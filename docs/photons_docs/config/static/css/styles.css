@@ -1,0 +1,51 @@
+@import "theme.css";
+
+h2 {
+  background: rgba(26, 255, 0, 0.12);
+	padding: 3px;
+}
+
+.option_spec_option {
+	margin-left: 15px;
+	padding: 10px;
+	padding-right: 0px;
+	padding-bottom: 1px;
+	margin-bottom: 15px;
+}
+
+.option_spec_option p.option {
+	line-height: 0.9em;
+}
+
+.option_spec_option div.description {
+	display: none;
+	background-color: rgba(98, 255, 98, 0.34);
+	margin-top: -15px;
+	margin-bottom: 10px;
+	margin-left: -10px;
+}
+
+.option_spec_option p.option:hover + div.description {
+	display: block;
+}
+
+.blue-back {
+  background-color: rgba(74, 0, 255, 0.09);
+}
+
+p.monospaced {
+	font-family: "Lucida Console", Monaco, monospace;
+	font-size: 0.8em;
+}
+
+span.green-text {
+	color: green;
+}
+
+span.red-text {
+	color: red;
+}
+
+span.blue-text {
+	color: rgb(0, 161, 143);
+}

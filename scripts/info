@@ -1,0 +1,121 @@
+#/bin/sh
+"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+
+from photons_app.actions import an_action
+from photons_app import helpers as hp
+from photons_app.errors import BadRun
+
+from photons_products_registry import capability_for_ids, DefaultCapability
+from photons_transport.target.errors import FailedToFindDevice
+from photons_device_messages import DeviceMessages
+from photons_script.script import Decider, ATarget
+from photons_multizone import zones_from_reference
+from photons_colour import ColourMessages
+
+from option_merge_addons import option_merge_addon_hook
+from collections import defaultdict
+import logging
+import json
+
+log = logging.getLogger("info")
+
+wanted = ["protocol", "device_finder", "socket", "colour", "device_messages", "multizone", "products_registry"]
+
+@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
+def __lifx__(collector, *args, **kwargs):
+    pass
+
+@an_action(needs_target=True, special_reference=True)
+async def info(collector, target, reference, **kwargs):
+    """
+    Display info about your devices
+
+    ``info d073d5000001,d073d5000002``
+
+    Will find the product type, current firmware, group, location and label for your devices.
+
+    And will get zone information if your device is multizone capable
+    """
+    info = defaultdict(dict)
+    multizone = []
+
+    getter = [
+          DeviceMessages.GetVersion()
+        , DeviceMessages.GetGroup()
+        , DeviceMessages.GetLocation()
+        , DeviceMessages.GetHostFirmware()
+        , ColourMessages.GetColor()
+        ]
+
+    def gatherer(reference, *states):
+        for s in states:
+            if s | DeviceMessages.StateVersion:
+                capability = capability_for_ids(s.product, s.vendor)
+                info[reference]["capability"] = capability
+                if capability.has_multizone:
+                    multizone.append(reference)
+            elif s | ColourMessages.LightState:
+                info[reference]["label"] = s.label
+                info[reference]["power"] = "off" if s.power is 0 else "on"
+                info[reference]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(
+                    s.hue, s.saturation, s.brightness, s.kelvin
+                )
+            elif s | DeviceMessages.StateGroup:
+                info[reference]["group"] = s.label
+            elif s | DeviceMessages.StateLocation:
+                info[reference]["location"] = s.label
+            elif s | DeviceMessages.StateHostFirmware:
+                info[reference]["firmware"] = "{0} ({1})".format(s.version, s.build)
+
+        return []
+
+    async with ATarget(target) as afr:
+        errors = []
+        await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors)
+
+        if multizone:
+            res = await zones_from_reference(target, multizone, afr, error_catcher=errors)
+            for reference, zones in res.items():
+                info[reference]["zones"] = zones
+
+        didnt_find = set()
+        failed_interaction = defaultdict(set)
+        for e in set(errors):
+            if isinstance(e, FailedToFindDevice):
+                didnt_find.add(e.kwargs["serial"])
+            else:
+                if "serial" in e.kwargs:
+                    failed_interaction[e.kwargs["serial"]].add(e)
+                else:
+                    log.error(e)
+
+        for serial in didnt_find:
+            log.error(hp.lc("Failed to find device", serial=serial))
+
+        for serial, errors in sorted(failed_interaction.items()):
+            log.error(hp.lc("Failed to interact with device", serial=serial, errors=list(errors)))
+
+    for reference, i in sorted(info.items()):
+        for key in ("label", "group", "location", "power", "firmware", "color"):
+            if key not in i:
+                i[key] = "<unknown>"
+
+        if "capability" not in i:
+            i["capability"] = DefaultCapability
+
+        print(reference)
+        print("\tLabel: {0}\n\tGroup: {1}\n\tLocation: {2}".format(i["label"], i["group"], i["location"]))
+        print("\tpower: {0}".format(i["power"]))
+        print("\tFirmware: {0}".format(i["firmware"]))
+        print("\tProduct: {0}".format(i["capability"].name))
+        if "zones" in i:
+            for z, colors in i["zones"]:
+                print("\t\tZone {0}: {1}".format(z, json.dumps(colors, sort_keys=True)))
+        else:
+            print("\tColor: {0}".format(i["color"]))
+        print("")
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    main(["lan:info"] + sys.argv[1:])

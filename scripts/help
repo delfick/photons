@@ -1,0 +1,17 @@
+#/bin/sh
+"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+
+from option_merge_addons import option_merge_addon_hook
+import pkg_resources
+
+available = [e.name for e in pkg_resources.iter_entry_points("lifx.photons")]
+
+@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in available])
+def __lifx__(collector, *args, **kwargs):
+    pass
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    import os
+    main(["help"] + sys.argv[1:])

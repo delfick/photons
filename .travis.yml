@@ -1,0 +1,16 @@
+language: python
+
+python:
+  - "3.6"
+
+env:
+  global:
+    - CI_SERVER=true
+
+install:
+  - pip install pip --upgrade
+  - pip install -e .
+  - pip install -e '.[tests]'
+
+script:
+  - ./test.sh

@@ -1,0 +1,15 @@
+#!/usr/bin/env python3.6
+
+import os
+
+this_dir = os.path.abspath(os.path.dirname(__file__))
+src_dir = os.path.join(this_dir, "..")
+
+from venvstarter import ignite
+ignite(__file__, "photons-docs"
+    , deps = [
+        "-e file:" + src_dir + "#egg=lifx-photons-core"
+      , "-e file:" + this_dir + "#egg=lifx-photons-docs"
+      ]
+    , env = {"LIFX_CONFIG": os.environ.get("LIFX_CONFIG", "{venv_parent}/docs.yml")}
+    )

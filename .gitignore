@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+docs/res/
+docs/.photons-docs/
+docs/gh-pages/
+scripts/.lifx/
+scripts/secrets.yml
+.tox/
+examples/.lifx/
+dist/

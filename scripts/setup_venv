@@ -1,0 +1,15 @@
+#!/usr/bin/env python3.6
+
+import runpy
+import os
+
+this_dir = os.path.abspath(os.path.dirname(__file__))
+src_dir = os.path.join(this_dir, "..")
+
+version_mod = runpy.run_path(os.path.join(src_dir, "photons_app", "__init__.py"))
+
+from venvstarter import ignite
+ignite(__file__, "lifx"
+    , deps = ["-e file:" + src_dir + "#egg=lifx-photons-core=={0}".format(version_mod["VERSION"])]
+    )
+

@@ -1,0 +1,44 @@
+#/bin/sh
+"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+
+from photons_app.actions import an_action
+
+from photons_tile_messages import TileMessages
+from photons_script.script import ATarget
+
+from option_merge_addons import option_merge_addon_hook
+import logging
+import random
+
+log = logging.getLogger("info")
+
+wanted = ["socket", "tile_messages", "device_finder"]
+
+@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
+def __lifx__(collector, *args, **kwargs):
+    pass
+
+@an_action(needs_target=True, special_reference=True)
+async def tiles(collector, target, reference, **kwargs):
+    """
+    Set our tiles to specific colors
+
+    ``tiles d073d5000001,d073d5000002``
+    """
+    colors = []
+    for i in range(5):
+        nxt = []
+        for i in range(64):
+            nxt.append({"hue": random.randint(0, 360), "saturation": 1, "brightness": 0.5, "kelvin": 3500})
+        colors.append(nxt)
+
+    msgs = []
+    for i, colors in enumerate(colors):
+        msgs.append(TileMessages.SetTileState64(tile_index=i, length=1, x=0, y=0, width=8, duration=1, colors=colors, res_required=False))
+
+    await target.script(msgs).run_with_all(reference)
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    main(["lan:tiles"] + sys.argv[1:])

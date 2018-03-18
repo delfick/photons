@@ -1,0 +1,61 @@
+#/bin/sh
+"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+
+from photons_app.actions import an_action
+from photons_app import helpers as hp
+
+from photons_script.script import Pipeline, Repeater, ATarget
+from photons_device_messages import DeviceMessages
+from photons_colour import ColourMessages
+
+from option_merge_addons import option_merge_addon_hook
+import binascii
+import logging
+
+log = logging.getLogger("repeater")
+
+wanted = ["protocol", "socket", "colour", "device_messages", "device_finder"]
+
+@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
+def __lifx__(collector, *args, **kwargs):
+    pass
+
+@an_action(needs_target=True, special_reference=True)
+async def repeater(collector, target, reference, **kwargs):
+    """
+    Do a never ending loop getting information from your devices
+
+    ``repeater d073d5000001,d073d5000002``
+
+    or if you want it to find devices each loop,
+
+    ``repeater``
+
+    Will find the product type, current firmware, group, location and label for your devices.
+    """
+
+    async def on_done_loop():
+        log.info("loop done")
+
+    getter = [
+          DeviceMessages.GetVersion()
+        , DeviceMessages.GetGroup()
+        , DeviceMessages.GetLocation()
+        , DeviceMessages.GetHostFirmware()
+        , ColourMessages.GetColor()
+        ]
+    pipeline = Pipeline(*getter, spread=1)
+    repeater = Repeater(pipeline, min_loop_time=10, on_done_loop=on_done_loop)
+
+    def error_catcher(e):
+        log.error(e)
+
+    async with ATarget(target) as afr:
+        async for pkt, _, _ in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher, timeout=5):
+            serial = binascii.hexlify(pkt.target).decode()
+            print(serial, repr(pkt.payload))
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    main(["lan:repeater"] + sys.argv[1:])
