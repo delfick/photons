@@ -62,7 +62,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     missing = []
     for field in TileMessages.GetTileState64.Payload.Meta.all_names:
-        if field not in options:
+        if field not in options and field not in ("reserved", ):
             missing.append(field)
 
     if missing:
