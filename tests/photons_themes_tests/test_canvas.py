@@ -86,6 +86,20 @@ describe TestCase, "Canvas":
         self.assertEqual(canvas[(10, 1)], ThemeColor(11, 1, 1, 3500))
         self.assertEqual(canvas[(10, 13)], ThemeColor(23, 1, 1, 3500))
 
+        # Color func overrides set points
+        canvas[(1, 1)] = ThemeColor(10, 1, 1, 3500)
+        self.assertEqual(canvas[(1, 1)], ThemeColor(2, 1, 1, 3500))
+
+    it "can get a point when we have a default color func":
+        color = ThemeColor(0, 1, 1, 3500)
+        canvas = Canvas()
+        canvas.set_default_color_func(lambda i, j: ThemeColor(i + j, 1, 1, 3500))
+        self.assertEqual(canvas[(1, 1)], ThemeColor(2, 1, 1, 3500))
+
+        # default color func does not override set points
+        canvas[(1, 1)] = ThemeColor(10, 1, 1, 3500)
+        self.assertEqual(canvas[(1, 1)], ThemeColor(10, 1, 1, 3500))
+
     it "can set a point":
         canvas = Canvas()
         self.assertEqual(canvas.points, {})
@@ -125,6 +139,14 @@ describe TestCase, "Canvas":
             red = ThemeColor(0, 1, 1, 3400)
             self.assertIs(canvas.get((1, 1), red), red)
             self.assertIs(canvas.get((1, 1)), None)
+
+        it "uses default_color_func instead of dflt":
+            canvas = Canvas()
+            red = ThemeColor(0, 1, 1, 3400)
+            dflt_from_func = ThemeColor(100, 1, 1, 3400)
+            canvas.set_default_color_func(lambda i, j: dflt_from_func)
+            self.assertEqual(canvas.get((1, 1), red), ThemeColor(100, 1, 1, 3400))
+            self.assertEqual(canvas.get((1, 1)), ThemeColor(100, 1, 1, 3400))
 
         it "uses the color_func if one is set":
             color = ThemeColor(0, 1, 1, 3500)

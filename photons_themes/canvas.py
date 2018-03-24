@@ -52,6 +52,7 @@ class Canvas:
     def __init__(self):
         self.points = {}
         self.color_func = None
+        self.default_color_func = None
 
     def set_color_func(self, color_func):
         """
@@ -61,6 +62,14 @@ class Canvas:
         on getting those points.
         """
         self.color_func = color_func
+
+    def set_default_color_func(self, default_color_func):
+        """
+        Add a default color func to the canvas
+
+        This will be used when getting points on the canvas that aren't filled.
+        """
+        self.default_color_func = default_color_func
 
     @property
     def width(self):
@@ -252,15 +261,24 @@ class Canvas:
         return len(self.points)
 
     def get(self, point, dflt=None):
-        """Get a point or the passed in ``dflt`` value if the point doesn't exist"""
+        """
+        Get a point or the passed in ``dflt`` value if the point doesn't exist
+
+        If this canvas has a default_color_func then dflt is ignored and the
+        default_color_func is used instead
+        """
         if self.color_func:
             return self.color_func(*point)
+        if point not in self.points and self.default_color_func:
+            return self.default_color_func(*point)
         return self.points.get(point, dflt)
 
     def __getitem__(self, point):
         """Return the color at ``point`` where ``point`` is ``(i, j)``"""
         if self.color_func:
             return self.color_func(*point)
+        if point not in self.points and self.default_color_func:
+            return self.default_color_func(*point)
         return self.points[point]
 
     def __setitem__(self, key, color):
