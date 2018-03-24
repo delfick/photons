@@ -1,3 +1,4 @@
+from photons_themes.coords import user_coords_to_pixel_coords
 from photons_themes.collections import TileColors, ZoneColors
 from photons_themes.theme import ThemeColor
 from photons_themes.canvas import Canvas
@@ -15,10 +16,7 @@ class TileApplier:
         Create a TileApplier from the ``[((user_x, user_y), (width, height)), ...]``
         returned by a GetDeviceChain message.
         """
-        normalized = [
-              ((int((x * w) - (w * 0.5)), int((y * h) + (h * 0.5))), (w, h))
-              for (x, y), (w, h) in coords_and_sizes
-            ]
+        normalized = user_coords_to_pixel_coords(coords_and_sizes)
         return kls(normalized, **kwargs)
 
     def add_tiles_from_canvas(self, colors, canvas):
