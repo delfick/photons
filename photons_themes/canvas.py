@@ -121,6 +121,42 @@ class Canvas:
             return 0
         return min([y for (x, y) in self.points])
 
+    def set_all_points_for_tile(self, left_x, top_y, tile_width, tile_height, get_color):
+        """
+        Translates x, y points relative to a single tile to the tile position on the canvas
+
+        So let's say a tile is at (10, 2) then get_color will be called with (x, y) from
+        0 to tile_width, 0 to tile_height and those points get translated to start from (10, 2)
+
+        NOTE: get_color gets y where higher y means moving down, whereas the coordinates on the canvas
+            is higher y means moving up.
+
+        So let's say you have a 4 by 4 tile, get_color will be called with the following points:
+
+        .. code-block:: plain
+
+            (0, 0) (1, 0) (2, 0) (3, 0)
+            (0, 1) (1, 1) (2, 1) (3, 1)
+            (0, 2) (1, 2) (2, 2) (3, 2)
+            (0, 3) (1, 3) (2, 3) (3, 3)
+
+        And if you have left_x, top_y of (10, 4), it'll set the following points on the canvas:
+
+        .. code-block:: plain
+
+            (10, 4) (11, 4) (12, 4) (13, 4)
+            (10, 3) (11, 3) (12, 3) (13, 3)
+            (10, 2) (11, 2) (12, 2) (13, 2)
+            (10, 1) (11, 1) (12, 1) (13, 1)
+
+        if get_color returns None, then no point is set for that turn
+        """
+        for j in range(top_y, top_y - tile_height, -1):
+            for i in range(left_x, left_x + tile_width):
+                color = get_color(i - left_x, (tile_height - 1) - (j - top_y + tile_height - 1))
+                if color is not None:
+                    self[(i, j)] = color
+
     def add_points_for_tile(self, left_x, top_y, tile_width, tile_height, theme):
         """
         Create points on the canvas around where a tile is.

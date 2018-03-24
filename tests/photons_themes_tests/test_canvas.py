@@ -357,6 +357,56 @@ describe TestCase, "Canvas":
 
             surrounding_colors.assert_called_once_with(1, 2)
 
+    describe "set_all_points_for_tile":
+        it "translates x, y to where the tile should be on the canvas":
+            want = [
+                  [0, 1, 0, 1, 0]
+                , [1, 0, 1, 0, 1]
+                , [0, 2, 0, 2, 0]
+                , [1, 0, 1, 0, 1]
+                , [0, 1, 0, 1, 0]
+                , [0, 0, 3, 0, 0]
+                ]
+
+            def get_color(x, y):
+                return ThemeColor(want[y][x], 1, 1, 3500)
+
+            canvas = Canvas()
+            canvas.set_all_points_for_tile(10, 2, 5, 6, get_color)
+            tile = canvas.points_for_tile(10, 2, 5, 6)
+            hues = [p.hue for p in tile]
+            expected = [
+                  0, 1, 0, 1, 0
+                , 1, 0, 1, 0, 1
+                , 0, 2, 0, 2, 0
+                , 1, 0, 1, 0, 1
+                , 0, 1, 0, 1, 0
+                , 0, 0, 3, 0, 0
+                ]
+            self.assertEqual(hues, expected)
+
+        it "ignores points where get_color returns None":
+            N = None
+            want = [
+                  [0, N, 2]
+                , [1, 0, N]
+                ]
+
+            def get_color(x, y):
+                if want[y][x] is None:
+                    return None
+                return ThemeColor(want[y][x], 1, 1, 3500)
+
+            canvas = Canvas()
+            canvas.set_all_points_for_tile(0, 0, 3, 2, get_color)
+            self.assertEqual(canvas.points
+                , { (0, 0): ThemeColor(0, 1, 1, 3500)
+                  , (0, -1): ThemeColor(1, 1, 1, 3500)
+                  , (1, -1): ThemeColor(0, 1, 1, 3500)
+                  , (2, 0): ThemeColor(2, 1, 1, 3500)
+                  }
+                )
+
     describe "add_points_for_tile":
         before_each:
             self.theme = Theme()
