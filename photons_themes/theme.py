@@ -21,6 +21,9 @@ class ThemeColor:
         self.brightness = brightness
         self.kelvin = int(kelvin)
 
+    def as_dict(self):
+        return {"hue": self.hue, "saturation": self.saturation, "brightness": self.brightness, "kelvin": self.kelvin}
+
     @classmethod
     def average(kls, colors):
         """

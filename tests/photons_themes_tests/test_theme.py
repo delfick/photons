@@ -20,6 +20,16 @@ describe TestCase, "ThemeColor":
         self.assertIs(color.brightness, brightness)
         self.assertIs(color.kelvin, kelvin)
 
+    it "can return as a dict":
+        hue = mock.Mock(name="hue")
+        saturation = mock.Mock(name="saturation")
+        brightness = mock.Mock(name="brightness")
+        kelvin = 3500
+
+        color = ThemeColor(hue, saturation, brightness, kelvin)
+
+        self.assertEqual(color.as_dict(), {"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin})
+
     it "makes sure kelvin is an integer":
         color = ThemeColor(320, 0, 0, 3500.5)
         self.assertEqual(color.kelvin, 3500)
