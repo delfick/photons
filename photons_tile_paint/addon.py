@@ -1,6 +1,7 @@
 from photons_tile_paint.font.alphabet import characters as alphabet
 from photons_tile_paint.pacman import state as pacman_state
 
+from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
@@ -31,6 +32,9 @@ __shortdesc__ = "Utilities for painting on the tiles"
     , ("lifx.photons", "products_registry")
     ])
 def __lifx__(*args, **kwargs):
+    pass
+
+class Finish(PhotonsAppError):
     pass
 
 coords_for_horizontal_line = user_coords_to_pixel_coords(
@@ -263,14 +267,26 @@ class TileMarqueeOptions(dictobj.Spec):
     text_color = dictobj.Field(ColorOption(200, 0.24, 0.5, 3500))
     text = dictobj.Field(sb.string_spec, wrapper=sb.required)
     user_coords = dictobj.Field(sb.boolean, default=False)
+    num_iterations = dictobj.Field(sb.integer_spec, default=-1)
 
     @property
     def text_width(self):
         return len(self.text) * 8
 
+    def final_iteration(self, iteration):
+        if self.num_iterations == -1:
+            return False
+        return self.num_iterations <= iteration
+
 class TilePacmanOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     user_coords = dictobj.Field(sb.boolean, default=False)
+    num_iterations = dictobj.Field(sb.integer_spec, default=-1)
+
+    def final_iteration(self, iteration):
+        if self.num_iterations == -1:
+            return False
+        return self.num_iterations <= iteration
 
 class TileTimeAnimation(Animation):
     every = 1.5
@@ -318,6 +334,7 @@ class TileMarqueeAnimation(Animation):
     duration = 0
 
     def setup(self):
+        self.iteration = 0
         if self.options.user_coords:
             self.coords = None
 
@@ -354,6 +371,9 @@ class TileMarqueeAnimation(Animation):
 
         nxt = prev_state.move_left(1)
         if nxt.x < left_x:
+            self.iteration += 1
+            if self.options.final_iteration(self.iteration):
+                raise Finish("Reached max iterations")
             nxt = self.State(right_x)
 
         return nxt
@@ -377,6 +397,7 @@ class TilePacmanAnimation(Animation):
     duration = 0
 
     def setup(self):
+        self.iteration = 0
         if self.options.user_coords:
             self.coords = None
 
@@ -385,6 +406,9 @@ class TilePacmanAnimation(Animation):
             return pacman_state.start(coords)
 
         if prev_state.finished:
+            self.iteration += 1
+            if self.options.final_iteration(self.iteration):
+                raise Finish("Reached max iterations")
             return prev_state.swap_state(coords)
 
         return prev_state.move(1)

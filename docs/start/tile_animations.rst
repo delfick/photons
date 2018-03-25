@@ -40,6 +40,7 @@ tile_time
 
   full_height_progress -- boolean -- default false
     If false then the progress bar is just the bottom pixels
+
 tile_marquee
   This also has the following options
 
@@ -54,6 +55,9 @@ tile_marquee
     determine what to display on the tiles. By default we assume the tiles are
     in a horizontal row.
 
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
+
 tile_pacman
   This also has the following options
 
@@ -61,3 +65,6 @@ tile_pacman
     If this is true, then we use the (user_x, user_y) values from the tiles to
     determine what to display on the tiles. By default we assume the tiles are
     in a horizontal row.
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
