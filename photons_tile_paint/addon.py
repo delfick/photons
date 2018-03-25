@@ -190,6 +190,10 @@ class Animation:
         self.afr = afr
         self.target = target
         self.options = options
+        self.setup()
+
+    def setup(self):
+        pass
 
     def next_state(self, prev_state, coords):
         raise NotImplementedError()
@@ -247,7 +251,7 @@ def ColorOption(h, s, b, k):
             return Color(self.hue, self.saturation, self.brightness, self.kelvin)
     return C.FieldSpec()
 
-class TileTextOptions(dictobj.Spec):
+class TileTimeOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     hour24 = dictobj.Field(sb.boolean, default=True)
     number_color = dictobj.Field(ColorOption(200, 0.24, 0.5, 3500))
@@ -258,6 +262,7 @@ class TileMarqueeOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     text_color = dictobj.Field(ColorOption(200, 0.24, 0.5, 3500))
     text = dictobj.Field(sb.string_spec, wrapper=sb.required)
+    user_coords = dictobj.Field(sb.boolean, default=False)
 
     @property
     def text_width(self):
@@ -265,6 +270,7 @@ class TileMarqueeOptions(dictobj.Spec):
 
 class TilePacmanOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
+    user_coords = dictobj.Field(sb.boolean, default=False)
 
 class TileTimeAnimation(Animation):
     every = 1.5
@@ -310,6 +316,10 @@ class TileMarqueeAnimation(Animation):
     acks = False
     coords = coords_for_horizontal_line
     duration = 0
+
+    def setup(self):
+        if self.options.user_coords:
+            self.coords = None
 
     class State:
         def __init__(self, x):
@@ -366,6 +376,10 @@ class TilePacmanAnimation(Animation):
     coords = coords_for_horizontal_line
     duration = 0
 
+    def setup(self):
+        if self.options.user_coords:
+            self.coords = None
+
     def next_state(self, prev_state, coords):
         if prev_state is None:
             return pacman_state.start(coords)
@@ -384,7 +398,7 @@ class TilePacmanAnimation(Animation):
 async def tile_time(collector, target, reference, **kwargs):
     """Print time to the tiles"""
     extra = collector.configuration["photons_app"].extra_as_json
-    options = TileTextOptions.FieldSpec().normalise(Meta.empty(), extra)
+    options = TileTimeOptions.FieldSpec().normalise(Meta.empty(), extra)
     async with ATarget(target) as afr:
         await TileTimeAnimation(target, afr, options).animate(reference)
 

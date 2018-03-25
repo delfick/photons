@@ -40,7 +40,6 @@ tile_time
 
   full_height_progress -- boolean -- default false
     If false then the progress bar is just the bottom pixels
-
 tile_marquee
   This also has the following options
 
@@ -49,3 +48,16 @@ tile_marquee
 
   text -- string -- required
     The text to scroll across the tiles
+
+  user_coords -- boolean -- default false
+    If this is true, then we use the (user_x, user_y) values from the tiles to
+    determine what to display on the tiles. By default we assume the tiles are
+    in a horizontal row.
+
+tile_pacman
+  This also has the following options
+
+  user_coords -- boolean -- default false
+    If this is true, then we use the (user_x, user_y) values from the tiles to
+    determine what to display on the tiles. By default we assume the tiles are
+    in a horizontal row.
