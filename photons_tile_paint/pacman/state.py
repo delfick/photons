@@ -1,4 +1,4 @@
-from photons_tile_paint.font import pacman
+from photons_tile_paint.pacman import font
 
 def start(coords):
     return L2RState(0, 0).swap_state(coords)
@@ -29,22 +29,22 @@ class R2LState(State):
     def characters(self):
         return [
               self.pacman
-            , pacman.Space(2)
-            , pacman.Blinky
-            , pacman.Space(2)
-            , pacman.Pinky
-            , pacman.Space(2)
-            , pacman.Inky
-            , pacman.Space(2)
-            , pacman.Clyde
+            , font.Space(2)
+            , font.Blinky
+            , font.Space(2)
+            , font.Pinky
+            , font.Space(2)
+            , font.Inky
+            , font.Space(2)
+            , font.Clyde
             ]
 
     @property
     def pacman(self):
         if self.x % 4 < 2:
-            return pacman.PacmanR2LOpen
+            return font.PacmanR2LOpen
         else:
-            return pacman.PacmanClosed
+            return font.PacmanClosed
 
     def move(self, amount):
         return self.__class__(self.start_x, self.x - amount)
@@ -67,22 +67,22 @@ class L2RState(State):
     def characters(self):
         return [
               self.pacman
-            , pacman.Space(2)
-            , pacman.Ghost
-            , pacman.Space(2)
-            , pacman.Ghost
-            , pacman.Space(2)
-            , pacman.Ghost
-            , pacman.Space(2)
-            , pacman.Ghost
+            , font.Space(2)
+            , font.Ghost
+            , font.Space(2)
+            , font.Ghost
+            , font.Space(2)
+            , font.Ghost
+            , font.Space(2)
+            , font.Ghost
             ]
 
     @property
     def pacman(self):
         if self.x % 4 < 2:
-            return pacman.PacmanL2ROpen
+            return font.PacmanL2ROpen
         else:
-            return pacman.PacmanClosed
+            return font.PacmanClosed
 
     def move(self, amount):
         return self.__class__(self.start_x, self.x + amount)
