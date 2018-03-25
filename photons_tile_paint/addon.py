@@ -1,4 +1,5 @@
-from photons_tile_paint.font import characters
+from photons_tile_paint.font.alphabet import characters as alphabet
+from photons_tile_paint.pacman import state as pacman_state
 
 from photons_app.actions import an_action
 from photons_app import helpers as hp
@@ -65,23 +66,13 @@ def canvas_to_msgs(canvas, coords, duration=1, acks=True):
             , ack_required = acks
             )
 
-def character_getter(ch, fill_color):
-    pixels = characters[ch].split('\n')
-
-    def get_color(x, y):
-        pixel = pixels[y][x]
-        if pixel == "#":
-            return fill_color
-
-    return get_color
-
-def put_characters_on_canvas(canvas, chars, coords, fill_color):
+def put_characters_on_canvas(canvas, chars, coords, fill_color=None):
     msgs = []
     for ch, coord in zip(chars, coords):
         if ch is None:
             continue
 
-        canvas.set_all_points_for_tile(*coord[0], *coord[1], character_getter(ch, fill_color))
+        canvas.set_all_points_for_tile(*coord[0], *coord[1], ch.get_color_func(fill_color))
 
     return msgs
 
@@ -272,6 +263,9 @@ class TileMarqueeOptions(dictobj.Spec):
     def text_width(self):
         return len(self.text) * 8
 
+class TilePacmanOptions(dictobj.Spec):
+    background = dictobj.Field(BackgroundOption.FieldSpec())
+
 class TileTimeAnimation(Animation):
     every = 1.5
     duration = 1
@@ -324,16 +318,15 @@ class TileMarqueeAnimation(Animation):
         def move_left(self, amount):
             return self.__class__(self.x - amount)
 
-        def coords_for(self, original, text):
+        def coords_for(self, original, characters):
             coords = []
-            for (left_x, top_y), (width, height) in original:
-                coords.append(((left_x + self.x, top_y), (width, height)))
 
-            if len(text) > 5:
-                (left_x, top_y), (width, height) = coords[-1]
-                for _ in range(len(text) - len(coords)):
-                    left_x += width
-                    coords.append(((left_x, top_y), (width, height)))
+            (left_x, top_y), (width, height) = original[0]
+            left_x = left_x + self.x
+
+            for char in characters:
+                coords.append(((left_x, top_y), (char.width, height)))
+                left_x += char.width
 
             return coords
 
@@ -355,9 +348,36 @@ class TileMarqueeAnimation(Animation):
 
         return nxt
 
+    @hp.memoized_property
+    def characters(self):
+        characters = []
+        for ch in self.options.text:
+            characters.append(alphabet[ch])
+        return characters
+
     def make_canvas(self, state, coords):
         canvas = Canvas()
-        put_characters_on_canvas(canvas, list(self.options.text), state.coords_for(coords, self.options.text), self.options.text_color.color)
+        put_characters_on_canvas(canvas, self.characters, state.coords_for(coords, self.characters), self.options.text_color.color)
+        return canvas
+
+class TilePacmanAnimation(Animation):
+    every = 0.075
+    acks = False
+    coords = coords_for_horizontal_line
+    duration = 0
+
+    def next_state(self, prev_state, coords):
+        if prev_state is None:
+            return pacman_state.start(coords)
+
+        if prev_state.finished:
+            return prev_state.swap_state(coords)
+
+        return prev_state.move(1)
+
+    def make_canvas(self, state, coords):
+        canvas = Canvas()
+        put_characters_on_canvas(canvas, state.characters, state.coords_for(coords))
         return canvas
 
 @an_action(needs_target=True, special_reference=True)
@@ -375,3 +395,11 @@ async def tile_marquee(collector, target, reference, **kwargs):
     options = TileMarqueeOptions.FieldSpec().normalise(Meta.empty(), extra)
     async with ATarget(target) as afr:
         await TileMarqueeAnimation(target, afr, options).animate(reference)
+
+@an_action(needs_target=True, special_reference=True)
+async def tile_pacman(collector, target, reference, **kwargs):
+    """Print scrolling text to the tiles"""
+    extra = collector.configuration["photons_app"].extra_as_json
+    options = TilePacmanOptions.FieldSpec().normalise(Meta.empty(), extra)
+    async with ATarget(target) as afr:
+        await TilePacmanAnimation(target, afr, options).animate(reference)
