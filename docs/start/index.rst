@@ -7,6 +7,7 @@
   venvstarter
   script_mechanism
   finding_serials
+  tile_animations
   packets
   known_issues
   changelog

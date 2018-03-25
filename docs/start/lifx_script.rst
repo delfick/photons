@@ -29,6 +29,11 @@ Doing a http api like transform on a light
 Applying a theme of colours to all the lights on your network
     ``lifx lan:apply_theme -- '{"colors": [{"brightness": 0.3, "hue": 0, "kelvin": 3500, "saturation": 1}, ...]}'``
 
+Applying an animation to your tile
+    ``lifx lan:tile_pacman match:cap=chain``
+
+    See :ref:`tile_animations` for more information.
+
 If you execute ``lifx`` with no arguments it will display all the available tasks.
 
 References
