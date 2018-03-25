@@ -324,7 +324,8 @@ class TileTimeAnimation(Animation):
                 return self.options.progress_bar_color.color
         canvas.set_all_points_for_tile(user_x, user_y, width * 5, height, get_color)
 
-        put_characters_on_canvas(canvas, list(state.time_string), coords, self.options.number_color.color)
+        time_characters = [alphabet[ch] for ch in list(state.time_string)]
+        put_characters_on_canvas(canvas, time_characters, coords, self.options.number_color.color)
         return canvas
 
 class TileMarqueeAnimation(Animation):
