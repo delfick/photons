@@ -12,6 +12,9 @@ a virtualenv just by specifying what modules you want in that virtualenv in a
 file and then executing that file will create or modify the virtualenv before
 using it to launch some python application.
 
+.. note:: venvstarter doesn't work on windows, so in that environment you'll
+  have to create and manage your virtualenv yourself.
+
 Usage is something like:
 
 .. code-block:: text

@@ -1,6 +1,7 @@
 from photons_app import VERSION
 
 from setuptools import setup, find_packages
+import platform
 import os
 
 packages = []
@@ -21,6 +22,10 @@ for filename in os.listdir(this_dir):
         if filename != 'photons_app':
             photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
 
+maybeuvloop = []
+if platform.system() != "Windows":
+    maybeuvloop.append("uvloop==0.9.1")
+
 setup(
       name = "lifx-photons-core"
     , version = VERSION
@@ -36,7 +41,6 @@ setup(
       , "delfick_app==0.9.6"
       , "option_merge==1.6"
       , "option_merge_addons==0.2.1"
-      , "uvloop==0.9.1"
       , "pyYaml==3.12"
 
       # photons-tile-messages
@@ -44,7 +48,7 @@ setup(
 
       # photons-protocol
       , "bitarray == 0.8.1"
-      ]
+      ] + maybeuvloop
 
     , extras_require =
       { "tests":

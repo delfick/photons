@@ -236,11 +236,14 @@ describe AsyncTestCase, "HardCodedSerials":
 describe AsyncTestCase, "ResolveReferencesFromFile":
     async it "complains if filename can't be read or is empty":
         with hp.a_temp_file() as fle:
+            fle.close()
             os.remove(fle.name)
+
             with self.fuzzyAssertRaisesError(PhotonsAppError, "Failed to read serials from a file"):
                 ResolveReferencesFromFile(fle.name)
 
         with hp.a_temp_file() as fle:
+            fle.close()
             with self.fuzzyAssertRaisesError(PhotonsAppError, "Found no serials in file"):
                 ResolveReferencesFromFile(fle.name)
 
@@ -254,7 +257,7 @@ describe AsyncTestCase, "ResolveReferencesFromFile":
 
         with hp.a_temp_file() as fle:
             fle.write("{}\n{}".format(serial1, serial2).encode())
-            fle.flush()
+            fle.close()
 
             with mock.patch("photons_app.special.HardCodedSerials", FakeHardCodedSerials):
                 r = ResolveReferencesFromFile(fle.name)

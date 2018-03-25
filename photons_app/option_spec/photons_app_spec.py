@@ -13,11 +13,15 @@ from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
+import platform
 import asyncio
 import logging
-import uvloop
 import json
 import sys
+
+uvloop = None
+if platform.system() != "Windows":
+    import uvloop
 
 log = logging.getLogger("photons_app.options_spec.photons_app-spec")
 
@@ -60,13 +64,14 @@ class PhotonsApp(dictobj.Spec):
     final_fut_finder = dictobj.Field(sb.overridden("{final_future}"), formatted=True
         , help="A function returning the future representing the end of the program"
         )
-    default_activate_all_modules= dictobj.Field(sb.boolean, default=False
+    default_activate_all_modules = dictobj.Field(sb.boolean, default=False
         , help="The collector looks at this to determine if we should default to activating all photons modules"
         )
 
     @memoized_property
     def uvloop(self):
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        if uvloop:
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         if self.debug:
             loop.set_debug(True)

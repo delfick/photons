@@ -10,3 +10,4 @@ ChangeLog
     * Tile animations
     * Added a ``serial`` property to packets that returns the hexlified target
       i.e. "d073d5000001" or None if target isn't set on the packet
+    * Now installs and runs on Windows.

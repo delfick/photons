@@ -1,6 +1,7 @@
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
+import platform
 import logging
 import asyncio
 import socket
@@ -116,4 +117,6 @@ class Sockets(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.settimeout(5)
+        if platform.system() == "Windows":
+            sock.bind(("", 0))
         return sock

@@ -8,9 +8,13 @@ from photons_app.errors import BadOption
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms.meta import Meta
 import asynctest
+import platform
 import asyncio
-import uvloop
 import mock
+
+uvloop = None
+if platform.system() != "Windows":
+    import uvloop
 
 describe TestCase, "PhotonsApp":
     before_each:
@@ -25,11 +29,13 @@ describe TestCase, "PhotonsApp":
             photons_app = self.make_photons_app()
 
             policy = asyncio.get_event_loop_policy()
-            assert not isinstance(policy, uvloop.EventLoopPolicy)
+            if uvloop:
+                assert not isinstance(policy, uvloop.EventLoopPolicy)
 
             try:
                 loop = photons_app.uvloop
-                assert isinstance(loop, uvloop.Loop)
+                if platform.system() != "Windows":
+                    assert isinstance(loop, uvloop.Loop)
                 assert not loop.get_debug()
             finally:
                 asyncio.set_event_loop_policy(policy)
@@ -38,11 +44,13 @@ describe TestCase, "PhotonsApp":
             photons_app = self.make_photons_app(debug=True)
 
             policy = asyncio.get_event_loop_policy()
-            assert not isinstance(policy, uvloop.EventLoopPolicy)
+            if uvloop:
+                assert not isinstance(policy, uvloop.EventLoopPolicy)
 
             try:
                 loop = photons_app.uvloop
-                assert isinstance(loop, uvloop.Loop)
+                if platform.system() != "Windows":
+                    assert isinstance(loop, uvloop.Loop)
                 assert loop.get_debug()
             finally:
                 asyncio.set_event_loop_policy(policy)

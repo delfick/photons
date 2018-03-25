@@ -4,9 +4,11 @@ from photons_app.test_helpers import TestCase, AsyncTestCase
 from photons_app.runner import run, runner, stop_everything
 
 import asynctest
+import platform
 import asyncio
 import signal
 import mock
+import nose
 import os
 
 describe TestCase, "run":
@@ -73,6 +75,9 @@ describe TestCase, "run":
 
 describe AsyncTestCase, "runner":
     async it "cancels final_future if it gets a SIGTERM":
+        if platform.system() == "Windows":
+            raise nose.SkipTest()
+
         final = asyncio.Future()
         reference = mock.Mock(name="reference")
         chosen_task = mock.Mock(name="chosen_task")

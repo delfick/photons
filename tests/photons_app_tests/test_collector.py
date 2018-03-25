@@ -36,7 +36,7 @@ describe TestCase, "Collector":
                ignored: "an option"
 
             """).encode())
-            fle.flush()
+            fle.close()
             collector.prepare(fle.name, {"one": 2})
 
             with mock.patch.object(Collector, "prepare", prepare):
@@ -326,7 +326,7 @@ describe TestCase, "Collector":
                     two:
                       three: 3
                 """).encode())
-                fle.flush()
+                fle.close()
 
                 read = Collector().read_file(fle.name)
                 self.assertEqual(read, {"one": 2, "two": {"three": 3}})
@@ -336,7 +336,7 @@ describe TestCase, "Collector":
                 fle.write(dedent("""
                     [1, 2
                 """).encode())
-                fle.flush()
+                fle.close()
 
                 with self.fuzzyAssertRaisesError(BadYaml, "Failed to read yaml", location=fle.name):
                     print(Collector().read_file(fle.name))

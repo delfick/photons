@@ -36,11 +36,14 @@ def a_temp_file():
             os.system("cat {0}".format(fle.name))
     """
     filename = None
+    tmpfile = None
     try:
         tmpfile = tempfile.NamedTemporaryFile(delete=False)
         filename = tmpfile.name
         yield tmpfile
     finally:
+        if tmpfile is not None:
+            tmpfile.close()
         if filename and os.path.exists(filename):
             os.remove(filename)
 

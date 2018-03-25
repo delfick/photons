@@ -205,14 +205,15 @@ class Collector(Collector):
 
     def read_file(self, location):
         """Read in a yaml file and return as a python object"""
-        try:
-            return yaml.load(open(location))
-        except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
-            raise self.BadFileErrorKls("Failed to read yaml"
-                , location = location
-                , error_type = error.__class__.__name__
-                , error = "{0}{1}".format(error.problem, error.problem_mark)
-                )
+        with open(location) as fle:
+            try:
+                return yaml.load(fle)
+            except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
+                raise self.BadFileErrorKls("Failed to read yaml"
+                    , location = location
+                    , error_type = error.__class__.__name__
+                    , error = "{0}{1}".format(error.problem, error.problem_mark)
+                    )
 
     def add_configuration(self, configuration, collect_another_source, done, result, src):
         """

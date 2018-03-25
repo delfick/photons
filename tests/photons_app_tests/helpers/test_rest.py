@@ -17,6 +17,7 @@ describe TestCase, "a_temp_file":
 
     it "doesn't fail if we delete the file early":
         with hp.a_temp_file() as fle:
+            fle.close()
             os.remove(fle.name)
         assert not os.path.exists(fle.name)
 

@@ -17,18 +17,19 @@ describe TestCase, "App":
         def from_config(self, config):
             with hp.a_temp_file() as fle:
                 fle.write(dedent(config).encode())
-                fle.flush()
+                fle.close()
 
-                args_dict = {
-                      "photons_app":
-                      { "config": open(fle.name)
-                      , "own_ca": sb.NotSpecified
-                      }
-                    }
+                with open(fle.name) as realfile:
+                    args_dict = {
+                          "photons_app":
+                          { "config": realfile
+                          , "own_ca": sb.NotSpecified
+                          }
+                        }
 
-                app = App()
-                logging_handler = mock.Mock(name="logging_handler")
-                collector = app.setup_collector(args_dict, logging_handler, None)
+                    app = App()
+                    logging_handler = mock.Mock(name="logging_handler")
+                    collector = app.setup_collector(args_dict, logging_handler, None)
                 return fle.name, args_dict, logging_handler, collector
 
         it "prepares the collector with the photons_app.config":

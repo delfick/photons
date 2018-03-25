@@ -1,5 +1,6 @@
 from photons_app import helpers as hp
 
+import platform
 import asyncio
 import logging
 import signal
@@ -58,9 +59,10 @@ async def runner(collector):
     loop = asyncio.get_event_loop()
     photons_app = collector.configuration["photons_app"]
 
-    def stop_final_fut():
-        photons_app.final_future.cancel()
-    loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
+    if platform.system() != "Windows":
+        def stop_final_fut():
+            photons_app.final_future.cancel()
+        loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
     def reporter(res):
         if res.cancelled():
