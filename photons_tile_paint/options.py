@@ -13,10 +13,7 @@ class BackgroundOption(dictobj.Spec):
 
     @property
     def default_color(self):
-        if self.type == "empty":
-            return Color(0, 0, 0, 3500)
-        else:
-            return Color(self.hue, self.saturation, self.brightness, self.kelvin)
+        return Color(self.hue, self.saturation, self.brightness, self.kelvin)
 
 def ColorOption(h, s, b, k):
     class C(dictobj.Spec):
