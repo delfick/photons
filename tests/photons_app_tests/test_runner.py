@@ -13,11 +13,11 @@ describe TestCase, "run":
     it "runs the collector and runs stop_everything when that's done":
         called = []
 
-        uvloop = mock.Mock(name="uvloop")
+        loop = asyncio.new_event_loop()
 
-        def ruc(coro):
-            asyncio.new_event_loop().run_until_complete(coro)
-        uvloop.run_until_complete.side_effect = ruc
+        uvloop = mock.Mock(name="uvloop")
+        uvloop.create_task.side_effect = loop.create_task
+        uvloop.run_until_complete.side_effect = loop.run_until_complete
 
         photons_app = mock.Mock(name="photons_app", uvloop=uvloop)
         configuration = {"photons_app": photons_app}
@@ -43,11 +43,10 @@ describe TestCase, "run":
     it "calls stop_everything even if runner raise an exception":
         called = []
 
+        loop = asyncio.new_event_loop()
         uvloop = mock.Mock(name="uvloop")
-
-        def ruc(coro):
-            asyncio.new_event_loop().run_until_complete(coro)
-        uvloop.run_until_complete.side_effect = ruc
+        uvloop.create_task.side_effect = loop.create_task
+        uvloop.run_until_complete.side_effect = loop.run_until_complete
 
         photons_app = mock.Mock(name="photons_app", uvloop=uvloop)
         configuration = {"photons_app": photons_app}

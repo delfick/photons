@@ -1,3 +1,5 @@
+from photons_app import helpers as hp
+
 import asyncio
 import logging
 import signal
@@ -88,7 +90,10 @@ def run(collector):
     """
     loop = collector.configuration["photons_app"].uvloop
 
+    task = loop.create_task(runner(collector))
+    task.add_done_callback(hp.silent_reporter)
+
     try:
-        loop.run_until_complete(runner(collector))
+        loop.run_until_complete(task)
     finally:
         stop_everything(loop, collector)
