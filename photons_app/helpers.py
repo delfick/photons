@@ -340,6 +340,8 @@ class ResettableFuture(object):
             print(val)
         fut.on_creation(do_something)
     """
+    _asyncio_future_blocking = False
+
     def __init__(self, info=None):
         if info is None:
             self.reset()
@@ -347,6 +349,10 @@ class ResettableFuture(object):
             self.info = info
         self.creationists = []
         self.reset_fut = asyncio.Future()
+
+    @property
+    def _loop(self):
+        return asyncio.get_event_loop()
 
     def reset(self):
         if hasattr(self, "reset_fut"):
@@ -428,10 +434,16 @@ class ChildOfFuture(object):
     Create a future that is considered done/cancelled if it's parent is
     done/cancelled
     """
+    _asyncio_future_blocking = False
+
     def __init__(self, original_fut):
         self.this_fut = asyncio.Future()
         self.original_fut = original_fut
         self.done_callbacks = []
+
+    @property
+    def _loop(self):
+        return asyncio.get_event_loop()
 
     @property
     def _callbacks(self):

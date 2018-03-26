@@ -11,6 +11,10 @@ import time
 import mock
 
 describe AsyncTestCase, "ResettableFuture":
+    async it "ensure_future returns the ResettableFuture as is":
+        fut = hp.ResettableFuture()
+        self.assertIs(asyncio.ensure_future(fut), fut)
+
     describe "Reset":
         async it "can be reset":
             res = mock.Mock(name="res")
@@ -252,6 +256,11 @@ describe AsyncTestCase, "ChildOfFuture":
     async before_each:
         self.orig_fut = asyncio.Future()
         self.cof = hp.ChildOfFuture(self.orig_fut)
+
+    async it "ensure_future returns the ChildOfFuture as is":
+        fut = asyncio.Future()
+        fut = hp.ChildOfFuture(fut)
+        self.assertIs(asyncio.ensure_future(fut), fut)
 
     describe "set_result":
         async it "complains if the original fut is already cancelled":
