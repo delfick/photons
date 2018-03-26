@@ -39,6 +39,9 @@ setup(
       , "uvloop==0.9.1"
       , "pyYaml==3.12"
 
+      # photons-tile-messages
+      , "lru-dict==1.1.6"
+
       # photons-protocol
       , "bitarray == 0.8.1"
       ]

@@ -11,6 +11,7 @@ from input_algorithms.errors import BadSpecValue
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from collections import defaultdict
+from lru import LRU
 import binascii
 import logging
 
@@ -167,7 +168,11 @@ async def set_tile_positions(collector, target, reference, **kwargs):
 
 class Color(dictobj.PacketSpec):
     fields = hsbk
-Color.Meta.cache = {}
+# Give Color a cache for 25 sets of tiles all containing different colors in every pixel
+# Which completely filled is only 4mb
+# The cache is used by photons-protocol so that we don't have to Color().pack() 64 times for every SetState64
+#   which is very slow...
+Color.Meta.cache = LRU(8000)
 
 class Tile(dictobj.PacketSpec):
     fields = [
