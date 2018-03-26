@@ -167,6 +167,7 @@ async def set_tile_positions(collector, target, reference, **kwargs):
 
 class Color(dictobj.PacketSpec):
     fields = hsbk
+Color.Meta.cache = {}
 
 class Tile(dictobj.PacketSpec):
     fields = [

@@ -163,6 +163,48 @@ describe TestCase, "many_spec":
                 with self.fuzzyAssertRaisesError(BadSpecValue, "Sorry, many fields only supports a list of dictionary of values"):
                     self.subject.normalise(self.meta, thing)
 
+        it "uses the cache on the kls if it has one":
+            record = False
+            packd = []
+
+            class Kls(dictobj.PacketSpec):
+                fields = [
+                      ("one", T.Bool)
+                    , ("two", T.Int8)
+                    ]
+
+                def pack(self):
+                    if record:
+                        packd.append(tuple(self.items()))
+                    return super(Kls, self).pack()
+            Kls.Meta.cache = {}
+            spec = T.Bytes(self.sizer * 25).spec(self.pkt, False)
+            subject = types.many_spec(Kls, self.sizer, self.pkt, spec, False)
+
+            items1 = (("one", True), ("two", 1))
+            items2 = (("one", True), ("two", 2))
+            items3 = (("one", False), ("two", 1))
+
+            val1 = Kls.empty_normalise(**dict(items1)).pack()
+            val2 = Kls.empty_normalise(**dict(items2)).pack()
+            val3 = Kls.empty_normalise(**dict(items3)).pack()
+
+            vb1 = types.bytes_spec(self.pkt, self.sizer).normalise(self.meta, val1)
+            vb2 = types.bytes_spec(self.pkt, self.sizer).normalise(self.meta, val2)
+            vb3 = types.bytes_spec(self.pkt, self.sizer).normalise(self.meta, val3)
+
+            expected = (vb1 * 5) + (vb2 * 5) + (vb1 * 5) + (vb3 * 5) + (vb2 * 5)
+            self.assertEqual(Kls.Meta.cache, {})
+
+            items = ([dict(items1)] * 5) + ([dict(items2)] * 5) + ([dict(items1)] * 5) + ([dict(items3)] * 5) + ([dict(items2)] * 5)
+
+            record = True
+            b = subject.normalise(self.meta, items)
+
+            self.assertEqual(Kls.Meta.cache, {items1: val1, items2: val2, items3: val3})
+            self.assertEqual(packd, [items1, items2, items3])
+            self.assertEqual(b, expected)
+
     describe "unpacking from bytes":
         before_each:
             self.meta = Meta({}, [])

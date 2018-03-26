@@ -420,7 +420,14 @@ class many_spec(sb.Spec):
                 for i, v in enumerate(items):
                     nxt = self.kls(**v)
                     spec = self.bytes_spec_for(nxt)
-                    res.append(spec.normalise(meta.indexed_at(i), nxt.pack()))
+                    if hasattr(self.kls.Meta, "cache"):
+                        items = tuple(sorted(nxt.items()))
+                        if items not in self.kls.Meta.cache:
+                            self.kls.Meta.cache[items] = nxt.pack()
+                        packd = self.kls.Meta.cache[items]
+                    else:
+                        packd = nxt.pack()
+                    res.append(spec.normalise(meta.indexed_at(i), packd))
                 val = functools.reduce(operator.add, res)
 
         # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
