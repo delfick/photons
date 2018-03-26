@@ -6,7 +6,7 @@ from photons_app import helpers as hp
 from photons_themes.canvas import Canvas
 
 class TileMarqueeAnimation(Animation):
-    every = 0.1
+    every = 0.075
     acks = False
     coords = coords_for_horizontal_line
     duration = 0
