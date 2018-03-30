@@ -9,7 +9,6 @@ from photons_device_messages import DeviceMessages
 from photons_colour import ColourMessages
 
 from option_merge_addons import option_merge_addon_hook
-import binascii
 import logging
 
 log = logging.getLogger("repeater")
@@ -52,8 +51,7 @@ async def repeater(collector, target, reference, **kwargs):
 
     async with ATarget(target) as afr:
         async for pkt, _, _ in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher, timeout=5):
-            serial = binascii.hexlify(pkt.target).decode()
-            print(serial, repr(pkt.payload))
+            print(pkt.serial, repr(pkt.payload))
 
 if __name__ == "__main__":
     from photons_app.executor import main

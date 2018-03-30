@@ -8,7 +8,6 @@ from photons_script.script import add_error
 
 from input_algorithms import spec_base as sb
 from functools import partial
-import binascii
 import asyncio
 import logging
 import time
@@ -159,7 +158,7 @@ class TransportItem(object):
             if packet.target is None or not looked or found and packet.target[:6] in found:
                 return
             else:
-                return FailedToFindDevice(serial=binascii.hexlify(packet.target[:6]).decode())
+                return FailedToFindDevice(serial=packet.serial)
 
         def make_waiter(writer):
             return afr.make_waiter(writer, first_wait=first_wait)
@@ -278,7 +277,7 @@ class TransportItem(object):
         def process(packet, res):
             if res.cancelled():
                 e = TimedOut("Message was cancelled"
-                    , serial=binascii.hexlify(packet.target).decode()
+                    , serial=packet.serial
                     )
                 add_error(error_catcher, e)
                 return
@@ -311,8 +310,7 @@ class TransportItem(object):
         def canceller():
             for f, packet in zip(futures, writing_packets):
                 if not f.done():
-                    serial = None if packet.target is None else binascii.hexlify(packet.target).decode()
-                    f.set_exception(TimedOut("Waiting for reply to a packet", serial=serial))
+                    f.set_exception(TimedOut("Waiting for reply to a packet", serial=packet.serial))
         asyncio.get_event_loop().call_later(timeout, canceller)
 
         while True:

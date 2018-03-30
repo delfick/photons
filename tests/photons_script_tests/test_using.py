@@ -7,7 +7,6 @@ from photons_app.test_helpers import AsyncTestCase
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import asynctest
-import binascii
 import mock
 
 describe AsyncTestCase, "Decider":
@@ -79,32 +78,23 @@ describe AsyncTestCase, "Decider":
                 , send_timeout = self.send_timeout
                 )
 
-        describe "serial_from_pkt":
-            async it "returns the serial as a string from the packet":
-                hexd = "d073d51261e2"
-                as_bytes = binascii.unhexlify(hexd)
-                pkt = mock.Mock(name="pkt", target=as_bytes)
-                self.assertEqual(self.using.serial_from_pkt(pkt), hexd)
-
         describe "do_getters":
             async it "runs the getters and collects the results by serial for those that match wanted":
-                target1 = "d073d5000000"
-                target2 = "d073d5000001"
+                serial1 = "d073d5000000"
+                serial2 = "d073d5000001"
+                serial3 = "d073d5000002"
 
-                pkt1 = mock.Mock(name="pkt1")
+                pkt1 = mock.Mock(name="pkt1", serial=serial1)
                 pkt1.__or__ = lambda s, o: True
 
-                pkt2 = mock.Mock(name="pkt2")
+                pkt2 = mock.Mock(name="pkt2", serial=serial2)
                 pkt2.__or__ = lambda s, o: True
 
-                pkt3 = mock.Mock(name="pkt3")
+                pkt3 = mock.Mock(name="pkt3", serial=serial1)
                 pkt3.__or__ = lambda s, o: True
 
-                pkt4 = mock.Mock(name="pkt4")
+                pkt4 = mock.Mock(name="pkt4", serial=serial3)
                 pkt4.__or__ = lambda s, o: False
-
-                def fake_serial_from_pkt(pkt):
-                    return {pkt1: target1, pkt2: target2, pkt3: target1}[pkt]
 
                 def aitr(returns):
                     m = asynctest.mock.CoroutineMock(name="run_with")
@@ -128,12 +118,11 @@ describe AsyncTestCase, "Decider":
                 args_for_run = mock.Mock(name="args_for_run")
                 error_catcher = mock.Mock(name="error_catcher")
 
-                with mock.patch.object(self.using, "serial_from_pkt", fake_serial_from_pkt):
-                    results = await self.using.do_getters(references, args_for_run, {"a": a}, error_catcher)
+                results = await self.using.do_getters(references, args_for_run, {"a": a}, error_catcher)
 
                 self.assertEqual(results
-                    , { target1: [pkt1, pkt3]
-                      , target2: [pkt2]
+                    , { serial1: [pkt1, pkt3]
+                      , serial2: [pkt2]
                       }
                     )
 
@@ -301,11 +290,12 @@ describe AsyncTestCase, "Decider":
                     self.assertEqual(error.errors, [error1])
 
             async it "raises errors if error_catcher gets given anything during sending result from decider":
-                state1 = mock.Mock(name='state1')
+                state1 = mock.Mock(name='state1', serial=self.ref1)
                 state1.__or__ = lambda s, o: True
                 self.getter.item_run_with.return_value = [(state1, (), ())]
 
                 error2 = PhotonsAppError("failure")
+
                 def decider(reference, state):
                     self.assertIs(state, state1)
                     self.assertIs(reference, self.ref1)
@@ -317,23 +307,19 @@ describe AsyncTestCase, "Decider":
                 references = [self.ref1]
                 args_for_run = mock.Mock(name="args_for_run")
 
-                def serial_from_pkt(s, pkt):
-                    return self.ref1
-
-                with mock.patch.object(Decider, "serial_from_pkt", serial_from_pkt):
-                    try:
-                        script = self.target.script(self.using)
-                        await script.run_with_all(references, args_for_run)
-                        assert False, "expected an exception"
-                    except BadRunWithResults as error:
-                        self.assertEqual(error.kwargs["results"], [])
-                        self.assertEqual(error.errors, [error2])
+                try:
+                    script = self.target.script(self.using)
+                    await script.run_with_all(references, args_for_run)
+                    assert False, "expected an exception"
+                except BadRunWithResults as error:
+                    self.assertEqual(error.kwargs["results"], [])
+                    self.assertEqual(error.errors, [error2])
 
             async it "collects the results":
-                state1 = mock.Mock(name='state1')
+                state1 = mock.Mock(name='state1', serial=self.ref1)
                 state1.__or__ = lambda s, o: True
 
-                state2 = mock.Mock(name='state2')
+                state2 = mock.Mock(name='state2', serial=self.ref2)
                 state2.__or__ = lambda s, o: True
 
                 self.getter.item_run_with.return_value = [(state1, (), ()), (state2, (), ())]
@@ -354,12 +340,8 @@ describe AsyncTestCase, "Decider":
                 references = [self.ref1, self.ref2]
                 args_for_run = mock.Mock(name="args_for_run")
 
-                def serial_from_pkt(s, pkt):
-                    return {state1: self.ref1, state2: self.ref2}[pkt]
-
-                with mock.patch.object(Decider, "serial_from_pkt", serial_from_pkt):
-                    script = self.target.script(self.using)
-                    result = await script.run_with_all(references, args_for_run)
+                script = self.target.script(self.using)
+                result = await script.run_with_all(references, args_for_run)
 
                 self.assertEqual(result, [(rep1, (), ()), (rep2, (), ())])
 

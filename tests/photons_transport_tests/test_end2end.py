@@ -24,6 +24,7 @@ import enum
 
 class Device(object):
     def __init__(self, serial):
+        self.serial = serial
         self.target = binascii.unhexlify(serial)
         self.connections = []
         self.received = []
@@ -76,6 +77,12 @@ class Packet(object):
     def represents_ack(self):
         return self.payload and self.payload.get("ack")
 
+    @property
+    def serial(self):
+        if self.target in (None, sb.NotSpecified):
+            return None
+        return binascii.hexlify(self.target[:6]).decode()
+
     def is_dynamic(self):
         return False
 
@@ -126,7 +133,7 @@ class Packet(object):
         return {
               "source": None if self.source is sb.NotSpecified else self.source
             , "sequence": None if self.sequence is sb.NotSpecified else self.sequence
-            , "target": None if self.target in (None, sb.NotSpecified) else binascii.hexlify(self.target).decode()
+            , "target": None if self.target in (None, sb.NotSpecified) else self.serial
             , "payload": self.payload
             , "ack_required": self.ack_required
             , "res_required": self.res_required
@@ -332,7 +339,7 @@ describe AsyncTestCase, "End2End":
                 async for info in self.target.script(msg).run_with([afr.devices[0].target], timeout=0.1):
                     found.append(info)
 
-            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=binascii.hexlify(afr.devices[0].target[:6]).decode()):
+            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=afr.devices[0].serial):
                 await self.wait_for(doit())
 
             self.assertEqual(found, [])
@@ -347,10 +354,8 @@ describe AsyncTestCase, "End2End":
                 async for info in self.target.script(msg).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1):
                     found.append(info)
 
-            serial1 = binascii.hexlify(afr.devices[0].target).decode()
-            serial2 = binascii.hexlify(afr.devices[1].target).decode()
-            t1 = TimedOut("Waiting for reply to a packet", serial=serial1)
-            t2 = TimedOut("Waiting for reply to a packet", serial=serial2)
+            t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
+            t2 = TimedOut("Waiting for reply to a packet", serial=afr.devices[1].serial)
             with self.fuzzyAssertRaisesError(RunErrors, _errors=[t1, t2]):
                 await self.wait_for(doit())
 
@@ -368,10 +373,8 @@ describe AsyncTestCase, "End2End":
                 async for info in self.target.script([msg1, msg2]).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1, error_catcher=errors):
                     results.append(info)
 
-            serial1 = binascii.hexlify(afr.devices[0].target).decode()
-            serial2 = binascii.hexlify(afr.devices[1].target).decode()
-            t1 = TimedOut("Waiting for reply to a packet", serial=serial1)
-            t2 = TimedOut("Waiting for reply to a packet", serial=serial2)
+            t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
+            t2 = TimedOut("Waiting for reply to a packet", serial=afr.devices[1].serial)
             await self.wait_for(doit())
 
             by_target = defaultdict(list)
@@ -398,10 +401,8 @@ describe AsyncTestCase, "End2End":
                 async for _ in self.target.script(msg1).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1, error_catcher=catcher):
                     pass
 
-            serial1 = binascii.hexlify(afr.devices[0].target).decode()
-            serial2 = binascii.hexlify(afr.devices[1].target).decode()
-            t1 = TimedOut("Waiting for reply to a packet", serial=serial1)
-            t2 = TimedOut("Waiting for reply to a packet", serial=serial2)
+            t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
+            t2 = TimedOut("Waiting for reply to a packet", serial=afr.devices[1].serial)
             await self.wait_for(doit())
 
             self.assertEqual(sorted(errors), sorted([t1, t2]))

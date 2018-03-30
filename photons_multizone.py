@@ -10,7 +10,6 @@ from input_algorithms import spec_base as sb
 from option_merge import MergedOptions
 from collections import defaultdict
 from enum import Enum
-import binascii
 
 __shortdesc__ = "LIFX Binary protocol messages related to multizone capabilities"
 
@@ -41,12 +40,11 @@ async def zones_from_reference(target, reference, afr=sb.NotSpecified, **kwargs)
     msg = MultiZoneMessages.GetMultiZoneColorZones(start_index=0, end_index=255)
     options = MergedOptions.using({"first_wait": 1, "timeout": 5}, kwargs, {"multiple_replies": True}).as_dict()
 
-    by_target = defaultdict(list)
+    by_serial = defaultdict(list)
     async for pkt, _, _ in target.script(msg).run_with(reference, afr, **options):
-        by_target[pkt.target].append(pkt)
+        by_serial[pkt.serial].append(pkt)
 
-    for target, pkts in by_target.items():
-        serial = binascii.hexlify(target[:6]).decode()
+    for serial, pkts in by_serial.items():
         final[serial] = []
         for p in pkts:
             if p | MultiZoneMessages.StateMultiZoneStateMultiZones:

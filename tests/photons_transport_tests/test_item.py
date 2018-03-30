@@ -180,13 +180,13 @@ describe AsyncTestCase, "TransportItem":
 
         describe "write_messages":
             async before_each:
-                self.t1 = binascii.unhexlify("d073d5000000")
-                self.t2 = binascii.unhexlify("d073d5000001")
+                self.serial1 = "d073d5000000"
+                self.serial2 = "d073d5000001"
 
-                self.p1 = mock.Mock(name="packet1", target=self.t1)
-                self.p2 = mock.Mock(name="packet2", target=self.t1)
-                self.p3 = mock.Mock(name="packet3", target=self.t2)
-                self.p4 = mock.Mock(name="packet4", target=self.t2)
+                self.p1 = mock.Mock(name="packet1", serial=self.serial1)
+                self.p2 = mock.Mock(name="packet2", serial=self.serial1)
+                self.p3 = mock.Mock(name="packet3", serial=self.serial2)
+                self.p4 = mock.Mock(name="packet4", serial=self.serial2)
 
                 self.packets = [self.p1, self.p2, self.p3, self.p4]
 
@@ -284,8 +284,8 @@ describe AsyncTestCase, "TransportItem":
                 await self.wait_for(doit())
 
                 self.assertEqual(sorted(errors), sorted(
-                      [ TimedOut("Waiting for reply to a packet", serial="d073d5000000")
-                      , TimedOut("Waiting for reply to a packet", serial="d073d5000001")
+                      [ TimedOut("Waiting for reply to a packet", serial=self.serial1)
+                      , TimedOut("Waiting for reply to a packet", serial=self.serial2)
                       ]
                     ))
                 self.assertEqual(results, [r1, r4])

@@ -24,12 +24,10 @@ For example:
     from photons_products_registry import capability_for_ids
     from photons_device_messages import DeviceMessages
 
-    import binascii
-
     async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference):
         if pkt | DeviceMessages.StateVersion:
             cap = capability_for_ids(pkt.product, pkt.vendor)
-            print("{}: {}".format(binascii.hexlify(pkt.target).decode(), cap))
+            print("{}: {}".format(pkt.serial, cap))
 
 .. autofunction:: photons_products_registry.capability_for_ids
 

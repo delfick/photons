@@ -16,6 +16,9 @@ payload
 from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
 
+from input_algorithms import spec_base as sb
+import binascii
+
 class FrameHeader(dictobj.PacketSpec):
     fields = [
           ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8)))
@@ -64,6 +67,13 @@ class LIFXPacket(dictobj.PacketSpec):
         , ("protocol_header", ProtocolHeader)
         , ("payload", "Payload")
         ]
+
+    @property
+    def serial(self):
+        target = self.target
+        if target in (None, sb.NotSpecified):
+            return None
+        return binascii.hexlify(target[:6]).decode()
 
     @property
     def represents_ack(self):

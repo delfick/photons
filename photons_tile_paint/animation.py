@@ -9,7 +9,6 @@ from photons_device_messages import DeviceMessages
 from photons_themes.canvas import Canvas
 
 from collections import defaultdict
-import binascii
 import logging
 import asyncio
 import time
@@ -38,7 +37,7 @@ async def tile_serials_from_reference(target, reference, afr):
         if pkt | DeviceMessages.StateVersion:
             cap = capability_for_ids(pkt.product, pkt.vendor)
             if cap.has_chain:
-                serials.append(binascii.hexlify(pkt.target[:6]).decode())
+                serials.append(pkt.serial)
 
     return serials
 
@@ -140,7 +139,7 @@ class TileStateGetter:
             return
 
         async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr, multiple_replies=True, first_wait=1):
-            serial = binascii.hexlify(pkt.target[:6]).decode()
+            serial = pkt.serial
 
             if pkt | TileMessages.StateTileState64:
                 self.info_by_serial[serial].states.append((pkt.tile_index, pkt))

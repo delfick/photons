@@ -16,7 +16,6 @@ from photons_protocol.types import Type as T
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
-import binascii
 import logging
 import json
 import sys
@@ -72,7 +71,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
 
     script = target.script(getter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, **kwargs):
-        print("{0}: {1}".format(binascii.hexlify(pkt.target[:6]).decode(), repr(pkt.payload)))
+        print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
 @an_action(special_reference=True, needs_target=True)
 async def get_multi_attr(*args, **kwargs):
@@ -130,4 +129,4 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
 
     script = target.script(setter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, broadcast=broadcast):
-        print("{0}: {1}".format(binascii.hexlify(pkt.target[:6]).decode(), repr(pkt.payload)))
+        print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))

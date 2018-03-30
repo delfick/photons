@@ -12,7 +12,6 @@ from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from collections import defaultdict
 from lru import LRU
-import binascii
 import logging
 
 __shortdesc__ = "LIFX binary protocol messages for Tiles"
@@ -50,7 +49,7 @@ async def get_device_chain(collector, target, reference, **kwargs):
     """
     async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(reference):
         if pkt | TileMessages.StateDeviceChain:
-            print(binascii.hexlify(pkt.target[:6]).decode())
+            print(pkt.serial)
             for tile in tiles_from(pkt):
                 print("   ", repr(tile))
 
@@ -77,8 +76,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     async for pkt, _, _ in target.script(msg).run_with(reference, multiple_replies=True, first_wait=1):
         if pkt | response_kls:
-            serial = binascii.hexlify(pkt.target[:6]).decode()
-            got[serial].append((pkt.tile_index, pkt))
+            got[pkt.serial].append((pkt.tile_index, pkt))
 
     for serial, states in got.items():
         print(serial)

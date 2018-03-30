@@ -4,7 +4,6 @@ from photons_app import helpers as hp
 
 from input_algorithms.spec_base import NotSpecified
 from collections import defaultdict
-import binascii
 import asyncio
 import logging
 import time
@@ -341,9 +340,6 @@ class Decider(object):
         if do_raise and error_catcher:
             raise RunErrors(_errors=list(set(error_catcher)))
 
-    def serial_from_pkt(self, pkt):
-        return binascii.hexlify(pkt.target[:6]).decode()
-
     async def do_getters(self, references, args_for_run, kwargs, error_catcher):
         results = defaultdict(list)
 
@@ -354,7 +350,7 @@ class Decider(object):
             async for pkt, _, _ in g.run_with(references, args_for_run, **kw):
                 if self.wanted and not any(pkt | w for w in self.wanted):
                     continue
-                results[self.serial_from_pkt(pkt)].append(pkt)
+                results[pkt.serial].append(pkt)
 
         return results
 

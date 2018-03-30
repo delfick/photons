@@ -14,7 +14,6 @@ from photons_colour import ColourMessages
 from photons_script.script import ATarget
 
 from input_algorithms.meta import Meta
-import binascii
 import asyncio
 import uuid
 
@@ -353,7 +352,7 @@ describe AsyncTestCase, "Memory target":
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(), afr):
                         assert pkt | DeviceMessages.StateInfrared
-                        found.append((binascii.hexlify(pkt.target[:6]).decode(), pkt.payload.level))
+                        found.append((pkt.serial, pkt.payload.level))
 
                     self.expect_received(device1, DeviceMessages.GetInfrared)
                     self.expect_received(device2, DeviceMessages.GetInfrared)
@@ -366,7 +365,7 @@ describe AsyncTestCase, "Memory target":
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(location_name="four"), afr):
                         assert pkt | DeviceMessages.StateInfrared
-                        found.append((binascii.hexlify(pkt.target[:6]).decode(), pkt.payload.level))
+                        found.append((pkt.serial, pkt.payload.level))
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device3.serial, 67)])

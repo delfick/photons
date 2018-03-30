@@ -79,29 +79,29 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     async with ATarget(target) as afr:
         tasks = []
         async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
-            serial = binascii.hexlify(pkt.target[:6]).decode()
+            serial = pkt.serial
             capability = capability_for_ids(pkt.product, pkt.vendor)
             if capability.has_multizone:
                 log.info(hp.lc("Found a strip", serial=serial))
-                tasks.append(hp.async_as_background(apply_zone(aps["1d"], target, afr, pkt.target, theme, options.overrides)))
+                tasks.append(hp.async_as_background(apply_zone(aps["1d"], target, afr, pkt.serial, theme, options.overrides)))
             elif capability.has_chain:
                 log.info(hp.lc("Found a tile", serial=serial))
-                tasks.append(hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.target, theme, options.overrides)))
+                tasks.append(hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.serial, theme, options.overrides)))
             else:
                 log.info(hp.lc("Found a light", serial=serial))
-                tasks.append(hp.async_as_background(apply_light(aps["0d"], target, afr, pkt.target, theme, options.overrides)))
+                tasks.append(hp.async_as_background(apply_light(aps["0d"], target, afr, pkt.serial, theme, options.overrides)))
 
         for t in tasks:
             await t
 
-async def apply_zone(applier, target, afr, reference, theme, overrides):
+async def apply_zone(applier, target, afr, serial, theme, overrides):
     length = None
-    async for pkt, _, _ in target.script(MultiZoneMessages.GetMultiZoneZoneCount(scan=0)).run_with(reference, afr):
+    async for pkt, _, _ in target.script(MultiZoneMessages.GetMultiZoneZoneCount(scan=0)).run_with(serial, afr):
         if pkt | MultiZoneMessages.StateMultiZoneStateZoneCount:
             length = pkt.num_zones
 
     if length is None:
-        log.warning(hp.lc("Couldn't work out how many zones the light had", serial=binascii.hexlify(reference).decode()))
+        log.warning(hp.lc("Couldn't work out how many zones the light had", serial=serial))
         return
 
     messages = []
@@ -120,23 +120,23 @@ async def apply_zone(applier, target, afr, reference, theme, overrides):
 
     set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)
-    await target.script([set_power, pipeline]).run_with_all(reference, afr)
+    await target.script([set_power, pipeline]).run_with_all(serial, afr)
 
-async def apply_light(applier, target, afr, reference, theme, overrides):
+async def apply_light(applier, target, afr, serial, theme, overrides):
     color = applier().apply_theme(theme)
     s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(color.kelvin, color.hue, color.saturation, color.brightness)
     set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-    await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(reference, afr)
+    await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(serial, afr)
 
-async def apply_tile(applier, target, afr, reference, theme, overrides):
+async def apply_tile(applier, target, afr, serial, theme, overrides):
     chain = []
-    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(reference, afr):
+    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(serial, afr):
         if pkt | TileMessages.StateDeviceChain:
             for tile in tiles_from(pkt):
                 chain.append(tile)
 
     if chain is None:
-        log.warning(hp.lc("Couldn't work out how many tiles the light had", serial=binascii.hexlify(reference).decode()))
+        log.warning(hp.lc("Couldn't work out how many tiles the light had", serial=serial))
         return
 
     coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in chain]
@@ -159,4 +159,4 @@ async def apply_tile(applier, target, afr, reference, theme, overrides):
 
     set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)
-    await target.script([set_power, pipeline]).run_with_all(reference, afr)
+    await target.script([set_power, pipeline]).run_with_all(serial, afr)

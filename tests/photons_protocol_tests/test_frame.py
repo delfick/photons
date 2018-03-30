@@ -12,6 +12,7 @@ from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from bitarray import bitarray
 from textwrap import dedent
+import binascii
 import mock
 
 describe TestCase, "FrameHeader":
@@ -166,6 +167,32 @@ describe TestCase, "LIFXPacket":
 
     it "has payload with message_type of 0":
         self.assertEqual(frame.LIFXPacket.Payload.message_type, 0)
+
+    describe "serial":
+        it "returns None if target isn't specified":
+            pkt = frame.LIFXPacket()
+            self.assertIs(pkt.target, sb.NotSpecified)
+            self.assertIs(pkt.serial, None)
+
+        it "returns 0s if target is None":
+            pkt = frame.LIFXPacket(target=None)
+            self.assertEqual(pkt.target, b'\x00\x00\x00\x00\x00\x00\x00\x00')
+            self.assertEqual(pkt.serial, '000000000000')
+
+        it "hexlifies otherwise":
+            serial = "d073d5000001"
+            target = binascii.unhexlify(serial)
+            pkt = frame.LIFXPacket(target=target)
+            self.assertEqual(pkt.target, target + b'\x00\x00')
+            self.assertEqual(pkt.serial, serial)
+
+        it "only deals with first six bytes":
+            serial = "d073d5000001"
+            serialexpanded = "d073d50000010101"
+            target = binascii.unhexlify(serialexpanded)
+            pkt = frame.LIFXPacket(target=target)
+            self.assertEqual(pkt.target, target)
+            self.assertEqual(pkt.serial, serial)
 
     describe "creating a message":
         it "has the provided name":

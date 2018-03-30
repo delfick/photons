@@ -15,7 +15,7 @@ against the serials of your devices:
 
     async for pkt, addr, sent_to in script.run_with(["d073d5000000", "d073d5000001"]):
         if pkt | DeviceMessages.StatePower:
-            print(pkt.target, pkt.level)
+            print(pkt.serial, pkt.level)
 
 What this has done is taken the ``GetPower`` messages and made a copy for our
 two serials and added the necessary ``source`` and ``sequence_id`` properties;
