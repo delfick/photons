@@ -16,7 +16,11 @@ def __lifx__(*args, **kwargs):
 
 @an_action(needs_target=True, special_reference=True)
 async def tile_time(collector, target, reference, **kwargs):
-    """Print time to the tiles"""
+    """
+    Print time to the tiles
+
+    ``lifx lan:tile_time <reference>``
+    """
     from photons_tile_paint.time.animation import TileTimeAnimation
     from photons_tile_paint.time.options import TileTimeOptions
 
@@ -27,7 +31,11 @@ async def tile_time(collector, target, reference, **kwargs):
 
 @an_action(needs_target=True, special_reference=True)
 async def tile_marquee(collector, target, reference, **kwargs):
-    """Print scrolling text to the tiles"""
+    """
+    Print scrolling text to the tiles
+
+    ``lifx lan:tile_marquee <reference> -- '{"text": "hello there"}'``
+    """
     from photons_tile_paint.marquee.animation import TileMarqueeAnimation
     from photons_tile_paint.marquee.options import TileMarqueeOptions
 
@@ -38,7 +46,11 @@ async def tile_marquee(collector, target, reference, **kwargs):
 
 @an_action(needs_target=True, special_reference=True)
 async def tile_pacman(collector, target, reference, **kwargs):
-    """Print scrolling text to the tiles"""
+    """
+    Make pacman go back and forth across your tiles
+
+    ``lifx lan:tile_pacman <reference>``
+    """
     from photons_tile_paint.pacman.animation import TilePacmanAnimation
     from photons_tile_paint.pacman.options import TilePacmanOptions
 
