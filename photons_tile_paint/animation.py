@@ -190,6 +190,8 @@ class Animation:
 
         log.info("Starting!")
 
+        await self.target.script(DeviceMessages.SetLightPower(level=65535, duration=1)).run_with_all(serials, self.afr)
+
         while True:
             start = time.time()
 
