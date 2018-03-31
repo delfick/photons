@@ -13,4 +13,4 @@ photons task function.
 
 Note that if you're on windows ``./setup_venv`` won't work. In that environment
 you'll have to make your own virtualenv and ``pip install photons-core`` in it, 
-or ``pip install -e .`` frm the ``photons-core`` directory.
+or ``pip install -e .`` from the ``photons-core`` directory.
