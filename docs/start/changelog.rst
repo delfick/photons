@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.5.2 - 28 April 2018
+    * Small fixes to the tile animations
+
 0.5.1 - 31 March 2018
     * Tile animations
     * Added a ``serial`` property to packets that returns the hexlified target
