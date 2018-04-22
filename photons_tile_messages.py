@@ -189,7 +189,7 @@ class Tile(dictobj.PacketSpec):
         , ("firmware_build", T.Uint64)
         , ("reserved11", T.Uint64.default(0))
         , ("firmware_version", T.Uint32.transform(
-                lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
+                lambda _, v: v if type(v) is int else (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
               , lambda v: float("{0}.{1:02d}".format(v >> 0x10, v & 0xFF))
               ).allow_float()
             )
