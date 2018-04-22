@@ -3,7 +3,10 @@
 ChangeLog
 =========
 
-0.5.2 - 28 April 2018
+0.5.3 - 22 April 2018
+    * Tiny fix to TileState64 message
+
+0.5.2 - 21 April 2018
     * Small fixes to the tile animations
 
 0.5.1 - 31 March 2018
