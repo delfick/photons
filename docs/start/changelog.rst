@@ -3,6 +3,13 @@
 ChangeLog
 =========
 
+0.5.4 - 28 April 2018
+    * You can now specify ``("lifx.photon", "__all__")`` as a dependency and all
+      photons modules will be seen as a dependency of your script.
+
+      Note however that you should not do this in a module you expect to be used
+      as a dependency by another module (otherwise you'll get cyclic dependencies).
+
 0.5.3 - 22 April 2018
     * Tiny fix to TileState64 message
 

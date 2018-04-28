@@ -40,7 +40,7 @@ setup(
       , "input_algorithms==0.6.0"
       , "delfick_app==0.9.6"
       , "option_merge==1.6"
-      , "option_merge_addons==0.2.1"
+      , "option_merge_addons==0.3"
       , "pyYaml==3.12"
 
       # photons-tile-messages
