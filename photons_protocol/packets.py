@@ -405,6 +405,15 @@ class PacketSpecMixin:
             if val is Optional:
                 continue
 
+            if type(val) is list:
+                newval = []
+                for thing in val:
+                    if hasattr(thing, "as_dict"):
+                        newval.append(thing.as_dict())
+                    else:
+                        newval.append(thing)
+                val = newval
+
             gs = [group for group, names in groups.items() if name in names]
             if gs:
                 if gs[0] not in final:

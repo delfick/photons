@@ -648,6 +648,25 @@ describe TestCase, "PacketSpecMixin":
             dct = Child(one=True, two=65).as_dict()
             self.assertEqual(dct, {"g": {"one": True}, "payload": {"two": 65}})
 
+        it "converts lists":
+            class P(dictobj.PacketSpec):
+                fields = [
+                      ( "one", T.Int16.transform(
+                            lambda _, v: int(v / 1000)
+                          , lambda v: v * 1000
+                          )
+                       )
+                    ]
+
+            class Q(dictobj.PacketSpec):
+                fields = [("things", T.Bytes(16 * 3).many(lambda pkt: P))]
+
+            q = Q.empty_normalise(things=[{"one": 1000}, {"one": 2000}, {"one": 0}])
+            self.assertEqual(q.things[0].actual("one"), 1)
+            self.assertEqual(q.things[1].actual("one"), 2)
+            self.assertEqual(q.things[2].actual("one"), 0)
+            self.assertEqual(q.as_dict(), {"things": [{"one": 1000}, {"one": 2000}, {"one": 0}]})
+
     describe "__repr__":
         it "converts bytes and bitarray to hexlified":
             payload = "d073d5"

@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.5.5 - TBD
+    * Small fix to how as_dict() on a packet works so it does the right thing
+      for packets that contain lists in the payload.
+
 0.5.4 - 28 April 2018
     * You can now specify ``("lifx.photon", "__all__")`` as a dependency and all
       photons modules will be seen as a dependency of your script.
