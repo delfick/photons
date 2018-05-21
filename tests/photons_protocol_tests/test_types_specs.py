@@ -16,6 +16,7 @@ from textwrap import dedent
 from enum import Enum
 import binascii
 import mock
+import json
 import uuid
 
 describe TestCase, "callable_spec":
@@ -955,6 +956,13 @@ describe TestCase, "bytes_spec":
         before_each:
             self.pkt = mock.Mock(name="pkt")
             self.meta = Meta.empty()
+
+        it "works from the repr of sb.NotSpecified":
+            expected = bitarray('0' * 8)
+            self.assertEqual(types.bytes_spec(self.pkt, 8).normalise(self.meta, repr(sb.NotSpecified)), expected)
+
+            expected = bitarray('0' * 8)
+            self.assertEqual(types.bytes_spec(self.pkt, 8).normalise(self.meta, repr(sb.NotSpecified).replace("'", "")), expected)
 
         it "returns None as the size_bits of bitarray":
             expected = bitarray('0' * 8)

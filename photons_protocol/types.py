@@ -883,6 +883,12 @@ class bytes_spec(sb.Spec):
 
         b = bitarray(endian="little")
         if type(val) is str:
+            # We care about when the single quotes aren't here for when we copy output from `lifx unpack` into a `lifx pack`
+            # This is because we say something like `lifx pack -- '{"thing": "<class 'input_algorithms.spec_base.NotSpecified'>"}'
+            # And the quotes cancel each other out
+            if val in ("<class input_algorithms.spec_base.NotSpecified>", "<class 'input_algorithms.spec_base.NotSpecified'>"):
+                val = ""
+
             try:
                 b.frombytes(binascii.unhexlify(val))
             except binascii.Error as error:
