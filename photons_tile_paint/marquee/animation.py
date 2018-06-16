@@ -91,8 +91,7 @@ class TileMarqueeAnimation(Animation):
 
         return prev_state.move_right(1)
 
-    @hp.memoized_property
-    def characters(self):
+    def characters(self, state):
         characters = []
         for ch in self.options.text:
             characters.append(alphabet[ch])
@@ -100,5 +99,6 @@ class TileMarqueeAnimation(Animation):
 
     def make_canvas(self, state, coords):
         canvas = Canvas()
-        put_characters_on_canvas(canvas, self.characters, state.coords_for(coords, self.characters), self.options.text_color.color)
+        characters = self.characters(state)
+        put_characters_on_canvas(canvas, characters, state.coords_for(coords, characters), self.options.text_color.color)
         return canvas
