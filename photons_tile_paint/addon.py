@@ -58,3 +58,18 @@ async def tile_pacman(collector, target, reference, **kwargs):
     options = TilePacmanOptions.FieldSpec().normalise(Meta.empty(), extra)
     async with ATarget(target) as afr:
         await TilePacmanAnimation(target, afr, options).animate(reference)
+
+@an_action(needs_target=True, special_reference=True)
+async def tile_nyan(collector, target, reference, **kwargs):
+    """
+    Make nyan go back and forth across your tiles
+
+    ``lifx lan:tile_nyan <reference>``
+    """
+    from photons_tile_paint.nyan import NyanCatAnimation
+    from photons_tile_paint.nyan import NyanCatOptions
+
+    extra = collector.configuration["photons_app"].extra_as_json
+    options = NyanCatOptions.FieldSpec().normalise(Meta.empty(), extra)
+    async with ATarget(target) as afr:
+        await NyanCatAnimation(target, afr, options).animate(reference)

@@ -5,13 +5,18 @@ Tile Animations
 
 Photons provides some actions for simple animations on the tiles.
 
-Currently implemented is ``tile_time``, ``tile_marquee`` and ``tile_pacman``.
+Currently implemented is ``tile_time``, ``tile_marquee``, ``tile_nyan`` and
+``tile_pacman``.
 
 For example::
 
   lifx lan:tile_time <reference> -- '{options}'
 
   lifx lan:tile_marquee <reference> -- '{"text": "hello there"}'
+
+  lifx lan:tile_nyan <reference>
+
+  lifx lan:tile_pacman <reference>
 
 Where the options are optional and are as follows:
 
@@ -60,6 +65,17 @@ tile_marquee
 
   direction -- left or right -- default left
     The direction the text goes in
+
+tile_nyan
+  This also has the following options
+
+  user_coords -- boolean -- default false
+    If this is true, then we use the (user_x, user_y) values from the tiles to
+    determine what to display on the tiles. By default we assume the tiles are
+    in a horizontal row.
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
 
 tile_pacman
   This also has the following options
