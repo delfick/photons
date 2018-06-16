@@ -26,3 +26,10 @@ describe TestCase, "Product Registries":
             products = registry.ProductRegistries[company].value
             en = products[name]
             self.assertEqual(registry.capability_for_enum(en), e)
+
+    it "can get product names":
+        names = registry.product_names()
+        self.assertEqual(len(names), 28)
+        for key in names:
+            self.assertRegex(key, r"\d+\.\d+")
+            self.assertEqual(type(names[key]), str)

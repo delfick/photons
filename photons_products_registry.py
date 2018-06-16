@@ -109,6 +109,21 @@ def enum_for_ids(pid, vid):
                     return member
     raise UnknownProduct(vid=vid, pid=pid)
 
+def product_names():
+    names = {}
+    for e in VendorRegistry:
+        if e != VendorRegistry.EMPTY:
+            vid = e.value
+            registry = ProductRegistries[e.name].value
+            for p in registry:
+                pid = p.value
+                ident = "{}.{}".format(vid, pid)
+                try:
+                    names[ident] = Capabilities[p.name].value.name
+                except KeyError:
+                    pass
+    return names
+
 L = LIFIProductRegistry
 
 class Capability(dictobj.Spec):
