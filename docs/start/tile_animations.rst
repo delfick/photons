@@ -58,6 +58,9 @@ tile_marquee
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop
 
+  direction -- left or right -- default left
+    The direction the text goes in
+
 tile_pacman
   This also has the following options
 

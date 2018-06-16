@@ -5,6 +5,12 @@ from photons_app import helpers as hp
 
 from photons_themes.canvas import Canvas
 
+import enum
+
+class MarqueeDirection(enum.Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
 class TileMarqueeAnimation(Animation):
     every = 0.075
     acks = False
@@ -23,6 +29,9 @@ class TileMarqueeAnimation(Animation):
         def move_left(self, amount):
             return self.__class__(self.x - amount)
 
+        def move_right(self, amount):
+            return self.__class__(self.x + amount)
+
         def coords_for(self, original, characters):
             coords = []
 
@@ -36,6 +45,12 @@ class TileMarqueeAnimation(Animation):
             return coords
 
     def next_state(self, prev_state, coords):
+        if self.options.direction is MarqueeDirection.LEFT:
+            return self.next_state_left(prev_state, coords)
+        else:
+            return self.next_state_right(prev_state, coords)
+
+    def next_state_left(self, prev_state, coords):
         right_x = 0
         left_x = 0
         for (user_x, top_y), (width, height) in coords:
@@ -55,6 +70,26 @@ class TileMarqueeAnimation(Animation):
             nxt = self.State(right_x)
 
         return nxt
+
+    def next_state_right(self, prev_state, coords):
+        right_x = 0
+        left_x = 0
+        for (user_x, top_y), (width, height) in coords:
+            if user_x + width > right_x:
+                right_x = user_x + width
+            if user_x - self.options.text_width < left_x:
+                left_x = user_x - self.options.text_width
+
+        if prev_state is None:
+            return self.State(left_x)
+
+        if prev_state.x > right_x + 2:
+            self.iteration += 1
+            if self.options.final_iteration(self.iteration):
+                raise Finish("Reached max iterations")
+            return self.State(left_x)
+
+        return prev_state.move_right(1)
 
     @hp.memoized_property
     def characters(self):
