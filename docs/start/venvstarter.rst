@@ -35,7 +35,7 @@ And then create a file something like:
 
     from venvstarter import ignite
     ignite(__file__, "lifx"
-        , deps = ["lifx-photons-core==0.5.4"]
+        , deps = ["lifx-photons-core==0.5.5"]
         , env = env
         )
 

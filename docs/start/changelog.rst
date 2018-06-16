@@ -3,9 +3,11 @@
 ChangeLog
 =========
 
-0.5.5 - TBD
+0.5.5 - 16 June 2018
     * Small fix to how as_dict() on a packet works so it does the right thing
       for packets that contain lists in the payload.
+    * Added direction option to the marquee tile animation
+    * Added nyan tile animation
 
 0.5.4 - 28 April 2018
     * You can now specify ``("lifx.photon", "__all__")`` as a dependency and all
