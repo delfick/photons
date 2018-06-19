@@ -59,9 +59,11 @@ Scripts with functionality
 When you do ``target.script(...)`` you may choose to send multiple messages at
 the same time or do something based on the reply from particular messages.
 
-To do this, ``photons_script`` provides two classes for achieving this.
+To do this, ``photons_script`` provides a few classes for achieving this.
 
 .. autoclass:: photons_script.script.Pipeline
 
 .. autoclass:: photons_script.script.Decider
+
+.. autoclass:: photons_script.script.Repeater
 '''
