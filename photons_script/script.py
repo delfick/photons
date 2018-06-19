@@ -388,7 +388,7 @@ class Repeater(object):
             print(e)
 
         async with ATarget(target) as afr:
-            pipeline = Repeater(msg1, msg2, spread=1)
+            pipeline = Pipeline(msg1, msg2, spread=1)
             async for result in target.script(Repeater(pipeline, min_loop_time=20).run_with([reference1, reference2], afr, error_catcher=error_catcher):
                 ....
 
