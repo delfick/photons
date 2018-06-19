@@ -415,9 +415,14 @@ class Repeater(object):
 
     on_done_loop
         An async callable that is called with no arguments when a loop completes (before any sleep from min_loop_time)
+
+        Note that if you raise ``Repeater.Stop()`` in this function then the Repeater will stop.
     """
     name = "Repeater"
     has_children = True
+
+    class Stop(Exception):
+        pass
 
     def __init__(self, msg, min_loop_time=30, on_done_loop=None):
         self.msg = msg
@@ -445,7 +450,10 @@ class Repeater(object):
                 references.reset()
 
             if callable(self.on_done_loop):
-                await self.on_done_loop()
+                try:
+                    await self.on_done_loop()
+                except Repeater.Stop:
+                    break
 
             took = time.time() - start
             diff = self.min_loop_time - took

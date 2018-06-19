@@ -75,6 +75,49 @@ describe AsyncTestCase, "Repeater":
                             pass
                     await self.wait_for(doit())
 
+        async it "stops when on_done_loop raises Repeater.Stop":
+            called = []
+
+            r1 = mock.Mock(name="r1")
+            r2 = mock.Mock(name="r2")
+            r3 = mock.Mock(name="r3")
+
+            results = [[r1], [r2], [r3]]
+
+            class Child(object):
+                async def run_with(s, *args, **kwargs):
+                    called.append(("run_with", args, kwargs))
+                    for thing in results.pop(0):
+                        yield thing
+
+            def on_done_loop():
+                called.append("done_loop")
+                if len(results) == 0:
+                    called.append("stop")
+                    raise Repeater.Stop()
+            on_done_loop = asynctest.mock.CoroutineMock(name="on_done_loop", side_effect=on_done_loop)
+            repeater = Repeater([Child()], min_loop_time=0.2, on_done_loop=on_done_loop)
+
+            afr = mock.Mock(name="afr")
+            errors = mock.Mock(name="errors")
+            references = "d073d500001"
+
+            async def doit():
+                async for info in repeater.run_with(references, afr, error_catcher=errors):
+                    pass
+            await self.wait_for(doit())
+
+            self.assertEqual(called
+                , [ ("run_with", (references, afr), {"error_catcher": errors})
+                  , "done_loop"
+                  , ("run_with", (references, afr), {"error_catcher": errors})
+                  , "done_loop"
+                  , ("run_with", (references, afr), {"error_catcher": errors})
+                  , "done_loop"
+                  , "stop"
+                  ]
+                )
+
         async it "repeatedly calls the msg":
             called = []
 
