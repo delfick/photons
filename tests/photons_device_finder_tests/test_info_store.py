@@ -31,8 +31,10 @@ describe AsyncTestCase, "InfoStore":
             self.assertEqual(dict(store.by_target), {})
             self.assertEqual(dict(store.tasks_by_target), {})
 
-            self.assertEqual(type(store.by_target["one"]), Device)
-            self.assertEqual(type(store.device_spec.empty_normalise()), Device)
+            new_device = store.by_target[binascii.unhexlify("d073d5000001")]
+            self.assertEqual(type(new_device), Device)
+            self.assertEqual(new_device.serial, "d073d5000001")
+            self.assertEqual(type(store.device_spec.empty_normalise(serial="d073d5000001")), Device)
 
     describe "functionality":
         async before_each:
@@ -185,19 +187,25 @@ describe AsyncTestCase, "InfoStore":
                 self.assertEqual(list(self.store.by_target.keys()), ["three"])
 
             async it "sets or resets found":
-                found = {"three": mock.Mock(name="services")}
+                t1 = binascii.unhexlify("d073d5000001")
+                t2 = binascii.unhexlify("d073d5000002")
+                found = {t1: mock.Mock(name="services")}
                 self.store.update_found(found, query_new_devices=False)
                 self.assertEqual(await self.wait_for(self.store.found), found)
 
-                found2 = {"four": mock.Mock(name="services")}
+                found2 = {t2: mock.Mock(name="services")}
                 self.store.update_found(found2, query_new_devices=False)
                 self.assertEqual(await self.wait_for(self.store.found), found2)
 
             async it "can query new devices":
-                self.store.by_target["five"] = mock.Mock(name="five")
-                found = {"three": mock.Mock(name="three"), "four": mock.Mock(name="four"), "five": mock.Mock(name="five")}
+                t1 = binascii.unhexlify("d073d5000001")
+                t2 = binascii.unhexlify("d073d5000002")
+                t3 = binascii.unhexlify("d073d5000003")
 
-                futs = {"three": asyncio.Future(), "four": asyncio.Future()}
+                self.store.by_target[t3] = mock.Mock(name="five")
+                found = {t1: mock.Mock(name="three"), t2: mock.Mock(name="four"), t3: mock.Mock(name="five")}
+
+                futs = {t1: asyncio.Future(), t2: asyncio.Future()}
 
                 async def add_new_device(t):
                     futs[t].set_result(True)
@@ -209,9 +217,12 @@ describe AsyncTestCase, "InfoStore":
 
             async it "stores a task in tasks_by_target until it is finished":
                 self.store.by_target["five"] = mock.Mock(name="five")
-                found = {"three": mock.Mock(name="three"), "four": mock.Mock(name="four"), "five": mock.Mock(name="five")}
+                t1 = binascii.unhexlify("d073d5000001")
+                t2 = binascii.unhexlify("d073d5000002")
+                t3 = binascii.unhexlify("d073d5000002")
+                found = {t1: mock.Mock(name="three"), t2: mock.Mock(name="four"), t3: mock.Mock(name="five")}
 
-                futs = {"three": asyncio.Future(), "four": asyncio.Future()}
+                futs = {t1: asyncio.Future(), t2: asyncio.Future()}
 
                 async def add_new_device(t):
                     await asyncio.sleep(0.1)

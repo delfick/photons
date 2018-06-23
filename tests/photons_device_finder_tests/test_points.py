@@ -20,7 +20,7 @@ describe TestCase, "Point":
 describe TestCase, "InfoPoints":
     it "has points":
         self.assertEqual(len(InfoPoints), 5)
-        device = Device.FieldSpec().empty_normalise()
+        device = Device.FieldSpec().empty_normalise(serial="d073d5000001")
         for e in InfoPoints:
             self.assertEqual(type(e.value), Point)
             self.assertEqual(type(e.value.keys), list)

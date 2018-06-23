@@ -6,6 +6,7 @@ ChangeLog
 0.5.6 - TBD
     * photons_script.script.Repeater can now be stopped by raising Repater.Stop()
       in the on_done_loop callback
+    * DeviceFinder can now be used to target specific serials
 
 0.5.5 - 16 June 2018
     * Small fix to how as_dict() on a packet works so it does the right thing

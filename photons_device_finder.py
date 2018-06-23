@@ -17,6 +17,7 @@ The idea is that you can query the device_finder for information.
     # info will be of the form:
     # {
     #      "d073d512c21d": {
+    #          "serial": "d073d512c21d",
     #          "brightness": 0.29999237048905164,
     #          "firmware_version": 1.21,
     #          "group_id": "925fb774c42c11e799e580e650080d3e",
@@ -33,6 +34,7 @@ The idea is that you can query the device_finder for information.
     #          "saturation": 0.0
     #      },
     #      "d073d514e733": {
+    #          "serial": "d073d514e733",
     #          "brightness": 0.29999237048905164,
     #          "firmware_version": 1.2,
     #          "group_id": "925fb774c42c11e799e580e650080d3e",
@@ -117,6 +119,9 @@ force_refresh:
 
     i.e. if the filter only matches against labels, then we will only refresh
     the labels on our devices.
+
+serial
+    The serial of the device
 
 label
     The label set on the device
@@ -375,6 +380,8 @@ class Filter(dictobj.Spec):
     """
     force_refresh = dictobj.Field(boolean, default=False)
 
+    serial = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
+
     label = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
     power = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
@@ -546,6 +553,8 @@ class Device(dictobj.Spec):
 
     Users shouldn't have to interact with these directly
     """
+    serial = dictobj.Field(sb.string_spec, wrapper=sb.required)
+
     label = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
     power = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
 
@@ -613,8 +622,10 @@ class Device(dictobj.Spec):
         for field in fields:
             val = self[field]
             if val is not sb.NotSpecified:
-                has_atleast_one_field = True
-                if filtr.has(field) and not filtr.matches(field, val):
+                has_field = filtr.has(field)
+                if has_field:
+                    has_atleast_one_field = True
+                if has_field and not filtr.matches(field, val):
                     return False
 
         return has_atleast_one_field
@@ -663,6 +674,15 @@ class Device(dictobj.Spec):
             self.cap = sorted(cap)
             return InfoPoints.VERSION
 
+class ByTarget(dict):
+    def __init__(self, device_spec):
+        self.device_spec = device_spec
+
+    def __getitem__(self, target):
+        if target not in self:
+            self[target] = self.device_spec.empty_normalise(serial = binascii.hexlify(target).decode())
+        return super().__getitem__(target)
+
 class InfoStore(object):
     """
     The central part of all our collected information
@@ -675,7 +695,7 @@ class InfoStore(object):
         self.futures = {e: hp.ResettableFuture() for e in InfoPoints}
         self.last_touch = {}
         self.device_spec = Device.FieldSpec()
-        self.by_target = defaultdict(self.device_spec.empty_normalise)
+        self.by_target = ByTarget(self.device_spec)
         self.tasks_by_target = {}
         self.collections = Collections()
 

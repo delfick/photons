@@ -184,6 +184,15 @@ describe AsyncTestCase, "Memory target":
                 finally:
                     await finder.finish()
 
+        async with ATarget(target) as afr:
+            async with target.with_devices(device1, device2, device3):
+                finder = DeviceFinder(target)
+                try:
+                    serials = await finder.serials(serial = [device1.serial])
+                    self.assertEqual(sorted(serials), sorted([device1.serial]))
+                finally:
+                    await finder.finish()
+
         async def test_wrap():
             wrap = DeviceFinderWrap(Filter.from_kwargs(), target)
             try:
@@ -208,7 +217,8 @@ describe AsyncTestCase, "Memory target":
                     info = await finder.info_for()
                     expected = {
                           'd073d5000001':
-                          { 'label': 'kitchen'
+                          { 'serial': 'd073d5000001'
+                          , 'label': 'kitchen'
                           , 'power': 'on'
                           , 'hue': 120.0
                           , 'saturation': 0.4
@@ -224,7 +234,8 @@ describe AsyncTestCase, "Memory target":
                           , "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"]
                           }
                         , 'd073d5000002':
-                          { 'label': 'bathroom'
+                          { 'serial': 'd073d5000002'
+                          , 'label': 'bathroom'
                           , 'power': 'off'
                           , 'hue': 120.0
                           , 'saturation': 0.4
@@ -240,7 +251,8 @@ describe AsyncTestCase, "Memory target":
                           , "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"]
                           }
                         , 'd073d5000003':
-                          { 'label': 'hallway'
+                          { 'serial': 'd073d5000003'
+                          , 'label': 'hallway'
                           , 'power': 'on'
                           , 'hue': 120.0
                           , 'saturation': 0.4
@@ -288,7 +300,8 @@ describe AsyncTestCase, "Memory target":
                     info = await finder.info_for()
                     expected = {
                           'd073d5000001':
-                          { 'label': 'kitchen'
+                          { 'serial': 'd073d5000001'
+                          , 'label': 'kitchen'
                           , 'power': 'on'
                           , 'hue': 72
                           , 'saturation': 0.8
@@ -304,7 +317,8 @@ describe AsyncTestCase, "Memory target":
                           , "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"]
                           }
                         , 'd073d5000002':
-                          { 'label': 'blah'
+                          { 'serial': 'd073d5000002'
+                          , 'label': 'blah'
                           , 'power': 'off'
                           , 'hue': 120.0
                           , 'saturation': 0.4
@@ -320,7 +334,8 @@ describe AsyncTestCase, "Memory target":
                           , "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"]
                           }
                         , 'd073d5000003':
-                          { 'label': 'hallway'
+                          { 'serial': 'd073d5000003'
+                          , 'label': 'hallway'
                           , 'power': 'on'
                           , 'hue': 120.0
                           , 'saturation': 0.4

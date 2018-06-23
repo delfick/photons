@@ -22,7 +22,7 @@ describe TestCase, "Filter":
 
         it "defaults everything to NotSpecified":
             filtr = Filter.FieldSpec().empty_normalise()
-            self.assertEqual(len(filtr.fields), 15)
+            self.assertEqual(len(filtr.fields), 16)
             self.assertFiltrMatches(filtr, {})
 
         describe "from_json_str":

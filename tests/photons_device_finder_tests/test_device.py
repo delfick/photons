@@ -15,7 +15,7 @@ import mock
 
 describe TestCase, "Device":
     before_each:
-        self.device = Device.FieldSpec().empty_normalise()
+        self.device = Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
     it "has property_fields":
         self.assertEqual(self.device.property_fields, ["group_id", "group_name", "location_name", "location_id"])
@@ -46,7 +46,8 @@ describe TestCase, "Device":
         self.device.cap = ["multizone", "color"]
 
         self.assertEqual(self.device.as_dict()
-            , { "label": "kitchen"
+            , { "serial": "d073d5000001"
+              , "label": "kitchen"
               , "power": "on"
               , "group_id": "uuidg"
               , "group_name": "blah"
@@ -108,6 +109,7 @@ describe TestCase, "Device":
                     , mock.call("group")
                     , mock.call("group_id")
                     , mock.call("group_name")
+                    , mock.call("serial")
                     ]
                   )
                 )
@@ -119,6 +121,7 @@ describe TestCase, "Device":
                     , mock.call("product_id", 22)
                     , mock.call("group_id", "uuidg")
                     , mock.call("group_name", "blah")
+                    , mock.call("serial", "d073d5000001")
                     ]
                   )
                 )
