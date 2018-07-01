@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.5.7 - TBD
+0.5.7 - 1 July 2018
     * Fixed the FakeTarget in photons_app.test_helpers to deal with errors
       correctly
     * Made ``photons_transform.transformer.Transformer`` faster for most cases
