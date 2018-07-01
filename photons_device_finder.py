@@ -1060,6 +1060,8 @@ class DeviceFinder(object):
 
     .. automethod:: photons_device_finder.DeviceFinder.args_for_run
     """
+    _merged_options_formattable = True
+
     def __init__(self, target, service_search_interval=20, information_search_interval=30, repeat_spread=1):
         self.loops = DeviceFinderLoops(target
             , service_search_interval = service_search_interval
