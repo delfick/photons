@@ -46,8 +46,20 @@ class FakeTarget(object):
     async def run_with(self, *args, **kwargs):
         self.call += 1
         call = mock.call(*args, **kwargs)
+
+        def add_error(e, do_raise=True):
+            if "error_catcher" in kwargs:
+                if type(kwargs["error_catcher"]) is list:
+                    kwargs["error_catcher"].append(e)
+                else:
+                    kwargs["error_catcher"](e)
+                return True
+            else:
+                if do_raise:
+                    raise e
+
         if len(self.expected_run_with) < self.call:
-            raise BadTest("Got an extra call to the target", got=repr(call))
+            add_error(BadTest("Got an extra call to the target", got=repr(call)))
 
         if self.expected_run_with[self.call][0] != call:
             try:
@@ -88,12 +100,15 @@ class FakeTarget(object):
                     print("\tGOT : {0}".format(ckwargs))
                     print("\tWANT: {0}".format(wkwargs))
 
-                raise
+                if not add_error(error):
+                    raise
 
         ret = self.expected_run_with[self.call][1]
         if isinstance(ret, Exception):
+            add_error(ret)
             raise ret
-        return ret
+        else:
+            return ret
 
     def expect_call(self, call, result):
         self.expected_run_with.append((call, result))

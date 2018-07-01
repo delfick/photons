@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.5.7 - TBD
+    * Fixed the FakeTarget in photons_app.test_helpers to deal with errors
+      correctly
+
 0.5.6 - 23 June 2018
     * photons_script.script.Repeater can now be stopped by raising Repater.Stop()
       in the on_done_loop callback
