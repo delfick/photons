@@ -6,6 +6,9 @@ ChangeLog
 0.5.7 - TBD
     * Fixed the FakeTarget in photons_app.test_helpers to deal with errors
       correctly
+    * Made ``photons_transform.transformer.Transformer`` faster for most cases
+      by making it not check the current state of the device when it doesn't
+      need to
 
 0.5.6 - 23 June 2018
     * photons_script.script.Repeater can now be stopped by raising Repater.Stop()

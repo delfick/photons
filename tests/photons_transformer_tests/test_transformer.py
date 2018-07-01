@@ -2,7 +2,7 @@
 
 from photons_transform.transformer import Transformer
 
-from photons_app.test_helpers import AsyncTestCase, FakeTargetIterator
+from photons_app.test_helpers import AsyncTestCase, FakeTargetIterator, print_packet_difference
 
 from photons_device_messages import DeviceMessages
 from photons_colour import ColourMessages, Parser
@@ -10,6 +10,8 @@ from photons_script.script import Pipeline
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from functools import partial
+import itertools
+import random
 import mock
 
 def simplify(item_kls, script_part, chain=None):
@@ -25,6 +27,56 @@ def simplify(item_kls, script_part, chain=None):
             final.append(p)
 
     yield item_kls(final)
+
+def generate_options(color, exclude=None):
+    zero_to_one = [v / 10 for v in range(1, 10, 1)]
+
+    options = {
+          "hue": list(range(0, 360, 1))
+        , "saturation": zero_to_one
+        , "brightness": zero_to_one
+        , "kelvin": list(range(3500, 9000, 50))
+        , "power": ["on", "off"]
+        }
+
+    extra = {
+          "duration": list(range(0, 10, 1))
+        , "res_required": [True, False]
+        , "effect": ["sine", "triangle", "saw"]
+        , "cycles": list(range(0, 10, 1))
+        }
+
+    def make_state(keys, extra_keys):
+        state = {}
+        if color is not None:
+            state["color"] = color
+
+        for k in keys:
+            state[k] = random.choice(options[k])
+
+        for k in extra_keys:
+            state[k] = random.choice(extra[k])
+
+        print(f"Generated state: {state}")
+        return state
+
+    keys = [k for k in options if exclude is None or k not in exclude]
+    random.shuffle(keys)
+
+    for r in range(len(keys)):
+        for i, comb in enumerate(itertools.combinations(keys, r + 1)):
+            if i > 0:
+                break
+
+            for r in (0, 2):
+                if r == 0:
+                    yield make_state(comb, [])
+                else:
+                    for j, comb2 in enumerate(itertools.combinations(extra, r)):
+                        if j > 0:
+                            break
+
+                        yield make_state(comb, comb2)
 
 describe AsyncTestCase, "Transformer":
     describe "just a power message":
@@ -46,7 +98,37 @@ describe AsyncTestCase, "Transformer":
             self.assertEqual(msg.pkt_type, DeviceMessages.SetLightPower.Payload.message_type)
             self.assertEqual(msg.payload.as_dict(), {"level": 65535, "duration": 20})
 
-    describe "when we have more than just power change":
+    describe "just color options":
+        async it "just uses Parser.color_to_msg":
+            for color in (random.choice(["red", "blue", "green", "yellow"]), None):
+                for state in generate_options(color, exclude=["power"]):
+                    want = Parser.color_to_msg(color, overrides=state)
+                    want.res_required = False
+
+                    got = Transformer.using(state, keep_brightness=False)
+                    self.assertEqual(got, want)
+
+    describe "color and power=off":
+        async it "pipelines turn off and color":
+            for state in generate_options("red"):
+                state["power"] = "off"
+                transformer = Transformer()
+                color_message = transformer.color_message(state)
+                power_message = transformer.power_message(state)
+
+                assert color_message is not None
+                assert power_message is not None
+
+                got = Transformer.using(state, keep_brightness=False)
+                self.assertEqual(type(got), Pipeline)
+                self.assertEqual(len(got.children), 2, got.children)
+                self.assertEqual(got.children, (power_message, color_message))
+
+    describe "no power or color options":
+        async it "returns an empty list":
+            self.assertEqual(Transformer.using({}), [])
+
+    describe "when we need a transition":
         async before_each:
             self.target = FakeTargetIterator()
             self.afr = mock.Mock(name='afr')
@@ -68,6 +150,7 @@ describe AsyncTestCase, "Transformer":
 
             msg = Transformer.using(state, keep_brightness=keep_brightness)
             simplified = msg.simplified(partial(simplify, item_kls))
+
             async def doit():
                 async for _ in simplified.run_with([self.serial], self.afr):
                     pass
@@ -87,7 +170,6 @@ describe AsyncTestCase, "Transformer":
                 expected += 1
                 first_colour_message.target = self.serial
                 first_colour_message.res_required = False
-                first_colour_message.ack_required = True
 
                 self.target.expect_call(
                     mock.call(first_colour_message, [], self.afr
@@ -100,7 +182,6 @@ describe AsyncTestCase, "Transformer":
                 expected += 1
                 power_message.target = self.serial
                 power_message.res_required = False
-                power_message.ack_required = True
 
                 self.target.expect_call(
                     mock.call(power_message, [], self.afr
@@ -113,7 +194,6 @@ describe AsyncTestCase, "Transformer":
                 expected += 1
                 second_colour_message.target = self.serial
                 second_colour_message.res_required = False
-                second_colour_message.ack_required = True
 
                 self.target.expect_call(
                     mock.call(second_colour_message, [], self.afr
@@ -174,40 +254,43 @@ describe AsyncTestCase, "Transformer":
                 , first_colour_message
                 , power_message
                 , second_colour_message
+                , keep_brightness = True
                 )
 
         async it "doesn't set power if it doesn't need to because power not provided":
             state = ColourMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
+                , hue=0, saturation=0, brightness=0.6, kelvin=3500
                 , power=0, label="blah"
                 )
 
             first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
             power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
+            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.6, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "duration": 10}, state
                 , first_colour_message
                 , power_message
                 , second_colour_message
+                , keep_brightness = True
                 )
 
         async it "doesn't reset if it doesn't need to":
             state = ColourMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
+                , hue=0, saturation=0, brightness=0.4, kelvin=3500
                 , power=65535, label="blah"
                 )
 
             first_colour_message = None
             power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"duration": 10})
+            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.4, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "duration": 10}, state
                 , first_colour_message
                 , power_message
                 , second_colour_message
+                , keep_brightness = True
                 )
 
         async it "doesn't reset if it doesn't need to and power is specified on":
@@ -236,12 +319,13 @@ describe AsyncTestCase, "Transformer":
 
             first_colour_message = None
             power_message = DeviceMessages.SetLightPower(level=0, duration=10)
-            second_colour_message = Parser.color_to_msg("blue", {"duration": 10})
+            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "power": "off", "duration": 10}, state
                 , first_colour_message
                 , power_message
                 , second_colour_message
+                , keep_brightness = True
                 )
 
         async it "doesn't reset if it doesn't need to and power is specified off and not duration":
@@ -253,46 +337,11 @@ describe AsyncTestCase, "Transformer":
 
             first_colour_message = None
             power_message = DeviceMessages.SetPower(level=0)
-            second_colour_message = Parser.color_to_msg("blue")
+            second_colour_message = Parser.color_to_msg("blue", overrides={"brightness": 0.5})
 
             await self.assertTransformBehaves({"color": "blue", "power": "off"}, state
                 , first_colour_message
                 , power_message
                 , second_colour_message
-                )
-
-        async it "overrides brightness if we say keep brightness":
-            state = ColourMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = DeviceMessages.SetPower(level=0)
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "off"}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness=True
-                )
-
-        async it "overrides brightness if we say keep brightness and turning power on":
-            state = ColourMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "on"}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness=True
+                , keep_brightness = True
                 )
