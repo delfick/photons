@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.5.8 - 1 July 2018
+    * Fixed a bug I introduced in the Transformer in 0.5.7
+
 0.5.7 - 1 July 2018
     * Fixed the FakeTarget in photons_app.test_helpers to deal with errors
       correctly

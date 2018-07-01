@@ -70,13 +70,12 @@ class Transformer(object):
         return msg
 
     def transition(self, state, keep_brightness=False):
-        power_message = None if "power" not in state else self.power_message(state)
-
         def receiver(reference, *states):
             if not states:
                 return
 
             current_state = states[0].as_dict()["payload"]
+            power_message = None if "power" not in state else self.power_message(state)
 
             msg_dict = dict(state)
             h, s, b, k = Parser.hsbk(state.get("color", None), overrides=state)
