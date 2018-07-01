@@ -28,6 +28,23 @@ class FakeScriptIterator(FakeScript):
             msgs.append(msg)
         return msgs
 
+def print_packet_difference(one, two):
+    if one != two:
+        print("\tGOT : {0}".format(one.payload.__class__))
+        print("\tWANT: {0}".format(two.payload.__class__))
+        if one.payload.__class__ == two.payload.__class__:
+            dictc = dict(one)
+            dictw = dict(two)
+            for k, v in dictc.items():
+                if k not in dictw:
+                    print("\t\tGot key not in wanted: {0}".format(k))
+                elif v != dictw[k]:
+                    print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
+
+            for k in dictw:
+                if k not in dictc:
+                    print("\t\tGot key in wanted but not in what we got: {0}".format(k))
+
 class FakeTarget(object):
     def __init__(self, afr_maker=None):
         self.call = -1
@@ -75,20 +92,7 @@ class FakeTarget(object):
                         print("\tDIFFERENT: item {0}".format(i))
 
                         if hasattr(c, "pack") and hasattr(w, "pack"):
-                            print("\tGOT : {0}".format(c.payload.__class__))
-                            print("\tWANT: {0}".format(w.payload.__class__))
-                            if c.payload.__class__ == w.payload.__class__:
-                                dictc = dict(c)
-                                dictw = dict(w)
-                                for k, v in dictc.items():
-                                    if k not in dictw:
-                                        print("\t\tGot key not in wanted: {0}".format(k))
-                                    elif v != dictw[k]:
-                                        print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
-
-                                for k in dictw:
-                                    if k not in dictc:
-                                        print("\t\tGot key in wanted but not in what we got: {0}".format(k))
+                            print_packet_different(c, w)
                         else:
                             print("\tGOT : {0}".format(c))
                             print("\tWANT: {0}".format(w))
