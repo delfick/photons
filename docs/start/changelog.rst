@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.5.9 - TBD
+    * Fixed a bug in the task runner such where a future could be given a result
+      even though it was already done.
+
 0.5.8 - 1 July 2018
     * Fixed a bug I introduced in the Transformer in 0.5.7
 

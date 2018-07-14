@@ -136,6 +136,45 @@ describe AsyncTestCase, "runner":
         assert final.cancelled()
         task_runner.assert_called_once_with(chosen_task, reference)
 
+    async it "doesn't fail if the final_future is already cancelled when the task finishes":
+        final = asyncio.Future()
+        reference = mock.Mock(name="reference")
+        chosen_task = mock.Mock(name="chosen_task")
+        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
+
+        def tr(*args, **kwargs):
+            final.cancel()
+        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=tr)
+
+        configuration = {"photons_app": photons_app, "task_runner": task_runner}
+        collector = mock.Mock(name="collector", configuration=configuration)
+
+        t = self.loop.create_task(runner(collector))
+        with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+            await self.wait_for(t)
+
+        assert final.cancelled()
+        task_runner.assert_called_once_with(chosen_task, reference)
+
+    async it "doesn't fail if the final_future is already done when the task finishes":
+        final = asyncio.Future()
+        reference = mock.Mock(name="reference")
+        chosen_task = mock.Mock(name="chosen_task")
+        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
+
+        def tr(*args, **kwargs):
+            final.set_result(True)
+        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=tr)
+
+        configuration = {"photons_app": photons_app, "task_runner": task_runner}
+        collector = mock.Mock(name="collector", configuration=configuration)
+
+        t = self.loop.create_task(runner(collector))
+        await self.wait_for(t)
+
+        assert final.done()
+        task_runner.assert_called_once_with(chosen_task, reference)
+
 describe TestCase, "stop_everything":
     it "calls cleanup on the photons_app and closes the loop":
         called = []

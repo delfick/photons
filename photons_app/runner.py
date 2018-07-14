@@ -65,18 +65,20 @@ async def runner(collector):
         loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
     def reporter(res):
+        if photons_app.final_future.done():
+            return
+
         if res.cancelled():
+            photons_app.final_future.cancel()
             return
 
         exc = res.exception()
-        if exc and not photons_app.final_future.done():
+        if exc:
             photons_app.final_future.set_exception(exc)
             return
 
-        if photons_app.final_future.cancelled():
-            return
-
-        photons_app.final_future.set_result(res.result())
+        res.result()
+        photons_app.final_future.set_result(None)
 
     task = collector.configuration["photons_app"].chosen_task
     reference = collector.configuration["photons_app"].reference
