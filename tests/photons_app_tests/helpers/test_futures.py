@@ -276,10 +276,11 @@ describe AsyncTestCase, "ChildOfFuture":
             self.assertEqual(await self.cof, True)
 
     describe "Getting  result":
-        async it "gets result from original if that is done":
+        async it "cancels the future if original is done":
             res = mock.Mock(name="res")
             self.orig_fut.set_result(res)
-            self.assertIs(self.cof.result(), res)
+            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                self.cof.result()
 
         async it "gets result from original if that is cancelled":
             self.orig_fut.cancel()
@@ -344,6 +345,17 @@ describe AsyncTestCase, "ChildOfFuture":
             cof3 = hp.ChildOfFuture(o3)
             o3.cancel()
             assert cof3.cancelled()
+
+        async it "is cancelled if the original fut is done without errors":
+            o = asyncio.Future()
+            o.set_result(None)
+            cof = hp.ChildOfFuture(o)
+            assert cof.cancelled()
+
+            o = asyncio.Future()
+            cof = hp.ChildOfFuture(o)
+            o.set_result(None)
+            assert cof.cancelled()
 
     describe "exception":
         async it "it complains no exception is set if neither fut cancelled or have exception":
@@ -649,9 +661,9 @@ describe AsyncTestCase, "ChildOfFuture":
             async with self.waiting_for(res):
                 self.cof.set_result(res)
 
-        async it "returns result from orig_fut if that goes first":
+        async it "cancels this_fut if original fut gets a result":
             res = mock.Mock(name="res")
-            async with self.waiting_for(res):
+            async with self.waiting_for(asyncio.CancelledError):
                 self.orig_fut.set_result(res)
 
         async it "returns result from this_fut if that cancels first":

@@ -434,8 +434,13 @@ class ResettableFuture(object):
 
 class ChildOfFuture(object):
     """
-    Create a future that is considered done/cancelled if it's parent is
-    done/cancelled
+    Create a future that also considers the status of it's parent.
+
+    So if the parent is cancelled, then this future is cancelled.
+    If the parent raises an exception, then that exception is given to this result
+
+    The special case is if the parent receives a result, then this future is
+    cancelled.
     """
     _asyncio_future_blocking = False
 
@@ -459,7 +464,10 @@ class ChildOfFuture(object):
 
     def result(self):
         if self.original_fut.done() or self.original_fut.cancelled():
-            return self.original_fut.result()
+            if self.original_fut.cancelled():
+                return self.original_fut.result()
+            else:
+                self.this_fut.cancel()
         if self.this_fut.done() or self.this_fut.cancelled():
             return self.this_fut.result()
         return self.original_fut.result()
@@ -468,7 +476,15 @@ class ChildOfFuture(object):
         return self.this_fut.done() or self.original_fut.done()
 
     def cancelled(self):
-        return self.this_fut.cancelled() or self.original_fut.cancelled()
+        if self.this_fut.cancelled() or self.original_fut.cancelled():
+            return True
+
+        # We cancel this_fut if original_fut gets a result
+        if self.original_fut.done() and not self.original_fut.exception():
+            self.this_fut.cancel()
+            return True
+
+        return False
 
     def exception(self):
         if self.this_fut.done() and not self.this_fut.cancelled():
@@ -536,10 +552,13 @@ class ChildOfFuture(object):
 
     def __await__(self):
         while True:
-            if self.this_fut.done() or self.this_fut.cancelled():
+            if self.original_fut.done() and not self.original_fut.cancelled() and not self.original_fut.exception():
+                self.this_fut.cancel()
+
+            if self.this_fut.done():
                 return (yield from self.this_fut)
 
-            if self.original_fut.done() or self.original_fut.cancelled():
+            if self.original_fut.done():
                 return (yield from self.original_fut)
 
             if hasattr(self, "waiter"):

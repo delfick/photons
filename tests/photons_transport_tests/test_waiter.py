@@ -44,6 +44,11 @@ describe AsyncTestCase, "Waiter":
         async after_each:
             self.stop_fut.cancel()
 
+        async it "is cancelled if the stop fut gets a result":
+            self.stop_fut.set_result(None)
+            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                await self.waiter
+
         describe "without so many mocks":
             async it "one writings":
                 ack_fut = asyncio.Future()
