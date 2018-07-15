@@ -2,6 +2,7 @@ from photons_app.errors import PhotonsAppError
 
 from delfick_error import DelfickErrorTestMixin
 from asynctest import TestCase as AsyncTestCase
+from collections import defaultdict
 from unittest import TestCase
 import asyncio
 import mock
@@ -92,7 +93,7 @@ class FakeTarget(object):
                         print("\tDIFFERENT: item {0}".format(i))
 
                         if hasattr(c, "pack") and hasattr(w, "pack"):
-                            print_packet_different(c, w)
+                            print_packet_difference(c, w)
                         else:
                             print("\tGOT : {0}".format(c))
                             print("\tWANT: {0}".format(w))
@@ -134,3 +135,44 @@ class AsyncTestCase(AsyncTestCase, DelfickErrorTestMixin):
             return await asyncio.wait_for(fut, timeout=timeout)
         except asyncio.TimeoutError as error:
             assert False, "Failed to wait for future before timeout: {0}".format(error)
+
+def assertFutCallbacks(fut, *cbs):
+    callbacks = fut._callbacks
+
+    try:
+        from contextvars import Context
+    except ImportError:
+        Context = None
+
+    if not cbs:
+        if Context is not None:
+            if callbacks:
+                assert len(callbacks) == 1, f"Expect only one context callback: got {callbacks}"
+                assert isinstance(callbacks[0], Context), f"Expected just a context callback: got {callbacks}"
+        else:
+            assert callbacks == [], f"Expected no callbacks, got {callbacks}"
+
+        return
+
+    if not callbacks:
+        assert False, f"expected callbacks, got {callbacks}"
+
+    counts = defaultdict(lambda: 0)
+    expected = defaultdict(lambda: 0)
+
+    for cb in callbacks:
+        if type(cb) is tuple:
+            if len(cb) == 2 and Context and isinstance(cb[1], Context):
+                cb = cb[0]
+            else:
+                assert False, f"Got a tuple instead of a callback, {cb} in {callbacks}"
+
+        if not Context or not isinstance(cb, Context):
+            counts[cb] += 1
+
+    for cb in cbs:
+        expected[cb] += 1
+
+    for cb in cbs:
+        msg = f"Expected {expected[cb]} instances of {cb}, got {counts[cb]} in {callbacks}"
+        assert counts[cb] == expected[cb], msg

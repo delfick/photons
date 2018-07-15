@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.test_helpers import AsyncTestCase
+from photons_app.test_helpers import AsyncTestCase, assertFutCallbacks
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
@@ -494,8 +494,8 @@ describe AsyncTestCase, "ChildOfFuture":
                 called.append(res)
 
             self.cof.add_done_callback(done)
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.orig_fut.set_result(True)
             await asyncio.sleep(0)
@@ -508,8 +508,8 @@ describe AsyncTestCase, "ChildOfFuture":
                 called.append(res)
 
             self.cof.add_done_callback(done)
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.set_result(True)
             await asyncio.sleep(0)
@@ -526,8 +526,8 @@ describe AsyncTestCase, "ChildOfFuture":
                 called.append(res)
 
             self.cof.add_done_callback(done)
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.cancel()
             await asyncio.sleep(0)
@@ -549,8 +549,8 @@ describe AsyncTestCase, "ChildOfFuture":
             self.cof.add_done_callback(done)
             self.cof.add_done_callback(done2)
 
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.set_result(True)
             await asyncio.sleep(0)
@@ -563,8 +563,8 @@ describe AsyncTestCase, "ChildOfFuture":
                 called.append(res)
 
             self.cof.add_done_callback(done)
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.orig_fut.cancel()
             await asyncio.sleep(0)
@@ -590,8 +590,8 @@ describe AsyncTestCase, "ChildOfFuture":
             self.assertEqual(self.cof.done_callbacks, [])
 
         async it "removes callback from the futures if no more callbacks":
-            self.assertEqual(self.orig_fut._callbacks, [])
-            self.assertEqual(self.cof.this_fut._callbacks, [])
+            assertFutCallbacks(self.orig_fut)
+            assertFutCallbacks(self.cof.this_fut)
 
             cb = mock.Mock(name='cb')
             cb2 = mock.Mock(name='c2')
@@ -600,23 +600,23 @@ describe AsyncTestCase, "ChildOfFuture":
 
             self.cof.add_done_callback(cb)
             self.assertEqual(self.cof.done_callbacks, [cb])
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.add_done_callback(cb2)
             self.assertEqual(self.cof.done_callbacks, [cb, cb2])
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.remove_done_callback(cb)
             self.assertEqual(self.cof.done_callbacks, [cb2])
-            self.assertEqual(self.orig_fut._callbacks, [self.cof._parent_done_cb])
-            self.assertEqual(self.cof.this_fut._callbacks, [self.cof._done_cb])
+            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
+            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
 
             self.cof.remove_done_callback(cb2)
             self.assertEqual(self.cof.done_callbacks, [])
-            self.assertEqual(self.orig_fut._callbacks, [])
-            self.assertEqual(self.cof.this_fut._callbacks, [])
+            assertFutCallbacks(self.orig_fut)
+            assertFutCallbacks(self.cof.this_fut)
 
     describe "repr":
         async it "gives repr for both futures":
@@ -684,6 +684,39 @@ describe AsyncTestCase, "ChildOfFuture":
             async with self.waiting_for(error):
                 self.orig_fut.set_exception(error)
 
+describe AsyncTestCase, "fut_has_callback":
+    async it "says no if fut has no callbacks":
+        def func():
+            pass
+
+        fut = asyncio.Future()
+        assert not hp.fut_has_callback(fut, func)
+
+    async it "says no if it has other callbacks":
+        def func1():
+            pass
+
+        def func2():
+            pass
+
+        fut = asyncio.Future()
+        fut.add_done_callback(func1)
+        assert not hp.fut_has_callback(fut, func2)
+
+    async it "says yes if we have the callback":
+        def func1():
+            pass
+
+        fut = asyncio.Future()
+        fut.add_done_callback(func1)
+        assert hp.fut_has_callback(fut, func1)
+
+        def func2():
+            pass
+        assert not hp.fut_has_callback(fut, func2)
+        fut.add_done_callback(func2)
+        assert hp.fut_has_callback(fut, func2)
+
 describe AsyncTestCase, "async_as_normal":
     async it "returns a function that spawns the coroutine as a task":
         async def func(one, two, three=None):
@@ -735,7 +768,7 @@ describe AsyncTestCase, "async_as_background":
             return "{0}.{1}.{2}".format(one, two, three)
 
         t = hp.async_as_background(func(6, 5, three=9))
-        self.assertEqual(t._callbacks, [hp.reporter])
+        assertFutCallbacks(t, hp.reporter)
         assert isinstance(t, asyncio.Task)
         self.assertEqual(await t, "6.5.9")
 
@@ -744,7 +777,7 @@ describe AsyncTestCase, "async_as_background":
             return "{0}.{1}.{2}".format(one, two, three)
 
         t = hp.async_as_background(func(6, 5, three=9), silent=True)
-        self.assertEqual(t._callbacks, [hp.silent_reporter])
+        assertFutCallbacks(t, hp.silent_reporter)
         assert isinstance(t, asyncio.Task)
         self.assertEqual(await t, "6.5.9")
 

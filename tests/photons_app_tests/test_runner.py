@@ -82,7 +82,11 @@ describe AsyncTestCase, "runner":
         reference = mock.Mock(name="reference")
         chosen_task = mock.Mock(name="chosen_task")
         photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
-        task_runner = mock.Mock(name="task_runner")
+
+        async def sleep(*args, **kwargs):
+            await asyncio.sleep(2)
+        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=sleep)
+
         configuration = {"photons_app": photons_app, "task_runner": task_runner}
         collector = mock.Mock(name="collector", configuration=configuration)
 

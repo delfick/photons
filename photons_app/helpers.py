@@ -84,6 +84,19 @@ def nested_dict_retrieve(data, keys, dflt):
 
     return data[last_key]
 
+def fut_has_callback(fut, callback):
+    if not fut._callbacks:
+        return False
+
+    for cb in fut._callbacks:
+        if type(cb) is tuple and cb:
+            cb = cb[0]
+
+        if cb == callback:
+            return True
+
+    return False
+
 def async_as_normal(func):
     """
     Return a function that creates a task on the provided loop using the
@@ -129,23 +142,39 @@ def async_as_background(coroutine, silent=False):
         t.add_done_callback(reporter)
     return t
 
-async def async_with_timeout(coroutine, timeout=10, timeout_error=None):
+async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=False):
     """
-    Run a coroutine until it's complete or times out
+    Run a coroutine as a task until it's complete or times out
+
+    If time runs out the task is cancelled
 
     If timeout_error is defined, that is raised instead of asyncio.CancelledError on timeout
     """
-    t = async_as_background(coroutine)
+    f = asyncio.Future()
+    t = async_as_background(coroutine, silent=silent)
 
     def set_exception():
-        if not t.done():
-            if timeout_error:
-                t.set_exception(timeout_error)
-            else:
-                t.cancel()
+        if t.cancelled():
+            f.cancel()
+            return
+
+        if t.done() and t.exception() is not None:
+            f.set_exception(t.exception())
+            return
+
+        if t.done():
+            f.set_result(t.result())
+            return
+
+        t.cancel()
+
+        if timeout_error:
+            f.set_exception(timeout_error)
+        else:
+            f.cancel()
 
     asyncio.get_event_loop().call_later(timeout, set_exception)
-    return await t
+    return await f
 
 class memoized_property(object):
     """
@@ -427,7 +456,12 @@ class ResettableFuture(object):
             if self.done() or self.cancelled():
                 return (yield from self.info["fut"])
 
-            yield from asyncio.wait([self.info["fut"], self.reset_fut], return_when=asyncio.FIRST_COMPLETED)
+            waiter = asyncio.wait([self.info["fut"], self.reset_fut], return_when=asyncio.FIRST_COMPLETED)
+            if hasattr(waiter, "__await__"):
+                yield from waiter.__await__()
+            else:
+                yield from waiter
+
             if self.reset_fut.done():
                 self.reset_fut = asyncio.Future()
     __iter__ = __await__
@@ -525,9 +559,9 @@ class ChildOfFuture(object):
 
     def add_done_callback(self, func):
         self.done_callbacks.append(func)
-        if self._done_cb not in self.this_fut._callbacks:
+        if not fut_has_callback(self.this_fut, self._done_cb):
             self.this_fut.add_done_callback(self._done_cb)
-        if self._parent_done_cb not in self.original_fut._callbacks:
+        if not fut_has_callback(self.original_fut, self._parent_done_cb):
             self.original_fut.add_done_callback(self._parent_done_cb)
 
     def remove_done_callback(self, func):
