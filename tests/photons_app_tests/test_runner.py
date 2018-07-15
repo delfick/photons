@@ -176,7 +176,7 @@ describe AsyncTestCase, "runner":
         task_runner.assert_called_once_with(chosen_task, reference)
 
 describe TestCase, "stop_everything":
-    it "calls cleanup on the photons_app and closes the loop":
+    it "calls cleanup on the photons_app":
         called = []
         t1 = mock.Mock(name="target1")
         t2 = mock.Mock(name="target2")
@@ -197,5 +197,3 @@ describe TestCase, "stop_everything":
 
         self.assertEqual(called, [1])
         cleanup.assert_called_once_with([t1, t2])
-
-        assert loop.is_closed()

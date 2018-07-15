@@ -43,9 +43,6 @@ def stop_everything(loop, collector):
         else:
             break
 
-    log.debug("CLOSE THE LOOP")
-    loop.close()
-
     log.debug("EVERYTHING SHOULD BE STOPPED")
 
 async def runner(collector):
