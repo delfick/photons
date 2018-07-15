@@ -25,7 +25,7 @@ And then create a file something like:
 
 .. code-block:: python
 
-    #!/usr/bin/env python3.6
+    #!/usr/bin/env python3
 
     import os
 
@@ -35,8 +35,9 @@ And then create a file something like:
 
     from venvstarter import ignite
     ignite(__file__, "lifx"
-        , deps = ["lifx-photons-core==0.5.8"]
+        , deps = ["lifx-photons-core==0.5.9"]
         , env = env
+        , min_python_version = 3.6
         )
 
 Make this file executable and run it. It'll make a virtualenv in a folder named

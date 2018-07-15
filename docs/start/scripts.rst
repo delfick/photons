@@ -13,11 +13,12 @@ First we create ``setup_venv`` with the following:
 
 .. code-block:: python
 
-    #!/usr/bin/env python3.6
+    #!/usr/bin/env python3
 
     from venvstarter import ignite
     ignite(__file__, "lifx"
-        , deps = ["lifx-photons-core==0.5.8"]
+        , deps = ["lifx-photons-core==0.5.9"]
+        , min_python_version = 3.6
         )
 
 And create our virtualenv by running it::
