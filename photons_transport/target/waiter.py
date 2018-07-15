@@ -79,7 +79,7 @@ class FutPair(object):
                     return
 
         self.done_callbacks.append(func)
-        if self._parent_done_cb not in self.parentfut._callbacks:
+        if not hp.fut_has_callback(self.parentfut, self._parent_done_cb):
             self.parentfut.add_done_callback(self._parent_done_cb)
 
     def set_final(self, res):
@@ -130,7 +130,7 @@ class FutPair(object):
 
         else:
             ack_fut, res_fut = res.result()
-            if self._done_ack not in ack_fut._callbacks:
+            if not hp.fut_has_callback(ack_fut, self._done_ack):
                 ack_fut.add_done_callback(self._done_ack)
 
     def _done_ack(self, res):

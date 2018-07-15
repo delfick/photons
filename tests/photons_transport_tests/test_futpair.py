@@ -2,7 +2,7 @@
 
 from photons_transport.target.waiter import FutPair
 
-from photons_app.test_helpers import AsyncTestCase
+from photons_app.test_helpers import AsyncTestCase, assertFutCallbacks
 from photons_app.errors import PhotonsAppError
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
@@ -49,19 +49,19 @@ describe AsyncTestCase, "FutPair":
             async it "adds set_final as a done_callback if parentfut is not complete":
                 self.futpair.set_final_cb()
                 self.assertEqual(self.futpair.done_callbacks, [self.futpair.set_final])
-                self.assertEqual(self.futpair.parentfut._callbacks, [self.futpair._parent_done_cb])
+                assertFutCallbacks(self.futpair.parentfut, self.futpair._parent_done_cb)
 
         describe "add_done_callback":
             async it "adds _done_cb to parentfut and func to done_callbacks if it's not done yet":
                 func = mock.Mock(name="func")
                 self.futpair.add_done_callback(func)
-                self.assertEqual(self.parentfut._callbacks, [self.futpair._parent_done_cb])
+                assertFutCallbacks(self.parentfut, self.futpair._parent_done_cb)
                 self.assertEqual(self.futpair.done_callbacks, [func])
 
                 # And we only add _done_cb once
                 func2 = mock.Mock(name="func2")
                 self.futpair.add_done_callback(func2)
-                self.assertEqual(self.parentfut._callbacks, [self.futpair._parent_done_cb])
+                assertFutCallbacks(self.parentfut, self.futpair._parent_done_cb)
                 self.assertEqual(self.futpair.done_callbacks, [func, func2])
 
             async it "calls each cbs only once no matter when they are given":
@@ -224,11 +224,11 @@ describe AsyncTestCase, "FutPair":
 
                 func = mock.Mock(name="func", spec=[])
                 res_fut.add_done_callback(func)
-                self.assertEqual(res_fut._callbacks, [func])
+                assertFutCallbacks(res_fut, func)
 
                 self.futpair.parentfut.set_result((ack_fut, res_fut))
                 self.futpair.remove_done_callback(func)
-                self.assertEqual(res_fut._callbacks, [])
+                assertFutCallbacks(res_fut)
 
         describe "_parent_done_cb":
             async it "adds _done_ack to the ack_fut":
@@ -237,13 +237,13 @@ describe AsyncTestCase, "FutPair":
                 res = asyncio.Future()
                 res.set_result((ack_fut, res_fut))
 
-                self.assertEqual(ack_fut._callbacks, [])
+                assertFutCallbacks(ack_fut)
                 self.futpair._parent_done_cb(res)
-                self.assertEqual(ack_fut._callbacks, [self.futpair._done_ack])
+                assertFutCallbacks(ack_fut, self.futpair._done_ack)
 
                 # And doesn't duplicate itself
                 self.futpair._parent_done_cb(res)
-                self.assertEqual(ack_fut._callbacks, [self.futpair._done_ack])
+                assertFutCallbacks(ack_fut, self.futpair._done_ack)
 
             async it "cancels the futpair if parentfut was cancelled":
                 res = asyncio.Future()
@@ -316,7 +316,7 @@ describe AsyncTestCase, "FutPair":
                 self.futpair.done_callbacks.extend([f1, f2])
 
                 self.futpair._done_ack(ack_fut)
-                self.assertEqual(res_fut._callbacks, [f1, f2])
+                assertFutCallbacks(res_fut, f1, f2)
                 self.assertEqual(self.futpair.done_callbacks, [])
 
         describe "cancel":
