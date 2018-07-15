@@ -9,6 +9,7 @@ ChangeLog
     * Made photons_app.helpers.ChildOfFuture behave as if it was cancelled when
       the parent future gets a non exception result. This is because ChildOfFuture
       is used to propagate errors/cancellation rather than propagate results.
+    * Upgraded PyYaml and uvloop so that you can install this under python3.7
 
 0.5.8 - 1 July 2018
     * Fixed a bug I introduced in the Transformer in 0.5.7

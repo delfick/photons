@@ -24,7 +24,7 @@ for filename in os.listdir(this_dir):
 
 maybeuvloop = []
 if platform.system() != "Windows":
-    maybeuvloop.append("uvloop==0.9.1")
+    maybeuvloop.append("uvloop==0.11.0")
 
 setup(
       name = "lifx-photons-core"
@@ -41,7 +41,7 @@ setup(
       , "delfick_app==0.9.6"
       , "option_merge==1.6"
       , "option_merge_addons==0.3"
-      , "pyYaml==3.12"
+      , "pyYaml==3.13"
 
       # photons-tile-messages
       , "lru-dict==1.1.6"
