@@ -734,7 +734,7 @@ describe AsyncTestCase, "async_with_timeout":
         async def func():
             return val
 
-        res = await hp.async_with_timeout(func(), timeout=1)
+        res = await self.wait_for(hp.async_with_timeout(func(), timeout=10))
         self.assertEqual(res, val)
 
     async it "cancels the coroutine if it doesn't respond":

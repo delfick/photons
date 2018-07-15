@@ -153,27 +153,30 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
     f = asyncio.Future()
     t = async_as_background(coroutine, silent=silent)
 
-    def set_exception():
-        if t.cancelled():
+    def pass_result(res):
+        if res.cancelled():
             f.cancel()
             return
 
-        if t.done() and t.exception() is not None:
-            f.set_exception(t.exception())
+        if res.exception() is not None:
+            if not f.done():
+                f.set_exception(t.exception())
             return
 
-        if t.done():
+        if t.done() and not f.done():
             f.set_result(t.result())
-            return
 
-        t.cancel()
+    t.add_done_callback(pass_result)
 
-        if timeout_error:
-            f.set_exception(timeout_error)
-        else:
+    def set_timeout():
+        if not t.done():
+            if timeout_error and not f.done():
+                f.set_exception(timeout_error)
+
+            t.cancel()
             f.cancel()
 
-    asyncio.get_event_loop().call_later(timeout, set_exception)
+    asyncio.get_event_loop().call_later(timeout, set_timeout)
     return await f
 
 class memoized_property(object):
