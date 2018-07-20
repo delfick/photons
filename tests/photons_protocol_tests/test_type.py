@@ -94,6 +94,7 @@ describe TestCase, "Type":
                     , "_allow_callable"
                     , "_optional"
                     , "_allow_float"
+                    , "_version_number"
                     )
 
                 fields = {}
@@ -174,6 +175,12 @@ describe TestCase, "Type":
                 with self.clone() as (res, setd):
                     self.assertIs(self.t.allow_float(), res)
                 self.assertEqual(setd, {"_allow_float": True})
+
+        describe "version_number":
+            it "sets _version_number to True":
+                with self.clone() as (res, setd):
+                    self.assertIs(self.t.version_number(), res)
+                self.assertEqual(setd, {"_version_number": True})
 
         describe "enum":
             it "sets _enum to the value passed in":
@@ -596,6 +603,21 @@ describe TestCase, "Type":
             integer_spec = mock.Mock(name="integer_spec", return_value=spec)
             with mock.patch("photons_protocol.types.integer_spec", integer_spec):
                 yield integer_spec, spec
+
+        @contextmanager
+        def mocked_version_number_spec(self):
+            spec = mock.Mock(name="spec")
+            version_number_spec = mock.Mock(name="version_number_spec", return_value=spec)
+            with mock.patch("photons_protocol.types.version_number_spec", version_number_spec):
+                yield version_number_spec, spec
+
+        it "creates version_number_spec if we have _version_number set":
+            em = mock.Mock(name="em")
+
+            with self.mocked_version_number_spec() as (version_number_spec, spec):
+                self.assertIs(self.t.version_number().make_integer_spec(self.pkt, self.unpacking), spec)
+
+            version_number_spec.assert_called_once_with(unpacking=self.unpacking)
 
         it "creates integer_spec with enum if we have one":
             em = mock.Mock(name="em")

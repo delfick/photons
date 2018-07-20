@@ -19,7 +19,7 @@ The idea is that you can query the device_finder for information.
     #      "d073d512c21d": {
     #          "serial": "d073d512c21d",
     #          "brightness": 0.29999237048905164,
-    #          "firmware_version": 1.21,
+    #          "firmware_version": "1.21",
     #          "group_id": "925fb774c42c11e799e580e650080d3e",
     #          "group_name": "one",
     #          "cap": ["color", "multizone", "variable_color_temp"]
@@ -36,7 +36,7 @@ The idea is that you can query the device_finder for information.
     #      "d073d514e733": {
     #          "serial": "d073d514e733",
     #          "brightness": 0.29999237048905164,
-    #          "firmware_version": 1.2,
+    #          "firmware_version": "1.20",
     #          "group_id": "925fb774c42c11e799e580e650080d3e",
     #          "group_name": "one",
     #          "cap": ["color", "multizone", "variable_color_temp"]
@@ -396,7 +396,7 @@ class Filter(dictobj.Spec):
     brightness = dictobj.Field(str_ranges, wrapper=sb.optional_spec)
     kelvin = dictobj.Field(str_ranges, wrapper=sb.optional_spec)
 
-    firmware_version = dictobj.Field(sb.listof(sb.float_spec()), wrapper=sb.optional_spec)
+    firmware_version = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
     product_id = dictobj.Field(sb.listof(sb.integer_spec()), wrapper=sb.optional_spec)
     product_identifier = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
@@ -566,7 +566,7 @@ class Device(dictobj.Spec):
     brightness = dictobj.Field(sb.float_spec, wrapper=sb.optional_spec)
     kelvin = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
 
-    firmware_version = dictobj.Field(sb.float_spec, wrapper=sb.optional_spec)
+    firmware_version = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
 
     product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
     product_identifier = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)

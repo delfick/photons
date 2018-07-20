@@ -50,11 +50,7 @@ class DeviceMessages(Messages):
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
         , ("reserved", T.Uint64.default(0))
-        , ("version", T.Uint32.transform(
-              lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
-            , lambda v: float("{0}.{1:02d}".format(v >> 0x10, v & 0xFF))
-            ).allow_float()
-          )
+        , ("version", T.Uint32.version_number())
         )
 
     GetWifiInfo = msg(16)
@@ -69,11 +65,7 @@ class DeviceMessages(Messages):
     StateWifiFirmware = msg(19
         , ("build", T.Uint64)
         , ("reserved", T.Uint64)
-        , ("version", T.Uint32.transform(
-              lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
-              , lambda v: float("{0}.{1:02d}".format(v >> 0x10, v & 0xFF))
-            ).allow_float()
-          )
+        , ("version", T.Uint32.version_number())
         )
 
     GetVersion = msg(32)

@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.5.10 - TBD
+    * Made version in StateHostFirmware and StateWifiFirmware a string instead
+      of a float to tell the difference between "1.2" and "1.20"
+
 0.5.9 - 15 July 2018
     * Fixed a bug in the task runner such where a future could be given a result
       even though it was already done.

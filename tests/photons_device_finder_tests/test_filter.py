@@ -210,14 +210,14 @@ describe TestCase, "Filter":
                 assert not filtr.matches(field, 82)
 
         it "matches against anything in a list":
-            for field in ("label", "power", "group_id", "group_name", "location_id", "location_name", "product_identifier"):
+            for field in ("label", "power", "group_id", "group_name", "location_id", "location_name", "product_identifier", "firmware_version"):
                 filtr = Filter.from_options({field: ["one", "two"]})
                 assert filtr.matches(field, "one")
                 assert filtr.matches(field, "two")
 
                 assert not filtr.matches(field, "three")
 
-            for field in ("firmware_version", "product_id"):
+            for field in ("product_id", ):
                 filtr = Filter.from_options({field: [1, 2]})
                 assert filtr.matches(field, 1)
                 assert filtr.matches(field, 2)

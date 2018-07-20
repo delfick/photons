@@ -24,10 +24,15 @@ import binascii
 import logging
 import json
 import enum
+import re
 
 log = logging.getLogger("photons_protocol.packets.builder")
 
 Optional = type("Optional", (), {})()
+
+regexes = {
+      "version_number": re.compile("(?P<major>\d+)\.(?P<minor>\d+)")
+    }
 
 class Type(object):
     """
@@ -60,6 +65,7 @@ class Type(object):
     _many = False
     _optional = False
     _allow_float = False
+    _version_number = False
     _allow_callable = False
 
     def __init__(self, struct_format, conversion):
@@ -90,6 +96,7 @@ class Type(object):
         result._unpack_transform = self._unpack_transform
         result._optional = self._optional
         result._allow_float = self._allow_float
+        result._version_number = self._version_number
         result._allow_callable = self._allow_callable
         result.original_size = getattr(self, "original_size", size_bits)
         if left is not sb.NotSpecified:
@@ -107,6 +114,12 @@ class Type(object):
         """Set the _allow_float option"""
         res = self.S(self.size_bits)
         res._allow_float = True
+        return res
+
+    def version_number(self):
+        """Set the _version_number option"""
+        res = self.S(self.size_bits)
+        res._version_number = True
         return res
 
     def enum(self, enum):
@@ -307,7 +320,7 @@ class Type(object):
         return many_spec(self._many_kls(pkt), self._many_size, pkt, spec, unpacking)
 
     def make_integer_spec(self, pkt, unpacking):
-        """Make an integer spec that respects enum, bitmask and allow_float"""
+        """Make an integer spec that respects enum, bitmask and allow_float/version_number"""
         enum = None
         if self._enum is not sb.NotSpecified:
             enum = self._enum
@@ -315,6 +328,9 @@ class Type(object):
         bitmask = None
         if self._bitmask is not sb.NotSpecified:
             bitmask = self._bitmask
+
+        if self._version_number:
+            return version_number_spec(unpacking=unpacking)
 
         return integer_spec(pkt, enum, bitmask, unpacking=unpacking, allow_float=self._allow_float)
 
@@ -491,6 +507,34 @@ class optional(sb.Spec):
         if val is Optional:
             return val
         return self.spec.normalise(meta, val)
+
+class version_number_spec(sb.Spec):
+    """Normalise a value as a version string"""
+    def setup(self, unpacking=False):
+        self.unpacking = unpacking
+
+    def normalise_filled(self, meta, val):
+        """
+        Convert to and from a string into an integer
+        """
+        if self.unpacking:
+            val = sb.integer_spec().normalise(meta, val)
+            major = val >> 0x10
+            minor = val & 0xFF
+            return f"{major}.{minor}"
+        else:
+            if type(val) is int:
+                return val
+
+            val = sb.string_spec().normalise(meta, val)
+            m = regexes["version_number"].match(val)
+            if not m:
+                raise BadSpecValue("Expected version string to match (\d+.\d+)", wanted=val)
+
+            groups = m.groupdict()
+            major = int(groups["major"])
+            minor = int(groups["minor"])
+            return (major << 0x10) + minor
 
 class integer_spec(sb.Spec):
     """

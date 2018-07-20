@@ -37,7 +37,7 @@ class Device(FakeDevice):
         self.location_label = ""
         self.location_updated_at = 0
 
-        self.firmware_version = 1.22
+        self.firmware_version = "1.22"
         self.firmware_build_time = 1508567297
 
         self.vendor_id = 1
@@ -224,7 +224,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.4
                           , 'brightness': 0.29999237048905164
                           , 'kelvin': 3500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 20
                           , 'product_identifier': 'lifx_br30_color'
                           , 'group_id': '12340000000000000000000000000000'
@@ -241,7 +241,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.4
                           , 'brightness': 0.29999237048905164
                           , 'kelvin': 3500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 22
                           , 'product_identifier': 'lifx_a19_color'
                           , 'group_id': '12340000000000000000000000000000'
@@ -258,7 +258,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.4
                           , 'brightness': 0.29999237048905164
                           , 'kelvin': 3500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 29
                           , "product_identifier": "lifx_a19_plus"
                           , 'group_id': '45670000000000000000000000000000'
@@ -307,7 +307,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.8
                           , 'brightness': 0.6
                           , 'kelvin': 2500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 20
                           , 'product_identifier': 'lifx_br30_color'
                           , 'group_id': '12340000000000000000000000000000'
@@ -324,7 +324,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.4
                           , 'brightness': 0.29999237048905164
                           , 'kelvin': 3500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 22
                           , 'product_identifier': 'lifx_a19_color'
                           , 'group_id': '12340000000000000000000000000000'
@@ -341,7 +341,7 @@ describe AsyncTestCase, "Memory target":
                           , 'saturation': 0.4
                           , 'brightness': 0.29999237048905164
                           , 'kelvin': 3500
-                          , 'firmware_version': 1.22
+                          , 'firmware_version': "1.22"
                           , 'product_id': 29
                           , "product_identifier": "lifx_a19_plus"
                           , 'group_id': '11110000000000000000000000000000'

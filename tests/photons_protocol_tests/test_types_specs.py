@@ -407,6 +407,38 @@ describe TestCase, "optional":
 
         ultimate_spec.normalise.assert_called_once_with(meta, thing)
 
+describe TestCase, "version_number_spec":
+    it "takes in many things":
+        unpacking = mock.Mock(name="unpacking")
+        spec = types.version_number_spec(unpacking=unpacking)
+        self.assertIs(spec.unpacking, unpacking)
+
+    it "defaults unpacking":
+        spec = types.version_number_spec()
+        self.assertEqual(spec.unpacking, False)
+
+    describe "normalise":
+        before_each:
+            self.meta = Meta.empty()
+
+        it "can go back and forward between string and integer":
+            for (want_int, want_str) in [(65538, "1.2"), (131092, "2.20"), (131272, "2.200")]:
+                unpacker = types.version_number_spec(unpacking=False)
+                as_int = unpacker.normalise(self.meta, want_str)
+                self.assertEqual(as_int, want_int)
+
+                packer = types.version_number_spec(unpacking=True)
+                as_str = packer.normalise(self.meta, as_int)
+                self.assertEqual(as_str, want_str)
+
+        it "complains if val is not a valid version number":
+            for v in ("", "0", "0.wat", "wat.0", "wat"):
+                with self.fuzzyAssertRaisesError(BadSpecValue, "Expected version string to match", wanted=v):
+                    types.version_number_spec(unpacking=False).normalise(self.meta, v)
+
+        it "can pack an integer":
+            self.assertEqual(types.version_number_spec(unpacking=False).normalise(self.meta, 100), 100)
+
 describe TestCase, "integer_spec":
     it "takes in many things":
         pkt = mock.Mock(name="pkt")
