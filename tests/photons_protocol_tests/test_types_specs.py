@@ -439,6 +439,13 @@ describe TestCase, "version_number_spec":
         it "can pack an integer":
             self.assertEqual(types.version_number_spec(unpacking=False).normalise(self.meta, 100), 100)
 
+        it "can unpack an string":
+            self.assertEqual(types.version_number_spec(unpacking=True).normalise(self.meta, "1.1"), "1.1")
+
+        it "can unpack an incorect string":
+            with self.fuzzyAssertRaisesError(BadSpecValue, "Expected string to match", got="1"):
+                types.version_number_spec(unpacking=True).normalise(self.meta, "1")
+
 describe TestCase, "integer_spec":
     it "takes in many things":
         pkt = mock.Mock(name="pkt")

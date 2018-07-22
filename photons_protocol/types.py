@@ -518,6 +518,11 @@ class version_number_spec(sb.Spec):
         Convert to and from a string into an integer
         """
         if self.unpacking:
+            if type(val) is str:
+                if not regexes["version_number"].match(val):
+                    raise BadSpecValue("Expected string to match \d+.\d+", got=val, meta=meta)
+                return val
+
             val = sb.integer_spec().normalise(meta, val)
             major = val >> 0x10
             minor = val & 0xFF
@@ -529,7 +534,7 @@ class version_number_spec(sb.Spec):
             val = sb.string_spec().normalise(meta, val)
             m = regexes["version_number"].match(val)
             if not m:
-                raise BadSpecValue("Expected version string to match (\d+.\d+)", wanted=val)
+                raise BadSpecValue("Expected version string to match (\d+.\d+)", wanted=val, meta=meta)
 
             groups = m.groupdict()
             major = int(groups["major"])

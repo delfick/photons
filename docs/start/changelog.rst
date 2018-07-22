@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.5.11 - TBD
+    * Small fix to the version_number_spec for defining a version number on a
+      protocol message
+
 0.5.10 - 22 July 2018
     * Made version in StateHostFirmware and StateWifiFirmware a string instead
       of a float to tell the difference between "1.2" and "1.20"
