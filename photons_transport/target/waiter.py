@@ -269,6 +269,13 @@ class Waiter(object):
         self.final_future = hp.ChildOfFuture(stop_fut)
 
         def ignore(f):
+            # Make sure we don't leak tasks
+            if hasattr(self, "_writings"):
+                self._writings.cancel()
+                del self._writings
+                del self._writings_cb
+            self.futs = []
+
             # I don't care about the exception from final_future
             if not f.cancelled():
                 f.exception()
@@ -297,10 +304,13 @@ class Waiter(object):
     def __await__(self):
         # Protect against starting multiple writings tasks
         if not hasattr(self, "_writings"):
-            self._writings_cb = hp.async_as_normal(self.writings)
             self._writings = hp.async_as_background(self.writings())
 
         return (yield from self.final_future)
+
+    @hp.memoized_property
+    def _writings_cb(self):
+        return hp.async_as_normal(self.writings)
 
     async def writings(self, *args):
         """

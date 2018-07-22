@@ -868,7 +868,20 @@ class DeviceFinderLoops(object):
     async def args_for_run(self):
         """Return an afr object. Multiple calls to this will return the same object"""
         if not hasattr(self, "afr_fut"):
-            self.afr_fut = hp.async_as_background(self.target.args_for_run())
+            self.afr_fut = asyncio.Future()
+            t = hp.async_as_background(self.target.args_for_run())
+
+            def transfer(res):
+                if res.cancelled():
+                    self.afr_fut.cancel()
+
+                exc = res.exception()
+                if exc:
+                    self.afr_fut.set_exception(exc)
+
+                self.afr_fut.set_result(res.result())
+            t.add_done_callback(transfer)
+
         return await self.afr_fut
 
     async def start(self, quickstart=False):

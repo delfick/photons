@@ -443,7 +443,7 @@ class ResettableFuture(object):
 
     def remove_done_callback(self, func):
         if func in self.info["done_callbacks"]:
-            self.info["done_callbacks"] = [cb for cb in self.info["done_callbacks"] if cb is not func]
+            self.info["done_callbacks"] = [cb for cb in self.info["done_callbacks"] if cb != func]
         return self.info["fut"].remove_done_callback(func)
 
     def freeze(self):
@@ -561,7 +561,9 @@ class ChildOfFuture(object):
         self.this_fut.set_exception(exc)
 
     def add_done_callback(self, func):
-        self.done_callbacks.append(func)
+        if func not in self.done_callbacks:
+            self.done_callbacks.append(func)
+
         if not fut_has_callback(self.this_fut, self._done_cb):
             self.this_fut.add_done_callback(self._done_cb)
         if not fut_has_callback(self.original_fut, self._parent_done_cb):
@@ -569,16 +571,19 @@ class ChildOfFuture(object):
 
     def remove_done_callback(self, func):
         if func in self.done_callbacks:
-            self.done_callbacks = [cb for cb in self.done_callbacks if cb is not func]
+            self.done_callbacks = [cb for cb in self.done_callbacks if cb != func]
         if not self.done_callbacks:
             self.this_fut.remove_done_callback(self._done_cb)
             self.original_fut.remove_done_callback(self._parent_done_cb)
 
     def _done_cb(self, *args, **kwargs):
-        cbs = list(self.done_callbacks)
-        for cb in cbs:
-            cb(*args, **kwargs)
-            self.done_callbacks = [c for c in self.done_callbacks if c != cb]
+        try:
+            cbs = list(self.done_callbacks)
+            for cb in cbs:
+                cb(*args, **kwargs)
+                self.remove_done_callback(cb)
+        finally:
+            self.original_fut.remove_done_callback(self._parent_done_cb)
 
     def _parent_done_cb(self, *args, **kwargs):
         if not self.this_fut.done() and not self.this_fut.cancelled():
@@ -593,9 +598,13 @@ class ChildOfFuture(object):
                 self.this_fut.cancel()
 
             if self.this_fut.done():
+                if hasattr(self, "waiter"):
+                    del self.waiter
                 return (yield from self.this_fut)
 
             if self.original_fut.done():
+                if hasattr(self, "waiter"):
+                    del self.waiter
                 return (yield from self.original_fut)
 
             if hasattr(self, "waiter"):

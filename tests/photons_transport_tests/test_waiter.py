@@ -44,6 +44,18 @@ describe AsyncTestCase, "Waiter":
         async after_each:
             self.stop_fut.cancel()
 
+        async it "can delete _writings_cb even if it hasn't been created yet":
+            del self.waiter._writings_cb
+
+        async it "can delete _writings_cb":
+            assert not hasattr(self.waiter, "__writings_cb")
+            cb = self.waiter._writings_cb
+            assert cb is not None
+            self.assertEqual(getattr(self.waiter, "__writings_cb", None), cb)
+            self.assertEqual(self.waiter._writings_cb, cb)
+            del self.waiter._writings_cb
+            assert not hasattr(self.waiter, "__writings_cb")
+
         async it "is cancelled if the stop fut gets a result":
             self.stop_fut.set_result(None)
             with self.fuzzyAssertRaisesError(asyncio.CancelledError):
@@ -232,9 +244,7 @@ describe AsyncTestCase, "Waiter":
                     assertSameNumber(self.waiter.timeouts, progression)
 
         describe "await":
-            async it "starts a writings and creates a writings_cb":
-                assert not hasattr(self.waiter, "_writings_cb")
-
+            async it "starts a writings":
                 called = []
                 def w():
                     called.append(1)

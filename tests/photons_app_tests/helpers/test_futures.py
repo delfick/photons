@@ -56,6 +56,40 @@ describe AsyncTestCase, "ResettableFuture":
             await asyncio.sleep(0)
             self.assertEqual(called, [1, 2, 1, 2])
 
+        async it "doesn't pass on removed callbacks to new fut":
+            called = []
+
+            def done1(fut):
+                called.append(1)
+
+            def done2(fut):
+                called.append(2)
+
+            class Thing:
+                def done3(s, fut):
+                    called.append(3)
+            thing = Thing()
+
+            fut = hp.ResettableFuture()
+            fut.add_done_callback(done1)
+            fut.add_done_callback(done2)
+            fut.add_done_callback(thing.done3)
+
+            self.assertEqual(called, [])
+            fut.set_result(True)
+            # Allow the callbacks to be called
+            await asyncio.sleep(0)
+            self.assertEqual(called, [1, 2, 3])
+
+            fut.remove_done_callback(done1)
+            fut.remove_done_callback(thing.done3)
+
+            fut.reset()
+            fut.set_result(True)
+            # Allow the callbacks to be called
+            await asyncio.sleep(0)
+            self.assertEqual(called, [1, 2, 3, 2])
+
         async it "respects remove_done_callback":
             called = []
 
@@ -587,6 +621,19 @@ describe AsyncTestCase, "ChildOfFuture":
             self.assertEqual(self.cof.done_callbacks, [cb2])
 
             self.cof.remove_done_callback(cb2)
+            self.assertEqual(self.cof.done_callbacks, [])
+
+            self.cof.add_done_callback(self.cof._parent_done_cb)
+            self.assertEqual(self.cof.done_callbacks, [self.cof._parent_done_cb])
+
+            other = lambda: 1
+            self.cof.add_done_callback(other)
+            self.assertEqual(self.cof.done_callbacks, [self.cof._parent_done_cb, other])
+
+            self.cof.remove_done_callback(self.cof._parent_done_cb)
+            self.assertEqual(self.cof.done_callbacks, [other])
+
+            self.cof.remove_done_callback(other)
             self.assertEqual(self.cof.done_callbacks, [])
 
         async it "removes callback from the futures if no more callbacks":
