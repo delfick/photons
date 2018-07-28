@@ -6,6 +6,8 @@ ChangeLog
 0.5.11 - TBD
     * Small fix to the version_number_spec for defining a version number on a
       protocol message
+    * Made uvloop optional. To turn it off put ``photons_app: {use_uvloop: false}``
+      in your configuration.
 
 0.5.10 - 22 July 2018
     * Made version in StateHostFirmware and StateWifiFirmware a string instead

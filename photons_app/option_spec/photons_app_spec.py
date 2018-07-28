@@ -67,10 +67,13 @@ class PhotonsApp(dictobj.Spec):
     default_activate_all_modules = dictobj.Field(sb.boolean, default=False
         , help="The collector looks at this to determine if we should default to activating all photons modules"
         )
+    use_uvloop = dictobj.Field(sb.boolean, default=True
+        , help="Use uvloop if it is available"
+        )
 
     @memoized_property
     def uvloop(self):
-        if uvloop:
+        if uvloop and self.use_uvloop:
             asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = asyncio.get_event_loop()
         if self.debug:
