@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.5.11 - TBD
+0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a
       protocol message
     * Made uvloop optional. To turn it off put ``photons_app: {use_uvloop: false}``
