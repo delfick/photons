@@ -322,7 +322,15 @@ def find_and_apply_result(final_fut, available_futs):
     if final_fut.cancelled():
         for f in available_futs:
             f.cancel()
-        return True
+        return False
+
+    if final_fut.done():
+        current_exc = final_fut.exception()
+        if current_exc:
+            for f in available_futs:
+                if not f.done():
+                    f.set_exception(current_exc)
+            return False
 
     errors, results = noncancelled_results_from_futs(available_futs)
     if errors:
@@ -331,7 +339,8 @@ def find_and_apply_result(final_fut, available_futs):
                 f.set_exception(errors)
         if not final_fut.done():
             final_fut.set_exception(errors)
-        return True
+            return True
+        return False
 
     if results:
         res = results[0]
@@ -340,11 +349,15 @@ def find_and_apply_result(final_fut, available_futs):
                 f.set_result(res)
         if not final_fut.done():
             final_fut.set_result(res)
-        return True
+            return True
+        return False
 
     for f in available_futs:
         if f.cancelled():
             final_fut.cancel()
+            return True
+
+    return False
 
 class ResettableFuture(object):
     """

@@ -828,7 +828,7 @@ describe AsyncTestCase, "async_as_background":
         assert isinstance(t, asyncio.Task)
         self.assertEqual(await t, "6.5.9")
 
-describe AsyncTestCase, "reporter":
+describe AsyncTestCase, "silent_reporter":
     async it "does nothing if the future was cancelled":
         fut = asyncio.Future()
         fut.cancel()
@@ -948,7 +948,7 @@ describe AsyncTestCase, "find_and_apply_result":
 
     async it "cancels futures if final_future is cancelled":
         self.final_fut.cancel()
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
 
         assert self.fut1.cancelled()
         assert self.fut2.cancelled()
@@ -956,6 +956,29 @@ describe AsyncTestCase, "find_and_apply_result":
         assert self.fut4.cancelled()
 
         assert self.final_fut.cancelled()
+
+    async it "sets exceptions on futures if final_future has an exception":
+        error = ValueError("NOPE")
+        self.final_fut.set_exception(error)
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+
+        for f in self.available_futs:
+            self.assertIs(f.exception(), error)
+
+    async it "ignores futures already done when final_future has an exception":
+        err1 = Exception("LOLZ")
+        self.available_futs[0].set_exception(err1)
+        self.available_futs[1].cancel()
+        self.available_futs[2].set_result([1, 2])
+
+        err2 = ValueError("NOPE")
+        self.final_fut.set_exception(err2)
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+
+        self.assertIs(self.available_futs[0].exception(), err1)
+        assert self.available_futs[1].cancelled()
+        self.assertEqual(self.available_futs[2].result(), [1, 2])
+        self.assertIs(self.available_futs[3].exception(), err2)
 
     async it "spreads error if any is found":
         error1 = Exception("wat")
@@ -1020,10 +1043,16 @@ describe AsyncTestCase, "find_and_apply_result":
         self.fut1.set_result(result)
         self.final_fut.cancel()
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
         assert self.final_fut.cancelled()
 
     async it "cancels final_fut if any of our futs are cancelled":
         self.fut1.cancel()
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), None)
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
         assert self.final_fut.cancelled()
+
+    async it "does nothing if none of the futures are done":
+        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+        for f in self.available_futs:
+            assert not f.done()
+        assert not self.final_fut.done()
