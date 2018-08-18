@@ -13,8 +13,8 @@ for defining ``by_type`` on the class.
 .. autoclass:: photons_protocol.messages.MessagesMixin
     :members:
 """
+from photons_protocol.frame import LIFXPacket, MultiOptions
 from photons_protocol.errors import BadConversion
-from photons_protocol.frame import LIFXPacket
 from photons_protocol.types import Type
 
 from input_algorithms.spec_base import NotSpecified
@@ -31,6 +31,7 @@ log = logging.getLogger("photons_protocol.messages")
 
 T = Type
 msg = LIFXPacket.message
+MultiOptions = MultiOptions
 
 class MessagesMixin:
     """

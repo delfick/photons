@@ -5,6 +5,7 @@ from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
 from photons_protocol import frame
 
+from photons_app.errors import ProgrammerError
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -255,3 +256,36 @@ describe TestCase, "LIFXPacket":
             self.assertEqual(msg2.parent_packet, False)
             self.assertEqual(msg2.Meta.parent, frame.LIFXPacket)
             self.assertEqual(using._lifx_packet_message, True)
+
+        it "sets multi on Meta":
+            msg = frame.LIFXPacket.message(52)("One")
+            self.assertIs(msg.Meta.multi, None)
+            self.assertIs(msg.Payload.Meta.multi, None)
+
+            multi = mock.Mock(name="multi")
+            msg = frame.LIFXPacket.message(52, multi=multi)("One")
+            self.assertIs(msg.Meta.multi, multi)
+            self.assertIs(msg.Payload.Meta.multi, multi)
+
+describe TestCase, "MultiOptions":
+    it "complains if we don't give it two functions":
+        for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
+            with self.fuzzyAssertRaisesError(ProgrammerError, "Multi Options expects two callables"):
+                frame.MultiOptions(a, b)
+
+    it "sets the two callables":
+        determine_res_packet = mock.Mock(name="determine_res_packet")
+        adjust_expected_number = mock.Mock(name="adjust_expected_number")
+        options = frame.MultiOptions(determine_res_packet, adjust_expected_number)
+
+        self.assertIs(options.determine_res_packet, determine_res_packet)
+        self.assertIs(options.adjust_expected_number, adjust_expected_number)
+
+    it "has a Max helper":
+        num = frame.MultiOptions.Max(5)
+
+        self.assertEqual(num(1), -1)
+        self.assertEqual(num(4), -1)
+
+        self.assertEqual(num(5), 5)
+        self.assertEqual(num(6), 6)

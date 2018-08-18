@@ -126,6 +126,12 @@ describe TestCase, "PacketSpecMetaKls":
 
             self.assertEqual(repr(Thing.Meta), "<type Thing.Meta>")
 
+        it "has multi":
+            class Thing(metaclass=PacketSpecMetaKls):
+                fields = []
+
+            self.assertIs(Thing.Meta.multi, None)
+
         it "has groups":
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]

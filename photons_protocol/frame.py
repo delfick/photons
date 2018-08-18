@@ -16,6 +16,8 @@ payload
 from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
 
+from photons_app.errors import ProgrammerError
+
 from input_algorithms import spec_base as sb
 import binascii
 
@@ -45,6 +47,28 @@ class ProtocolHeader(dictobj.PacketSpec):
         , ('pkt_type', T.Uint16.default(lambda pkt: pkt.Payload.message_type))
         , ('reserved5', T.Reserved(16))
         ]
+
+class MultiOptions:
+    def __init__(self, determine_res_packet, adjust_expected_number):
+        if not callable(determine_res_packet) or not callable(adjust_expected_number):
+            raise ProgrammerError("Multi Options expects two callables")
+
+        self.determine_res_packet = determine_res_packet
+        self.adjust_expected_number = adjust_expected_number
+
+    class Max:
+        """
+        A callable that returns -1 if num_results is less than our value
+
+        or num_results if it is larger than our value.
+        """
+        def __init__(self, value):
+            self.value = value
+
+        def __call__(self, num_results):
+            if num_results >= self.value:
+                return num_results
+            return -1
 
 class LIFXPacket(dictobj.PacketSpec):
     """
@@ -80,7 +104,7 @@ class LIFXPacket(dictobj.PacketSpec):
         return self.Payload.represents_ack
 
     @classmethod
-    def message(kls, message_type, *payload_fields):
+    def message(kls, message_type, *payload_fields, multi=None):
         """
         This is to be used in conjunction with ``photons_protocol.messages.Messages``
 
@@ -114,6 +138,42 @@ class LIFXPacket(dictobj.PacketSpec):
 
         Here, ``MyOtherMessage`` will use the same fields as ``MyMessage`` but
         will have a ``pkt_type`` of ``14`` instead of ``13``.
+
+        And you can specify multiple replies options with the multi keyword:
+
+        .. code-block:: python
+
+            from photons_protocol.messages import Messages, MultiOptions
+
+            class MyMessages(Messages):
+                MyMessage = LIFXPacket.message(13
+                    , ("field_one", field_one_type)
+                    , ("field_two", field_two_type)
+
+                    , multi = MultiOptions(
+                          # expect MymessageReply messages
+                          lambda req: MyMessages.MyMessageReply
+
+                          # Use total on the reply packet to determine how many packets to receive
+                        , lambda res: res.total
+                        )
+                    )
+
+                MyMessage = LIFXPacket.message(14
+                    , ("total", total_type)
+                    )
+
+        If you expect multiple replies but don't know how many to expect you can say:
+
+        .. code-block:: python
+
+            class MyMessages(Messages):
+                MyMessage = LIFXPacket.message(13
+                    , ("field_one", field_one_type)
+                    , ("field_two", field_two_type)
+
+                    , multi = -1
+                    )
         """
         def maker(name):
             Payload = type(
@@ -125,8 +185,12 @@ class LIFXPacket(dictobj.PacketSpec):
                   }
                 )
             Payload.Meta.protocol = 1024
+            Payload.Meta.multi = multi
+
             res = type(name, (LIFXPacket, ), {"Payload": Payload, "parent_packet": False})
             res.Meta.parent = LIFXPacket
+            res.Meta.multi = multi
+
             return res
         maker._lifx_packet_message = True
         maker.using = lambda mt, **kwargs: kls.message(mt, *payload_fields, **kwargs)

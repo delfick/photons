@@ -526,7 +526,8 @@ class PacketSpecMetaKls(FieldSpecMetakls):
                 return "<type {0}.Meta>".format(classname)
 
         Meta = type.__new__(MetaRepr, "Meta", ()
-            , { "groups": groups
+            , { "multi": None
+              , "groups": groups
               , "all_names": all_names
               , "field_types": field_types
               , "format_types": format_types
