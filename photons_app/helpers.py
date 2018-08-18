@@ -272,6 +272,30 @@ def reporter(res):
             res.result()
             return True
 
+def transfer_result(fut, errors_only=False):
+    """
+    Return a done_callback that transfers the result/errors/cancellation to fut
+
+    If errors_only is True then it will not transfer a result to fut
+    """
+    def transfer(res):
+        if res.cancelled():
+            fut.cancel()
+            return
+
+        exc = res.exception()
+
+        if fut.done():
+            return
+
+        if exc is not None:
+            fut.set_exception(exc)
+            return
+
+        if not errors_only:
+            fut.set_result(res.result())
+    return transfer
+
 def noncancelled_results_from_futs(futs):
     """
     Get back (exception, results) from a list of futures

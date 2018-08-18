@@ -860,6 +860,73 @@ describe AsyncTestCase, "reporter":
         fut.set_result(mock.Mock(name="result"))
         self.assertEqual(hp.reporter(fut), True)
 
+describe AsyncTestCase, "transfer_result":
+    async it "works as a done_callback":
+        fut = asyncio.Future()
+
+        async def doit():
+            return [1, 2]
+
+        t = self.loop.create_task(doit())
+        t.add_done_callback(hp.transfer_result(fut))
+        await self.wait_for(t)
+
+        self.assertEqual(fut.result(), [1, 2])
+
+    describe "errors_only":
+        async it "cancels fut if res is cancelled":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+            res.cancel()
+
+            hp.transfer_result(fut, errors_only=True)(res)
+            assert res.cancelled()
+
+        async it "sets exception on fut if res has an exception":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+
+            error = ValueError("NOPE")
+            res.set_exception(error)
+
+            hp.transfer_result(fut, errors_only=True)(res)
+            self.assertEqual(fut.exception(), error)
+
+        async it "does not transfer result":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+            res.set_result([1, 2])
+
+            hp.transfer_result(fut, errors_only=True)(res)
+            assert not fut.done()
+
+    describe "not errors_only":
+        async it "cancels fut if res is cancelled":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+            res.cancel()
+
+            hp.transfer_result(fut, errors_only=False)(res)
+            assert res.cancelled()
+
+        async it "sets exception on fut if res has an exception":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+
+            error = ValueError("NOPE")
+            res.set_exception(error)
+
+            hp.transfer_result(fut, errors_only=False)(res)
+            self.assertEqual(fut.exception(), error)
+
+        async it "transfers result":
+            fut = asyncio.Future()
+            res = asyncio.Future()
+            res.set_result([1, 2])
+
+            hp.transfer_result(fut, errors_only=False)(res)
+            self.assertEqual(fut.result(), [1, 2])
+
 describe AsyncTestCase, "noncancelled_results_from_futs":
     async it "returns results from done futures that aren't cancelled":
         fut1 = asyncio.Future()
