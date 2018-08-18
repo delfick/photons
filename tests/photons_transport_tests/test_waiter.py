@@ -62,6 +62,16 @@ describe AsyncTestCase, "Waiter":
                 await self.waiter
 
         describe "without so many mocks":
+            async it "when ensure_conn fails, the error is propagated":
+                error = ValueError("NOPE")
+                self.ensure_conn.side_effect = error
+
+                async def doit():
+                    await self.waiter
+
+                with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
+                    await self.wait_for(doit())
+
             async it "one writings":
                 ack_fut = asyncio.Future()
                 res_fut = asyncio.Future()

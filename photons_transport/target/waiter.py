@@ -341,7 +341,12 @@ class Waiter(object):
             if any(time.time() - fut.partial() < 5 for fut in self.futs):
                 log.info("Got a partial result, waiting till next write")
             else:
-                await self.writer.ensure_conn()
+                async def ensure():
+                    await self.writer.ensure_conn()
+                t = asyncio.get_event_loop().create_task(ensure())
+                t.add_done_callback(hp.transfer_result(self.final_future, errors_only=True))
+                await t
+
                 self.futs.append(self.do_write())
             self.next_time = self.determine_next_time()
 
