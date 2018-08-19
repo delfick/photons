@@ -244,7 +244,7 @@ class TileMessages(Messages):
     GetTileState64 = msg(707, *get_tile_state
         , multi = MultiOptions(
               lambda req: TileMessages.StateTileState64
-            , lambda req, res: MultiOptions.Max(req.length - req.tile_index)
+            , lambda req, res: MultiOptions.Max(req.length)
             )
         )
 
