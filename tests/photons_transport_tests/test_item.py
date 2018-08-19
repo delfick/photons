@@ -30,7 +30,7 @@ describe AsyncTestCase, "TransportItem":
             self.item = TransportItem([self.part1, self.part2])
 
         describe "simplify_parts":
-            async it "returns packets as they are if they are dynamic, else we simplify them":
+            async it "returns originals with packets as they are if they are dynamic, else we simplify them":
                 part1_dynamic = mock.Mock(name="part1_dynamic", is_dynamic=True, spec=["is_dynamic"])
 
                 part2_static = mock.Mock(name="part2_static", is_dynamic=False)
@@ -44,10 +44,20 @@ describe AsyncTestCase, "TransportItem":
                 part4_dynamic = mock.Mock(name="part4_dynamic", is_dynamic=True, spec=["is_dynamic"])
 
                 simplified = TransportItem([part1_dynamic, part2_static, part3_static, part4_dynamic]).simplify_parts()
-                self.assertEqual(simplified, [part1_dynamic, part2_simple, part3_simple, part4_dynamic])
+                self.assertEqual(simplified
+                    , [ (part1_dynamic, part1_dynamic)
+                      , (part2_static, part2_simple)
+                      , (part3_static, part3_simple)
+                      , (part4_dynamic, part4_dynamic)
+                      ]
+                    )
 
         describe "making packets":
             async it "duplicates parts for each serial and only clones those already with targets":
+                original1 = mock.Mock(name="original1")
+                original2 = mock.Mock(name="original2")
+                original3 = mock.Mock(name="original3")
+
                 s1 = mock.Mock(name='s1')
                 s2 = mock.Mock(name='s2')
                 serials = [s1, s2]
@@ -79,7 +89,7 @@ describe AsyncTestCase, "TransportItem":
                 source = mock.Mock(name="source")
                 afr.source.return_value = source
 
-                seqs = {s1:0, s2:0, target:0}
+                seqs = {s1: 0, s2: 0, target: 0}
 
                 def seq_maker(t):
                     seqs[t] += 1
@@ -87,14 +97,16 @@ describe AsyncTestCase, "TransportItem":
                 afr.seq.side_effect = seq_maker
 
                 item = TransportItem([part1, part2, part3])
-                simplify_parts = mock.Mock(name="simplify_parts", return_value=[part1, part2, part3])
+                simplify_parts = mock.Mock(name="simplify_parts"
+                    , return_value= [(original1, part1), (original2, part2), (original3, part3)]
+                    )
 
                 broadcast_address = False
 
                 with mock.patch.object(item, "simplify_parts", simplify_parts):
                     packets = item.make_packets(afr, serials, broadcast_address)
 
-                self.assertEqual(packets, [c1, c2, c3, c4, c5])
+                self.assertEqual(packets, [(original1, c1), (original1, c2), (original2, c3), (original2, c4), (original3, c5)])
 
                 c1.update.assert_called_once_with(dict(source=source, sequence=1, target=s1))
                 c2.update.assert_called_once_with(dict(source=source, sequence=1, target=s2))
@@ -108,14 +120,14 @@ describe AsyncTestCase, "TransportItem":
             async it "doesn't search and returns found if we have found and it has all the targets":
                 target1 = binascii.unhexlify('d073d5000000')
                 target2 = binascii.unhexlify('d073d5000001')
-                p1 = mock.Mock(name="p1", target=target1)
-                p2 = mock.Mock(name="p2", target=target2)
+                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
+                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
 
                 afr = mock.Mock(name="afr", spec=[])
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = mock.Mock(name="find_timeout")
                 found = {target1: True, target2: True}
-                looked, f = await self.item.search(afr, found, [p1, p2], broadcast_address, find_timeout)
+                looked, f = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, False)
                 self.assertIs(f, found)
@@ -123,8 +135,8 @@ describe AsyncTestCase, "TransportItem":
             async it "keeps searching till we have all the targets":
                 target1 = binascii.unhexlify('d073d5000000')
                 target2 = binascii.unhexlify('d073d5000001')
-                p1 = mock.Mock(name="p1", target=target1)
-                p2 = mock.Mock(name="p2", target=target2)
+                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
+                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
 
                 afr = mock.Mock(name="afr")
                 found = {}
@@ -141,7 +153,7 @@ describe AsyncTestCase, "TransportItem":
 
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = 1
-                looked, f = await self.item.search(afr, None, [p1, p2], broadcast_address, find_timeout)
+                looked, f = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, True)
                 self.assertEqual(f, {target1: True, target2: True})
@@ -155,8 +167,8 @@ describe AsyncTestCase, "TransportItem":
             async it "keeps searching till we have all the targets even if we start with targets":
                 target1 = binascii.unhexlify('d073d5000000')
                 target2 = binascii.unhexlify('d073d5000001')
-                p1 = mock.Mock(name="p1", target=target1)
-                p2 = mock.Mock(name="p2", target=target2)
+                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
+                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
 
                 afr = mock.Mock(name="afr")
                 found = {target1: True}
@@ -168,7 +180,7 @@ describe AsyncTestCase, "TransportItem":
 
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = 1
-                looked, f = await self.item.search(afr, found, [p1, p2], broadcast_address, find_timeout)
+                looked, f = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, True)
                 self.assertEqual(f, {target1: True, target2: True})
@@ -183,12 +195,17 @@ describe AsyncTestCase, "TransportItem":
                 self.serial1 = "d073d5000000"
                 self.serial2 = "d073d5000001"
 
-                self.p1 = mock.Mock(name="packet1", serial=self.serial1)
-                self.p2 = mock.Mock(name="packet2", serial=self.serial1)
-                self.p3 = mock.Mock(name="packet3", serial=self.serial2)
-                self.p4 = mock.Mock(name="packet4", serial=self.serial2)
+                self.o1, self.p1 = mock.Mock(name="original1"), mock.Mock(name="packet1", serial=self.serial1)
+                self.o2, self.p2 = mock.Mock(name="original2"), mock.Mock(name="packet2", serial=self.serial1)
+                self.o3, self.p3 = mock.Mock(name="original3"), mock.Mock(name="packet3", serial=self.serial2)
+                self.o4, self.p4 = mock.Mock(name="original4"), mock.Mock(name="packet4", serial=self.serial2)
 
-                self.packets = [self.p1, self.p2, self.p3, self.p4]
+                self.packets = [
+                      (self.o1, self.p1)
+                    , (self.o2, self.p2)
+                    , (self.o3, self.p3)
+                    , (self.o4, self.p4)
+                    ]
 
                 self.make_waiter = mock.Mock(name="make_waiter")
                 self.make_writer = asynctest.mock.CoroutineMock(name="make_writer")
@@ -207,7 +224,8 @@ describe AsyncTestCase, "TransportItem":
                 w3 = asyncio.Future()
                 w4 = asyncio.Future()
 
-                async def make_writer(p):
+                async def make_writer(o, p):
+                    self.assertIs({self.p1: self.o1, self.p2: self.o2, self.p3: self.o3, self.p4: self.o4}[p], o)
                     return {self.p1: w1, self.p3: w3, self.p4: w4}[p]
                 self.make_writer.side_effect = make_writer
 
@@ -251,7 +269,8 @@ describe AsyncTestCase, "TransportItem":
                 w3 = asyncio.Future()
                 w4 = asyncio.Future()
 
-                async def make_writer(p):
+                async def make_writer(o, p):
+                    self.assertIs({self.p1: self.o1, self.p2: self.o2, self.p3: self.o3, self.p4: self.o4}[p], o)
                     return {self.p1: w1, self.p2: w2, self.p3: w3, self.p4: w4}[p]
                 self.make_writer.side_effect = make_writer
 

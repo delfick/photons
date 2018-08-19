@@ -45,8 +45,8 @@ class TransportItem(object):
             self.parts = [self.parts]
 
     async def run_with(self, serials, args_for_run
-        , broadcast=False, multiple_replies=False, first_wait=0.05
-        , accept_found=False, found=None, error_catcher=None, **kwargs
+        , broadcast=False, accept_found=False, found=None, error_catcher=None
+        , **kwargs
         ):
         """
         Entry point to this item, the idea is you create a `script` with the
@@ -57,14 +57,6 @@ class TransportItem(object):
         broadcast
             Whether we are broadcasting these messages or just unicasting directly
             to each device
-
-        multiple_replies
-            Whether we expect multiple replies from a single messsage.
-
-            This must be True if we are broadcasting
-
-        first_wait
-            Time, in seconds, we wait for our first reply before retrying
 
         find_timeout
             timeout for finding devices
@@ -103,9 +95,6 @@ class TransportItem(object):
         * Then we gather results and errors
         """
         afr = args_for_run
-
-        if broadcast:
-            multiple_replies = True
 
         do_raise = error_catcher is None
         error_catcher = [] if do_raise else error_catcher
@@ -154,6 +143,8 @@ class TransportItem(object):
 
         # Create our helpers that channel particular arguments into the correct places
 
+        retry_options = afr.make_retry_options()
+
         def check_packet(packet):
             if packet.target is None or not looked or found and packet.target[:6] in found:
                 return
@@ -161,11 +152,11 @@ class TransportItem(object):
                 return FailedToFindDevice(serial=packet.serial)
 
         def make_waiter(writer):
-            return afr.make_waiter(writer, first_wait=first_wait)
+            return afr.make_waiter(writer, retry_options=retry_options)
 
-        async def make_writer(packet):
-            return await afr.make_writer(packet
-                , broadcast=broadcast, multiple_replies=multiple_replies
+        async def make_writer(original, packet):
+            return await afr.make_writer(original, packet
+                , broadcast=broadcast, retry_options=retry_options
                 , addr=addr, found=found, **kwargs
                 )
 
@@ -194,7 +185,7 @@ class TransportItem(object):
         Unless a packet is dynamically created (has a callable field)
         in which case, we just return packet as is
         """
-        return [p if p.is_dynamic else p.simplify() for p in self.parts]
+        return [(p, p) if p.is_dynamic else (p, p.simplify()) for p in self.parts]
 
     def make_packets(self, afr, serials, broadcast):
         """
@@ -215,7 +206,7 @@ class TransportItem(object):
             serials = [serials]
 
         packets = []
-        for p in simplified_parts:
+        for original, p in simplified_parts:
             if p.target is sb.NotSpecified:
                 for serial in serials:
                     clone = p.clone()
@@ -226,11 +217,11 @@ class TransportItem(object):
                           , target=serial
                           )
                         )
-                    packets.append(clone)
+                    packets.append((original, clone))
             else:
                 clone = p.clone()
                 clone.update(dict(source=source_maker(), sequence=sequence_maker(p.target)))
-                packets.append(clone)
+                packets.append((original, clone))
 
         return packets
 
@@ -238,7 +229,7 @@ class TransportItem(object):
         """Search for the devices we want to send to"""
         looked = False
         start = time.time()
-        targets = set(p.target[:6] for p in packets)
+        targets = set(p.target[:6] for _, p in packets)
         while not found or any(target not in found for target in targets):
             looked = True
             found = await afr.find_devices(broadcast_address
@@ -253,13 +244,13 @@ class TransportItem(object):
         writers = []
         writing_packets = []
 
-        for packet in packets:
+        for (original, packet) in packets:
             error = check_packet(packet)
             if error:
                 add_error(error_catcher, error)
             else:
                 try:
-                    writer = await make_writer(packet)
+                    writer = await make_writer(original, packet)
                 except Exception as error:
                     add_error(error_catcher, error)
                 else:
@@ -293,7 +284,7 @@ class TransportItem(object):
             if full_number and futs_done and gatherers_done:
                 hp.async_as_background(queue.put(Done))
 
-        for writer, packet in zip(writers, packets):
+        for writer, (_, packet) in zip(writers, packets):
             # We separate the waiter from waiting on the waiter
             # so we can cancel the waiter instead of the thing waiting on it
             # To avoid AssertionError: _step(): already done logs
