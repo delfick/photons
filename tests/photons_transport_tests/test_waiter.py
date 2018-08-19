@@ -1,9 +1,12 @@
 # coding: spec
 
+from photons_transport.target.retry_options import RetryOptions
 from photons_transport.target.waiter import Waiter
+from photons_transport.target.result import Result
 
-from photons_app.test_helpers import AsyncTestCase
+from photons_app.test_helpers import AsyncTestCase, assertFutCallbacks
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 import asynctest
@@ -15,28 +18,25 @@ describe AsyncTestCase, "Waiter":
     async it "takes in several things":
         stop_fut = asyncio.Future()
         writer = mock.Mock(name="writer")
-        first_resend = mock.Mock(name="first_resend")
-        first_wait = mock.Mock(name="first_wait")
+        retry_options = mock.Mock(name="retry_options")
 
-        waiter = Waiter(stop_fut, writer
-            , first_resend=first_resend, first_wait=first_wait
-            )
+        waiter = Waiter(stop_fut, writer, retry_options)
 
         self.assertIs(waiter.writer, writer)
-        self.assertEqual(waiter.timeouts, [first_wait, first_resend])
+        self.assertIs(waiter.retry_options, retry_options)
 
         self.assertIs(waiter.final_future.done(), False)
         stop_fut.cancel()
         self.assertIs(waiter.final_future.cancelled(), True)
 
-        self.assertEqual(waiter.futs, [])
-        self.assertEqual(waiter.next_time, None)
+        self.assertEqual(waiter.results, [])
 
     describe "Usage":
         async before_each:
             self.stop_fut = asyncio.Future()
             self.writer = asynctest.mock.CoroutineMock(name="writer")
-            self.waiter = Waiter(self.stop_fut, self.writer)
+            self.retry_options = RetryOptions()
+            self.waiter = Waiter(self.stop_fut, self.writer, self.retry_options)
 
             self.ensure_conn = asynctest.mock.CoroutineMock(name="ensure_conn")
             self.writer.ensure_conn = self.ensure_conn
@@ -73,116 +73,189 @@ describe AsyncTestCase, "Waiter":
                     await self.wait_for(doit())
 
             async it "one writings":
-                ack_fut = asyncio.Future()
-                res_fut = asyncio.Future()
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
 
-                def writer():
+                result = Result(request, False, self.retry_options)
+
+                async def writer():
                     self.ensure_conn.assert_called_once_with()
-                    return ack_fut, res_fut
+                    return result
                 self.writer.side_effect = writer
-
-                dnt = mock.Mock(name="determine_next_time", return_value=time.time() + 2)
 
                 async def doit():
                     start = time.time()
-                    with mock.patch.object(self.waiter, "determine_next_time", dnt):
+                    with mock.patch.object(RetryOptions, "next_time", 2):
                         res = await self.waiter
                     return res, time.time() - start
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.01)
-                self.writer.assert_called_once_with()
-
-                res = mock.Mock(name="res")
-                ack_fut.set_result(True)
-                res_fut.set_result(res)
+                results = mock.Mock(name="results")
+                result.set_result(results)
 
                 r, took = await self.wait_for(t)
                 self.assertLess(took, 0.1)
-                self.assertIs(r, res)
+                self.assertIs(r, results)
                 self.writer.assert_called_once_with()
 
+            async it "propagates error from failed writer":
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
+
+                result = Result(request, False, self.retry_options)
+
+                async def writer():
+                    raise ValueError("Nope")
+                self.writer.side_effect = writer
+
+                async def doit():
+                    with self.fuzzyAssertRaisesError(ValueError, "Nope"):
+                        await self.waiter
+                await self.wait_for(doit())
+
+            async it "propagates cancellation from cancelled writer":
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
+
+                result = Result(request, False, self.retry_options)
+
+                async def writer():
+                    fut = asyncio.Future()
+                    fut.cancel()
+                    await fut
+                self.writer.side_effect = writer
+
+                async def doit():
+                    with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                        await self.waiter
+                await self.wait_for(doit())
+
             async it "two writings":
-                ack_fut1 = asyncio.Future()
-                res_fut1 = asyncio.Future()
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
 
-                ack_fut2 = asyncio.Future()
-                res_fut2 = asyncio.Future()
+                result1 = Result(request, False, self.retry_options)
+                result2 = Result(request, False, self.retry_options)
 
-                futs = [(ack_fut1, res_fut1), (ack_fut2, res_fut2)]
+                futs = [result1, result2]
 
-                def writer():
+                async def writer():
                     self.assertEqual(len(self.ensure_conn.mock_calls), 2 - (len(futs) - 1))
                     return futs.pop(0)
                 self.writer.side_effect = writer
 
-                times = [time.time() + 0.05, time.time() + 2]
+                times = [0.05, 2]
 
-                def determine_next_time():
+                def next_time(s):
                     return times.pop(0)
-                dnt = mock.Mock(name="determine_next_time", side_effect=determine_next_time)
 
                 async def doit():
                     start = time.time()
-                    with mock.patch.object(self.waiter, "determine_next_time", dnt):
+                    with mock.patch.object(RetryOptions, "next_time", property(next_time)):
                         res = await self.waiter
                     return res, time.time() - start
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.005)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                await asyncio.sleep(0.06)
+                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+
+                res = mock.Mock(name="res")
+                result2.set_result(res)
+
+                r, took = await self.wait_for(t)
+                self.assertLess(took, 0.1)
+                self.assertIs(r, res)
+                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+
+                self.assertEqual(await self.wait_for(result1), res)
+
+            async it "one writings with partial write":
+                request = mock.Mock(name="request", ack_required=True, res_required=True)
+                request.Meta.multi = None
+
+                result = Result(request, False, self.retry_options)
+                futs = [result]
+
+                async def writer():
+                    self.ensure_conn.assert_called_once_with()
+                    return futs.pop(0)
+                self.writer.side_effect = writer
+
+                times = [0.05, 2]
+
+                def next_time(s):
+                    return times.pop(0)
+
+                async def doit():
+                    start = time.time()
+                    with mock.patch.object(RetryOptions, "next_time", property(next_time)):
+                        res = await self.waiter
+                    return res, time.time() - start
+
+                t = self.loop.create_task(doit())
+                await asyncio.sleep(0.005)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                result.add_ack()
+                await asyncio.sleep(0.08)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+
+                res = mock.Mock(name="res")
+                result.set_result(res)
+
+                r, took = await self.wait_for(t)
+                self.assertLess(took, 0.1)
+                self.assertIs(r, res)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+
+            async it "two writings with partial write for first writing":
+                request = mock.Mock(name="request", ack_required=True, res_required=True)
+                request.Meta.multi = None
+
+                self.retry_options.gap_between_ack_and_res = 0.06
+                self.retry_options.next_check_after_wait_for_result = 0.04
+
+                result1 = Result(request, False, self.retry_options)
+                result2 = Result(request, False, self.retry_options)
+
+                futs = [result1, result2]
+
+                async def writer():
+                    self.assertEqual(len(self.ensure_conn.mock_calls), 2 - (len(futs) - 1))
+                    return futs.pop(0)
+                self.writer.side_effect = writer
+
+                times = [0.05, 0.05]
+
+                def next_time(s):
+                    return times.pop(0)
+
+                async def doit():
+                    start = time.time()
+                    with mock.patch.object(RetryOptions, "next_time", property(next_time)):
+                        res = await self.waiter
+                    return res, time.time() - start
+
+                t = self.loop.create_task(doit())
+                await asyncio.sleep(0.005)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                result1.add_ack()
+                await asyncio.sleep(0.08)
                 self.assertEqual(self.writer.mock_calls, [mock.call()])
                 await asyncio.sleep(0.05)
                 self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
 
                 res = mock.Mock(name="res")
-                ack_fut2.set_result(True)
-                res_fut2.set_result(res)
+                result2.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
+                self.assertLess(took, 0.15)
                 self.assertIs(r, res)
                 self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
 
-                assert ack_fut1.done()
-                self.assertIs(res_fut2.result(), res)
-
-            async it "one writings with partial write":
-                ack_fut1 = asyncio.Future()
-                res_fut1 = asyncio.Future()
-
-                futs = [(ack_fut1, res_fut1)]
-
-                def writer():
-                    self.ensure_conn.assert_called_once_with()
-                    return futs.pop(0)
-                self.writer.side_effect = writer
-
-                times = [time.time() + 0.05, time.time() + 2]
-
-                def determine_next_time():
-                    return times.pop(0)
-                dnt = mock.Mock(name="determine_next_time", side_effect=determine_next_time)
-
-                async def doit():
-                    start = time.time()
-                    with mock.patch.object(self.waiter, "determine_next_time", dnt):
-                        res = await self.waiter
-                    return res, time.time() - start
-
-                t = self.loop.create_task(doit())
-                await asyncio.sleep(0.005)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
-                ack_fut1.set_result(True)
-                await asyncio.sleep(0.08)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
-
-                res = mock.Mock(name="res")
-                res_fut1.set_result(res)
-
-                r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
-                self.assertIs(r, res)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                self.assertEqual(await self.wait_for(result1), res)
 
         describe "future":
             async it "cancel the final future on cancel":
@@ -221,38 +294,6 @@ describe AsyncTestCase, "Waiter":
                 self.assertIs(self.waiter.exception(), error)
                 assert self.waiter.done()
 
-        describe "determine_next_time":
-            async before_each:
-                self.current_time = mock.Mock(name="current_time")
-                class MagicTime(object):
-                    def __add__(s, other):
-                        return (self.current_time, other)
-                self.time = mock.Mock(name='time', return_value=MagicTime())
-
-            async it "adds first item from timeout to current time if there are more than one in there":
-                t1 = mock.Mock(name="t1")
-                t2 = mock.Mock(name="t2")
-                self.waiter.timeouts = [t1, t2]
-                with mock.patch("time.time", self.time):
-                    self.assertEqual(self.waiter.determine_next_time(), (self.current_time, t1))
-                self.assertEqual(self.waiter.timeouts, [t2])
-
-            async it "progressively adds to the timeout with each call":
-                self.waiter.timeouts = [0.05]
-
-                def assertSameNumber(l, wanted):
-                    assert len(l) == 1
-                    n = "{0:.2f}".format(l[0])
-                    w = "{0:.2f}".format(wanted)
-                    self.assertEqual(n, w)
-
-                for progression in (0.1, 0.2, 0.3, 0.8, 1.3, 1.8, 2.3, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 10.3, 15.3):
-                    with mock.patch("time.time", self.time):
-                        c, p = self.waiter.determine_next_time()
-                        self.assertIs(c, self.current_time)
-                        assertSameNumber([p], progression)
-                    assertSameNumber(self.waiter.timeouts, progression)
-
         describe "await":
             async it "starts a writings":
                 called = []
@@ -288,47 +329,48 @@ describe AsyncTestCase, "Waiter":
                 # Cause it doesn't exist yet
                 assert await self.wait_for(self.waiter.writings()) is None
 
-            async it "tries to apply a result from the futs and quits if successful":
+            async it "tries to apply a result from the results and quits if successful":
                 res = mock.Mock(name="res")
-                futs = mock.Mock(name="futs")
+                results = mock.Mock(name="results")
+
                 def faar(ff, fs):
-                    assert fs is futs
+                    assert fs is results
                     ff.set_result(res)
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
-                self.waiter.futs = futs
+                self.waiter.results = results
                 with mock.patch("photons_transport.target.waiter.hp.find_and_apply_result", find_and_apply_result):
                     await self.waiter.writings()
 
                 self.assertIs(self.waiter.result(), res)
 
-            async it "cancels all the futs if the final future gets cancelled":
-                futs = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
+            async it "cancels all the results if the final future gets cancelled":
+                results = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
+
+                original_find_and_apply_result = hp.find_and_apply_result
+
                 def faar(ff, fs):
-                    self.assertEqual(fs, futs)
-                    for f in futs:
+                    self.assertEqual(fs, results)
+                    for f in results:
                         assert not f.cancelled()
                     ff.cancel()
+                    original_find_and_apply_result(ff, fs)
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
-                self.waiter.futs = futs
+                self.waiter.results = results
                 with mock.patch("photons_transport.target.waiter.hp.find_and_apply_result", find_and_apply_result):
                     await self.waiter.writings()
 
                 assert self.waiter.cancelled()
-                for f in futs:
+                for f in results:
                     assert f.cancelled()
 
-            async it "calls again in the future without writing if we're not up to next time yet":
-                now = time.time()
-                self.waiter.next_time = now + 10
-
-                te = mock.Mock(name="time", return_value=now)
-
+            async it "calls the writer if no results yet and schedules for self.retry_options.next_time in future":
                 writings_cb = mock.Mock(name="writings_cb")
                 original_call_later = self.loop.call_later
 
                 called = []
+
                 def cl(t, cb, *args):
                     if cb is writings_cb:
                         called.append((t, args))
@@ -336,85 +378,27 @@ describe AsyncTestCase, "Waiter":
                         original_call_later(t, cb, *args)
 
                 self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
-                with mock.patch("time.time", te):
+
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
+                result = Result(request, False, self.retry_options)
+
+                fut = asyncio.Future()
+
+                async def write():
+                    fut.set_result(True)
+                    return result
+                self.writer.side_effect = write
+
+                with mock.patch.object(RetryOptions, "next_time", 15):
                     with mock.patch.object(self.loop, "call_later", cl):
                         await self.waiter.writings()
 
-                self.assertEqual(called, [(10, ())])
-
-            async it "calls the writer if no next time and uses determine_next_time":
-                now = time.time()
-                te = mock.Mock(name="time", return_value=now)
-
-                writings_cb = mock.Mock(name="writings_cb")
-                original_call_later = self.loop.call_later
-
-                called = []
-                def cl(t, cb, *args):
-                    if cb is writings_cb:
-                        called.append((t, args))
-                    else:
-                        original_call_later(t, cb, *args)
-
-                self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
-
-                nt = now + 15
-                determine_next_time = mock.Mock(name="determine_next_time", return_value=nt)
-
-                dwf = mock.Mock(name="do_write_future")
-                do_write = mock.Mock(name="do_write", return_value=dwf)
-
-                with mock.patch("time.time", te):
-                    with mock.patch.object(self.loop, "call_later", cl):
-                        with mock.patch.multiple(self.waiter, determine_next_time=determine_next_time, do_write=do_write):
-                            assert self.waiter.next_time is None
-                            await self.waiter.writings()
-
+                await self.wait_for(fut)
                 self.assertEqual(called, [(15, ())])
-                self.assertEqual(self.waiter.futs, [dwf])
-                self.assertEqual(self.waiter.next_time, nt)
-                do_write.assert_called_once_with()
-
-            async it "calls the writer if next time is in the past":
-                now = time.time()
-                te = mock.Mock(name="time", return_value=now)
-
-                writings_cb = mock.Mock(name="writings_cb")
-                original_call_later = self.loop.call_later
-
-                called = []
-                def cl(t, cb, *args):
-                    if cb is writings_cb:
-                        called.append((t, args))
-                    else:
-                        original_call_later(t, cb, *args)
-
-                self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
-
-                nt = now + 2
-                determine_next_time = mock.Mock(name="determine_next_time", return_value=nt)
-
-                dwf = mock.Mock(name="do_write_future")
-                do_write = mock.Mock(name="do_write", return_value=dwf)
-
-                with mock.patch("time.time", te):
-                    with mock.patch.object(self.loop, "call_later", cl):
-                        with mock.patch.multiple(self.waiter, determine_next_time=determine_next_time, do_write=do_write):
-                            self.waiter.next_time = now - 10
-                            await self.waiter.writings()
-
-                self.assertEqual(called, [(2, ())])
-                self.assertEqual(self.waiter.futs, [dwf])
-                self.assertEqual(self.waiter.next_time, nt)
-                do_write.assert_called_once_with()
+                self.assertEqual(self.waiter.results, [result])
 
             async it "does not call writer if we have a partial result":
-                now = time.time()
-                te = mock.Mock(name="time", return_value=now)
-
                 writings_cb = mock.Mock(name="writings_cb")
                 original_call_later = self.loop.call_later
 
@@ -425,35 +409,26 @@ describe AsyncTestCase, "Waiter":
                     else:
                         original_call_later(t, cb, *args)
 
+                result = asyncio.Future()
+                result.wait_for_result = lambda: True
+
                 self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
+                self.waiter.results = [result]
 
-                nt = now + 2
-                determine_next_time = mock.Mock(name="determine_next_time", return_value=nt)
+                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=Exception("Expect no write"))
 
-                dwf = mock.Mock(name="do_write_future")
-                do_write = mock.Mock(name="do_write", return_value=dwf)
+                self.waiter.retry_options.next_check_after_wait_for_result = 9001
 
-                futs = [asyncio.Future(), asyncio.Future()]
-                futs[0].partial = mock.Mock(name="partial", return_value=0)
-                futs[1].partial = mock.Mock(name="partial", return_value=now-1)
-                self.waiter.futs = futs
-
-                with mock.patch("time.time", te):
+                with mock.patch.object(RetryOptions, "next_time", 2):
                     with mock.patch.object(self.loop, "call_later", cl):
-                        with mock.patch.multiple(self.waiter, determine_next_time=determine_next_time, do_write=do_write):
-                            self.waiter.next_time = now - 10
+                        with mock.patch.object(self.waiter, "do_write", do_write):
                             await self.waiter.writings()
 
-                self.assertEqual(called, [(2, ())])
-                self.assertEqual(len(self.waiter.futs), 2)
-                self.assertEqual(self.waiter.next_time, nt)
+                self.assertEqual(called, [(9001, ())])
+                self.assertEqual(self.waiter.results, [result])
                 self.assertEqual(do_write.mock_calls, [])
 
-            async it "does call writer if we have no partial result":
-                now = time.time()
-                te = mock.Mock(name="time", return_value=now)
-
+            async it "calls writer if we have results that we shouldn't wait for":
                 writings_cb = mock.Mock(name="writings_cb")
                 original_call_later = self.loop.call_later
 
@@ -464,88 +439,118 @@ describe AsyncTestCase, "Waiter":
                     else:
                         original_call_later(t, cb, *args)
 
-                self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
-
-                nt = now + 2
-                determine_next_time = mock.Mock(name="determine_next_time", return_value=nt)
-
-                dwf = mock.Mock(name="do_write_future")
-                do_write = mock.Mock(name="do_write", return_value=dwf)
-
-                futs = [asyncio.Future(), asyncio.Future()]
-                futs[0].partial = mock.Mock(name="partial", return_value=0)
-                futs[1].partial = mock.Mock(name="partial", return_value=0)
-                self.waiter.futs = futs
-
-                with mock.patch("time.time", te):
-                    with mock.patch.object(self.loop, "call_later", cl):
-                        with mock.patch.multiple(self.waiter, determine_next_time=determine_next_time, do_write=do_write):
-                            self.waiter.next_time = now - 10
-                            await self.waiter.writings()
-
-                self.assertEqual(called, [(2, ())])
-                self.assertEqual(len(self.waiter.futs), 3)
-                self.assertEqual(self.waiter.next_time, nt)
-                do_write.assert_called_once_with()
-
-            async it "does call writer if we have only old partial results":
-                now = time.time()
-                te = mock.Mock(name="time", return_value=now)
-
-                writings_cb = mock.Mock(name="writings_cb")
-                original_call_later = self.loop.call_later
-
-                called = []
-                def cl(t, cb, *args):
-                    if cb is writings_cb:
-                        called.append((t, args))
-                    else:
-                        original_call_later(t, cb, *args)
+                result = asyncio.Future()
+                result.wait_for_result = lambda: False
 
                 self.waiter._writings_cb = writings_cb
-                self.waiter.futs = []
+                self.waiter.results = [result]
 
-                nt = now + 2
-                determine_next_time = mock.Mock(name="determine_next_time", return_value=nt)
+                do_write = asynctest.mock.CoroutineMock(name="do_write")
 
-                dwf = mock.Mock(name="do_write_future")
-                do_write = mock.Mock(name="do_write", return_value=dwf)
-
-                futs = [asyncio.Future(), asyncio.Future()]
-                futs[0].partial = mock.Mock(name="partial", return_value=0)
-                futs[1].partial = mock.Mock(name="partial", return_value=now - 6)
-                self.waiter.futs = futs
-
-                with mock.patch("time.time", te):
+                with mock.patch.object(RetryOptions, "next_time", 9002):
                     with mock.patch.object(self.loop, "call_later", cl):
-                        with mock.patch.multiple(self.waiter, determine_next_time=determine_next_time, do_write=do_write):
-                            self.waiter.next_time = now - 10
+                        with mock.patch.object(self.waiter, "do_write", do_write):
                             await self.waiter.writings()
 
-                self.assertEqual(called, [(2, ())])
-                self.assertEqual(len(self.waiter.futs), 3)
-                self.assertEqual(self.waiter.next_time, nt)
-                do_write.assert_called_once_with()
+                self.assertEqual(called, [(9002, ())])
+                self.assertEqual(self.waiter.results, [result])
+                do_write.assert_called_with()
+
+            async it "passes on errors from do_write":
+                self.waiter.results = []
+
+                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=ValueError("Nope"))
+
+                with mock.patch.object(self.waiter, "do_write", do_write):
+                    await self.waiter.writings()
+
+                with self.fuzzyAssertRaisesError(ValueError, "Nope"):
+                    await self.wait_for(self.waiter)
+
+                do_write.assert_called_with()
+
+            async it "passes on cancellation from do_write":
+                self.waiter.results = []
+
+                async def do_write():
+                    fut = asyncio.Future()
+                    fut.cancel()
+                    await fut
+                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=do_write)
+
+                with mock.patch.object(self.waiter, "do_write", do_write):
+                    await self.waiter.writings()
+
+                with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                    await self.wait_for(self.waiter)
+
+                do_write.assert_called_with()
 
         describe "do_write":
-            async it "create a FutPair from our writer":
-                w = mock.Mock(name="w")
-                self.waiter.writer = mock.Mock(name="writer", return_value=w)
+            async it "ensures_conn and adds result from writer to results and schedules writings_cb if result already done":
+                called = []
 
-                fut = mock.Mock(name="fut")
-                ensure_future = mock.Mock(name="ensure_future", return_value=fut)
-
-                fp = mock.Mock(name="futpair")
-                FakeFutPair = mock.Mock(name="FutPair", return_value=fp)
+                def ensure_conn():
+                    called.append("ensure_conn")
+                ensure_conn = asynctest.mock.CoroutineMock(name="ensure_conn", side_effect=ensure_conn)
 
                 writings_cb = mock.Mock(name="writings_cb")
+                original_call_soon = self.loop.call_soon
+
+                def cs(cb, *args):
+                    if cb is writings_cb:
+                        called.append(("call_soon", args))
+                    else:
+                        original_call_soon(cb, *args)
+
+                result = asyncio.Future()
+                result.set_result([])
+
+                async def writer():
+                    called.append("writer")
+                    return result
+                writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
+                writer.ensure_conn = ensure_conn
+
+                self.waiter.writer = writer
                 self.waiter._writings_cb = writings_cb
 
-                with mock.patch("photons_transport.target.waiter.FutPair", FakeFutPair):
-                    with mock.patch("asyncio.ensure_future", ensure_future):
-                        self.assertIs(self.waiter.do_write(), fp)
+                with mock.patch.object(self.loop, "call_soon", cs):
+                    await self.wait_for(self.waiter.do_write())
 
-                fp.add_done_callback.assert_called_once_with(writings_cb)
-                FakeFutPair.assert_called_once_with(fut)
-                ensure_future.assert_called_once_with(w)
+                self.assertEqual(self.waiter.results, [result])
+                self.assertEqual(called, ["ensure_conn", "writer", ("call_soon", ())])
+
+            async it "calls _writings_cb when result is done if result isn't already done":
+                called = []
+
+                def ensure_conn():
+                    called.append("ensure_conn")
+                ensure_conn = asynctest.mock.CoroutineMock(name="ensure_conn", side_effect=ensure_conn)
+
+                fut = asyncio.Future()
+                def writings_cb(*args):
+                    called.append("writings_cb")
+                    fut.set_result(True)
+                writings_cb = mock.Mock(name="writings_cb", side_effect=writings_cb)
+
+                result = asyncio.Future()
+
+                async def writer():
+                    called.append("writer")
+                    return result
+                writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
+                writer.ensure_conn = ensure_conn
+
+                self.waiter.writer = writer
+                self.waiter._writings_cb = writings_cb
+
+                await self.wait_for(self.waiter.do_write())
+
+                self.assertEqual(self.waiter.results, [result])
+                self.assertEqual(called, ["ensure_conn", "writer"])
+                assertFutCallbacks(result, writings_cb)
+
+                result.set_result([])
+                await self.wait_for(fut)
+                self.assertEqual(called, ["ensure_conn", "writer", "writings_cb"])
