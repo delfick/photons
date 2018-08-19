@@ -12,6 +12,8 @@ describe AsyncTestCase, "Executor":
     async it "takes in a few things":
         writer = mock.Mock(name='writer')
 
+        original = mock.Mock(name="original")
+
         clone = mock.Mock(name="clone")
         packet = mock.Mock(name='packet')
         packet.clone.return_value = clone
@@ -22,9 +24,10 @@ describe AsyncTestCase, "Executor":
         addr = mock.Mock(name='addr')
         expect_zero = mock.Mock(name="expect_zero")
 
-        executor = Executor(writer, packet, conn, serial, addr, target, expect_zero)
+        executor = Executor(writer, original, packet, conn, serial, addr, target, expect_zero)
 
         self.assertIs(executor.writer, writer)
+        self.assertIs(executor.original, original)
         self.assertIs(executor.packet, packet)
         self.assertIs(executor.conn, conn)
         self.assertIs(executor.serial, serial)
@@ -33,7 +36,7 @@ describe AsyncTestCase, "Executor":
         self.assertIs(executor.clone, clone)
         self.assertIs(executor.expect_zero, expect_zero)
 
-        self.assertEqual(executor.made_futures, [])
+        self.assertEqual(executor.requests, [])
 
     describe "Usage":
         async before_each:
@@ -42,6 +45,7 @@ describe AsyncTestCase, "Executor":
             self.clone = mock.Mock(name="clone")
             self.packet = mock.Mock(name='packet')
             self.packet.clone.return_value = self.clone
+            self.original = mock.Mock(name="original")
 
             self.conn = mock.Mock(name='conn')
             self.serial = mock.Mock(name='serial')
@@ -49,7 +53,7 @@ describe AsyncTestCase, "Executor":
             self.addr = mock.Mock(name='addr')
             self.expect_zero = mock.Mock(name='expect_zero')
 
-            self.executor = Executor(self.writer, self.packet, self.conn, self.serial, self.addr, self.target, self.expect_zero)
+            self.executor = Executor(self.writer, self.original, self.packet, self.conn, self.serial, self.addr, self.target, self.expect_zero)
 
         describe "requires response":
             async it "says yes if the packet only needs a res":
@@ -114,8 +118,8 @@ describe AsyncTestCase, "Executor":
                 await self.executor()
                 self.writer.write.assert_called_once_with(
                       self.serial
-                    , self.packet, self.clone
+                    , self.original, self.clone, self.packet.source
                     , self.conn, self.addr
-                    , self.executor.made_futures
+                    , self.executor.requests
                     , self.expect_zero
                     )

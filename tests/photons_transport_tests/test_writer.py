@@ -24,14 +24,15 @@ describe AsyncTestCase, "Writer":
             , spec=["receiver", "write_to_sock", "default_desired_services", "default_broadcast", "found"]
             )
         self.packet = mock.Mock(name="packet")
+        self.original = mock.Mock(name="original")
         self.broadcast = mock.Mock(name="broadcast")
+        self.retry_options = mock.Mock(name="retry_options", spec=[])
         self.connect_timeout = mock.Mock(name="connect_timeout")
         self.desired_services = mock.Mock(name="desired_services")
-        self.multiple_replies = mock.Mock(name="multiple_replies")
 
     async it "takes in much":
-        writer = Writer(self.bridge, self.packet
-            , conn=self.conn, addr=self.addr, multiple_replies=self.multiple_replies, broadcast=self.broadcast
+        writer = Writer(self.bridge, self.original, self.packet, self.retry_options
+            , conn=self.conn, addr=self.addr, broadcast=self.broadcast
             , desired_services=self.desired_services, found=self.found, connect_timeout=self.connect_timeout
             , a=self.a, b=self.b
             )
@@ -40,18 +41,20 @@ describe AsyncTestCase, "Writer":
         self.assertIs(writer.addr, self.addr)
         self.assertIs(writer.found, self.found)
         self.assertIs(writer.packet, self.packet)
+        self.assertIs(writer.original, self.original)
         self.assertEqual(writer.kwargs, {"a": self.a, "b": self.b})
         self.assertIs(writer.bridge, self.bridge)
         self.assertIs(writer.broadcast, self.broadcast)
         self.assertIs(writer.connect_timeout, self.connect_timeout)
         self.assertIs(writer.desired_services, self.desired_services)
-        self.assertIs(writer.multiple_replies, self.multiple_replies)
 
     async it "defaults much":
-        writer = Writer(self.bridge, self.packet)
+        writer = Writer(self.bridge, self.original, self.packet, self.retry_options)
 
         self.assertIs(writer.bridge, self.bridge)
         self.assertIs(writer.packet, self.packet)
+        self.assertIs(writer.original, self.original)
+        self.assertIs(writer.retry_options, self.retry_options)
 
         self.assertIs(writer.conn, None)
         self.assertIs(writer.addr, None)
@@ -60,21 +63,12 @@ describe AsyncTestCase, "Writer":
         self.assertIs(writer.broadcast, False)
         self.assertIs(writer.connect_timeout, 10)
         self.assertIs(writer.desired_services, self.bridge.default_desired_services)
-        self.assertIs(writer.multiple_replies, False)
-
-    async it "complains if we have broadcast but no addr":
-        with self.fuzzyAssertRaisesError(ProgrammerError, "If broadcast is specified, so must multiple_replies be True"):
-            writer = Writer(self.bridge, self.packet, broadcast=True, multiple_replies=False)
-
-    async it "does not complain if we have broadcast and multiple_replies is not False":
-        Writer(self.bridge, self.packet, broadcast=True, multiple_replies=True)
-        assert True, "no exception was raised"
 
     describe "Usage":
         async before_each:
             self.expect_zero = mock.Mock(name="expect_zero")
-            self.writer = Writer(self.bridge, self.packet
-                , conn=self.conn, addr=self.addr, multiple_replies=self.multiple_replies, broadcast=self.broadcast
+            self.writer = Writer(self.bridge, self.original, self.packet, self.retry_options
+                , conn=self.conn, addr=self.addr, broadcast=self.broadcast
                 , desired_services=self.desired_services, found=self.found, connect_timeout=self.connect_timeout
                 , a=self.a, b=self.b
                 , expect_zero = self.expect_zero
@@ -131,7 +125,7 @@ describe AsyncTestCase, "Writer":
                 normalise_target.assert_called_once_with(self.packet)
                 determine_addr.assert_called_once_with(target, serial)
                 determine_conn.assert_called_once_with(addr, target)
-                FakeExecutor.assert_called_once_with(self.writer, self.packet, conn, serial, addr, target, self.expect_zero)
+                FakeExecutor.assert_called_once_with(self.writer, self.original, self.packet, conn, serial, addr, target, self.expect_zero)
 
         describe "normalise_target":
             async it "gets serial from hexlifying target if target is bytes":
@@ -301,196 +295,106 @@ describe AsyncTestCase, "Writer":
             async before_each:
                 self.serial = mock.Mock(name="serial")
                 self.clone = mock.Mock(name="clone")
-                self.made_futures = []
+                self.bts = mock.Mock(name="bts")
+                self.clone.tobytes.return_value = self.bts
+                self.requests = []
 
                 self.source = 666
-                self.packet.source = self.source
 
-                self.register_ack = mock.Mock(name="register_ack")
-                self.register_res = mock.Mock(name="register_res")
-                self.receiver = mock.Mock(name="receiver"
-                    , register_ack = self.register_ack
-                    , register_res = self.register_res
-                    )
+                self.register = mock.Mock(name="register")
+                self.receiver = mock.Mock(name="receiver", register=self.register)
+
                 self.bridge.receiver = self.receiver
 
                 self.display_written = mock.Mock(name="display_written")
                 self.writer.display_written = self.display_written
 
-            async it "creates futures, writes to the sock and returns our futures":
+            async it "registers with the receiver if the result is not already done before sending":
+                result = mock.Mock(name="result", spec=["done", "add_done_callback"])
+                result.done.return_value = False
+                FakeResult = mock.Mock(name="Result", return_value=result)
+
+                requests = []
+
+                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                    r = await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
+                        , self.conn, self.addr
+                        , requests = requests
+                        , expect_zero = self.expect_zero
+                        ))
+
+                    self.assertIs(r, result)
+
+                FakeResult.assert_called_once_with(self.original, self.broadcast, self.retry_options)
+                self.bridge.receiver.register.assert_called_once_with(self.clone, result, self.expect_zero)
+                self.assertEqual(requests, [result])
+                self.assertEqual(self.clone.source, self.source)
+
+                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, self.bts)
+                self.display_written.assert_called_once_with(self.bts, self.serial)
+
+            async it "does not register with the receiver if the result is already done before sending":
+                result = mock.Mock(name="result", spec=["done", "add_done_callback"])
+                result.done.return_value = True
+                FakeResult = mock.Mock(name="Result", return_value=result)
+
+                requests = []
+
+                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                    r = await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
+                        , self.conn, self.addr
+                        , requests = requests
+                        , expect_zero = self.expect_zero
+                        ))
+
+                    self.assertIs(r, result)
+
+                FakeResult.assert_called_once_with(self.original, self.broadcast, self.retry_options)
+                self.assertEqual(len(self.bridge.receiver.register.mock_calls), 0)
+                self.assertEqual(requests, [])
+                self.assertEqual(self.clone.source, self.source)
+
+                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, self.bts)
+                self.display_written.assert_called_once_with(self.bts, self.serial)
+
+            async it "sets source on the clone to the original source plus number of requests":
+                result = mock.Mock(name="result", spec=["done", "add_done_callback"])
+                result.done.return_value = False
+                FakeResult = mock.Mock(name="Result", return_value=result)
+
+                requests = list(range(5))
                 called = []
-                def caller(num, ret=None):
-                    def call(*args, **kwargs):
-                        called.append(num)
-                        return ret
-                    return call
 
-                self.register_ack.side_effect = caller(1)
-                self.register_res.side_effect = caller(2)
+                def register(cl, *args):
+                    called.append("register")
+                    self.assertEqual(cl.source, self.source + 5)
+                self.bridge.receiver.register.side_effect = register
 
-                bts = mock.Mock(name="bts")
-                self.clone.tobytes.side_effect = caller(3, bts)
+                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                    await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
+                        , self.conn, self.addr
+                        , requests = requests
+                        , expect_zero = self.expect_zero
+                        ))
 
-                self.bridge.write_to_sock.side_effect = caller(4)
-                self.display_written.side_effect = caller(5)
+                self.bridge.receiver.register.assert_called_once_with(self.clone, result, self.expect_zero)
+                self.assertEqual(called, ["register"])
 
-                assert isinstance(self.clone.source,  mock.Mock)
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures, False)
-                self.assertEqual(self.clone.source, 666)
-                self.assertEqual(self.made_futures, [af, rf])
+            async it "uses write_to_conn if that's available":
+                result = mock.Mock(name="result", spec=["done", "add_done_callback"])
+                result.done.return_value = False
+                FakeResult = mock.Mock(name="Result", return_value=result)
 
-                self.register_ack.assert_called_once_with(self.clone, af, self.broadcast)
-                self.register_res.assert_called_once_with(self.clone, rf, self.multiple_replies, False)
-                self.clone.tobytes.assert_called_once_with(self.serial)
-                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, bts)
-                self.display_written.assert_called_once_with(bts, self.serial)
+                requests = []
 
-                self.assertEqual(called, [1, 2, 3, 4, 5])
-                assert not af.done()
-                assert not rf.done()
+                self.bridge.write_to_conn = asynctest.mock.CoroutineMock(name="write_to_conn")
 
-            async it "creates futures, writes to the conn if write_to_conn is defined and returns our futures":
-                called = []
-                def caller(num, ret=None):
-                    def call(*args, **kwargs):
-                        called.append(num)
-                        return ret
-                    return call
+                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                    await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
+                        , self.conn, self.addr
+                        , requests = requests
+                        , expect_zero = self.expect_zero
+                        ))
 
-                self.register_ack.side_effect = caller(1)
-                self.register_res.side_effect = caller(2)
-
-                bts = mock.Mock(name="bts")
-                self.clone.tobytes.side_effect = caller(3, bts)
-
-                write_to_conn = asynctest.mock.CoroutineMock(name="write_to_conn")
-                self.bridge.write_to_conn = write_to_conn
-                write_to_conn.side_effect = caller(4)
-                self.bridge.write_to_sock.side_effect = caller("shouldnotbecalled")
-
-                self.display_written.side_effect = caller(5)
-
-                assert isinstance(self.clone.source,  mock.Mock)
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures, True)
-                self.assertEqual(self.clone.source, 666)
-                self.assertEqual(self.made_futures, [af, rf])
-
-                self.register_ack.assert_called_once_with(self.clone, af, self.broadcast)
-                self.register_res.assert_called_once_with(self.clone, rf, self.multiple_replies, True)
-                self.clone.tobytes.assert_called_once_with(self.serial)
-                self.assertEqual(self.bridge.write_to_sock.mock_calls, [])
-                write_to_conn.assert_called_once_with(self.conn, self.addr, self.clone, bts)
-                self.display_written.assert_called_once_with(bts, self.serial)
-
-                self.assertEqual(called, [1, 2, 3, 4, 5])
-                assert not af.done()
-                assert not rf.done()
-
-            async it "sets source on the clone to the source plus number of things in made_futures":
-                self.made_futures.extend(range(5))
-
-                assert isinstance(self.clone.source,  mock.Mock)
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures)
-                self.assertEqual(self.clone.source, 666 + 5)
-                assert not af.done()
-                assert not rf.done()
-
-            async it "doesn't register ack if doesn't need to":
-                called = []
-                def caller(num, ret=None):
-                    def call(*args, **kwargs):
-                        called.append(num)
-                        return ret
-                    return call
-
-                self.register_ack.side_effect = caller(1)
-                self.register_res.side_effect = caller(2)
-
-                bts = mock.Mock(name="bts")
-                self.clone.tobytes.side_effect = caller(3, bts)
-
-                self.bridge.write_to_sock.side_effect = caller(4)
-                self.display_written.side_effect = caller(5)
-
-                assert isinstance(self.clone.source,  mock.Mock)
-                self.packet.ack_required = False
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures, True)
-                self.assertEqual(self.clone.source, 666)
-                self.assertEqual(self.made_futures, [af, rf])
-
-                self.assertEqual(self.register_ack.mock_calls, [])
-                self.register_res.assert_called_once_with(self.clone, rf, self.multiple_replies, True)
-                self.clone.tobytes.assert_called_once_with(self.serial)
-                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, bts)
-                self.display_written.assert_called_once_with(bts, self.serial)
-
-                self.assertEqual(called, [2, 3, 4, 5])
-                self.assertEqual(af.result(), False)
-                assert not rf.done()
-
-            async it "doesn't register res if it doesn't need to":
-                called = []
-                def caller(num, ret=None):
-                    def call(*args, **kwargs):
-                        called.append(num)
-                        return ret
-                    return call
-
-                self.register_ack.side_effect = caller(1)
-                self.register_res.side_effect = caller(2)
-
-                bts = mock.Mock(name="bts")
-                self.clone.tobytes.side_effect = caller(3, bts)
-
-                self.bridge.write_to_sock.side_effect = caller(4)
-                self.display_written.side_effect = caller(5)
-
-                assert isinstance(self.clone.source,  mock.Mock)
-                self.packet.res_required = False
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures)
-                self.assertEqual(self.clone.source, 666)
-                self.assertEqual(self.made_futures, [af, rf])
-
-                self.register_ack.assert_called_once_with(self.clone, af, self.broadcast)
-                self.assertEqual(self.register_res.mock_calls, [])
-                self.clone.tobytes.assert_called_once_with(self.serial)
-                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, bts)
-                self.display_written.assert_called_once_with(bts, self.serial)
-
-                self.assertEqual(called, [1, 3, 4, 5])
-                assert not af.done()
-                self.assertEqual(rf.result(), [])
-
-            async it "doesn't register anything if it doesn't need to":
-                called = []
-                def caller(num, ret=None):
-                    def call(*args, **kwargs):
-                        called.append(num)
-                        return ret
-                    return call
-
-                self.register_ack.side_effect = caller(1)
-                self.register_res.side_effect = caller(2)
-
-                bts = mock.Mock(name="bts")
-                self.clone.tobytes.side_effect = caller(3, bts)
-
-                self.bridge.write_to_sock.side_effect = caller(4)
-                self.display_written.side_effect = caller(5)
-
-                assert isinstance(self.clone.source,  mock.Mock)
-                self.packet.ack_required = False
-                self.packet.res_required = False
-                af, rf = await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures)
-                self.assertEqual(self.clone.source, 666)
-                self.assertEqual(self.made_futures, [af, rf])
-
-                self.assertEqual(self.register_ack.mock_calls, [])
-                self.assertEqual(self.register_res.mock_calls, [])
-                self.clone.tobytes.assert_called_once_with(self.serial)
-                self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, bts)
-                self.display_written.assert_called_once_with(bts, self.serial)
-
-                self.assertEqual(called, [3, 4, 5])
-                self.assertEqual(af.result(), False)
-                self.assertEqual(rf.result(), [])
+                self.assertEqual(len(self.bridge.write_to_sock.mock_calls), 0)
+                self.bridge.write_to_conn.assert_called_once_with(self.conn, self.addr, self.clone, self.bts)

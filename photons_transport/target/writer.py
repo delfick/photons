@@ -1,6 +1,7 @@
 from photons_transport.target.errors import NoDesiredService, CouldntMakeConnection
+from photons_transport.target.result import Result
 
-from photons_app.errors import ProgrammerError, PhotonsAppError
+from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from input_algorithms import spec_base as sb
@@ -16,17 +17,18 @@ class Executor(object):
 
     Ultimately it uses the Writer that's passed in to do the actual writing
     """
-    def __init__(self, writer, packet, conn, serial, addr, target, expect_zero):
+    def __init__(self, writer, original, packet, conn, serial, addr, target, expect_zero):
         self.writer = writer
         self.conn = conn
         self.addr = addr
         self.packet = packet
         self.serial = serial
         self.target = target
+        self.original = original
         self.expect_zero = expect_zero
 
         self.clone = packet.clone()
-        self.made_futures = []
+        self.requests = []
 
         self.conn_fut = hp.ResettableFuture()
         self.conn_fut.set_result(self.conn)
@@ -44,7 +46,7 @@ class Executor(object):
             self.conn = await self.writer.determine_conn(self.addr, self.target)
 
     async def __call__(self):
-        return await self.writer.write(self.serial, self.packet, self.clone, self.conn, self.addr, self.made_futures, self.expect_zero)
+        return await self.writer.write(self.serial, self.original, self.clone, self.packet.source, self.conn, self.addr, self.requests, self.expect_zero)
 
 class Writer(object):
     """
@@ -59,8 +61,8 @@ class Writer(object):
         ack_fut, res_fut = await writer()
         print(await res_fut)
     """
-    def __init__(self, bridge, packet
-        , conn=None, addr=None, multiple_replies=False, broadcast=False
+    def __init__(self, bridge, original, packet, retry_options
+        , conn=None, addr=None, broadcast=False
         , desired_services=None, found=None, connect_timeout=10, expect_zero=False
         , **kwargs
         ):
@@ -70,14 +72,12 @@ class Writer(object):
         self.packet = packet
         self.kwargs = kwargs
         self.bridge = bridge
+        self.original = original
         self.broadcast = broadcast
         self.expect_zero = expect_zero
+        self.retry_options = retry_options
         self.connect_timeout = connect_timeout
         self.desired_services = desired_services
-        self.multiple_replies = multiple_replies
-
-        if self.broadcast and self.multiple_replies is False:
-            raise ProgrammerError("If broadcast is specified, so must multiple_replies be True")
 
         if self.desired_services is None:
             self.desired_services = self.bridge.default_desired_services
@@ -109,7 +109,7 @@ class Writer(object):
         target, serial = self.normalise_target(packet)
         addr = await self.determine_addr(target, serial)
         conn = await self.determine_conn(addr, target)
-        return Executor(self, packet, conn, serial, addr, target, self.expect_zero)
+        return Executor(self, self.original, packet, conn, serial, addr, target, self.expect_zero)
 
     def normalise_target(self, packet):
         """
@@ -188,48 +188,29 @@ class Writer(object):
 
         return service, addr
 
-    async def write(self, serial, packet, clone, conn, addr, made_futures, expect_zero=False):
+    async def write(self, serial, original, clone, original_source, conn, addr, requests, expect_zero=False):
         """
-        Return two futures representing the acknowledgement and result of writing
-        this message to the device.
+        Return the result object representing the results we get from the device
 
-        If the packet has False for ``ack_required`` then the acknoledgement
-        future is already resolved to ``True``.
-
-        If ``res_required`` is False, then the result future is already resolved
-        to an empty list.
-
-        We allow these futures to be resolved by telling the bridge to expect
+        We allow this result to be resolved by telling the bridge to expect
         results for this ``(source, sequence, target)`` combination.
 
         Finally, we use ``bridge.write_to_conn`` if it is defined, otherwise
         we use ``bridge.write_to_sock``. The difference between them is
         ``write_to_sock`` does not require awaiting, whereas ``write_to_conn``
         does.
+
+        We also create a clone of the packet and set it's source to be different
+        depending on how many times we have retried this packet.
         """
         # Set new source on the clone
-        source = packet.source
-        if packet.ack_required or packet.res_required:
-            source = packet.source + len(made_futures)
-        clone.source = source
+        clone.source = original_source + len(requests)
 
-        # Create a future for acking
-        ack_fut = asyncio.Future()
-        made_futures.append(ack_fut)
-        if packet.ack_required:
-            self.bridge.receiver.register_ack(clone, ack_fut, self.broadcast)
-        else:
-            # Setting false so the writer doesn't take this as a partial result
-            ack_fut.set_result(False)
-
-        # Create a future for a result
-
-        res_fut = asyncio.Future()
-        made_futures.append(res_fut)
-        if packet.res_required:
-            self.bridge.receiver.register_res(clone, res_fut, self.multiple_replies, expect_zero)
-        else:
-            res_fut.set_result([])
+        result = Result(original, self.broadcast, self.retry_options)
+        if not result.done():
+            result.add_done_callback(hp.silent_reporter)
+            requests.append(result)
+            self.bridge.receiver.register(clone, result, expect_zero)
 
         # Pack the clone to bytes for transferral
         bts = clone.tobytes(serial)
@@ -259,7 +240,7 @@ class Writer(object):
         #             actual = " ({0})".format(as_dct[k])
         #         log.info("------- %-30s: %-20s%s", k, unpackd.__getitem__(k, do_spec=False), actual)
 
-        return [ack_fut, res_fut]
+        return result
 
     def display_written(self, bts, serial):
         """Log out what we just wrote to the connection"""
