@@ -62,6 +62,9 @@ import asyncio
 import socket
 
 class MemorySocketBridge(SocketBridge):
+    class RetryOptions(RetryOptions):
+        timeouts = [(0.2, 0.2)]
+
     async def find_devices(self, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
         res = {}
         for target, device in self.transport_target.devices.items():
@@ -83,12 +86,8 @@ class WithDevices(object):
         for device in self.devices:
             await device.finish()
 
-class RetryOptions(RetryOptions):
-    timeouts = [(0.2, 0.2)]
-
 class MemorySocketTarget(SocketTarget):
     bridge_kls = lambda s: MemorySocketBridge
-    RetryOptions = RetryOptions
 
     def setup(self, *args, **kwargs):
         super(MemorySocketTarget, self).setup(*args, **kwargs)
