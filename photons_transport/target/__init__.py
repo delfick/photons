@@ -44,6 +44,18 @@ The writer
 
 .. automodule:: photons_transport.target.writer
     :members:
+
+Result
+------
+
+.. automodule:: photons_transport.target.result
+    :members:
+
+Retry options
+-------------
+
+.. automodule:: photons_transport.target.retry_options
+    :members:
 """
 from photons_transport.target.target import TransportTarget
 from photons_transport.target.bridge import TransportBridge
@@ -53,4 +65,3 @@ from photons_transport.target.item import TransportItem
 TransportItem = TransportItem
 TransportTarget = TransportTarget
 TransportBridge = TransportBridge
-

@@ -3,6 +3,13 @@
 ChangeLog
 =========
 
+0.6 - TBD
+    * Cleaned up the code that handles retries and multiple replies
+      - multiple_replies, first_send and first_wait are no longer options
+        for run_with as they are no longer necessary
+      - The packet definition now includes options for specifying how many
+        packets to expect
+
 0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a
       protocol message

@@ -58,8 +58,8 @@ class Writer(object):
     .. code-block:: python
 
         writer = await bridge.make_writer(packet, **kwargs)
-        ack_fut, res_fut = await writer()
-        print(await res_fut)
+        result = await writer()
+        print(await result)
     """
     def __init__(self, bridge, original, packet, retry_options
         , conn=None, addr=None, broadcast=False
