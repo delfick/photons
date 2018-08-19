@@ -74,7 +74,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     msg = TileMessages.GetTileState64.empty_normalise(**options)
 
-    async for pkt, _, _ in target.script(msg).run_with(reference, multiple_replies=True, first_wait=1):
+    async for pkt, _, _ in target.script(msg).run_with(reference):
         if pkt | response_kls:
             got[pkt.serial].append((pkt.tile_index, pkt))
 

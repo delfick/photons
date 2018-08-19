@@ -38,7 +38,7 @@ async def zones_from_reference(target, reference, afr=sb.NotSpecified, **kwargs)
     final = {}
 
     msg = MultiZoneMessages.GetMultiZoneColorZones(start_index=0, end_index=255)
-    options = MergedOptions.using({"first_wait": 1, "timeout": 5}, kwargs, {"multiple_replies": True}).as_dict()
+    options = MergedOptions.using({"timeout": 5}, kwargs).as_dict()
 
     by_serial = defaultdict(list)
     async for pkt, _, _ in target.script(msg).run_with(reference, afr, **options):

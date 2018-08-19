@@ -138,7 +138,7 @@ class TileStateGetter:
         if not msgs:
             return
 
-        async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr, multiple_replies=True, first_wait=1):
+        async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr):
             serial = pkt.serial
 
             if pkt | TileMessages.StateTileState64:
