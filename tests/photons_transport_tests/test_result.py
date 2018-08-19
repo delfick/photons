@@ -507,10 +507,8 @@ describe AsyncTestCase, "Result":
                             for num_results in (-1, 0, 1):
                                 assert not self.wait_for_result(ack_required, False, {}, now, None, None, results, num_results)
 
-                                assert not self.wait_for_result(ack_required, False, {}, now, 1, None, results, num_results)
                                 assert not self.wait_for_result(ack_required, False, {}, now, None, 1, results, num_results)
 
-                                assert not self.wait_for_result(ack_required, False, {}, now, now + 5, None, results, num_results)
                                 assert not self.wait_for_result(ack_required, False, {}, now, None, now + 5, results, num_results)
 
         describe "with just res_required":
@@ -532,6 +530,13 @@ describe AsyncTestCase, "Result":
                 last = now - 0.3
                 retry_options = {"gap_between_results": 0.2}
                 assert not self.wait_for_result(False, True, retry_options, now, None, last, [], 1)
+
+        describe "with just ack_required":
+            async it "says no if we haven't had an ack yet":
+                assert not self.wait_for_result(True, False, {}, time.time(), None, None, [], -1)
+
+            async it "says yes if we have an ack":
+                assert self.wait_for_result(True, False, {}, time.time(), 1, None, [], -1)
 
         describe "with both ack_required and res_required":
             async it "says no if received no acks":

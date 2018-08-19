@@ -153,7 +153,10 @@ class Result(asyncio.Future):
 
             return (time.time() - self.last_ack_received) < self.retry_options.gap_between_ack_and_res
 
-        if self.request.res_required:
+        elif self.request.ack_required and self.last_ack_received is not None:
+            return True
+
+        elif self.request.res_required:
             if self.last_res_received is None:
                 return False
 
