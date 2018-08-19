@@ -9,6 +9,7 @@ from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
 from photons_script.script import ATarget, Pipeline
+from photons_protocol.messages import MultiOptions
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
@@ -44,8 +45,7 @@ class Device(object):
                 if got.ack_required:
                     await resQueue.put(got.make_ack().tobytes())
                 if got.res_required:
-                    res = got.make_res()
-                    if res:
+                    for res in got.make_res():
                         await resQueue.put(res.tobytes())
         self.connections.append(hp.async_as_background(receive()))
         return resQueue, recvQueue
@@ -72,6 +72,9 @@ class Packet(object):
         self.payload = payload
         self.ack_required = ack_required
         self.res_required = res_required
+
+    class Meta:
+        multi = None
 
     @property
     def represents_ack(self):
@@ -115,19 +118,25 @@ class Packet(object):
         if self.as_dict()["payload"]["action"] == "missing":
             return
 
-        nw = Packet(**self.as_dict())
-        nw.ack_required = False
-        nw.res_required = False
-        nw.payload = self.calculate(**nw.payload)
-        return nw
+        for payload in self.calculate(**self.payload):
+            nw = Packet(**self.as_dict())
+            nw.ack_required = False
+            nw.res_required = False
+            nw.payload = payload
+            yield nw
+
+    def __or__(self, other):
+        return "many" in self.payload and other == "multireply"
 
     def calculate(self, uid, one, two, action):
         if action == "add":
-            return {"uid": uid, "result": one + two}
+            return [{"uid": uid, "result": one + two}]
         if action == "sub":
-            return {"uid": uid, "result": one - two}
+            return [{"uid": uid, "result": one - two}]
         if action == "mul":
-            return {"uid": uid, "result": one * two}
+            return [{"uid": uid, "result": one * two}]
+        if action == "many":
+            return [{"uid": uid, "result": one, "many": True}, {"uid": uid, "result": two, "many": True}]
 
     def as_dict(self):
         return {
@@ -153,6 +162,17 @@ def NoReply(**kwargs):
 
 def Multiplier(one, two, **kwargs):
     return EmptyPacket(one, two, "mul", **kwargs)
+
+def Many(one, two, **kwargs):
+    pkt = EmptyPacket(one, two, "many", **kwargs)
+
+    class Meta:
+        multi = MultiOptions(
+              lambda req: "multireply"
+            , lambda req, res: 2
+            )
+    pkt.Meta = Meta
+    return pkt
 
 class Messages(object):
     @classmethod
@@ -289,10 +309,11 @@ describe AsyncTestCase, "End2End":
 
             msg2 = Subtractor(7, 8, ack_required=True)
             msg3 = Multiplier(8, 8, ack_required=False)
+            msg4 = Many(9001, 9002, ack_required=False)
             results = []
 
             async def doit():
-                async for info in self.target.script(Pipeline(msg2, msg3)).run_with([d.target for d in afr.devices], afr):
+                async for info in self.target.script(Pipeline(msg2, msg3, msg4)).run_with([d.target for d in afr.devices], afr):
                     results.append(info)
             await self.wait_for(doit())
 
@@ -300,21 +321,37 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(len(afr.devices[1].connections), 1)
             self.assertEqual(len(afr.devices[2].connections), 1)
 
-            self.assertEqual(len(afr.devices[0].received), 3)
-            self.assertEqual(len(afr.devices[1].received), 2)
-            self.assertEqual(len(afr.devices[2].received), 2)
+            self.assertEqual(len(afr.devices[0].received), 4)
+            self.assertEqual(len(afr.devices[1].received), 3)
+            self.assertEqual(len(afr.devices[2].received), 3)
 
-            self.assertEqual(len(results), 6)
+            self.assertEqual(len(results), 12)
             by_target = defaultdict(list)
             for pkt, _, _ in results:
                 by_target[pkt.target].append(pkt.payload)
             expected = {
-                  afr.devices[0].target: [{"uid": msg2.payload["uid"], "result": -1}, {"uid": msg3.payload["uid"], "result": 64}]
-                , afr.devices[1].target: [{"uid": msg2.payload["uid"], "result": -1}, {"uid": msg3.payload["uid"], "result": 64}]
-                , afr.devices[2].target: [{"uid": msg2.payload["uid"], "result": -1}, {"uid": msg3.payload["uid"], "result": 64}]
+                  afr.devices[0].target: [
+                      {"uid": msg2.payload["uid"], "result": -1}
+                    , {"uid": msg3.payload["uid"], "result": 64}
+                    , {"uid": msg4.payload["uid"], "result": 9001, "many": True}
+                    , {"uid": msg4.payload["uid"], "result": 9002, "many": True}
+                    ]
+                , afr.devices[1].target: [
+                      {"uid": msg2.payload["uid"], "result": -1}
+                    , {"uid": msg3.payload["uid"], "result": 64}
+                    , {"uid": msg4.payload["uid"], "result": 9001, "many": True}
+                    , {"uid": msg4.payload["uid"], "result": 9002, "many": True}
+                    ]
+                , afr.devices[2].target: [
+                      {"uid": msg2.payload["uid"], "result": -1}
+                    , {"uid": msg3.payload["uid"], "result": 64}
+                    , {"uid": msg4.payload["uid"], "result": 9001, "many": True}
+                    , {"uid": msg4.payload["uid"], "result": 9002, "many": True}
+                    ]
                 }
+
             self.assertEqual(dict(by_target), expected)
-            self.assertEqual(len(set(hash(p) for p, _, _ in results)), 6)
+            self.assertEqual(len(set(hash(p) for p, _, _ in results)), 9)
 
     async it "raises a single error if serials is None":
         async with ATarget(self.target) as afr:
