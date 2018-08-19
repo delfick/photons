@@ -497,11 +497,11 @@ describe AsyncTestCase, "Waiter":
                 writings_cb = mock.Mock(name="writings_cb")
                 original_call_soon = self.loop.call_soon
 
-                def cs(cb, *args):
+                def cs(cb, *args, **kwargs):
                     if cb is writings_cb:
                         called.append(("call_soon", args))
                     else:
-                        original_call_soon(cb, *args)
+                        original_call_soon(cb, *args, **kwargs)
 
                 result = asyncio.Future()
                 result.set_result([])
