@@ -4,20 +4,15 @@ device.
 
 .. photons_task:: get_attr
 
-.. photons_task:: get_multi_attr
-
 .. photons_task:: set_attr
 """
 from photons_app.actions import an_action
 from photons_app.errors import BadOption
 
-from photons_protocol.types import Type as T
-
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 import logging
-import json
 import sys
 
 __shortdesc__ = "Tasks for setting and getting attributes on devices"
@@ -72,23 +67,6 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     script = target.script(getter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
-
-@an_action(special_reference=True, needs_target=True)
-async def get_multi_attr(*args, **kwargs):
-    """
-    Get attributes from your globes
-
-    ``get_multi_attr d073d5000000 multi_zone_color_zones``
-
-    Where ``d073d5000000`` is replaced with the serial of the device you are
-    addressing and ``color`` is replaced with the attribute you want.
-
-    This does the same as the get_attr task except it will wait for multiple
-    replies.
-    """
-    kwargs["first_wait"] = 0.5
-    kwargs["multiple_replies"] = True
-    return await get_attr(*args, **kwargs)
 
 @an_action(special_reference=True, needs_target=True)
 async def set_attr(collector, target, reference, artifact, broadcast=False, **kwargs):
