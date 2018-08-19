@@ -4,7 +4,7 @@
 
 .. lifx_messages:: DiscoveryMessages
 """
-from photons_protocol.messages import Messages, msg, T
+from photons_protocol.messages import Messages, msg, MultiOptions, T
 
 from enum import Enum
 
@@ -22,7 +22,10 @@ class DiscoveryMessages(Messages):
     """
     Acknowledgment = msg(45)
 
-    GetService = msg(2)
+    GetService = msg(2
+        , multi = -1
+        )
+
     StateService = msg(3
         , ("service", T.Uint8.enum(Services))
         , ("port", T.Uint32)

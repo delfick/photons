@@ -91,10 +91,7 @@ describe AsyncTestCase, "SocketBridge":
 
             self.s_run_with.assert_called_once_with([], self.bridge
                 , broadcast = "255.255.255.255"
-                , first_wait = 0.8
-                , first_resend = 0.8
                 , accept_found = True
-                , multiple_replies = True
                 , timeout = 60
                 )
 

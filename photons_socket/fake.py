@@ -54,6 +54,7 @@ set ``device.online = False``.
 from photons_socket.messages import Services, DiscoveryMessages
 from photons_socket.target import SocketTarget, SocketBridge
 
+from photons_transport.target.retry_options import RetryOptions
 from photons_protocol.messages import Messages
 
 import binascii
@@ -82,8 +83,12 @@ class WithDevices(object):
         for device in self.devices:
             await device.finish()
 
+class RetryOptions(RetryOptions):
+    timeouts = [(0.2, 0.2)]
+
 class MemorySocketTarget(SocketTarget):
     bridge_kls = lambda s: MemorySocketBridge
+    RetryOptions = RetryOptions
 
     def setup(self, *args, **kwargs):
         super(MemorySocketTarget, self).setup(*args, **kwargs)
