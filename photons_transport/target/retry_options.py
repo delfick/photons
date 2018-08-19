@@ -44,7 +44,7 @@ class RetryOptions:
 
     next_check_after_wait_for_result = 0.15
 
-    timeouts = [(0.1, 0.1), (0.05, 0.3), (0.1, 1), (1, 5)]
+    timeouts = [(0.2, 0.2), (0.1, 0.5), (0.2, 1), (1, 5)]
 
     def __init__(self):
         self.timeout = None

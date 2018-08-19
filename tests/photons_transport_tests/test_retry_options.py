@@ -22,11 +22,11 @@ describe TestCase, "RetryOptions":
 
     describe "next_time":
         it "returns first time from timeouts if first time":
-            self.assertEqual(RetryOptions().next_time, 0.1)
+            self.assertEqual(RetryOptions().next_time, 0.2)
 
             class Options(RetryOptions):
-                timeouts = [(0.2, 0.3)]
-            self.assertEqual(Options().next_time, 0.2)
+                timeouts = [(0.3, 0.4)]
+            self.assertEqual(Options().next_time, 0.3)
 
         it "keeps adding step till we get past end, before going to next timeout item":
             class Options(RetryOptions):
