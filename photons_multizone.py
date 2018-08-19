@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_protocol.messages import Messages, msg, T
+from photons_protocol.messages import Messages, msg, MultiOptions, T
 from photons_colour import hsbk, duration_typ
 from photons_protocol.packets import dictobj
 
@@ -118,6 +118,11 @@ class MultiZoneMessages(Messages):
     GetMultiZoneColorZones = msg(502
         , ("start_index", T.Uint8)
         , ("end_index", T.Uint8)
+
+        , multi = MultiOptions(
+              lambda req: [MultiZoneMessages.StateMultiZoneStateMultiZones, MultiZoneMessages.StateMultiZoneStateZones]
+            , lambda req, res: min((req.end_index // 8) + 1, res.num_zones // 8)
+            )
         )
 
     StateMultiZoneStateZones = msg(503

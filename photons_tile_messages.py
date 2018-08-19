@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_protocol.messages import Messages, msg, T
+from photons_protocol.messages import Messages, msg, MultiOptions, T
 from photons_colour import hsbk, duration_typ
 from photons_protocol.packets import dictobj
 from photons_script.script import ATarget
@@ -241,7 +241,12 @@ class TileMessages(Messages):
         , ("user_y", T.Float)
         )
 
-    GetTileState64 = msg(707, *get_tile_state)
+    GetTileState64 = msg(707, *get_tile_state
+        , multi = MultiOptions(
+              lambda req: TileMessages.StateTileState64
+            , lambda req, res: MultiOptions.Max(req.length - req.tile_index)
+            )
+        )
 
     SetTileState64 = msg(715, *set_tile_state(64))
 
