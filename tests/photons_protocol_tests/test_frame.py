@@ -284,8 +284,8 @@ describe TestCase, "MultiOptions":
     it "has a Max helper":
         num = frame.MultiOptions.Max(5)
 
-        self.assertEqual(num(1), -1)
-        self.assertEqual(num(4), -1)
+        self.assertEqual(num([1]), -1)
+        self.assertEqual(num([0, 1, 2, 3]), -1)
 
-        self.assertEqual(num(5), 5)
-        self.assertEqual(num(6), 6)
+        self.assertEqual(num([0, 1, 2, 3, 4]), 5)
+        self.assertEqual(num([0, 1, 2, 3, 4, 5]), 6)

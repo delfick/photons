@@ -65,7 +65,8 @@ class MultiOptions:
         def __init__(self, value):
             self.value = value
 
-        def __call__(self, num_results):
+        def __call__(self, results):
+            num_results = len(results)
             if num_results >= self.value:
                 return num_results
             return -1

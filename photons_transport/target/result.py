@@ -129,7 +129,7 @@ class Result(asyncio.Future):
         if type(expect) is int:
             return expect
         else:
-            return expect(len(self.results))
+            return expect(self.results)
 
     def wait_for_result(self):
         """

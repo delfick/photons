@@ -466,21 +466,21 @@ describe AsyncTestCase, "Result":
                     self.assertIs(result.num_results, val)
                 _determine_num_results.assert_called_once_with()
 
-        async it "calls function with number of results if _determine_num_results returns is a function":
+        async it "calls function with results if _determine_num_results returns is a function":
             count = mock.Mock(name="count")
             res = mock.Mock(name="res", return_value=count)
             _determine_num_results = mock.Mock(name="_determine_num_results", return_value=res)
             result = Result(self.request, False, RetryOptions())
 
             with mock.patch.object(result, "_determine_num_results", _determine_num_results):
-                for results, length in [([1, 2], 2), ([], 0), ([1], 1), ([1, 2, 3], 3)]:
+                for results in [[1, 2], [], [1], [1, 2, 3]]:
                     result.results = results
 
                     res.reset_mock()
                     _determine_num_results.reset_mock()
 
                     self.assertIs(result.num_results, count)
-                    res.assert_called_once_with(length)
+                    res.assert_called_once_with(results)
                     _determine_num_results.assert_called_once_with()
 
     describe "wait_for_result":
