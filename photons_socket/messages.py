@@ -4,7 +4,7 @@
 
 .. lifx_messages:: DiscoveryMessages
 """
-from photons_protocol.messages import Messages, msg, MultiOptions, T
+from photons_protocol.messages import Messages, msg, T
 
 from enum import Enum
 
