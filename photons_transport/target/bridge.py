@@ -1,6 +1,7 @@
 """
 .. autoclass:: photons_transport.target.bridge.TransportBridge
 """
+from photons_transport.target.retry_options import RetryOptions
 from photons_transport.target.receiver import Receiver
 from photons_transport.target.writer import Writer
 from photons_transport.target.waiter import Waiter
@@ -78,6 +79,7 @@ class TransportBridge(object):
     Writer = Writer
     Receiver = Receiver
     Messages = NotImplemented
+    RetryOptions = RetryOptions
     default_desired_services = None
 
     def __init__(self, stop_fut, transport_target, protocol_register, found=None, default_broadcast="255.255.255.255"):
@@ -206,7 +208,7 @@ class TransportBridge(object):
             #     fle.write("RECEIVING - {0}\n".format(pkt.Payload.__name__))
             #     fle.write("\t{0}\n".format(binascii.hexlify(data).decode()))
             #     fle.write("\t{0}\n".format(repr(pkt)))
-            return self.receiver((pkt, addr, address))
+            self.receiver((pkt, addr, address))
 
     @hp.memoized_property
     def receiver(self):
@@ -217,7 +219,11 @@ class TransportBridge(object):
         """Make a future for waiting on a writer to get a reply"""
         return self.Waiter(self.stop_fut, writer, **kwargs)
 
-    async def make_writer(self, packet, **kwargs):
+    async def make_writer(self, original, packet, **kwargs):
         """Make an object for writing to this bridge"""
-        writer = self.Writer(self, packet, **kwargs)
+        writer = self.Writer(self, original, packet, **kwargs)
         return await writer.make()
+
+    def make_retry_options(self):
+        """Return a new retry options object"""
+        return self.RetryOptions()

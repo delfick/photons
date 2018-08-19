@@ -1,5 +1,6 @@
 # coding: spec
 
+from photons_transport.target.retry_options import RetryOptions
 from photons_transport.target.bridge import TransportBridge
 
 from photons_app.errors import PhotonsAppError, TimedOut
@@ -314,7 +315,7 @@ describe AsyncTestCase, "TransportBridge":
                 receiver = mock.Mock(name="receiver", return_value=res)
 
                 with mock.patch.object(self.bridge, "receiver", receiver):
-                    self.assertIs(self.bridge.received_data(self.data, self.addr, self.address), res)
+                    self.bridge.received_data(self.data, self.addr, self.address)
 
                 self.Messages.unpack.assert_called_once_with(self.data, self.protocol_register, unknown_ok=True)
                 receiver.assert_called_with((pkt, self.addr, self.address))
@@ -326,7 +327,7 @@ describe AsyncTestCase, "TransportBridge":
                 receiver = mock.Mock(name="receiver")
 
                 with mock.patch.object(self.bridge, "receiver", receiver):
-                    self.assertIs(self.bridge.received_data(self.data, self.addr, self.address), None)
+                    self.bridge.received_data(self.data, self.addr, self.address)
 
                 self.Messages.unpack.assert_called_once_with(self.data, self.protocol_register, unknown_ok=True)
                 self.assertEqual(receiver.mock_calls, [])
@@ -364,11 +365,26 @@ describe AsyncTestCase, "TransportBridge":
                 res = mock.Mock(name="res", make=make)
                 a = mock.Mock(name="a")
                 b = mock.Mock(name="b")
+                original = mock.Mock(name="original")
                 packet = mock.Mock(name="packet")
 
                 FakeWriter = mock.Mock(name='Writer', return_value=res)
 
                 self.bridge.Writer = FakeWriter
-                self.assertIs(await self.bridge.make_writer(packet, a=a, b=b), executor)
-                FakeWriter.assert_called_once_with(self.bridge, packet, a=a, b=b)
+                self.assertIs(await self.bridge.make_writer(original, packet, a=a, b=b), executor)
+                FakeWriter.assert_called_once_with(self.bridge, original, packet, a=a, b=b)
                 make.assert_called_once_with()
+
+        describe "make_retry_options":
+            async it "creates RetryOptions by default":
+                options = self.bridge.make_retry_options()
+                self.assertIsInstance(options, RetryOptions)
+
+            async it "uses the RetryOptions object on the bridge":
+                res = mock.Mock(name='res')
+                FakeRetryOptions = mock.Mock(name='Writer', return_value=res)
+
+                self.bridge.RetryOptions = FakeRetryOptions
+                options = self.bridge.make_retry_options()
+                self.assertIs(options, res)
+                FakeRetryOptions.assert_called_once_with()
