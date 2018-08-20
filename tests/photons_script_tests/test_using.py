@@ -15,21 +15,15 @@ describe AsyncTestCase, "Decider":
         decider = mock.Mock(name="decider")
         wanted = mock.Mock(name="wanted")
         simplifier = mock.Mock(name="simplifier")
-        get_timeout = mock.Mock(name="get_timeout")
-        send_timeout = mock.Mock(name="send_timeout")
 
         using = Decider(getter, decider, wanted
             , simplifier = simplifier
-            , get_timeout = get_timeout
-            , send_timeout = send_timeout
             )
 
         self.assertIs(using.getter, getter)
         self.assertIs(using.decider, decider)
         self.assertIs(using.wanted, wanted)
         self.assertIs(using.simplifier, simplifier)
-        self.assertIs(using.get_timeout, get_timeout)
-        self.assertIs(using.send_timeout, send_timeout)
 
     describe "Simplified":
         async it "simplifies the getter and returns a clone with result and new simplifier":
@@ -37,13 +31,9 @@ describe AsyncTestCase, "Decider":
             decider = mock.Mock(name="decider")
             wanted = mock.Mock(name="wanted")
             simplifier = mock.Mock(name="simplifier")
-            get_timeout = mock.Mock(name="get_timeout")
-            send_timeout = mock.Mock(name="send_timeout")
 
             using = Decider(getter, decider, wanted
                 , simplifier = simplifier
-                , get_timeout = get_timeout
-                , send_timeout = send_timeout
                 )
 
             simple_getter = mock.Mock(name="simple_getter")
@@ -60,8 +50,6 @@ describe AsyncTestCase, "Decider":
 
             self.assertIs(clone.decider, decider)
             self.assertIs(clone.wanted, wanted)
-            self.assertIs(clone.get_timeout, get_timeout)
-            self.assertIs(clone.send_timeout, send_timeout)
 
     describe "Usage":
         async before_each:
@@ -69,13 +57,9 @@ describe AsyncTestCase, "Decider":
             self.decider = mock.Mock(name="decider")
             self.wanted = mock.Mock(name="wanted")
             self.simplifier = mock.Mock(name="simplifier")
-            self.get_timeout = mock.Mock(name="get_timeout")
-            self.send_timeout = mock.Mock(name="send_timeout")
 
             self.using = Decider(self.getter, self.decider, [self.wanted]
                 , simplifier = self.simplifier
-                , get_timeout = self.get_timeout
-                , send_timeout = self.send_timeout
                 )
 
         describe "do_getters":
@@ -127,15 +111,11 @@ describe AsyncTestCase, "Decider":
                     )
 
                 g1_run_with.assert_called_once_with(references, args_for_run
-                    , find_timeout = self.get_timeout
-                    , timeout = self.get_timeout
                     , error_catcher = error_catcher
                     , a = a
                     )
 
                 g2_run_with.assert_called_once_with(references, args_for_run
-                    , find_timeout = self.get_timeout
-                    , timeout = self.get_timeout
                     , error_catcher = error_catcher
                     , a = a
                     )
@@ -220,9 +200,9 @@ describe AsyncTestCase, "Decider":
                 self.assertEqual(res, [rep1, rep2, rep3, rep4, rep5])
 
                 self.assertEqual(called
-                    , [ (msg1, "run_with", ([], args_for_run), dict(a=a, timeout=self.send_timeout, error_catcher=error_catcher, accept_found=True))
-                      , (msg2, "run_with", ([], args_for_run), dict(a=a, timeout=self.send_timeout, error_catcher=error_catcher, accept_found=True))
-                      , (msg3, "run_with", ([], args_for_run), dict(a=a, timeout=self.send_timeout, error_catcher=error_catcher, accept_found=True))
+                    , [ (msg1, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
+                      , (msg2, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
+                      , (msg3, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
                       ]
                     )
 

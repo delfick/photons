@@ -161,7 +161,7 @@ describe AsyncTestCase, "Transformer":
             getter = ColourMessages.GetColor(ack_required=False, res_required=True)
             self.target.expect_call(
                 mock.call(getter, [self.serial], self.afr
-                    , error_catcher=mock.ANY, timeout=1, find_timeout=1
+                    , error_catcher=mock.ANY
                     )
                   , [(state, None, None)]
                   )
@@ -173,7 +173,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(first_colour_message, [], self.afr
-                        , error_catcher=mock.ANY, timeout=1, accept_found=True
+                        , error_catcher=mock.ANY, accept_found=True
                         )
                     , []
                     )
@@ -185,7 +185,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(power_message, [], self.afr
-                        , error_catcher=mock.ANY, timeout=1, accept_found=True
+                        , error_catcher=mock.ANY, accept_found=True
                         )
                     , []
                     )
@@ -197,7 +197,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(second_colour_message, [], self.afr
-                        , error_catcher=mock.ANY, timeout=1, accept_found=True
+                        , error_catcher=mock.ANY, accept_found=True
                         )
                     , []
                     )

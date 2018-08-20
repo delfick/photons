@@ -288,21 +288,17 @@ class Decider(object):
     name = "using"
     has_children = True
 
-    def __init__(self, getter, decider, wanted, simplifier=None, get_timeout=1, send_timeout=1):
+    def __init__(self, getter, decider, wanted, simplifier=None):
         self.decider = decider
         self.wanted = wanted
         self.getter = getter
         self.simplifier = simplifier
-        self.get_timeout = get_timeout
-        self.send_timeout = send_timeout
 
     def simplified(self, simplifier, chain=None):
         chain = [] if chain is None else chain
         return self.__class__(simplifier(self.getter, chain=chain)
             , self.decider, self.wanted
             , simplifier = simplifier
-            , get_timeout = self.get_timeout
-            , send_timeout = self.send_timeout
             )
 
     async def run_with(self, references, args_for_run, **kwargs):
@@ -343,7 +339,7 @@ class Decider(object):
     async def do_getters(self, references, args_for_run, kwargs, error_catcher):
         results = defaultdict(list)
 
-        kw = {"find_timeout": self.get_timeout, "timeout": self.get_timeout, "error_catcher": error_catcher}
+        kw = {"error_catcher": error_catcher}
         kw.update(kwargs)
 
         for g in self.getter:
@@ -363,7 +359,7 @@ class Decider(object):
                 log.warning("Didn't find reference from getter %s\tavailable=%s", reference, list(got.keys()))
 
     async def send_msgs(self, msgs, args_for_run, kwargs, error_catcher):
-        kw = {"timeout": self.send_timeout, "error_catcher": error_catcher, "accept_found": True}
+        kw = {"error_catcher": error_catcher, "accept_found": True}
         kw.update(kwargs)
 
         for g in self.simplifier(msgs):
