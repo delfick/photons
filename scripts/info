@@ -14,6 +14,7 @@ from photons_colour import ColourMessages
 
 from option_merge_addons import option_merge_addon_hook
 from collections import defaultdict
+import binascii
 import logging
 import json
 
@@ -36,6 +37,21 @@ async def info(collector, target, reference, **kwargs):
 
     And will get zone information if your device is multizone capable
     """
+    async with ATarget(target) as afr:
+        found, serials = await reference.find(afr, target.default_broadcast, 30)
+        log.info(f"Found {len(serials)} devices")
+
+        buf = []
+        for serial in serials:
+            buf.append(serial)
+            if len(buf) == 20:
+                await gather(buf, target, afr, found)
+                buf = []
+
+        if buf:
+            await gather(buf, target, afr, found)
+
+async def gather(reference, target, afr, found):
     info = defaultdict(dict)
     multizone = []
 
@@ -47,55 +63,54 @@ async def info(collector, target, reference, **kwargs):
         , ColourMessages.GetColor()
         ]
 
-    def gatherer(reference, *states):
+    def gatherer(serial, *states):
         for s in states:
             if s | DeviceMessages.StateVersion:
                 capability = capability_for_ids(s.product, s.vendor)
-                info[reference]["capability"] = capability
+                info[serial]["capability"] = capability
                 if capability.has_multizone:
-                    multizone.append(reference)
+                    multizone.append(serial)
             elif s | ColourMessages.LightState:
-                info[reference]["label"] = s.label
-                info[reference]["power"] = "off" if s.power is 0 else "on"
-                info[reference]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(
+                info[serial]["label"] = s.label
+                info[serial]["power"] = "off" if s.power is 0 else "on"
+                info[serial]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(
                     s.hue, s.saturation, s.brightness, s.kelvin
                 )
             elif s | DeviceMessages.StateGroup:
-                info[reference]["group"] = s.label
+                info[serial]["group"] = s.label
             elif s | DeviceMessages.StateLocation:
-                info[reference]["location"] = s.label
+                info[serial]["location"] = s.label
             elif s | DeviceMessages.StateHostFirmware:
-                info[reference]["firmware"] = "{0} ({1})".format(s.version, s.build)
+                info[serial]["firmware"] = "{0} ({1})".format(s.version, s.build)
 
         return []
 
-    async with ATarget(target) as afr:
-        errors = []
-        await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors)
+    errors = []
+    await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors, found=found, accept_found=True)
 
-        if multizone:
-            res = await zones_from_reference(target, multizone, afr, error_catcher=errors)
-            for reference, zones in res.items():
-                info[reference]["zones"] = zones
+    if multizone:
+        res = await zones_from_reference(target, multizone, afr, error_catcher=errors)
+        for serial, zones in res.items():
+            info[serial]["zones"] = zones
 
-        didnt_find = set()
-        failed_interaction = defaultdict(set)
-        for e in set(errors):
-            if isinstance(e, FailedToFindDevice):
-                didnt_find.add(e.kwargs["serial"])
+    didnt_find = set()
+    failed_interaction = defaultdict(set)
+    for e in set(errors):
+        if isinstance(e, FailedToFindDevice):
+            didnt_find.add(e.kwargs["serial"])
+        else:
+            if "serial" in e.kwargs:
+                failed_interaction[e.kwargs["serial"]].add(e)
             else:
-                if "serial" in e.kwargs:
-                    failed_interaction[e.kwargs["serial"]].add(e)
-                else:
-                    log.error(e)
+                log.error(e)
 
-        for serial in didnt_find:
-            log.error(hp.lc("Failed to find device", serial=serial))
+    for serial in didnt_find:
+        log.error(hp.lc("Failed to find device", serial=serial))
 
-        for serial, errors in sorted(failed_interaction.items()):
-            log.error(hp.lc("Failed to interact with device", serial=serial, errors=list(errors)))
+    for serial, errors in sorted(failed_interaction.items()):
+        log.error(hp.lc("Failed to interact with device", serial=serial, errors=list(errors)))
 
-    for reference, i in sorted(info.items()):
+    for serial, i in sorted(info.items()):
         for key in ("label", "group", "location", "power", "firmware", "color"):
             if key not in i:
                 i[key] = "<unknown>"
@@ -103,7 +118,7 @@ async def info(collector, target, reference, **kwargs):
         if "capability" not in i:
             i["capability"] = DefaultCapability
 
-        print(reference)
+        print(serial)
         print("\tLabel: {0}\n\tGroup: {1}\n\tLocation: {2}".format(i["label"], i["group"], i["location"]))
         print("\tpower: {0}".format(i["power"]))
         print("\tFirmware: {0}".format(i["firmware"]))
