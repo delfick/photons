@@ -9,6 +9,10 @@ ChangeLog
         for run_with as they are no longer necessary
       - The packet definition now includes options for specifying how many
         packets to expect
+    * When error_catcher to run_with is a callable, it is called straight away
+      with all errors instead of being put onto the asyncio loop to be called
+      soon. This means when you have awaited on run_with, you know that all
+      errors have been given to the error_catcher
 
 0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a
