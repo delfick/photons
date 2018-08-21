@@ -81,6 +81,7 @@ class TransportBridge(object):
     Messages = NotImplemented
     RetryOptions = RetryOptions
     default_desired_services = None
+    _merged_options_formattable = True
 
     def __init__(self, stop_fut, transport_target, protocol_register, found=None, default_broadcast="255.255.255.255"):
         self.transport_target = transport_target
