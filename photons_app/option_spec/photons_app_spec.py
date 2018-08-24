@@ -13,15 +13,10 @@ from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms import validators
 
-import platform
 import asyncio
 import logging
 import json
 import sys
-
-uvloop = None
-if platform.system() != "Windows":
-    import uvloop
 
 log = logging.getLogger("photons_app.options_spec.photons_app-spec")
 
@@ -67,14 +62,9 @@ class PhotonsApp(dictobj.Spec):
     default_activate_all_modules = dictobj.Field(sb.boolean, default=False
         , help="The collector looks at this to determine if we should default to activating all photons modules"
         )
-    use_uvloop = dictobj.Field(sb.boolean, default=True
-        , help="Use uvloop if it is available"
-        )
 
     @memoized_property
-    def uvloop(self):
-        if uvloop and self.use_uvloop:
-            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    def loop(self):
         loop = asyncio.get_event_loop()
         if self.debug:
             loop.set_debug(True)

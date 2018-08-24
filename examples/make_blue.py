@@ -14,5 +14,5 @@ async def doit():
     script = lan_target.script([color_msg, on_msg])
     await script.run_with_all(FoundSerials())
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

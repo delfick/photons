@@ -28,5 +28,5 @@ async def doit():
     msg = Decider(getter, found, [DeviceMessages.StateLabel, ColourMessages.LightState])
     await lan_target.script(msg).run_with_all(FoundSerials())
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

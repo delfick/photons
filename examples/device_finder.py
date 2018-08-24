@@ -87,7 +87,7 @@ async def doit():
     finally:
         await device_finder.finish()
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 try:
     loop.run_until_complete(doit())
 except (EOFError, KeyboardInterrupt):

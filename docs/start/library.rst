@@ -23,8 +23,10 @@ So our script from the :ref:`lifx_photons_script` would look like:
     # and core_modules to a list like ["sockets", "color"]
     collector = library_setup()
 
-    # We can get a uvloop from the photons_app object
-    loop = collector.configuration["photons_app"].uvloop
+    # We can get a loop from the photons_app object
+    # This just gets a normal asyncio event loop
+    # And sets debug on it if photons_app.debug is set
+    loop = collector.configuration["photons_app"].loop
 
     # Or we can do something like
     # import asyncio

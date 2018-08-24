@@ -55,5 +55,5 @@ async def doit():
         # We share the afr we got from ATarget so that we don't have to search for the ips of the lights again
         await lan_target.script(msgs).run_with_all(None, afr)
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

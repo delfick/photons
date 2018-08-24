@@ -12,10 +12,6 @@ import platform
 import asyncio
 import mock
 
-uvloop = None
-if platform.system() != "Windows":
-    import uvloop
-
 describe TestCase, "PhotonsApp":
     before_each:
         self.final_future = mock.Mock(name="final_future")
@@ -24,36 +20,17 @@ describe TestCase, "PhotonsApp":
     def make_photons_app(self, **kwargs):
         return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(self.meta, kwargs)
 
-    describe "uvloop":
-        it "installs uvloop":
+    describe "loop":
+        it "gets a loop":
             photons_app = self.make_photons_app()
-
-            policy = asyncio.get_event_loop_policy()
-            if uvloop:
-                assert not isinstance(policy, uvloop.EventLoopPolicy)
-
-            try:
-                loop = photons_app.uvloop
-                if platform.system() != "Windows":
-                    assert isinstance(loop, uvloop.Loop)
-                assert not loop.get_debug()
-            finally:
-                asyncio.set_event_loop_policy(policy)
+            loop = photons_app.loop
+            assert not loop.get_debug()
 
         it "makes the loop debug if we are in debug":
             photons_app = self.make_photons_app(debug=True)
 
-            policy = asyncio.get_event_loop_policy()
-            if uvloop:
-                assert not isinstance(policy, uvloop.EventLoopPolicy)
-
-            try:
-                loop = photons_app.uvloop
-                if platform.system() != "Windows":
-                    assert isinstance(loop, uvloop.Loop)
-                assert loop.get_debug()
-            finally:
-                asyncio.set_event_loop_policy(policy)
+            loop = photons_app.loop
+            assert loop.get_debug()
 
     describe "final_future":
         it "returns result of calling our final_future function":

@@ -1,7 +1,6 @@
 from photons_app import VERSION
 
 from setuptools import setup, find_packages
-import platform
 import os
 
 packages = []
@@ -21,10 +20,6 @@ for filename in os.listdir(this_dir):
         packages.extend([filename] + ["{0}.{1}".format(filename, pkg) for pkg in find_packages(filename)])
         if filename != 'photons_app':
             photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
-
-maybeuvloop = []
-if platform.system() != "Windows":
-    maybeuvloop.append("uvloop==0.11.0")
 
 setup(
       name = "lifx-photons-core"
@@ -48,7 +43,7 @@ setup(
 
       # photons-protocol
       , "bitarray == 0.8.1"
-      ] + maybeuvloop
+      ]
 
     , extras_require =
       { "tests":

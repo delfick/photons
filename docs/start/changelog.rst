@@ -13,6 +13,10 @@ ChangeLog
       with all errors instead of being put onto the asyncio loop to be called
       soon. This means when you have awaited on run_with, you know that all
       errors have been given to the error_catcher
+    * Remove uvloop altogether. I don't think it is actually necessary and it
+      would break after the process was alive long enough. Also it's disabled
+      for windows anyway, and something that needs to be compiled at
+      installation.
 
 0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a

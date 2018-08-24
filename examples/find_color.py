@@ -13,5 +13,5 @@ async def doit():
         hsbk = " ".join("{0}={1}".format(key, pkt.payload[key]) for key in ("hue", "saturation", "brightness", "kelvin"))
         print("{0}: {1}".format(pkt.serial, hsbk))
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

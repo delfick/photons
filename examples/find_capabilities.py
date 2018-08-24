@@ -14,5 +14,5 @@ async def doit():
             cap = capability_for_ids(pkt.product, pkt.vendor)
             print("{}: {}".format(pkt.serial, cap))
 
-loop = collector.configuration["photons_app"].uvloop
+loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

@@ -89,7 +89,7 @@ def run(collector):
     """
     Get the loop, then use runner with stop_everything in a finally block
     """
-    loop = collector.configuration["photons_app"].uvloop
+    loop = collector.configuration["photons_app"].loop
 
     task = loop.create_task(runner(collector))
     task.add_done_callback(hp.silent_reporter)

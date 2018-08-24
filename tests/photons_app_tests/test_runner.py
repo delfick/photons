@@ -17,11 +17,11 @@ describe TestCase, "run":
 
         loop = asyncio.new_event_loop()
 
-        uvloop = mock.Mock(name="uvloop")
-        uvloop.create_task.side_effect = loop.create_task
-        uvloop.run_until_complete.side_effect = loop.run_until_complete
+        lp = mock.Mock(name="loop")
+        lp.create_task.side_effect = loop.create_task
+        lp.run_until_complete.side_effect = loop.run_until_complete
 
-        photons_app = mock.Mock(name="photons_app", uvloop=uvloop)
+        photons_app = mock.Mock(name="photons_app", loop=lp)
         configuration = {"photons_app": photons_app}
         collector = mock.Mock(name="collector", configuration=configuration)
 
@@ -30,7 +30,7 @@ describe TestCase, "run":
             called.append(1)
 
         def stop_everything(l, c):
-            self.assertIs(l, uvloop)
+            self.assertIs(l, lp)
             self.assertIs(c, collector)
             called.append(2)
 
@@ -40,17 +40,18 @@ describe TestCase, "run":
 
         self.assertEqual(called, [1, 2])
 
-        uvloop.run_until_complete.assert_called_once_with(mock.ANY)
+        lp.run_until_complete.assert_called_once_with(mock.ANY)
 
     it "calls stop_everything even if runner raise an exception":
         called = []
 
         loop = asyncio.new_event_loop()
-        uvloop = mock.Mock(name="uvloop")
-        uvloop.create_task.side_effect = loop.create_task
-        uvloop.run_until_complete.side_effect = loop.run_until_complete
 
-        photons_app = mock.Mock(name="photons_app", uvloop=uvloop)
+        lp = mock.Mock(name="loop")
+        lp.create_task.side_effect = loop.create_task
+        lp.run_until_complete.side_effect = loop.run_until_complete
+
+        photons_app = mock.Mock(name="photons_app", loop=lp)
         configuration = {"photons_app": photons_app}
         collector = mock.Mock(name="collector", configuration=configuration)
 
@@ -60,7 +61,7 @@ describe TestCase, "run":
             raise Exception("wat")
 
         def stop_everything(l, c):
-            self.assertIs(l, uvloop)
+            self.assertIs(l, lp)
             self.assertIs(c, collector)
             called.append(2)
 
@@ -71,7 +72,7 @@ describe TestCase, "run":
 
         self.assertEqual(called, [1, 2])
 
-        uvloop.run_until_complete.assert_called_once_with(mock.ANY)
+        lp.run_until_complete.assert_called_once_with(mock.ANY)
 
 describe AsyncTestCase, "runner":
     async it "cancels final_future if it gets a SIGTERM":
