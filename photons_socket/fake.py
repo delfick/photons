@@ -107,6 +107,8 @@ class FakeDevice(object):
         self.protocol_register = protocol_register
 
     async def start(self):
+        ready = asyncio.Future()
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('0.0.0.0', 0))
             port = s.getsockname()[1]
@@ -114,6 +116,8 @@ class FakeDevice(object):
         class ServerProtocol(asyncio.Protocol):
             def connection_made(sp, transport):
                 self.transport = transport
+                if not ready.done():
+                    ready.set_result(True)
 
             def datagram_received(sp, data, addr):
                 if not self.online:
@@ -138,6 +142,10 @@ class FakeDevice(object):
         self.port = port
         self.services = (set([(Services.UDP, ("127.0.0.1", self.port))]), "255.255.255.255")
         self.online = True
+
+        # Make sure we wait for the port to be bound
+        # So that other test devices don't choose the same port
+        await ready
 
     async def finish(self):
         if hasattr(self, "remote"):
