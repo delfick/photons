@@ -3,6 +3,7 @@
 
 from photons_app.actions import an_action
 
+from photons_device_messages import DeviceMessages
 from photons_tile_messages import TileMessages
 from photons_script.script import ATarget
 
@@ -24,6 +25,10 @@ async def tiles(collector, target, reference, **kwargs):
     Set our tiles to specific colors
 
     ``tiles d073d5000001,d073d5000002``
+
+    Note that you have to specify just tiles. A shortcut to doing this is to say something like:
+
+    ``tiles match:cap=chain``
     """
     colors = []
     for i in range(5):
@@ -32,7 +37,8 @@ async def tiles(collector, target, reference, **kwargs):
             nxt.append({"hue": random.randint(0, 360), "saturation": 1, "brightness": 0.5, "kelvin": 3500})
         colors.append(nxt)
 
-    msgs = []
+    msgs = [DeviceMessages.SetPower(level=65535)]
+
     for i, colors in enumerate(colors):
         msgs.append(TileMessages.SetTileState64(tile_index=i, length=1, x=0, y=0, width=8, duration=1, colors=colors, res_required=False))
 
