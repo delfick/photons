@@ -1,8 +1,10 @@
 #/bin/sh
 "exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
 
+from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
+from photons_products_registry import capability_for_ids
 from photons_device_messages import DeviceMessages
 from photons_tile_messages import TileMessages
 from photons_script.script import ATarget
@@ -13,7 +15,7 @@ import random
 
 log = logging.getLogger("info")
 
-wanted = ["socket", "tile_messages", "device_finder"]
+wanted = ["socket", "tile_messages", "device_finder", "products_registry", "script"]
 
 @option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
 def __lifx__(collector, *args, **kwargs):
@@ -22,27 +24,51 @@ def __lifx__(collector, *args, **kwargs):
 @an_action(needs_target=True, special_reference=True)
 async def tiles(collector, target, reference, **kwargs):
     """
-    Set our tiles to specific colors
+    Set any tiles we find on the network to specific colors
+
+    You can specify only specific devices by giving a matcher. For example:
 
     ``tiles d073d5000001,d073d5000002``
 
-    Note that you have to specify just tiles. A shortcut to doing this is to say something like:
+    or
 
-    ``tiles match:cap=chain``
+    ``tiles match:group_name=kitchen``
     """
-    colors = []
-    for i in range(5):
-        nxt = []
-        for i in range(64):
-            nxt.append({"hue": random.randint(0, 360), "saturation": 1, "brightness": 0.5, "kelvin": 3500})
-        colors.append(nxt)
+    tiles = []
+    async with ATarget(target) as afr:
+        async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
+            if pkt | DeviceMessages.StateVersion:
+                if capability_for_ids(pkt.product, pkt.vendor).has_chain:
+                    tiles.append(pkt.serial)
 
-    msgs = [DeviceMessages.SetPower(level=65535)]
+        if not tiles:
+            raise PhotonsAppError("Couldn't find any tiles on your network")
 
-    for i, colors in enumerate(colors):
-        msgs.append(TileMessages.SetTileState64(tile_index=i, length=1, x=0, y=0, width=8, duration=1, colors=colors, res_required=False))
+        colors = []
+        for i in range(5):
+            nxt = []
+            for i in range(64):
+                nxt.append({"hue": random.randint(0, 360), "saturation": 1, "brightness": 0.5, "kelvin": 3500})
+            colors.append(nxt)
 
-    await target.script(msgs).run_with_all(reference)
+        msgs = [DeviceMessages.SetPower(level=65535)]
+
+        for i, colors in enumerate(colors):
+            msgs.append(TileMessages.SetTileState64(
+                  x = 0
+                , y = 0
+                , width = 8
+                , length = 1
+                , duration = 1
+
+                , colors = colors
+                , tile_index = i
+
+                , res_required = False
+                )
+            )
+
+        await target.script(msgs).run_with_all(tiles, afr)
 
 if __name__ == "__main__":
     from photons_app.executor import main
