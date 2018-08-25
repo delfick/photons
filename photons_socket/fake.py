@@ -30,7 +30,7 @@ Usage looks like:
 
     final_future = asyncio.Future()
     everything = {
-          "final_future": lambda: final_future
+          "final_future": final_future
         , "protocol_register": protocol_register
         }
     meta = Meta(everything, []).at("target")
