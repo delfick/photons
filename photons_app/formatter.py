@@ -18,6 +18,7 @@ from option_merge.formatter import MergedOptionStringFormatter as StringFormatte
 from photons_app.errors import BadOptionFormat
 from input_algorithms.meta import Meta
 import pkg_resources
+import asyncio
 
 class MergedOptionStringFormatter(StringFormatter):
     """
@@ -83,3 +84,5 @@ class MergedOptionStringFormatter(StringFormatter):
         if format_spec == "resource":
             parts = obj.split("/")
             return pkg_resources.resource_filename(parts[0], "/".join(parts[1:]))
+        elif isinstance(obj, asyncio.Future):
+            return obj

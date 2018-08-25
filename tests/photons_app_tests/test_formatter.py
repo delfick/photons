@@ -8,6 +8,7 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from option_merge import MergedOptions
+import asyncio
 import uuid
 import mock
 
@@ -56,3 +57,8 @@ describe TestCase, "MergedOptionStringFormatter":
             self.assertIs(self.spec.normalise(self.meta, "{somewhere.nice/really/cool:resource}"), res)
 
         resource_filename.assert_called_once_with("somewhere.nice", "really/cool")
+
+    it "can return asyncio.Future objects":
+        fut = asyncio.Future()
+        self.meta.everything["fut"] = fut
+        self.assertIs(self.spec.normalise(self.meta, "{fut}"), fut)
