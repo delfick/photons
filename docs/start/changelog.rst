@@ -17,6 +17,11 @@ ChangeLog
       would break after the process was alive long enough. Also it's disabled
       for windows anyway, and something that needs to be compiled at
       installation.
+    * collector.configuration["final_future"] is now the Future object itself
+      rather than a function returning the future.
+    * Anything inheriting from TransportTarget now has ``protocol_register``
+      attribute instead of ``protocols`` and ``final_future`` instead of
+      ``final_fut_finder``
 
 0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a

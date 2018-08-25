@@ -242,7 +242,7 @@ describe AsyncTestCase, "End2End":
     async before_each:
         self.final_future = asyncio.Future()
         self.protocol_register = mock.Mock(name="protocol_register")
-        meta = Meta({"final_future": lambda: self.final_future, "protocol_register": self.protocol_register}, [])
+        meta = Meta({"final_future": self.final_future, "protocol_register": self.protocol_register}, [])
         self.target = MemoryTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta.at("targets").at("memory"), {})
 
     async after_each:

@@ -26,7 +26,7 @@ describe AsyncTestCase, "SocketTarget":
         self.protocol_register.message_register(1024).add(DiscoveryMessages)
 
         self.final_future = asyncio.Future()
-        options = {"final_future": lambda : self.final_future, "protocol_register": self.protocol_register}
+        options = {"final_future": self.final_future, "protocol_register": self.protocol_register}
 
         meta = Meta(options, []).at("targets").at("lan")
         self.target = SocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})

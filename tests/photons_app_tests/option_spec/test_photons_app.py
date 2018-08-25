@@ -14,7 +14,7 @@ import mock
 
 describe TestCase, "PhotonsApp":
     before_each:
-        self.final_future = mock.Mock(name="final_future")
+        self.final_future = asyncio.Future()
         self.meta = Meta({"final_future": self.final_future}, []).at("photons_app")
 
     def make_photons_app(self, **kwargs):
@@ -33,18 +33,9 @@ describe TestCase, "PhotonsApp":
             assert loop.get_debug()
 
     describe "final_future":
-        it "returns result of calling our final_future function":
-            res = mock.Mock(name="final_future")
-            self.final_future.return_value = res
+        it "Is the final future":
             photons_app = self.make_photons_app()
-
-            self.assertIs(photons_app.final_future, res)
-            self.final_future.assert_called_once_with()
-
-            # And it memoizes the value
-            self.assertIs(photons_app.final_future, res)
-            self.assertIs(photons_app.final_future, res)
-            self.final_future.assert_called_once_with()
+            self.assertIs(photons_app.final_future, self.final_future)
 
     describe "extra_as_json":
         it "converts extra into json dictionary":

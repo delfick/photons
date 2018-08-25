@@ -28,15 +28,28 @@ class TransportTarget(dictobj.Spec):
             bridge_kls = lambda s: SocketBridge
             description = dictobj.Field(sb.string_spec, default="Understands how to talk to a device over a TCP socket")
 
-    ``protocols`` and ``final_fut_finder`` are retrieved automatically from
+    ``protocol_register`` and ``final_future`` are retrieved automatically from
     ``Meta`` if we create the transport by doing
     ``TransportTarget.normalise(meta, **kwargs)``
+
+    Note that the path on the meta cannot be root. So make you meta like:
+
+    .. code-block:: python
+
+        from input_algorithms.meta import Meta
+        from option_merge import MergedOptions
+
+        configuration = MergedOptions.using({"protocol_register": ..., "final_future": asyncio.Future()})
+
+        # By saying `at("options")` on the meta we are putting it not at root
+        # So when we resolve final_future we don't get recursive option errors
+        meta = Meta(configuration, []).at("options")
 
     Generally you'll be passed in a transport via the ``tasks`` mechanism and
     you won't have to instantiate it yourself.
     """
-    protocols = dictobj.Field(sb.overridden("{protocol_register}"), formatted=True)
-    final_fut_finder = dictobj.Field(sb.overridden("{final_future}"), formatted=True)
+    protocol_register = dictobj.Field(sb.overridden("{protocol_register}"), formatted=True)
+    final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True)
     default_broadcast = dictobj.Field(sb.defaulted(sb.string_spec(), "255.255.255.255"))
     item_kls = lambda s: TransportItem
     bridge_kls = lambda s: TransportBridge
@@ -53,8 +66,8 @@ class TransportTarget(dictobj.Spec):
 
     async def args_for_run(self, found=None):
         """Create an instance of args_for_run. This is designed to be shared amongst many `script`"""
-        afr = self.bridge_kls()(self.final_fut_finder(), self
-            , protocol_register=self.protocols, found=found, default_broadcast=self.default_broadcast
+        afr = self.bridge_kls()(self.final_future, self
+            , protocol_register=self.protocol_register, found=found, default_broadcast=self.default_broadcast
             )
         await afr.start()
         return afr

@@ -56,8 +56,8 @@ class PhotonsApp(dictobj.Spec):
     cleaners = dictobj.Field(lambda: sb.overridden([])
         , help="A list of functions to call when cleaning up at the end of the program"
         )
-    final_fut_finder = dictobj.Field(sb.overridden("{final_future}"), formatted=True
-        , help="A function returning the future representing the end of the program"
+    final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True
+        , help="A future representing the end of the program"
         )
     default_activate_all_modules = dictobj.Field(sb.boolean, default=False
         , help="The collector looks at this to determine if we should default to activating all photons modules"
@@ -69,10 +69,6 @@ class PhotonsApp(dictobj.Spec):
         if self.debug:
             loop.set_debug(True)
         return loop
-
-    @memoized_property
-    def final_future(self):
-        return self.final_fut_finder()
 
     @memoized_property
     def extra_as_json(self):

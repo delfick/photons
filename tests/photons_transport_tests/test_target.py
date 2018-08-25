@@ -15,7 +15,7 @@ import mock
 
 describe AsyncTestCase, "TransportTarget":
     describe "normalise":
-        async it "gets protocol_register and final_future from the meta":
+        async it "gets protocol_register and final_fut from the meta":
             protocol_register = mock.Mock(name="protocol_register")
             final_future = mock.Mock(name="final_future")
             config = {
@@ -27,15 +27,14 @@ describe AsyncTestCase, "TransportTarget":
             spec = TransportTarget.FieldSpec(formatter=MergedOptionStringFormatter)
             t = spec.normalise(meta, {})
 
-            self.assertIs(t.protocols, protocol_register)
-            self.assertIs(t.final_fut_finder, final_future)
+            self.assertIs(t.protocol_register, protocol_register)
+            self.assertIs(t.final_future, final_future)
             self.assertEqual(t.default_broadcast, "255.255.255.255")
 
     describe "Usage":
         async before_each:
             self.protocol_register = mock.Mock(name="protocol_register")
             self.final_future = mock.Mock(name="final_future")
-            self.final_fut_finder = lambda: self.final_future
             self.item_kls = mock.Mock(name="item_kls")
             self.bridge_kls = mock.Mock(name="bridge_kls")
 
@@ -45,7 +44,7 @@ describe AsyncTestCase, "TransportTarget":
 
             config = {
                   "protocol_register": self.protocol_register
-                , "final_future": self.final_fut_finder
+                , "final_future": self.final_future
                 }
             meta = Meta(config, []).at("target")
             spec = Transport.FieldSpec(formatter=MergedOptionStringFormatter)

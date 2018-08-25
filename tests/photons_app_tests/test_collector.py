@@ -88,17 +88,18 @@ describe TestCase, "Collector":
             with self.mocks(collector, configuration, args_dict, photons_app, register):
                 collector.extra_prepare(configuration, args_dict)
 
+            class AFuture:
+                def __eq__(self, other):
+                    return isinstance(other, asyncio.Future)
+
             self.assertIs(collector.register, register)
             self.assertEqual(configuration.as_dict()
                 , { "$@": extra
                   , "collector": collector
                   , "photons_app": photons_app
-                  , "final_future": mock.ANY
+                  , "final_future": AFuture()
                   }
                 )
-
-            self.assertEqual(type(configuration["final_future"]()), asyncio.Future)
-            self.assertIs(configuration["final_future"](), configuration["final_future"]())
 
     describe "find_photons_app_options":
         it "returns us a dictionary with options from configuration and args_dict":

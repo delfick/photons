@@ -79,35 +79,18 @@ class Collector(Collector):
             The photons_app settings
 
         final_future
-            A function that returns a future object representing the end of the
-            the program. Users may call this function to get a future that is
-            only resolved when the program is quitting.
-
-            So to determine if the program is ending:
-
-            .. code-block:: python
-
-                final_fut = collector.configuration["final_future"]()
-                if final_fut.done():
-                    print("Program is ending")
+            A future representing the end of the program.
         """
         photons_app = self.find_photons_app_options(configuration, args_dict)
         __main__ = self.determine_mainline_module()
         self.register = self.setup_addon_register(photons_app, __main__)
-
-        info = {}
-
-        def final_fut_finder(*args):
-            if "fut" not in info:
-                info["fut"] = asyncio.Future()
-            return info["fut"]
 
         # Add our special stuff to the configuration
         configuration.update(
             { "$@": photons_app.get("extra", "")
             , "collector": self
             , "photons_app": photons_app
-            , "final_future": final_fut_finder
+            , "final_future": asyncio.Future()
             }
         , source = "<args_dict>"
         )

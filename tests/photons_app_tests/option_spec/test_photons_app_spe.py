@@ -16,7 +16,7 @@ describe TestCase, "PhotonsAppSpec":
         self.spec = PhotonsAppSpec()
         self.collector = mock.Mock(name="collector")
         self.final_future = mock.Mock(name='final_future')
-        self.meta = Meta({"collector": self.collector, "final_future": self.final_future}, [])
+        self.meta = Meta({"collector": self.collector, "final_future": self.final_future}, []).at("options")
 
     describe "target_name_spec":
         before_each:
