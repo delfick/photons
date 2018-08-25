@@ -1,5 +1,6 @@
 from photons_transform.transformer import Transformer
 
+from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from option_merge_addons import option_merge_addon_hook
@@ -23,4 +24,6 @@ async def transform(collector, target, reference, **kwargs):
     ``SetWaveformOptional``.
     """
     msg = Transformer.using(collector.configuration["photons_app"].extra_as_json)
+    if not msg:
+        raise PhotonsAppError('Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``')
     await target.script(msg).run_with_all(reference)
