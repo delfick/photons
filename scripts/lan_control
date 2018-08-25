@@ -1,15 +1,5 @@
 #/bin/sh
-"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
-
-from option_merge_addons import option_merge_addon_hook
-
-wanted = ["protocol", "colour", "socket", "device_messages", "attributes", "transform", "multizone", "tile_messages", "device_finder", "tile_paint"]
-
-@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
-def __lifx__(collector, *args, **kwargs):
-    pass
-
-if __name__ == "__main__":
-    from photons_app.executor import main
-    import sys
-    main(["lan:{0}".format(sys.argv[1])] + sys.argv[2:])
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+command=$1
+shift
+$DIR/.lifx/bin/lifx lan:$command "$@"
