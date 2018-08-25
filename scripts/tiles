@@ -59,7 +59,7 @@ async def tiles(collector, target, reference, **kwargs):
                 , y = 0
                 , width = 8
                 , length = 1
-                , duration = 1
+                , duration = 2
 
                 , colors = colors
                 , tile_index = i
