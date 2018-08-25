@@ -2,4 +2,4 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 command=$1
 shift
-$DIR/.lifx/bin/lifx lan:$command "$@"
+$DIR/lifx lan:$command "$@"
