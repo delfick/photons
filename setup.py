@@ -33,7 +33,7 @@ setup(
       # photons_app
         "delfick_error==1.7.8"
       , "input_algorithms==0.6.0"
-      , "delfick_app==0.9.6"
+      , "delfick_app==0.9.7"
       , "option_merge==1.6"
       , "option_merge_addons==0.3"
       , "pyYaml==3.13"

@@ -22,6 +22,8 @@ ChangeLog
     * Anything inheriting from TransportTarget now has ``protocol_register``
       attribute instead of ``protocols`` and ``final_future`` instead of
       ``final_fut_finder``
+    * Updated delfick_app to give us a --json-console-logs argument for showing
+      logs as json lines
 
 0.5.11 - 28 July 2018
     * Small fix to the version_number_spec for defining a version number on a
