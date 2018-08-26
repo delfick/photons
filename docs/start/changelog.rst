@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.6 - TBD
+0.6 - 26 August 2018
     * Cleaned up the code that handles retries and multiple replies
       - multiple_replies, first_send and first_wait are no longer options
         for run_with as they are no longer necessary
