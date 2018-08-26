@@ -66,6 +66,7 @@ setup(
     , author = "Stephen Moore"
     , author_email = "delfick755@gmail.com"
     , description = "The core modules of the photons framework"
+    , long_description = open("README.rst").read()
     , license = "MIT"
     , keywords = "lifx photons"
     )
