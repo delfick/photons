@@ -5,10 +5,12 @@ ChangeLog
 
 0.6 - 26 August 2018
     * Cleaned up the code that handles retries and multiple replies
+
       - multiple_replies, first_send and first_wait are no longer options
         for run_with as they are no longer necessary
       - The packet definition now includes options for specifying how many
         packets to expect
+
     * When error_catcher to run_with is a callable, it is called straight away
       with all errors instead of being put onto the asyncio loop to be called
       soon. This means when you have awaited on run_with, you know that all
