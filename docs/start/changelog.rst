@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.6.1 - TBD
+0.6.1 - 1 September 2018
     * Added the tile_gameoflife task for doing a Conway's game of life simulation
       on your tiles.
 
