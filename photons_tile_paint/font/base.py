@@ -10,6 +10,10 @@ class Character:
     def width(self):
         return len(self.char.split("\n")[0])
 
+    @property
+    def height(self):
+        return len(self.char.split("\n"))
+
     def get_color_func(self, fill_color):
         pixels = self.char.split('\n')
 

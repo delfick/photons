@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.6.1 - TBD
+    * Added the tile_gameoflife task for doing a Conway's game of life simulation
+      on your tiles.
+
 0.6 - 26 August 2018
     * Cleaned up the code that handles retries and multiple replies
 

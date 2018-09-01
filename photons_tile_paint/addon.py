@@ -77,3 +77,15 @@ tile_nyan = an_action(needs_target=True, special_reference=True)(animation_actio
       ``lifx lan:tile_nyan <reference>``
       """
     ))
+
+from photons_tile_paint.gameoflife.animation import TileGameOfLifeAnimation
+from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
+tile_gameoflife = an_action(needs_target=True, special_reference=True)(animation_action(
+      "tile_gameoflife"
+    , TileGameOfLifeAnimation, TileGameOfLifeOptions
+    , """
+      Run a Conway's game of life simulation on the tiles
+
+      ``lifx lan:tile_gameoflife <reference>``
+      """
+    ))

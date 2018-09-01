@@ -18,6 +18,8 @@ For example::
 
   lifx lan:tile_pacman <reference>
 
+  lifx lan:tile_gameoflife <reference>
+
 Where the options are optional and are as follows:
 
 background
@@ -87,3 +89,34 @@ tile_pacman
 
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop
+
+tile_gameoflife
+  This simulates the conway's game of life (https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
+
+  Pixels turn on to represent ``alive`` cells and turn off to represent ``dead``
+  cells.
+
+  We will randomly turn on cells with random colors every second and then
+  iterate using the rules of the simulation
+
+  This also has the following options
+
+  user_coords -- boolean -- default false
+    If this is true, then we use the (user_x, user_y) values from the tiles to
+    determine what to display on the tiles. By default we assume the tiles are
+    in a horizontal row.
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
+
+  new_color_style -- ``random`` or ``average`` -- default ``average``
+    This determines what color we set points that become alive. If random then
+    we choose a random color. If average then we set the color to be the average
+    of it's surrounding neighbours.
+
+    Note that the randomly placed cells every second are random colors regardless
+    of this option.
+
+  iteration_delay -- float -- default 0.1
+    The amount of seconds between each iteration of the simulation. Note that
+    0.1 is the smallest value.
