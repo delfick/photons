@@ -111,6 +111,20 @@ describe TestCase, "Canvas":
         canvas[(2, 3)] = red
         self.assertEqual(canvas.points, {(1, 1): white, (2, 3): red})
 
+    it "can delete a point":
+        canvas = Canvas()
+        self.assertEqual(canvas.points, {})
+
+        canvas[(1, 1)] = white
+        canvas[(2, 1)] = white
+        self.assertEqual(canvas.points, {(1, 1): white, (2, 1): white})
+
+        del canvas[(1, 1)]
+        self.assertEqual(canvas.points, {(2, 1): white})
+
+        del canvas[(2, 1)]
+        self.assertEqual(canvas.points, {})
+
     it "can test whether a point is in the canvas":
         canvas = Canvas()
         assert (1, 1) not in canvas
@@ -294,6 +308,24 @@ describe TestCase, "Canvas":
 
             canvas[(200, 200)] = white
             self.assertEqual(canvas.center, (50, 50))
+
+    describe "surrounding_points":
+        it "gets the points that surround the provided i, j":
+            canvas = Canvas()
+
+            self.assertEqual(canvas.surrounding_points(-1, 4)
+                , [ (-2, 5), (-1, 5), (0, 5)
+                  , (-2, 4),          (0, 4)
+                  , (-2, 3), (-1, 3), (0, 3)
+                  ]
+                )
+
+            self.assertEqual(canvas.surrounding_points(20, -9)
+                , [ (19, -8),  (20,  -8), (21, -8)
+                  , (19, -9),             (21, -9)
+                  , (19, -10), (20, -10), (21, -10)
+                  ]
+                )
 
     describe "surrounding_colors":
         it "gets the colors that surround the provided i, j":

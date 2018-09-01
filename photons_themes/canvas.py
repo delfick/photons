@@ -191,7 +191,11 @@ class Canvas:
 
         This will only return points that exist.
         """
-        surrounding = [
+        return [self[(x, y)] for x, y in self.surrounding_points(i, j) if (x, y) in self]
+
+    def surrounding_points(self, i, j):
+        """Return the co-ordinates that are neighbours of this point"""
+        return [
             (i - 1, j + 1)
           , (i    , j + 1)
           , (i + 1, j + 1)
@@ -201,7 +205,6 @@ class Canvas:
           , (i    , j - 1)
           , (i + 1, j - 1)
           ]
-        return [self[(x, y)] for x, y in surrounding if (x, y) in self]
 
     def has_neighbour(self, i, j):
         """Return whether there are any points around this (i, j) position"""
@@ -320,6 +323,10 @@ class Canvas:
     def __setitem__(self, key, color):
         """Set the color at ``point`` where ``point`` is ``(i, j)``"""
         self.points[key] = color
+
+    def __delitem__(self, key):
+        """Remove a key from our points"""
+        del self.points[key]
 
     def __contains__(self, point):
         """Return whether this ``point`` has a color where ``point`` is ``(i, j)``"""
