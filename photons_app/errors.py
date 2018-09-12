@@ -28,6 +28,9 @@ UserQuit = UserQuit
 BadSpecValue = BadSpecValue
 ProgrammerError = ProgrammerError
 
+class ApplicationCancelled(PhotonsAppError):
+    desc = "The application itself was shutdown"
+
 class BadConfiguration(PhotonsAppError):
     desc = "Bad configuration"
 

@@ -1,3 +1,4 @@
+from photons_app.errors import ApplicationCancelled
 from photons_app import helpers as hp
 
 import platform
@@ -96,5 +97,7 @@ def run(collector):
 
     try:
         loop.run_until_complete(task)
+    except asyncio.CancelledError:
+        raise ApplicationCancelled()
     finally:
         stop_everything(loop, collector)
