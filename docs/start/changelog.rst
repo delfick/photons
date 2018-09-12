@@ -5,6 +5,7 @@ ChangeLog
 
 0.6.2 - TBD
     * Fixed cleanup logic
+    * Make products registry aware of kelvin ranges
 
 0.6.1 - 1 September 2018
     * Added the tile_gameoflife task for doing a Conway's game of life simulation

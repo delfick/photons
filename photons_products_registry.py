@@ -138,6 +138,9 @@ class Capability(dictobj.Spec):
     has_variable_color_temp = dictobj.Field(sb.boolean, default=True)
     has_chain = dictobj.Field(sb.boolean, default=False)
 
+    min_kelvin = dictobj.Field(sb.integer_spec, default=2500)
+    max_kelvin = dictobj.Field(sb.integer_spec, default=9000)
+
 def capability(name, company, identifier, **kwargs):
     return Capability.FieldSpec().empty_normalise(name=name, company=company, identifier=identifier, **kwargs)
 
@@ -149,9 +152,9 @@ class Capabilities(Enum):
     LMB_MESH_A21            = lc("Original 1000", "original")
     LMBG_MESH_GU10          = lc("Color 650", "gu10_color")
 
-    LCMV4_A19_WHITE_LV      = lc("White 800", "a19_white", has_color=False)
-    LCMV4_A19_WHITE_HV      = lc("White 800", "a19_white", has_color=False)
-    LCMV4_BR30_WHITE_LV     = lc("White 900 BR30", "br30_white", has_color=False)
+    LCMV4_A19_WHITE_LV      = lc("White 800", "a19_white", has_color=False, min_kelvin=2700, max_kelvin=6500)
+    LCMV4_A19_WHITE_HV      = lc("White 800", "a19_white", has_color=False, min_kelvin=2700, max_kelvin=6500)
+    LCMV4_BR30_WHITE_LV     = lc("White 900 BR30", "br30_white", has_color=False, min_kelvin=2700, max_kelvin=6500)
     LCMV4_BR30_COLOR        = lc("Color 1000 BR30", "br30_color")
     LCMV4_A19_COLOR         = lc("Color 1000", "a19_color")
 
@@ -173,15 +176,15 @@ class Capabilities(Enum):
     LCM2_BR30_PLUS_HK       = lc("LIFX+ BR30", "br30_plus", has_ir=True)
 
     LCM3_MINI_COLOR         = lc("LIFX Mini Color", "mini_color")
-    LCM3_MINI_DAY_DUSK      = lc("LIFX Mini Day Dusk", "mini_day_dusk", has_color=False)
-    LCM3_MINI_DAY           = lc("LIFX Mini Day", "mini_day", has_color=False)
+    LCM3_MINI_DAY_DUSK      = lc("LIFX Mini Day Dusk", "mini_day_dusk", has_color=False, min_kelvin=1500, max_kelvin=4000)
+    LCM3_MINI_DAY           = lc("LIFX Mini Day", "mini_day", has_color=False, min_kelvin=2700, max_kelvin=2700)
 
     LCM3_GU10_COLOR         = lc("LIFX GU10 Color", "gu10_color")
 
     LCM3_TILE               = lc("LIFX Tile", "tile", has_chain=True)
 
     LCM3_MINI2_COLOR        = lc("LIFX Mini Color", "mini_color")
-    LCM3_MINI2_DAY_DUSK     = lc("LIFX Mini Day Dusk", "mini_day_dusk", has_color=False)
-    LCM3_MINI2_WHITE        = lc("LIFX Mini White", "mini_white", has_color=False)
+    LCM3_MINI2_DAY_DUSK     = lc("LIFX Mini Day Dusk", "mini_day_dusk", has_color=False, min_kelvin=1500, max_kelvin=4000)
+    LCM3_MINI2_WHITE        = lc("LIFX Mini White", "mini_white", has_color=False, min_kelvin=2700, max_kelvin=2700)
 
 DefaultCapability = capability("Unknown", "unknown", "Unknown")
