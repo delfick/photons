@@ -8,41 +8,6 @@ import signal
 
 log = logging.getLogger("photons_app.runner")
 
-def stop_everything(loop, collector):
-    """
-    Call our cleanup functions and .finish on all our targets
-
-    Then keep running the loop until everything is closed
-
-    And then close the loop itself
-    """
-    log.debug("CLEANING UP")
-    try:
-        targets = collector.configuration["target_register"].target_values
-        loop.run_until_complete(collector.configuration["photons_app"].cleanup(targets))
-    except RuntimeError:
-        pass
-
-    previous_num = None
-    while True:
-        num_left = len([t for t in asyncio.Task.all_tasks() if t._state not in ("CANCELLED", "FINISHED")])
-        if previous_num == num_left:
-            for task in asyncio.Task.all_tasks():
-                task.cancel()
-        previous_num = num_left
-
-        if num_left > 0:
-            log.debug("RUN LOOP AGAIN %s LEFT", num_left)
-
-            def stopper():
-                loop.stop()
-            loop.call_later(0.1, stopper)
-            loop.run_forever()
-        else:
-            break
-
-    log.debug("EVERYTHING SHOULD BE STOPPED")
-
 async def runner(collector):
     """
     Create a coroutine for our task using the task_runner in collector
@@ -85,7 +50,7 @@ async def runner(collector):
 
 def run(collector):
     """
-    Get the loop, then use runner with stop_everything in a finally block
+    Get the loop, then use runner with cleanup in a finally block
     """
     loop = collector.configuration["photons_app"].loop
 
@@ -97,4 +62,6 @@ def run(collector):
     except asyncio.CancelledError:
         raise ApplicationCancelled()
     finally:
-        stop_everything(loop, collector)
+        log.debug("CLEANING UP")
+        targets = collector.configuration["target_register"].target_values
+        loop.run_until_complete(collector.configuration["photons_app"].cleanup(targets))

@@ -1,7 +1,7 @@
 # coding: spec
 
 from photons_app.test_helpers import TestCase, AsyncTestCase
-from photons_app.runner import run, runner, stop_everything
+from photons_app.runner import run, runner
 
 import asynctest
 import platform
@@ -12,67 +12,62 @@ import nose
 import os
 
 describe TestCase, "run":
-    it "runs the collector and runs stop_everything when that's done":
-        called = []
+    it "runs the collector and runs cleanup when that's done":
+        info = {"cleaned": False, "ran": False}
 
         loop = asyncio.new_event_loop()
+        final_future = asyncio.Future(loop=loop)
 
-        lp = mock.Mock(name="loop")
-        lp.create_task.side_effect = loop.create_task
-        lp.run_until_complete.side_effect = loop.run_until_complete
+        target_register = mock.Mock(name='target_register')
 
-        photons_app = mock.Mock(name="photons_app", loop=lp)
-        configuration = {"photons_app": photons_app}
+        async def cleanup(tr):
+            self.assertEqual(tr, target_register.target_values)
+            await asyncio.sleep(0.01)
+            info["cleaned"] = True
+
+        async def task_runner(*args):
+            await asyncio.sleep(0.01)
+            info["ran"] = True
+        task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
+
+        photons_app = mock.Mock(name="photons_app", loop=loop, chosen_task="task", reference="reference", final_future=final_future)
+        photons_app.cleanup.side_effect = cleanup
+
+        configuration = {"photons_app": photons_app, "target_register": target_register, "task_runner": task_runner}
         collector = mock.Mock(name="collector", configuration=configuration)
 
-        async def runner(c):
-            self.assertIs(c, collector)
-            called.append(1)
+        run(collector)
+        self.assertEqual(info, {"cleaned": True, "ran": True})
 
-        def stop_everything(l, c):
-            self.assertIs(l, lp)
-            self.assertIs(c, collector)
-            called.append(2)
-
-        with mock.patch("photons_app.runner.runner", runner):
-            with mock.patch("photons_app.runner.stop_everything", stop_everything):
-                run(collector)
-
-        self.assertEqual(called, [1, 2])
-
-        lp.run_until_complete.assert_called_once_with(mock.ANY)
-
-    it "calls stop_everything even if runner raise an exception":
-        called = []
+    it "cleans up even if runner raise an exception":
+        info = {"cleaned": False, "ran": False}
 
         loop = asyncio.new_event_loop()
+        final_future = asyncio.Future(loop=loop)
 
-        lp = mock.Mock(name="loop")
-        lp.create_task.side_effect = loop.create_task
-        lp.run_until_complete.side_effect = loop.run_until_complete
+        target_register = mock.Mock(name='target_register')
 
-        photons_app = mock.Mock(name="photons_app", loop=lp)
-        configuration = {"photons_app": photons_app}
+        async def cleanup(tr):
+            self.assertEqual(tr, target_register.target_values)
+            await asyncio.sleep(0.01)
+            info["cleaned"] = True
+
+        async def task_runner(*args):
+            await asyncio.sleep(0.01)
+            info["ran"] = True
+            raise ValueError("Nope")
+        task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
+
+        photons_app = mock.Mock(name="photons_app", loop=loop, chosen_task="task", reference="reference", final_future=final_future)
+        photons_app.cleanup.side_effect = cleanup
+
+        configuration = {"photons_app": photons_app, "target_register": target_register, "task_runner": task_runner}
         collector = mock.Mock(name="collector", configuration=configuration)
 
-        async def runner(c):
-            self.assertIs(c, collector)
-            called.append(1)
-            raise Exception("wat")
+        with self.fuzzyAssertRaisesError(ValueError, "Nope"):
+            run(collector)
 
-        def stop_everything(l, c):
-            self.assertIs(l, lp)
-            self.assertIs(c, collector)
-            called.append(2)
-
-        with self.fuzzyAssertRaisesError(Exception, "wat"):
-            with mock.patch("photons_app.runner.runner", runner):
-                with mock.patch("photons_app.runner.stop_everything", stop_everything):
-                    run(collector)
-
-        self.assertEqual(called, [1, 2])
-
-        lp.run_until_complete.assert_called_once_with(mock.ANY)
+        self.assertEqual(info, {"cleaned": True, "ran": True})
 
 describe AsyncTestCase, "runner":
     async it "cancels final_future if it gets a SIGTERM":
@@ -179,26 +174,3 @@ describe AsyncTestCase, "runner":
 
         assert final.done()
         task_runner.assert_called_once_with(chosen_task, reference)
-
-describe TestCase, "stop_everything":
-    it "calls cleanup on the photons_app":
-        called = []
-        t1 = mock.Mock(name="target1")
-        t2 = mock.Mock(name="target2")
-        target_register = mock.Mock(name="target_register", target_values=[t1, t2])
-
-        loop = asyncio.new_event_loop()
-
-        def cleanup(ts):
-            self.assertEqual(ts, [t1, t2])
-            called.append(1)
-
-        cleanup = asynctest.mock.CoroutineMock(name="cleanup", side_effect=cleanup)
-        photons_app = mock.Mock(name="photons_app", cleanup=cleanup)
-        configuration = {"photons_app": photons_app, "target_register": target_register}
-        collector = mock.Mock(name="collector", configuration=configuration)
-
-        stop_everything(loop, collector)
-
-        self.assertEqual(called, [1])
-        cleanup.assert_called_once_with([t1, t2])
