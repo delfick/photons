@@ -16,9 +16,6 @@ def stop_everything(loop, collector):
 
     And then close the loop itself
     """
-    # Ensure the loop is stopped so we can run run_until_complete below
-    loop.stop()
-
     log.debug("CLEANING UP")
     try:
         targets = collector.configuration["target_register"].target_values
