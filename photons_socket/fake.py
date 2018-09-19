@@ -67,9 +67,15 @@ class MemorySocketBridge(SocketBridge):
 
     async def find_devices(self, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
         res = {}
+
+        broadcast_address = (
+              self.default_broadcast if broadcast is True else broadcast
+            ) or self.default_broadcast
+
         for target, device in self.transport_target.devices.items():
-            if device.online:
+            if device.is_reachable(broadcast_address):
                 res[target[:6]] = device.services
+
         return res
 
 class WithDevices(object):
@@ -107,27 +113,41 @@ class FakeDevice(object):
         self.protocol_register = protocol_register
 
     async def start(self):
+        await self.start_services()
+        self.online = True
+
+    async def start_services(self):
+        await self.start_udp()
+        self.services = (
+              set(
+                [ (Services.UDP, ("127.0.0.1", self.port))
+                ]
+              )
+            , "255.255.255.255"
+            )
+
+    async def start_udp(self):
         class ServerProtocol(asyncio.Protocol):
             def connection_made(sp, transport):
-                self.transport = transport
+                self.udp_transport = transport
 
             def datagram_received(sp, data, addr):
                 if not self.online:
                     return
 
                 pkt = Messages.unpack(data, self.protocol_register, unknown_ok=True)
-                ack = self.ack_for(pkt)
+                ack = self.ack_for(pkt, "udp")
                 if ack:
                     ack.sequence = pkt.sequence
                     ack.source = pkt.source
                     ack.target = pkt.target
-                    self.transport.sendto(ack.tobytes(serial=self.serial), addr)
+                    self.udp_transport.sendto(ack.tobytes(serial=self.serial), addr)
 
-                for res in self.response_for(pkt):
+                for res in self.response_for(pkt, "udp"):
                     res.sequence = pkt.sequence
                     res.source = pkt.source
                     res.target = pkt.target
-                    self.transport.sendto(res.tobytes(serial=self.serial), addr)
+                    self.udp_transport.sendto(res.tobytes(serial=self.serial), addr)
 
         remote = None
 
@@ -145,23 +165,21 @@ class FakeDevice(object):
                 await asyncio.sleep(0.1)
 
         if remote is None:
-            raise Exception("Failed to bind to a socket for fake device")
+            raise Exception("Failed to bind to a udp socket for fake device")
 
-        self.remote = remote
+        self.udp_remote = remote
         self.port = port
-        self.services = (set([(Services.UDP, ("127.0.0.1", self.port))]), "255.255.255.255")
-        self.online = True
 
     async def finish(self):
-        if hasattr(self, "remote"):
-            self.remote.close()
+        if hasattr(self, "udp_remote"):
+            self.udp_remote.close()
 
-    def ack_for(self, pkt):
+    def ack_for(self, pkt, protocol):
         if pkt.ack_required:
             return DiscoveryMessages.Acknowledgment()
 
-    def response_for(self, pkt):
-        res = self.make_response(pkt)
+    def response_for(self, pkt, protocol):
+        res = self.make_response(pkt, protocol)
         if res is None or not pkt.res_required:
             return
 
@@ -171,5 +189,8 @@ class FakeDevice(object):
         else:
             yield res
 
-    def make_response(pkt):
+    def make_response(self, pkt, protocol):
         raise NotImplementedError()
+
+    def is_reachable(self, broadcast_address):
+        return self.online

@@ -78,7 +78,7 @@ class Device(FakeDevice):
         self.vendor_id = vendor_id
         self.product_id = product_id
 
-    def make_response(self, pkt):
+    def make_response(self, pkt, protocol):
         self.received.append(pkt)
 
         if pkt | DeviceMessages.GetInfrared:

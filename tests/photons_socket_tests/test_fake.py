@@ -14,9 +14,12 @@ from input_algorithms.meta import Meta
 import asyncio
 
 class Device(FakeDevice):
-    def make_response(self, pkt):
+    def make_response(self, pkt, protocol):
         if pkt | DiscoveryMessages.GetService:
-            return DiscoveryMessages.StateService(service=Services.UDP, port=self.port)
+            msgs = []
+            for service, (_, port) in self.services[0]:
+                msgs.append(DiscoveryMessages.StateService(service=service, port=port))
+            return msgs
 
 describe AsyncTestCase, "Memory target":
     async it "works":
@@ -38,9 +41,13 @@ describe AsyncTestCase, "Memory target":
             async with ATarget(target) as afr:
                 async with target.with_devices(device1):
                     script = target.script(DiscoveryMessages.GetService())
-                    pkts = await script.run_with_all(device1.serial, afr)
-                    self.assertEqual(len(pkts), 1)
-                    pkt = pkts[0][0]
-                    assert pkt | DiscoveryMessages.StateService
-                    self.assertEqual(pkt.port, device1.port)
+
+                    got = []
+                    async for pkt, _, _ in script.run_with(device1.serial, afr):
+                        got.append((pkt.service.value, pkt.port))
+
+                    self.assertEqual(sorted(got)
+                        , [ (Services.UDP.value, device1.port)
+                          ]
+                        )
         await self.wait_for(doit())
