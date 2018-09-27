@@ -837,18 +837,22 @@ describe TestCase, "defaulted":
     it "uses the default_func with pkt when NotSpecified":
         meta = Meta.empty()
         val = sb.NotSpecified
+        normalised = mock.Mock(name="normalised")
 
         default_func = mock.Mock(name="default_func")
         pkt = mock.Mock(name="pkt")
         spec = mock.NonCallableMock(name="spec")
+        spec.normalise.return_value = normalised
+
         subject = types.defaulted(spec, default_func, pkt)
 
-        ret = mock.Mock(name="ret")
-        default_func.return_value = ret
+        defaultvalue = mock.Mock(name="ret")
+        default_func.return_value = defaultvalue
 
-        self.assertIs(subject.normalise(meta, val), ret)
+        self.assertIs(subject.normalise(meta, val), normalised)
 
         default_func.assert_called_once_with(pkt)
+        spec.normalise.assert_called_once_with(meta, defaultvalue)
 
 describe TestCase, "boolean":
     it "complains if no value to normalise":

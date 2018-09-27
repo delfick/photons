@@ -112,7 +112,7 @@ class MultiZoneMessages(Messages):
         , ("end_index", T.Uint8)
         , *hsbk
         , ("duration", duration_typ)
-        , ("type", T.Uint8.enum(ApplicationRequestType).default(ApplicationRequestType.APPLY.value))
+        , ("type", T.Uint8.enum(ApplicationRequestType).default(ApplicationRequestType.APPLY))
         )
 
     GetMultiZoneColorZones = msg(502
@@ -132,7 +132,7 @@ class MultiZoneMessages(Messages):
         )
 
     GetMultiZoneZoneCount = msg(504
-        , ("scan", T.Uint8.enum(ZoneCountScanType).default(ZoneCountScanType.RESCAN.value))
+        , ("scan", T.Uint8.enum(ZoneCountScanType).default(ZoneCountScanType.RESCAN))
         )
 
     StateMultiZoneStateZoneCount = msg(505

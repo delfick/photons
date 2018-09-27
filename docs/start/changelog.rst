@@ -6,6 +6,8 @@ ChangeLog
 0.6.2 - TBD
     * Fixed cleanup logic
     * Make products registry aware of kelvin ranges
+    * Made defaults for values in a message definition go through the spec for
+      that field when no value is specified
 
 0.6.1 - 1 September 2018
     * Added the tile_gameoflife task for doing a Conway's game of life simulation

@@ -490,7 +490,7 @@ class expand_spec(sb.Spec):
                 except BadSpecValue as error:
                     raise BadSpecValue("Sorry, dynamic fields only supports a dictionary of values", error=error)
                 else:
-                    val = self.kls(**fields).pack()
+                    val = self.kls.empty_normalise(**fields).pack()
 
             # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
             return self.spec.normalise(meta, val)
@@ -798,7 +798,7 @@ class defaulted(sb.Spec):
         self.default_func = default_func
 
     def normalise_empty(self, meta):
-        return self.default_func(self.pkt)
+        return self.spec.normalise(meta, self.default_func(self.pkt))
 
     def normalise_filled(self, meta, val):
         return self.spec.normalise(meta, val)
