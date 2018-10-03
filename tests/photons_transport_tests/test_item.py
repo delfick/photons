@@ -127,10 +127,36 @@ describe AsyncTestCase, "TransportItem":
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = mock.Mock(name="find_timeout")
                 found = {target1: True, target2: True}
-                looked, f = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
+                looked, f, catcher = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, False)
+                self.assertEqual(catcher, None)
                 self.assertIs(f, found)
+
+            async it "returns errors caught in find_devices":
+                target1 = binascii.unhexlify('d073d5000000')
+                target2 = binascii.unhexlify('d073d5000001')
+                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
+                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
+
+                afr = mock.Mock(name="afr")
+                found = {}
+
+                class Error(PhotonsAppError):
+                    pass
+
+                def find_devices(*args, **kwargs):
+                    kwargs["error_catcher"].append(Error())
+                    return {}
+                afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
+
+                broadcast_address = mock.Mock(name="broadcast_address")
+                find_timeout = 0.1
+                looked, f, catcher = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
+
+                self.assertEqual(looked, True)
+                self.assertEqual(set(catcher), set([Error()]))
+                self.assertEqual(f, {})
 
             async it "keeps searching till we have all the targets":
                 target1 = binascii.unhexlify('d073d5000000')
@@ -153,14 +179,19 @@ describe AsyncTestCase, "TransportItem":
 
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = 1
-                looked, f = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
+                looked, f, catcher = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, True)
+                self.assertEqual(catcher, [])
                 self.assertEqual(f, {target1: True, target2: True})
 
+                class List:
+                    def __eq__(self, other):
+                        return other == []
+
                 self.assertEqual(afr.find_devices.mock_calls
-                    , [ mock.call(broadcast_address, raise_on_none=True, timeout=find_timeout)
-                      , mock.call(broadcast_address, raise_on_none=True, timeout=find_timeout)
+                    , [ mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
+                      , mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
                       ]
                     )
 
@@ -180,13 +211,18 @@ describe AsyncTestCase, "TransportItem":
 
                 broadcast_address = mock.Mock(name="broadcast_address")
                 find_timeout = 1
-                looked, f = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
+                looked, f, catcher = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
 
                 self.assertEqual(looked, True)
+                self.assertEqual(catcher, [])
                 self.assertEqual(f, {target1: True, target2: True})
 
+                class List:
+                    def __eq__(self, other):
+                        return other == []
+
                 self.assertEqual(afr.find_devices.mock_calls
-                    , [ mock.call(broadcast_address, raise_on_none=True, timeout=find_timeout)
+                    , [ mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
                       ]
                     )
 

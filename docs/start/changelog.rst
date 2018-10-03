@@ -8,6 +8,9 @@ ChangeLog
     * Make products registry aware of kelvin ranges
     * Made defaults for values in a message definition go through the spec for
       that field when no value is specified
+    * Don't raise an error if we can't find any devices, instead respect the 
+      error_catcher option and only raise errors for not finding each serial that
+      we couldn't find
 
 0.6.1 - 1 September 2018
     * Added the tile_gameoflife task for doing a Conway's game of life simulation

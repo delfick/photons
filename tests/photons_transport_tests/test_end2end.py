@@ -1,6 +1,7 @@
 # coding: spec
 
 from photons_transport.target import TransportItem, TransportBridge, TransportTarget
+from photons_transport.target.errors import FailedToFindDevice
 
 from photons_app.errors import PhotonsAppError, TimedOut, RunErrors
 from photons_app.formatter import MergedOptionStringFormatter
@@ -14,6 +15,7 @@ from photons_protocol.messages import MultiOptions
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
+from contextlib import contextmanager
 from collections import defaultdict
 import binascii
 import asyncio
@@ -29,6 +31,7 @@ class Device(object):
         self.target = binascii.unhexlify(serial)
         self.connections = []
         self.received = []
+        self.online = True
 
     def finish(self):
         for conn in self.connections:
@@ -199,6 +202,16 @@ class MemoryBridge(TransportBridge):
         self.receivers = {}
         self.connections = {}
 
+    @contextmanager
+    def all_offline(self):
+        try:
+            for d in self.devices:
+                d.online = False
+            yield
+        finally:
+            for d in self.devices:
+                d.online = True
+
     def finish(self):
         super(MemoryBridge, self).finish()
         for target, task in self.receivers.items():
@@ -232,10 +245,11 @@ class MemoryBridge(TransportBridge):
     async def find_devices(self, broadcast, **kwargs):
         found = {}
         for device in self.devices:
-            found[device.target] = (
-                  set([(Services.MEMORY, (device, 0))])
-                , (device, 0)
-                )
+            if device.online:
+                found[device.target] = (
+                      set([(Services.MEMORY, (device, 0))])
+                    , (device, 0)
+                    )
         return found
 
 describe AsyncTestCase, "End2End":
@@ -359,7 +373,7 @@ describe AsyncTestCase, "End2End":
 
             found = []
             async def doit():
-                async for info in self.target.script(msg).run_with(None, broadcast=True, timeout=0.1):
+                async for info in self.target.script(msg).run_with(None, afr, broadcast=True, timeout=0.1):
                     found.append(info)
 
             with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=None):
@@ -373,7 +387,7 @@ describe AsyncTestCase, "End2End":
 
             found = []
             async def doit():
-                async for info in self.target.script(msg).run_with([afr.devices[0].target], timeout=0.1):
+                async for info in self.target.script(msg).run_with([afr.devices[0].target], afr, timeout=0.1):
                     found.append(info)
 
             with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=afr.devices[0].serial):
@@ -388,7 +402,7 @@ describe AsyncTestCase, "End2End":
             found = []
 
             async def doit():
-                async for info in self.target.script(msg).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1):
+                async for info in self.target.script(msg).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1):
                     found.append(info)
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
@@ -407,7 +421,7 @@ describe AsyncTestCase, "End2End":
             results = []
 
             async def doit():
-                async for info in self.target.script([msg1, msg2]).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1, error_catcher=errors):
+                async for info in self.target.script([msg1, msg2]).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1, error_catcher=errors):
                     results.append(info)
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
@@ -425,6 +439,23 @@ describe AsyncTestCase, "End2End":
 
             self.assertEqual(sorted(errors), sorted([t1, t2]))
 
+    async it "doesn't raise errors if we can't find devices":
+        async with ATarget(self.target) as afr:
+            with afr.all_offline():
+                msg1 = NoReply()
+                msg2 = Adder(3, 4)
+
+                errors = []
+                results = []
+
+                async def doit():
+                    script = self.target.script([msg1, msg2])
+                    async for info in script.run_with("d073d5000069", afr, find_timeout=0.1, error_catcher=errors):
+                        results.append(info)
+
+                await self.wait_for(doit())
+                self.assertEqual(errors, [FailedToFindDevice(serial="d073d5000069")])
+
     async it "calls error_catcher if it's a function":
         async with ATarget(self.target) as afr:
             msg1 = NoReply()
@@ -435,7 +466,7 @@ describe AsyncTestCase, "End2End":
                 errors.append(e)
 
             async def doit():
-                async for _ in self.target.script(msg1).run_with([afr.devices[0].target, afr.devices[1].target], timeout=0.1, error_catcher=catcher):
+                async for _ in self.target.script(msg1).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1, error_catcher=catcher):
                     pass
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)

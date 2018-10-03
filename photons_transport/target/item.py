@@ -17,6 +17,15 @@ log = logging.getLogger("photons_transport.target.item")
 class Done:
     """Used to specify when we should close a queue"""
 
+def throw_error(serials, error_catcher):
+    """Throw the errors from our error catcher"""
+    error_catcher = list(set(error_catcher))
+    if error_catcher:
+        if (serials is None or len(serials) < 2) and len(error_catcher) is 1:
+            raise error_catcher[0]
+        else:
+            raise RunErrors(_errors=error_catcher)
+
 class TransportItem(object):
     """
     Responsible for Writing our parts to our devices.
@@ -127,13 +136,22 @@ class TransportItem(object):
         looked = False
         found = found if found is not None else afr.found
         if not accept_found and not broadcast:
-            looked, found = await self.search(
+            looked, found, catcher = await self.search(
                   afr
                 , found
                 , packets
                 , broadcast_address
                 , kwargs.get("find_timeout", 20)
                 )
+
+            if catcher:
+                for error in set(catcher):
+                    add_error(error_catcher, error)
+
+                if do_raise:
+                    throw_error(serials, error_catcher)
+                else:
+                    return
 
         # Work out where to send packets
         if type(broadcast) is tuple:
@@ -171,12 +189,7 @@ class TransportItem(object):
             yield thing
 
         if do_raise:
-            error_catcher = list(set(error_catcher))
-            if error_catcher:
-                if (serials is None or len(serials) < 2) and len(error_catcher) is 1:
-                    raise error_catcher[0]
-                else:
-                    raise RunErrors(_errors=error_catcher)
+            throw_error(serials, error_catcher)
 
     def simplify_parts(self):
         """
@@ -230,24 +243,38 @@ class TransportItem(object):
         looked = False
         start = time.time()
         targets = set(p.target[:6] for _, p in packets)
-        while not found or any(target not in found for target in targets):
+        catcher = None
+
+        need_check = lambda: not found or any(target not in found for target in targets)
+
+        while need_check():
             looked = True
+            catcher = []
             found = await afr.find_devices(broadcast_address
-                , raise_on_none=True, timeout=find_timeout
+                , raise_on_none = False
+                , timeout = find_timeout
+                , error_catcher = catcher
                 )
             if time.time() - start > find_timeout:
                 break
-        return looked, found
+
+        if catcher and not need_check():
+            # We don't care about errors if we found all the devices we care about
+            catcher = []
+
+        return looked, found, catcher
 
     async def write_messages(self, packets, check_packet, make_writer, make_waiter, timeout, error_catcher):
         """Make a bunch of writers and then use them to create waiters"""
         writers = []
         writing_packets = []
 
+        errors = []
+
         for (original, packet) in packets:
             error = check_packet(packet)
             if error:
-                add_error(error_catcher, error)
+                errors.append(error)
             else:
                 try:
                     writer = await make_writer(original, packet)
@@ -256,6 +283,9 @@ class TransportItem(object):
                 else:
                     writers.append(writer)
                     writing_packets.append(packet)
+
+        for error in set(errors):
+            add_error(error_catcher, error)
 
         if not writing_packets:
             return
