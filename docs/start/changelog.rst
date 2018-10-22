@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.6.2 - TBD
+0.6.2 - 22 October 2018
     * Fixed cleanup logic
     * Make products registry aware of kelvin ranges
     * Made defaults for values in a message definition go through the spec for
