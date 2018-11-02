@@ -1,17 +1,6 @@
 from docutils.parsers.rst import Directive
 from docutils import statemachine
 
-class Cache:
-    @classmethod
-    def protocol_register(kls, app):
-        if hasattr(app.env, "protocol_register"):
-            return app.env.protocol_register
-        else:
-            if not hasattr(kls, "_protocol_register"):
-                from photons_app.sphinx.setup import collector
-                kls._protocol_register = collector.configuration["protocol_register"]
-            return kls._protocol_register
-
 class ShowMessagesDirective(Directive):
     has_content = True
 
@@ -32,7 +21,7 @@ class ShowMessagesDirective(Directive):
         if len(self.content) > 1:
             protocol = int(self.content[1])
 
-        protocol_register = Cache.protocol_register(self.app)
+        protocol_register = self.app.env.protocol_register
         klses = protocol_register.message_register(protocol).message_classes
 
         if wanted and "." in wanted:
