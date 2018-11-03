@@ -23,7 +23,6 @@ describe TestCase, "App":
                     args_dict = {
                           "photons_app":
                           { "config": realfile
-                          , "own_ca": sb.NotSpecified
                           }
                         }
 

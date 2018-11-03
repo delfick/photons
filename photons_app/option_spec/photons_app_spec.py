@@ -38,9 +38,6 @@ class PhotonsApp(dictobj.Spec):
     target = dictobj.Field(wrapper=sb.optional_spec, format_into=sb.string_spec
         , help="The target to use when executing the task"
         )
-    own_ca = dictobj.Field(sb.file_spec, wrapper=sb.optional_spec
-        , help="A certificate to use for local https connections"
-        )
     artifact = dictobj.Field(default="", format_into=sb.string_spec
         , help="The artifact string from the commandline"
         )
