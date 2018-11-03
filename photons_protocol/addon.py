@@ -4,6 +4,7 @@ from photons_app.actions import an_action
 
 from option_merge_addons import option_merge_addon_hook
 import binascii
+import base64
 
 __shortdesc__ = "The underlying core of the Photons Protocol interface"
 
@@ -44,5 +45,16 @@ async def unpack(collector, **kwargs):
     for example ``unpack -- 310000148205ed33d073d51261e20000000000000000030100000000000000006600000000f4690000ffffac0d00000000``
     """
     bts = binascii.unhexlify(collector.configuration["photons_app"].extra)
+    pkt = Messages.unpack(bts, collector.configuration["protocol_register"], unknown_ok=True)
+    print(repr(pkt))
+
+@an_action()
+async def unpack_base64(collector, **kwargs):
+    """
+    Unpack base64 string found after the ``--`` into a json dictionary
+
+    for example ``unpack_base64 -- MQAAFIIF7TPQc9USYeIAAAAAAAAAAAMBAAAAAAAAAABmAAAAAPRpAAD//6wNAAAAAA==``
+    """
+    bts = base64.b64decode(collector.configuration["photons_app"].extra)
     pkt = Messages.unpack(bts, collector.configuration["protocol_register"], unknown_ok=True)
     print(repr(pkt))
