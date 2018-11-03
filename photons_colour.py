@@ -87,22 +87,19 @@ class Waveform(enum.Enum):
     TRIANGLE = 3
     PULSE = 4
 
+scaled_to_65535 = T.Uint16.transform(
+      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
+    , lambda v: float(v) / 65535
+    ).allow_float()
+
 hsbk = (
       ('hue', T.Uint16.transform(
               lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
             , lambda v: float(v) * 360 / 65535
             ).allow_float()
           )
-    , ('saturation', T.Uint16.transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-            , lambda v: float(v) / 65535
-            ).allow_float()
-          )
-    , ('brightness', T.Uint16.transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-            , lambda v: float(v) / 65535
-            ).allow_float()
-          )
+    , ('saturation', scaled_to_65535)
+    , ('brightness', scaled_to_65535)
     , ('kelvin', T.Uint16.default(3500))
     )
 
