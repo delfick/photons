@@ -443,7 +443,7 @@ describe TestCase, "Collector":
         it "registers converters for serveral things":
             f = asyncio.Future()
             configuration = MergedOptions.using(
-                  { "final_future": lambda: f
+                  { "final_future": f
                   , "targets":
                     { "one":
                       { "type": "special"
