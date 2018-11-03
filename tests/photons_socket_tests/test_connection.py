@@ -197,6 +197,60 @@ describe AsyncTestCase, "Sockets":
             make_socket.assert_called_once_with(address)
             connect_socket.assert_called_once_with(sock, address, fut, backoff, timeout)
 
+        async it "cancels the fut if connect_socket gets cancelled":
+            conn = mock.Mock(name="conn")
+            address = mock.Mock(name='address')
+            backoff = mock.Mock(name="backoff")
+            timeout = 2
+
+            fut = asyncio.Future()
+
+            sock = mock.Mock(name='sock')
+            make_socket = mock.Mock(name="make_socket", return_value=sock)
+
+            async def connector(s, a, f, b, t):
+                f = asyncio.Future()
+                f.cancel()
+                await f
+            connect_socket = asynctest.mock.CoroutineMock(name="connect_socket", side_effect=connector)
+
+            with mock.patch.object(self.sockets, "make_socket", make_socket):
+                with mock.patch.object(self.sockets, "connect_socket", connect_socket):
+                    self.sockets._spawn(address, fut, backoff, timeout)
+
+            assert not fut.done()
+            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                await self.wait_for(fut, timeout=1)
+
+            make_socket.assert_called_once_with(address)
+            connect_socket.assert_called_once_with(sock, address, fut, backoff, timeout)
+
+        async it "sets exception fut if connect_socket gets an exception":
+            conn = mock.Mock(name="conn")
+            address = mock.Mock(name='address')
+            backoff = mock.Mock(name="backoff")
+            timeout = 2
+
+            fut = asyncio.Future()
+
+            sock = mock.Mock(name='sock')
+            make_socket = mock.Mock(name="make_socket", return_value=sock)
+
+            async def connector(s, a, f, b, t):
+                raise ValueError("NOPE")
+            connect_socket = asynctest.mock.CoroutineMock(name="connect_socket", side_effect=connector)
+
+            with mock.patch.object(self.sockets, "make_socket", make_socket):
+                with mock.patch.object(self.sockets, "connect_socket", connect_socket):
+                    self.sockets._spawn(address, fut, backoff, timeout)
+
+            assert not fut.done()
+            with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
+                await self.wait_for(fut, timeout=1)
+
+            make_socket.assert_called_once_with(address)
+            connect_socket.assert_called_once_with(sock, address, fut, backoff, timeout)
+
     describe "connect_socket":
         async it "works and ignores address and backoff":
             fut = asyncio.Future()

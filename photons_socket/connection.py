@@ -59,7 +59,20 @@ class Sockets(object):
     def _spawn(self, address, fut, backoff, timeout):
         """Spawn the actual connection"""
         sock = self.make_socket(address)
-        hp.async_as_background(self.connect_socket(sock, address, fut, backoff, timeout))
+        t = hp.async_as_background(self.connect_socket(sock, address, fut, backoff, timeout))
+
+        def pass_failure(res):
+            if fut.done():
+                return
+
+            if res.cancelled():
+                fut.cancel()
+                return
+
+            exc = res.exception()
+            if exc is not None:
+                fut.set_exception(exc)
+        t.add_done_callback(pass_failure)
 
     async def connect_socket(self, sock, address, fut, backoff, timeout):
         """Connect our socket to the address"""

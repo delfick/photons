@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.6.3 - TBD
+    * Fix potential hang when connecting to a device (very unlikely error case,
+      but now it's handled).
+
 0.6.2 - 22 October 2018
     * Fixed cleanup logic
     * Make products registry aware of kelvin ranges
