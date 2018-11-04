@@ -132,21 +132,6 @@ class PacketSpecMixin:
 
         return packet_spec(kls, attrs, kls.Meta.name_to_group)
 
-    def __or__(self, kls):
-        """
-        Determine if this object is of type ``kls``. It does this by looking at
-        the ``protocol`` and ``message_type`` values on the ``kls.Payload`` and this
-        instance and returning whether they are equal.
-        """
-        this_protocol = dictobj.__getitem__(self, "protocol")
-        this_protocol = this_protocol if this_protocol is not sb.NotSpecified else self.protocol
-        if this_protocol != kls.Payload.Meta.protocol:
-            return False
-
-        this_pkt_type = dictobj.__getitem__(self, "pkt_type")
-        this_pkt_type = this_pkt_type if this_pkt_type is not sb.NotSpecified else self.pkt_type
-        return this_pkt_type == kls.Payload.message_type
-
     def actual(self, key):
         """Return the actual value at this key, rather than a normalised value"""
         return self.__getitem__(key, do_spec=False)

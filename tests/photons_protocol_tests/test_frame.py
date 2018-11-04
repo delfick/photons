@@ -169,6 +169,61 @@ describe TestCase, "LIFXPacket":
     it "has payload with message_type of 0":
         self.assertEqual(frame.LIFXPacket.Payload.message_type, 0)
 
+    describe "__or__":
+        it "says yes if the protocol and pkt_type are the same as on kls.Payload":
+            class One(frame.LIFXPacket):
+                class Payload(dictobj.PacketSpec):
+                    fields = []
+                    message_type = 32
+            One.Payload.Meta.protocol = 1024
+
+            class Two(frame.LIFXPacket):
+                class Payload(dictobj.PacketSpec):
+                    fields = []
+                    message_type = 33
+            Two.Payload.Meta.protocol = 1024
+
+            payloadone = One()
+            payloadtwo = Two()
+
+            self.assertEqual(payloadone.pkt_type, 32)
+            self.assertEqual(payloadone.protocol, 1024)
+
+            self.assertEqual(payloadtwo.pkt_type, 33)
+            self.assertEqual(payloadtwo.protocol, 1024)
+
+            self.assertEqual(payloadone | Two, False)
+            self.assertEqual(payloadone | One, True)
+
+            self.assertEqual(payloadtwo | Two, True)
+            self.assertEqual(payloadtwo | One, False)
+
+        it "can get the values from the packet data if already defined":
+            class One(frame.LIFXPacket):
+                class Payload(dictobj.PacketSpec):
+                    fields = []
+                    message_type = 32
+            One.Payload.Meta.protocol = 1024
+
+            class Two(frame.LIFXPacket):
+                class Payload(dictobj.PacketSpec):
+                    fields = []
+                    message_type = 33
+            Two.Payload.Meta.protocol = 1024
+
+            # These values are already there if it's been unpacked from bytes for example
+            # In this case we don't want to go through the __getattr__ mechanism on the packet
+            # Because that is slow!
+            payloadone = One(pkt_type=32, protocol=1024)
+            payloadtwo = Two(pkt_type=33, protocol=1024)
+
+            with mock.patch.object(frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")):
+                self.assertEqual(payloadone | Two, False)
+                self.assertEqual(payloadone | One, True)
+
+                self.assertEqual(payloadtwo | Two, True)
+                self.assertEqual(payloadtwo | One, False)
+
     describe "serial":
         it "returns None if target isn't specified":
             pkt = frame.LIFXPacket()

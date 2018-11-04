@@ -289,45 +289,6 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(t.actual("two"), 65538)
             self.assertEqual(t.actual("three").tobytes(), b"whatever\x00\x00")
 
-    describe "__or__":
-        it "says yes if the protocol and pkt_typ are the same as on kls.Payload":
-            class One(dictobj.PacketSpec):
-                fields = [("protocol", T.Int16), ("pkt_type", T.Int16)]
-
-            class Two:
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 32
-            Two.Payload.Meta.protocol = 1024
-
-            self.assertEqual(One(protocol=1024, pkt_type=32) | Two, True)
-            self.assertEqual(One(protocol=1025, pkt_type=32) | Two, False)
-            self.assertEqual(One(protocol=1024, pkt_type=42) | Two, False)
-
-        it "works on pkts that aren't complete":
-            class One(LIFXPacket):
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 32
-            One.Payload.Meta.protocol = 1024
-
-            class Two(LIFXPacket):
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 42
-            Two.Payload.Meta.protocol = 1024
-
-            class Three(LIFXPacket):
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 32
-            Three.Payload.Meta.protocol = 2048
-
-            self.assertEqual(One() | One, True)
-            self.assertEqual(One() | Two, False)
-            self.assertEqual(One() | Three, False)
-            self.assertEqual(Two() | Two, True)
-
     describe "actual":
         it "uses __getitem__ with do_spec of False":
             key = mock.Mock(name="key")

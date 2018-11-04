@@ -104,6 +104,21 @@ class LIFXPacket(dictobj.PacketSpec):
     def represents_ack(self):
         return self.Payload.represents_ack
 
+    def __or__(self, kls):
+        """
+        Determine if this object is of type ``kls``. It does this by looking at
+        the ``protocol`` and ``message_type`` values on the ``kls.Payload`` and this
+        instance and returning whether they are equal.
+        """
+        this_protocol = dictobj.__getitem__(self, "protocol")
+        this_protocol = this_protocol if this_protocol is not sb.NotSpecified else self.protocol
+        if this_protocol != kls.Payload.Meta.protocol:
+            return False
+
+        this_pkt_type = dictobj.__getitem__(self, "pkt_type")
+        this_pkt_type = this_pkt_type if this_pkt_type is not sb.NotSpecified else self.pkt_type
+        return this_pkt_type == kls.Payload.message_type
+
     @classmethod
     def message(kls, message_type, *payload_fields, multi=None):
         """

@@ -6,6 +6,9 @@ ChangeLog
 0.6.3 - TBD
     * Fix potential hang when connecting to a device (very unlikely error case,
       but now it's handled).
+    * Moved the __or__ functionality on packets onto the LIFXPacket object as
+      it's implementation depended on fields specifically on LIFXPacket. This
+      is essentially a no-op within photons.
 
 0.6.2 - 22 October 2018
     * Fixed cleanup logic
