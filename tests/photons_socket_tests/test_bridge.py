@@ -3,14 +3,12 @@
 from photons_socket.target import SocketTarget, SocketBridge
 from photons_socket.messages import DiscoveryMessages, Services
 
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import TimedOut, FoundNoDevices
 from photons_app.test_helpers import AsyncTestCase
 from photons_app.registers import ProtocolRegister
 from photons_protocol.frame import LIFXPacket
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
-from input_algorithms.meta import Meta
 import asynctest
 import binascii
 import asyncio
@@ -23,10 +21,8 @@ describe AsyncTestCase, "SocketBridge":
         self.protocol_register.message_register(1024).add(DiscoveryMessages)
 
         self.final_future = asyncio.Future()
-        options = {"final_future": lambda : self.final_future, "protocol_register": self.protocol_register}
-
-        meta = Meta(options, []).at("targets").at("lan")
-        self.target = SocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})
+        options = {"final_future": self.final_future, "protocol_register": self.protocol_register}
+        self.target = SocketTarget.create(options)
 
     async after_each:
         self.final_future.cancel()

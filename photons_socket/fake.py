@@ -5,7 +5,6 @@ Usage looks like:
 
 .. code-block:: python
 
-    from photons_app.formatter import MergedOptionStringFormatter
     from photons_app.registers import ProtocolRegister
 
     from photons_socket.fake import FakeDevice, MemorySocketTarget
@@ -13,7 +12,6 @@ Usage looks like:
     from photons_device_messages import DeviceMessages
     from photons_protocol.frame import LIFXPacket
 
-    from input_algorithms.meta import Meta
     import asyncio
 
     # The protocol register is used to transform bytes into objects
@@ -29,12 +27,11 @@ Usage looks like:
                 return DeviceMessages.StateGroup(group="123", label="one", updated_at=1)
 
     final_future = asyncio.Future()
-    everything = {
+    options = {
           "final_future": final_future
         , "protocol_register": protocol_register
         }
-    meta = Meta(everything, []).at("target")
-    target = MemorySocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})
+    target = MemorySocketTarget.create(options)
 
     device1 = MyDevice("d073d5000001", protocol_register)
     await device1.start()

@@ -3,7 +3,6 @@
 from photons_socket.messages import Services, DiscoveryMessages
 from photons_socket.target import SocketTarget
 
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 from photons_app.registers import ProtocolRegister
 from photons_protocol.frame import LIFXPacket
@@ -11,7 +10,6 @@ from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
-from input_algorithms.meta import Meta
 import threading
 import asynctest
 import binascii
@@ -27,9 +25,7 @@ describe AsyncTestCase, "SocketTarget":
 
         self.final_future = asyncio.Future()
         options = {"final_future": self.final_future, "protocol_register": self.protocol_register}
-
-        meta = Meta(options, []).at("targets").at("lan")
-        self.target = SocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})
+        self.target = SocketTarget.create(options)
         self.bridge = await self.target.args_for_run()
 
     async after_each:

@@ -8,12 +8,33 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_script.script import InvalidScript
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from input_algorithms.dictobj import dictobj
+from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 import asynctest
 import binascii
 import mock
 
 describe AsyncTestCase, "TransportTarget":
+    describe "create":
+        async it "works":
+            protocol_register = mock.Mock(name="protocol_register")
+            final_future = mock.Mock(name="final_future")
+            config = {
+                  "protocol_register": protocol_register
+                , "final_future": final_future
+                }
+
+            class T(TransportTarget):
+                one = dictobj.Field(sb.integer_spec)
+
+            t = T.create(config, {"one": 20})
+
+            self.assertIs(t.protocol_register, protocol_register)
+            self.assertIs(t.final_future, final_future)
+            self.assertEqual(t.default_broadcast, "255.255.255.255")
+            self.assertEqual(t.one, 20)
+
     describe "normalise":
         async it "gets protocol_register and final_fut from the meta":
             protocol_register = mock.Mock(name="protocol_register")

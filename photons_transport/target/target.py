@@ -1,10 +1,13 @@
 from photons_transport.target.bridge import TransportBridge
 from photons_transport.target.item import TransportItem
 
+from photons_app.formatter import MergedOptionStringFormatter
+
 from photons_script.script import ScriptRunnerIterator, InvalidScript, Pipeline
 
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
+from input_algorithms.meta import Meta
 import binascii
 import logging
 
@@ -54,6 +57,12 @@ class TransportTarget(dictobj.Spec):
     item_kls = lambda s: TransportItem
     bridge_kls = lambda s: TransportBridge
     description = dictobj.Field(sb.string_spec, default="Base transport functionality")
+
+    @classmethod
+    def create(kls, configuration, options=None):
+        options = options if options is not None else configuration
+        meta = Meta(configuration, []).at("options")
+        return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, options)
 
     def script(self, raw):
         """Return us a ScriptRunnerIterator for the given `raw` against this `target`"""

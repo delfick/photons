@@ -3,14 +3,12 @@
 from photons_socket.messages import DiscoveryMessages, Services
 from photons_socket.fake import MemorySocketTarget, FakeDevice
 
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_protocol.frame import LIFXPacket
 from photons_script.script import ATarget
 
-from input_algorithms.meta import Meta
 import asyncio
 
 class Device(FakeDevice):
@@ -28,12 +26,11 @@ describe AsyncTestCase, "Memory target":
         protocol_register.message_register(1024).add(DiscoveryMessages)
 
         final_future = asyncio.Future()
-        everything = {
+        options = {
               "final_future": final_future
             , "protocol_register": protocol_register
             }
-        meta = Meta(everything, []).at("target")
-        target = MemorySocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})
+        target = MemorySocketTarget.create(options)
 
         device1 = Device("d073d5000001", protocol_register)
 

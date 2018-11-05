@@ -2,7 +2,6 @@
 
 from photons_device_finder import DeviceFinder, InfoPoints, DeviceFinderWrap, Filter
 
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import AsyncTestCase
 
@@ -13,7 +12,6 @@ from photons_protocol.frame import LIFXPacket
 from photons_colour import ColourMessages
 from photons_script.script import ATarget
 
-from input_algorithms.meta import Meta
 import asyncio
 import uuid
 
@@ -147,12 +145,11 @@ describe AsyncTestCase, "Memory target":
         protocol_register.message_register(1024).add(DiscoveryMessages)
 
         final_future = asyncio.Future()
-        everything = {
+        configuration = {
               "final_future": final_future
             , "protocol_register": protocol_register
             }
-        meta = Meta(everything, []).at("target")
-        target = MemorySocketTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, {})
+        target = MemorySocketTarget.create(configuration)
 
         device1 = Device("d073d5000001", protocol_register)
         device2 = Device("d073d5000002", protocol_register)

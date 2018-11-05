@@ -4,7 +4,6 @@ from photons_transport.target import TransportItem, TransportBridge, TransportTa
 from photons_transport.target.errors import FailedToFindDevice
 
 from photons_app.errors import PhotonsAppError, TimedOut, RunErrors
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
@@ -14,7 +13,6 @@ from photons_protocol.messages import MultiOptions
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from collections import defaultdict
 import binascii
@@ -256,8 +254,8 @@ describe AsyncTestCase, "End2End":
     async before_each:
         self.final_future = asyncio.Future()
         self.protocol_register = mock.Mock(name="protocol_register")
-        meta = Meta({"final_future": self.final_future, "protocol_register": self.protocol_register}, [])
-        self.target = MemoryTarget.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta.at("targets").at("memory"), {})
+        options = {"final_future": self.final_future, "protocol_register": self.protocol_register}
+        self.target = MemoryTarget.create(options)
 
     async after_each:
         self.final_future.cancel()

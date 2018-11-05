@@ -9,6 +9,7 @@ ChangeLog
     * Moved the __or__ functionality on packets onto the LIFXPacket object as
       it's implementation depended on fields specifically on LIFXPacket. This
       is essentially a no-op within photons.
+    * Added a create helper to TransportTarget
 
 0.6.2 - 22 October 2018
     * Fixed cleanup logic
