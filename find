@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Helper for searching code base without searching through external code
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+(
+    cd $DIR
+    exec ack "$@" \
+        --ignore-directory .tox \
+        --ignore-directory dist \
+        --ignore-directory lifx_photons_core.egg-info \
+        --ignore-directory scripts/.lifx \
+        --ignore-directory docs/.photons-docs \
+        --ignore-directory docs/res \
+        --ignore-directory docs/gh-pages \
+        --ignore-directory docs/lifx_photons_docs.egg-info \
+        --ignore-directory examples/.lifx
+)
