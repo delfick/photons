@@ -133,7 +133,7 @@ class Canvas:
 
         So let's say you have a 4 by 4 tile, get_color will be called with the following points:
 
-        .. code-block:: plain
+        .. code-block:: none
 
             (0, 0) (1, 0) (2, 0) (3, 0)
             (0, 1) (1, 1) (2, 1) (3, 1)
@@ -142,7 +142,7 @@ class Canvas:
 
         And if you have left_x, top_y of (10, 4), it'll set the following points on the canvas:
 
-        .. code-block:: plain
+        .. code-block:: none
 
             (10, 4) (11, 4) (12, 4) (13, 4)
             (10, 3) (11, 3) (12, 3) (13, 3)
