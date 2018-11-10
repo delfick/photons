@@ -36,24 +36,4 @@ Applying an animation to your tile
 
 If you execute ``lifx`` with no arguments it will display all the available tasks.
 
-References
-----------
-
-In all the commands that take in a reference, the reference can be empty or an
-``_`` to signify running the command against all the devices on the network.
-
-Or it can be a comma separated list of serials like ``d073d5000001,d073d5000002``
-
-Or it can be a ``match:<options>`` where ``<options>`` is a url query string
-specifying filters to match against.
-
-For example, ``match:group_name=one&cap=multizone`` will match against all
-the multizone capable lights in the ``one`` group.
-
-Or ``match:cap=multizone&cap=ir`` will match against all the multizone and
-infrared capable lights.
-
-See :ref:`finder_filters` for valid options to the match filter.
-
-You may also specify a file that has newline separated serials in it by saying
-``file:/path/to/filename``.
+See :ref:`tasks` for more information.

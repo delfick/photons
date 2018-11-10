@@ -2,6 +2,7 @@
   :hidden:
 
   lifx_script
+  tasks
   scripts
   library
   venvstarter

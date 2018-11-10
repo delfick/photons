@@ -1,5 +1,12 @@
 __doc__ = """
-.. photons_task:: transform
+A helper for performing transformations on your devices.j
+
+Tasks
+-----
+
+See :ref:`tasks`.
+
+.. photons_module_tasks::
 
 The Transformer
 ---------------

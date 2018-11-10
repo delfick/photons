@@ -17,13 +17,12 @@ import logging
 __shortdesc__ = "LIFX binary protocol messages for Tiles"
 
 __doc__ = """
-.. photons_task:: get_device_chain
+Code for interacting with LIFX tiles
 
-.. photons_task:: get_chain_state
+Tasks
+-----
 
-.. photons_task:: set_chain_state
-
-.. photons_task:: set_tile_positions
+.. photons_module_tasks::
 
 .. lifx_messages:: TileMessages
 """

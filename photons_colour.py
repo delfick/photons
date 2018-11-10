@@ -20,7 +20,12 @@ __shortdesc__ = "Colour related LIFX binary protocol messages and colour convers
 __doc__ = """
 This module knows about colour.
 
-.. photons_task:: set_color
+Tasks
+-----
+
+See :ref:`tasks`.
+
+.. photons_module_tasks::
 
 .. lifx_messages:: ColourMessages
 

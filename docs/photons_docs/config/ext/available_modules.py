@@ -18,6 +18,9 @@ class ShowAvailableModulesDirective(Directive):
             found.append((module_name, e))
 
         for module_name, e in sorted(found):
+            if module_name in ("__main__", "photons_docs"):
+                continue
+
             template.append("    modules/{0}".format(module_name))
             with open(os.path.join(folder, "modules", "{0}.rst".format(module_name)), 'w') as fle:
                 lines = []
@@ -32,6 +35,9 @@ class ShowAvailableModulesDirective(Directive):
         template.append("")
 
         for module_name, e in sorted(found):
+            if module_name in ("__main__", "photons_docs"):
+                continue
+
             template.append(":ref:`{0}`".format(module_name))
             shortdesc = getattr(e.resolve(), "__shortdesc__", "This module has no __shortdesc__ property")
             template.append("    {0}".format(shortdesc))

@@ -1,13 +1,12 @@
 __doc__ = """
 Here we have the core logic for creating LIFX binary protocol messages.
 
-We also have tasks for packing and unpacking messages from the commandline.
+Tasks
+-----
 
-.. photons_task:: pack
+See :ref:`tasks`.
 
-.. photons_task:: pack_payload
-
-.. photons_task:: unpack
+.. photons_module_tasks::
 
 LIFX Packet Protocol
 --------------------

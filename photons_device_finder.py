@@ -2,8 +2,6 @@
 This module provides an object for finding devices based on filters, which can
 also act as a daemon collecting information in the background.
 
-.. photons_task:: find_with_filter
-
 The idea is that you can query the device_finder for information.
 
 .. code-block:: python
@@ -107,6 +105,13 @@ having ``force_refresh=True`` in your filter.
     search again, call ``reset`` on it.
 
 .. _finder_filters:
+
+Tasks
+-----
+
+See :ref:`tasks`.
+
+.. photons_module_tasks::
 
 Valid Filters
 -------------

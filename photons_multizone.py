@@ -14,9 +14,12 @@ from enum import Enum
 __shortdesc__ = "LIFX Binary protocol messages related to multizone capabilities"
 
 __doc__ = """
-.. photons_task:: get_zones
+Code for interacting with LIFX strips and beams.
 
-.. photons_task:: set_zones
+Tasks
+-----
+
+.. photons_module_tasks::
 
 .. lifx_messages:: MultiZoneMessages
 """

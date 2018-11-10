@@ -2,7 +2,12 @@ __doc__ = """
 This module contains utilities for determining how to apply a range of colours
 to a device.
 
-.. photons_task:: apply_theme
+Tasks
+-----
+
+See :ref:`tasks`.
+
+.. photons_module_tasks::
 
 Theme
 -----

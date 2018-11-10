@@ -2,9 +2,9 @@
 This module provides tasks for accessing and modifying attributes on a LIFX
 device.
 
-.. photons_task:: get_attr
+See :ref:`tasks`.
 
-.. photons_task:: set_attr
+.. photons_module_tasks::
 """
 from photons_app.actions import an_action
 from photons_app.errors import BadOption
