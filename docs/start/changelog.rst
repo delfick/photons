@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.6.3 - TBD
+0.6.3 - 10 November 2018
     * Fix potential hang when connecting to a device (very unlikely error case,
       but now it's handled).
     * Moved the __or__ functionality on packets onto the LIFXPacket object as
