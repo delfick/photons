@@ -1,11 +1,11 @@
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
+from photons_messages import DeviceMessages, TileMessages
 from photons_themes.coords import user_coords_to_pixel_coords
-from photons_tile_messages import TileMessages, tiles_from
 from photons_products_registry import capability_for_ids
 from photons_themes.theme import ThemeColor as Color
-from photons_device_messages import DeviceMessages
+from photons_control.tile import tiles_from
 from photons_themes.canvas import Canvas
 
 from collections import defaultdict

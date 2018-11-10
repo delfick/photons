@@ -13,13 +13,13 @@ The information that is used to understand the different messages is kept in the
 If you use the module system of photons then one of these will be available and
 filled out via ``collector.configuration["protocol_register"]``.
 
-Otherwise you have to create it yourself.
+Otherwise, just import the default one from ``photons_messages.protocol_register``
+
+Or you can create a new one yourself.
 
 .. code-block:: python
 
-    from photons_socket.messages import DiscoveryMessages
-    from photons_protocol.frame import LIFXPacket
-    from photons_colour import ColourMessages
+    from photons_messages import DiscoveryMessages, ColourMessages, LIFXPacket
 
     collector.configuration["protocol_register"].add(1024, LIFXPacket)
     collector.configuration["protocol_register"].message_register(1024).add(ColourMessages)
@@ -29,7 +29,7 @@ Otherwise you have to create it yourself.
  you must register a Messages class that implements message 45 (the acknowledgement
  packet) for the target to be able to tell the difference between acks and replies.
 
- ``photons_socket.messages.DiscoveryMessages`` is an example of a class that
+ ``photons_messages.CoreMessages`` is an example of a class that
  defines the Acknowledgement message.
 
 And then you can use the protocol_register to unpack messages you receive from
@@ -108,7 +108,7 @@ defines it in milliseconds:
 
 .. code-block:: python
 
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages
 
     pkt = DeviceMessages.SetLightPower(level=0, duration=10)
 

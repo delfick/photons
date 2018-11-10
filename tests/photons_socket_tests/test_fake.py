@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_socket.messages import DiscoveryMessages, Services
 from photons_socket.fake import MemorySocketTarget, FakeDevice
 
-from photons_app.registers import ProtocolRegister
+from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 
-from photons_protocol.frame import LIFXPacket
+from photons_messages import DiscoveryMessages, Services, protocol_register
 from photons_script.script import ATarget
 
 import asyncio
@@ -21,10 +20,6 @@ class Device(FakeDevice):
 
 describe AsyncTestCase, "Memory target":
     async it "works":
-        protocol_register = ProtocolRegister()
-        protocol_register.add(1024, LIFXPacket)
-        protocol_register.message_register(1024).add(DiscoveryMessages)
-
         final_future = asyncio.Future()
         options = {
               "final_future": final_future

@@ -14,8 +14,8 @@ Below is a short introduction to what it can do:
 
 .. code-block:: python
 
-    from photons_device_messages import DeviceMessages
     from photons_device_finder import DeviceFinder
+    from photons_messages import DeviceMessages
 
     async def my_process(lan_target):
         device_finder = DeviceFinder(lan_target)

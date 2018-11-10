@@ -1007,6 +1007,29 @@ class float_spec(sb.Spec):
         except (TypeError, ValueError) as error:
             raise BadSpecValue("Failed to convert value into a float", got=val, error=error, meta=meta)
 
+class MultiOptions:
+    def __init__(self, determine_res_packet, adjust_expected_number):
+        if not callable(determine_res_packet) or not callable(adjust_expected_number):
+            raise ProgrammerError("Multi Options expects two callables")
+
+        self.determine_res_packet = determine_res_packet
+        self.adjust_expected_number = adjust_expected_number
+
+    class Max:
+        """
+        A callable that returns -1 if num_results is less than our value
+
+        or num_results if it is larger than our value.
+        """
+        def __init__(self, value):
+            self.value = value
+
+        def __call__(self, results):
+            num_results = len(results)
+            if num_results >= self.value:
+                return num_results
+            return -1
+
 Type.install(
       ("Bool",     1,    bool, bool)
 

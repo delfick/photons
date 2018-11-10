@@ -1,12 +1,11 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_tile_messages import TileMessages, tiles_from
+from photons_messages import DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products_registry import capability_for_ids
 from photons_themes.appliers import types as appliers
 from photons_script.script import ATarget, Pipeline
-from photons_device_messages import DeviceMessages
-from photons_multizone import MultiZoneMessages
+from photons_control.tile import tiles_from
 from photons_themes.theme import Theme
 from photons_colour import Parser
 
@@ -14,12 +13,12 @@ from option_merge_addons import option_merge_addon_hook
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
-import binascii
 import logging
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "socket"), ("lifx.photons", "products_registry"), ("lifx.photons", "device_messages")
-    , ("lifx.photons", "colour"), ("lifx.photons", "multizone"), ("lifx.photons", "tile_messages")
+      ("lifx.photons", "products_registry")
+    , ("lifx.photons", "messages")
+    , ("lifx.photons", "colour")
     ])
 def __lifx__(collector, *args, **kwargs):
     pass
@@ -70,29 +69,43 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     """
     options = Options.FieldSpec().normalise(Meta.empty(), collector.configuration["photons_app"].extra_as_json)
 
+    async with ATarget(target) as afr:
+        await do_apply_theme(target, reference, afr, options)
+
+async def do_apply_theme(target, reference, afr, options):
     aps = appliers[options.theme]
 
     theme = Theme()
     for color in options.colors:
         theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
-    async with ATarget(target) as afr:
-        tasks = []
-        async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
-            serial = pkt.serial
-            capability = capability_for_ids(pkt.product, pkt.vendor)
-            if capability.has_multizone:
-                log.info(hp.lc("Found a strip", serial=serial))
-                tasks.append(hp.async_as_background(apply_zone(aps["1d"], target, afr, pkt.serial, theme, options.overrides)))
-            elif capability.has_chain:
-                log.info(hp.lc("Found a tile", serial=serial))
-                tasks.append(hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.serial, theme, options.overrides)))
-            else:
-                log.info(hp.lc("Found a light", serial=serial))
-                tasks.append(hp.async_as_background(apply_light(aps["0d"], target, afr, pkt.serial, theme, options.overrides)))
+    tasks = []
+    async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
+        serial = pkt.serial
+        capability = capability_for_ids(pkt.product, pkt.vendor)
+        if capability.has_multizone:
+            log.info(hp.lc("Found a strip", serial=serial))
+            t = hp.async_as_background(apply_zone(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
+        elif capability.has_chain:
+            log.info(hp.lc("Found a tile", serial=serial))
+            t = hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.serial, theme, options.overrides))
+        else:
+            log.info(hp.lc("Found a light", serial=serial))
+            t = hp.async_as_background(apply_light(aps["0d"], target, afr, pkt.serial, theme, options.overrides))
 
-        for t in tasks:
+        tasks.append((serial, t))
+
+    results = {}
+
+    for serial, t in tasks:
+        try:
             await t
+        except Exception as error:
+            results[serial] = error
+        else:
+            results[serial] = "ok"
+
+    return results
 
 async def apply_zone(applier, target, afr, serial, theme, overrides):
     length = None

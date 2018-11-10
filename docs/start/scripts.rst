@@ -43,7 +43,7 @@ our ``my_script`` file.
 
     @option_merge_addon_hook(extras=[
           ("lifx.photons", "socket")
-        , ("lifx.photons", "device_messages")
+        , ("lifx.photons", "messages")
         ])
     def __lifx__(collector, *args, **kwargs):
         pass
@@ -129,7 +129,7 @@ So now, running our app should spit out something like::
     15:11:04 INFO    option_merge.addons Found lifx.photons.socket addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.protocol addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.transport addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.device_messages addon
+    15:11:04 INFO    option_merge.addons Found lifx.photons.messages addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.script addon
     15:11:04 INFO    option_merge.collector Converting protocol_register
     15:11:04 INFO    option_merge.collector Converting target_register
@@ -151,7 +151,7 @@ For completeness, this particular script would be implemented like:
 
 .. code-block:: python
 
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages
 
     import random
 

@@ -4,9 +4,8 @@
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
+from photons_messages import DeviceMessages, TileMessages
 from photons_products_registry import capability_for_ids
-from photons_device_messages import DeviceMessages
-from photons_tile_messages import TileMessages
 from photons_script.script import ATarget
 
 from option_merge_addons import option_merge_addon_hook
@@ -15,9 +14,13 @@ import random
 
 log = logging.getLogger("info")
 
-wanted = ["socket", "tile_messages", "device_finder", "products_registry", "script"]
-
-@option_merge_addon_hook(extras=[("lifx.photons", comp) for comp in wanted])
+@option_merge_addon_hook(extras=[
+      ("lifx.photons", "script")
+    , ("lifx.photons", "socket")
+    , ("lifx.photons", "messages")
+    , ("lifx.photons", "products_registry")
+    , ("lifx.photons", "device_finder")
+    ])
 def __lifx__(collector, *args, **kwargs):
     pass
 

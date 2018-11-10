@@ -26,13 +26,6 @@ field. See ``photons_protocol.types`` for builtin types.
 
 .. autoclass:: photons_protocol.packets.PacketSpecMixin
     :members:
-
-LIFXPacket
-----------
-
-Photons protocol also defines the ``parent_packet`` for the LIFX binary protocol.
-
-.. autoclass:: photons_protocol.frame.LIFXPacket
 """
 from photons_protocol.packing import PacketPacking, val_to_bitarray
 from photons_protocol.types import Optional, Type as T

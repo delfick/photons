@@ -5,11 +5,8 @@ from photons_device_finder import DeviceFinder, InfoPoints, DeviceFinderWrap, Fi
 from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import AsyncTestCase
 
+from photons_messages import DeviceMessages, ColourMessages, protocol_register
 from photons_socket.fake import MemorySocketTarget, FakeDevice
-from photons_socket.messages import DiscoveryMessages
-from photons_device_messages import DeviceMessages
-from photons_protocol.frame import LIFXPacket
-from photons_colour import ColourMessages
 from photons_script.script import ATarget
 
 import asyncio
@@ -138,12 +135,6 @@ describe AsyncTestCase, "Memory target":
             device.received.pop()
 
     async it "works":
-        protocol_register = ProtocolRegister()
-        protocol_register.add(1024, LIFXPacket)
-        protocol_register.message_register(1024).add(DeviceMessages)
-        protocol_register.message_register(1024).add(ColourMessages)
-        protocol_register.message_register(1024).add(DiscoveryMessages)
-
         final_future = asyncio.Future()
         configuration = {
               "final_future": final_future

@@ -1,12 +1,11 @@
 # coding: spec
 
 from photons_socket.target import SocketTarget, SocketBridge
-from photons_socket.messages import DiscoveryMessages, Services
 
 from photons_app.errors import TimedOut, FoundNoDevices
 from photons_app.test_helpers import AsyncTestCase
-from photons_app.registers import ProtocolRegister
-from photons_protocol.frame import LIFXPacket
+
+from photons_messages import DiscoveryMessages, Services, protocol_register
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 import asynctest
@@ -16,12 +15,8 @@ import mock
 
 describe AsyncTestCase, "SocketBridge":
     async before_each:
-        self.protocol_register = ProtocolRegister()
-        self.protocol_register.add(1024, LIFXPacket)
-        self.protocol_register.message_register(1024).add(DiscoveryMessages)
-
         self.final_future = asyncio.Future()
-        options = {"final_future": self.final_future, "protocol_register": self.protocol_register}
+        options = {"final_future": self.final_future, "protocol_register": protocol_register}
         self.target = SocketTarget.create(options)
 
     async after_each:

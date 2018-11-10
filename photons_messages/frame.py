@@ -1,22 +1,5 @@
-"""
-The LIFXPacket is made up of the following:
-
-frame_header
-    .. code_for:: photons_protocol.frame.FrameHeader
-
-frame_address
-    .. code_for:: photons_protocol.frame.FrameAddress
-
-protocol_header
-    .. code_for:: photons_protocol.frame.ProtocolHeader
-
-payload
-    As determined by each payload type
-"""
-from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
-
-from photons_app.errors import ProgrammerError
+from photons_protocol.messages import T
 
 from input_algorithms import spec_base as sb
 import binascii
@@ -48,29 +31,6 @@ class ProtocolHeader(dictobj.PacketSpec):
         , ('reserved5', T.Reserved(16))
         ]
 
-class MultiOptions:
-    def __init__(self, determine_res_packet, adjust_expected_number):
-        if not callable(determine_res_packet) or not callable(adjust_expected_number):
-            raise ProgrammerError("Multi Options expects two callables")
-
-        self.determine_res_packet = determine_res_packet
-        self.adjust_expected_number = adjust_expected_number
-
-    class Max:
-        """
-        A callable that returns -1 if num_results is less than our value
-
-        or num_results if it is larger than our value.
-        """
-        def __init__(self, value):
-            self.value = value
-
-        def __call__(self, results):
-            num_results = len(results)
-            if num_results >= self.value:
-                return num_results
-            return -1
-
 class LIFXPacket(dictobj.PacketSpec):
     """
     The LIFXPacket represents protocol 1024.
@@ -82,7 +42,7 @@ class LIFXPacket(dictobj.PacketSpec):
         ``bytes``. Specific message classes will represent the payload as a
         dictionary of data.
 
-    .. automethod:: photons_protocol.frame.LIFXPacket.message
+    .. automethod:: photons_messages.frame.LIFXPacket.message
     """
     parent_packet = True
 
@@ -217,3 +177,6 @@ class LIFXPacket(dictobj.PacketSpec):
         fields = []
 LIFXPacket.Meta.protocol = 1024
 LIFXPacket.Payload.Meta.protocol = 1024
+
+# Helper for creating messages
+msg = LIFXPacket.message

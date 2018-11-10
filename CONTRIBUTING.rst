@@ -121,12 +121,12 @@ For example, inside ``photons_socket``:
 
 .. code-block:: python
 
-    from photons_socket.messages import DiscoveryMessages, Services
     from photons_socket.connection import Sockets
 
     from photons_app.errors import TimedOut, FoundNoDevices
 
     from photons_transport.target import TransportItem, TransportBridge, TransportTarget
+    from photons_messages import DiscoveryMessages, Services
     from photons_protocol.messages import Messages
 
     from input_algorithms.dictobj import dictobj

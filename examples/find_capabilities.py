@@ -2,7 +2,7 @@ from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
 from photons_products_registry import capability_for_ids
-from photons_device_messages import DeviceMessages
+from photons_messages import DeviceMessages
 
 collector = library_setup()
 

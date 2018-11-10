@@ -54,7 +54,7 @@ class ShowMessagesDirective(Directive):
                         title = msg.__name__
 
                     template.extend([title, '+' * len(title)])
-                    template.extend(["", "``{1}.{2}.{3}``".format(num, kls.__module__, kls.__name__, msg.__name__), ""])
+                    template.extend(["", "``{1}.{2}.{3}``".format(num, "photons_messages", kls.__name__, msg.__name__), ""])
                     template.extend(["", ".. code-block:: python", ""])
                     for line in msg.Meta.caller_source.split("\n"):
                         template.append("    {0}".format(line))

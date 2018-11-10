@@ -8,7 +8,8 @@ from input_algorithms.meta import Meta
 __shortdesc__ = "Utilities for painting on the tiles"
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "tile_messages"), ("lifx.photons", "themes"), ("lifx.photons", "device_messages")
+      ("lifx.photons", "messages")
+    , ("lifx.photons", "themes")
     , ("lifx.photons", "products_registry")
     ])
 def __lifx__(*args, **kwargs):

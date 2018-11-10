@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_protocol.messages import Messages
-from photons_protocol.frame import LIFXPacket
 from photons_protocol.types import Type as T
 
 from photons_app.test_helpers import TestCase
@@ -62,37 +61,3 @@ describe TestCase, "MessagesMeta":
 
         assert hasattr(M, "pack")
         assert hasattr(M, "unpack")
-
-    it "works with LIFXPacket":
-        msg = LIFXPacket.message
-
-        class M(Messages):
-            One = msg(42
-                , ("one", T.Int8)
-                )
-
-            Two = One.using(46)
-
-        class M2(Messages):
-            Three = M.One
-
-        self.assertEqual(M.by_type
-            , { 42: M.One
-              , 46: M.Two
-              }
-            )
-
-        self.assertEqual(M2.by_type
-            , { 42: M.One
-              }
-            )
-
-        o = M.One(one=27)
-        self.assertEqual(o.one, 27)
-        self.assertEqual(o.size, 37)
-        self.assertEqual(o.pkt_type, 42)
-
-        t = M2.Three(one=57)
-        self.assertEqual(t.one, 57)
-        self.assertEqual(t.size, 37)
-        self.assertEqual(t.pkt_type, 42)

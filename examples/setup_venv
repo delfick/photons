@@ -3,15 +3,28 @@
 import runpy
 import os
 
-
 this_dir = os.path.abspath(os.path.dirname(__file__))
 src_dir = os.path.join(this_dir, "..")
 
 version_mod = runpy.run_path(os.path.join(src_dir, "photons_app", "__init__.py"))
+
+def remove(name):
+    location = os.path.join(src_dir, name)
+    if os.path.exists(location):
+        if os.path.isdir(location):
+            shutil.rmtree(location)
+        else:
+            os.remove(location)
+
+# Make sure old modules don't cause problems
+remove("photons_attributes.pyc")
+remove("photons_device_messages.pyc")
+remove("photons_multizone.pyc")
+remove("photons_tile_messages.pyc")
+remove("photons_transform")
 
 from venvstarter import ignite
 ignite(__file__, "lifx"
     , deps = ["-e file:" + src_dir + "#egg=lifx-photons-core=={0}".format(version_mod["VERSION"])]
     , min_python_version = 3.6
     )
-

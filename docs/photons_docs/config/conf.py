@@ -5,7 +5,7 @@ extensions = [
       "sphinx.ext.autodoc"
     , "sphinxcontrib_trio"
 
-    , "photons_protocol.sphinx.messages"
+    , "photons_messages.sphinx.messages"
     , "photons_app.sphinx.code_for"
     , "photons_app.sphinx.structures"
     , "photons_app.sphinx.docstrings"

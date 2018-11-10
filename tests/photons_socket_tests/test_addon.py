@@ -1,11 +1,12 @@
 # coding: spec
 
-from photons_socket.messages import DiscoveryMessages
 from photons_socket.target import SocketTarget
 
 from photons_app.test_helpers import TestCase
 from photons_app.collector import Collector
 from photons_app import helpers as hp
+
+from photons_messages import DiscoveryMessages
 
 from textwrap import dedent
 

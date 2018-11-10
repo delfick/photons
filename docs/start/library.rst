@@ -12,7 +12,7 @@ So our script from the :ref:`lifx_photons_script` would look like:
 
     from photons_app.executor import library_setup
     
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages
 
     import random
 

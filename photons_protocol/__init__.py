@@ -1,13 +1,6 @@
 __doc__ = """
 Here we have the core logic for creating LIFX binary protocol messages.
 
-Tasks
------
-
-See :ref:`tasks`.
-
-.. photons_module_tasks::
-
 LIFX Packet Protocol
 --------------------
 

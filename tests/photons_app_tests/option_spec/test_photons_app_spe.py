@@ -1,8 +1,8 @@
 # coding: spec
 
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec, PhotonsApp
-from photons_app.registers import TargetRegister, ProtocolRegister
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.registers import TargetRegister
 from photons_app.test_helpers import TestCase
 from photons_app.registers import Target
 
@@ -53,11 +53,6 @@ describe TestCase, "PhotonsAppSpec":
             register = self.spec.target_register_spec.normalise(self.meta.at('target_register'), {})
             assert isinstance(register, TargetRegister)
             self.assertIs(register.collector, self.collector)
-
-    describe "protocol_register_spe":
-        it "gets us a protocol register":
-            register = self.spec.protocol_register_spec.normalise(self.meta, {})
-            assert isinstance(register, ProtocolRegister)
 
     describe "targets spec":
         it "gets us a dictionary of targets":

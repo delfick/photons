@@ -1,6 +1,12 @@
+"""
+.. autoclass:: photons_control.transform.Transformer
+"""
+from photons_app.errors import PhotonsAppError
+from photons_app.actions import an_action
+
+from photons_messages import ColourMessages, DeviceMessages
 from photons_script.script import Decider, Pipeline
-from photons_device_messages import DeviceMessages
-from photons_colour import ColourMessages, Parser
+from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
 
@@ -121,3 +127,18 @@ class Transformer(object):
 
         getter = ColourMessages.GetColor(ack_required=False, res_required=True)
         return Decider(getter, receiver, [ColourMessages.LightState])
+
+@an_action(needs_target=True, special_reference=True)
+async def transform(collector, target, reference, **kwargs):
+    """
+    Do a http-api like transformation over whatever target you specify
+
+    ``target:transform d073d5000000 -- '{"color": "red", "effect": "pulse"}'``
+
+    It takes in ``color``, ``effect``, ``power`` and valid options for a
+    ``SetWaveformOptional``.
+    """
+    msg = Transformer.using(collector.configuration["photons_app"].extra_as_json)
+    if not msg:
+        raise PhotonsAppError('Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``')
+    await target.script(msg).run_with_all(reference)

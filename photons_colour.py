@@ -1,7 +1,6 @@
-from photons_protocol.messages import Messages, msg, T
-
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
+
+from photons_messages import ColourMessages, Waveform
 
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms import spec_base as sb
@@ -10,29 +9,14 @@ from input_algorithms.meta import Meta
 import colorsys
 import logging
 import random
-import enum
 import re
 
 log = logging.getLogger("photons_colour")
 
-__shortdesc__ = "Colour related LIFX binary protocol messages and colour conversion functionality"
+__shortdesc__ = "Colour conversion functionality"
 
 __doc__ = """
 This module knows about colour.
-
-Tasks
------
-
-See :ref:`tasks`.
-
-.. photons_module_tasks::
-
-.. lifx_messages:: ColourMessages
-
-Helpers
--------
-
-We also supply the following helpers:
 
 .. autoclass:: photons_colour.Effects
     :members:
@@ -41,143 +25,23 @@ We also supply the following helpers:
 """
 
 regexes = {
-      "whitespace": re.compile("\s+")
-    , "10_random_component": re.compile("random")
-    , "07_kelvin_component": re.compile("\Akelvin:([\d]+)\Z")
-    , "06_brightness_component": re.compile("\Abrightness:([\d.]+%?)\Z")
-    , "05_saturation_component": re.compile("\Asaturation:([\d.]+%?)\Z")
-    , "04_hue_component": re.compile("\Ahue:([\d.]+)\Z")
-    , "03_hex_component": re.compile("\A(?:hex:)?#?([0-9a-fA-F]{6})\Z")
-    , "02_rgb_component": re.compile("\Argb:(\d+,\d+,\d+)\Z")
-    , "01_hsb_component": re.compile("\Ahsb:([\d\.]+),([\d\.]+%?),([\d\.]+%?)\Z")
+      "whitespace": re.compile(r"\s+")
+    , "10_random_component": re.compile(r"random")
+    , "07_kelvin_component": re.compile(r"\Akelvin:([\d]+)\Z")
+    , "06_brightness_component": re.compile(r"\Abrightness:([\d.]+%?)\Z")
+    , "05_saturation_component": re.compile(r"\Asaturation:([\d.]+%?)\Z")
+    , "04_hue_component": re.compile(r"\Ahue:([\d.]+)\Z")
+    , "03_hex_component": re.compile(r"\A(?:hex:)?#?([0-9a-fA-F]{6})\Z")
+    , "02_rgb_component": re.compile(r"\Argb:(\d+,\d+,\d+)\Z")
+    , "01_hsb_component": re.compile(r"\Ahsb:([\d\.]+),([\d\.]+%?),([\d\.]+%?)\Z")
     }
 
-@option_merge_addon_hook(extras=(("lifx.photons", "protocol")))
+@option_merge_addon_hook(extras=(("lifx.photons", "messages")))
 def __lifx__(collector, *args, **kwargs):
     pass
 
-@option_merge_addon_hook(post_register=True)
-def __lifx_post__(collector, *args, **kwargs):
-    collector.configuration["protocol_register"].message_register(1024).add(ColourMessages)
-
 class NoSuchEffect(PhotonsAppError):
     desc = "No such effect"
-
-@an_action(needs_target=True, special_reference=True)
-async def set_color(collector, target, reference, artifact, **kwargs):
-    """
-    Change specified bulb to specified colour
-
-    ``lan:set_color d073d50000 red -- '{"hue": 205}'``
-
-    The format of this task is ``<reference> <color> -- <overrides>`` where
-    overrides is optional.
-
-    The color may be any valid color specifier.
-    """
-    overrides = {}
-    if collector.configuration["photons_app"].extra:
-        overrides = collector.configuration["photons_app"].extra_as_json
-
-    if artifact in (None, "", sb.NotSpecified):
-        raise PhotonsAppError("Please specify a color as artifact")
-
-    msg = Parser.color_to_msg(artifact, overrides)
-    await target.script(msg).run_with_all(reference)
-
-class Waveform(enum.Enum):
-    SAW = 0
-    SINE = 1
-    HALF_SINE = 2
-    TRIANGLE = 3
-    PULSE = 4
-
-scaled_to_65535 = T.Uint16.transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-    , lambda v: float(v) / 65535
-    ).allow_float()
-
-hsbk = (
-      ('hue', T.Uint16.transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
-            , lambda v: float(v) * 360 / 65535
-            ).allow_float()
-          )
-    , ('saturation', scaled_to_65535)
-    , ('brightness', scaled_to_65535)
-    , ('kelvin', T.Uint16.default(3500))
-    )
-
-duration_typ = T.Uint32.default(0).transform(
-      lambda _, value: int(1000 * float(value))
-    , lambda value: float(value) / 1000
-    ).allow_float()
-
-color_and_duration = (
-      ('setcolor_reserved1', T.Reserved(8))
-    , *hsbk
-    , ('duration', duration_typ)
-    )
-
-waveform_opts = (
-      ('period', T.Uint32.default(0).transform(
-              lambda _, value: int(1000 * float(value))
-            , lambda value: float(value) / 1000
-            ).allow_float()
-          )
-    , ('cycles', T.Float.default(1))
-    , ('skew_ratio', T.Int16.default(0).transform(
-              lambda _, value: int(32767 * float(value))
-            , lambda value: float(value) / 32767
-            ).allow_float()
-          )
-    , ('waveform', T.Uint8.enum(Waveform).default(Waveform.SAW))
-    )
-
-class ColourMessages(Messages):
-    """
-    Messages related to colour.
-
-    These make use of the following helpers:
-
-    .. code_for:: photons_colour.Waveform
-
-    .. code_for:: photons_colour.hsbk
-
-    .. code_for:: photons_colour.duration_typ
-
-    .. code_for:: photons_colour.color_and_duration
-
-    .. code_for:: photons_colour.waveform_opts
-    """
-    GetColor = msg(101)
-    SetColor = msg(102, *color_and_duration)
-
-    SetWaveForm = msg(103
-        , ('stream', T.Uint8.default(0))
-        , ('transient', T.Uint8.default(0))
-        , *hsbk
-        , *waveform_opts
-        )
-
-    SetWaveFormOptional = msg(119
-        , ('stream', T.Uint8.default(0))
-        , ('transient', T.Uint8.default(0))
-        , *hsbk
-        , *waveform_opts
-        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if pkt.actual("hue") is sb.NotSpecified else 1))
-        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if pkt.actual("saturation") is sb.NotSpecified else 1))
-        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if pkt.actual("brightness") is sb.NotSpecified else 1))
-        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if pkt.actual("kelvin") is sb.NotSpecified else 1))
-        )
-
-    LightState = msg(107
-        , *hsbk
-        , ('state_reserved1', T.Int16.default(0))
-        , ('power', T.Uint16)
-        , ('label', T.String(32 * 8))
-        , ('state_reserved2', T.Uint64.default(0))
-        )
 
 class BadColor(PhotonsAppError):
     pass

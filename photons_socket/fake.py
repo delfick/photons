@@ -5,24 +5,13 @@ Usage looks like:
 
 .. code-block:: python
 
-    from photons_app.registers import ProtocolRegister
-
     from photons_socket.fake import FakeDevice, MemorySocketTarget
-    from photons_socket.messages import DiscoveryMessages
-    from photons_device_messages import DeviceMessages
-    from photons_protocol.frame import LIFXPacket
+    from photons_messages import protocol_register, DeviceMessages
 
     import asyncio
 
-    # The protocol register is used to transform bytes into objects
-    # Note that for acks to work, we must register DiscoveryMessages
-    protocol_register = ProtocolRegister()
-    protocol_register.add(1024, LIFXPacket)
-    protocol_register.message_register(1024).add(DiscoveryMessages)
-    protocol_register.message_register(1024).add(DeviceMessages)
-
     class MyDevice(FakeDevice):
-        def make_response(self, pkt):
+        def make_response(self, pkt, protocol):
             if pkt | DeviceMessages.GetGroup:
                 return DeviceMessages.StateGroup(group="123", label="one", updated_at=1)
 
@@ -48,12 +37,13 @@ Usage looks like:
 If you want a device to not appear when the target finds devices then
 set ``device.online = False``.
 """
-from photons_socket.messages import Services, DiscoveryMessages
 from photons_socket.target import SocketTarget, SocketBridge
+from photons_messages import Services, CoreMessages
 
 from photons_transport.target.retry_options import RetryOptions
 from photons_protocol.messages import Messages
 
+from input_algorithms import spec_base as sb
 import binascii
 import asyncio
 import socket
@@ -137,21 +127,19 @@ class FakeDevice(object):
                 if ack:
                     ack.sequence = pkt.sequence
                     ack.source = pkt.source
-                    ack.target = pkt.target
+                    ack.target = self.serial
                     self.udp_transport.sendto(ack.tobytes(serial=self.serial), addr)
 
                 for res in self.response_for(pkt, "udp"):
                     res.sequence = pkt.sequence
                     res.source = pkt.source
-                    res.target = pkt.target
+                    res.target = self.serial
                     self.udp_transport.sendto(res.tobytes(serial=self.serial), addr)
 
         remote = None
 
         for i in range(3):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('0.0.0.0', 0))
-                port = s.getsockname()[1]
+            port = self.make_port()
 
             try:
                 remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
@@ -173,7 +161,7 @@ class FakeDevice(object):
 
     def ack_for(self, pkt, protocol):
         if pkt.ack_required:
-            return DiscoveryMessages.Acknowledgment()
+            return CoreMessages.Acknowledgment()
 
     def response_for(self, pkt, protocol):
         res = self.make_response(pkt, protocol)
@@ -185,6 +173,12 @@ class FakeDevice(object):
                 yield r
         else:
             yield res
+
+    def make_port(self):
+        """Return the port to listen to"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('0.0.0.0', 0))
+            return s.getsockname()[1]
 
     def make_response(self, pkt, protocol):
         raise NotImplementedError()

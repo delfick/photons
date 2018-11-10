@@ -1,8 +1,10 @@
 # coding: spec
 
-from photons_colour import Effects, Waveform, ColourMessages, NoSuchEffect
+from photons_colour import Effects, Waveform, NoSuchEffect
 
 from photons_app.test_helpers import TestCase
+
+from photons_messages import ColourMessages
 
 import random
 

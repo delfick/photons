@@ -10,6 +10,8 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadYaml, BadConfiguration
 from photons_app.task_finder import TaskFinder
 
+from photons_messages import protocol_register
+
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
@@ -247,7 +249,7 @@ class Collector(Collector):
             .. autoattribute:: photons_app.option_spec.photons_app_spec.PhotonsAppSpec.target_register_spec
 
         protocol_register
-            .. autoattribute:: photons_app.option_spec.photons_app_spec.PhotonsAppSpec.protocol_register_spec
+            The protocol_register object from photons_messages
         """
         photons_app_spec = PhotonsAppSpec()
 
@@ -255,7 +257,7 @@ class Collector(Collector):
               { (0, ("targets", )): photons_app_spec.targets_spec
               , (0, ("photons_app", )): photons_app_spec.photons_app_spec
               , (0, ("target_register", )): photons_app_spec.target_register_spec
-              , (0, ("protocol_register", )): photons_app_spec.protocol_register_spec
+              , (0, ("protocol_register", )): sb.overridden(protocol_register)
               , (0, ("reference_resolver_register", )): photons_app_spec.reference_resolver_register_spec
               }
             , Meta, configuration, sb.NotSpecified

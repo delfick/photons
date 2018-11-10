@@ -6,13 +6,25 @@ from photons_app.actions import an_action
 
 __shortdesc__ = "Core classes for creating Photons targets"
 
-@option_merge_addon_hook(extras=[("lifx.photons", "script")])
+@option_merge_addon_hook(extras=[
+      ("lifx.photons", "script")
+    ])
 def __lifx__(*args, **kwargs):
     pass
 
 @an_action(needs_target=True)
 async def find_devices(collector, target, reference, **kwargs):
-    """Print the devices that can be found"""
+    """
+    List the devices that can be found on the network
+
+    ``target:find_devices <broadcast>``
+
+    If you specify a broadcast (i.e. 192.168.0.255) then it will broadcast the
+    discovery messages to that address.
+
+    Otherwise it will use the default broadcast address for the target you are
+    using. (i.e. the lan target by default broadcasts to 255.255.255.255)
+    """
     broadcast = sb.NotSpecified
     if reference not in (None, "", sb.NotSpecified):
         broadcast = reference

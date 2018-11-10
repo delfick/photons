@@ -1,12 +1,14 @@
 # coding: spec
 
+from photons_protocol.types import Type as T, MultiOptions
 from photons_protocol.packing import PacketPacking
-from photons_protocol.types import Type as T
+from photons_protocol.messages import Messages
 from photons_protocol.packets import dictobj
-from photons_protocol import frame
 
 from photons_app.errors import ProgrammerError
 from photons_app.test_helpers import TestCase
+
+from photons_messages import frame
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
@@ -326,21 +328,56 @@ describe TestCase, "MultiOptions":
     it "complains if we don't give it two functions":
         for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
             with self.fuzzyAssertRaisesError(ProgrammerError, "Multi Options expects two callables"):
-                frame.MultiOptions(a, b)
+                MultiOptions(a, b)
 
     it "sets the two callables":
         determine_res_packet = mock.Mock(name="determine_res_packet")
         adjust_expected_number = mock.Mock(name="adjust_expected_number")
-        options = frame.MultiOptions(determine_res_packet, adjust_expected_number)
+        options = MultiOptions(determine_res_packet, adjust_expected_number)
 
         self.assertIs(options.determine_res_packet, determine_res_packet)
         self.assertIs(options.adjust_expected_number, adjust_expected_number)
 
     it "has a Max helper":
-        num = frame.MultiOptions.Max(5)
+        num = MultiOptions.Max(5)
 
         self.assertEqual(num([1]), -1)
         self.assertEqual(num([0, 1, 2, 3]), -1)
 
         self.assertEqual(num([0, 1, 2, 3, 4]), 5)
         self.assertEqual(num([0, 1, 2, 3, 4, 5]), 6)
+
+describe TestCase, "Messages":
+    it "works":
+        msg = frame.LIFXPacket.message
+
+        class M(Messages):
+            One = msg(42
+                , ("one", T.Int8)
+                )
+
+            Two = One.using(46)
+
+        class M2(Messages):
+            Three = M.One
+
+        self.assertEqual(M.by_type
+            , { 42: M.One
+              , 46: M.Two
+              }
+            )
+
+        self.assertEqual(M2.by_type
+            , { 42: M.One
+              }
+            )
+
+        o = M.One(one=27)
+        self.assertEqual(o.one, 27)
+        self.assertEqual(o.size, 37)
+        self.assertEqual(o.pkt_type, 42)
+
+        t = M2.Three(one=57)
+        self.assertEqual(t.one, 57)
+        self.assertEqual(t.size, 37)
+        self.assertEqual(t.pkt_type, 42)

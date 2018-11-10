@@ -1,18 +1,11 @@
 # coding: spec
 
-from photons_colour import ColourMessages, Waveform
-
-from photons_protocol.frame import LIFXPacket
-
-from photons_app.registers import ProtocolRegister
-
 from photons_app.test_helpers import TestCase
+
+from photons_messages import ColourMessages, Waveform, protocol_register
 
 describe TestCase, "ColourMessages":
     def unpack(self, msg):
-        protocol_register = ProtocolRegister()
-        protocol_register.add(1024, LIFXPacket)
-        protocol_register.message_register(1024).add(ColourMessages)
         return ColourMessages.unpack(msg, protocol_register=protocol_register)
 
     it "has Setcolor":

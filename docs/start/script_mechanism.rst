@@ -9,7 +9,7 @@ against the serials of your devices:
 
 .. code-block:: python
 
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages
 
     script = target.script(DeviceMessages.GetPower())
 
@@ -50,9 +50,8 @@ If you want to make sure they happen in order, then use a
 
 .. code-block:: python
 
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages, ColourMessages
     from photons_script.script import Pipeline
-    from photons_colour import ColourMessages
 
     color_no_brightness = ColourMessages.SetColor(hue=210, saturation=0.5, brightness=0, kelvin=3500, res_required=False)
     power_on = DeviceMessages.SetPower(level=65535, res_required=False)

@@ -1,6 +1,5 @@
 # coding: spec
 
-from photons_protocol.frame import LIFXPacket
 from photons_protocol.packets import dictobj
 from photons_protocol.types import Type as T
 

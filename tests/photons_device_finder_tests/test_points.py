@@ -4,7 +4,7 @@ from photons_device_finder import Point, InfoPoints, Device, Filter
 
 from photons_app.test_helpers import TestCase
 
-from photons_protocol.frame import LIFXPacket
+from photons_messages import LIFXPacket
 
 import mock
 

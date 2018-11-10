@@ -9,14 +9,11 @@ wanted = [
       "protocol"
     , "script"
     , "socket"
-    , "transform"
-    , "attributes"
+    , "control"
+    , "messages"
     , "colour"
     , "themes"
-    , "device_messages"
-    , "multizone"
     , "device_finder"
-    , "tile_messages"
     , "products_registry"
     ]
 

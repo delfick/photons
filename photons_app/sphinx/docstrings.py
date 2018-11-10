@@ -3,7 +3,7 @@ from input_algorithms.dictobj import dictobj
 def process_dictobj_signature(app, what, name, obj, options, signature, return_annotation):
     if what == "class" and issubclass(obj, dictobj):
         try:
-            from photons_protocol.frame import LIFXPacket
+            from photons_messages import LIFXPacket
         except ImportError:
             pass
         else:

@@ -22,7 +22,7 @@ For example:
 .. code-block:: python
 
     from photons_products_registry import capability_for_ids
-    from photons_device_messages import DeviceMessages
+    from photons_messages import DeviceMessages
 
     async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference):
         if pkt | DeviceMessages.StateVersion:

@@ -1,8 +1,10 @@
 # coding: spec
 
-from photons_colour import ColourMessages, Waveform, split_color_string, Parser, InvalidColor, ValueOutOfRange
+from photons_colour import split_color_string, Parser, InvalidColor, ValueOutOfRange
 
 from photons_app.test_helpers import TestCase
+
+from photons_messages import ColourMessages, Waveform
 
 import mock
 

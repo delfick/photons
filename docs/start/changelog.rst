@@ -3,6 +3,17 @@
 ChangeLog
 =========
 
+0.7.0 - TBD
+    Moved code into ``photons_control`` and ``photons_messages``. This means
+    ``photons_attributes``, ``photons_device_messages``, ``photons_tile_messages``
+    and ``photons_transform`` no longer exist.
+
+    Anything related to messages in those modules (and in ``photons_sockets.messages``
+    is now in ``photons_messages``.
+
+    Everything else in those modules, and the actions from ``photons_protocol``
+    are now in ``photons_control``.
+
 0.6.3 - 10 November 2018
     * Fix potential hang when connecting to a device (very unlikely error case,
       but now it's handled).

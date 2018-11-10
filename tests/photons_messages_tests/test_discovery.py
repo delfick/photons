@@ -1,20 +1,14 @@
 # coding: spec
 
-from photons_socket.messages import Services, DiscoveryMessages
+from photons_messages import Services, DiscoveryMessages, protocol_register
 
 from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import TestCase
-
-from photons_protocol.frame import LIFXPacket
 
 import binascii
 
 describe TestCase, "DiscoveryMessages":
     it "can unpack":
-        protocol_register = ProtocolRegister()
-        protocol_register.add(1024, LIFXPacket)
-        protocol_register.message_register(1024).add(DiscoveryMessages)
-
         hexd = "29000014f7f15496d073d51261e200004c49465856320101e41ac32cece1d31403000000017cdd0000"
 
         unpackd = DiscoveryMessages.unpack(hexd, protocol_register = protocol_register)

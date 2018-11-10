@@ -1,34 +1,16 @@
-"""
-This module provides tasks for accessing and modifying attributes on a LIFX
-device.
-
-See :ref:`tasks`.
-
-.. photons_module_tasks::
-"""
 from photons_app.actions import an_action
 from photons_app.errors import BadOption
 
-from option_merge_addons import option_merge_addon_hook
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
-import logging
 import sys
-
-__shortdesc__ = "Tasks for setting and getting attributes on devices"
-
-log = logging.getLogger("photons_attributes")
-
-@option_merge_addon_hook(extras=[("lifx.photons", "protocol")])
-def __lifx__(collector, *args, **kwargs):
-    pass
 
 @an_action(special_reference=True, needs_target=True)
 async def get_attr(collector, target, reference, artifact, **kwargs):
     """
     Get attributes from your globes
 
-    ``get_attr d073d5000000 color``
+    ``target:get_attr d073d5000000 color``
 
     Where ``d073d5000000`` is replaced with the serial of the device you are
     addressing and ``color`` is replaced with the attribute you want.
@@ -73,7 +55,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     """
     Set attributes on your globes
 
-    ``set_attr d073d5000000 color -- '{"hue": 360, "saturation": 1, "brightness": 1}'``
+    ``target:set_attr d073d5000000 color -- '{"hue": 360, "saturation": 1, "brightness": 1}'``
 
     This does the same thing as ``get_attr`` but will look for ``Set<Attr>``
     message and initiates it with the options found after the ``--``.

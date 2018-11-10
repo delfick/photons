@@ -2,11 +2,12 @@
 
 from photons_protocol.messages import MessagesMixin, Messages
 from photons_protocol.errors import BadConversion
-from photons_protocol.frame import LIFXPacket
 from photons_protocol.types import Type as T
 
 from photons_app.test_helpers import TestCase
 from photons_app.registers import ProtocolRegister
+
+from photons_messages import LIFXPacket
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb

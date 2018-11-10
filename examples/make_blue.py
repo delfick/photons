@@ -1,7 +1,7 @@
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
-from photons_device_messages import DeviceMessages
+from photons_messages import DeviceMessages
 from photons_colour import Parser
 
 collector = library_setup()

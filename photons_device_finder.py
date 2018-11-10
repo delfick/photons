@@ -193,17 +193,14 @@ from photons_app.special import FoundSerials, SpecialReference
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
+from photons_messages import LIFXPacket, DeviceMessages, ColourMessages
 from photons_products_registry import capability_for_ids
 from photons_script.script import Pipeline, Repeater
-from photons_device_messages import DeviceMessages
-from photons_protocol.frame import LIFXPacket
-from photons_colour import ColourMessages
 
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
-from collections import defaultdict
 from urllib.parse import parse_qs
 from functools import partial
 import binascii
@@ -220,9 +217,10 @@ log = logging.getLogger("photons_device_finder")
 __shortdesc__ = "Device finder that gathers information about devices in the background"
 
 @option_merge_addon_hook(extras=[
-    ("lifx.photons", comp)
-    for comp in ["script", "colour", "device_messages", "products_registry"]
-])
+    ("lifx.photons", "script")
+  , ("lifx.photons", "messages")
+  , ("lifx.photons", "products_registry")
+  ])
 def __lifx__(collector, *args, **kwargs):
     pass
 

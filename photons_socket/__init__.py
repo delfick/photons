@@ -20,8 +20,6 @@ broadcast address.
 .. note:: This module will create a target called ``lan`` in the configuration
   if one is not already specified.
 
-.. automodule:: photons_socket.messages
-
 The target
 ----------
 

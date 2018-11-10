@@ -4,7 +4,7 @@ Here we define the yaml specification for photons_app options and task options
 The specifications are responsible for sanitation, validation and normalisation.
 """
 
-from photons_app.registers import ProtocolRegister, TargetRegister, Target, ReferenceResolerRegister
+from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.helpers import memoized_property
 from photons_app.errors import BadOption
@@ -129,15 +129,6 @@ class PhotonsAppSpec(object):
         return sb.create_spec(TargetRegister
             , collector=sb.formatted(sb.overridden("{collector}"), formatter=MergedOptionStringFormatter)
             )
-
-    @memoized_property
-    def protocol_register_spec(self):
-        """
-        Make a ProtocolRegister object
-
-        .. autoclass:: photons_app.option_spec.photons_app_spec.ProtocolRegister
-        """
-        return sb.create_spec(ProtocolRegister)
 
     @memoized_property
     def reference_resolver_register_spec(self):

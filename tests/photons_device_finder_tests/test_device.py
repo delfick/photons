@@ -4,9 +4,8 @@ from photons_device_finder import Device, Collection, Collections, Filter, InfoP
 
 from photons_app.test_helpers import TestCase
 
-from photons_device_messages import DeviceMessages
+from photons_messages import DeviceMessages, ColourMessages
 from photons_products_registry import Capability
-from photons_colour import ColourMessages
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
