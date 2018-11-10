@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.7.0 - TBD
+0.7.0 - 10 November 2018
     Moved code into ``photons_control`` and ``photons_messages``. This means
     ``photons_attributes``, ``photons_device_messages``, ``photons_tile_messages``
     and ``photons_transform`` no longer exist.
