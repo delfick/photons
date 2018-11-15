@@ -1,10 +1,10 @@
 language: python
 
+dist: xenial
+
 python:
   - "3.6"
-
-  # I"ll add this when travis ci supports python3.7
-  # - "3.7"
+  - "3.7"
 
 env:
   global:
