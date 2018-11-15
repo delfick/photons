@@ -38,15 +38,20 @@ If you want a device to not appear when the target finds devices then
 set ``device.online = False``.
 """
 from photons_socket.target import SocketTarget, SocketBridge
-from photons_messages import Services, CoreMessages
+
+from photons_app import helpers as hp
 
 from photons_transport.target.retry_options import RetryOptions
+from photons_messages import Services, CoreMessages
 from photons_protocol.messages import Messages
 
-from input_algorithms import spec_base as sb
+from contextlib import contextmanager
 import binascii
+import logging
 import asyncio
 import socket
+
+log = logging.getLogger("photons_socket.fake")
 
 class MemorySocketBridge(SocketBridge):
     class RetryOptions(RetryOptions):
@@ -94,9 +99,10 @@ class MemorySocketTarget(SocketTarget):
         return WithDevices(self, devices)
 
 class FakeDevice(object):
-    def __init__(self, serial, protocol_register):
+    def __init__(self, serial, protocol_register, port=None):
         self.serial = serial
         self.online = False
+        self.chosen_port = port
         self.protocol_register = protocol_register
 
     async def start(self):
@@ -121,6 +127,8 @@ class FakeDevice(object):
             def datagram_received(sp, data, addr):
                 if not self.online:
                     return
+
+                log.debug(hp.lc("RECV", bts=binascii.hexlify(data).decode(), protocol="udp", serial=self.serial))
 
                 pkt = Messages.unpack(data, self.protocol_register, unknown_ok=True)
                 ack = self.ack_for(pkt, "udp")
@@ -176,6 +184,9 @@ class FakeDevice(object):
 
     def make_port(self):
         """Return the port to listen to"""
+        if self.chosen_port is not None:
+            return self.chosen_port
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('0.0.0.0', 0))
             return s.getsockname()[1]
@@ -185,3 +196,11 @@ class FakeDevice(object):
 
     def is_reachable(self, broadcast_address):
         return self.online
+
+    @contextmanager
+    def offline(self):
+        try:
+            self.online = False
+            yield
+        finally:
+            self.online = True
