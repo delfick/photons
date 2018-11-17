@@ -80,12 +80,6 @@ describe TestCase, "ProtocolHeader":
     before_each:
         self.protocol_header = frame.ProtocolHeader()
 
-    it "defaults reserved4 to 0":
-        pkt = mock.Mock(name="pkt")
-        spec = self.protocol_header.Meta.field_types_dict["reserved4"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, 0)
-
     it "defaults pkt_type to Payload.message_type":
         class Payload:
             message_type = 62
@@ -138,6 +132,7 @@ describe TestCase, "LIFXPacket":
         for info in PacketPacking.fields_in(p, p, None):
             found.append((info.name, info.val, info.to_sized_bitarray()))
 
+        self.maxDiff = None
         self.assertEqual(found
             , [ ('size', 38, bitarray('0110010000000000'))
               , ('protocol', 1024, bitarray('000000000010'))
@@ -154,7 +149,7 @@ describe TestCase, "LIFXPacket":
               , ('ack_required', True, bitarray('1'))
               , ('reserved3', sb.NotSpecified, bitarray('000000'))
               , ('sequence', 1, bitarray('10000000'))
-              , ('reserved4', 0, bitarray('0000000000000000000000000000000000000000000000000000000000000000'))
+              , ('reserved4', sb.NotSpecified, bitarray('0000000000000000000000000000000000000000000000000000000000000000'))
               , ('pkt_type', 52, bitarray('0010110000000000'))
               , ('reserved5', sb.NotSpecified, bitarray('0000000000000000'))
               , ('one', bitarray('0000000000000000'), bitarray('0000000000000000'))

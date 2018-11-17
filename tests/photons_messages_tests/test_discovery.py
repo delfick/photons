@@ -35,7 +35,7 @@ describe TestCase, "DiscoveryMessages":
                 , "service": Services.UDP
                 }
               , "protocol_header":
-                { "reserved4": 1500791505324022500
+                { "reserved4": "e41ac32cece1d314"
                 , "pkt_type": 3
                 , "reserved5": "0000"
                 }

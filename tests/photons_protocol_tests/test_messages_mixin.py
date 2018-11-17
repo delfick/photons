@@ -142,7 +142,7 @@ describe TestCase, "MessagesMixin":
                     , 'sequence': 1
                     }
                   , 'protocol_header':
-                    { 'reserved4': 0
+                    { 'reserved4': sb.NotSpecified
                     , 'pkt_type': 78
                     , 'reserved5': sb.NotSpecified
                     }
@@ -169,7 +169,7 @@ describe TestCase, "MessagesMixin":
                       , ('reserved1', sb.NotSpecified)
                       , ('reserved2', sb.NotSpecified)
                       , ('reserved3', sb.NotSpecified)
-                      , ('reserved4', 0)
+                      , ('reserved4', sb.NotSpecified)
                       , ('reserved5', sb.NotSpecified)
                       , ('sequence', 1)
                       , ('size', 38)
@@ -198,7 +198,7 @@ describe TestCase, "MessagesMixin":
                     , 'sequence': 1
                     }
                   , 'protocol_header':
-                    { 'reserved4': 0
+                    { 'reserved4': sb.NotSpecified
                     , 'pkt_type': 78
                     , 'reserved5': sb.NotSpecified
                     }

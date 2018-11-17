@@ -144,8 +144,8 @@ describe TestCase, "ColourMessages":
               , 'kelvin': 2500
               , 'power': 65535
               , 'label': 'den'
-              , 'state_reserved1': 0
-              , 'state_reserved2': 0
+              , 'state_reserved1': b'\x00\x00'
+              , 'state_reserved2': b'\x00\x00\x00\x00\x00\x00\x00\x00'
               }
             )
 

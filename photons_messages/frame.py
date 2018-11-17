@@ -26,7 +26,7 @@ class FrameAddress(dictobj.PacketSpec):
 
 class ProtocolHeader(dictobj.PacketSpec):
     fields = [
-          ('reserved4', T.Uint64.default(0))
+          ('reserved4', T.Reserved(64))
         , ('pkt_type', T.Uint16.default(lambda pkt: pkt.Payload.message_type))
         , ('reserved5', T.Reserved(16))
         ]

@@ -65,7 +65,7 @@ class DeviceMessages(Messages):
     GetHostFirmware = msg(14)
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
-        , ("reserved", T.Uint64.default(0))
+        , ("reserved", T.Reserved(64))
         , ("version", T.Uint32.version_number())
         )
 
@@ -74,13 +74,13 @@ class DeviceMessages(Messages):
         , ("signal", T.Float)
         , ("tx", T.Uint32)
         , ("rx", T.Uint32)
-        , ("reserved", T.Int16)
+        , ("reserved", T.Reserved(16))
         )
 
     GetWifiFirmware = msg(18)
     StateWifiFirmware = msg(19
         , ("build", T.Uint64)
-        , ("reserved", T.Uint64)
+        , ("reserved", T.Reserved(64))
         , ("version", T.Uint32.version_number())
         )
 
@@ -126,7 +126,7 @@ class DeviceMessages(Messages):
         , ("signal", T.Float)
         , ("tx", T.Uint32)
         , ("rx", T.Uint32)
-        , ("reserved", T.Int16)
+        , ("reserved", T.Reserved(16))
         )
 
     EchoRequest = msg(58
@@ -171,10 +171,10 @@ class ColourMessages(Messages):
 
     LightState = msg(107
         , *fields.hsbk
-        , ('state_reserved1', T.Int16.default(0))
+        , ('state_reserved1', T.Reserved(16))
         , ('power', T.Uint16)
         , ('label', T.String(32 * 8))
-        , ('state_reserved2', T.Uint64.default(0))
+        , ('state_reserved2', T.Reserved(64))
         )
 
 ########################
@@ -236,7 +236,7 @@ class TileMessages(Messages):
 
     SetUserPosition = msg(703
         , ("tile_index", T.Uint8)
-        , ("reserved6", T.Uint16.default(0))
+        , ("reserved6", T.Reserved(16))
         , ("user_x", T.Float)
         , ("user_y", T.Float)
         )
