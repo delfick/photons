@@ -1,9 +1,9 @@
 # coding: spec
 
 from photons_protocol.packing import val_to_bitarray, BitarraySlice, FieldInfo, PacketPacking
+from photons_protocol.types import Type as T, Optional
 from photons_protocol.errors import BadConversion
 from photons_protocol.packets import dictobj
-from photons_protocol.types import Type as T
 
 from photons_app.test_helpers import TestCase
 
@@ -281,6 +281,11 @@ describe TestCase, "FieldInfo":
 
             with self.fuzzyAssertRaisesError(BadConversion, "Failed trying to convert a value", val=9000, fmt="<b", group=self.group, name=self.name):
                 self.info.struct_format(self.info.typ.struct_format, 9000)
+
+        it "understands the Optional value":
+            b = bitarray(endian="little")
+            b.frombytes(struct.pack("<H", 0))
+            self.assertEqual(self.info.struct_format("<H", Optional), b)
 
 describe TestCase, "PacketPacking":
     before_each:

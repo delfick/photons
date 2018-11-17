@@ -4,6 +4,11 @@ from photons_app.test_helpers import TestCase
 
 from photons_messages import ColourMessages, Waveform, protocol_register
 
+from photons_protocol.messages import Messages
+from photons_protocol.types import Optional
+
+from input_algorithms import spec_base as sb
+
 describe TestCase, "ColourMessages":
     def unpack(self, msg):
         return ColourMessages.unpack(msg, protocol_register=protocol_register)
@@ -90,6 +95,44 @@ describe TestCase, "ColourMessages":
         self.assertEqual(msg.payload.actual("set_saturation"), 0)
         self.assertEqual(msg.payload.actual("set_brightness"), 1)
         self.assertEqual(msg.payload.actual("set_kelvin"), 1)
+
+    it "SetWaveFormOptional does not require all hsbk values":
+        msg = ColourMessages.SetWaveFormOptional(hue=100, source=1, sequence=0, target=None)
+        self.assertIs(msg.actual("brightness"), sb.NotSpecified)
+
+        self.assertEqual(msg.set_hue, 1)
+        self.assertEqual(msg.set_saturation, 0)
+        self.assertEqual(msg.set_brightness, 0)
+        self.assertEqual(msg.set_kelvin, 0)
+        unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
+
+        self.assertAlmostEqual(unpackd.hue, 100, places=2)
+        self.assertEqual(unpackd.set_hue, 1)
+        self.assertEqual(unpackd.set_saturation, 0)
+        self.assertEqual(unpackd.saturation, 0)
+        self.assertEqual(unpackd.set_brightness, 0)
+        self.assertEqual(unpackd.brightness, 0)
+        self.assertEqual(unpackd.set_kelvin, 0)
+        self.assertEqual(unpackd.kelvin, 0)
+
+        msg = ColourMessages.SetWaveFormOptional.empty_normalise(hue=100, source=1, sequence=0, target=None)
+        self.assertIs(msg.actual("brightness"), Optional)
+
+        self.assertEqual(msg.set_hue, 1)
+        self.assertEqual(msg.set_saturation, 0)
+        self.assertEqual(msg.set_brightness, 0)
+        self.assertEqual(msg.set_kelvin, 0)
+
+        unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
+
+        self.assertAlmostEqual(unpackd.hue, 100, places=2)
+        self.assertEqual(unpackd.set_hue, 1)
+        self.assertEqual(unpackd.set_saturation, 0)
+        self.assertEqual(unpackd.saturation, 0)
+        self.assertEqual(unpackd.set_brightness, 0)
+        self.assertEqual(unpackd.brightness, 0)
+        self.assertEqual(unpackd.set_kelvin, 0)
+        self.assertEqual(unpackd.kelvin, 0)
 
     it "has LightState":
         msg = self.unpack("580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b00000000079919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000")

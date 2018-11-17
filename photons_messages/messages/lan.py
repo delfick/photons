@@ -2,11 +2,15 @@ from photons_messages import enums, fields
 from photons_messages.frame import msg
 
 from photons_protocol.messages import T, Messages, MultiOptions
+from photons_protocol.types import Optional
 
 from input_algorithms import spec_base as sb
 
 # Used in .many calls. Defined here so we don't have to recreate this lambda so much
 return_color = lambda pkt: fields.Color
+
+def empty(pkt, attr):
+    return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
 ########################
 ###   CORE
@@ -157,12 +161,12 @@ class ColourMessages(Messages):
     SetWaveFormOptional = msg(119
         , ('stream', T.Uint8.default(0))
         , ('transient', T.Uint8.default(0))
-        , *fields.hsbk
+        , *fields.hsbk_with_optional
         , *fields.waveform_opts
-        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if pkt.actual("hue") is sb.NotSpecified else 1))
-        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if pkt.actual("saturation") is sb.NotSpecified else 1))
-        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if pkt.actual("brightness") is sb.NotSpecified else 1))
-        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if pkt.actual("kelvin") is sb.NotSpecified else 1))
+        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
+        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
+        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
+        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
         )
 
     LightState = msg(107

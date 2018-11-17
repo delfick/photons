@@ -1,4 +1,5 @@
 from photons_protocol.errors import BadConversion
+from photons_protocol.types import Optional
 
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
@@ -101,6 +102,8 @@ class FieldInfo(dictobj):
     def struct_format(self, fmt, val):
         b = bitarray(endian="little")
         try:
+            if val is Optional:
+                val = 0
             b.frombytes(struct.pack(fmt, val))
         except struct.error as error:
             raise BadConversion("Failed trying to convert a value", val=val, fmt=fmt, error=error, group=self.group, name=self.name)

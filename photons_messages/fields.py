@@ -27,6 +27,13 @@ hsbk = (
     , ('kelvin', T.Uint16.default(3500))
     )
 
+hsbk_with_optional = (
+      ('hue', hsbk[0][1].optional())
+    , ('saturation', hsbk[1][1].optional())
+    , ('brightness', hsbk[2][1].optional())
+    , ('kelvin', T.Uint16.optional())
+    )
+
 duration_typ = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
     , lambda value: float(value) / 1000
