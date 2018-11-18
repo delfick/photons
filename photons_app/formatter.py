@@ -14,8 +14,10 @@ To do this we define the MergedOptionStringFormatter below that uses the magic
 of MergedOptions to do the lookup for us.
 """
 
-from option_merge.formatter import MergedOptionStringFormatter as StringFormatter
 from photons_app.errors import BadOptionFormat
+from photons_app import helpers as hp
+
+from option_merge.formatter import MergedOptionStringFormatter as StringFormatter
 from input_algorithms.meta import Meta
 import pkg_resources
 import asyncio
@@ -84,5 +86,5 @@ class MergedOptionStringFormatter(StringFormatter):
         if format_spec == "resource":
             parts = obj.split("/")
             return pkg_resources.resource_filename(parts[0], "/".join(parts[1:]))
-        elif isinstance(obj, asyncio.Future):
+        elif any(isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)):
             return obj
