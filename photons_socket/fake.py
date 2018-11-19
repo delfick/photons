@@ -131,6 +131,9 @@ class FakeDevice(object):
                 log.debug(hp.lc("RECV", bts=binascii.hexlify(data).decode(), protocol="udp", serial=self.serial))
 
                 pkt = Messages.unpack(data, self.protocol_register, unknown_ok=True)
+                if pkt.serial not in ("000000000000", self.serial):
+                    return
+
                 ack = self.ack_for(pkt, "udp")
                 if ack:
                     ack.sequence = pkt.sequence
@@ -171,9 +174,12 @@ class FakeDevice(object):
         if pkt.ack_required:
             return CoreMessages.Acknowledgment()
 
+    def do_send_response(self, pkt):
+        return pkt.res_required
+
     def response_for(self, pkt, protocol):
         res = self.make_response(pkt, protocol)
-        if res is None or not pkt.res_required:
+        if res is None or not self.do_send_response(pkt):
             return
 
         if type(res) is list:
