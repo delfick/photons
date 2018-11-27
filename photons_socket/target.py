@@ -65,6 +65,10 @@ class SocketBridge(TransportBridge):
     async def create_receiver(self, conn, packet, addr):
         """LAN connections do receiving with a different mechanism for now"""
 
+    def is_sock_active(self, sock):
+        """Determine if this sock (which is actually a transport) is still open"""
+        return self.sockets.is_transport_active(sock)
+
     async def spawn_conn(self, address, backoff=0.05, target=None, timeout=10):
         """
         Spawn a connection for this address, or the default_broadcast if we

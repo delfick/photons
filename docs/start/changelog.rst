@@ -5,6 +5,7 @@ ChangeLog
 
 0.7.1 - TBD
     * Made it easier to construct a SetWaveFormOptional
+    * Fix handling of sockets when the network goes away
 
 0.7.0 - 10 November 2018
     Moved code into ``photons_control`` and ``photons_messages``. This means

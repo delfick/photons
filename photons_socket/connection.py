@@ -29,8 +29,15 @@ class Sockets(object):
                     pass
         self.stop_fut.cancel()
 
+    def is_transport_active(self, transport):
+        """Say whether this transport is closed or not"""
+        return getattr(transport, "_sock", None) is not None and not getattr(transport._sock, "_closed", False)
+
     def spawn(self, address, backoff=0.05, timeout=10):
         """Spawn a socket for this address"""
+
+        if self.stop_fut.cancelled():
+            raise PhotonsAppError("The target has been cancelled")
 
         # Don't care about port, only care about host
         if type(address) is tuple:
@@ -38,13 +45,15 @@ class Sockets(object):
 
         if address in self.sockets:
             fut = self.sockets[address]
-            if not fut.done() or (not fut.cancelled() and not fut.exception()):
-                return self.sockets[address]
-            else:
-                del self.sockets[address]
+            if not fut.done():
+                return fut
 
-        if self.stop_fut.cancelled():
-            raise PhotonsAppError("The target has been cancelled")
+            if not fut.cancelled() and not fut.exception():
+                transport = fut.result()
+                if self.is_transport_active(transport):
+                    return fut
+
+            del self.sockets[address]
 
         # Initialize a spot for this address
         if address not in self.sockets:
@@ -91,8 +100,10 @@ class Sockets(object):
         """Make a socket protocol to read data from"""
 
         def onerror(exc):
-            if address in self.sockets:
-                del self.sockets[address]
+            if fut.done() and not fut.exception() and not fut.cancelled():
+                transport = fut.result()
+                if hasattr(transport, "close"):
+                    transport.close()
 
             if not fut.done() and not fut.cancelled():
                 if exc:
@@ -100,12 +111,19 @@ class Sockets(object):
                 else:
                     fut.cancel()
 
+            if address in self.sockets and self.sockets[address] is fut:
+                del self.sockets[address]
+
         class SocketProtocol:
             def datagram_received(sp, data, addr):
                 self.data_receiver(data, addr, address)
 
             def error_received(sp, exc):
                 log.error("Socket for {0} got an error\terror={1}".format(address, exc))
+                # errno 51 is network unreachable
+                # Once the network is back, the socket will start working again
+                if isinstance(exc, OSError) and exc.errno == 51:
+                    return
                 onerror(exc)
 
             def connection_made(sp, transport):

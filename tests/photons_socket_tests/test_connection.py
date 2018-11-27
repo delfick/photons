@@ -99,7 +99,7 @@ describe AsyncTestCase, "Sockets":
 
         async it "returns the fut if it's done without error":
             fut = asyncio.Future()
-            fut.set_result(mock.Mock(name="conn"))
+            fut.set_result(mock.Mock(name="conn", _sock=mock.Mock(name="sock", _closed=False)))
             self.sockets.sockets["address"] = fut
 
             _spawn = mock.NonCallableMock(name='_spawn')
@@ -152,6 +152,54 @@ describe AsyncTestCase, "Sockets":
 
             _spawn.assert_called_once_with("address", IsFut(), backoff, timeout)
 
+        async it "spawns a new connection if transport._sock is None":
+            backoff = mock.Mock(name="backoff")
+            timeout = mock.Mock(name="timeout")
+
+            fut = asyncio.Future()
+            transport = mock.Mock(name="transport", _sock=None)
+            fut.set_result(transport)
+            self.sockets.sockets["address"] = fut
+
+            _spawn = mock.Mock(name='_spawn')
+            with mock.patch.object(self.sockets, "_spawn", _spawn):
+                made = self.sockets.spawn(("address", 1), backoff=backoff, timeout=timeout)
+                self.assertIsNot(made, fut)
+                self.assertEqual(self.sockets.sockets["address"], made)
+
+            class IsFut:
+                def __eq__(s, thing):
+                    print(thing)
+                    self.assertIs(type(thing), hp.ChildOfFuture)
+                    self.assertIs(thing.original_fut, self.sockets.stop_fut)
+                    return True
+
+            _spawn.assert_called_once_with("address", IsFut(), backoff, timeout)
+
+        async it "spawns a new connection if transport._sock._closed is True":
+            backoff = mock.Mock(name="backoff")
+            timeout = mock.Mock(name="timeout")
+
+            fut = asyncio.Future()
+            transport = mock.Mock(name="transport", _sock=mock.Mock(name="_sock", _closed=True))
+            fut.set_result(transport)
+            self.sockets.sockets["address"] = fut
+
+            _spawn = mock.Mock(name='_spawn')
+            with mock.patch.object(self.sockets, "_spawn", _spawn):
+                made = self.sockets.spawn(("address", 1), backoff=backoff, timeout=timeout)
+                self.assertIsNot(made, fut)
+                self.assertEqual(self.sockets.sockets["address"], made)
+
+            class IsFut:
+                def __eq__(s, thing):
+                    print(thing)
+                    self.assertIs(type(thing), hp.ChildOfFuture)
+                    self.assertIs(thing.original_fut, self.sockets.stop_fut)
+                    return True
+
+            _spawn.assert_called_once_with("address", IsFut(), backoff, timeout)
+
         async it "spawns a new connection if there is no current future":
             backoff = mock.Mock(name="backoff")
             timeout = mock.Mock(name="timeout")
@@ -168,6 +216,61 @@ describe AsyncTestCase, "Sockets":
                     return True
 
             _spawn.assert_called_once_with("address", IsFut(), backoff, timeout)
+
+        async it "can detect a closed socket":
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('0.0.0.0', 0))
+                port = s.getsockname()[1]
+
+            class ServerProtocol(asyncio.Protocol):
+                def connection_made(sp, transport):
+                    self.transport = transport
+
+                def datagram_received(sp, data, addr):
+                    pass
+
+            remote, _ = await self.loop.create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
+            try:
+                assert "127.0.0.1" not in self.sockets.sockets
+                fut = self.sockets.spawn("127.0.0.1")
+                self.assertIs(self.sockets.sockets["127.0.0.1"], fut)
+                transport = await self.wait_for(fut)
+
+                transport.sendto(b"wat", ("127.0.0.1", port))
+                assert "127.0.0.1" in self.sockets.sockets
+                assert self.sockets.is_transport_active(transport)
+
+                transport.close()
+                transport.sendto(b"wat", ("127.0.0.1", port))
+                await asyncio.sleep(0.01)
+                assert "127.0.0.1" not in self.sockets.sockets
+                assert not self.sockets.is_transport_active(transport)
+
+                fut2 = self.sockets.spawn("127.0.0.1")
+                self.assertIsNot(fut, fut2)
+                self.assertIs(self.sockets.sockets["127.0.0.1"], fut2)
+                transport = await self.wait_for(fut2)
+                transport.close()
+                await asyncio.sleep(0.01)
+                assert "127.0.0.1" not in self.sockets.sockets
+                assert not self.sockets.is_transport_active(transport)
+
+                fut3 = self.sockets.spawn("127.0.0.1")
+                self.assertIsNot(fut2, fut3)
+                self.assertIs(self.sockets.sockets["127.0.0.1"], fut3)
+                transport = await self.wait_for(fut3)
+                transport._sock.close()
+                await asyncio.sleep(0.01)
+                assert "127.0.0.1" in self.sockets.sockets
+                assert not self.sockets.is_transport_active(transport)
+
+                fut4 = self.sockets.spawn("127.0.0.1")
+                self.assertIsNot(fut3, fut4)
+                self.assertIs(self.sockets.sockets["127.0.0.1"], fut4)
+                transport = await self.wait_for(fut4)
+                assert self.sockets.is_transport_active(transport)
+            finally:
+                remote.close()
 
     describe "private _spawn":
         async it "works":
