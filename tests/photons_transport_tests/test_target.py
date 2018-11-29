@@ -1,11 +1,10 @@
 # coding: spec
 
 from photons_transport.target.target import TransportTarget
+from photons_transport.target.script import InvalidScript
 
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
-
-from photons_script.script import InvalidScript
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms.dictobj import dictobj
@@ -118,22 +117,7 @@ describe AsyncTestCase, "TransportTarget":
                 self.assertIs(ret, bridge)
 
                 self.bridge_kls.assert_called_once_with(self.final_future, self.target
-                    , protocol_register=self.protocol_register, found=None, default_broadcast="255.255.255.255"
-                    )
-
-                bridge.start.assert_called_with()
-
-            async it "passes on found to the bridge":
-                found = mock.Mock(name="found")
-                bridge = mock.Mock(name="bridge")
-                bridge.start = asynctest.mock.CoroutineMock(name="start")
-                self.bridge_kls.return_value = bridge
-
-                ret = await self.target.args_for_run(found=found)
-                self.assertIs(ret, bridge)
-
-                self.bridge_kls.assert_called_once_with(self.final_future, self.target
-                    , protocol_register=self.protocol_register, found=found, default_broadcast="255.255.255.255"
+                    , protocol_register=self.protocol_register, default_broadcast="255.255.255.255"
                     )
 
                 bridge.start.assert_called_with()
@@ -143,6 +127,24 @@ describe AsyncTestCase, "TransportTarget":
                 args_for_run = mock.Mock(name="args_for_run")
                 await self.target.close_args_for_run(args_for_run)
                 args_for_run.finish.assert_called_once_with()
+
+        describe "session":
+            async it "creates and closes an args_for_run":
+                afr = mock.Mock(name="afr")
+                args_for_run = asynctest.mock.CoroutineMock(name="args_for_run", return_value=afr)
+                close_args_for_run = asynctest.mock.CoroutineMock(name="close_args_for_run")
+
+                args_for_run_patch = mock.patch.object(self.target, "args_for_run", args_for_run)
+                close_args_for_run_patch = mock.patch.object(self.target, "close_args_for_run", close_args_for_run)
+
+                with args_for_run_patch, close_args_for_run_patch:
+                    async with self.target.session() as a:
+                        self.assertIs(a, afr)
+                        args_for_run.assert_called_once_with()
+                        self.assertEqual(len(close_args_for_run.mock_calls), 0)
+
+                    args_for_run.assert_called_once_with()
+                    close_args_for_run.assert_called_once_with(afr)
 
         describe "get_list":
             async it "uses find_devices on the args_for_run":

@@ -1,123 +1,13 @@
-from photons_app.errors import RunErrors, BadRunWithResults, PhotonsAppError
+from photons_app.errors import RunErrors, PhotonsAppError
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from input_algorithms.spec_base import NotSpecified
 from collections import defaultdict
 import asyncio
 import logging
 import time
 
-log = logging.getLogger("photons_script")
-
-def add_error(catcher, error):
-    """
-    Adds an error to an error_catcher.
-
-    This means if it's callable we call it with the error
-
-    and if it's a list or set we add the error to it.
-    """
-    if callable(catcher):
-        catcher(error)
-    elif type(catcher) is list:
-        catcher.append(error)
-    elif type(catcher) is set:
-        catcher.add(error)
-
-class InvalidScript(PhotonsAppError):
-    desc = "Script is invalid"
-
-class ATarget(object):
-    """
-    Use and cleanup a target.
-
-    .. code-block:: python
-
-        async with ATarget(target) as afr:
-            ...
-
-    Is equivalent to:
-
-    .. code-block:: python
-
-        afr = await target.args_for_run()
-        ...
-        await target.close_args_for_run(afr)
-    """
-    def __init__(self, target, **kwargs):
-        self.kwargs = kwargs
-        self.target = target
-
-    async def __aenter__(self):
-        self.args_for_run = await self.target.args_for_run(**self.kwargs)
-        return self.args_for_run
-
-    async def __aexit__(self, *args):
-        if hasattr(self, "args_for_run"):
-            await self.target.close_args_for_run(self.args_for_run)
-
-class ScriptRunner(object):
-    """
-    Create a runner for our script.
-
-    The ``script`` is an object with a ``run_with`` method on it.
-
-    This helper will create the ``afr`` if none is passed in and clean it up if
-    we created it.
-    """
-    def __init__(self, script, target):
-        self.script = script
-        self.target = target
-
-    async def run_with(self, reference, args_for_run=NotSpecified, **kwargs):
-        specified = True
-        if args_for_run is NotSpecified:
-            specified = False
-            args_for_run = await self.target.args_for_run()
-        try:
-            return await self.script.run_with(reference, args_for_run, **kwargs)
-        finally:
-            if not specified:
-                await self.target.close_args_for_run(args_for_run)
-
-class ScriptRunnerIterator(object):
-    """
-    Create an iterator runner for our script.
-
-    The ``script`` is an object with a ``run_with`` method on it.
-
-    This helper will create the ``afr`` if none is passed in and clean it up if
-    we created it.
-    """
-    def __init__(self, script, target):
-        self.script = script
-        self.target = target
-
-    async def run_with_all(self, *args, **kwargs):
-        """Do a run_with but don't complete till all messages have completed"""
-        results = []
-        try:
-            async for info in self.run_with(*args, **kwargs):
-                results.append(info)
-        except RunErrors as error:
-            raise BadRunWithResults(results=results, _errors=error.errors)
-        except Exception as error:
-            raise BadRunWithResults(results=results, _errors=[error])
-        else:
-            return results
-
-    async def run_with(self, reference, args_for_run=NotSpecified, **kwargs):
-        specified = True
-        if args_for_run is NotSpecified:
-            specified = False
-            args_for_run = await self.target.args_for_run()
-        try:
-            async for thing in self.script.run_with(reference, args_for_run, **kwargs):
-                yield thing
-        finally:
-            if not specified:
-                await self.target.close_args_for_run(args_for_run)
+log = logging.getLogger("photons_control.script")
 
 class Pipeline(object):
     """
@@ -134,7 +24,7 @@ class Pipeline(object):
         reference1 = "d073d500000"
         reference2 = "d073d500001"
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             async for result in target.script(Pipeline(msg1, msg2)).run_with([reference1, reference2], afr):
                 ....
 
@@ -142,7 +32,7 @@ class Pipeline(object):
 
     .. code-block:: python
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             async for result in target.script(msg1).run_with([reference1], afr):
                 ...
             async for result in target.script(msg2).run_with([reference1], afr):
@@ -198,7 +88,7 @@ class Pipeline(object):
 
         def new_error_catcher(e):
             data["found_error"] = True
-            add_error(original_ec, e)
+            hp.add_error(original_ec, e)
         kwargs["error_catcher"] = new_error_catcher
 
         for i, child in enumerate(self.children):
@@ -227,7 +117,7 @@ class Pipeline(object):
             except Exception as error:
                 if do_raise:
                     raise
-                add_error(error_catcher, error)
+                hp.add_error(error_catcher, error)
                 return
 
         if type(references) is not list:
@@ -282,7 +172,7 @@ class Decider(object):
         reply that doesn't match this message type is dropped before we call
         ``decider``
 
-    .. automethod:: photons_script.script.Decider.run_with
+    .. automethod:: photons_control.script.Decider.run_with
     """
     name = "using"
     has_children = True
@@ -382,7 +272,7 @@ class Repeater(object):
         def error_catcher(e):
             print(e)
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             pipeline = Pipeline(msg1, msg2, spread=1)
             async for result in target.script(Repeater(pipeline, min_loop_time=20).run_with([reference1, reference2], afr, error_catcher=error_catcher):
                 ....
@@ -391,7 +281,7 @@ class Repeater(object):
 
     .. code-block:: python
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             while True:
                 async for result in target.script(pipeline).run_with([reference1], afr):
                     ...

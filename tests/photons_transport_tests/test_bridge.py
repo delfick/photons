@@ -19,7 +19,6 @@ describe AsyncTestCase, "TransportBridge":
         self.stop_fut = asyncio.Future()
         self.transport_target = mock.Mock(name="transport_target")
         self.protocol_register = mock.Mock(name="protocol_register")
-        self.found = mock.Mock(name="found")
         self.default_broadcast = mock.Mock(name="default_broadcast")
 
     async after_each:
@@ -35,14 +34,13 @@ describe AsyncTestCase, "TransportBridge":
 
         with mock.patch.object(TransportBridge, "generate_source", generate_source):
             bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register
-                , found=self.found, default_broadcast=self.default_broadcast
+                , default_broadcast=self.default_broadcast
                 )
 
         assert not bridge.stop_fut.done()
         self.assertIs(bridge.transport_target, self.transport_target)
         self.assertIs(bridge.protocol_register, self.protocol_register)
         self.assertIs(bridge.device_source, s1)
-        self.assertIs(bridge.found, self.found)
         self.assertIs(bridge.broadcast_source, s2)
         self.assertIs(bridge.default_broadcast, self.default_broadcast)
 
@@ -59,17 +57,10 @@ describe AsyncTestCase, "TransportBridge":
         self.assertEqual(bridge.found, {})
         self.assertEqual(bridge.default_broadcast, "255.255.255.255")
 
-    async it "doesn't use new found if given found is empty":
-        found = {}
-        bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register, found=found)
-        self.assertEqual(bridge.found, {})
-        found["a"] = 1
-        self.assertEqual(bridge.found, {"a": 1})
-
     describe "usage":
         async before_each:
             self.bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register
-                , found=self.found, default_broadcast=self.default_broadcast
+                , default_broadcast=self.default_broadcast
                 )
 
         describe "start":

@@ -2,7 +2,7 @@ from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, ColourMessages
-from photons_script.script import ATarget, Pipeline
+from photons_control.script import Pipeline
 from photons_colour import Parser
 
 import asyncio
@@ -20,7 +20,7 @@ get_color = ColourMessages.GetColor()
 color_msgs = [Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread}) for name in color_names]
 
 async def doit():
-    async with ATarget(lan_target) as afr:
+    async with lan_target.session() as afr:
         # By using a pipeline we can introduce a wait time between successful sending of colors
         colors = Pipeline(*color_msgs, spread=spread, synchronized=True)
 
@@ -52,7 +52,7 @@ async def doit():
                 msg.res_required = False
                 msgs.append(msg)
 
-        # We share the afr we got from ATarget so that we don't have to search for the ips of the lights again
+        # We share the afr we got from target.session() so that we don't have to search for the ips of the lights again
         await lan_target.script(msgs).run_with_all(None, afr)
 
 loop = collector.configuration["photons_app"].loop

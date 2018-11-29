@@ -8,8 +8,8 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from photons_script.script import ATarget, Pipeline
 from photons_protocol.messages import MultiOptions
+from photons_control.script import Pipeline
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
@@ -268,7 +268,7 @@ describe AsyncTestCase, "End2End":
                 called.append(("find_serials", afr, broadcast, find_timeout))
                 return await afr.find_devices(broadcast, find_timeout=find_timeout)
 
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg = Adder(3, 4)
             results = []
             find_timeout = mock.Mock(name="find_timeout")
@@ -300,7 +300,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(called, [("find_serials", afr, False, find_timeout)])
 
     async it "works":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg = Adder(3, 4)
             results = []
 
@@ -366,7 +366,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(len(set(hash(p) for p, _, _ in results)), 9)
 
     async it "raises a single error if serials is None":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg = NoReply()
 
             found = []
@@ -380,7 +380,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(found, [])
 
     async it "raises a single error if only one serial":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg = NoReply()
 
             found = []
@@ -394,7 +394,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(found, [])
 
     async it "raises a RunErrors if multiple serials":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg = NoReply()
 
             found = []
@@ -411,7 +411,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(found, [])
 
     async it "doesn't raise errors if a error_catcher is specified":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg1 = NoReply()
             msg2 = Adder(3, 4)
 
@@ -438,7 +438,7 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(sorted(errors), sorted([t1, t2]))
 
     async it "doesn't raise errors if we can't find devices":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             with afr.all_offline():
                 msg1 = NoReply()
                 msg2 = Adder(3, 4)
@@ -455,7 +455,7 @@ describe AsyncTestCase, "End2End":
                 self.assertEqual(errors, [FailedToFindDevice(serial="d073d5000069")])
 
     async it "calls error_catcher if it's a function":
-        async with ATarget(self.target) as afr:
+        async with self.target.session() as afr:
             msg1 = NoReply()
 
             errors = []

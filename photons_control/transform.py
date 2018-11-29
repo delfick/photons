@@ -1,11 +1,12 @@
 """
 .. autoclass:: photons_control.transform.Transformer
 """
+from photons_control.script import Decider, Pipeline
+
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import ColourMessages, DeviceMessages
-from photons_script.script import Decider, Pipeline
 from photons_colour import Parser
 
 from input_algorithms import spec_base as sb

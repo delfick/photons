@@ -9,7 +9,7 @@ from photons_products_registry import capability_for_ids, DefaultCapability
 from photons_transport.target.errors import FailedToFindDevice
 from photons_messages import DeviceMessages, ColourMessages
 from photons_control.multizone import zones_from_reference
-from photons_script.script import Decider, ATarget
+from photons_control.script import Decider
 
 from option_merge_addons import option_merge_addon_hook
 from collections import defaultdict
@@ -20,7 +20,7 @@ import json
 log = logging.getLogger("info")
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "script")
+      ("lifx.photons", "control")
     , ("lifx.photons", "socket")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "device_finder")
@@ -39,7 +39,7 @@ async def info(collector, target, reference, **kwargs):
 
     And will get zone information if your device is multizone capable
     """
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         found, serials = await reference.find(afr, target.default_broadcast, 30)
         log.info(f"Found {len(serials)} devices")
 

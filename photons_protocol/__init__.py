@@ -1,4 +1,4 @@
-__doc__ = """
+"""
 Here we have the core logic for creating LIFX binary protocol messages.
 
 LIFX Packet Protocol

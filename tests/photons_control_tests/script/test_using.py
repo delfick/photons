@@ -1,9 +1,11 @@
 # coding: spec
 
-from photons_script.script import Decider, ScriptRunnerIterator
+from photons_control.script import Decider
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
+
+from photons_transport.target.script import ScriptRunnerIterator
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import asynctest

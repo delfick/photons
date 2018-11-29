@@ -4,8 +4,6 @@ from photons_app.errors import TimedOut, RunErrors
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from photons_script.script import add_error
-
 from input_algorithms import spec_base as sb
 from functools import partial
 import asyncio
@@ -121,7 +119,7 @@ class TransportItem(object):
             except Exception as error:
                 if do_raise:
                     raise
-                add_error(error_catcher, error)
+                hp.add_error(error_catcher, error)
                 return
 
         # Work out what and where to send
@@ -146,7 +144,7 @@ class TransportItem(object):
 
             if catcher:
                 for error in set(catcher):
-                    add_error(error_catcher, error)
+                    hp.add_error(error_catcher, error)
 
                 if do_raise:
                     throw_error(serials, error_catcher)
@@ -279,13 +277,13 @@ class TransportItem(object):
                 try:
                     writer = await make_writer(original, packet)
                 except Exception as error:
-                    add_error(error_catcher, error)
+                    hp.add_error(error_catcher, error)
                 else:
                     writers.append(writer)
                     writing_packets.append(packet)
 
         for error in set(errors):
-            add_error(error_catcher, error)
+            hp.add_error(error_catcher, error)
 
         if not writing_packets:
             return
@@ -300,13 +298,13 @@ class TransportItem(object):
                 e = TimedOut("Message was cancelled"
                     , serial=packet.serial
                     )
-                add_error(error_catcher, e)
+                hp.add_error(error_catcher, e)
                 return
 
             if not res.cancelled():
                 exc = res.exception()
                 if exc:
-                    add_error(error_catcher, exc)
+                    hp.add_error(error_catcher, exc)
 
             full_number = len(gatherers) == len(writers)
             futs_done = all(f.done() for f in futures)

@@ -3,6 +3,28 @@
 ChangeLog
 =========
 
+0.8.0 - TBD
+    * Merging photons_script module into photons_control and photons_transport
+    * Removing the need for the ATarget context manager and replacing it with a
+      session() context manager on the target itself.
+
+      So:
+
+      .. code-block:: python
+
+        from photons_script.script import ATarget
+        async with ATarget(target) as afr:
+            ...
+
+      Becomes:
+
+      .. code-block:: python
+    
+        async with target.session() as afr
+            ...
+    * Pipeline/Repeater/Decider is now in photons_control.script instead of
+      photons_script.script.
+
 0.7.1 - 29 November 2018
     * Made it easier to construct a SetWaveFormOptional
     * Fix handling of sockets when the network goes away

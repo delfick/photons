@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_script.script import Pipeline
+from photons_control.script import Pipeline
 
 from photons_app.errors import PhotonsAppError, RunErrors
 from photons_app.test_helpers import AsyncTestCase
@@ -44,7 +44,7 @@ describe AsyncTestCase, "Pipeline":
             spread = mock.Mock(name='spread')
             synchronized = mock.Mock(name="synchronized")
             short_circuit_on_error = mock.Mock(name='short_circuit_on_error')
-            with mock.patch("photons_script.script.Pipeline", FakePipeline):
+            with mock.patch("photons_control.script.Pipeline", FakePipeline):
                 pipeline = Pipeline(c1, c2, c3
                     , short_circuit_on_error = short_circuit_on_error
                     , synchronized = synchronized

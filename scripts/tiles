@@ -6,7 +6,6 @@ from photons_app.actions import an_action
 
 from photons_messages import DeviceMessages, TileMessages
 from photons_products_registry import capability_for_ids
-from photons_script.script import ATarget
 
 from option_merge_addons import option_merge_addon_hook
 import logging
@@ -15,8 +14,7 @@ import random
 log = logging.getLogger("info")
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "script")
-    , ("lifx.photons", "socket")
+      ("lifx.photons", "socket")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "products_registry")
     , ("lifx.photons", "device_finder")
@@ -38,7 +36,7 @@ async def tiles(collector, target, reference, **kwargs):
     ``tiles match:group_name=kitchen``
     """
     tiles = []
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
             if pkt | DeviceMessages.StateVersion:
                 if capability_for_ids(pkt.product, pkt.vendor).has_chain:

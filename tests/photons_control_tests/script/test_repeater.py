@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_script.script import Repeater
+from photons_control.script import Repeater
 
 from photons_app.errors import PhotonsAppError, RunErrors
 from photons_app.test_helpers import AsyncTestCase
@@ -50,7 +50,7 @@ describe AsyncTestCase, "Repeater":
 
             min_loop_time = mock.Mock(name='min_loop_time')
             on_done_loop = asynctest.mock.CoroutineMock(name="on_done_loop")
-            with mock.patch("photons_script.script.Repeater", FakeRepeater):
+            with mock.patch("photons_control.script.Repeater", FakeRepeater):
                 repeater = Repeater(child, min_loop_time=min_loop_time, on_done_loop=on_done_loop)
                 self.assertIs(repeater.simplified(simplifier), result)
 

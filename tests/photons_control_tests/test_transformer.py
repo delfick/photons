@@ -1,11 +1,11 @@
 # coding: spec
 
 from photons_control.transform import Transformer
+from photons_control.script import Pipeline
 
 from photons_app.test_helpers import AsyncTestCase, FakeTargetIterator, print_packet_difference
 
 from photons_messages import DeviceMessages, ColourMessages
-from photons_script.script import Pipeline
 from photons_colour import Parser
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp

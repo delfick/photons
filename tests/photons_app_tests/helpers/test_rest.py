@@ -6,6 +6,25 @@ from photons_app import helpers as hp
 import mock
 import os
 
+describe TestCase, "add_error":
+    it "calls the error_catcher with the error if it's a callable":
+        error = mock.Mock(name="error")
+        catcher = mock.Mock(name="catcher")
+        hp.add_error(catcher, error)
+        catcher.assert_called_once_with(error)
+
+    it "appends to the error catcher if it's a list":
+        error = mock.Mock(name="error")
+        catcher = []
+        hp.add_error(catcher, error)
+        self.assertEqual(catcher, [error])
+
+    it "adds to the error catcher if it's a set":
+        error = mock.Mock(name="error")
+        catcher = set()
+        hp.add_error(catcher, error)
+        self.assertEqual(catcher, set([error]))
+
 describe TestCase, "a_temp_file":
     it "gives us the tmpfile":
         with hp.a_temp_file() as fle:

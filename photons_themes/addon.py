@@ -4,7 +4,7 @@ from photons_app import helpers as hp
 from photons_messages import DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products_registry import capability_for_ids
 from photons_themes.appliers import types as appliers
-from photons_script.script import ATarget, Pipeline
+from photons_control.script import Pipeline
 from photons_control.tile import tiles_from
 from photons_themes.theme import Theme
 from photons_colour import Parser
@@ -19,6 +19,7 @@ import logging
       ("lifx.photons", "products_registry")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "colour")
+    , ("lifx.photons", "control")
     ])
 def __lifx__(collector, *args, **kwargs):
     pass
@@ -69,7 +70,7 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     """
     options = Options.FieldSpec().normalise(Meta.empty(), collector.configuration["photons_app"].extra_as_json)
 
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         await do_apply_theme(target, reference, afr, options)
 
 async def do_apply_theme(target, reference, afr, options):

@@ -8,6 +8,12 @@ See :ref:`tasks`.
 
 .. photons_module_tasks::
 
+Script helpers
+--------------
+
+.. automodule:: photons_control.script
+    :members:
+
 Transformer
 -----------
 

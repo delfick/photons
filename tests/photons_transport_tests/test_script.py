@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_script.script import ATarget, ScriptRunner, ScriptRunnerIterator
+from photons_transport.target.script import ScriptRunner, ScriptRunnerIterator
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
@@ -8,38 +8,6 @@ from photons_app.test_helpers import AsyncTestCase
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import asyncio
 import mock
-
-describe AsyncTestCase, "ATarget":
-    async it "calls args_for_run on entry and close_args_for_run on exit":
-        afr = mock.Mock(name="afr")
-
-        a = mock.Mock(name="a")
-        b = mock.Mock(name="b")
-
-        called = []
-
-        class FakeTarget(object):
-            async def args_for_run(s, *args, **kwargs):
-                called.append(("args_for_run", args, kwargs))
-                return afr
-
-            async def close_args_for_run(s, *args, **kwargs):
-                called.append(("close_args_for_run", args, kwargs))
-
-        target = FakeTarget()
-
-        self.assertEqual(called, [])
-        async with ATarget(target, c=a, d=b) as got_afr:
-            self.assertIs(got_afr, afr)
-            self.assertEqual(called
-                , [ ("args_for_run", (), {"c": a, "d": b})
-                  ]
-                )
-        self.assertEqual(called
-            , [ ("args_for_run", (), {"c": a, "d": b})
-              , ("close_args_for_run", (afr, ), {})
-              ]
-            )
 
 describe AsyncTestCase, "ScriptRunner":
     async it "takes in script and target":

@@ -2,7 +2,7 @@ from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, ColourMessages
-from photons_script.script import Decider
+from photons_control.script import Decider
 
 collector = library_setup()
 

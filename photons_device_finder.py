@@ -195,7 +195,7 @@ from photons_app import helpers as hp
 
 from photons_messages import LIFXPacket, DeviceMessages, ColourMessages
 from photons_products_registry import capability_for_ids
-from photons_script.script import Pipeline, Repeater
+from photons_control.script import Pipeline, Repeater
 
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.dictobj import dictobj
@@ -217,7 +217,7 @@ log = logging.getLogger("photons_device_finder")
 __shortdesc__ = "Device finder that gathers information about devices in the background"
 
 @option_merge_addon_hook(extras=[
-    ("lifx.photons", "script")
+    ("lifx.photons", "control")
   , ("lifx.photons", "messages")
   , ("lifx.photons", "products_registry")
   ])

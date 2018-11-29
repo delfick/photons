@@ -1,7 +1,5 @@
 from photons_app.actions import an_action
 
-from photons_script.script import ATarget
-
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.meta import Meta
 
@@ -23,7 +21,7 @@ def animation_action(name, animationkls, optionskls, __doc__):
     async def action(collector, target, reference, **kwargs):
         extra = collector.configuration["photons_app"].extra_as_json
         options = optionskls.FieldSpec().normalise(Meta.empty(), extra)
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             await animationkls(target, afr, options).animate(reference)
 
     action.__name__ = name

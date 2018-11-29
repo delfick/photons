@@ -7,7 +7,7 @@ from photons_app.errors import FoundNoDevices
 from photons_app.special import FoundSerials
 from photons_app import helpers as hp
 
-from photons_script.script import Pipeline, Repeater
+from photons_control.script import Pipeline, Repeater
 from photons_messages import DeviceMessages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp

@@ -1,9 +1,10 @@
+from photons_transport.target.script import ScriptRunnerIterator, InvalidScript
 from photons_transport.target.bridge import TransportBridge
 from photons_transport.target.item import TransportItem
 
 from photons_app.formatter import MergedOptionStringFormatter
 
-from photons_script.script import ScriptRunnerIterator, InvalidScript, Pipeline
+from photons_control.script import Pipeline
 
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
@@ -73,10 +74,25 @@ class TransportTarget(dictobj.Spec):
             items = items[0]
         return ScriptRunnerIterator(items, target=self)
 
-    async def args_for_run(self, found=None):
+    def session(self):
+        info = {}
+
+        class Session:
+            async def __aenter__(s):
+                afr = info["afr"] = await self.args_for_run()
+                return afr
+
+            async def __aexit__(s, exc_type, exc, tb):
+                if "afr" in info:
+                    await self.close_args_for_run(info["afr"])
+
+        return Session()
+
+    async def args_for_run(self):
         """Create an instance of args_for_run. This is designed to be shared amongst many `script`"""
         afr = self.bridge_kls()(self.final_future, self
-            , protocol_register=self.protocol_register, found=found, default_broadcast=self.default_broadcast
+            , protocol_register=self.protocol_register
+            , default_broadcast=self.default_broadcast
             )
         await afr.start()
         return afr

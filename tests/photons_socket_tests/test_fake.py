@@ -6,7 +6,6 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DiscoveryMessages, Services, protocol_register
-from photons_script.script import ATarget
 
 import asyncio
 
@@ -30,7 +29,7 @@ describe AsyncTestCase, "Memory target":
         device1 = Device("d073d5000001", protocol_register)
 
         async def doit():
-            async with ATarget(target) as afr:
+            async with target.session() as afr:
                 async with target.with_devices(device1):
                     script = target.script(DiscoveryMessages.GetService())
 

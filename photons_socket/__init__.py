@@ -1,4 +1,4 @@
-__doc__ = """
+"""
 This is an implementation of ``photons_transport`` for writing to a device over
 a socket.
 

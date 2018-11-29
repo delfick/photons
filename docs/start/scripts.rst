@@ -95,15 +95,17 @@ they do.
     pass is used for registering special hooks in the configuration and for
     defining what dependency modules are required.
 
-    The second pass, is the ``post_register`` pass and is done once all
-    dependencies are resolved and initialized.
+    You can also use the decorator with ``post_register=True`` and this function
+    will be called once all the dependencies are resolved and initialized.
+    In this second pass we can inspect the configuration and do any setup we
+    need to do.
 
 ``an_action``
-    This decorator registers a function to be a :term:`action`.
+    This decorator registers a function to be an action.
 
-    ``an_action`` takes some arguments that define common behaviour for the action..
+    ``an_action`` takes some arguments that define common behaviour for the action.
 
-    In this case we say that the user must specify a target to
+    In this case we say that the user must specify a reference and a target to
     use, with the lan target being set by default.
 
     We also ask that the reference be treated as a special reference. This means
@@ -118,7 +120,7 @@ they do.
     running the ``lifx`` application with the specified arguments on the
     command line.
 
-    In this case we are saying run photons with the ``lan`` target and execute
+    In this case we are saying run photons with the ``lan`` target an execute
     the ``do_turn_off`` target.
 
 So now, running our app should spit out something like::

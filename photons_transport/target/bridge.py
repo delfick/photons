@@ -83,9 +83,9 @@ class TransportBridge(object):
     default_desired_services = None
     _merged_options_formattable = True
 
-    def __init__(self, stop_fut, transport_target, protocol_register, found=None, default_broadcast="255.255.255.255"):
+    def __init__(self, stop_fut, transport_target, protocol_register, default_broadcast="255.255.255.255"):
         self.transport_target = transport_target
-        self.found = {} if found is None else found
+        self.found = {}
         self.stop_fut = hp.ChildOfFuture(stop_fut)
         self.device_source = self.generate_source()
         self.broadcast_source = self.generate_source()

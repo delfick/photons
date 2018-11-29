@@ -7,7 +7,6 @@ from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, ColourMessages, protocol_register
 from photons_socket.fake import MemorySocketTarget, FakeDevice
-from photons_script.script import ATarget
 
 import asyncio
 import uuid
@@ -163,7 +162,7 @@ describe AsyncTestCase, "Memory target":
 
         device2.change_power(0)
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             async with target.with_devices(device1, device2, device3):
                 finder = DeviceFinder(target)
                 try:
@@ -172,7 +171,7 @@ describe AsyncTestCase, "Memory target":
                 finally:
                     await finder.finish()
 
-        async with ATarget(target) as afr:
+        async with target.session() as afr:
             async with target.with_devices(device1, device2, device3):
                 finder = DeviceFinder(target)
                 try:
@@ -184,7 +183,7 @@ describe AsyncTestCase, "Memory target":
         async def test_wrap():
             wrap = DeviceFinderWrap(Filter.from_kwargs(), target)
             try:
-                async with ATarget(target) as afr:
+                async with target.session() as afr:
                     found = await wrap.find(afr, True, 5)
                     expected = {t: d.services for t, d in target.devices.items()}
                     serials = [d.serial for d in target.devices.values()]
@@ -199,7 +198,7 @@ describe AsyncTestCase, "Memory target":
             , repeat_spread = 0.1
             )
         try:
-            async with ATarget(target) as afr:
+            async with target.session() as afr:
                 async with target.with_devices(device1, device2, device3):
                     await finder.start()
                     info = await finder.info_for()

@@ -46,12 +46,12 @@ You can provide a list of messages to ``target.script`` and it will send all of
 them for all of the serials specified and collect all the responses.
 
 If you want to make sure they happen in order, then use a
-``photons_script.script.Pipeline``. For example:
+``photons_control.script.Pipeline``. For example:
 
 .. code-block:: python
 
     from photons_messages import DeviceMessages, ColourMessages
-    from photons_script.script import Pipeline
+    from photons_control.script import Pipeline
 
     color_no_brightness = ColourMessages.SetColor(hue=210, saturation=0.5, brightness=0, kelvin=3500, res_required=False)
     power_on = DeviceMessages.SetPower(level=65535, res_required=False)
@@ -83,14 +83,12 @@ When you do a ``run_with`` without specifying the ``afr``, it will essentially d
         await target.close_args_for_run(afr)
 
 You can create an ``afr`` and pass it in yourself by running ``args_for_run`` and
-``close_args_for_run`` yourself, or you can use the ``photons_script.script.ATarget``
-context manager.
+``close_args_for_run`` yourself, or you can use the ``session()`` context manager
+on the target.
 
 .. code-block:: python
     
-    from photons_script.script import ATarget
-
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         script.run_with([serial1, serial2], afr)
         script2.run_with([serial2], afr)
 

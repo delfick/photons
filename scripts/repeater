@@ -4,8 +4,8 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_script.script import Pipeline, Repeater, ATarget
 from photons_messages import DeviceMessages, ColourMessages
+from photons_control.script import Pipeline, Repeater
 
 from option_merge_addons import option_merge_addon_hook
 import logging
@@ -13,7 +13,7 @@ import logging
 log = logging.getLogger("repeater")
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "script")
+      ("lifx.photons", "control")
     , ("lifx.photons", "socket")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "device_finder")
@@ -51,7 +51,7 @@ async def repeater(collector, target, reference, **kwargs):
     def error_catcher(e):
         log.error(e)
 
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         async for pkt, _, _ in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher, timeout=5):
             print(pkt.serial, repr(pkt.payload))
 

@@ -5,7 +5,6 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import TileMessages
-from photons_script.script import ATarget
 
 from input_algorithms.errors import BadSpecValue
 from input_algorithms import spec_base as sb
@@ -139,7 +138,7 @@ async def set_tile_positions(collector, target, reference, **kwargs):
     if any(len(position) != 2 for position in positions):
         raise PhotonsAppError("Please enter positions as a list of two item lists of user_x, user_y")
 
-    async with ATarget(target) as afr:
+    async with target.session() as afr:
         for i, (user_x, user_y) in enumerate(positions):
             msg = TileMessages.SetUserPosition(tile_index=i, user_gravity_vector=0, user_x=user_x, user_y=user_y, res_required=False)
             await target.script(msg).run_with_all(reference, afr)
