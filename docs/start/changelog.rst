@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.7.1 - TBD
+0.7.1 - 29 November 2018
     * Made it easier to construct a SetWaveFormOptional
     * Fix handling of sockets when the network goes away
 
