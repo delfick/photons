@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.8.0 - TBD
+0.8.0 - 29 November 2018
     * Merging photons_script module into photons_control and photons_transport
     * Removing the need for the ATarget context manager and replacing it with a
       session() context manager on the target itself.
@@ -19,7 +19,7 @@ ChangeLog
       Becomes:
 
       .. code-block:: python
-    
+
         async with target.session() as afr
             ...
     * Pipeline/Repeater/Decider is now in photons_control.script instead of
