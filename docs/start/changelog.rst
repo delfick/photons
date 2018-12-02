@@ -5,6 +5,7 @@ ChangeLog
 
 0.8.1 - TBD
     * Added twinkles tile animation
+    * Made it a bit easier to start animations programmatically
 
 0.8.0 - 29 November 2018
     * Merging photons_script module into photons_control and photons_transport

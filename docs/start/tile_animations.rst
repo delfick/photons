@@ -142,3 +142,25 @@ tile_gameoflife
   iteration_delay -- float -- default 0.1
     The amount of seconds between each iteration of the simulation. Note that
     0.1 is the smallest value.
+
+Starting an animation programmatically
+--------------------------------------
+
+You can start the animation in a script by doing something like the following
+assuming you already have a lan target object:
+
+.. code-block:: python
+
+    from photons_tile_paint.addon import Animations
+
+    import asyncio
+
+    # Cancel this final_future when you want to stop the animation
+    final_future = asyncio.Future()
+
+    async with target.session() as afr:
+        options = {"text": "hello there"}
+        reference = "d073d5000001"
+        await Animations.tile_marquee.animate(target, afr, final_future, reference, options)
+
+For more information about valid objects for the reference, see :ref:`photons_app_special`
