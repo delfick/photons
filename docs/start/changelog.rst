@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.8.1 - TBD
+    * Added twinkles tile animation
+
 0.8.0 - 29 November 2018
     * Merging photons_script module into photons_control and photons_transport
     * Removing the need for the ATarget context manager and replacing it with a

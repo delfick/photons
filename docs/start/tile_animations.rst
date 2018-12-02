@@ -16,6 +16,8 @@ For example::
 
   lifx lan:tile_nyan <reference>
 
+  lifx lan:tile_twinkles <reference>
+
   lifx lan:tile_pacman <reference>
 
   lifx lan:tile_gameoflife <reference>
@@ -89,6 +91,26 @@ tile_pacman
 
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop
+
+tile_twinkles
+  This displays dots on the tiles like twinkling stars! It also has the following
+  options.
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
+
+  pallete -- optional string
+    The colours to use, this a choice between. Not specifying this means random
+    colours
+
+  num_twinkles -- int -- default 20
+    The number of twinkles to display
+
+  fade_in_speed -- float -- default 0.125
+    How long to take to fade in a twinkle
+
+  fade_out_speed -- float -- default 0.078
+    How long to take to fade out a twinkle
 
 tile_gameoflife
   This simulates the conway's game of life (https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)

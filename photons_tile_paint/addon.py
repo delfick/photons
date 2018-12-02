@@ -88,3 +88,18 @@ tile_gameoflife = an_action(needs_target=True, special_reference=True)(animation
       ``lifx lan:tile_gameoflife <reference>``
       """
     ))
+
+from photons_tile_paint.twinkles import TileTwinklesAnimation
+from photons_tile_paint.twinkles import TileTwinklesOptions
+tile_twinkles = an_action(needs_target=True, special_reference=True)(animation_action(
+      "tile_twinkles"
+    , TileTwinklesAnimation, TileTwinklesOptions
+    , """
+      Random twinkles on the tiles
+      """
+    ))
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    main(["lan:tile_twinkles"] + sys.argv[1:])
