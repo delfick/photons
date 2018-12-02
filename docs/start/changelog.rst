@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.8.1 - TBD
+0.8.1 - 2 December 2018
     * Added twinkles tile animation
     * Made it a bit easier to start animations programmatically
 
