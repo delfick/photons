@@ -57,6 +57,14 @@ from photons_tile_paint.twinkles import TileTwinklesAnimation
 from photons_tile_paint.twinkles import TileTwinklesOptions
 
 class Animations:
+    @classmethod
+    def animators(kls):
+        for attr in dir(kls):
+            if not attr.startswith("_"):
+                val = getattr(kls, attr)
+                if isinstance(val, Animator):
+                    yield attr, val
+
     tile_time = Animator(TileTimeAnimation, TileTimeOptions
         , """
           Print time to the tiles
@@ -103,9 +111,8 @@ class Animations:
           """
         )
 
-for attr in dir(Animations):
-    if attr.startswith("tile_"):
-        locals()[attr] = getattr(Animations, attr).make_action()
+for name, animator in Animations.animators():
+    locals()[name] = animator.make_action()
 
 if __name__ == "__main__":
     from photons_app.executor import main
