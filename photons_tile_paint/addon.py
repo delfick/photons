@@ -13,91 +13,98 @@ __shortdesc__ = "Utilities for painting on the tiles"
 def __lifx__(*args, **kwargs):
     pass
 
-def animation_action(name, animationkls, optionskls, __doc__):
-    """
-    Return an action that will create our options and provide them to the animation kls
-    before running the animation
-    """
-    async def action(collector, target, reference, **kwargs):
-        extra = collector.configuration["photons_app"].extra_as_json
-        options = optionskls.FieldSpec().normalise(Meta.empty(), extra)
-        async with target.session() as afr:
-            await animationkls(target, afr, options).animate(reference)
+class Animator:
+    def __init__(self, animationkls, optionskls, __doc__):
+        self.__doc__ = __doc__
+        self.optionskls = optionskls
+        self.animationkls = animationkls
 
-    action.__name__ = name
-    action.__doc__ = __doc__
+    async def animate(self, target, afr, reference, options):
+        options = self.optionskls.FieldSpec().normalise(Meta.empty(), options)
+        return await self.animationkls(target, afr, options).animate(reference)
 
-    return action
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def make_action(self):
+        async def action(collector, target, reference, **kwargs):
+            extra = collector.configuration["photons_app"].extra_as_json
+            async with target.session() as afr:
+                await self.animate(target, afr, reference, extra)
+
+        action.__name__ = self.name
+        action.__doc__ = self.__doc__
+
+        return an_action(needs_target=True, special_reference=True)(action)
 
 from photons_tile_paint.time.animation import TileTimeAnimation
 from photons_tile_paint.time.options import TileTimeOptions
-tile_time = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_time"
-    , TileTimeAnimation, TileTimeOptions
-    , """
-      Print time to the tiles
-
-      ``lifx lan:tile_time <reference>``
-      """
-    ))
 
 from photons_tile_paint.marquee.animation import TileMarqueeAnimation
 from photons_tile_paint.marquee.options import TileMarqueeOptions
-tile_marquee = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_marquee"
-    , TileMarqueeAnimation, TileMarqueeOptions
-    , """
-      Print scrolling text to the tiles
-
-      ``lifx lan:tile_marquee <reference> -- '{"text": "hello there"}'``
-      """
-    ))
 
 from photons_tile_paint.pacman.animation import TilePacmanAnimation
 from photons_tile_paint.pacman.options import TilePacmanOptions
-tile_pacman = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_pacman"
-    , TilePacmanAnimation, TilePacmanOptions
-    , """
-      Make pacman go back and forth across your tiles
-
-      ``lifx lan:tile_pacman <reference>``
-      """
-    ))
 
 from photons_tile_paint.nyan import TileNyanAnimation
 from photons_tile_paint.nyan import TileNyanOptions
-tile_nyan = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_nyan"
-    , TileNyanAnimation, TileNyanOptions
-    , """
-      Make nyan go back and forth across your tiles
-
-      ``lifx lan:tile_nyan <reference>``
-      """
-    ))
 
 from photons_tile_paint.gameoflife.animation import TileGameOfLifeAnimation
 from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
-tile_gameoflife = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_gameoflife"
-    , TileGameOfLifeAnimation, TileGameOfLifeOptions
-    , """
-      Run a Conway's game of life simulation on the tiles
-
-      ``lifx lan:tile_gameoflife <reference>``
-      """
-    ))
 
 from photons_tile_paint.twinkles import TileTwinklesAnimation
 from photons_tile_paint.twinkles import TileTwinklesOptions
-tile_twinkles = an_action(needs_target=True, special_reference=True)(animation_action(
-      "tile_twinkles"
-    , TileTwinklesAnimation, TileTwinklesOptions
-    , """
-      Random twinkles on the tiles
-      """
-    ))
+
+class Animations:
+    tile_time = Animator(TileTimeAnimation, TileTimeOptions
+        , """
+          Print time to the tiles
+
+          ``lifx lan:tile_time <reference>``
+          """
+        )
+
+    tile_marquee = Animator(TileMarqueeAnimation, TileMarqueeOptions
+        , """
+          Print scrolling text to the tiles
+
+          ``lifx lan:tile_marquee <reference> -- '{"text": "hello there"}'``
+          """
+        )
+
+    tile_pacman = Animator(TilePacmanAnimation, TilePacmanOptions
+        , """
+          Make pacman go back and forth across your tiles
+
+          ``lifx lan:tile_pacman <reference>``
+          """
+        )
+
+    tile_nyan = Animator(TileNyanAnimation, TileNyanOptions
+        , """
+          Make nyan go back and forth across your tiles
+
+          ``lifx lan:tile_nyan <reference>``
+          """
+        )
+
+    tile_gameoflife = Animator(TileGameOfLifeAnimation, TileGameOfLifeOptions
+        , """
+          Run a Conway's game of life simulation on the tiles
+
+          ``lifx lan:tile_gameoflife <reference>``
+          """
+        )
+
+    tile_twinkles = Animator(TileTwinklesAnimation, TileTwinklesOptions
+        , """
+          Random twinkles on the tiles
+          """
+        )
+
+for attr in dir(Animations):
+    if attr.startswith("tile_"):
+        locals()[attr] = getattr(Animations, attr).make_action()
 
 if __name__ == "__main__":
     from photons_app.executor import main
