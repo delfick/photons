@@ -171,7 +171,7 @@ class Animation:
     def make_canvas(self, state, coords):
         raise NotImplementedError()
 
-    async def animate(self, reference):
+    async def animate(self, reference, final_future):
         def errors(e):
             log.error(e)
 
@@ -205,7 +205,13 @@ class Animation:
                         msg.target = serial
                         msgs.append(msg)
 
+            if final_future.done():
+                break
+
             await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors)
+
+            if final_future.done():
+                break
 
             diff = time.time() - start
             if diff < self.every:

@@ -19,9 +19,9 @@ class Animator:
         self.optionskls = optionskls
         self.animationkls = animationkls
 
-    async def animate(self, target, afr, reference, options):
+    async def animate(self, target, afr, final_future, reference, options):
         options = self.optionskls.FieldSpec().normalise(Meta.empty(), options)
-        return await self.animationkls(target, afr, options).animate(reference)
+        return await self.animationkls(target, afr, options).animate(reference, final_future)
 
     def __set_name__(self, owner, name):
         self.name = name
@@ -29,8 +29,9 @@ class Animator:
     def make_action(self):
         async def action(collector, target, reference, **kwargs):
             extra = collector.configuration["photons_app"].extra_as_json
+            final_future = collector.configuration["photons_app"].final_future
             async with target.session() as afr:
-                await self.animate(target, afr, reference, extra)
+                await self.animate(target, afr, final_future, reference, extra)
 
         action.__name__ = self.name
         action.__doc__ = self.__doc__
