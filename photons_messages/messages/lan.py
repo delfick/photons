@@ -206,15 +206,6 @@ class MultiZoneMessages(Messages):
         , *fields.hsbk
         )
 
-    GetMultiZoneZoneCount = msg(504
-        , ("scan", T.Uint8.enum(enums.ZoneCountScanType).default(enums.ZoneCountScanType.RESCAN))
-        )
-
-    StateMultiZoneStateZoneCount = msg(505
-        , ("time", T.Uint64)
-        , ("num_zones", T.Uint8)
-        )
-
     StateMultiZoneStateMultiZones = msg(506
         , ("num_zones", T.Uint8)
         , ("zone_index", T.Uint8)
