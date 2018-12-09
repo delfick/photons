@@ -76,7 +76,7 @@ class Device(FakeDevice):
         self.received.append(pkt)
 
         if pkt | ColourMessages.GetInfrared:
-            return ColourMessages.StateInfrared(level=self.infrared)
+            return ColourMessages.StateInfrared(brightness=self.infrared)
 
         if pkt | ColourMessages.GetColor:
             return ColourMessages.LightState(
@@ -354,7 +354,7 @@ describe AsyncTestCase, "Memory target":
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(), afr):
                         assert pkt | ColourMessages.StateInfrared
-                        found.append((pkt.serial, pkt.payload.level))
+                        found.append((pkt.serial, pkt.payload.brightness))
 
                     self.expect_received(device1, ColourMessages.GetInfrared)
                     self.expect_received(device2, ColourMessages.GetInfrared)
@@ -367,7 +367,7 @@ describe AsyncTestCase, "Memory target":
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(location_name="four"), afr):
                         assert pkt | ColourMessages.StateInfrared
-                        found.append((pkt.serial, pkt.payload.level))
+                        found.append((pkt.serial, pkt.payload.brightness))
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device3.serial, 67)])

@@ -173,7 +173,7 @@ class ColourMessages(Messages):
 
     GetInfrared = msg(120)
     SetInfrared = msg(122
-        , ('level', T.Uint16)
+        , ('brightness', T.Uint16)
         )
     StateInfrared = SetInfrared.using(121)
 
