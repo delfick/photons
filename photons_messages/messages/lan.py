@@ -38,18 +38,12 @@ class DiscoveryMessages(Messages):
 ########################
 
 class DeviceMessages(Messages):
-    GetLabel = msg(23)
-    SetLabel = msg(24
-        , ('label', T.String(32 * 8))
-        )
-    StateLabel = SetLabel.using(25)
-
-    GetPower = msg(20)
-    SetPower = msg(21
-        , ('level', T.Uint16)
-        )
-    StatePower = msg(22
-        , ('level', T.Uint16)
+    GetHostInfo = msg(12)
+    StateHostInfo = msg(13
+        , ("signal", T.Float)
+        , ("tx", T.Uint32)
+        , ("rx", T.Uint32)
+        , ("reserved", T.Reserved(16))
         )
 
     GetHostFirmware = msg(14)
@@ -74,12 +68,34 @@ class DeviceMessages(Messages):
         , ("version", T.Uint32.version_number())
         )
 
+    GetPower = msg(20)
+    SetPower = msg(21
+        , ('level', T.Uint16)
+        )
+    StatePower = msg(22
+        , ('level', T.Uint16)
+        )
+
+    GetLabel = msg(23)
+    SetLabel = msg(24
+        , ('label', T.String(32 * 8))
+        )
+    StateLabel = SetLabel.using(25)
+
     GetVersion = msg(32)
     StateVersion = msg(33
         , ("vendor", T.Uint32)
         , ("product", T.Uint32)
         , ("version", T.Uint32)
         )
+
+    GetInfo = msg(34)
+    StateInfo = msg(35
+        , ("time", T.Uint64)
+        , ("uptime", fields.nano_to_seconds)
+        , ("downtime", fields.nano_to_seconds)
+        )
+
 
     GetLocation = msg(48)
     SetLocation = msg(49
@@ -105,25 +121,10 @@ class DeviceMessages(Messages):
         , ("updated_at", T.Uint64)
         )
 
-    GetHostInfo = msg(12)
-    StateHostInfo = msg(13
-        , ("signal", T.Float)
-        , ("tx", T.Uint32)
-        , ("rx", T.Uint32)
-        , ("reserved", T.Reserved(16))
-        )
-
     EchoRequest = msg(58
         , ("echoing", T.Bytes(64 * 8))
         )
     EchoResponse = EchoRequest.using(59)
-
-    GetInfo = msg(34)
-    StateInfo = msg(35
-        , ("time", T.Uint64)
-        , ("uptime", fields.nano_to_seconds)
-        , ("downtime", fields.nano_to_seconds)
-        )
 
 ########################
 ###   LIGHT
@@ -142,17 +143,6 @@ class LightMessages(Messages):
         , *fields.waveform_opts
         )
 
-    SetWaveFormOptional = msg(119
-        , ('stream', T.Uint8.default(0))
-        , ('transient', T.Uint8.default(0))
-        , *fields.hsbk_with_optional
-        , *fields.waveform_opts
-        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
-        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
-        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
-        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
-        )
-
     LightState = msg(107
         , *fields.hsbk
         , ('state_reserved1', T.Reserved(16))
@@ -169,6 +159,17 @@ class LightMessages(Messages):
 
     StateLightPower = msg(118
         , ('level', T.Uint16)
+        )
+
+    SetWaveFormOptional = msg(119
+        , ('stream', T.Uint8.default(0))
+        , ('transient', T.Uint8.default(0))
+        , *fields.hsbk_with_optional
+        , *fields.waveform_opts
+        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
+        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
+        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
+        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
         )
 
     GetInfrared = msg(120)
@@ -242,16 +243,16 @@ class TileMessages(Messages):
             )
         )
 
+    State64 = msg(711
+        , ("tile_index", T.Uint8)
+        , *fields.tile_buffer_rect
+        , ("colors", T.Bytes(64 * 64).many(return_color))
+        )
+
     SetState64 = msg(715
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
         , ("duration", fields.duration_typ)
-        , ("colors", T.Bytes(64 * 64).many(return_color))
-        )
-
-    State64 = msg(711
-        , ("tile_index", T.Uint8)
-        , *fields.tile_buffer_rect
         , ("colors", T.Bytes(64 * 64).many(return_color))
         )
