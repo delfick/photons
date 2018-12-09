@@ -17,7 +17,7 @@ def empty(pkt, attr):
 ########################
 
 class CoreMessages(Messages):
-    Acknowledgment = msg(45)
+    Acknowledgement = msg(45)
 
 ########################
 ###   DISCOVERY

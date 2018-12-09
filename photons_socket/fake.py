@@ -172,7 +172,7 @@ class FakeDevice(object):
 
     def ack_for(self, pkt, protocol):
         if pkt.ack_required:
-            return CoreMessages.Acknowledgment()
+            return CoreMessages.Acknowledgement()
 
     def do_send_response(self, pkt):
         return pkt.res_required
