@@ -105,12 +105,6 @@ class DeviceMessages(Messages):
         , ("updated_at", T.Uint64)
         )
 
-    GetInfrared = msg(120)
-    SetInfrared = msg(122
-        , ('level', T.Uint16)
-        )
-    StateInfrared = SetInfrared.using(121)
-
     GetHostInfo = msg(12)
     StateHostInfo = msg(13
         , ("signal", T.Float)
@@ -168,7 +162,6 @@ class ColourMessages(Messages):
         )
 
     GetLightPower = msg(116)
-
     SetLightPower = msg(117
         , ('level', T.Uint16)
         , ('duration', fields.duration_typ)
@@ -177,6 +170,12 @@ class ColourMessages(Messages):
     StateLightPower = msg(118
         , ('level', T.Uint16)
         )
+
+    GetInfrared = msg(120)
+    SetInfrared = msg(122
+        , ('level', T.Uint16)
+        )
+    StateInfrared = SetInfrared.using(121)
 
 ########################
 ###   MULTIZONE

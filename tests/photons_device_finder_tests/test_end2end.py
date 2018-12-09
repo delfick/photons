@@ -75,8 +75,8 @@ class Device(FakeDevice):
     def make_response(self, pkt, protocol):
         self.received.append(pkt)
 
-        if pkt | DeviceMessages.GetInfrared:
-            return DeviceMessages.StateInfrared(level=self.infrared)
+        if pkt | ColourMessages.GetInfrared:
+            return ColourMessages.StateInfrared(level=self.infrared)
 
         if pkt | ColourMessages.GetColor:
             return ColourMessages.LightState(
@@ -350,15 +350,15 @@ describe AsyncTestCase, "Memory target":
                     device2.change_infrared(25)
                     device3.change_infrared(67)
 
-                    script = target.script(DeviceMessages.GetInfrared())
+                    script = target.script(ColourMessages.GetInfrared())
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(), afr):
-                        assert pkt | DeviceMessages.StateInfrared
+                        assert pkt | ColourMessages.StateInfrared
                         found.append((pkt.serial, pkt.payload.level))
 
-                    self.expect_received(device1, DeviceMessages.GetInfrared)
-                    self.expect_received(device2, DeviceMessages.GetInfrared)
-                    self.expect_received(device3, DeviceMessages.GetInfrared)
+                    self.expect_received(device1, ColourMessages.GetInfrared)
+                    self.expect_received(device2, ColourMessages.GetInfrared)
+                    self.expect_received(device3, ColourMessages.GetInfrared)
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device2.serial, 25), (device3.serial, 67)])
@@ -366,15 +366,15 @@ describe AsyncTestCase, "Memory target":
 
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(location_name="four"), afr):
-                        assert pkt | DeviceMessages.StateInfrared
+                        assert pkt | ColourMessages.StateInfrared
                         found.append((pkt.serial, pkt.payload.level))
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device3.serial, 67)])
                         )
 
-                    self.expect_received(device1, DeviceMessages.GetInfrared)
-                    self.expect_received(device3, DeviceMessages.GetInfrared)
+                    self.expect_received(device1, ColourMessages.GetInfrared)
+                    self.expect_received(device3, ColourMessages.GetInfrared)
 
                     serials = await finder.serials(product_identifier="*a19*")
                     self.assertEqual(sorted(serials), sorted([device2.serial, device3.serial]))
