@@ -70,15 +70,15 @@ class DeviceMessages(Messages):
 
     GetPower = msg(20)
     SetPower = msg(21
-        , ('level', T.Uint16)
+        , ("level", T.Uint16)
         )
     StatePower = msg(22
-        , ('level', T.Uint16)
+        , ("level", T.Uint16)
         )
 
     GetLabel = msg(23)
     SetLabel = msg(24
-        , ('label', T.String(32 * 8))
+        , ("label", T.String(32 * 8))
         )
     StateLabel = SetLabel.using(25)
 
@@ -137,44 +137,44 @@ class LightMessages(Messages):
         )
 
     SetWaveForm = msg(103
-        , ('stream', T.Uint8.default(0))
-        , ('transient', T.Uint8.default(0))
+        , ("stream", T.Uint8.default(0))
+        , ("transient", T.Uint8.default(0))
         , *fields.hsbk
         , *fields.waveform_opts
         )
 
     LightState = msg(107
         , *fields.hsbk
-        , ('state_reserved1', T.Reserved(16))
-        , ('power', T.Uint16)
-        , ('label', T.String(32 * 8))
-        , ('state_reserved2', T.Reserved(64))
+        , ("state_reserved1", T.Reserved(16))
+        , ("power", T.Uint16)
+        , ("label", T.String(32 * 8))
+        , ("state_reserved2", T.Reserved(64))
         )
 
     GetLightPower = msg(116)
     SetLightPower = msg(117
-        , ('level', T.Uint16)
-        , ('duration', fields.duration_typ)
+        , ("level", T.Uint16)
+        , ("duration", fields.duration_typ)
         )
 
     StateLightPower = msg(118
-        , ('level', T.Uint16)
+        , ("level", T.Uint16)
         )
 
     SetWaveFormOptional = msg(119
-        , ('stream', T.Uint8.default(0))
-        , ('transient', T.Uint8.default(0))
+        , ("stream", T.Uint8.default(0))
+        , ("transient", T.Uint8.default(0))
         , *fields.hsbk_with_optional
         , *fields.waveform_opts
-        , ('set_hue', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
-        , ('set_saturation', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
-        , ('set_brightness', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
-        , ('set_kelvin', T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
+        , ("set_hue", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
+        , ("set_saturation", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
+        , ("set_brightness", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
+        , ("set_kelvin", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
         )
 
     GetInfrared = msg(120)
     SetInfrared = msg(122
-        , ('brightness', T.Uint16)
+        , ("brightness", T.Uint16)
         )
     StateInfrared = SetInfrared.using(121)
 
