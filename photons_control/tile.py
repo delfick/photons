@@ -40,18 +40,18 @@ async def get_chain_state(collector, target, reference, **kwargs):
     options = collector.configuration['photons_app'].extra_as_json
 
     missing = []
-    for field in TileMessages.GetTileState64.Payload.Meta.all_names:
+    for field in TileMessages.GetState64.Payload.Meta.all_names:
         if field not in options and field not in ("reserved", ):
             missing.append(field)
 
     if missing:
         raise PhotonsAppError("Missing options for the GetTileState message", missing=missing)
 
-    response_kls = TileMessages.StateTileState64
+    response_kls = TileMessages.State64
 
     got = defaultdict(list)
 
-    msg = TileMessages.GetTileState64.empty_normalise(**options)
+    msg = TileMessages.GetState64.empty_normalise(**options)
 
     async for pkt, _, _ in target.script(msg).run_with(reference):
         if pkt | response_kls:
@@ -115,7 +115,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Please specify colors in options after -- as a grid of [h, s, b, k]")
 
     missing = []
-    for field in TileMessages.SetTileState64.Payload.Meta.all_names:
+    for field in TileMessages.SetState64.Payload.Meta.all_names:
         if field not in options and field not in ("duration", "reserved"):
             missing.append(field)
 
@@ -123,7 +123,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Missing options for the SetTileState message", missing=missing)
 
     options["res_required"] = False
-    msg = TileMessages.SetTileState64.empty_normalise(**options)
+    msg = TileMessages.SetState64.empty_normalise(**options)
     await target.script(msg).run_with_all(reference)
 
 @an_action(needs_target=True, special_reference=True)

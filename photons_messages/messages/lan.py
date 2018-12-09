@@ -232,17 +232,17 @@ class TileMessages(Messages):
         , ("user_y", T.Float)
         )
 
-    GetTileState64 = msg(707
+    GetState64 = msg(707
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
         , multi = MultiOptions(
-              lambda req: TileMessages.StateTileState64
+              lambda req: TileMessages.State64
             , lambda req, res: MultiOptions.Max(req.length)
             )
         )
 
-    SetTileState64 = msg(715
+    SetState64 = msg(715
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
@@ -250,7 +250,7 @@ class TileMessages(Messages):
         , ("colors", T.Bytes(64 * 64).many(return_color))
         )
 
-    StateTileState64 = msg(711
+    State64 = msg(711
         , ("tile_index", T.Uint8)
         , *fields.tile_buffer_rect
         , ("colors", T.Bytes(64 * 64).many(return_color))

@@ -45,7 +45,7 @@ def canvas_to_msgs(canvas, coords, duration=1, acks=True):
     for i, coord in enumerate(coords):
         colors = [c.as_dict() for c in canvas.points_for_tile(*coord[0], *coord[1])]
 
-        yield TileMessages.SetTileState64(
+        yield TileMessages.SetState64(
               tile_index=i, length=1, x=0, y=0, width=coord[1][0], duration=duration, colors=colors
             , res_required = False
             , ack_required = acks
@@ -130,7 +130,7 @@ class TileStateGetter:
     async def fill(self):
         msgs = []
         if self.background_option.type == "current":
-            msgs.append(TileMessages.GetTileState64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
+            msgs.append(TileMessages.GetState64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
 
         if self.coords is None:
             msgs.append(TileMessages.GetDeviceChain())
@@ -141,7 +141,7 @@ class TileStateGetter:
         async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr):
             serial = pkt.serial
 
-            if pkt | TileMessages.StateTileState64:
+            if pkt | TileMessages.State64:
                 self.info_by_serial[serial].states.append((pkt.tile_index, pkt))
 
             elif pkt | TileMessages.StateDeviceChain:
