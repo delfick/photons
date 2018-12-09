@@ -18,7 +18,7 @@ async def zones_from_reference(target, reference, afr=sb.NotSpecified, **kwargs)
     """
     final = {}
 
-    msg = MultiZoneMessages.GetMultiZoneColorZones(start_index=0, end_index=255)
+    msg = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
     options = MergedOptions.using({"timeout": 5}, kwargs).as_dict()
 
     by_serial = defaultdict(list)
@@ -28,7 +28,7 @@ async def zones_from_reference(target, reference, afr=sb.NotSpecified, **kwargs)
     for serial, pkts in by_serial.items():
         final[serial] = []
         for p in pkts:
-            if p | MultiZoneMessages.StateMultiZoneStateMultiZones:
+            if p | MultiZoneMessages.StateMultiZone:
                 for i, color in enumerate(p.colors):
                     final[serial].append((p.zone_index + i, color))
 
@@ -52,14 +52,14 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
     """
     options = collector.configuration["photons_app"].extra_as_json
 
-    setter_kls = MultiZoneMessages.SetMultiZoneColorZones
+    setter_kls = MultiZoneMessages.SetColorZones
     missing = []
     for field in setter_kls.Payload.Meta.all_names:
         if field not in options and field not in ("kelvin", "duration", "type"):
             missing.append(field)
 
     if missing:
-        raise PhotonsAppError("Missing options for the SetMultiZoneColorZones message", missing=missing)
+        raise PhotonsAppError("Missing options for the SetColorZones message", missing=missing)
 
     setter = setter_kls.empty_normalise(**options)
     setter.res_required = False

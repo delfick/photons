@@ -110,9 +110,9 @@ async def do_apply_theme(target, reference, afr, options):
 
 async def apply_zone(applier, target, afr, serial, theme, overrides):
     length = None
-    msg = MultiZoneMessages.GetMultiZoneColorZones(start_index=0, end_index=255)
+    msg = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
     async for pkt, _, _ in target.script(msg).run_with(serial, afr):
-        if pkt | MultiZoneMessages.StateMultiZoneStateMultiZones:
+        if pkt | MultiZoneMessages.StateMultiZone:
             length = pkt.num_zones
 
     if length is None:
@@ -121,7 +121,7 @@ async def apply_zone(applier, target, afr, serial, theme, overrides):
 
     messages = []
     for (start_index, end_index), hsbk in applier(length).apply_theme(theme):
-        messages.append(MultiZoneMessages.SetMultiZoneColorZones(
+        messages.append(MultiZoneMessages.SetColorZones(
               start_index=start_index
             , end_index=end_index
             , hue = hsbk.hue

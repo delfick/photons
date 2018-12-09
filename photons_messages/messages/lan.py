@@ -182,7 +182,7 @@ class ColourMessages(Messages):
 ########################
 
 class MultiZoneMessages(Messages):
-    SetMultiZoneColorZones = msg(501
+    SetColorZones = msg(501
         , ("start_index", T.Uint8)
         , ("end_index", T.Uint8)
         , *fields.hsbk
@@ -190,23 +190,23 @@ class MultiZoneMessages(Messages):
         , ("type", T.Uint8.enum(enums.ApplicationRequestType).default(enums.ApplicationRequestType.APPLY))
         )
 
-    GetMultiZoneColorZones = msg(502
+    GetColorZones = msg(502
         , ("start_index", T.Uint8)
         , ("end_index", T.Uint8)
 
         , multi = MultiOptions(
-              lambda req: [MultiZoneMessages.StateMultiZoneStateMultiZones, MultiZoneMessages.StateMultiZoneStateZones]
+              lambda req: [MultiZoneMessages.StateMultiZone, MultiZoneMessages.StateZone]
             , lambda req, res: min((req.end_index // 8) + 1, res.num_zones // 8)
             )
         )
 
-    StateMultiZoneStateZones = msg(503
+    StateZone = msg(503
         , ("num_zones", T.Uint8)
         , ("zone_index", T.Uint8)
         , *fields.hsbk
         )
 
-    StateMultiZoneStateMultiZones = msg(506
+    StateMultiZone = msg(506
         , ("num_zones", T.Uint8)
         , ("zone_index", T.Uint8)
         , ("colors", T.Bytes(64 * 8).many(return_color))
