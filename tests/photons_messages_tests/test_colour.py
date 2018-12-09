@@ -32,9 +32,9 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("kelvin"), 2500)
         self.assertEqual(msg.payload.actual("duration"), 1000)
 
-    it "has SetWaveForm":
+    it "has SetWaveform":
         msg = self.unpack("39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01")
-        assert msg | LightMessages.SetWaveForm
+        assert msg | LightMessages.SetWaveform
         self.assertEqual(msg.payload.as_dict()
             , { 'stream': 0
               , 'transient': 0
@@ -60,9 +60,9 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("skew_ratio"), 3276)
         self.assertEqual(msg.payload.actual("waveform"), 1)
 
-    it "has SetWaveFormOptional":
+    it "has SetWaveformOptional":
         msg = self.unpack("3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040cc0c0101000101")
-        assert msg | LightMessages.SetWaveFormOptional
+        assert msg | LightMessages.SetWaveformOptional
         self.assertEqual(msg.payload.as_dict()
             , { 'stream': 0
               , 'transient': 0
@@ -96,8 +96,8 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("set_brightness"), 1)
         self.assertEqual(msg.payload.actual("set_kelvin"), 1)
 
-    it "SetWaveFormOptional does not require all hsbk values":
-        msg = LightMessages.SetWaveFormOptional(hue=100, source=1, sequence=0, target=None)
+    it "SetWaveformOptional does not require all hsbk values":
+        msg = LightMessages.SetWaveformOptional(hue=100, source=1, sequence=0, target=None)
         self.assertIs(msg.actual("brightness"), sb.NotSpecified)
 
         self.assertEqual(msg.set_hue, 1)
@@ -115,7 +115,7 @@ describe TestCase, "LightMessages":
         self.assertEqual(unpackd.set_kelvin, 0)
         self.assertEqual(unpackd.kelvin, 0)
 
-        msg = LightMessages.SetWaveFormOptional.empty_normalise(hue=100, source=1, sequence=0, target=None)
+        msg = LightMessages.SetWaveformOptional.empty_normalise(hue=100, source=1, sequence=0, target=None)
         self.assertIs(msg.actual("brightness"), Optional)
 
         self.assertEqual(msg.set_hue, 1)

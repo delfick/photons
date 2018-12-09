@@ -64,7 +64,7 @@ def split_color_string(color_string):
 class Parser(object):
     """
     Class for converting valid colour specifiers into the options for a
-    ``SetWaveFormOptional`` device command.
+    ``SetWaveformOptional`` device command.
 
     .. note:: http://colorizer.org/ and http://colormine.org/ are amazing!
 
@@ -113,7 +113,7 @@ class Parser(object):
     @classmethod
     def color_to_msg(kls, components, overrides=None):
         """
-        Create a ``SetWaveFormOptional`` message that may be used to change the
+        Create a ``SetWaveformOptional`` message that may be used to change the
         state of a device to what has been specified.
         """
         h, s, b, k = kls.hsbk(components, overrides)
@@ -143,7 +143,7 @@ class Parser(object):
 
         other_override = Effects.make(**(overrides or {}))
         options = MergedOptions.using(other, other_override, overrides or {}, colour)
-        return LightMessages.SetWaveFormOptional.normalise(Meta.empty(), options)
+        return LightMessages.SetWaveformOptional.normalise(Meta.empty(), options)
 
     def parse_color_string(self, components):
         if type(components) is str:

@@ -136,7 +136,7 @@ class LightMessages(Messages):
         , *fields.color_and_duration
         )
 
-    SetWaveForm = msg(103
+    SetWaveform = msg(103
         , ("stream", T.Uint8.default(0))
         , ("transient", T.Uint8.default(0))
         , *fields.hsbk
@@ -161,7 +161,7 @@ class LightMessages(Messages):
         , ("level", T.Uint16)
         )
 
-    SetWaveFormOptional = msg(119
+    SetWaveformOptional = msg(119
         , ("stream", T.Uint8.default(0))
         , ("transient", T.Uint8.default(0))
         , *fields.hsbk_with_optional

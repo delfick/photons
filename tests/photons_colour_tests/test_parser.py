@@ -173,7 +173,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components)
-                assert msg | LightMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 1
                       , 'transient': 0
@@ -202,7 +202,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | LightMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 1
                       , 'transient': 1
@@ -231,7 +231,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | LightMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 0
                       , 'transient': 1
@@ -260,7 +260,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | LightMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 0
                       , 'transient': 1

@@ -38,7 +38,7 @@ describe TestCase, "Effects":
             options = Effects.make(effect)
             self.assertEqual(type(options["waveform"]), Waveform)
             for k in options:
-                assert k in LightMessages.SetWaveFormOptional.Meta.all_names
+                assert k in LightMessages.SetWaveformOptional.Meta.all_names
 
             overrides = {k: random.random() * 10 for k in options if k != "waveform"}
             final = {**overrides}
