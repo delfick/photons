@@ -5,7 +5,7 @@ from photons_control.script import Pipeline
 
 from photons_app.test_helpers import AsyncTestCase, FakeTargetIterator, print_packet_difference
 
-from photons_messages import DeviceMessages, ColourMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_colour import Parser
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
@@ -91,11 +91,11 @@ describe AsyncTestCase, "Transformer":
 
         async it "uses SetLightPower if we have duration":
             msg = Transformer.using({"power": "off", "duration": 100})
-            self.assertEqual(msg.pkt_type, ColourMessages.SetLightPower.Payload.message_type)
+            self.assertEqual(msg.pkt_type, LightMessages.SetLightPower.Payload.message_type)
             self.assertEqual(msg.payload.as_dict(), {"level": 0, "duration": 100})
 
             msg = Transformer.using({"power": "on", "duration": 20})
-            self.assertEqual(msg.pkt_type, ColourMessages.SetLightPower.Payload.message_type)
+            self.assertEqual(msg.pkt_type, LightMessages.SetLightPower.Payload.message_type)
             self.assertEqual(msg.payload.as_dict(), {"level": 65535, "duration": 20})
 
     describe "just color options":
@@ -158,7 +158,7 @@ describe AsyncTestCase, "Transformer":
 
         async def assertTransformBehaves(self, transform_into, state, first_colour_message, power_message, second_colour_message, **kwargs):
             expected = 0
-            getter = ColourMessages.GetColor(ack_required=False, res_required=True)
+            getter = LightMessages.GetColor(ack_required=False, res_required=True)
             self.target.expect_call(
                 mock.call(getter, [self.serial], self.afr
                     , error_catcher=mock.ANY
@@ -206,7 +206,7 @@ describe AsyncTestCase, "Transformer":
             self.assertEqual(self.target.call, expected)
 
         async it "sets power on if it needs to":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=0, label="blah"
@@ -223,14 +223,14 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "sets power on if it needs to with duration":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=0, label="blah"
                 )
 
             first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = ColourMessages.SetLightPower(level=65535, duration=10)
+            power_message = LightMessages.SetLightPower(level=65535, duration=10)
             second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "power": "on", "duration": 10}, state
@@ -240,7 +240,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't set power if it doesn't need to":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=0, label="blah"
@@ -258,7 +258,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't set power if it doesn't need to because power not provided":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.6, kelvin=3500
                 , power=0, label="blah"
@@ -276,7 +276,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't reset if it doesn't need to":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.4, kelvin=3500
                 , power=65535, label="blah"
@@ -294,7 +294,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't reset if it doesn't need to and power is specified on":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=65535, label="blah"
@@ -311,14 +311,14 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't reset if it doesn't need to and power is specified off":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=65535, label="blah"
                 )
 
             first_colour_message = None
-            power_message = ColourMessages.SetLightPower(level=0, duration=10)
+            power_message = LightMessages.SetLightPower(level=0, duration=10)
             second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "power": "off", "duration": 10}, state
@@ -329,7 +329,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
         async it "doesn't reset if it doesn't need to and power is specified off and not duration":
-            state = ColourMessages.LightState.empty_normalise(
+            state = LightMessages.LightState.empty_normalise(
                   target=self.serial, source=0, sequence=0
                 , hue=0, saturation=0, brightness=0.5, kelvin=3500
                 , power=65535, label="blah"

@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
-from photons_messages import ColourMessages, DeviceMessages, TileMessages
+from photons_messages import LightMessages, DeviceMessages, TileMessages
 from photons_themes.coords import user_coords_to_pixel_coords
 from photons_products_registry import capability_for_ids
 from photons_themes.theme import ThemeColor as Color
@@ -190,7 +190,7 @@ class Animation:
 
         log.info("Starting!")
 
-        await self.target.script(ColourMessages.SetLightPower(level=65535, duration=1)).run_with_all(serials, self.afr)
+        await self.target.script(LightMessages.SetLightPower(level=65535, duration=1)).run_with_all(serials, self.afr)
 
         while True:
             start = time.time()

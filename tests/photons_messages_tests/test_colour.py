@@ -2,20 +2,20 @@
 
 from photons_app.test_helpers import TestCase
 
-from photons_messages import ColourMessages, Waveform, protocol_register
+from photons_messages import LightMessages, Waveform, protocol_register
 
 from photons_protocol.messages import Messages
 from photons_protocol.types import Optional
 
 from input_algorithms import spec_base as sb
 
-describe TestCase, "ColourMessages":
+describe TestCase, "LightMessages":
     def unpack(self, msg):
-        return ColourMessages.unpack(msg, protocol_register=protocol_register)
+        return LightMessages.unpack(msg, protocol_register=protocol_register)
 
     it "has Setcolor":
         msg = self.unpack("3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000")
-        assert msg | ColourMessages.SetColor
+        assert msg | LightMessages.SetColor
         self.assertEqual(msg.payload.as_dict()
             , { 'setcolor_reserved1': b'\x00'
               , 'hue': 9.997711146715496
@@ -34,7 +34,7 @@ describe TestCase, "ColourMessages":
 
     it "has SetWaveForm":
         msg = self.unpack("39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01")
-        assert msg | ColourMessages.SetWaveForm
+        assert msg | LightMessages.SetWaveForm
         self.assertEqual(msg.payload.as_dict()
             , { 'stream': 0
               , 'transient': 0
@@ -62,7 +62,7 @@ describe TestCase, "ColourMessages":
 
     it "has SetWaveFormOptional":
         msg = self.unpack("3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040cc0c0101000101")
-        assert msg | ColourMessages.SetWaveFormOptional
+        assert msg | LightMessages.SetWaveFormOptional
         self.assertEqual(msg.payload.as_dict()
             , { 'stream': 0
               , 'transient': 0
@@ -97,7 +97,7 @@ describe TestCase, "ColourMessages":
         self.assertEqual(msg.payload.actual("set_kelvin"), 1)
 
     it "SetWaveFormOptional does not require all hsbk values":
-        msg = ColourMessages.SetWaveFormOptional(hue=100, source=1, sequence=0, target=None)
+        msg = LightMessages.SetWaveFormOptional(hue=100, source=1, sequence=0, target=None)
         self.assertIs(msg.actual("brightness"), sb.NotSpecified)
 
         self.assertEqual(msg.set_hue, 1)
@@ -115,7 +115,7 @@ describe TestCase, "ColourMessages":
         self.assertEqual(unpackd.set_kelvin, 0)
         self.assertEqual(unpackd.kelvin, 0)
 
-        msg = ColourMessages.SetWaveFormOptional.empty_normalise(hue=100, source=1, sequence=0, target=None)
+        msg = LightMessages.SetWaveFormOptional.empty_normalise(hue=100, source=1, sequence=0, target=None)
         self.assertIs(msg.actual("brightness"), Optional)
 
         self.assertEqual(msg.set_hue, 1)
@@ -136,7 +136,7 @@ describe TestCase, "ColourMessages":
 
     it "has LightState":
         msg = self.unpack("580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b00000000079919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000")
-        assert msg | ColourMessages.LightState
+        assert msg | LightMessages.LightState
         self.assertEqual(msg.payload.as_dict()
             , { 'hue': 9.843900205996796
               , 'saturation': 0.09999237048905166

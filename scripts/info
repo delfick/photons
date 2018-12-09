@@ -7,7 +7,7 @@ from photons_app.errors import BadRun
 
 from photons_products_registry import capability_for_ids, DefaultCapability
 from photons_transport.target.errors import FailedToFindDevice
-from photons_messages import DeviceMessages, ColourMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_control.multizone import zones_from_reference
 from photons_control.script import Decider
 
@@ -62,7 +62,7 @@ async def gather(reference, target, afr, found):
         , DeviceMessages.GetGroup()
         , DeviceMessages.GetLocation()
         , DeviceMessages.GetHostFirmware()
-        , ColourMessages.GetColor()
+        , LightMessages.GetColor()
         ]
 
     def gatherer(serial, *states):
@@ -72,7 +72,7 @@ async def gather(reference, target, afr, found):
                 info[serial]["capability"] = capability
                 if capability.has_multizone:
                     multizone.append(serial)
-            elif s | ColourMessages.LightState:
+            elif s | LightMessages.LightState:
                 info[serial]["label"] = s.label
                 info[serial]["power"] = "off" if s.power is 0 else "on"
                 info[serial]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(

@@ -126,10 +126,10 @@ class DeviceMessages(Messages):
         )
 
 ########################
-###   COLOUR
+###   LIGHT
 ########################
 
-class ColourMessages(Messages):
+class LightMessages(Messages):
     GetColor = msg(101)
     SetColor = msg(102
         , *fields.color_and_duration

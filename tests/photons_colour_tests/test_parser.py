@@ -4,7 +4,7 @@ from photons_colour import split_color_string, Parser, InvalidColor, ValueOutOfR
 
 from photons_app.test_helpers import TestCase
 
-from photons_messages import ColourMessages, Waveform
+from photons_messages import LightMessages, Waveform
 
 import mock
 
@@ -173,7 +173,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components)
-                assert msg | ColourMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveFormOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 1
                       , 'transient': 0
@@ -202,7 +202,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | ColourMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveFormOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 1
                       , 'transient': 1
@@ -231,7 +231,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | ColourMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveFormOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 0
                       , 'transient': 1
@@ -260,7 +260,7 @@ describe TestCase, "Parser":
 
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
-                assert msg | ColourMessages.SetWaveFormOptional
+                assert msg | LightMessages.SetWaveFormOptional
                 self.assertEqual(msg.payload.as_dict()
                     , { 'stream': 0
                       , 'transient': 1

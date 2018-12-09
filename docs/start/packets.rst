@@ -19,10 +19,10 @@ Or you can create a new one yourself.
 
 .. code-block:: python
 
-    from photons_messages import DiscoveryMessages, ColourMessages, LIFXPacket
+    from photons_messages import DiscoveryMessages, LightMessages, LIFXPacket
 
     collector.configuration["protocol_register"].add(1024, LIFXPacket)
-    collector.configuration["protocol_register"].message_register(1024).add(ColourMessages)
+    collector.configuration["protocol_register"].message_register(1024).add(LightMessages)
     collector.configuration["protocol_register"].message_register(1024).add(DiscoveryMessages)
 
 .. note:: If you manually create a target and pass in a protocol register,
@@ -41,7 +41,7 @@ the bulb.
 
     data = "580000541cf7e30cd073d514e73300004c4946585632000128cc694f8bdee2146b000000aa2affffcc4cac0d0000000073747269700000000000000000000000000000000000000000000000000000000000000000000000"
     pkt = Messages.unpack(data, protocol_register)
-    assert pkt | ColourMessages.LightState
+    assert pkt | LightMessages.LightState
     assert pkt.as_dict() == {
           "frame_address":
           { "ack_required": false
@@ -102,15 +102,15 @@ includes transformations for some values in the payload.
 Here accessing the variable returns the transformed value, whereas the ``actual``
 function returns us the actual value in the packet.
 
-Another example of a packet with transformed values is ``ColourMessages.SetLightPower``.
+Another example of a packet with transformed values is ``LightMessages.SetLightPower``.
 In this packet, the duration is transformed into seconds whereas the packet
 defines it in milliseconds:
 
 .. code-block:: python
 
-    from photons_messages import ColourMessages
+    from photons_messages import LightMessages
 
-    pkt = ColourMessages.SetLightPower(level=0, duration=10)
+    pkt = LightMessages.SetLightPower(level=0, duration=10)
 
     assert pkt.actual("duration") == 10000
 
@@ -119,12 +119,12 @@ functionality on the class:
 
 .. code-block:: python
 
-    pkt = ColourMessages.SetLightPower.empty_normalise(**kwargs)
+    pkt = LightMessages.SetLightPower.empty_normalise(**kwargs)
 
     # Or
 
     from input_algorithms.meta import Meta
-    pkt = ColourMessages.SetLightPower.normalise(Meta.empty(), kwargs)
+    pkt = LightMessages.SetLightPower.normalise(Meta.empty(), kwargs)
 
 Doing this will mean that the values are checked at the instantiation of the
 packet and extra options are ignored.

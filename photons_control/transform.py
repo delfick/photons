@@ -6,7 +6,7 @@ from photons_control.script import Decider, Pipeline
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_messages import ColourMessages, DeviceMessages
+from photons_messages import LightMessages, DeviceMessages
 from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
@@ -69,7 +69,7 @@ class Transformer(object):
         if state.get("duration") in (sb.NotSpecified, "", 0, None):
             return DeviceMessages.SetPower(level=power_level, res_required=False)
         else:
-            return ColourMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
+            return LightMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
 
     def color_message(self, state):
         msg = Parser.color_to_msg(state.get("color", None), overrides=state)
@@ -126,8 +126,8 @@ class Transformer(object):
 
             yield Pipeline(*pipeline)
 
-        getter = ColourMessages.GetColor(ack_required=False, res_required=True)
-        return Decider(getter, receiver, [ColourMessages.LightState])
+        getter = LightMessages.GetColor(ack_required=False, res_required=True)
+        return Decider(getter, receiver, [LightMessages.LightState])
 
 @an_action(needs_target=True, special_reference=True)
 async def transform(collector, target, reference, **kwargs):

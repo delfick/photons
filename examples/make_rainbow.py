@@ -1,7 +1,7 @@
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
-from photons_messages import DeviceMessages, ColourMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline
 from photons_colour import Parser
 
@@ -16,7 +16,7 @@ color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purp
 spread = 2
 
 power_on = DeviceMessages.SetPower(level=65535)
-get_color = ColourMessages.GetColor()
+get_color = LightMessages.GetColor()
 color_msgs = [Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread}) for name in color_names]
 
 async def doit():
@@ -34,7 +34,7 @@ async def doit():
             # We set res_required on the colors to False on line 20
             # Which means only the ``get_color`` messages will return a LightState
             # We use this to record what the color of the light was before the rainbow
-            if pkt | ColourMessages.LightState:
+            if pkt | LightMessages.LightState:
                 color = "kelvin:{kelvin} hue:{hue} saturation:{saturation} brightness:{brightness}"
                 original_colors[pkt.target] = (pkt.power, color.format(**pkt.payload.as_dict()))
 

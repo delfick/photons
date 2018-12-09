@@ -193,7 +193,7 @@ from photons_app.special import FoundSerials, SpecialReference
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import LIFXPacket, DeviceMessages, ColourMessages
+from photons_messages import LIFXPacket, DeviceMessages, LightMessages
 from photons_products_registry import capability_for_ids
 from photons_control.script import Pipeline, Repeater
 
@@ -544,7 +544,7 @@ class InfoPoints(enum.Enum):
     """
     Enum used to determine what information is required for what keys
     """
-    LIGHT_STATE = Point(ColourMessages.GetColor(), ["label", "power", "hue", "saturation", "brightness", "kelvin"])
+    LIGHT_STATE = Point(LightMessages.GetColor(), ["label", "power", "hue", "saturation", "brightness", "kelvin"])
     VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "product_identifier", "cap"])
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"])
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"])
@@ -641,7 +641,7 @@ class Device(dictobj.Spec):
 
         We return a InfoPoints enum representing what type of information was set.
         """
-        if pkt | ColourMessages.LightState:
+        if pkt | LightMessages.LightState:
             self.label = pkt.label
             self.power = "off" if pkt.power is 0 else "on"
             self.hue = pkt.hue

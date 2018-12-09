@@ -1,6 +1,6 @@
 from photons_app.errors import PhotonsAppError
 
-from photons_messages import ColourMessages, Waveform
+from photons_messages import LightMessages, Waveform
 
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms import spec_base as sb
@@ -143,7 +143,7 @@ class Parser(object):
 
         other_override = Effects.make(**(overrides or {}))
         options = MergedOptions.using(other, other_override, overrides or {}, colour)
-        return ColourMessages.SetWaveFormOptional.normalise(Meta.empty(), options)
+        return LightMessages.SetWaveFormOptional.normalise(Meta.empty(), options)
 
     def parse_color_string(self, components):
         if type(components) is str:

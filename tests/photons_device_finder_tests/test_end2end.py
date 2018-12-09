@@ -5,7 +5,7 @@ from photons_device_finder import DeviceFinder, InfoPoints, DeviceFinderWrap, Fi
 from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import AsyncTestCase
 
-from photons_messages import DeviceMessages, ColourMessages, protocol_register
+from photons_messages import DeviceMessages, LightMessages, protocol_register
 from photons_socket.fake import MemorySocketTarget, FakeDevice
 
 import asyncio
@@ -75,11 +75,11 @@ class Device(FakeDevice):
     def make_response(self, pkt, protocol):
         self.received.append(pkt)
 
-        if pkt | ColourMessages.GetInfrared:
-            return ColourMessages.StateInfrared(brightness=self.infrared)
+        if pkt | LightMessages.GetInfrared:
+            return LightMessages.StateInfrared(brightness=self.infrared)
 
-        if pkt | ColourMessages.GetColor:
-            return ColourMessages.LightState(
+        if pkt | LightMessages.GetColor:
+            return LightMessages.LightState(
                   hue = self.hue
                 , saturation = self.saturation
                 , brightness = self.brightness
@@ -264,9 +264,9 @@ describe AsyncTestCase, "Memory target":
                     self.expect_received(device3, *[type(e.value.msg) for e in InfoPoints])
 
                     serials = await finder.serials(label="kitchen", force_refresh=True)
-                    self.expect_received(device1, ColourMessages.GetColor)
-                    self.expect_received(device2, ColourMessages.GetColor)
-                    self.expect_received(device3, ColourMessages.GetColor)
+                    self.expect_received(device1, LightMessages.GetColor)
+                    self.expect_received(device2, LightMessages.GetColor)
+                    self.expect_received(device3, LightMessages.GetColor)
                     self.assertEqual(serials, [device1.serial])
 
                     serials = await finder.serials(group_name="two", force_refresh=True)
@@ -350,15 +350,15 @@ describe AsyncTestCase, "Memory target":
                     device2.change_infrared(25)
                     device3.change_infrared(67)
 
-                    script = target.script(ColourMessages.GetInfrared())
+                    script = target.script(LightMessages.GetInfrared())
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(), afr):
-                        assert pkt | ColourMessages.StateInfrared
+                        assert pkt | LightMessages.StateInfrared
                         found.append((pkt.serial, pkt.payload.brightness))
 
-                    self.expect_received(device1, ColourMessages.GetInfrared)
-                    self.expect_received(device2, ColourMessages.GetInfrared)
-                    self.expect_received(device3, ColourMessages.GetInfrared)
+                    self.expect_received(device1, LightMessages.GetInfrared)
+                    self.expect_received(device2, LightMessages.GetInfrared)
+                    self.expect_received(device3, LightMessages.GetInfrared)
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device2.serial, 25), (device3.serial, 67)])
@@ -366,15 +366,15 @@ describe AsyncTestCase, "Memory target":
 
                     found = []
                     async for pkt, _, _ in script.run_with(finder.find(location_name="four"), afr):
-                        assert pkt | ColourMessages.StateInfrared
+                        assert pkt | LightMessages.StateInfrared
                         found.append((pkt.serial, pkt.payload.brightness))
 
                     self.assertEqual(sorted(found)
                         , sorted([(device1.serial, 22), (device3.serial, 67)])
                         )
 
-                    self.expect_received(device1, ColourMessages.GetInfrared)
-                    self.expect_received(device3, ColourMessages.GetInfrared)
+                    self.expect_received(device1, LightMessages.GetInfrared)
+                    self.expect_received(device3, LightMessages.GetInfrared)
 
                     serials = await finder.serials(product_identifier="*a19*")
                     self.assertEqual(sorted(serials), sorted([device2.serial, device3.serial]))

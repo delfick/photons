@@ -12,7 +12,7 @@ from photons_messages.frame import LIFXPacket
 # Get the messages
 from photons_messages.messages.lan import (
       CoreMessages, DiscoveryMessages
-    , DeviceMessages, ColourMessages
+    , DeviceMessages, LightMessages
     , MultiZoneMessages, TileMessages
     )
 
@@ -33,7 +33,7 @@ def make_protocol_register():
     message_register.add(CoreMessages)
     message_register.add(DiscoveryMessages)
     message_register.add(DeviceMessages)
-    message_register.add(ColourMessages)
+    message_register.add(LightMessages)
     message_register.add(MultiZoneMessages)
     message_register.add(TileMessages)
 

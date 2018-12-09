@@ -4,7 +4,7 @@ from photons_colour import Effects, Waveform, NoSuchEffect
 
 from photons_app.test_helpers import TestCase
 
-from photons_messages import ColourMessages
+from photons_messages import LightMessages
 
 import random
 
@@ -38,7 +38,7 @@ describe TestCase, "Effects":
             options = Effects.make(effect)
             self.assertEqual(type(options["waveform"]), Waveform)
             for k in options:
-                assert k in ColourMessages.SetWaveFormOptional.Meta.all_names
+                assert k in LightMessages.SetWaveFormOptional.Meta.all_names
 
             overrides = {k: random.random() * 10 for k in options if k != "waveform"}
             final = {**overrides}

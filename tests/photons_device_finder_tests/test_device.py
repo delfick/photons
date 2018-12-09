@@ -4,7 +4,7 @@ from photons_device_finder import Device, Collection, Collections, Filter, InfoP
 
 from photons_app.test_helpers import TestCase
 
-from photons_messages import DeviceMessages, ColourMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_products_registry import Capability
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -130,7 +130,7 @@ describe TestCase, "Device":
             self.collections = Collections()
 
         it "can take in a LightState":
-            pkt = ColourMessages.LightState.empty_normalise(
+            pkt = LightMessages.LightState.empty_normalise(
                   label = "kitchen"
                 , power = 0
                 , hue = 250
@@ -149,7 +149,7 @@ describe TestCase, "Device":
             self.assertEqual(self.device.kelvin, 4500)
 
             # And test when power is on
-            pkt = ColourMessages.LightState.empty_normalise(
+            pkt = LightMessages.LightState.empty_normalise(
                   label = "kitchen"
                 , power = 65535
                 , hue = 250

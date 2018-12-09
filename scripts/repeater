@@ -4,7 +4,7 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, ColourMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline, Repeater
 
 from option_merge_addons import option_merge_addon_hook
@@ -43,7 +43,7 @@ async def repeater(collector, target, reference, **kwargs):
         , DeviceMessages.GetGroup()
         , DeviceMessages.GetLocation()
         , DeviceMessages.GetHostFirmware()
-        , ColourMessages.GetColor()
+        , LightMessages.GetColor()
         ]
     pipeline = Pipeline(*getter, spread=1)
     repeater = Repeater(pipeline, min_loop_time=10, on_done_loop=on_done_loop)

@@ -50,12 +50,12 @@ If you want to make sure they happen in order, then use a
 
 .. code-block:: python
 
-    from photons_messages import DeviceMessages, ColourMessages
+    from photons_messages import DeviceMessages, LightMessages
     from photons_control.script import Pipeline
 
-    color_no_brightness = ColourMessages.SetColor(hue=210, saturation=0.5, brightness=0, kelvin=3500, res_required=False)
+    color_no_brightness = LightMessages.SetColor(hue=210, saturation=0.5, brightness=0, kelvin=3500, res_required=False)
     power_on = DeviceMessages.SetPower(level=65535, res_required=False)
-    color_with_brightness = ColourMessages.SetColor(hue=210, saturation=0.5, brightness=0.8, kelvin=3500, res_required=False)
+    color_with_brightness = LightMessages.SetColor(hue=210, saturation=0.5, brightness=0.8, kelvin=3500, res_required=False)
 
     pipeline = Pipeline(color_no_brightness, power_on, color_with_brightness)
     script = target.script(pipeline)
