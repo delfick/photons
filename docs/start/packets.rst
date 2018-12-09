@@ -102,15 +102,15 @@ includes transformations for some values in the payload.
 Here accessing the variable returns the transformed value, whereas the ``actual``
 function returns us the actual value in the packet.
 
-Another example of a packet with transformed values is ``DeviceMessages.SetLightPower``.
+Another example of a packet with transformed values is ``ColourMessages.SetLightPower``.
 In this packet, the duration is transformed into seconds whereas the packet
 defines it in milliseconds:
 
 .. code-block:: python
 
-    from photons_messages import DeviceMessages
+    from photons_messages import ColourMessages
 
-    pkt = DeviceMessages.SetLightPower(level=0, duration=10)
+    pkt = ColourMessages.SetLightPower(level=0, duration=10)
 
     assert pkt.actual("duration") == 10000
 
@@ -119,12 +119,12 @@ functionality on the class:
 
 .. code-block:: python
 
-    pkt = DeviceMessages.SetLightPower.empty_normalise(**kwargs)
+    pkt = ColourMessages.SetLightPower.empty_normalise(**kwargs)
 
     # Or
 
     from input_algorithms.meta import Meta
-    pkt = DeviceMessages.SetLightPower.normalise(Meta.empty(), kwargs)
+    pkt = ColourMessages.SetLightPower.normalise(Meta.empty(), kwargs)
 
 Doing this will mean that the values are checked at the instantiation of the
 packet and extra options are ignored.

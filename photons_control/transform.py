@@ -69,7 +69,7 @@ class Transformer(object):
         if state.get("duration") in (sb.NotSpecified, "", 0, None):
             return DeviceMessages.SetPower(level=power_level, res_required=False)
         else:
-            return DeviceMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
+            return ColourMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
 
     def color_message(self, state):
         msg = Parser.color_to_msg(state.get("color", None), overrides=state)

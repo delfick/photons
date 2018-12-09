@@ -1,7 +1,7 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, MultiZoneMessages, TileMessages
+from photons_messages import ColourMessages, DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products_registry import capability_for_ids
 from photons_themes.appliers import types as appliers
 from photons_control.script import Pipeline
@@ -133,14 +133,14 @@ async def apply_zone(applier, target, afr, serial, theme, overrides):
             , ack_required = True
             ))
 
-    set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
+    set_power = ColourMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)
     await target.script([set_power, pipeline]).run_with_all(serial, afr)
 
 async def apply_light(applier, target, afr, serial, theme, overrides):
     color = applier().apply_theme(theme)
     s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(color.kelvin, color.hue, color.saturation, color.brightness)
-    set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
+    set_power = ColourMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(serial, afr)
 
 async def apply_tile(applier, target, afr, serial, theme, overrides):
@@ -172,6 +172,6 @@ async def apply_tile(applier, target, afr, serial, theme, overrides):
             , ack_required = True
             ))
 
-    set_power = DeviceMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
+    set_power = ColourMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)
     await target.script([set_power, pipeline]).run_with_all(serial, afr)

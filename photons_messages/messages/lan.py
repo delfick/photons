@@ -52,16 +52,6 @@ class DeviceMessages(Messages):
         , ('level', T.Uint16)
         )
 
-    # Light Power! Like Device Power, but with duration
-    GetLightPower = msg(116)
-    SetLightPower = msg(117
-        , ('level', T.Uint16)
-        , ('duration', fields.duration_typ)
-        )
-    StateLightPower = msg(118
-        , ('level', T.Uint16)
-        )
-
     GetHostFirmware = msg(14)
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
@@ -175,6 +165,17 @@ class ColourMessages(Messages):
         , ('power', T.Uint16)
         , ('label', T.String(32 * 8))
         , ('state_reserved2', T.Reserved(64))
+        )
+
+    GetLightPower = msg(116)
+
+    SetLightPower = msg(117
+        , ('level', T.Uint16)
+        , ('duration', fields.duration_typ)
+        )
+
+    StateLightPower = msg(118
+        , ('level', T.Uint16)
         )
 
 ########################

@@ -91,11 +91,11 @@ describe AsyncTestCase, "Transformer":
 
         async it "uses SetLightPower if we have duration":
             msg = Transformer.using({"power": "off", "duration": 100})
-            self.assertEqual(msg.pkt_type, DeviceMessages.SetLightPower.Payload.message_type)
+            self.assertEqual(msg.pkt_type, ColourMessages.SetLightPower.Payload.message_type)
             self.assertEqual(msg.payload.as_dict(), {"level": 0, "duration": 100})
 
             msg = Transformer.using({"power": "on", "duration": 20})
-            self.assertEqual(msg.pkt_type, DeviceMessages.SetLightPower.Payload.message_type)
+            self.assertEqual(msg.pkt_type, ColourMessages.SetLightPower.Payload.message_type)
             self.assertEqual(msg.payload.as_dict(), {"level": 65535, "duration": 20})
 
     describe "just color options":
@@ -230,7 +230,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
             first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = DeviceMessages.SetLightPower(level=65535, duration=10)
+            power_message = ColourMessages.SetLightPower(level=65535, duration=10)
             second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "power": "on", "duration": 10}, state
@@ -318,7 +318,7 @@ describe AsyncTestCase, "Transformer":
                 )
 
             first_colour_message = None
-            power_message = DeviceMessages.SetLightPower(level=0, duration=10)
+            power_message = ColourMessages.SetLightPower(level=0, duration=10)
             second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
 
             await self.assertTransformBehaves({"color": "blue", "power": "off", "duration": 10}, state
