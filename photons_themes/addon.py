@@ -113,7 +113,7 @@ async def apply_zone(applier, target, afr, serial, theme, overrides):
     msg = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
     async for pkt, _, _ in target.script(msg).run_with(serial, afr):
         if pkt | MultiZoneMessages.StateMultiZone:
-            length = pkt.num_zones
+            length = pkt.zones_count
 
     if length is None:
         log.warning(hp.lc("Couldn't work out how many zones the light had", serial=serial))

@@ -214,18 +214,18 @@ class MultiZoneMessages(Messages):
 
         , multi = MultiOptions(
               lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
-            , lambda req, res: min((req.end_index // 8) + 1, res.num_zones // 8)
+            , lambda req, res: min((req.end_index // 8) + 1, res.zones_count // 8)
             )
         )
 
     StateZone = msg(503
-        , ("num_zones", T.Uint8)
+        , ("zones_count", T.Uint8)
         , ("zone_index", T.Uint8)
         , *fields.hsbk
         )
 
     StateMultiZone = msg(506
-        , ("num_zones", T.Uint8)
+        , ("zones_count", T.Uint8)
         , ("zone_index", T.Uint8)
         , ("colors", T.Bytes(64 * 8).many(lambda pkt: fields.Color))
         )
