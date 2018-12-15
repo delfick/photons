@@ -100,11 +100,7 @@ class DeviceMessages(Messages):
         , ("label", T.String(32 * 8))
         , ("updated_at", T.Uint64)
         )
-    StateLocation = msg(50
-        , ("location", T.Bytes(16 * 8))
-        , ("label", T.String(32 * 8))
-        , ("updated_at", T.Uint64)
-        )
+    StateLocation = SetLocation.using(50)
 
     GetGroup = msg(51)
     SetGroup = msg(52
@@ -112,11 +108,7 @@ class DeviceMessages(Messages):
         , ("label", T.String(32 * 8))
         , ("updated_at", T.Uint64)
         )
-    StateGroup = msg(53
-        , ("group", T.Bytes(16 * 8))
-        , ("label", T.String(32 * 8))
-        , ("updated_at", T.Uint64)
-        )
+    StateGroup = SetGroup.using(53)
 
     EchoRequest = msg(58
         , ("echoing", T.Bytes(64 * 8))
