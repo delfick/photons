@@ -6,9 +6,6 @@ from photons_protocol.types import Optional
 
 from input_algorithms import spec_base as sb
 
-# Used in .many calls. Defined here so we don't have to recreate this lambda so much
-return_color = lambda pkt: fields.Color
-
 def empty(pkt, attr):
     return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
@@ -218,7 +215,7 @@ class MultiZoneMessages(Messages):
     StateMultiZone = msg(506
         , ("num_zones", T.Uint8)
         , ("zone_index", T.Uint8)
-        , ("colors", T.Bytes(64 * 8).many(return_color))
+        , ("colors", T.Bytes(64 * 8).many(lambda pkt: fields.Color))
         )
 
 ########################
@@ -254,7 +251,7 @@ class TileMessages(Messages):
     State64 = msg(711
         , ("tile_index", T.Uint8)
         , *fields.tile_buffer_rect
-        , ("colors", T.Bytes(64 * 64).many(return_color))
+        , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
         )
 
     SetState64 = msg(715
@@ -262,7 +259,7 @@ class TileMessages(Messages):
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
         , ("duration", fields.duration_type)
-        , ("colors", T.Bytes(64 * 64).many(return_color))
+        , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
         )
 
 __all__ = ["CoreMessages", "DiscoveryMessages", "DeviceMessages", "LightMessages", "MultiZoneMessages", "TileMessages"]
