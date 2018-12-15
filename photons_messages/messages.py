@@ -36,6 +36,7 @@ class DiscoveryMessages(Messages):
 
 class DeviceMessages(Messages):
     GetHostInfo = msg(12)
+
     StateHostInfo = msg(13
         , ("signal", T.Float)
         , ("tx", T.Uint32)
@@ -44,6 +45,7 @@ class DeviceMessages(Messages):
         )
 
     GetHostFirmware = msg(14)
+
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
         , ("reserved6", T.Reserved(64))
@@ -51,6 +53,7 @@ class DeviceMessages(Messages):
         )
 
     GetWifiInfo = msg(16)
+
     StateWifiInfo = msg(17
         , ("signal", T.Float)
         , ("tx", T.Uint32)
@@ -59,6 +62,7 @@ class DeviceMessages(Messages):
         )
 
     GetWifiFirmware = msg(18)
+
     StateWifiFirmware = msg(19
         , ("build", T.Uint64)
         , ("reserved6", T.Reserved(64))
@@ -66,20 +70,25 @@ class DeviceMessages(Messages):
         )
 
     GetPower = msg(20)
+
     SetPower = msg(21
         , ("level", T.Uint16)
         )
+
     StatePower = msg(22
         , ("level", T.Uint16)
         )
 
     GetLabel = msg(23)
+
     SetLabel = msg(24
         , ("label", T.String(32 * 8))
         )
+
     StateLabel = SetLabel.using(25)
 
     GetVersion = msg(32)
+
     StateVersion = msg(33
         , ("vendor", T.Uint32)
         , ("product", T.Uint32)
@@ -87,32 +96,37 @@ class DeviceMessages(Messages):
         )
 
     GetInfo = msg(34)
+
     StateInfo = msg(35
         , ("time", T.Uint64)
         , ("uptime", fields.nano_to_seconds)
         , ("downtime", fields.nano_to_seconds)
         )
 
-
     GetLocation = msg(48)
+
     SetLocation = msg(49
         , ("location", T.Bytes(16 * 8))
         , ("label", T.String(32 * 8))
         , ("updated_at", T.Uint64)
         )
+
     StateLocation = SetLocation.using(50)
 
     GetGroup = msg(51)
+
     SetGroup = msg(52
         , ("group", T.Bytes(16 * 8))
         , ("label", T.String(32 * 8))
         , ("updated_at", T.Uint64)
         )
+
     StateGroup = SetGroup.using(53)
 
     EchoRequest = msg(58
         , ("echoing", T.Bytes(64 * 8))
         )
+
     EchoResponse = EchoRequest.using(59)
 
 ########################
@@ -121,6 +135,7 @@ class DeviceMessages(Messages):
 
 class LightMessages(Messages):
     GetColor = msg(101)
+
     SetColor = msg(102
         , ("reserved6", T.Reserved(8))
         , *fields.hsbk
@@ -146,6 +161,7 @@ class LightMessages(Messages):
         )
 
     GetLightPower = msg(116)
+
     SetLightPower = msg(117
         , ("level", T.Uint16)
         , ("duration", fields.duration_type)
@@ -170,13 +186,17 @@ class LightMessages(Messages):
         )
 
     GetInfrared = msg(120)
+
+    StateInfrared = msg(121
+        , ("brightness", T.Uint16)
+        )
+
     SetInfrared = msg(122
         , ("brightness", T.Uint16)
         )
-    StateInfrared = SetInfrared.using(121)
 
 ########################
-###   MULTIZONE
+###   MULTI_ZONE
 ########################
 
 class MultiZoneMessages(Messages):
@@ -185,7 +205,7 @@ class MultiZoneMessages(Messages):
         , ("end_index", T.Uint8)
         , *fields.hsbk
         , ("duration", fields.duration_type)
-        , ("type", T.Uint8.enum(enums.MultiZoneApplicationRequest).default(enums.MultiZoneApplicationRequest.APPLY))
+        , ("apply", T.Uint8.enum(enums.MultiZoneApplicationRequest).default(enums.MultiZoneApplicationRequest.APPLY))
         )
 
     GetColorZones = msg(502
@@ -193,7 +213,7 @@ class MultiZoneMessages(Messages):
         , ("end_index", T.Uint8)
 
         , multi = MultiOptions(
-              lambda req: [MultiZoneMessages.StateMultiZone, MultiZoneMessages.StateZone]
+              lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
             , lambda req, res: min((req.end_index // 8) + 1, res.num_zones // 8)
             )
         )
@@ -234,6 +254,7 @@ class TileMessages(Messages):
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
+
         , multi = MultiOptions(
               lambda req: TileMessages.State64
             , lambda req, res: MultiOptions.Max(req.length)
