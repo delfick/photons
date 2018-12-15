@@ -196,7 +196,7 @@ class MultiZoneMessages(Messages):
         , ("end_index", T.Uint8)
         , *fields.hsbk
         , ("duration", fields.duration_typ)
-        , ("type", T.Uint8.enum(enums.ApplicationRequestType).default(enums.ApplicationRequestType.APPLY))
+        , ("type", T.Uint8.enum(enums.MultiZoneApplicationRequest).default(enums.MultiZoneApplicationRequest.APPLY))
         )
 
     GetColorZones = msg(502
