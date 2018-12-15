@@ -40,13 +40,13 @@ class DeviceMessages(Messages):
         , ("signal", T.Float)
         , ("tx", T.Uint32)
         , ("rx", T.Uint32)
-        , ("reserved", T.Reserved(16))
+        , ("reserved6", T.Reserved(16))
         )
 
     GetHostFirmware = msg(14)
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
-        , ("reserved", T.Reserved(64))
+        , ("reserved6", T.Reserved(64))
         , ("version", T.Uint32.version_number())
         )
 
@@ -55,13 +55,13 @@ class DeviceMessages(Messages):
         , ("signal", T.Float)
         , ("tx", T.Uint32)
         , ("rx", T.Uint32)
-        , ("reserved", T.Reserved(16))
+        , ("reserved6", T.Reserved(16))
         )
 
     GetWifiFirmware = msg(18)
     StateWifiFirmware = msg(19
         , ("build", T.Uint64)
-        , ("reserved", T.Reserved(64))
+        , ("reserved6", T.Reserved(64))
         , ("version", T.Uint32.version_number())
         )
 
