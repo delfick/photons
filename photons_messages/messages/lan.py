@@ -133,22 +133,27 @@ class DeviceMessages(Messages):
 class LightMessages(Messages):
     GetColor = msg(101)
     SetColor = msg(102
-        , *fields.color_and_duration
+        , ("reserved6", T.Reserved(8))
+        , *fields.hsbk
+        , ("duration", fields.duration_typ)
         )
 
     SetWaveform = msg(103
-        , ("stream", T.Uint8.default(0))
-        , ("transient", T.Uint8.default(0))
+        , ("reserved6", T.Reserved(8))
+        , ("transient", T.BoolInt.default(0))
         , *fields.hsbk
-        , *fields.waveform_opts
+        , ("period", fields.waveform_period)
+        , ("cycles", T.Float.default(1))
+        , ("skew_ratio", fields.waveform_skew_ratio)
+        , ("waveform", T.Uint8.enum(enums.Waveform).default(enums.Waveform.SAW))
         )
 
     LightState = msg(107
         , *fields.hsbk
-        , ("state_reserved1", T.Reserved(16))
+        , ("reserved6", T.Reserved(16))
         , ("power", T.Uint16)
         , ("label", T.String(32 * 8))
-        , ("state_reserved2", T.Reserved(64))
+        , ("reserved7", T.Reserved(64))
         )
 
     GetLightPower = msg(116)
@@ -162,10 +167,13 @@ class LightMessages(Messages):
         )
 
     SetWaveformOptional = msg(119
-        , ("stream", T.Uint8.default(0))
-        , ("transient", T.Uint8.default(0))
+        , ("reserved6", T.Reserved(8))
+        , ("transient", T.BoolInt.default(0))
         , *fields.hsbk_with_optional
-        , *fields.waveform_opts
+        , ("period", fields.waveform_period)
+        , ("cycles", T.Float.default(1))
+        , ("skew_ratio", fields.waveform_skew_ratio)
+        , ("waveform", T.Uint8.enum(enums.Waveform).default(enums.Waveform.SAW))
         , ("set_hue", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
         , ("set_saturation", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
         , ("set_brightness", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))

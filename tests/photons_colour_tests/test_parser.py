@@ -6,6 +6,7 @@ from photons_app.test_helpers import TestCase
 
 from photons_messages import LightMessages, Waveform
 
+from input_algorithms import spec_base as sb
 import mock
 
 describe TestCase, "split_color_string":
@@ -175,7 +176,7 @@ describe TestCase, "Parser":
                 msg = Parser.color_to_msg(components)
                 assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
-                    , { 'stream': 1
+                    , { 'reserved6': sb.NotSpecified
                       , 'transient': 0
                       , 'hue': 240.0
                       , 'saturation': 0.09999237048905166
@@ -204,7 +205,7 @@ describe TestCase, "Parser":
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
-                    , { 'stream': 1
+                    , { 'reserved6': sb.NotSpecified
                       , 'transient': 1
                       , 'hue': 240.0
                       , 'saturation': 0.09999237048905166
@@ -233,7 +234,7 @@ describe TestCase, "Parser":
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
-                    , { 'stream': 0
+                    , { 'reserved6': sb.NotSpecified
                       , 'transient': 1
                       , 'hue': 240.0
                       , 'saturation': 0.09999237048905166
@@ -262,7 +263,7 @@ describe TestCase, "Parser":
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
                 self.assertEqual(msg.payload.as_dict()
-                    , { 'stream': 0
+                    , { 'reserved6': sb.NotSpecified
                       , 'transient': 1
                       , 'hue': 240.0
                       , 'saturation': 0.09999237048905166

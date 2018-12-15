@@ -66,8 +66,8 @@ the bulb.
           , "label": "strip"
           , "power": 0
           , "saturation": 1.0
-          , "state_reserved1": 0
-          , "state_reserved2": 0
+          , "reserved6": 0
+          , "reserved7": 0
           }
         , "protocol_header":
           { "pkt_type": 107

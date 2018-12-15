@@ -1,5 +1,3 @@
-from photons_messages.enums import Waveform
-
 from photons_protocol.packets import dictobj
 from photons_protocol.messages import T
 
@@ -26,32 +24,21 @@ nano_to_seconds = T.Uint64.transform(
     , lambda v: v / 1e9
     ).allow_float()
 
-waveform_opts = (
-      ('period', T.Uint32.default(0).transform(
-              lambda _, value: int(1000 * float(value))
-            , lambda value: float(value) / 1000
-            ).allow_float()
-          )
-    , ('cycles', T.Float.default(1))
-    , ('skew_ratio', T.Int16.default(0).transform(
-              lambda _, value: int(32767 * float(value))
-            , lambda value: float(value) / 32767
-            ).allow_float()
-          )
-    , ('waveform', T.Uint8.enum(Waveform).default(Waveform.SAW))
-    )
+waveform_period = T.Uint32.default(0).transform(
+      lambda _, value: int(1000 * float(value))
+    , lambda value: float(value) / 1000
+    ).allow_float()
+
+waveform_skew_ratio = T.Int16.default(0).transform(
+      lambda _, value: int(32767 * float(value))
+    , lambda value: float(value) / 32767
+    ).allow_float()
 
 hsbk = (
       ("hue", scaled_hue)
     , ("saturation", scaled_to_65535)
     , ("brightness", scaled_to_65535)
     , ("kelvin", T.Uint16.default(3500))
-    )
-
-color_and_duration = (
-      ('setcolor_reserved1', T.Reserved(8))
-    , *hsbk
-    , ('duration', duration_typ)
     )
 
 class Color(dictobj.PacketSpec):

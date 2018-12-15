@@ -133,8 +133,7 @@ class Parser(object):
             )
 
         other = dict(
-              stream = 1
-            , transient = 0
+              transient = 0
             , cycles = 1
             , skew_ratio = 0
             , waveform = Waveform.SAW
@@ -329,36 +328,36 @@ class Effects(object):
         return getattr(kls(), effect)(**kwargs)
 
     @effect
-    def pulse(self, cycles=1, duty_cycle=0.5, transient=1, period=1.0, stream=0, skew_ratio=1, **kwargs):
+    def pulse(self, cycles=1, duty_cycle=0.5, transient=1, period=1.0, skew_ratio=1, **kwargs):
         """Options to make the light(s) pulse `color` and then back to its original color"""
-        return dict(waveform=Waveform.PULSE, cycles=cycles, skew_ratio=skew_ratio - duty_cycle, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.PULSE, cycles=cycles, skew_ratio=skew_ratio - duty_cycle, transient=transient, period=period)
 
     @effect
-    def sine(self, cycles=1, period=1.0, peak=0.5, transient=1, stream=0, skew_ratio=sb.NotSpecified, **kwargs):
+    def sine(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         """Options to make the light(s) transition to `color` and back in a smooth sine wave"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
 
     @effect
-    def half_sine(self, cycles=1, period=1.0, transient=1, stream=0, **kwargs):
+    def half_sine(self, cycles=1, period=1.0, transient=1, **kwargs):
         """Options to make the light(s) transition to `color` smoothly, then immediately back to its original color"""
-        return dict(waveform=Waveform.HALF_SINE, cycles=cycles, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.HALF_SINE, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def triangle(self, cycles=1, period=1.0, peak=0.5, transient=1, stream=0, skew_ratio=sb.NotSpecified, **kwargs):
+    def triangle(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         """Options to make the light(s) transition to `color` linearly and back"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.TRIANGLE, cycles=cycles, skew_ratio=skew_ratio, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.TRIANGLE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
 
     @effect
-    def saw(self, cycles=1, period=1.0, transient=1, stream=0, **kwargs):
+    def saw(self, cycles=1, period=1.0, transient=1, **kwargs):
         """Options to make the light(s) transition to `color` linearly, then instantly back"""
-        return dict(waveform=Waveform.SAW, cycles=cycles, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.SAW, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def breathe(self, cycles=1, period=1, peak=0.5, transient=1, stream=0, skew_ratio=sb.NotSpecified, **kwargs):
+    def breathe(self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, stream=stream, transient=transient, period=period)
+        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)

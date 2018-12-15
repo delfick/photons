@@ -17,7 +17,7 @@ describe TestCase, "LightMessages":
         msg = self.unpack("3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000")
         assert msg | LightMessages.SetColor
         self.assertEqual(msg.payload.as_dict()
-            , { 'setcolor_reserved1': b'\x00'
+            , { 'reserved6': b'\x00'
               , 'hue': 9.997711146715496
               , 'saturation': 0.09999237048905166
               , 'brightness': 0.49999237048905165
@@ -36,7 +36,7 @@ describe TestCase, "LightMessages":
         msg = self.unpack("39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01")
         assert msg | LightMessages.SetWaveform
         self.assertEqual(msg.payload.as_dict()
-            , { 'stream': 0
+            , { 'reserved6': b"\x00"
               , 'transient': 0
               , 'hue': 99.9990844586862
               , 'saturation': 0.09999237048905166
@@ -49,7 +49,6 @@ describe TestCase, "LightMessages":
               }
             )
 
-        self.assertEqual(msg.payload.actual("stream"), 0)
         self.assertEqual(msg.payload.actual("transient"), 0)
         self.assertEqual(msg.payload.actual("hue"), 18204)
         self.assertEqual(msg.payload.actual("saturation"), 6553)
@@ -64,7 +63,7 @@ describe TestCase, "LightMessages":
         msg = self.unpack("3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040cc0c0101000101")
         assert msg | LightMessages.SetWaveformOptional
         self.assertEqual(msg.payload.as_dict()
-            , { 'stream': 0
+            , { 'reserved6': b"\x00"
               , 'transient': 0
               , 'hue': 99.9990844586862
               , 'saturation': 0.0
@@ -81,7 +80,6 @@ describe TestCase, "LightMessages":
               }
             )
 
-        self.assertEqual(msg.payload.actual("stream"), 0)
         self.assertEqual(msg.payload.actual("transient"), 0)
         self.assertEqual(msg.payload.actual("hue"), 18204)
         self.assertEqual(msg.payload.actual("saturation"), 0)
@@ -144,8 +142,8 @@ describe TestCase, "LightMessages":
               , 'kelvin': 2500
               , 'power': 65535
               , 'label': 'den'
-              , 'state_reserved1': b'\x00\x00'
-              , 'state_reserved2': b'\x00\x00\x00\x00\x00\x00\x00\x00'
+              , 'reserved6': b'\x00\x00'
+              , 'reserved7': b'\x00\x00\x00\x00\x00\x00\x00\x00'
               }
             )
 
