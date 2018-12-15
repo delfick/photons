@@ -46,26 +46,20 @@ class Color(dictobj.PacketSpec):
 Color.Meta.cache = LRU(8000)
 
 tile_state_device = (
-      ("reserved6", T.Int16.default(0))
-    , ("reserved7", T.Int16.default(0))
-    , ("reserved8", T.Int16.default(0))
-    , ("reserved9", T.Uint16.default(0))
+      ("reserved6", T.Reserved(48))
+    , ("reserved7", T.Reserved(16))
     , ("user_x", T.Float)
     , ("user_y", T.Float)
     , ("width", T.Uint8)
     , ("height", T.Uint8)
-    , ("reserved10", T.Uint8.default(50))
+    , ("reserved8", T.Reserved(8))
     , ("device_version_vendor", T.Uint32)
     , ("device_version_product", T.Uint32)
     , ("device_version_version", T.Uint32)
     , ("firmware_build", T.Uint64)
-    , ("reserved11", T.Uint64.default(0))
-    , ("firmware_version", T.Uint32.transform(
-            lambda _, v: v if type(v) is int else (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
-          , lambda v: float("{0}.{1:02d}".format(v >> 0x10, v & 0xFF))
-          ).allow_float()
-        )
-    , ("reserved12", T.Uint32.default(0))
+    , ("reserved9", T.Reserved(64))
+    , ("firmware_version", T.Uint32.version_number())
+    , ("reserved10", T.Reserved(32))
     )
 
 class Tile(dictobj.PacketSpec):
