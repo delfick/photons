@@ -4,7 +4,7 @@ from photons_protocol.messages import T
 from input_algorithms import spec_base as sb
 from lru import LRU
 
-duration_typ = T.Uint32.default(0).transform(
+duration_type = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
     , lambda value: float(value) / 1000
     ).allow_float()

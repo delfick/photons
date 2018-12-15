@@ -135,7 +135,7 @@ class LightMessages(Messages):
     SetColor = msg(102
         , ("reserved6", T.Reserved(8))
         , *fields.hsbk
-        , ("duration", fields.duration_typ)
+        , ("duration", fields.duration_type)
         )
 
     SetWaveform = msg(103
@@ -159,7 +159,7 @@ class LightMessages(Messages):
     GetLightPower = msg(116)
     SetLightPower = msg(117
         , ("level", T.Uint16)
-        , ("duration", fields.duration_typ)
+        , ("duration", fields.duration_type)
         )
 
     StateLightPower = msg(118
@@ -195,7 +195,7 @@ class MultiZoneMessages(Messages):
         , ("start_index", T.Uint8)
         , ("end_index", T.Uint8)
         , *fields.hsbk
-        , ("duration", fields.duration_typ)
+        , ("duration", fields.duration_type)
         , ("type", T.Uint8.enum(enums.MultiZoneApplicationRequest).default(enums.MultiZoneApplicationRequest.APPLY))
         )
 
@@ -261,7 +261,7 @@ class TileMessages(Messages):
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
-        , ("duration", fields.duration_typ)
+        , ("duration", fields.duration_type)
         , ("colors", T.Bytes(64 * 64).many(return_color))
         )
 
