@@ -264,3 +264,5 @@ class TileMessages(Messages):
         , ("duration", fields.duration_typ)
         , ("colors", T.Bytes(64 * 64).many(return_color))
         )
+
+__all__ = ["CoreMessages", "DiscoveryMessages", "DeviceMessages", "LightMessages", "MultiZoneMessages", "TileMessages"]

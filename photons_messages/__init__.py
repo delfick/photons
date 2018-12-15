@@ -2,19 +2,14 @@
 This module contains the definition of the LIFX binary protocol messages.
 
 This includes the frame of the packet that is common to all messages.
-
-See :ref:`lifx_binary_protocol` for the messages.
 """
 
 # Get the parent packet
 from photons_messages.frame import LIFXPacket
 
 # Get the messages
-from photons_messages.messages.lan import (
-      CoreMessages, DiscoveryMessages
-    , DeviceMessages, LightMessages
-    , MultiZoneMessages, TileMessages
-    )
+from photons_messages.messages import *
+from photons_messages import messages
 
 # Make the enums available straight from photons_messages
 from photons_messages.enums import *
@@ -30,12 +25,9 @@ def make_protocol_register():
     protocol_register.add(1024, LIFXPacket)
     message_register = protocol_register.message_register(1024)
 
-    message_register.add(CoreMessages)
-    message_register.add(DiscoveryMessages)
-    message_register.add(DeviceMessages)
-    message_register.add(LightMessages)
-    message_register.add(MultiZoneMessages)
-    message_register.add(TileMessages)
+    for kls in messages.__all__:
+        kls = getattr(messages, kls)
+        message_register.add(kls)
 
     return protocol_register
 
