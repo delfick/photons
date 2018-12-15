@@ -73,8 +73,8 @@ tile_buffer_rect = (
     )
 
 hsbk_with_optional = (
-      ('hue', hsbk[0][1].optional())
-    , ('saturation', hsbk[1][1].optional())
-    , ('brightness', hsbk[2][1].optional())
-    , ('kelvin', T.Uint16.optional())
+      ("hue", scaled_hue.optional())
+    , ("saturation", scaled_to_65535.optional())
+    , ("brightness", scaled_to_65535.optional())
+    , ("kelvin", T.Uint16.optional())
     )
