@@ -55,7 +55,7 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
     setter_kls = MultiZoneMessages.SetColorZones
     missing = []
     for field in setter_kls.Payload.Meta.all_names:
-        if field not in options and field not in ("kelvin", "duration", "type"):
+        if field not in options and field not in ("kelvin", "duration", "apply"):
             missing.append(field)
 
     if missing:
