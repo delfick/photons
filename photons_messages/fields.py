@@ -34,6 +34,13 @@ waveform_skew_ratio = T.Int16.default(0).transform(
     , lambda value: float(value) / 32767
     ).allow_float()
 
+hsbk_with_optional = (
+      ("hue", scaled_hue.optional())
+    , ("saturation", scaled_to_65535.optional())
+    , ("brightness", scaled_to_65535.optional())
+    , ("kelvin", T.Uint16.optional())
+    )
+
 hsbk = (
       ("hue", scaled_hue)
     , ("saturation", scaled_to_65535)
@@ -70,11 +77,4 @@ tile_buffer_rect = (
     , ("x", T.Uint8)
     , ("y", T.Uint8)
     , ("width", T.Uint8)
-    )
-
-hsbk_with_optional = (
-      ("hue", scaled_hue.optional())
-    , ("saturation", scaled_to_65535.optional())
-    , ("brightness", scaled_to_65535.optional())
-    , ("kelvin", T.Uint16.optional())
     )
