@@ -3,6 +3,37 @@
 ChangeLog
 =========
 
+0.9.0 - TBD
+    The photons_messages module is now generated via a process internal to LIFX.
+    The information required for this will be made public but for now I'm making
+    the resulting changes to photons.
+
+    As part of this change there are some moves and renames to some messages.
+
+    * ColourMessages is now LightMessages
+    * LightPower messages are now under LightMessages
+    * Infrared messages are now under LightMessages
+    * Infrared messages now have `brightness` instead of `level`
+    * Fixed Acknowledgement message typo
+    * Multizone messages have better names
+
+      * SetMultiZoneColorZones -> SetColorZones
+      * GetMultiZoneColorZones -> GetColorZones
+      * StateMultiZoneStateZones -> StateZone
+      * StateMultiZoneStateMultiZones -> StateMultiZone
+
+    * Tile messages have better names
+
+      * GetTileState64 -> GetState64
+      * SetTileState64 -> SetState64
+      * StateTileState64 -> State64
+
+    * Some reserved fields have more consistent names
+    * SetWaveForm is now SetWaveform
+    * SetWaveFormOptional is now SetWaveformOptional
+    * num_zones field on multizone messages is now zones_count
+    * The type field in SetColorZones was renamed to apply
+
 0.8.1 - 2 December 2018
     * Added twinkles tile animation
     * Made it a bit easier to start animations programmatically
