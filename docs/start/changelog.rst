@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.9.0 - TBD
+0.9.0 - 17 December 2018
     The photons_messages module is now generated via a process internal to LIFX.
     The information required for this will be made public but for now I'm making
     the resulting changes to photons.
