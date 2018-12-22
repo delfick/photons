@@ -5,6 +5,7 @@ ChangeLog
 
 0.9.1 - TBD
     * Added tile_falling animation
+    * tile_marquee animation can now do dashes and underscores
 
 0.9.0 - 17 December 2018
     The photons_messages module is now generated via a process internal to LIFX.
