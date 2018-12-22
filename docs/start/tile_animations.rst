@@ -195,6 +195,8 @@ tile_dice_roll
   num_iterations -- int -- default 1
     How many rolls to perform. By default we only do one roll
 
+    -1 means we never stop rolling the dice.
+
   roll_time -- float -- default 2
     The number of seconds to roll the dice for before choosing a number
 

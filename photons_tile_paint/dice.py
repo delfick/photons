@@ -39,9 +39,12 @@ class TileDiceRollAnimation(Animation):
     def next_state(self, prev_state, coords):
         state = prev_state
 
+        if prev_state is None and self.options.num_iterations == 0:
+            return -1
+
         if prev_state == -2:
             self.remaining -= 1
-            if self.remaining <= 0:
+            if self.remaining <= 0 and self.options.num_iterations != -1:
                 raise Finish()
             else:
                 self.every = 0.01
