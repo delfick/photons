@@ -1,0 +1,58 @@
+#/bin/sh
+"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+
+from photons_app.errors import PhotonsAppError
+from photons_app.actions import an_action
+
+from photons_tile_paint.animation import (
+      coords_for_horizontal_line
+    , tile_serials_from_reference, put_characters_on_canvas 
+    , canvas_to_msgs
+    )
+from photons_themes.theme import ThemeColor as Color
+from photons_tile_paint.font.dice import dice
+from photons_themes.canvas import Canvas
+
+from option_merge_addons import option_merge_addon_hook
+
+@option_merge_addon_hook(extras=[
+      ("lifx.photons", "socket")
+    , ("lifx.photons", "themes")
+    , ("lifx.photons", "tile_paint")
+    , ("lifx.photons", "device_finder")
+    ])
+def __lifx__(collector, *args, **kwargs):
+    pass
+
+@an_action(needs_target=True, special_reference=True)
+async def tile_dice(collector, target, reference, **kwargs):
+    """
+    Display dice on your tiles
+
+    ``tile_dice d073d5000001,d073d5000002``
+    """
+    async with target.session() as afr:
+        serials = await tile_serials_from_reference(target, reference, afr)
+        if not serials:
+            raise PhotonsAppError("Didn't find any tiles")
+
+        canvas = Canvas()
+
+        def default_color_func(i, j):
+            if j == -3:
+                return Color(0, 1, 0.4, 3500)
+            return Color(0, 0, 0, 3500)
+        canvas.set_default_color_func(default_color_func)
+
+        numbers = ["1", "2", "3", "4", "5"]
+        characters = [dice[n] for n in numbers]
+        color = Color(100, 1, 1, 3500)
+        put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
+
+        msgs = list(canvas_to_msgs(canvas, coords_for_horizontal_line, duration=1, acks=True))
+        await target.script(msgs).run_with_all(serials, afr)
+
+if __name__ == "__main__":
+    from photons_app.executor import main
+    import sys
+    main(["lan:tile_dice"] + sys.argv[1:])
