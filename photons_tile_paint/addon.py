@@ -56,6 +56,9 @@ from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
 from photons_tile_paint.twinkles import TileTwinklesAnimation
 from photons_tile_paint.twinkles import TileTwinklesOptions
 
+from photons_tile_paint.falling import FallingAnimation
+from photons_tile_paint.falling import FallingOptions
+
 class Animations:
     @classmethod
     def animators(kls):
@@ -108,6 +111,12 @@ class Animations:
     tile_twinkles = Animator(TileTwinklesAnimation, TileTwinklesOptions
         , """
           Random twinkles on the tiles
+          """
+        )
+
+    tile_falling = Animator(FallingAnimation, FallingOptions
+        , """
+          Falling lines of pixels
           """
         )
 

@@ -22,6 +22,8 @@ For example::
 
   lifx lan:tile_gameoflife <reference>
 
+  lifx lan:tile_falling <reference>
+
 Where the options are optional and are as follows:
 
 background
@@ -142,6 +144,45 @@ tile_gameoflife
   iteration_delay -- float -- default 0.1
     The amount of seconds between each iteration of the simulation. Note that
     0.1 is the smallest value.
+
+tile_falling
+  This is just pixels falling from the top to the bottom.
+
+  Essentially we have lines of pixels with the tip being a special colour and
+  the rest between a random colour in a hue_range with decreasing brightness
+  where each line is of a random length.
+
+  The following are options available for this animation:
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
+
+  hue_ranges -- null or list of strings or csv -- default "90-110"
+    A string or a list of strings where each string is a comma separated range
+    where the range is either '<min>-<max>' or the word 'rainbow'. These numbers
+    are used to determine the colour of each pixel in each line. Saying rainbow
+    is the same as saying '0-360'.
+
+    For example if you said '0-10,rainbow' then half the lines will be the full
+    range of colours and the other half of the lines will have red pixels.
+
+    You can say a single number to represent just that number. For example if
+    you said '0-10,100' then half will be between 0 and 10 and the other half
+    will all be exactly 100.
+
+    If this is set to null then only the tip will have a nonzero brightness.
+
+  line_tip_hue -- null or hue range -- default 60
+    A single hue range like those in hue_ranges. I.e. 'rainbow' or '60' or '0-10'
+
+    If this is set to null then the tip of each line will not be a special colour,
+    otherwise it's hue will be a random value in the range specified.
+
+    Note that if both hue_ranges and line_tip_hue are null then hue_ranges will
+    remain null and line_tip_hue will become 60.
+
+  blinking_pixels -- boolean -- default true
+    Whether pixels should randomly blink as they are moving down.
 
 Starting an animation programmatically
 --------------------------------------
