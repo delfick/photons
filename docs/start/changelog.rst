@@ -8,6 +8,7 @@ ChangeLog
     * Added tile_dice_roll animation
     * tile_marquee animation can now do dashes and underscores
     * Added a tile_dice script for putting 1 to 5 on your tiles
+    * Made tile animations are lot less taxing on the CPU
 
 0.9.0 - 17 December 2018
     The photons_messages module is now generated via a process internal to LIFX.

@@ -1,3 +1,5 @@
+from photons_tile_paint.set_state import set_state_64_maker
+
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
@@ -43,11 +45,11 @@ async def tile_serials_from_reference(target, reference, afr):
 
 def canvas_to_msgs(canvas, coords, duration=1, acks=True):
     for i, coord in enumerate(coords):
-        colors = [c.as_dict() for c in canvas.points_for_tile(*coord[0], *coord[1])]
-
-        yield TileMessages.SetState64(
-              tile_index=i, length=1, x=0, y=0, width=coord[1][0], duration=duration, colors=colors
-            , res_required = False
+        yield set_state_64_maker(
+              tile_index = i
+            , width = coord[1][0]
+            , duration = duration
+            , colors = canvas.points_for_tile(*coord[0], *coord[1])
             , ack_required = acks
             )
 
