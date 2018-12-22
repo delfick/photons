@@ -56,8 +56,8 @@ from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
 from photons_tile_paint.twinkles import TileTwinklesAnimation
 from photons_tile_paint.twinkles import TileTwinklesOptions
 
-from photons_tile_paint.falling import FallingAnimation
-from photons_tile_paint.falling import FallingOptions
+from photons_tile_paint.falling import TileFallingAnimation
+from photons_tile_paint.falling import TileFallingOptions
 
 class Animations:
     @classmethod
@@ -114,7 +114,7 @@ class Animations:
           """
         )
 
-    tile_falling = Animator(FallingAnimation, FallingOptions
+    tile_falling = Animator(TileFallingAnimation, TileFallingOptions
         , """
           Falling lines of pixels
           """

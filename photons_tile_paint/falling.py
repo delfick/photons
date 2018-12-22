@@ -90,7 +90,7 @@ class hue_range_spec(sb.Spec):
 
         return HueRange(*rnge)
 
-class FallingOptions(dictobj.Spec):
+class TileFallingOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
 
@@ -200,7 +200,7 @@ class Line:
 
             brightness += increment
 
-class FallingState:
+class TileFallingState:
     def __init__(self, coords, options):
         self.options = options
 
@@ -244,7 +244,7 @@ class FallingState:
                     canvas[(i, j)] = got
         return canvas
 
-class FallingAnimation(Animation):
+class TileFallingAnimation(Animation):
     every = 0.01
     duration = 0
 
@@ -253,7 +253,7 @@ class FallingAnimation(Animation):
 
     def next_state(self, prev_state, coords):
         if prev_state is None:
-            return FallingState(coords, self.options)
+            return TileFallingState(coords, self.options)
 
         self.iteration += 1
         if self.options.final_iteration(self.iteration):
