@@ -59,6 +59,9 @@ from photons_tile_paint.twinkles import TileTwinklesOptions
 from photons_tile_paint.falling import TileFallingAnimation
 from photons_tile_paint.falling import TileFallingOptions
 
+from photons_tile_paint.dice import TileDiceRollAnimation
+from photons_tile_paint.dice import TileDiceRollOptions
+
 class Animations:
     @classmethod
     def animators(kls):
@@ -117,6 +120,12 @@ class Animations:
     tile_falling = Animator(TileFallingAnimation, TileFallingOptions
         , """
           Falling lines of pixels
+          """
+        )
+
+    tile_dice_roll = Animator(TileDiceRollAnimation, TileDiceRollOptions
+        , """
+          A dice roll
           """
         )
 

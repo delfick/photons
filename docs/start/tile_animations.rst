@@ -24,6 +24,8 @@ For example::
 
   lifx lan:tile_falling <reference>
 
+  lifx lan:tile_dice_roll <reference>
+
 Where the options are optional and are as follows:
 
 background
@@ -183,6 +185,21 @@ tile_falling
 
   blinking_pixels -- boolean -- default true
     Whether pixels should randomly blink as they are moving down.
+
+tile_dice_roll
+  This does a roll of a dice following by choosing a number to be displayed on
+  all the tiles
+
+  The following are options available for this animation:
+
+  num_iterations -- int -- default 1
+    How many rolls to perform. By default we only do one roll
+
+  roll_time -- float -- default 2
+    The number of seconds to roll the dice for before choosing a number
+
+  dice_color -- hsbk dictionary -- default 200, 1, 1, 3500
+    The color of the dots on the dice
 
 Starting an animation programmatically
 --------------------------------------

@@ -5,6 +5,7 @@ ChangeLog
 
 0.9.1 - TBD
     * Added tile_falling animation
+    * Added tile_dice_roll animation
     * tile_marquee animation can now do dashes and underscores
 
 0.9.0 - 17 December 2018
