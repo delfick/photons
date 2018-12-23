@@ -9,6 +9,8 @@ ChangeLog
     * tile_marquee animation can now do dashes and underscores
     * Added a tile_dice script for putting 1 to 5 on your tiles
     * Made tile animations are lot less taxing on the CPU
+    * Made tile_gameoflife animation default to using coords from the tiles
+      rather than assuming the tiles are in a line.
 
 0.9.0 - 17 December 2018
     The photons_messages module is now generated via a process internal to LIFX.

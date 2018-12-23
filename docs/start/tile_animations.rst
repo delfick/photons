@@ -127,10 +127,10 @@ tile_gameoflife
 
   This also has the following options
 
-  user_coords -- boolean -- default false
+  user_coords -- boolean -- default true
     If this is true, then we use the (user_x, user_y) values from the tiles to
-    determine what to display on the tiles. By default we assume the tiles are
-    in a horizontal row.
+    determine what to display on the tiles. If false we assume the tiles are in
+    a straight line.
 
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop

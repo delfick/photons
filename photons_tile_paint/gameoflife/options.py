@@ -8,7 +8,7 @@ import random
 
 class TileGameOfLifeOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
-    user_coords = dictobj.Field(sb.boolean, default=False)
+    user_coords = dictobj.Field(sb.boolean, default=True)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     new_color_style = dictobj.Field(sb.string_choice_spec(["random", "average"]), default="average")
     iteration_delay = dictobj.Field(sb.float_spec, default=0.1)
