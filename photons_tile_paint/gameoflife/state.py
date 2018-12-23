@@ -22,11 +22,11 @@ class State:
         for (left, top), (width, height) in coords:
             self.left = min(left, self.left)
             self.right = max(left + width, self.right)
-            self.top = min(top, self.top)
-            self.bottom = max(top + height, self.bottom)
+            self.bottom = min(top - height, self.bottom)
+            self.top = max(top, self.top)
 
         self.width = self.right - self.left
-        self.height = self.bottom - self.top
+        self.height = self.top - self.bottom
 
         self.place_random(4)
 
@@ -79,8 +79,8 @@ class State:
         for (left, top), _ in list(self.canvas):
             too_far_left = left < self.left - 20
             too_far_right = left > self.right + 20
-            too_far_up = top < self.top - 20
-            too_far_down = top > self.bottom + 20
+            too_far_up = top > self.top + 20
+            too_far_down = top < self.bottom - 20
             if too_far_left or too_far_right or too_far_up or too_far_down:
                 del self.canvas[(left, top)]
 
@@ -88,5 +88,5 @@ class State:
 
     def random_coord(self):
         left = random.randrange(self.left, self.right)
-        top = random.randrange(self.top, self.bottom)
+        top = random.randrange(self.bottom, self.top)
         return left, top

@@ -66,14 +66,14 @@ class TwinklesState:
         for (left, top), (width, height) in coords:
             self.left = min(left, self.left)
             self.right = max(left + width, self.right)
-            self.top = min(top - height, self.top)
-            self.bottom = max(top, self.bottom)
+            self.bottom = min(top - height, self.bottom)
+            self.top = max(top, self.top)
 
         self.place_random(random.randrange(0, self.options.num_twinkles / 2))
 
     def random_coord(self):
         left = random.randrange(self.left, self.right)
-        top = random.randrange(self.top, self.bottom)
+        top = random.randrange(self.bottom, self.top)
         return left, top
 
     def place_random(self, amount):
