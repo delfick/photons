@@ -4,10 +4,7 @@ from photons_tile_paint.pacman import state
 from photons_themes.canvas import Canvas
 
 class TilePacmanAnimation(Animation):
-    every = 0.075
-    acks = False
     coords = coords_for_horizontal_line
-    duration = 0
 
     def setup(self):
         self.iteration = 0

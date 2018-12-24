@@ -6,6 +6,7 @@ from photons_themes.canvas import Canvas
 import time
 
 class TileTimeAnimation(Animation):
+    acks = True
     every = 1.5
     duration = 1
     coords = coords_for_horizontal_line

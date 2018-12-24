@@ -245,9 +245,6 @@ class TileFallingState:
         return canvas
 
 class TileFallingAnimation(Animation):
-    every = 0.01
-    duration = 0
-
     def setup(self):
         self.iteration = 0
 

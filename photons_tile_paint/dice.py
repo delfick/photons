@@ -29,8 +29,7 @@ class TileDiceRollOptions(dictobj.Spec):
     dice_color = dictobj.Field(ColorOption(200, 1, 1, 3500))
 
 class TileDiceRollAnimation(Animation):
-    every = 0.01
-    duration = 0
+    acks = True
     coords = coords_for_horizontal_line
 
     def setup(self):

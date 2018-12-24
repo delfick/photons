@@ -114,9 +114,7 @@ class TwinklesState:
         return self
 
 class TileTwinklesAnimation(Animation):
-    every = 0.01
     coords = coords_for_horizontal_line
-    duration = 0
 
     def setup(self):
         self.iteration = 0

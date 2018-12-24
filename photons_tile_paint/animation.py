@@ -153,10 +153,10 @@ class TileStateGetter:
                 self.info_by_serial[serial].coords = user_coords_to_pixel_coords(coords)
 
 class Animation:
+    acks = False
+    every = 0.075
     coords = None
-    every = 1.5
-    duration = 1
-    acks = True
+    duration = 0
 
     def __init__(self, target, afr, options):
         self.afr = afr
