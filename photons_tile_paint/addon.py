@@ -19,9 +19,9 @@ class Animator:
         self.optionskls = optionskls
         self.animationkls = animationkls
 
-    async def animate(self, target, afr, final_future, reference, options):
+    async def animate(self, target, afr, final_future, reference, options, **kwargs):
         options = self.optionskls.FieldSpec().normalise(Meta.empty(), options)
-        return await self.animationkls(target, afr, options).animate(reference, final_future)
+        return await self.animationkls(target, afr, options).animate(reference, final_future, **kwargs)
 
     def __set_name__(self, owner, name):
         self.name = name

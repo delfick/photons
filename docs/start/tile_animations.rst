@@ -223,4 +223,38 @@ assuming you already have a lan target object:
         reference = "d073d5000001"
         await Animations.tile_marquee.animate(target, afr, final_future, reference, options)
 
+You can also pause if it if you pass in an asyncio.Condition and acquire it:
+
+.. code-block:: python
+
+    from photons_tile_paint.addon import Animations
+
+    from photons_app import helpers as hp
+
+    import asyncio
+
+    # Cancel this final_future when you want to stop the animation
+    final_future = asyncio.Future()
+
+    # condition used to pause the animation
+    pauser = asyncio.Condition()
+
+    async def pause_for_a_while():
+       """example of what you need to do to pause and resume the animation"""
+       # After two seconds, pause the animation
+       await asyncio.sleep(2)
+       await pauser.acquire()
+
+       # After another two seconds, resume the animation
+       await asyncio.sleep(2)
+       pauser.release()
+    hp.async_as_background(pause_for_a_while())
+
+    async with target.session() as afr:
+        options = {"text": "hello there"}
+        reference = "d073d5000001"
+        await Animations.tile_marquee.animate(target, afr, final_future, reference, options
+            , pauser = pauser
+            )
+
 For more information about valid objects for the reference, see :ref:`photons_app_special`

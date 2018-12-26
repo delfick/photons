@@ -173,7 +173,10 @@ class Animation:
     def make_canvas(self, state, coords):
         raise NotImplementedError()
 
-    async def animate(self, reference, final_future):
+    async def animate(self, reference, final_future, pauser=None):
+        if pauser is None:
+            pauser = asyncio.Condition()
+
         def errors(e):
             log.error(e)
 
@@ -207,10 +210,10 @@ class Animation:
                         msg.target = serial
                         msgs.append(msg)
 
-            if final_future.done():
-                break
-
-            await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors)
+            async with pauser:
+                if final_future.done():
+                    break
+                await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors)
 
             if final_future.done():
                 break
