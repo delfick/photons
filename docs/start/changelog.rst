@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.9.2 - TBD
+    * Made tile_marquee work without options
+
 0.9.1 - 26 December 2018
     * Added tile_falling animation
     * Added tile_dice_roll animation
