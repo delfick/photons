@@ -5,39 +5,37 @@ Tile Animations
 
 Photons provides some actions for simple animations on the tiles.
 
-Currently implemented is ``tile_time``, ``tile_marquee``, ``tile_nyan`` and
-``tile_pacman``.
+To run them, say something like::
+
+  lifx lan:<animation> <reference> -- '{options}'
 
 For example::
 
-  lifx lan:tile_time <reference> -- '{options}'
+  # Run the time animation on all tiles
+  lifx lan:tile_time
 
-  lifx lan:tile_marquee <reference> -- '{"text": "hello there"}'
+  # Make "hello there" scroll on all the tiles in the home group
+  lifx lan:tile_marquee match:group_name=home -- '{"text": "hello there"}'
 
-  lifx lan:tile_nyan <reference>
+The following animations are available
 
-  lifx lan:tile_twinkles <reference>
+* tile_time
+* tile_marquee
+* tile_nyan
+* tile_twinkles
+* tile_pacman
+* tile_gameoflife
+* tile_falling
+* tile_dice_roll
 
-  lifx lan:tile_pacman <reference>
+Where all animations take in a ``background`` option, which is a dictionary
+containing ``{"type", "hue", "saturation", "brightness", "kelvin"}``.
 
-  lifx lan:tile_gameoflife <reference>
+``type`` can be ``specified`` or ``current``. If ``current`` then the hsbk values
+are ignored and the background of the animation is whatever the tile is set to.
+If type is ``specified`` then it'll use the specified hsbk values as the background.
 
-  lifx lan:tile_falling <reference>
-
-  lifx lan:tile_dice_roll <reference>
-
-Where the options are optional and are as follows:
-
-background
-  All the animation actions take in a background option of a dictionary containing
-  ``{"type", "hue", "saturation", "brightness", "kelvin"}``
-
-  type can be ``specified`` or ``current``. If ``current`` then the hsbk values
-  are ignored and the background of the animation is whatever the tile is
-  set to.
-
-  if type is ``specified`` then it'll use the specified hsbk values as the
-  background.
+The animations also contain these options:
 
 tile_time
   This also has the following options:
