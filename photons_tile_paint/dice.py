@@ -39,49 +39,44 @@ class TileDiceRollAnimation(Animation):
         state = prev_state
 
         if prev_state is None and self.options.num_iterations == 0:
-            return -1
+            return {"chars": -1}
 
-        if prev_state == -2:
+        if prev_state and prev_state["chars"] == -1:
+            return {"chars": -2}
+
+        if prev_state and prev_state["chars"] == -2:
             self.remaining -= 1
             if self.remaining <= 0 and self.options.num_iterations != -1:
                 raise Finish()
             else:
                 self.every = 0.01
                 self.duration = 0
-
-                if hasattr(self, "started"):
-                    del self.started
-
-                if hasattr(self, "last_state"):
-                    del self.last_state
-
                 prev_state = None
 
-        if prev_state == -1:
-            return -2
+        if prev_state is None or time.time() - prev_state["last_state"] > 0.05:
+            state = {
+                  "chars": random.sample(list(dice.values()), k=5)
+                , "last_state": time.time()
+                , "started": time.time() if prev_state is None else prev_state["started"]
+                }
 
-        if prev_state is None or time.time() - self.last_state > 0.05:
-            self.last_state = time.time()
-            state = random.sample(list(dice.values()), k=5)
-
-        if not hasattr(self, 'started'):
-            self.started = time.time()
-
-        if time.time() - self.started > self.options.roll_time:
-            return -1
+        if time.time() - state["started"] > self.options.roll_time:
+            return {"chars": -1}
 
         return state
 
     def make_canvas(self, state, coords):
-        if state == -1:
-            self.every = 0.5
-            state = [full_character] * 5
+        chars = state["chars"]
 
-        if state == -2:
+        if state["chars"] == -1:
+            self.every = 0.5
+            chars = [full_character] * 5
+
+        if state["chars"] == -2:
             self.duration = 0.5
             self.every = 1.5
-            state = [random.choice(list(dice.values()))] * 5
+            chars = [random.choice(list(dice.values()))] * 5
 
         canvas = Canvas()
-        put_characters_on_canvas(canvas, state, coords, self.options.dice_color.color)
+        put_characters_on_canvas(canvas, chars, coords, self.options.dice_color.color)
         return canvas
