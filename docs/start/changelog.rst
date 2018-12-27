@@ -9,6 +9,7 @@ ChangeLog
       tile even if they have the same user coords
     * Fixed tile_dice_roll to work when you have specified multiple tiles
     * Take into account the orientation of the tiles when doing animations
+    * apply_theme action takes tile orientation into account
 
 0.9.1 - 26 December 2018
     * Added tile_falling animation

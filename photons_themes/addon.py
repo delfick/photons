@@ -144,11 +144,16 @@ async def apply_light(applier, target, afr, serial, theme, overrides):
     await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(serial, afr)
 
 async def apply_tile(applier, target, afr, serial, theme, overrides):
+    from photons_tile_paint.orientation import Orientation as O, reorient
+    from photons_tile_paint.animation import orientations_from
+
     chain = []
+    orientations = {}
     async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(serial, afr):
         if pkt | TileMessages.StateDeviceChain:
             for tile in tiles_from(pkt):
                 chain.append(tile)
+            orientations = orientations_from(pkt)
 
     if chain is None:
         log.warning(hp.lc("Couldn't work out how many tiles the light had", serial=serial))
@@ -165,6 +170,8 @@ async def apply_tile(applier, target, afr, serial, theme, overrides):
             , "kelvin": overrides.get("kelvin", hsbk.kelvin)
             } for hsbk in hsbks
         ]
+
+        colors = reorient(colors, orientations.get(i, O.RightSideUp))
 
         messages.append(TileMessages.SetState64(
               tile_index=i, length=1, x=0, y=0, width=coords_and_size[1][0], duration=overrides.get("duration", 1), colors=colors
