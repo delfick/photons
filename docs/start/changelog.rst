@@ -5,6 +5,8 @@ ChangeLog
 
 0.9.2 - TBD
     * Made tile_marquee work without options
+    * Made animations on multiple tiles recalculate the whole animation for each
+      tile even if they have the same user coords
     * Fixed tile_dice_roll to work when you have specified multiple tiles
 
 0.9.1 - 26 December 2018

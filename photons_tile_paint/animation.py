@@ -184,14 +184,12 @@ class Animation:
         state = TileStateGetter(self.target, self.afr, serials, self.options.background, coords=self.coords)
         await state.fill()
 
-        coords_to_state = {}
-        coords_to_serials = {}
+        by_serial = {}
         for serial in serials:
-            coords = tuple(state.info_by_serial[serial].coords)
-            if coords not in coords_to_serials:
-                coords_to_serials[coords] = []
-            coords_to_serials[coords].append(serial)
-            coords_to_state[coords] = None
+            by_serial[serial] = {
+                  "state": None
+                , "coords": tuple(state.info_by_serial[serial].coords)
+                }
 
         log.info("Starting!")
 
@@ -201,14 +199,14 @@ class Animation:
             start = time.time()
 
             msgs = []
-            for coords, serials in coords_to_serials.items():
-                coords_to_state[coords] = self.next_state(coords_to_state[coords], coords)
-                canvas = self.make_canvas(coords_to_state[coords], coords)
-                for serial in serials:
-                    canvas.set_default_color_func(state.info_by_serial[serial].default_color_func)
-                    for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks):
-                        msg.target = serial
-                        msgs.append(msg)
+            for serial, info in by_serial.items():
+                coords = info["coords"]
+                info["state"] = self.next_state(info["state"], coords)
+                canvas = self.make_canvas(info["state"], coords)
+                canvas.set_default_color_func(state.info_by_serial[serial].default_color_func)
+                for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks):
+                    msg.target = serial
+                    msgs.append(msg)
 
             async with pauser:
                 if final_future.done():
