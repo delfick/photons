@@ -15,6 +15,7 @@ from photons_themes.canvas import Canvas
 from collections import defaultdict
 import logging
 import asyncio
+import random
 import time
 
 log = logging.getLogger("photons_tile_paint.animation")
@@ -144,7 +145,7 @@ class TileStateGetter:
             funcs[serial] = self.info_by_serial[serial].default_color_func
         return funcs
 
-    async def fill(self):
+    async def fill(self, random_orientations=False):
         msgs = []
         if self.background_option.type == "current":
             msgs.append(TileMessages.GetState64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
@@ -163,13 +164,19 @@ class TileStateGetter:
                     for tile in tiles_from(pkt):
                         coords.append(((tile.user_x, tile.user_y), (tile.width, tile.height)))
                     self.info_by_serial[serial].coords = user_coords_to_pixel_coords(coords)
-                self.info_by_serial[serial].orientations = orientations_from(pkt)
+
+                orientations = orientations_from(pkt)
+                if random_orientations:
+                    self.info_by_serial[serial].orientations = {i: random.choice(list(O.__members__.values())) for i in orientations}
+                else:
+                    self.info_by_serial[serial].orientations = orientations
 
 class Animation:
     acks = False
     every = 0.075
     coords = None
     duration = 0
+    random_orientations = False
 
     def __init__(self, target, afr, options):
         self.afr = afr
@@ -195,7 +202,7 @@ class Animation:
 
         serials = await tile_serials_from_reference(self.target, reference, self.afr)
         state = TileStateGetter(self.target, self.afr, serials, self.options.background, coords=self.coords)
-        await state.fill()
+        await state.fill(random_orientations=self.random_orientations)
 
         by_serial = {}
         for serial in serials:

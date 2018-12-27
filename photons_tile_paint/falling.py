@@ -93,6 +93,7 @@ class hue_range_spec(sb.Spec):
 class TileFallingOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
+    random_orientations = dictobj.Field(sb.boolean, default=False)
 
     hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=[])
     line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(60, 60))
@@ -247,6 +248,8 @@ class TileFallingState:
 class TileFallingAnimation(Animation):
     def setup(self):
         self.iteration = 0
+        if self.options.random_orientations:
+            self.random_orientations = True
 
     def next_state(self, prev_state, coords):
         if prev_state is None:

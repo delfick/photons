@@ -83,6 +83,9 @@ tile_nyan
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop
 
+  random_orientations -- bool -- default false
+    If true then we will choose a random orientation for each tile
+
 tile_pacman
   This also has the following options
 
@@ -156,6 +159,9 @@ tile_falling
 
   num_iterations -- int -- default -1
     How many iterations before we stop. -1 means never stop
+
+  random_orientations -- bool -- default false
+    If true then we will choose a random orientation for each tile
 
   hue_ranges -- null or list of strings or csv -- default "90-110"
     A string or a list of strings where each string is a comma separated range

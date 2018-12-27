@@ -10,6 +10,8 @@ ChangeLog
     * Fixed tile_dice_roll to work when you have specified multiple tiles
     * Take into account the orientation of the tiles when doing animations
     * apply_theme action takes tile orientation into account
+    * Made tile_falling and tile_nyan animations take in a random_orientation
+      option for choosing random orientations for each tile
 
 0.9.1 - 26 December 2018
     * Added tile_falling animation

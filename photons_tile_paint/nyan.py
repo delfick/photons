@@ -14,6 +14,7 @@ class TileNyanOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     user_coords = dictobj.Field(sb.boolean, default=False)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
+    random_orientations = dictobj.Field(sb.boolean, default=False)
 
     @property
     def direction(self):
@@ -69,6 +70,11 @@ Nyan2 = NyanCharacter("""
     """)
 
 class TileNyanAnimation(TileMarqueeAnimation):
+    def setup(self):
+        super().setup()
+        if self.options.random_orientations:
+            self.random_orientations = True
+
     def characters(self, state):
         if state.x % 6 in (0, 1, 2):
             return [Nyan1]
