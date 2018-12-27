@@ -53,20 +53,22 @@ class Color(dictobj.PacketSpec):
 Color.Meta.cache = LRU(8000)
 
 tile_state_device = (
-      ("reserved6", T.Reserved(48))
-    , ("reserved7", T.Reserved(16))
+      ("accel_meas_x", T.Int16)
+    , ("accel_meas_y", T.Int16)
+    , ("accel_meas_z", T.Int16)
+    , ("reserved6", T.Reserved(16))
     , ("user_x", T.Float)
     , ("user_y", T.Float)
     , ("width", T.Uint8)
     , ("height", T.Uint8)
-    , ("reserved8", T.Reserved(8))
+    , ("reserved7", T.Reserved(8))
     , ("device_version_vendor", T.Uint32)
     , ("device_version_product", T.Uint32)
     , ("device_version_version", T.Uint32)
     , ("firmware_build", T.Uint64)
-    , ("reserved9", T.Reserved(64))
+    , ("reserved8", T.Reserved(64))
     , ("firmware_version", T.Uint32.version_number())
-    , ("reserved10", T.Reserved(32))
+    , ("reserved9", T.Reserved(32))
     )
 
 class Tile(dictobj.PacketSpec):

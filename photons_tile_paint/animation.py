@@ -1,4 +1,6 @@
 from photons_tile_paint.set_state import set_state_64_maker
+from photons_tile_paint.orientation import Orientation as O
+from photons_tile_paint import orientation
 
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
@@ -43,13 +45,23 @@ async def tile_serials_from_reference(target, reference, afr):
 
     return serials
 
-def canvas_to_msgs(canvas, coords, duration=1, acks=True):
+def orientations_from(pkt):
+    orientations = {}
+    for i, tile in enumerate(tiles_from(pkt)):
+        orientations[i] = orientation.nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
+    return orientations
+
+def canvas_to_msgs(canvas, coords, duration=1, acks=True, orientations=None):
     for i, coord in enumerate(coords):
+        colors = canvas.points_for_tile(*coord[0], *coord[1])
+        if orientations:
+            colors = orientation.reorient(colors, orientations.get(i, O.RightSideUp))
+
         yield set_state_64_maker(
               tile_index = i
             , width = coord[1][0]
             , duration = duration
-            , colors = canvas.points_for_tile(*coord[0], *coord[1])
+            , colors = colors
             , ack_required = acks
             )
 
@@ -68,6 +80,7 @@ class TileStateGetter:
         def __init__(self, coords, default_color):
             self.states = []
             self.coords = coords
+            self.orientations = {}
             self.default_color = default_color
 
         @hp.memoized_property
@@ -89,6 +102,8 @@ class TileStateGetter:
             for i, state in sorted(self.states):
                 colors = state.colors
                 coords = self.coords
+                o = orientation.reverse_orientation(self.orientations.get(i, O.RightSideUp))
+                colors = orientation.reorient(colors, o)
 
                 if not coords:
                     continue
@@ -134,11 +149,7 @@ class TileStateGetter:
         if self.background_option.type == "current":
             msgs.append(TileMessages.GetState64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
 
-        if self.coords is None:
-            msgs.append(TileMessages.GetDeviceChain())
-
-        if not msgs:
-            return
+        msgs.append(TileMessages.GetDeviceChain())
 
         async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr):
             serial = pkt.serial
@@ -147,10 +158,12 @@ class TileStateGetter:
                 self.info_by_serial[serial].states.append((pkt.tile_index, pkt))
 
             elif pkt | TileMessages.StateDeviceChain:
-                coords = []
-                for tile in tiles_from(pkt):
-                    coords.append(((tile.user_x, tile.user_y), (tile.width, tile.height)))
-                self.info_by_serial[serial].coords = user_coords_to_pixel_coords(coords)
+                if self.coords is None:
+                    coords = []
+                    for tile in tiles_from(pkt):
+                        coords.append(((tile.user_x, tile.user_y), (tile.width, tile.height)))
+                    self.info_by_serial[serial].coords = user_coords_to_pixel_coords(coords)
+                self.info_by_serial[serial].orientations = orientations_from(pkt)
 
 class Animation:
     acks = False
@@ -204,7 +217,8 @@ class Animation:
                 info["state"] = self.next_state(info["state"], coords)
                 canvas = self.make_canvas(info["state"], coords)
                 canvas.set_default_color_func(state.info_by_serial[serial].default_color_func)
-                for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks):
+                orientations = state.info_by_serial[serial].orientations
+                for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks, orientations=orientations):
                     msg.target = serial
                     msgs.append(msg)
 

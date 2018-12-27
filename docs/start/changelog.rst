@@ -8,6 +8,7 @@ ChangeLog
     * Made animations on multiple tiles recalculate the whole animation for each
       tile even if they have the same user coords
     * Fixed tile_dice_roll to work when you have specified multiple tiles
+    * Take into account the orientation of the tiles when doing animations
 
 0.9.1 - 26 December 2018
     * Added tile_falling animation
