@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.9.2 - TBD
+0.9.2 - 27 December 2018
     * Made tile_marquee work without options
     * Made animations on multiple tiles recalculate the whole animation for each
       tile even if they have the same user coords
