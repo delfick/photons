@@ -51,9 +51,6 @@ class SetState64Maker:
         that do not change, which is stored on the maker (the instance of SetState64Maker)
         """
         def __init__(self, maker, **kwargs):
-            if not hasattr(maker, "wat"):
-                maker.wat = True
-                self.wat = True
             self.kwargs = kwargs
             self.maker = maker
             self.extra = {}
