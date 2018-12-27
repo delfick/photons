@@ -140,6 +140,10 @@ class SetState64Maker:
         def is_dynamic(self):
             return False
 
+        @property
+        def colors(self):
+            return self.kwargs.get("colors", [])
+
     def __init__(self):
         self.targets_cache = LRU(1000)
         self.source_bits_cache = LRU(10)
