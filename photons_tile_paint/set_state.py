@@ -7,7 +7,7 @@ possible
 Don't use this directly, always use it via the
 photons_tile_paint.animation.canvas_to_msgs function
 """
-from photons_messages.fields import Color as ProtocolColor
+from photons_messages.fields import hsbk, Color as ProtocolColor
 from photons_messages import TileMessages
 from photons_protocol.messages import T
 
@@ -205,7 +205,12 @@ class SetState64Maker:
             dct = color.as_dict()
             fields = tuple(sorted(dct.items()))
             if fields not in self.cache:
-                self.cache[fields] = ProtocolColor(**dct).pack()
+                bits = []
+                bits.append(self.bits(hsbk[0][1], int(65535 * (dct["hue"] / 360))))
+                bits.append(self.bits(hsbk[1][1], int(65535 * dct["saturation"])))
+                bits.append(self.bits(hsbk[2][1], int(65535 * dct["brightness"])))
+                bits.append(self.bits(hsbk[3][1], dct["kelvin"]))
+                self.cache[fields] = functools.reduce(operator.add, bits)
             res.append(self.cache[fields])
         return functools.reduce(operator.add, res)
 
