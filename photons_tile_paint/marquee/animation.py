@@ -1,8 +1,6 @@
 from photons_tile_paint.animation import Animation, coords_for_horizontal_line, put_characters_on_canvas, Finish
 from photons_tile_paint.font.alphabet import characters as alphabet
 
-from photons_app import helpers as hp
-
 from photons_themes.canvas import Canvas
 
 import enum
@@ -35,8 +33,8 @@ class TileMarqueeAnimation(Animation):
         def coords_for(self, original, characters):
             coords = []
 
-            (left_x, top_y), (width, height) = original[0]
-            left_x = left_x + self.x
+            (_, top_y), (_, height) = sorted(original)[0]
+            left_x = self.x
 
             for char in characters:
                 coords.append(((left_x, top_y), (char.width, height)))
@@ -51,13 +49,11 @@ class TileMarqueeAnimation(Animation):
             return self.next_state_right(prev_state, coords)
 
     def next_state_left(self, prev_state, coords):
-        right_x = 0
-        left_x = 0
-        for (user_x, top_y), (width, height) in coords:
-            if user_x + width > right_x:
-                right_x = user_x + width
-            if user_x - self.options.text_width < left_x:
-                left_x = user_x - self.options.text_width
+        (left_x, _), (_, _) = sorted(coords)[0]
+        left_x -= self.options.text_width
+
+        (right_x, _), (width, _) = sorted(coords)[-1]
+        right_x += width
 
         if prev_state is None:
             return self.State(right_x)
@@ -72,18 +68,16 @@ class TileMarqueeAnimation(Animation):
         return nxt
 
     def next_state_right(self, prev_state, coords):
-        right_x = 0
-        left_x = 0
-        for (user_x, top_y), (width, height) in coords:
-            if user_x + width > right_x:
-                right_x = user_x + width
-            if user_x - self.options.text_width < left_x:
-                left_x = user_x - self.options.text_width
+        (left_x, _), (_, _) = sorted(coords)[0]
+        left_x -= self.options.text_width
+
+        (right_x, _), (width, _) = sorted(coords)[-1]
+        right_x += width
 
         if prev_state is None:
             return self.State(left_x)
 
-        if prev_state.x > right_x + 2:
+        if prev_state.x > right_x:
             self.iteration += 1
             if self.options.final_iteration(self.iteration):
                 raise Finish("Reached max iterations")

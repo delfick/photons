@@ -1,14 +1,14 @@
 from photons_tile_paint.pacman import font
 
 def start(coords):
-    return L2RState(0, 0).swap_state(coords)
+    return L2RState(0, 0, 0).swap_state(coords)
 
 class State:
     def coords_for(self, original):
         coords = []
 
-        (left_x, top_y), (width, height) = original[0]
-        left_x = left_x + self.x
+        (_, top_y), (_, height) = original[0]
+        left_x = self.x
 
         for char in self.characters:
             coords.append(((left_x, top_y), (char.width, height)))
@@ -21,8 +21,9 @@ class State:
         return sum(char.width for char in self.characters)
 
 class R2LState(State):
-    def __init__(self, start_x, x):
+    def __init__(self, start_x, end_x, x):
         self.x = x
+        self.end_x = end_x
         self.start_x = start_x
 
     @property
@@ -47,20 +48,24 @@ class R2LState(State):
             return font.PacmanClosed
 
     def move(self, amount):
-        return self.__class__(self.start_x, self.x - amount)
+        return self.__class__(self.start_x, self.end_x, self.x - amount)
 
     @property
     def finished(self):
-        return self.x == self.start_x - self.length * 2
+        return self.x == self.end_x
 
     def swap_state(self, coords):
-        (user_x, top_y), (width, height) = coords[0]
-        left_x = user_x - self.length
-        return L2RState(left_x, left_x)
+        (left_x, _), _ = sorted(coords)[0]
+        left_x -= self.length
+
+        (right_x, _), (width, _) = sorted(coords)[-1]
+        right_x += width
+        return L2RState(left_x, right_x, left_x)
 
 class L2RState(State):
-    def __init__(self, start_x, x):
+    def __init__(self, start_x, end_x, x):
         self.x = x
+        self.end_x = end_x
         self.start_x = start_x
 
     @property
@@ -85,15 +90,17 @@ class L2RState(State):
             return font.PacmanClosed
 
     def move(self, amount):
-        return self.__class__(self.start_x, self.x + amount)
+        return self.__class__(self.start_x, self.end_x, self.x + amount)
 
     @property
     def finished(self):
-        return self.x == self.start_x + self.length * 2
+        return self.x == self.end_x
 
     def swap_state(self, coords):
-        right_x = 0
-        for (user_x, top_y), (width, height) in coords:
-            if user_x + width > right_x:
-                right_x = user_x + width
-        return R2LState(right_x, right_x)
+        (right_x, _), (width, _) = sorted(coords)[-1]
+        right_x += width
+
+        (left_x, _), _ = sorted(coords)[0]
+        left_x -= self.length
+
+        return R2LState(right_x, left_x, right_x)
