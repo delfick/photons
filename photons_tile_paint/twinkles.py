@@ -1,5 +1,5 @@
 from photons_tile_paint.animation import Animation, coords_for_horizontal_line, Finish
-from photons_tile_paint.options import BackgroundOption
+from photons_tile_paint.options import AnimationOptions
 from photons_themes.theme import ThemeColor as Color
 from photons_themes.canvas import Canvas
 
@@ -37,8 +37,7 @@ class choose_palette(sb.Spec):
         val = sb.string_choice_spec(list(palettes)).normalise(meta, val)
         return palettes[val]
 
-class TileTwinklesOptions(dictobj.Spec):
-    background = dictobj.Field(BackgroundOption.FieldSpec())
+class TileTwinklesOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
 
     palette = dictobj.Field(choose_palette())

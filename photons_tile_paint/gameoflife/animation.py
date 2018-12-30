@@ -9,8 +9,6 @@ class TileGameOfLifeAnimation(Animation):
 
     def setup(self):
         self.iteration = 0
-        if self.options.user_coords:
-            self.coords = None
 
     def next_state(self, prev_state, coords):
         if prev_state is None:

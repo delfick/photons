@@ -182,6 +182,10 @@ class Animation:
         self.afr = afr
         self.target = target
         self.options = options
+
+        if getattr(self.options, "user_coords", False) or getattr(self.options, "combine_tiles", False):
+            self.coords = None
+
         self.setup()
 
     def setup(self):
@@ -215,14 +219,28 @@ class Animation:
 
         await self.target.script(LightMessages.SetLightPower(level=65535, duration=1)).run_with_all(serials, self.afr)
 
+        combined_coords = []
+        for info in by_serial.values():
+            combined_coords.extend(info["coords"])
+        combined_info = {"state": None}
+
         while True:
             start = time.time()
+
+            combined_canvas = None
+            if getattr(self.options, "combine_tiles", False):
+                combined_state = combined_info["state"] = self.next_state(combined_info["state"], combined_coords)
+                combined_canvas = self.make_canvas(combined_state, combined_coords)
 
             msgs = []
             for serial, info in by_serial.items():
                 coords = info["coords"]
-                info["state"] = self.next_state(info["state"], coords)
-                canvas = self.make_canvas(info["state"], coords)
+
+                canvas = combined_canvas
+                if canvas is None:
+                    info["state"] = self.next_state(info["state"], coords)
+                    canvas = self.make_canvas(info["state"], coords)
+
                 canvas.set_default_color_func(state.info_by_serial[serial].default_color_func)
                 orientations = state.info_by_serial[serial].orientations
                 for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks, orientations=orientations):

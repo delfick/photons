@@ -140,5 +140,5 @@ async def set_tile_positions(collector, target, reference, **kwargs):
 
     async with target.session() as afr:
         for i, (user_x, user_y) in enumerate(positions):
-            msg = TileMessages.SetUserPosition(tile_index=i, user_gravity_vector=0, user_x=user_x, user_y=user_y, res_required=False)
+            msg = TileMessages.SetUserPosition(tile_index=i, user_x=user_x, user_y=user_y, res_required=False)
             await target.script(msg).run_with_all(reference, afr)

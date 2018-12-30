@@ -1,5 +1,5 @@
 from photons_tile_paint.animation import Animation, put_characters_on_canvas, coords_for_horizontal_line, Finish
-from photons_tile_paint.options import BackgroundOption, ColorOption
+from photons_tile_paint.options import AnimationOptions, ColorOption
 from photons_tile_paint.font.base import Character
 from photons_tile_paint.font.dice import dice
 
@@ -21,8 +21,7 @@ full_character = Character("""
     ########
     """)
 
-class TileDiceRollOptions(dictobj.Spec):
-    background = dictobj.Field(BackgroundOption.FieldSpec())
+class TileDiceRollOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=1)
 
     roll_time = dictobj.Field(sb.float_spec, default=2)

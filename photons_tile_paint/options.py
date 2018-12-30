@@ -26,3 +26,7 @@ def ColorOption(h, s, b, k):
         def color(self):
             return Color(self.hue, self.saturation, self.brightness, self.kelvin)
     return C.FieldSpec()
+
+class AnimationOptions(dictobj.Spec):
+    background = dictobj.Field(BackgroundOption.FieldSpec())
+    combine_tiles = dictobj.Field(sb.boolean, default=False)

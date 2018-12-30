@@ -1,5 +1,5 @@
 from photons_tile_paint.animation import Animation, Finish
-from photons_tile_paint.options import BackgroundOption
+from photons_tile_paint.options import AnimationOptions
 from photons_themes.theme import ThemeColor as Color
 from photons_themes.canvas import Canvas
 
@@ -90,8 +90,7 @@ class hue_range_spec(sb.Spec):
 
         return HueRange(*rnge)
 
-class TileFallingOptions(dictobj.Spec):
-    background = dictobj.Field(BackgroundOption.FieldSpec())
+class TileFallingOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)
 

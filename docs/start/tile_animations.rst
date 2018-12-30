@@ -28,12 +28,19 @@ The following animations are available
 * tile_falling
 * tile_dice_roll
 
-Where all animations take in a ``background`` option, which is a dictionary
-containing ``{"type", "hue", "saturation", "brightness", "kelvin"}``.
+Where all animations take in ``background`` and ``combine_tiles`` options.
+
+``background`` is a dictionary containing
+``{"type", "hue", "saturation", "brightness", "kelvin"}``.
 
 ``type`` can be ``specified`` or ``current``. If ``current`` then the hsbk values
 are ignored and the background of the animation is whatever the tile is set to.
 If type is ``specified`` then it'll use the specified hsbk values as the background.
+
+The ``combine_tiles`` option is a boolean that defaults to False. If true then
+all the tiles are combined into a single animation rather than being separate
+animations. Note that you need to set user_x/user_y on your tiles such that
+they don't overlap for this to look like a combined animation.
 
 The animations also contain these options:
 

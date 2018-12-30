@@ -1,17 +1,13 @@
 from photons_tile_paint.marquee.animation import TileMarqueeAnimation, MarqueeDirection
-from photons_tile_paint.options import BackgroundOption
+from photons_tile_paint.options import AnimationOptions
 from photons_tile_paint.font.base import Character
 
-from photons_app import helpers as hp
-
 from photons_themes.theme import ThemeColor as Color
-from photons_themes.canvas import Canvas
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 
-class TileNyanOptions(dictobj.Spec):
-    background = dictobj.Field(BackgroundOption.FieldSpec())
+class TileNyanOptions(AnimationOptions):
     user_coords = dictobj.Field(sb.boolean, default=False)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)

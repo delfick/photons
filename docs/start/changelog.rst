@@ -7,6 +7,7 @@ ChangeLog
     * Minor changes
     * Another efficiency improvement for tile animations
     * Some fixes to the scrolling animations
+    * Make it possible to combine many tiles into one animation
 
 0.9.2 - 27 December 2018
     * Made tile_marquee work without options

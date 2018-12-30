@@ -17,8 +17,6 @@ class TileMarqueeAnimation(Animation):
 
     def setup(self):
         self.iteration = 0
-        if self.options.user_coords:
-            self.coords = None
 
     class State:
         def __init__(self, x):
