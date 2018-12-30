@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.9.3 - TBD
+0.9.3 - 30 December 2018
     * Minor changes
     * Another efficiency improvement for tile animations
     * Some fixes to the scrolling animations
