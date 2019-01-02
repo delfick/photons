@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.9.4 - TBD
+    * Added get_tile_positions action
+
 0.9.3 - 30 December 2018
     * Minor changes
     * Another efficiency improvement for tile animations

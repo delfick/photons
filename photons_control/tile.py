@@ -142,3 +142,16 @@ async def set_tile_positions(collector, target, reference, **kwargs):
         for i, (user_x, user_y) in enumerate(positions):
             msg = TileMessages.SetUserPosition(tile_index=i, user_x=user_x, user_y=user_y, res_required=False)
             await target.script(msg).run_with_all(reference, afr)
+
+@an_action(needs_target=True, special_reference=True)
+async def get_tile_positions(collector, target, reference, **kwargs):
+    """
+    Get the positions of the tiles in your chain.
+
+    ``lan:get_tile_positions d073d5f09124``
+    """
+    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(reference):
+        print(pkt.serial)
+        for tile in tiles_from(pkt):
+            print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")
+        print("")
