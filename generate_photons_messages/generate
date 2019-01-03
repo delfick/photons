@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+import shutil
+import runpy
+import os
+
+this_dir = os.path.abspath(os.path.dirname(__file__))
+
+env = {
+      "SRC": os.path.join(this_dir, "public-protocol", "protocol.yml")
+    , "ADJUSTMENTS": os.path.join(this_dir, "adjustments.yml")
+    , "OUTPUT_FOLDER": os.path.join(this_dir, "..", "photons_messages")
+    }
+
+from venvstarter import ignite
+ignite(__file__, "generate_photons_messages"
+    , deps = ["lifx-photons-messages-generator==0.5"]
+    , min_python_version = 3.6
+    , env = env
+    )

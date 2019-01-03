@@ -1,0 +1,321 @@
+---
+
+# Implementation detail of photons means these field names are already taken
+# by attributes on the packet objects
+invalid_field_names: ["payload", "count", "index", "fields", "Meta"]
+
+num_reserved_fields_in_frame: 5
+
+namespace_order: ["core", "discovery", "device", "light"]
+
+ignore:
+  TileAccelMeas:
+    expanded: true
+
+output:
+  - create: enums
+    dest: "enums.py"
+    static: |
+      from enum import Enum
+
+  - create: fields
+    dest: "fields.py"
+    static: |
+      from photons_protocol.packets import dictobj
+      from photons_protocol.messages import T
+
+      from input_algorithms import spec_base as sb
+      from lru import LRU
+
+  - create: packets
+    dest: "messages.py"
+    options:
+      include: "*"
+    static: |
+      from photons_messages import enums, fields
+      from photons_messages.frame import msg
+
+      from photons_protocol.messages import T, Messages, MultiOptions
+      from photons_protocol.types import Optional
+
+      from input_algorithms import spec_base as sb
+
+      def empty(pkt, attr):
+          return pkt.actual(attr) in (Optional, sb.NotSpecified)
+
+types:
+  duration_type:
+    type: uint32
+    size_bytes: 4
+    default: "0"
+    extras:
+      - |
+        transform(
+              lambda _, value: int(1000 * float(value))
+            , lambda value: float(value) / 1000
+            )
+      - "allow_float()"
+
+  scaled_hue:
+    type: uint16
+    size_bytes: 2
+    extras:
+      - |
+        transform(
+              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
+            , lambda v: float(v) * 360 / 65535
+            )
+      - "allow_float()"
+
+  scaled_to_65535:
+    type: uint16
+    size_bytes: 2
+    extras:
+      - |
+        transform(
+              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
+            , lambda v: float(v) / 65535
+            )
+      - "allow_float()"
+
+  nano_to_seconds:
+    type: uint64
+    size_bytes: 8
+    extras:
+      - |
+        transform(
+              lambda _, v: int(v * 1e9)
+            , lambda v: v / 1e9
+            )
+      - "allow_float()"
+
+  waveform_period:
+    type: uint32
+    size_bytes: 4
+    default: "0"
+    extras:
+      - |
+        transform(
+              lambda _, value: int(1000 * float(value))
+            , lambda value: float(value) / 1000
+            )
+      - "allow_float()"
+
+  waveform_skew_ratio:
+    type: int16
+    size_bytes: 2
+    default: "0"
+    extras:
+      - |
+        transform(
+              lambda _, value: int(32767 * float(value))
+            , lambda value: float(value) / 32767
+            )
+      - "allow_float()"
+
+clones:
+  hsbk_with_optional:
+    cloning: LightHsbk
+    fields:
+      Hue:
+        more_extras: ["optional()"]
+      Saturation:
+        more_extras: ["optional()"]
+      Brightness:
+        more_extras: ["optional()"]
+      Kelvin:
+        remove_default:  true
+        more_extras: ["optional()"]
+
+changes:
+  DeviceService:
+    rename: Services
+
+  DeviceAcknowledgement:
+    namespace: core
+
+  DeviceSetLabel:
+    fields:
+      Label:
+        string_type: true
+
+  DeviceStateLabel:
+    using: DeviceSetLabel
+
+  DeviceSetLocation:
+    fields:
+      Label:
+        string_type: true
+
+  DeviceStateLocation:
+    using: DeviceSetLocation
+
+  DeviceSetGroup:
+    fields:
+      Label:
+        string_type: true
+
+  DeviceStateGroup:
+    using: DeviceSetGroup
+
+  DeviceGetService:
+    namespace: discovery
+    multi: "-1"
+
+  DeviceStateService:
+    namespace: discovery
+
+  DeviceEchoRequest:
+    fields:
+      Payload:
+        rename: echoing
+
+  DeviceEchoResponse:
+    using: DeviceEchoRequest
+
+  DeviceStateInfo:
+    fields:
+      Uptime:
+        special_type: nano_to_seconds
+      Downtime:
+        special_type: nano_to_seconds
+
+  DeviceStateHostFirmware:
+    fields:
+      Version:
+        extras: ["version_number()"]
+
+  DeviceStateWifiFirmware:
+    fields:
+      Version:
+        extras: ["version_number()"]
+
+  LightGet:
+    rename: GetColor
+
+  LightSetColor:
+    rename: SetColor
+    fields:
+      Duration:
+        special_type: duration_type
+
+  LightWaveform:
+    rename: Waveform
+
+  LightGetPower:
+    rename: GetLightPower
+
+  LightSetPower:
+    rename: SetLightPower
+    fields:
+      Duration:
+        special_type: duration_type
+
+  LightStatePower:
+    rename: StateLightPower
+
+  LightState:
+    fields:
+      Label:
+        string_type: true
+
+  LightHsbk:
+    rename: hsbk
+    many_options:
+      name: Color
+      cache_amount: 8000
+    fields:
+      Hue:
+        special_type: scaled_hue
+      Saturation:
+        special_type: scaled_to_65535
+      Brightness:
+        special_type: scaled_to_65535
+      Kelvin:
+        default: "3500"
+  
+  LightSetWaveformOptional:
+    fields:
+      Stream:
+        default: "0"
+      Transient:
+        default: "0"
+      Color:
+        override_struct: hsbk_with_optional
+      Period:
+        special_type: waveform_period
+      Cycles:
+        default: "1"
+      SkewRatio:
+        special_type: waveform_skew_ratio
+      Waveform:
+        default: SAW
+      SetHue:
+        default: 'lambda pkt: 0 if empty(pkt, "hue") else 1'
+      SetSaturation:
+        default: 'lambda pkt: 0 if empty(pkt, "saturation") else 1'
+      SetBrightness:
+        default: 'lambda pkt: 0 if empty(pkt, "brightness") else 1'
+      SetKelvin:
+        default: 'lambda pkt: 0 if empty(pkt, "kelvin") else 1'
+
+  LightSetWaveform:
+    fields:
+      Stream:
+        default: "0"
+      Transient:
+        default: "0"
+      Period:
+        special_type: waveform_period
+      Cycles:
+        default: "1"
+      SkewRatio:
+        special_type: waveform_skew_ratio
+      Waveform:
+        default: SAW
+
+  MultiZoneSetColorZones:
+    fields:
+      Apply:
+        default: APPLY
+      Duration:
+        special_type: duration_type
+
+  MultiZoneGetColorZones:
+    multi: |
+      MultiOptions(
+           lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
+         , lambda req, res: min((req.end_index // 8) + 1, res.zones_count // 8)
+         )
+
+  MultiZoneStateZone:
+    fields:
+      Count:
+        rename: zones_count
+      Index:
+        rename: zone_index
+
+  MultiZoneStateMultiZone:
+    fields:
+      Count:
+        rename: zones_count
+      Index:
+        rename: zone_index
+      Color:
+        rename: colors
+
+  TileStateDevice:
+    many_options:
+      name: Tile
+
+  TileGetState64:
+    multi: |
+      MultiOptions(
+           lambda req: TileMessages.State64
+         , lambda req, res: MultiOptions.Max(req.length)
+         )
+
+  TileSetState64:
+    fields:
+      Duration:
+        special_type: duration_type

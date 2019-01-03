@@ -1,0 +1,3 @@
+[submodule "generate_photons_messages/public-protocol"]
+	path = generate_photons_messages/public-protocol
+	url = git@github.com:LIFX/public-protocol.git
