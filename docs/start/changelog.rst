@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.9.4 - TBD
+0.9.4 - 3 Jan 2019
     * Added get_tile_positions action
     * Adjustments to the dice font
     * Added the scripts used to generate photons_messages
