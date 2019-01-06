@@ -201,6 +201,12 @@ tile_falling
     So if you want a cool dripping rainbow effect say something like
     ``{"fade_amount": 0, "hue_ranges": "rainbow", "line_tip_hue": null}``
 
+  min_speed - float -- default 0.2
+    The minimum amount of pixels to fall every tick of the animation
+
+  max_speed - float -- default 0.4
+    The maximum amount of pixels to fall every tick of the animation
+
 tile_dice_roll
   This does a roll of a dice following by choosing a number to be displayed on
   all the tiles

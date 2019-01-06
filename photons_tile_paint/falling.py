@@ -99,6 +99,9 @@ class TileFallingOptions(AnimationOptions):
     fade_amount = dictobj.Field(sb.float_spec, default=0.1)
     line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(40, 40))
 
+    min_speed = dictobj.Field(sb.float_spec, default=0.2)
+    max_speed = dictobj.Field(sb.float_spec, default=0.4)
+
     def final_iteration(self, iteration):
         if self.num_iterations == -1:
             return False
@@ -110,7 +113,6 @@ class Line:
         self.parts = []
         self.column = column
         self.bottom = state.bottom - random.randrange(10)
-        self.rate = (random.randrange(10, 30) + 10) / 100
         self.max_length = min([self.state.top - self.state.bottom, 20])
 
         self.blank_lines = state.options.hue_ranges is None
@@ -171,6 +173,12 @@ class Line:
             part = list(self.make_part())
             self.parts.insert(0, part)
             top += len(part)
+
+    @property
+    def rate(self):
+        mn = int(self.state.options.min_speed * 100)
+        mx = int(self.state.options.max_speed * 100)
+        return (random.randint(0, mx) + mn) / 100
 
     def progress(self):
         self.bottom -= self.rate
