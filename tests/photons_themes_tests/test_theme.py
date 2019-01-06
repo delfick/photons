@@ -30,6 +30,31 @@ describe TestCase, "ThemeColor":
 
         self.assertEqual(color.as_dict(), {"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin})
 
+    it "can return as a key suitable for a cache":
+        hue = mock.Mock(name="hue")
+        saturation = mock.Mock(name="saturation")
+        brightness = mock.Mock(name="brightness")
+        kelvin = 3500
+
+        color = ThemeColor(hue, saturation, brightness, kelvin)
+
+        self.assertEqual(color.cache_key, tuple(sorted(color.as_dict().items())))
+
+    it "can be cloned":
+        hue = mock.Mock(name="hue")
+        saturation = mock.Mock(name="saturation")
+        brightness = mock.Mock(name="brightness")
+        kelvin = 3500
+        color = ThemeColor(hue, saturation, brightness, kelvin)
+
+        clone = color.clone()
+        self.assertIsNot(clone, color)
+
+        self.assertIs(clone.hue, hue)
+        self.assertIs(clone.saturation, saturation)
+        self.assertIs(clone.brightness, brightness)
+        self.assertEqual(clone.kelvin, kelvin)
+
     it "makes sure kelvin is an integer":
         color = ThemeColor(320, 0, 0, 3500.5)
         self.assertEqual(color.kelvin, 3500)

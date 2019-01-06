@@ -202,14 +202,13 @@ class SetState64Maker:
     def colors_bits(self, colors):
         res = []
         for color in colors:
-            dct = color.as_dict()
-            fields = tuple(sorted(dct.items()))
+            fields = color.cache_key
             if fields not in self.cache:
                 bits = []
-                bits.append(self.bits(hsbk[0][1], int(65535 * (dct["hue"] / 360))))
-                bits.append(self.bits(hsbk[1][1], int(65535 * dct["saturation"])))
-                bits.append(self.bits(hsbk[2][1], int(65535 * dct["brightness"])))
-                bits.append(self.bits(hsbk[3][1], dct["kelvin"]))
+                bits.append(self.bits(hsbk[0][1], int(65535 * (color.hue / 360))))
+                bits.append(self.bits(hsbk[1][1], int(65535 * color.saturation)))
+                bits.append(self.bits(hsbk[2][1], int(65535 * color.brightness)))
+                bits.append(self.bits(hsbk[3][1], color.kelvin))
                 self.cache[fields] = functools.reduce(operator.add, bits)
             res.append(self.cache[fields])
         return functools.reduce(operator.add, res)

@@ -21,9 +21,6 @@ class ThemeColor:
         self.brightness = brightness
         self.kelvin = int(kelvin)
 
-    def as_dict(self):
-        return {"hue": self.hue, "saturation": self.saturation, "brightness": self.brightness, "kelvin": self.kelvin}
-
     @classmethod
     def average(kls, colors):
         """
@@ -72,6 +69,24 @@ class ThemeColor:
     def __hash__(self):
         return hash((self.hue, self.saturation, self.brightness, self.kelvin))
 
+    def as_dict(self):
+        return {"hue": self.hue, "saturation": self.saturation, "brightness": self.brightness, "kelvin": self.kelvin}
+
+    @property
+    def cache_key(self):
+        """
+        Return as tuple of tuples
+
+        This is used by the tile_paint module to use as a key for caching
+
+        It is essentially the same as tuple(sorted(color.as_dict().items()))
+        """
+        return (("brightness", self.brightness), ("hue", self.hue), ("kelvin", self.kelvin), ("saturation", self.saturation))
+
+    def clone(self):
+        """Return another ThemeColor with the same hsbk values"""
+        return self.__class__(self.hue, self.saturation, self.brightness, self.kelvin)
+
     def limit_distance_to(self, other):
         """
         Return a color within 90 hue points of this color
@@ -92,7 +107,7 @@ class ThemeColor:
             return self
 
     def __repr__(self):
-        return "<Color {}>".format(str((self.hue, self.saturation, self.brightness, self.kelvin)))
+        return f"<Color ({self.hue}, {self.saturation}, {self.brightness}, {self.kelvin})>"
 
 class Theme:
     """A wrapper around a list of ThemeColor objects"""
