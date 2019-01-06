@@ -97,7 +97,7 @@ class TileFallingOptions(AnimationOptions):
 
     hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=[])
     fade_amount = dictobj.Field(sb.float_spec, default=0.1)
-    line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(60, 60))
+    line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(40, 40))
 
     def final_iteration(self, iteration):
         if self.num_iterations == -1:
@@ -116,10 +116,10 @@ class Line:
         self.blank_lines = state.options.hue_ranges is None
 
         if not self.blank_lines:
-            self.hue_ranges = state.options.hue_ranges or [HueRange(90, 110)]
+            self.hue_ranges = state.options.hue_ranges or [HueRange(90, 90)]
 
         if self.blank_lines and state.options.line_tip_hue is None:
-            self.line_tip_hue = HueRange(60, 60)
+            self.line_tip_hue = HueRange(40, 40)
         else:
             self.line_tip_hue = state.options.line_tip_hue
 

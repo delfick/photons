@@ -170,7 +170,7 @@ tile_falling
   random_orientations -- bool -- default false
     If true then we will choose a random orientation for each tile
 
-  hue_ranges -- null or list of strings or csv -- default "90-110"
+  hue_ranges -- null or list of strings or csv -- default "90"
     A string or a list of strings where each string is a comma separated range
     where the range is either '<min>-<max>' or the word 'rainbow'. These numbers
     are used to determine the colour of each pixel in each line. Saying rainbow
@@ -185,14 +185,14 @@ tile_falling
 
     If this is set to null then only the tip will have a nonzero brightness.
 
-  line_tip_hue -- null or hue range -- default 60
+  line_tip_hue -- null or hue range -- default 40
     A single hue range like those in hue_ranges. I.e. 'rainbow' or '60' or '0-10'
 
     If this is set to null then the tip of each line will not be a special colour,
     otherwise it's hue will be a random value in the range specified.
 
     Note that if both hue_ranges and line_tip_hue are null then hue_ranges will
-    remain null and line_tip_hue will become 60.
+    remain null and line_tip_hue will become 40.
 
   fade_amount -- integer -- default 0.1
     This controls how quickly the lines fade. A smaller number makes the lines
