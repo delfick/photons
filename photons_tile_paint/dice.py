@@ -53,8 +53,12 @@ class TileDiceRollAnimation(Animation):
                 prev_state = None
 
         if prev_state is None or time.time() - prev_state["last_state"] > 0.05:
+            chs = []
+            while len(chs) < len(coords):
+                chs.extend(random.sample(list(dice.values()), k=5))
+
             state = {
-                  "chars": random.sample(list(dice.values()), k=5)
+                  "chars": random.sample(chs, k=len(coords))
                 , "last_state": time.time()
                 , "started": time.time() if prev_state is None else prev_state["started"]
                 }
@@ -69,12 +73,12 @@ class TileDiceRollAnimation(Animation):
 
         if state["chars"] == -1:
             self.every = 0.5
-            chars = [full_character] * 5
+            chars = [full_character] * len(coords)
 
         if state["chars"] == -2:
             self.duration = 0.5
             self.every = 1.5
-            chars = [random.choice(list(dice.values()))] * 5
+            chars = [random.choice(list(dice.values()))] * len(coords)
 
         canvas = Canvas()
         put_characters_on_canvas(canvas, chars, coords, self.options.dice_color.color)
