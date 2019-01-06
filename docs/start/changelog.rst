@@ -6,6 +6,7 @@ ChangeLog
 0.9.5 - TBD
     * Make the dice roll work better with multiple tiles and the combine_tiles
       option
+    * Made the falling animation much smoother. Many thanks to @mic159!
 
 0.9.4 - 3 Jan 2019
     * Added get_tile_positions action

@@ -194,8 +194,12 @@ tile_falling
     Note that if both hue_ranges and line_tip_hue are null then hue_ranges will
     remain null and line_tip_hue will become 60.
 
-  blinking_pixels -- boolean -- default true
-    Whether pixels should randomly blink as they are moving down.
+  fade_amount -- integer -- default 0.1
+    This controls how quickly the lines fade. A smaller number makes the lines
+    longer.
+
+    So if you want a cool dripping rainbow effect say something like
+    ``{"fade_amount": 0, "hue_ranges": "rainbow", "line_tip_hue": null}``
 
 tile_dice_roll
   This does a roll of a dice following by choosing a number to be displayed on

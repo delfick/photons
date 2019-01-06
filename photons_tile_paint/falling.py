@@ -7,6 +7,7 @@ from input_algorithms.errors import BadSpecValue
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 import random
+import math
 
 class HueRange:
     def __init__(self, minimum, maximum):
@@ -95,8 +96,8 @@ class TileFallingOptions(AnimationOptions):
     random_orientations = dictobj.Field(sb.boolean, default=False)
 
     hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=[])
+    fade_amount = dictobj.Field(sb.float_spec, default=0.1)
     line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(60, 60))
-    blinking_pixels = dictobj.Field(sb.boolean, default=True)
 
     def final_iteration(self, iteration):
         if self.num_iterations == -1:
@@ -109,7 +110,8 @@ class Line:
         self.parts = []
         self.column = column
         self.bottom = state.bottom - random.randrange(10)
-        self.rate = (random.randrange(0, 100) + 10) / 100
+        self.rate = (random.randrange(10, 30) + 10) / 100
+        self.max_length = min([self.state.top - self.state.bottom, 20])
 
         self.blank_lines = state.options.hue_ranges is None
 
@@ -124,24 +126,41 @@ class Line:
         self.jump = 1
         self.fill()
 
-    def point_for(self, i):
-        count = self.bottom
-        point = (len(self.parts) - 1, len(self.parts[-1]) - 1)
+    def pixels(self):
+        j = self.bottom + sum(len(p) for p in self.parts)
+        for part in self.parts:
+            info = {"hues": []}
+            for hue in part:
+                j -= 1
+                if hue is not None:
+                    if "position" not in info:
+                        info["position"] = j
+                    info["hues"].insert(0, hue)
 
-        while count < i:
-            count += 1
-            p, pp = point
-            pp -= 1
-            if pp == -1:
-                p -= 1
-                pp = len(self.parts[p]) - 1
-            point = (p, pp)
+            hues = info["hues"]
+            if not hues:
+                continue
 
-        return point
+            position = info["position"]
 
-    def __getitem__(self, i):
-        point = self.point_for(i)
-        return self.parts[point[0]][point[1]]
+            if len(hues) == 1:
+                hue = hues[0]
+                brightness = 1.0 - (position - math.floor(position))
+                color = Color(hue, 1, brightness, 3500)
+                yield (self.column, math.floor(position)), color
+
+            else:
+                closeness = 1.0 - (position - math.floor(position))
+                head_color = Color(hues[0], 1, closeness, 3500)
+                middle_hue = hues[0] + min([10, (hues[2] - hues[0]) * closeness])
+                if middle_hue > 360:
+                    middle_hue -= 360
+
+                middle_color = Color(middle_hue, 1, 1, 3500)
+                body_color = Color(hues[2], 1, 1, 3500)
+
+                for i, color in enumerate((head_color, middle_color, body_color)):
+                    yield (self.column, math.floor(position) + i), color
 
     def fill(self):
         top = self.bottom
@@ -153,52 +172,38 @@ class Line:
             self.parts.insert(0, part)
             top += len(part)
 
-    @property
-    def next_amount(self):
-        if self.jump >= 1:
-            self.jump -= 1
-            return 1
-
-        self.jump += self.rate
-        return 0
-
     def progress(self):
-        self.bottom -= self.next_amount
-        if self.bottom + len(self.parts[-1]) < self.state.bottom:
+        self.bottom -= self.rate
+        bottom = math.floor(self.bottom)
+        if bottom + len(self.parts[-1]) < self.state.bottom:
             self.bottom += len(self.parts.pop())
         self.fill()
 
     def make_part(self):
-        length = random.randrange(0, self.state.top - self.state.bottom) + 5
+        length = random.randrange(0, self.max_length) + 5
         if random.randrange(0, 100) < 50:
             for _ in range(length):
-                yield Color(0, 0, 0, 3500)
+                yield None
             return
-
-        brightness = 0
-        increment = 0.6 / length
 
         if not self.blank_lines:
             hue_range = random.choice(self.hue_ranges)
 
-        for i in range(length):
-            if self.blank_lines:
-                hue = 0
-                brightness = 0
-            else:
-                hue = hue_range.make_hue()
+        line = [None for i in range(length)]
 
-            tip = False
-            if i == length - 1 and self.line_tip_hue is not None:
-                hue = self.line_tip_hue.make_hue()
-                brightness = 0.8
-                tip = True
+        if self.line_tip_hue is not None:
+            line[-1] = self.line_tip_hue.make_hue()
+            length -= 1
 
-            color = Color(hue, 1, brightness, 3500)
-            color.tip = tip
-            yield color
+        if not self.blank_lines:
+            tail_hue = hue_range.make_hue()
+            line[length - 1] = tail_hue
+            line[length - 2] = tail_hue
 
-            brightness += increment
+            if self.line_tip_hue is None:
+                line[length - 3] = tail_hue
+
+        yield from line
 
 class TileFallingState:
     def __init__(self, coords, options):
@@ -225,24 +230,26 @@ class TileFallingState:
                 if column not in self.lines:
                     self.lines[column] = Line(column, self)
 
+        self.canvas = Canvas()
+
     def tick(self):
         for line in self.lines.values():
             line.progress()
         return self
 
     def make_canvas(self):
-        canvas = Canvas()
+        for point, pixel in list(self.canvas):
+            pixel.brightness -= self.options.fade_amount
+            if pixel.brightness < 0:
+                del self.canvas[point]
+
         for (left, top), (width, height) in self.coords:
             for i in range(left, left + width):
                 line = self.lines[i]
-                for j in range(top - height, top):
-                    got = line[j]
-                    if self.options.blinking_pixels:
-                        if not getattr(got, "tip", False) and random.randrange(0, 100) < 5:
-                            got = Color(got.hue, got.saturation, got.brightness, got.kelvin)
-                            got.brightness = 0
-                    canvas[(i, j)] = got
-        return canvas
+                for point, pixel in line.pixels():
+                    self.canvas[point] = pixel
+
+        return self.canvas
 
 class TileFallingAnimation(Animation):
     def setup(self):
