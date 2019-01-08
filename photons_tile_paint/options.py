@@ -114,3 +114,16 @@ class hue_range_spec(sb.Spec):
                     )
 
         return HueRange(*rnge)
+
+def normalise_speed_options(options):
+    if options.min_speed < 0:
+        options.min_speed = 0
+
+    if options.max_speed < 0:
+        options.max_speed = 0
+
+    if options.min_speed > options.max_speed:
+        options.min_speed, options.max_speed = options.max_speed, options.min_speed
+
+    if options.min_speed == 0 and options.max_speed == 0:
+        options.max_speed = 0.1

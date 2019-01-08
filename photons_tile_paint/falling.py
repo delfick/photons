@@ -1,4 +1,4 @@
-from photons_tile_paint.options import AnimationOptions, split_by_comma, hue_range_spec, HueRange
+from photons_tile_paint.options import AnimationOptions, split_by_comma, hue_range_spec, HueRange, normalise_speed_options
 from photons_tile_paint.animation import Animation, Finish
 from photons_themes.theme import ThemeColor as Color
 from photons_themes.canvas import Canvas
@@ -184,18 +184,7 @@ class TileFallingAnimation(Animation):
         self.iteration = 0
         if self.options.random_orientations:
             self.random_orientations = True
-
-        if self.options.min_speed < 0:
-            self.options.min_speed = 0
-
-        if self.options.max_speed < 0:
-            self.options.max_speed = 0
-
-        if self.options.min_speed > self.options.max_speed:
-            self.options.min_speed, self.options.max_speed = self.options.max_speed, self.options.min_speed
-
-        if self.options.min_speed == 0 and self.options.max_speed == 0:
-            self.options.max_speed = 0.1
+        normalise_speed_options(self.options)
 
     def next_state(self, prev_state, coords):
         if prev_state is None:
