@@ -62,6 +62,9 @@ from photons_tile_paint.falling import TileFallingOptions
 from photons_tile_paint.dice import TileDiceRollAnimation
 from photons_tile_paint.dice import TileDiceRollOptions
 
+from photons_tile_paint.balls import TileBallsAnimation
+from photons_tile_paint.balls import TileBallsOptions
+
 class Animations:
     @classmethod
     def animators(kls):
@@ -126,6 +129,12 @@ class Animations:
     tile_dice_roll = Animator(TileDiceRollAnimation, TileDiceRollOptions
         , """
           A dice roll
+          """
+        )
+
+    tile_balls = Animator(TileBallsAnimation, TileBallsOptions
+        , """
+          Bouncing balls
           """
         )
 

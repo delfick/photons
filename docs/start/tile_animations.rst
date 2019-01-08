@@ -27,6 +27,7 @@ The following animations are available
 * tile_gameoflife
 * tile_falling
 * tile_dice_roll
+* tile_balls
 
 Where all animations take in ``background`` and ``combine_tiles`` options.
 
@@ -223,6 +224,41 @@ tile_dice_roll
 
   dice_color -- hsbk dictionary -- default 200, 1, 1, 3500
     The color of the dots on the dice
+
+tile_balls
+  Bouncing balls around the box that your tiles form.
+
+  When two balls collide they are turned white and removed. Two new balls will
+  take their place.
+
+  The following are options available for this animation:
+
+  num_iterations -- int -- default -1
+    How many iterations before we stop. -1 means never stop
+
+  random_orientations -- bool -- default false
+    If true then we will choose a random orientation for each tile
+
+  num_balls -- int -- default 5
+    The number of balls to have on your tiles at any one time.
+
+  ball_hues -- null or list of strings or csv -- default "rainbow"
+    A string or a list of strings where each string is a comma separated range
+    where the range is either '<min>-<max>' or the word 'rainbow'.
+
+    Every time a new ball is made the color will be from one of these ranges.
+
+    For example, to have just red and green balls you would say "0,100"
+
+  fade_amount -- integer -- default 0.02
+    This controls how quickly the lines made by the balls fade. A smaller number
+    makes the lines longer.
+
+  min_speed - float -- default 0.6
+    The minimum amount of pixels to fall every tick of the animation
+
+  max_speed - float -- default 0.8
+    The maximum amount of pixels to fall every tick of the animation
 
 Starting an animation programmatically
 --------------------------------------
