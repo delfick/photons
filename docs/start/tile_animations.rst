@@ -185,11 +185,11 @@ tile_falling
 
     If this is set to null then only the tip will have a nonzero brightness.
 
-  line_tip_hue -- null or hue range -- default 40
-    A single hue range like those in hue_ranges. I.e. 'rainbow' or '60' or '0-10'
+  line_tip_hues -- null or list of strings or csv -- default "40"
+    Multiple hue ranges like in the hue_ranges option.
 
     If this is set to null then the tip of each line will not be a special colour,
-    otherwise it's hue will be a random value in the range specified.
+    otherwise it's hue will be a random value from the ranges specified.
 
     Note that if both hue_ranges and line_tip_hue are null then hue_ranges will
     remain null and line_tip_hue will become 40.

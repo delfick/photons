@@ -8,13 +8,16 @@ from input_algorithms import spec_base as sb
 import random
 import math
 
+class Empty:
+    pass
+
 class TileFallingOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)
 
-    hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=[])
+    hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=Empty)
     fade_amount = dictobj.Field(sb.float_spec, default=0.1)
-    line_tip_hue = dictobj.NullableField(hue_range_spec(), default=HueRange(40, 40))
+    line_tip_hues = dictobj.NullableField(split_by_comma(hue_range_spec()), default=Empty)
 
     min_speed = dictobj.Field(sb.float_spec, default=0.2)
     max_speed = dictobj.Field(sb.float_spec, default=0.4)
@@ -37,10 +40,10 @@ class Line:
         if not self.blank_lines:
             self.hue_ranges = state.options.hue_ranges or [HueRange(90, 90)]
 
-        if self.blank_lines and state.options.line_tip_hue is None:
-            self.line_tip_hue = HueRange(40, 40)
+        if self.blank_lines and state.options.line_tip_hues is None:
+            self.line_tip_hues = [HueRange(40, 40)]
         else:
-            self.line_tip_hue = state.options.line_tip_hue
+            self.line_tip_hues = state.options.line_tip_hues
 
         self.jump = 1
         self.fill()
@@ -119,8 +122,8 @@ class Line:
 
         line = [None for i in range(length)]
 
-        if self.line_tip_hue is not None:
-            line[-1] = self.line_tip_hue.make_hue()
+        if self.line_tip_hues is not None:
+            line[-1] = random.choice(self.line_tip_hues).make_hue()
             length -= 1
 
         if not self.blank_lines:
@@ -128,7 +131,7 @@ class Line:
             line[length - 1] = tail_hue
             line[length - 2] = tail_hue
 
-            if self.line_tip_hue is None:
+            if self.line_tip_hues is None:
                 line[length - 3] = tail_hue
 
         yield from line
@@ -190,6 +193,18 @@ class TileFallingAnimation(Animation):
         if self.options.random_orientations:
             self.random_orientations = True
         normalise_speed_options(self.options)
+
+        if self.options.hue_ranges == []:
+            self.options.hue_ranges = None
+
+        if self.options.line_tip_hues == []:
+            self.options.line_tip_hues = None
+
+        if self.options.hue_ranges is Empty:
+            self.options.hue_ranges = [HueRange(90, 90)]
+
+        if self.options.line_tip_hues is Empty:
+            self.options.line_tip_hues = [HueRange(40, 40)]
 
     def next_state(self, prev_state, coords):
         if prev_state is None:
