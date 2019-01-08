@@ -171,11 +171,16 @@ class TileFallingState:
             if pixel.brightness < 0:
                 del self.canvas[point]
 
+        drawn = set()
         for (left, top), (width, height) in self.coords:
             for i in range(left, left + width):
+                if i in drawn:
+                    continue
+
                 line = self.lines[i]
                 for point, pixel in line.pixels():
                     self.canvas[point] = pixel
+                drawn.add(i)
 
         return self.canvas
 
