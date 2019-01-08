@@ -170,7 +170,7 @@ tile_falling
   random_orientations -- bool -- default false
     If true then we will choose a random orientation for each tile
 
-  hue_ranges -- null or list of strings or csv -- default "90"
+  line_hues -- null or list of strings or csv -- default "90"
     A string or a list of strings where each string is a comma separated range
     where the range is either '<min>-<max>' or the word 'rainbow'. These numbers
     are used to determine the colour of each pixel in each line. Saying rainbow
@@ -186,12 +186,12 @@ tile_falling
     If this is set to null then only the tip will have a nonzero brightness.
 
   line_tip_hues -- null or list of strings or csv -- default "40"
-    Multiple hue ranges like in the hue_ranges option.
+    Multiple hue ranges like in the line_hues option.
 
     If this is set to null then the tip of each line will not be a special colour,
     otherwise it's hue will be a random value from the ranges specified.
 
-    Note that if both hue_ranges and line_tip_hue are null then hue_ranges will
+    Note that if both line_hues and line_tip_hue are null then line_hues will
     remain null and line_tip_hue will become 40.
 
   fade_amount -- integer -- default 0.1
@@ -199,7 +199,7 @@ tile_falling
     longer.
 
     So if you want a cool dripping rainbow effect say something like
-    ``{"fade_amount": 0, "hue_ranges": "rainbow", "line_tip_hue": null}``
+    ``{"fade_amount": 0, "line_hues": "rainbow", "line_tip_hue": null}``
 
   min_speed - float -- default 0.2
     The minimum amount of pixels to fall every tick of the animation

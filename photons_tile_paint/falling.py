@@ -15,7 +15,7 @@ class TileFallingOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)
 
-    hue_ranges = dictobj.NullableField(split_by_comma(hue_range_spec()), default=Empty)
+    line_hues = dictobj.NullableField(split_by_comma(hue_range_spec()), default=Empty)
     fade_amount = dictobj.Field(sb.float_spec, default=0.1)
     line_tip_hues = dictobj.NullableField(split_by_comma(hue_range_spec()), default=Empty)
 
@@ -35,10 +35,10 @@ class Line:
         self.bottom = state.bottom - random.randrange(10)
         self.max_length = min([self.state.top - self.state.bottom, 20])
 
-        self.blank_lines = state.options.hue_ranges is None
+        self.blank_lines = state.options.line_hues is None
 
         if not self.blank_lines:
-            self.hue_ranges = state.options.hue_ranges or [HueRange(90, 90)]
+            self.line_hues = state.options.line_hues or [HueRange(90, 90)]
 
         if self.blank_lines and state.options.line_tip_hues is None:
             self.line_tip_hues = [HueRange(40, 40)]
@@ -118,7 +118,7 @@ class Line:
             return
 
         if not self.blank_lines:
-            hue_range = random.choice(self.hue_ranges)
+            hue_range = random.choice(self.line_hues)
 
         line = [None for i in range(length)]
 
@@ -194,14 +194,14 @@ class TileFallingAnimation(Animation):
             self.random_orientations = True
         normalise_speed_options(self.options)
 
-        if self.options.hue_ranges == []:
-            self.options.hue_ranges = None
+        if self.options.line_hues == []:
+            self.options.line_hues = None
 
         if self.options.line_tip_hues == []:
             self.options.line_tip_hues = None
 
-        if self.options.hue_ranges is Empty:
-            self.options.hue_ranges = [HueRange(90, 90)]
+        if self.options.line_hues is Empty:
+            self.options.line_hues = [HueRange(90, 90)]
 
         if self.options.line_tip_hues is Empty:
             self.options.line_tip_hues = [HueRange(40, 40)]

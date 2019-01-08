@@ -7,6 +7,8 @@ ChangeLog
     * Make the dice roll work better with multiple tiles and the combine_tiles
       option
     * Made the falling animation much smoother. Many thanks to @mic159!
+    * Changed the ``hue_ranges`` option of the tile_falling animation to
+      ``line_hues`` and the ``line_tip_hue`` option to ``line_tip_hues``
 
 0.9.4 - 3 Jan 2019
     * Added get_tile_positions action
