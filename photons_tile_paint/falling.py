@@ -93,9 +93,12 @@ class Line:
 
     @property
     def rate(self):
+        if self.state.options.min_speed == self.state.options.max_speed:
+            return self.state.options.min_speed
+
         mn = int(self.state.options.min_speed * 100)
         mx = int(self.state.options.max_speed * 100)
-        return (random.randint(0, mx) + mn) / 100
+        return random.randint(mn, mx) / 100
 
     def progress(self):
         self.bottom -= self.rate
@@ -181,6 +184,18 @@ class TileFallingAnimation(Animation):
         self.iteration = 0
         if self.options.random_orientations:
             self.random_orientations = True
+
+        if self.options.min_speed < 0:
+            self.options.min_speed = 0
+
+        if self.options.max_speed < 0:
+            self.options.max_speed = 0
+
+        if self.options.min_speed > self.options.max_speed:
+            self.options.min_speed, self.options.max_speed = self.options.max_speed, self.options.min_speed
+
+        if self.options.min_speed == 0 and self.options.max_speed == 0:
+            self.options.max_speed = 0.1
 
     def next_state(self, prev_state, coords):
         if prev_state is None:
