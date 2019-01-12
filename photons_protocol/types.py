@@ -30,8 +30,20 @@ log = logging.getLogger("photons_protocol.packets.builder")
 
 Optional = type("Optional", (), {})()
 
+class UnknownEnum:
+    def __init__(self, val):
+        self.name = "UNKNOWN"
+        self.value = val
+
+    def __repr__(self):
+        return f"<UNKNOWN: {self.value}>"
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and other.value == self.value
+
 regexes = {
-      "version_number": re.compile("(?P<major>\d+)\.(?P<minor>\d+)")
+      "version_number": re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)")
+    , "unknown_enum": re.compile(r"<UNKNOWN: (?P<value>\d+)>")
     }
 
 class Type(object):
@@ -67,6 +79,7 @@ class Type(object):
     _allow_float = False
     _version_number = False
     _allow_callable = False
+    _unknown_enum_values = False
 
     def __init__(self, struct_format, conversion):
         self.conversion = conversion
@@ -98,6 +111,8 @@ class Type(object):
         result._allow_float = self._allow_float
         result._version_number = self._version_number
         result._allow_callable = self._allow_callable
+        result._unknown_enum_values = self._unknown_enum_values
+
         result.original_size = getattr(self, "original_size", size_bits)
         if left is not sb.NotSpecified:
             result.left_cut = left
@@ -122,10 +137,11 @@ class Type(object):
         res._version_number = True
         return res
 
-    def enum(self, enum):
+    def enum(self, enum, allow_unknown=False):
         """Set the _enum option"""
         res = self.S(self.size_bits)
         res._enum = enum
+        res._unknown_enum_values = allow_unknown
         return res
 
     def dynamic(self, dynamiser):
@@ -332,7 +348,11 @@ class Type(object):
         if self._version_number:
             return version_number_spec(unpacking=unpacking)
 
-        return integer_spec(pkt, enum, bitmask, unpacking=unpacking, allow_float=self._allow_float)
+        return integer_spec(pkt, enum, bitmask
+            , unpacking = unpacking
+            , allow_float = self._allow_float
+            , unknown_enum_values = self._unknown_enum_values
+            )
 
     def do_transform(self, pkt, value):
         """Perform transformation on a value"""
@@ -549,12 +569,13 @@ class integer_spec(sb.Spec):
 
     .. automethod:: photons_protocol.types.integer_spec.normalise_filled
     """
-    def setup(self, pkt, enum, bitmask, unpacking=False, allow_float=False):
+    def setup(self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False):
         self.pkt = pkt
         self.enum = enum
         self.bitmask = bitmask
         self.unpacking = unpacking
         self.allow_float = allow_float
+        self.unknown_enum_values = unknown_enum_values
         if self.enum and self.bitmask:
             raise ProgrammerError("Sorry, can't specify enum and bitmask for the same type")
 
@@ -577,7 +598,8 @@ class integer_spec(sb.Spec):
             return sb.integer_spec().normalise(meta, val)
 
         if self.enum:
-            return enum_spec(self.pkt, self.enum, unpacking=self.unpacking).normalise(meta, val)
+            kwargs = dict(unpacking=self.unpacking, allow_unknown=self.unknown_enum_values)
+            return enum_spec(self.pkt, self.enum, **kwargs).normalise(meta, val)
         else:
             return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(meta, val)
 
@@ -719,10 +741,11 @@ class enum_spec(sb.Spec):
 
     When not unpacking, we are converting into the value of that member of the enum
     """
-    def setup(self, pkt, enum, unpacking=False):
+    def setup(self, pkt, enum, unpacking=False, allow_unknown=False):
         self.pkt = pkt
         self.enum = enum
         self.unpacking = unpacking
+        self.allow_unknown = allow_unknown
 
     def normalise_filled(self, meta, val):
         em = self.determine_enum()
@@ -745,6 +768,16 @@ class enum_spec(sb.Spec):
             if val == name or val == repr(member) or val == member.value:
                 return member
 
+        if self.allow_unknown:
+            if isinstance(val, int) and not isinstance(val, bool):
+                return UnknownEnum(val)
+            elif isinstance(val, UnknownEnum):
+                return val
+            elif isinstance(val, str):
+                m = regexes["unknown_enum"].match(val)
+                if m:
+                    return UnknownEnum(int(m["value"]))
+
         # Only here if didn't match any members
         raise BadConversion("Value is not a valid value of the enum", val=val, enum=em, available=available, meta=meta)
 
@@ -755,6 +788,16 @@ class enum_spec(sb.Spec):
             available.append((name, member.value))
             if val == name or val == repr(member) or val == member.value or val is member:
                 return member.value
+
+        if self.allow_unknown:
+            if isinstance(val, int) and not isinstance(val, bool):
+                return val
+            elif isinstance(val, UnknownEnum):
+                return val.value
+            elif isinstance(val, str):
+                m = regexes["unknown_enum"].match(val)
+                if m:
+                    return int(m["value"])
 
         if isinstance(val, enum.Enum):
             raise BadConversion("Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta)

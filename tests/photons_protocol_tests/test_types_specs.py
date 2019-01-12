@@ -453,10 +453,12 @@ describe TestCase, "integer_spec":
         bitmask = mock.Mock(name="bitmask")
         unpacking = mock.Mock(name="unpacking")
         allow_float = mock.Mock(name="allow_float")
+        unknown_enum_values = mock.Mock(name="unknown_enum_values")
 
         for kw in ({"enum": enum, "bitmask": None}, {"enum": None, "bitmask": bitmask}):
             kw["unpacking"] = unpacking
             kw["allow_float"] = allow_float
+            kw["unknown_enum_values"] = unknown_enum_values
 
             spec = types.integer_spec(pkt, **kw)
             self.assertIs(spec.pkt, pkt)
@@ -464,6 +466,7 @@ describe TestCase, "integer_spec":
             self.assertIs(spec.bitmask, kw["bitmask"])
             self.assertIs(spec.unpacking, unpacking)
             self.assertIs(spec.allow_float, allow_float)
+            self.assertIs(spec.unknown_enum_values, unknown_enum_values)
 
     it "complains if enum and bitmask are both specified":
         with self.fuzzyAssertRaisesError(ProgrammerError, "Sorry, can't specify enum and bitmask for the same type"):
@@ -501,13 +504,14 @@ describe TestCase, "integer_spec":
             val = mock.Mock(name="val")
 
             es = mock.Mock(name="enum_spec()")
+            uev = mock.Mock(name="unknown_enum_values")
             enum_spec = mock.Mock(name='enum_spec', return_value=es)
             es.normalise.return_value = ret
             with mock.patch("photons_protocol.types.enum_spec", enum_spec):
-                spec = types.integer_spec(self.pkt, enum, None, unpacking=unpacking)
+                spec = types.integer_spec(self.pkt, enum, None, unpacking=unpacking, unknown_enum_values=uev)
                 self.assertIs(spec.normalise(meta, val), ret)
 
-            enum_spec.assert_called_once_with(self.pkt, enum, unpacking=unpacking)
+            enum_spec.assert_called_once_with(self.pkt, enum, unpacking=unpacking, allow_unknown=uev)
             es.normalise.assert_called_once_with(meta, val)
 
         it "does a bitmask spec if we have a bitmask":
@@ -674,12 +678,14 @@ describe TestCase, "enum_spec":
         pkt = mock.Mock(name="pkt")
         em = mock.Mock(name='enum')
         unpacking = mock.Mock(name="unpacking")
+        allow_unknown = mock.Mock(name="allow_unknown")
 
-        spec = types.enum_spec(pkt, em, unpacking=unpacking)
+        spec = types.enum_spec(pkt, em, unpacking=unpacking, allow_unknown=allow_unknown)
 
         self.assertIs(spec.pkt, pkt)
         self.assertIs(spec.enum, em)
         self.assertIs(spec.unpacking, unpacking)
+        self.assertIs(spec.allow_unknown, allow_unknown)
 
     describe "normalisation":
         before_each:
@@ -706,24 +712,41 @@ describe TestCase, "enum_spec":
             for thing in (0, 1, [], [1], {}, {1:2}, lambda pkt: 1, Kls(1), Kls, None, True, False):
                 with self.fuzzyAssertRaisesError(ProgrammerError, "Enum is not an enum!"):
                     types.enum_spec(self.pkt, thing).normalise(self.meta, mock.Mock(name='val'))
+                with self.fuzzyAssertRaisesError(ProgrammerError, "Enum is not an enum!"):
+                    types.enum_spec(self.pkt, thing, allow_unknown=True).normalise(self.meta, mock.Mock(name='val'))
 
         describe "packing into a value":
             before_each:
                 self.subject = types.enum_spec(self.pkt, self.enum, unpacking=False)
+                self.subject_with_unknown = types.enum_spec(self.pkt, self.enum, unpacking=False, allow_unknown=True)
 
             it "can convert from the name":
                 self.assertEqual(self.subject.normalise(self.meta, "ONE"), 1)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, "ONE"), 1)
 
             it "can convert from repr of the member":
                 self.assertEqual(self.subject.normalise(self.meta, "<Vals.ONE: 1>"), 1)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, "<Vals.ONE: 1>"), 1)
 
             it "can convert from member itself":
                 self.assertEqual(self.subject.normalise(self.meta, self.enum.TWO), 2)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, self.enum.TWO), 2)
 
             it "complains if it's not in the enum":
-                for val in (0, 200, False, None, [], [1], {}, {1:2}, lambda: 1):
+                ue = types.UnknownEnum(20)
+                for val in (0, 200, False, None, [], [1], {}, {1:2}, ue, repr(ue), lambda: 1):
                     with self.fuzzyAssertRaisesError(BadConversion, "Value wasn't a valid enum value"):
                         self.subject.normalise(self.meta, val)
+                for val in (False, None, [], [1], {}, {1:2}, lambda: 1):
+                    with self.fuzzyAssertRaisesError(BadConversion, "Value wasn't a valid enum value"):
+                        self.subject_with_unknown.normalise(self.meta, val)
+
+            it "does not complain if allow_unknown and value not in the enum and valid value":
+                ue = types.UnknownEnum(20)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, ue), 20)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, repr(ue)), 20)
+
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, 40), 40)
 
             it "complains if we're using the wrong enum":
                 class Vals2(Enum):
@@ -735,13 +758,17 @@ describe TestCase, "enum_spec":
 
                 with self.fuzzyAssertRaisesError(BadConversion, "Can't convert value of wrong Enum"):
                     self.subject.normalise(self.meta, Vals2.THREE)
+                with self.fuzzyAssertRaisesError(BadConversion, "Can't convert value of wrong Enum"):
+                    self.subject_with_unknown.normalise(self.meta, Vals2.THREE)
 
         describe "unpacking into enum member":
             before_each:
                 self.subject = types.enum_spec(self.pkt, self.enum, unpacking=True)
+                self.subject_with_unknown = types.enum_spec(self.pkt, self.enum, unpacking=True, allow_unknown=True)
 
             it "returns as is if already a member":
                 self.assertIs(self.subject.normalise(self.meta, self.enum.TWO), self.enum.TWO)
+                self.assertIs(self.subject_with_unknown.normalise(self.meta, self.enum.TWO), self.enum.TWO)
 
             it "complains if from the wrong enum":
                 class Vals2(Enum):
@@ -753,20 +780,36 @@ describe TestCase, "enum_spec":
 
                 with self.fuzzyAssertRaisesError(BadConversion, "Can't convert value of wrong Enum"):
                     self.subject.normalise(self.meta, Vals2.THREE)
+                with self.fuzzyAssertRaisesError(BadConversion, "Can't convert value of wrong Enum"):
+                    self.subject_with_unknown.normalise(self.meta, Vals2.THREE)
 
             it "converts from name":
                 self.assertEqual(self.subject.normalise(self.meta, "THREE"), self.enum.THREE)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, "THREE"), self.enum.THREE)
 
             it "converts from repr of member":
                 self.assertEqual(self.subject.normalise(self.meta, "<Vals.THREE: 3>"), self.enum.THREE)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, "<Vals.THREE: 3>"), self.enum.THREE)
 
             it "converts from value of member":
                 self.assertEqual(self.subject.normalise(self.meta, 4), self.enum.FOUR)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, 4), self.enum.FOUR)
 
             it "complains if value isn't in enum":
-                for val in ("SEVEN", 200):
+                ue = repr(types.UnknownEnum(20))
+                for val in ("SEVEN", 200, ue, False, None, [], [1], {}, {1:2}, lambda: 1):
                     with self.fuzzyAssertRaisesError(BadConversion, "Value is not a valid value of the enum"):
                         self.subject.normalise(self.meta, val)
+
+                for val in ("SEVEN", False, None, [], [1], {}, {1:2}, lambda: 1):
+                    with self.fuzzyAssertRaisesError(BadConversion, "Value is not a valid value of the enum"):
+                        self.subject_with_unknown.normalise(self.meta, val)
+
+            it "does not complain if allow_unknown and valid unknown value":
+                ue = types.UnknownEnum(20)
+                self.assertIs(self.subject_with_unknown.normalise(self.meta, ue), ue)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, repr(ue)), ue)
+                self.assertEqual(self.subject_with_unknown.normalise(self.meta, 20), ue)
 
 describe TestCase, "overridden":
     it "takes in pkt and default_func":

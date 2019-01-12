@@ -95,6 +95,7 @@ describe TestCase, "Type":
                     , "_optional"
                     , "_allow_float"
                     , "_version_number"
+                    , "_unknown_enum_values"
                     )
 
                 fields = {}
@@ -187,7 +188,14 @@ describe TestCase, "Type":
                 em = mock.Mock(name="enum")
                 with self.clone() as (res, setd):
                     self.assertIs(self.t.enum(em), res)
-                self.assertEqual(setd, {"_enum": em})
+                self.assertEqual(setd, {"_enum": em, "_unknown_enum_values": False})
+
+            it "sets _unknown_enum_values to the allow_unknown value passed in":
+                em = mock.Mock(name="enum")
+                allow_unknown = mock.Mock(name="allow_unknown")
+                with self.clone() as (res, setd):
+                    self.assertIs(self.t.enum(em, allow_unknown=allow_unknown), res)
+                self.assertEqual(setd, {"_enum": em, "_unknown_enum_values": allow_unknown})
 
         describe "many":
             it "sets _many_kls and _many_size to the values passed in":
@@ -594,6 +602,9 @@ describe TestCase, "Type":
             self.allow_float = mock.Mock(name="allow_float")
             self.t._allow_float = self.allow_float
 
+            self.unknown_enum_values = mock.Mock(name="unknown_enum_values")
+            self.t._unknown_enum_values = self.unknown_enum_values
+
             self.pkt = mock.Mock(name="pkt")
             self.unpacking = mock.Mock(name="unpacking")
 
@@ -623,9 +634,14 @@ describe TestCase, "Type":
             em = mock.Mock(name="em")
 
             with self.mocked_integer_spec() as (integer_spec, spec):
-                self.assertIs(self.t.enum(em).make_integer_spec(self.pkt, self.unpacking), spec)
+                t = self.t.enum(em, allow_unknown=self.unknown_enum_values)
+                self.assertIs(t.make_integer_spec(self.pkt, self.unpacking), spec)
 
-            integer_spec.assert_called_once_with(self.pkt, em, None, unpacking=self.unpacking, allow_float=self.allow_float)
+            integer_spec.assert_called_once_with(self.pkt, em, None
+                , unpacking = self.unpacking
+                , allow_float = self.allow_float
+                , unknown_enum_values = self.unknown_enum_values
+                )
 
         it "creates integer_spec with bitmask if we have one":
             bitmask = mock.Mock(name="bitmask")
@@ -633,13 +649,21 @@ describe TestCase, "Type":
             with self.mocked_integer_spec() as (integer_spec, spec):
                 self.assertIs(self.t.bitmask(bitmask).make_integer_spec(self.pkt, self.unpacking), spec)
 
-            integer_spec.assert_called_once_with(self.pkt, None, bitmask, unpacking=self.unpacking, allow_float=self.allow_float)
+            integer_spec.assert_called_once_with(self.pkt, None, bitmask
+                , unpacking = self.unpacking
+                , allow_float = self.allow_float
+                , unknown_enum_values = self.unknown_enum_values
+                )
 
         it "creates integer_spec with neither enum or bitmask if we have neither":
             with self.mocked_integer_spec() as (integer_spec, spec):
                 self.assertIs(self.t.make_integer_spec(self.pkt, self.unpacking), spec)
 
-            integer_spec.assert_called_once_with(self.pkt, None, None, unpacking=self.unpacking, allow_float=self.allow_float)
+            integer_spec.assert_called_once_with(self.pkt, None, None
+                , unpacking = self.unpacking
+                , allow_float = self.allow_float
+                , unknown_enum_values = self.unknown_enum_values
+                )
 
     describe "transforming":
         before_each:
