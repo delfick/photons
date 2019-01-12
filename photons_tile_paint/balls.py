@@ -27,21 +27,57 @@ class TileBallsOptions(AnimationOptions):
 
 class Boundary:
     def __init__(self, coords):
-        self.left = coords[0][0][0]
-        self.right = coords[0][0][0]
-        self.top = coords[0][0][1]
-        self.bottom = coords[0][0][1]
+        self.points = {}
 
         for (left, top), (width, height) in coords:
-            self.left = min(left, self.left)
-            self.right = max(left + width, self.right)
-            self.bottom = min(top - height, self.bottom)
-            self.top = max(top, self.top)
+            for i in range(left, left + width):
+                for j in range(top - height, top):
+                    self.points[(i, j)] = True
+
+        self.position_points = list(self.points)
 
     def random_coord(self):
-        left = random.randrange(self.left, self.right)
-        top = random.randrange(self.bottom, self.top)
-        return left, top
+        return random.choice(self.position_points)
+
+    def is_going_outside(self, now, nxt, dx, dy):
+        combined = now + nxt
+        most_left = min(x for x, _ in combined)
+        most_right = max(x for x, _ in combined)
+        most_top = max(y for _, y in combined)
+        most_bottom = min(y for _, y in combined)
+
+        if dx < 0:
+            now_x = min(x for x, _ in now)
+        else:
+            now_x = max(x for x, _ in now)
+
+        if dy < 0:
+            now_y = min(y for _, y in now)
+        else:
+            now_y = max(y for _, y in now)
+
+        outside_x = 0
+        outside_y = 0
+
+        for i in range(most_left, most_right + 1):
+            for j in range(most_bottom, most_top + 1):
+                point = (i, j)
+                if point not in self.points and point not in now:
+                    if dx < 0:
+                        if point[0] < now_x:
+                            outside_x += 1
+                    else:
+                        if point[0] > now_x:
+                            outside_x += 1
+
+                    if dy < 0:
+                        if point[1] < now_y:
+                            outside_y += 1
+                    else:
+                        if point[1] > now_y:
+                            outside_y += 1
+
+        return outside_x >= 2, outside_y >= 2
 
 class Ball:
     def __init__(self, boundary, hue, rate_x, rate_y):
@@ -56,27 +92,27 @@ class Ball:
         self.maybe_alter_course()
 
     def maybe_alter_course(self):
-        changed = False
+        points_now = [(math.floor(x), math.floor(y)) for x, y in self.points]
+        points_next = [(math.floor(x), math.floor(y)) for x, y in self.next_points]
+        outside_x, outside_y = self.boundary.is_going_outside(points_now, points_next, self.dx, self.dy)
 
-        if self.top >= self.boundary.top and self.dy > 0:
-            self.dy *= -1
-            changed = True
+        if not outside_x and not outside_y:
+            return
 
-        if self.bottom <= self.boundary.bottom and self.dy < 0:
-            self.dy *= -1
-            changed = True
-
-        if self.right >= self.boundary.right and self.dx > 0:
+        if outside_x:
             self.dx *= -1
-            changed = True
 
-        if self.left <= self.boundary.left and self.dx < 0:
-            self.dx *= -1
-            changed = True
+        if outside_y:
+            self.dy *= -1
 
-        if changed:
-            self.extra_x = random.randrange(0, 5) / 10
-            self.extra_y = random.randrange(0, 5) / 10
+        self.extra_x = random.randrange(0, 5) / 10
+        self.extra_y = random.randrange(0, 5) / 10
+
+        if (self.dy < 0) ^ (self.extra_y < 0):
+            self.extra_y *= -1
+
+        if (self.dx < 0) ^ (self.extra_x < 0):
+            self.extra_x *= -1
 
     @property
     def top(self):
@@ -94,20 +130,36 @@ class Ball:
     def left(self):
         return self.x
 
-    def progress(self):
-        self.x += self.dx + self.extrax
-        self.y += self.dy + self.extray
-        self.maybe_alter_course()
-
-    def pixels(self):
-        pixels = [
+    @property
+    def points(self):
+        return [
               (self.x, self.y)
             , (self.x, self.y - 1)
             , (self.x + 1, self.y)
             , (self.x + 1, self.y - 1)
             ]
 
-        for x, y in pixels:
+    @property
+    def next_points(self):
+        x, y = self.next_point()
+        return [
+              (x, y)
+            , (x, y - 1)
+            , (x + 1, y)
+            , (x + 1, y - 1)
+            ]
+
+    def next_point(self):
+        x = self.x + self.dx + self.extrax
+        y = self.y + self.dy + self.extray
+        return x, y
+
+    def progress(self):
+        self.x, self.y = self.next_point()
+        self.maybe_alter_course()
+
+    def pixels(self):
+        for x, y in self.points:
             yield (math.floor(x), math.floor(y)), Color(self.hue, 1, 1, 3500)
 
 class TileBallsState:
