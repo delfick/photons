@@ -12,6 +12,8 @@ ChangeLog
     * Added tile_balls tile animation
     * Made it possible for photons_protocol to specify an enum field as having
       unknown values
+    * Fixed how skew_ratio in waveform messages are transformed. It's actually
+      scaled 0 to 1, not -1 to 1.
 
 0.9.4 - 3 Jan 2019
     * Added get_tile_positions action

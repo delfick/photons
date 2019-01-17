@@ -30,8 +30,8 @@ waveform_period = T.Uint32.default(0).transform(
     ).allow_float()
 
 waveform_skew_ratio = T.Int16.default(0).transform(
-      lambda _, value: int(32767 * float(value))
-    , lambda value: float(value) / 32767
+      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v))) - 32768
+    , lambda v: float(v + 32768) / 65535
     ).allow_float()
 
 hsbk_with_optional = (

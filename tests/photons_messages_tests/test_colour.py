@@ -44,7 +44,7 @@ describe TestCase, "LightMessages":
               , 'kelvin': 2500
               , 'period': 2.0
               , 'cycles': 5.0
-              , 'skew_ratio': 0.0999786370433668
+              , 'skew_ratio': 0.5499961852445259
               , 'waveform': Waveform.SINE
               }
             )
@@ -60,7 +60,7 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("waveform"), 1)
 
     it "has SetWaveformOptional":
-        msg = self.unpack("3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040cc0c0101000101")
+        msg = self.unpack("3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040ff7f0101000101")
         assert msg | LightMessages.SetWaveformOptional
         self.assertEqual(msg.payload.as_dict()
             , { 'reserved6': b"\x00"
@@ -71,7 +71,7 @@ describe TestCase, "LightMessages":
               , 'kelvin': 2500
               , 'period': 2.0
               , 'cycles': 5.0
-              , 'skew_ratio': 0.0999786370433668
+              , 'skew_ratio': 1
               , 'waveform': Waveform.SINE
               , 'set_hue': 1
               , 'set_saturation': 0
@@ -87,7 +87,7 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("kelvin"), 2500)
         self.assertEqual(msg.payload.actual("period"), 2000)
         self.assertEqual(msg.payload.actual("cycles"), 5)
-        self.assertEqual(msg.payload.actual("skew_ratio"), 3276)
+        self.assertEqual(msg.payload.actual("skew_ratio"), 32767)
         self.assertEqual(msg.payload.actual("waveform"), 1)
         self.assertEqual(msg.payload.actual("set_hue"), 1)
         self.assertEqual(msg.payload.actual("set_saturation"), 0)
