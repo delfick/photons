@@ -328,9 +328,11 @@ class Effects(object):
         return getattr(kls(), effect)(**kwargs)
 
     @effect
-    def pulse(self, cycles=1, duty_cycle=0.5, transient=1, period=1.0, skew_ratio=1, **kwargs):
+    def pulse(self, cycles=1, duty_cycle=0.5, transient=1, period=1.0, skew_ratio=sb.NotSpecified, **kwargs):
         """Options to make the light(s) pulse `color` and then back to its original color"""
-        return dict(waveform=Waveform.PULSE, cycles=cycles, skew_ratio=skew_ratio - duty_cycle, transient=transient, period=period)
+        if skew_ratio is sb.NotSpecified:
+            skew_ratio = 1 - duty_cycle
+        return dict(waveform=Waveform.PULSE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
 
     @effect
     def sine(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):

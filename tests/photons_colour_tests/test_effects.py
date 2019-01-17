@@ -46,7 +46,8 @@ describe TestCase, "Effects":
             if effect == "pulse":
                 # pulse is special, it takes in duty_cycle too
                 overrides["duty_cycle"] = random.random() * 10
-                final["skew_ratio"] = overrides["skew_ratio"] - overrides["duty_cycle"]
+                del overrides["skew_ratio"]
+                final["skew_ratio"] = 1 - overrides["duty_cycle"]
 
             options2 = Effects.make(effect, **overrides)
             self.assertEqual(options2, {"waveform": options["waveform"], **final})

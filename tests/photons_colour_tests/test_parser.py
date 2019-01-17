@@ -242,7 +242,7 @@ describe TestCase, "Parser":
                       , 'kelvin': 2500
                       , 'period': 1.0
                       , 'cycles': 1.0
-                      , 'skew_ratio': 0.499984740745262
+                      , 'skew_ratio': 0.49999237048905165
                       , 'waveform': Waveform.SINE
                       , 'set_hue': 1
                       , 'set_saturation': 1
@@ -271,7 +271,7 @@ describe TestCase, "Parser":
                       , 'kelvin': 2500
                       , 'period': 1.0
                       , 'cycles': 1.0
-                      , 'skew_ratio': 0.1999877925962096
+                      , 'skew_ratio': 0.2
                       , 'waveform': Waveform.PULSE
                       , 'set_hue': 1
                       , 'set_saturation': 1
