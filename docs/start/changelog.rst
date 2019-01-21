@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.9.5 - TBD
+0.9.5 - 21 January 2019
     * Make the dice roll work better with multiple tiles and the combine_tiles
       option
     * Made the falling animation much smoother. Many thanks to @mic159!
@@ -15,7 +15,7 @@ ChangeLog
     * Fixed how skew_ratio in waveform messages are transformed. It's actually
       scaled 0 to 1, not -1 to 1.
 
-0.9.4 - 3 Jan 2019
+0.9.4 - 3 January 2019
     * Added get_tile_positions action
     * Adjustments to the dice font
     * Added the scripts used to generate photons_messages
