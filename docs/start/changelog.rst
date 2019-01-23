@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.10.0 - 23 January 2019
+    * Started using ruamel.yaml instead of PyYaml to load configuration
+
 0.9.5 - 21 January 2019
     * Make the dice roll work better with multiple tiles and the combine_tiles
       option

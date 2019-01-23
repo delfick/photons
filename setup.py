@@ -36,7 +36,7 @@ setup(
       , "delfick_app==0.9.7"
       , "option_merge==1.6"
       , "option_merge_addons==0.3"
-      , "pyYaml==3.13"
+      , "ruamel.yaml==0.15.87"
 
       # photons-tile-messages
       , "lru-dict==1.1.6"

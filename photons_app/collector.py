@@ -21,10 +21,11 @@ from option_merge_addons import Result, Addon, Register, AddonGetter
 from option_merge.collector import Collector
 from option_merge import MergedOptions
 
+from ruamel.yaml import YAML
 import pkg_resources
+import ruamel.yaml
 import asyncio
 import logging
-import yaml
 import os
 
 log = logging.getLogger("photons_app.collector")
@@ -192,8 +193,8 @@ class Collector(Collector):
         """Read in a yaml file and return as a python object"""
         with open(location) as fle:
             try:
-                return yaml.load(fle)
-            except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
+                return YAML(typ='safe').load(fle)
+            except (ruamel.yaml.parser.ParserError, ruamel.yaml.scanner.ScannerError) as error:
                 raise self.BadFileErrorKls("Failed to read yaml"
                     , location = location
                     , error_type = error.__class__.__name__
