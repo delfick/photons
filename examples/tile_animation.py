@@ -27,7 +27,7 @@ class State:
 
         for (left, top), (width, height) in coords:
             for i in range(left, left + width):
-                for j in range(top - height, top):
+                for j in range(top, top - height, -1):
                     self.remaining[(i, j)] = True
 
     def progress(self):
