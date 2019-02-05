@@ -101,10 +101,10 @@ async def doit(collector):
     final_future = asyncio.Future()
 
     # Options for our animation
-    # In this example there aren't any extra options
+    # Here we say start the animation with whatever is currently on the tiles
     # The options has these two options by default https://github.com/delfick/photons-core/blob/master/photons_tile_paint/options.py#L32
     # See existing animations for an example of adding options, like https://github.com/delfick/photons-core/blob/master/photons_tile_paint/dice.py#L24
-    options = {}
+    options = {"background": {"type": "current"}}
 
     try:
         # Run the animation
