@@ -94,7 +94,7 @@ async def doit(collector):
     # More information on special references can be found at https://delfick.github.io/photons-core/photons_app/special.html#photons-app-special
     reference = FoundSerials()
 
-    # Create the animation from our classes defined ab ove
+    # Create the animation from our classes defined above
     animation = Animator(Animation, Options, "Example animation")
 
     # final_future is used for cleanup purposes
