@@ -9,6 +9,8 @@ num_reserved_fields_in_frame: 5
 namespace_order: ["core", "discovery", "device", "light"]
 
 ignore:
+  TileEffectParameter: {}
+  MultiZoneEffectParameter: {}
   TileAccelMeas:
     expanded: true
 
@@ -18,14 +20,37 @@ output:
     static: |
       from enum import Enum
 
+      class Direction(Enum):
+          RIGHT = 0
+          LEFT = 1
+          BACKWARD = 0
+          FORWARD = 1
+
   - create: fields
     dest: "fields.py"
     static: |
+      from photons_messages import enums
+
       from photons_protocol.packets import dictobj
       from photons_protocol.messages import T
 
       from input_algorithms import spec_base as sb
       from lru import LRU
+      import random
+
+      def tile_effect_parameters_for(typ):
+          for i in range(8):
+              yield ("parameter{0}".format(i), T.Reserved(32))
+
+      def multizone_effect_parameters_for(typ):
+          if typ is enums.MultiZoneEffectType.MOVE:
+              yield ("parameter1", T.Reserved(32))
+              yield ("speed_direction", T.Uint32.enum(enums.Direction).default(enums.Direction.RIGHT))
+              for i in range(6):
+                  yield ("parameter{0}".format(i + 2), T.Reserved(32))
+          else:
+              for i in range(8):
+                  yield ("parameter{0}".format(i), T.Reserved(32))
 
   - create: packets
     dest: "messages.py"
@@ -53,6 +78,18 @@ types:
         transform(
               lambda _, value: int(1000 * float(value))
             , lambda value: float(value) / 1000
+            )
+      - "allow_float()"
+
+  extended_duration_type:
+    type: uint64
+    size_bytes: 8
+    default: "0"
+    extras:
+      - |
+        transform(
+              lambda _, value: int(1e9 * float(value))
+            , lambda value: float(value) / 1e9
             )
       - "allow_float()"
 
@@ -304,6 +341,53 @@ changes:
       Color:
         rename: colors
 
+  MultiZoneGetEffect:
+    rename: GetMultiZoneEffect
+
+  MultiZoneSetEffect:
+    rename: SetMultiZoneEffect
+
+  MultiZoneStateEffect:
+    rename: StateMultiZoneEffect
+    using: MultiZoneSetEffect
+
+  MultiZoneEffectSettings:
+    fields:
+      Instanceid:
+        extras: "default(lambda pkt: random.randrange(1, 1<<32))"
+      Type:
+        default: "MOVE"
+        allow_unknown_enums: true
+      Speed:
+        special_type: duration_type
+        default: "5"
+      Duration:
+        special_type: extended_duration_type
+      Parameter:
+        rename: parameters
+        extras: "dynamic(lambda pkt: multizone_effect_parameters_for(pkt.type))"
+
+  MultiZoneExtendedGetColorZones:
+    rename: GetExtendedColorZones
+
+  MultiZoneExtendedSetColorZones:
+    rename: SetExtendedColorZones
+    fields:
+      Duration:
+        special_type: duration_type
+      Apply:
+        default: "APPLY"
+      Index:
+        rename: zone_index
+
+  MultiZoneExtendedStateMultiZone:
+    rename: StateExtendedColorZones
+    fields:
+      Count:
+        rename: zones_count
+      Index:
+        rename: zone_index
+
   TileStateDevice:
     many_options:
       name: Tile
@@ -319,3 +403,36 @@ changes:
     fields:
       Duration:
         special_type: duration_type
+
+  TileEffectSettings:
+    fields:
+      Instanceid:
+        extras: "default(lambda pkt: random.randrange(1, 1<<32))"
+      Type:
+        default: "OFF"
+        allow_unknown_enums: true
+      Speed:
+        special_type: duration_type
+        default: "5"
+      Duration:
+        special_type: extended_duration_type
+      Parameter:
+        rename: parameters
+        extras: "dynamic(lambda pkt: tile_effect_parameters_for(pkt.type))"
+
+  TileGetEffect:
+    rename: GetTileEffect
+
+  TileSetEffect:
+    rename: SetTileEffect
+    fields:
+      Reserved0:
+        rename: reserved8
+      Reserved1:
+        rename: reserved9
+
+  TileStateEffect:
+    rename: StateTileEffect
+    fields:
+      Reserved0:
+        rename: reserved8

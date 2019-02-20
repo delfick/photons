@@ -1,12 +1,34 @@
+from photons_messages import enums
+
 from photons_protocol.packets import dictobj
 from photons_protocol.messages import T
 
 from input_algorithms import spec_base as sb
 from lru import LRU
+import random
+
+def tile_effect_parameters_for(typ):
+    for i in range(8):
+        yield ("parameter{0}".format(i), T.Reserved(32))
+
+def multizone_effect_parameters_for(typ):
+    if typ is enums.MultiZoneEffectType.MOVE:
+        yield ("parameter1", T.Reserved(32))
+        yield ("speed_direction", T.Uint32.enum(enums.Direction).default(enums.Direction.RIGHT))
+        for i in range(6):
+            yield ("parameter{0}".format(i + 2), T.Reserved(32))
+    else:
+        for i in range(8):
+            yield ("parameter{0}".format(i), T.Reserved(32))
 
 duration_type = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
     , lambda value: float(value) / 1000
+    ).allow_float()
+
+extended_duration_type = T.Uint64.default(0).transform(
+      lambda _, value: int(1e9 * float(value))
+    , lambda value: float(value) / 1e9
     ).allow_float()
 
 scaled_hue = T.Uint16.transform(
@@ -52,6 +74,17 @@ class Color(dictobj.PacketSpec):
     fields = hsbk
 Color.Meta.cache = LRU(8000)
 
+multi_zone_effect_settings = (
+      ("instanceid", T.Uint32.default(lambda pkt: random.randrange(1, 1<<32)))
+    , ("type", T.Uint8.enum(enums.MultiZoneEffectType, allow_unknown=True).default(enums.MultiZoneEffectType.MOVE))
+    , ("reserved6", T.Reserved(16))
+    , ("speed", duration_type.default(5))
+    , ("duration", extended_duration_type)
+    , ("reserved7", T.Reserved(32))
+    , ("reserved8", T.Reserved(32))
+    , ("parameters", T.Bytes(32 * 8).dynamic(lambda pkt: multizone_effect_parameters_for(pkt.type)))
+    )
+
 tile_state_device = (
       ("accel_meas_x", T.Int16)
     , ("accel_meas_y", T.Int16)
@@ -79,4 +112,16 @@ tile_buffer_rect = (
     , ("x", T.Uint8)
     , ("y", T.Uint8)
     , ("width", T.Uint8)
+    )
+
+tile_effect_settings = (
+      ("instanceid", T.Uint32.default(lambda pkt: random.randrange(1, 1<<32)))
+    , ("type", T.Uint8.enum(enums.TileEffectType, allow_unknown=True).default(enums.TileEffectType.OFF))
+    , ("speed", duration_type.default(5))
+    , ("duration", extended_duration_type)
+    , ("reserved6", T.Reserved(32))
+    , ("reserved7", T.Reserved(32))
+    , ("parameters", T.Bytes(32 * 8).dynamic(lambda pkt: tile_effect_parameters_for(pkt.type)))
+    , ("palette_count", T.Uint8)
+    , ("palette", T.Bytes(64 * 16).many(lambda pkt: Color))
     )

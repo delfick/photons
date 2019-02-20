@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.10.1 - TBD
+    * Added messages for Extended multizone and firmware effects
+
 0.10.0 - 23 January 2019
     * Started using ruamel.yaml instead of PyYaml to load configuration
 

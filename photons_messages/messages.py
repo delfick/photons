@@ -230,6 +230,31 @@ class MultiZoneMessages(Messages):
         , ("colors", T.Bytes(64 * 8).many(lambda pkt: fields.Color))
         )
 
+    GetMultiZoneEffect = msg(507)
+
+    SetMultiZoneEffect = msg(508
+        , *fields.multi_zone_effect_settings
+        )
+
+    StateMultiZoneEffect = SetMultiZoneEffect.using(509)
+
+    SetExtendedColorZones = msg(510
+        , ("duration", fields.duration_type)
+        , ("apply", T.Uint8.enum(enums.MultiZoneExtendedApplicationRequest).default(enums.MultiZoneExtendedApplicationRequest.APPLY))
+        , ("zone_index", T.Uint16)
+        , ("colors_count", T.Uint8)
+        , ("colors", T.Bytes(64 * 82).many(lambda pkt: fields.Color))
+        )
+
+    GetExtendedColorZones = msg(511)
+
+    StateExtendedColorZones = msg(512
+        , ("zones_count", T.Uint16)
+        , ("zone_index", T.Uint16)
+        , ("colors_count", T.Uint8)
+        , ("colors", T.Bytes(64 * 82).many(lambda pkt: fields.Color))
+        )
+
 ########################
 ###   TILE
 ########################
@@ -273,6 +298,22 @@ class TileMessages(Messages):
         , *fields.tile_buffer_rect
         , ("duration", fields.duration_type)
         , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
+        )
+
+    GetTileEffect = msg(718
+        , ("reserved6", T.Reserved(8))
+        , ("reserved7", T.Reserved(8))
+        )
+
+    SetTileEffect = msg(719
+        , ("reserved8", T.Reserved(8))
+        , ("reserved9", T.Reserved(8))
+        , *fields.tile_effect_settings
+        )
+
+    StateTileEffect = msg(720
+        , ("reserved8", T.Reserved(8))
+        , *fields.tile_effect_settings
         )
 
 __all__ = ["CoreMessages", "DiscoveryMessages", "DeviceMessages", "LightMessages", "MultiZoneMessages", "TileMessages"]
