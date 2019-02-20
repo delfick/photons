@@ -136,6 +136,30 @@ class AsyncTestCase(AsyncTestCase, DelfickErrorTestMixin):
         except asyncio.TimeoutError as error:
             assert False, "Failed to wait for future before timeout: {0}".format(error)
 
+def with_timeout(func):
+    """
+    A decorator that returns an async function that runs the original function
+    with a timeout
+
+    It assumes you are decorating a method on a class with a ``wait_for`` method
+
+    .. code-block:: python
+
+        from photons_app.test_helpers import AsyncTestCase, with_timeout
+
+        import asyncio
+
+        class TestSomething(AsyncTestCase):
+            @with_timeout
+            async def test_waiting(self):
+                # This will assert False cause the function takes too long
+                await asyncio.sleep(20)
+    """
+    async def test(s):
+        await s.wait_for(func(s))
+    test.__name__ = func.__name__
+    return test
+
 def assertFutCallbacks(fut, *cbs):
     callbacks = fut._callbacks
 
