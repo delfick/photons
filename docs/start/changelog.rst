@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.10.1 - TBD
+0.10.1 - 20 February 2019
     * Added messages for Extended multizone and firmware effects
     * Made photons_products_registry aware of extended multizone
     * The apply_theme action now uses extended multizone when that is available
