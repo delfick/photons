@@ -8,12 +8,14 @@ ChangeLog
     * Made photons_products_registry aware of extended multizone
     * The apply_theme action now uses extended multizone when that is available
     * Added the following actions:
-        * attr - Much like get_attr and set_attr but without the auto prefix
-        * attr_actual - same as attr but shows the actual values on the responses
-            rather than the transformed values
-        * multizone_effect - start or stop a firmware effect on your multizone
-            device
-        * tile_effect - start or stop a firmware effect on your LIFX Tile.
+
+      * attr: Much like get_attr and set_attr but without the auto prefix
+      * attr_actual: same as attr but shows the actual values on the responses
+        rather than the transformed values
+      * multizone_effect: start or stop a firmware effect on your multizone
+        device
+      * tile_effect: start or stop a firmware effect on your LIFX Tile.
+
     * Fixed the set_zones action to be more useful
 
 0.10.0 - 23 January 2019
