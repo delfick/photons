@@ -13,6 +13,7 @@ from option_merge_addons import option_merge_addon_hook
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
+from collections import defaultdict
 import logging
 
 @option_merge_addon_hook(extras=[
@@ -80,13 +81,27 @@ async def do_apply_theme(target, reference, afr, options):
     for color in options.colors:
         theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
+    info = defaultdict(dict)
+    async for pkt, _, _ in target.script([DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()]).run_with(reference, afr):
+        if pkt | DeviceMessages.StateVersion:
+            info[pkt.serial]["capability"] = capability_for_ids(pkt.product, pkt.vendor)
+        elif pkt | DeviceMessages.StateHostFirmware:
+            info[pkt.serial]["firmware"] = pkt.build
+
     tasks = []
-    async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
-        serial = pkt.serial
-        capability = capability_for_ids(pkt.product, pkt.vendor)
+    for serial, details in info.items():
+        if "capability" not in details:
+            continue
+
+        firmware = details.get("firmware")
+        capability = details["capability"]
+
         if capability.has_multizone:
             log.info(hp.lc("Found a strip", serial=serial))
-            t = hp.async_as_background(apply_zone(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
+            if capability.has_extended_multizone(firmware):
+                t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
+            else:
+                t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
         elif capability.has_chain:
             log.info(hp.lc("Found a tile", serial=serial))
             t = hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.serial, theme, options.overrides))
@@ -108,7 +123,35 @@ async def do_apply_theme(target, reference, afr, options):
 
     return results
 
-async def apply_zone(applier, target, afr, serial, theme, overrides):
+async def apply_zone_extended(applier, target, afr, serial, theme, overrides):
+    length = None
+    async for pkt, _, _ in target.script(MultiZoneMessages.GetExtendedColorZones()).run_with(serial, afr):
+        if pkt | MultiZoneMessages.StateExtendedColorZones:
+            length = pkt.zones_count
+
+    if length is None:
+        log.warning(hp.lc("Couldn't work out how many zones the light had", serial=serial))
+        return
+
+    colors = []
+    for (start_index, end_index), hsbk in applier(length).apply_theme(theme):
+        for _ in range(0, end_index - start_index + 1):
+            colors.append(hsbk.as_dict())
+
+    set_zones = MultiZoneMessages.SetExtendedColorZones(
+          zone_index = 0
+        , colors_count = len(colors)
+        , colors = colors
+        , duration = overrides.get("duration", 1)
+        , res_required = False
+        , ack_required = True
+        )
+
+    set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
+
+    await target.script([set_power, set_zones]).run_with_all(serial, afr)
+
+async def apply_zone_old(applier, target, afr, serial, theme, overrides):
     length = None
     msg = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
     async for pkt, _, _ in target.script(msg).run_with(serial, afr):
