@@ -17,6 +17,7 @@ __shortdesc__ = "Tasks and code for control of the devices"
 @option_merge_addon_hook(extras=[
       ("lifx.photons", "messages")
     , ("lifx.photons", "colour")
+    , ("lifx.photons", "products_registry")
     ])
 def __lifx__(collector, *args, **kwargs):
     pass

@@ -4,7 +4,8 @@
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_messages import TileMessages
+from photons_messages import TileMessages, TileEffectType
+from photons_colour import Parser
 
 from input_algorithms.errors import BadSpecValue
 from input_algorithms import spec_base as sb
@@ -64,6 +65,83 @@ async def get_chain_state(collector, target, reference, **kwargs):
             for index, color in enumerate(pkt.colors):
                 print("        color {0}".format(index), repr(color))
             print("")
+
+@an_action(needs_target=True, special_reference=True)
+async def tile_effect(collector, target, reference, artifact, **kwargs):
+    """
+    Set an animation on your tile!
+
+    ``lan:tile_effect d073d5000001 <type> -- '{<options>}'``
+
+    Where type is one of the available effect types:
+
+    OFF
+        Turn of the animation off
+
+    MOVE
+        No supported on tile
+
+    MORPH
+        Move through a perlin noise map, assigning pixel values from a
+        16-color palette
+
+    FLAME
+        Behaviour TBD
+
+    RIPPLE
+        Behaviour TBD
+
+    For effects that take in a palette option, you may specify palette as
+    ``[{"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 2500}, ...]``
+
+    or as ``[[0, 1, 1, 2500], ...]`` or as ``[[0, 1, 1], ...]``
+
+    or as ``["red", "hue:100 saturation:1", "blue"]``
+    """
+    if artifact in ("", None, sb.NotSpecified):
+        raise PhotonsAppError("Please specify type of effect with --artifact")
+
+    typ = None
+    for e in TileEffectType:
+        if e.name.lower() == artifact.lower():
+            typ = e
+            break
+
+    if typ is None:
+        available = [e.name for e in TileEffectType]
+        raise PhotonsAppError("Please specify a valid type", wanted=artifact, available=available)
+
+    options = collector.configuration["photons_app"].extra_as_json or {}
+
+    options["type"] = typ
+    if "palette" not in options:
+        options["palette"] = [
+              {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
+              for hue in [0, 40, 60, 122, 239, 271, 294]
+            ]
+
+    if typ is not TileEffectType.OFF:
+        if len(options["palette"]) > 16:
+            raise PhotonsAppError("Palette can only be up to 16 colors", got=len(options["palette"]))
+
+        palette = []
+        for thing in options["palette"]:
+            if type(thing) is list:
+                if len(thing) == 3:
+                    thing.append(2500)
+                palette.append({"hue": thing[0], "saturation": thing[1], "brightness": thing[2], "kelvin": thing[3]})
+            elif type(thing) is str:
+                h, s, b, k = Parser.hsbk(thing, {"brightness": 1})
+                palette.append({"hue": h or 0, "saturation": s or 1, "brightness": b or 1, "kelvin": k or 3500})
+            else:
+                palette.append(thing)
+
+        options["palette"] = palette
+
+    options["palette_count"] = len(options["palette"])
+    options["res_required"] = False
+    msg = TileMessages.SetTileEffect.empty_normalise(**options)
+    await target.script(msg).run_with_all(reference)
 
 class list_spec(sb.Spec):
     def setup(self, *specs):

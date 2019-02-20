@@ -1,9 +1,102 @@
 from photons_app.actions import an_action
 from photons_app.errors import BadOption
 
+from photons_messages import DeviceMessages, MultiZoneMessages, TileMessages
+from photons_products_registry import capability_for_ids
+
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 import sys
+
+def find_packet(protocol_register, value, prefix):
+    """
+    Return either None or the class object for this value/prefix combination.
+
+    For example, if value is GetHostFirmware then the GetHostFirmware packet is returned
+
+    If the value is host_firmware or HostFirmware, then we get GetHostFirmware if the prefix is Get and SetHostFirmware if the prefix is Set
+    """
+    prefix = prefix.lower().capitalize()
+
+    kls_name_plain = f"{prefix}{value}"
+    kls_name_transformed = f"""{prefix}{"".join(part.capitalize() for part in value.split("_"))}"""
+
+    for messages in protocol_register.message_register(1024):
+        for kls in messages.by_type.values():
+            if kls.__name__ in (value, kls_name_plain, kls_name_transformed):
+                return kls
+
+@an_action(special_reference=True, needs_target=True)
+async def attr(collector, target, reference, artifact, **kwargs):
+    """
+    Send a message to your bulb and print out all the replies.
+
+    This is the same as the get_attr and set_attr commands but doesn't prefix the wanted message with get or set
+
+    ``target:attr d073d5000000 get_host_firmware``
+    """
+    protocol_register = collector.configuration["protocol_register"]
+
+    if artifact in (None, "", NotSpecified):
+        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
+
+    kls = find_packet(protocol_register, artifact, "")
+    if kls is None:
+        raise BadOption("Sorry, couldn't a class for this message", prefix="", want=artifact)
+
+    photons_app = collector.configuration["photons_app"]
+
+    extra = photons_app.extra_as_json
+
+    if "extra_payload_kwargs" in kwargs:
+        extra.update(kwargs["extra_payload_kwargs"])
+
+    script = target.script(kls.normalise(Meta.empty(), extra))
+    async for pkt, _, _ in script.run_with(reference, **kwargs):
+        print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
+
+@an_action(special_reference=True, needs_target=True)
+async def attr_actual(collector, target, reference, artifact, **kwargs):
+    """
+    Same as the attr command but prints out the actual values on the replies rather than transformed values
+    """
+    protocol_register = collector.configuration["protocol_register"]
+
+    if artifact in (None, "", NotSpecified):
+        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
+
+    kls = find_packet(protocol_register, artifact, "")
+    if kls is None:
+        raise BadOption("Sorry, couldn't a class for this message", prefix="", want=artifact)
+
+    photons_app = collector.configuration["photons_app"]
+
+    extra = photons_app.extra_as_json
+
+    if "extra_payload_kwargs" in kwargs:
+        extra.update(kwargs["extra_payload_kwargs"])
+
+    def lines(pkt, indent="    "):
+        for field in pkt.Meta.all_names:
+            val = pkt[field]
+            if isinstance(val, list):
+                yield f"{indent}{field}:"
+                for item in val:
+                    ind = f"{indent}    "
+                    ls = list(lines(item, ind))
+                    first = list(ls[0])
+                    first[len(indent) + 2] = "*"
+                    ls[0] = "".join(first)
+                    yield from ls
+            else:
+                yield f"{indent}{field}: {pkt.actual(field)}"
+
+    script = target.script(kls.normalise(Meta.empty(), extra))
+    async for pkt, _, _ in script.run_with(reference, **kwargs):
+        print()
+        print(f"""{"=" * 10}: {pkt.serial}""")
+        for line in lines(pkt):
+            print(line)
 
 @an_action(special_reference=True, needs_target=True)
 async def get_attr(collector, target, reference, artifact, **kwargs):
@@ -27,17 +120,9 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     if artifact in (None, "", NotSpecified):
         raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
 
-    kls_name = "Get{0}".format("".join(part.capitalize() for part in artifact.split("_")))
-
-    getter = None
-    for messages in protocol_register.message_register(1024):
-        for kls in messages.by_type.values():
-            if kls.__name__ == kls_name:
-                getter = kls
-                break
-
+    getter = find_packet(protocol_register, artifact, "Get")
     if getter is None:
-        raise BadOption("Sorry, couldn't find the message type {0}".format(kls_name))
+        raise BadOption("Sorry, couldn't a class for this message", prefix="get", want=artifact)
 
     photons_app = collector.configuration["photons_app"]
 
@@ -68,17 +153,9 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     if artifact in (None, "", NotSpecified):
         raise BadOption("Please specify what you want to get\nUsage: {0} <target>:set_attr <reference> <attr_to_get> -- '{{<options>}}'".format(sys.argv[0]))
 
-    kls_name = "Set{0}".format("".join(part.capitalize() for part in artifact.split("_")))
-
-    setter = None
-    for messages in protocol_register.message_register(1024):
-        for kls in messages.by_type.values():
-            if kls.__name__ == kls_name:
-                setter = kls
-                break
-
+    setter = find_packet(protocol_register, artifact, "Set")
     if setter is None:
-        raise BadOption("Sorry, couldn't find the message type {0}".format(kls_name))
+        raise BadOption("Sorry, couldn't a class for this message", prefix="get", want=artifact)
 
     photons_app = collector.configuration["photons_app"]
 
@@ -90,3 +167,34 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     script = target.script(setter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, broadcast=broadcast):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
+
+@an_action(needs_target=True, special_reference=True)
+async def get_effects(collector, target, reference, **kwargs):
+    types = {}
+    async with target.session() as afr:
+        async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
+            if pkt | DeviceMessages.StateVersion:
+                types[pkt.serial] = capability_for_ids(pkt.product, pkt.vendor)
+
+        msgs = []
+        for serial, cap in types.items():
+            if cap.has_chain:
+                msgs.append(TileMessages.GetTileEffect(target=serial))
+            elif cap.has_multizone:
+                msgs.append(MultiZoneMessages.GetMultiZoneEffect(target=serial))
+
+        async for pkt, _, _ in target.script(msgs).run_with(None, afr):
+            print(f"{pkt.serial}: {pkt.type}")
+            for field, value in sorted(pkt.payload.as_dict().items()):
+                if "reserved" not in field and field != "type":
+                    if field == "palette":
+                        print("\tpalette:")
+                        for color in value:
+                            print(f"\t\t{repr(color)}")
+                    elif field == "parameters":
+                        for name, val in value.items():
+                            if not name.startswith("parameter"):
+                                print(f"\t{name}: {val}")
+                    else:
+                        print(f"\t{field}: {value}")
+            print()
