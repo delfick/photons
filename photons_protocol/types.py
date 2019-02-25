@@ -545,7 +545,7 @@ class version_number_spec(sb.Spec):
 
             val = sb.integer_spec().normalise(meta, val)
             major = val >> 0x10
-            minor = val & 0xFF
+            minor = val & 0xFFFF
             return f"{major}.{minor}"
         else:
             if type(val) is int:
