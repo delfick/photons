@@ -30,8 +30,7 @@ our ``my_script`` file.
 
 .. code-block:: python
 
-    #/bin/sh
-    "exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"
+    #!/usr/bin/env python -cos=__import__("os");sys=__import__("sys");python=os.path.join(os.path.dirname(sys.argv[1]),".lifx/bin/python");os.execv(python,sys.argv)
 
     from photons_app.actions import an_action
 
@@ -67,21 +66,10 @@ I'll complete the ``do_turn_off`` action below for completeness sake, but first
 let's go over the different parts of this file and what they are for and what
 they do.
 
-``#/bin/sh``
-    This the shebang and tells your shell to run this file as a bash script.
-
-    We do this because we use the second line to run the file with the python
-    interpreter from our virtualenv.
-
-``"exec" "`dirname $0`/.lifx/bin/python" "$0" "$@"``
-    Find the python in our virtualenv and execute this file using it.
-
-.. note:: The shebang and exec line are only necessary so you don't have to
- activate the virtualenv yourself. You can always activate the virtualenv and
- run the script with the python from your virtualenv.
-
- For example, ``source .lifx/bin/activate && python my_script`` instead of just
- ``./my_script``
+``#!/usr/bin/env python -cos=__import__("os");sys=__import__("sys");python=os.path.join(os.path.dirname(sys.argv[1]),".lifx/bin/python");os.execv(python,sys.argv)``
+    This shebang means that when you say ``./my_script`` you are actually saying
+    ``./.lifx/bin/python ./my_script`` so that you are running the script
+    with the python in the virtualenv you created when you ran ``./setup_venv``
 
 ``option_merge_addon_hook``
     This function registers this module and is used to specify what other
