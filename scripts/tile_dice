@@ -8,9 +8,9 @@ from photons_tile_paint.animation import (
     , tile_serials_from_reference, put_characters_on_canvas 
     , canvas_to_msgs, orientations_from
     )
+from photons_messages import TileMessages, DeviceMessages
 from photons_themes.theme import ThemeColor as Color
 from photons_tile_paint.font.dice import dice
-from photons_messages import TileMessages
 from photons_themes.canvas import Canvas
 
 from option_merge_addons import option_merge_addon_hook
@@ -65,6 +65,8 @@ async def tile_dice(collector, target, reference, **kwargs):
         msgs = []
         for serial in serials:
             os = orientations.get(serial)
+            msgs.append(DeviceMessages.SetPower(level=65535, target=serial))
+
             for msg in canvas_to_msgs(canvas, coords_for_horizontal_line, duration=1, acks=True, orientations=os):
                 msg.target = serial
                 msgs.append(msg)
