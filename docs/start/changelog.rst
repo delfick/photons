@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.10.2 - TBD
+0.10.2 - 3 March 2019
     * Fixed a bug when applying a theme to multiple devices
 
 0.10.1 - 20 February 2019
