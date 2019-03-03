@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.10.2 - TBD
+    * Fixed a bug when applying a theme to multiple devices
+
 0.10.1 - 20 February 2019
     * Added messages for Extended multizone and firmware effects
     * Made photons_products_registry aware of extended multizone

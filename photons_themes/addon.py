@@ -99,15 +99,15 @@ async def do_apply_theme(target, reference, afr, options):
         if capability.has_multizone:
             log.info(hp.lc("Found a strip", serial=serial))
             if capability.has_extended_multizone(firmware):
-                t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
+                t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides))
             else:
-                t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, pkt.serial, theme, options.overrides))
+                t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides))
         elif capability.has_chain:
             log.info(hp.lc("Found a tile", serial=serial))
-            t = hp.async_as_background(apply_tile(aps["2d"], target, afr, pkt.serial, theme, options.overrides))
+            t = hp.async_as_background(apply_tile(aps["2d"], target, afr, serial, theme, options.overrides))
         else:
             log.info(hp.lc("Found a light", serial=serial))
-            t = hp.async_as_background(apply_light(aps["0d"], target, afr, pkt.serial, theme, options.overrides))
+            t = hp.async_as_background(apply_light(aps["0d"], target, afr, serial, theme, options.overrides))
 
         tasks.append((serial, t))
 
