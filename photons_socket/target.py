@@ -101,7 +101,7 @@ class SocketBridge(TransportBridge):
         try:
             kwargs["broadcast"] = broadcast
             kwargs["accept_found"] = True
-            kwargs["timeout"] = timeout
+            kwargs["message_timeout"] = timeout
             async for pkt, addr, broadcast in script.run_with([], self, **kwargs):
                 target = pkt.target[:6]
                 found_now.append(target)

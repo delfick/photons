@@ -1,16 +1,22 @@
 # coding: spec
 
+from photons_transport.target.retry_options import RetryOptions
 from photons_transport.target.item import TransportItem
+from photons_transport.target.waiter import Waiter
 
 from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
 import asynctest
 import binascii
 import asyncio
 import mock
+
+class LargeRetryOptions(RetryOptions):
+    timeouts = [(1, 5)]
 
 describe AsyncTestCase, "TransportItem":
     async it "takes in parts":
@@ -247,6 +253,11 @@ describe AsyncTestCase, "TransportItem":
                 self.make_writer = asynctest.mock.CoroutineMock(name="make_writer")
                 self.check_packet = mock.Mock(name="check_packet")
 
+                self.stop_fut = asyncio.Future()
+
+            async after_each:
+                self.stop_fut.cancel()
+
             async it "collects errors from check_packet and from waiter and waits on the rest":
                 err = PhotonsAppError("packet not found")
                 err2 = PhotonsAppError("Failed to wait")
@@ -289,7 +300,7 @@ describe AsyncTestCase, "TransportItem":
                 async def doit():
                     async for info in self.item.write_messages(self.packets
                         , self.check_packet, self.make_writer, self.make_waiter
-                        , timeout=0.1, error_catcher=errors
+                        , message_timeout=0.1, error_catcher=errors
                         ):
                         results.append(info)
                 await self.wait_for(doit())
@@ -333,7 +344,7 @@ describe AsyncTestCase, "TransportItem":
                 async def doit():
                     async for info in self.item.write_messages(self.packets
                         , self.check_packet, self.make_writer, self.make_waiter
-                        , timeout=0.1, error_catcher=errors
+                        , message_timeout=0.1, error_catcher=errors
                         ):
                         results.append(info)
                 await self.wait_for(doit())
@@ -344,3 +355,198 @@ describe AsyncTestCase, "TransportItem":
                       ]
                     ))
                 self.assertEqual(results, [r1, r4])
+
+            async it "creates message cancelled error if it gets cancelled":
+                self.check_packet.return_value = None
+
+                w1 = asyncio.Future()
+                w2 = asyncio.Future()
+                w3 = asyncio.Future()
+                w4 = asyncio.Future()
+
+                async def make_writer(o, p):
+                    self.assertIs({self.p1: self.o1, self.p2: self.o2, self.p3: self.o3, self.p4: self.o4}[p], o)
+                    return {self.p1: w1, self.p2: w2, self.p3: w3, self.p4: w4}[p]
+                self.make_writer.side_effect = make_writer
+
+                f1 = asyncio.Future()
+                f2 = asyncio.Future()
+                f3 = asyncio.Future()
+                f4 = asyncio.Future()
+
+                r1 = mock.Mock(name="r1")
+                r4 = mock.Mock(name="r4")
+
+                def make_waiter(w):
+                    f = {w1: f1, w2: f2, w3: f3, w4: f4}[w]
+                    if w in (w2, w3):
+                        return f
+
+                    f.set_result([{w1: r1, w4: r4}[w]])
+                    return f
+                self.make_waiter.side_effect = make_waiter
+
+                errors = []
+                results = []
+
+                async def doit():
+                    async for info in self.item.write_messages(self.packets
+                        , self.check_packet, self.make_writer, self.make_waiter
+                        , message_timeout=1, error_catcher=errors
+                        ):
+                        results.append(info)
+
+                t = hp.async_as_background(doit())
+                await self.wait_for(f1)
+                await self.wait_for(f4)
+                t.cancel()
+
+                # Do a switch so that the cancellation happens and errors gets populated
+                await asyncio.sleep(0.01)
+
+                self.assertEqual(sorted(errors), sorted(
+                      [ TimedOut("Message was cancelled", serial=self.serial1)
+                      , TimedOut("Message was cancelled", serial=self.serial2)
+                      ]
+                    ))
+                self.assertEqual(results, [r1, r4])
+
+            async def assertLimits(self, results, waits, expectedResult, expectedMaxinflight, limit, timeout=1):
+                self.check_packet.return_value = None
+
+                info = {"inflight": 0, "maxinflight": 0}
+
+                class Writer:
+                    def __init__(s, timeout, result):
+                        s.result = result
+                        s.timeout = timeout
+
+                    async def ensure_conn(s):
+                        pass
+
+                    async def __call__(s):
+                        info["inflight"] += 1
+                        info["maxinflight"] = max(info["maxinflight"], info["inflight"])
+                        await asyncio.sleep(s.timeout)
+                        info["inflight"] -= 1
+                        f = asyncio.Future()
+                        f.set_result([s.result])
+                        return f
+
+                async def make_writer(o, p):
+                    self.assertIs({self.p1: self.o1, self.p2: self.o2, self.p3: self.o3, self.p4: self.o4}[p], o)
+                    w = {self.p1: 1, self.p2: 2, self.p3: 3, self.p4: 4}[p]
+                    return Writer(waits[w], results[w])
+                self.make_writer.side_effect = make_writer
+
+                def make_waiter(writer):
+                    return Waiter(self.stop_fut, writer, LargeRetryOptions())
+                self.make_waiter.side_effect = make_waiter
+
+                def errors(e):
+                    raise e
+
+                res = []
+
+                async def doit():
+                    async for info in self.item.write_messages(self.packets
+                        , self.check_packet, self.make_writer, self.make_waiter
+                        , message_timeout = timeout, error_catcher=errors, limit = limit
+                        ):
+                        res.append(info)
+                await self.wait_for(doit())
+
+                self.assertEqual(res, expectedResult, res)
+                self.assertEqual(info["maxinflight"], expectedMaxinflight)
+
+            async it "defaults to no limit":
+                r1 = mock.Mock(name="r1")
+                r2 = mock.Mock(name="r2")
+                r3 = mock.Mock(name="r3")
+                r4 = mock.Mock(name="r4")
+
+                results = {
+                      1: r1
+                    , 2: r2
+                    , 3: r3
+                    , 4: r4
+                    }
+
+                waits = {
+                      1: 0.04
+                    , 2: 0.02
+                    , 3: 0.03
+                    , 4: 0.05
+                    }
+
+                expected = [r2, r3, r1, r4]
+                await self.assertLimits(results, waits, expected, 4, None)
+
+            async it "can be given a limit":
+                r1 = mock.Mock(name="r1")
+                r2 = mock.Mock(name="r2")
+                r3 = mock.Mock(name="r3")
+                r4 = mock.Mock(name="r4")
+
+                results = {
+                      1: r1
+                    , 2: r2
+                    , 3: r3
+                    , 4: r4
+                    }
+
+                waits = {
+                      1: 0.04
+                    , 2: 0.02
+                    , 3: 0.03
+                    , 4: 0.05
+                    }
+
+                expected = [r2, r1, r3, r4]
+                await self.assertLimits(results, waits, expected, 2, asyncio.Semaphore(2))
+
+            async it "can be given a limit of 1":
+                r1 = mock.Mock(name="r1")
+                r2 = mock.Mock(name="r2")
+                r3 = mock.Mock(name="r3")
+                r4 = mock.Mock(name="r4")
+
+                results = {
+                      1: r1
+                    , 2: r2
+                    , 3: r3
+                    , 4: r4
+                    }
+
+                waits = {
+                      1: 0.04
+                    , 2: 0.02
+                    , 3: 0.03
+                    , 4: 0.05
+                    }
+
+                expected = [r1, r2, r3, r4]
+                await self.assertLimits(results, waits, expected, 1, asyncio.Semaphore(1))
+
+            async it "timeout is per message":
+                r1 = mock.Mock(name="r1")
+                r2 = mock.Mock(name="r2")
+                r3 = mock.Mock(name="r3")
+                r4 = mock.Mock(name="r4")
+
+                results = {
+                      1: r1
+                    , 2: r2
+                    , 3: r3
+                    , 4: r4
+                    }
+
+                waits = {
+                      1: 0.06
+                    , 2: 0.06
+                    , 3: 0.09
+                    , 4: 0.05
+                    }
+
+                expected = [r1, r2, r3, r4]
+                await self.assertLimits(results, waits, expected, 1, asyncio.Semaphore(1), timeout=0.1)

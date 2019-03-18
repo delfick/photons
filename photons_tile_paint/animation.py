@@ -250,7 +250,7 @@ class Animation:
             async with pauser:
                 if final_future.done():
                     break
-                await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors)
+                await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors, limit=None)
 
             if final_future.done():
                 break

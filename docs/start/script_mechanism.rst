@@ -65,6 +65,49 @@ If you want to make sure they happen in order, then use a
  will return the state before the message is applied. Note that ack_required
  defaults to True, so photons will still know to retry if we don't get an ack
 
+Inflight limit
+--------------
+
+When you call run_with, photons will default to ensuring there's only 30 messages
+being sent at any one time. This means for that run_with, the 31st message will
+be sent once the first message to get replies does so.
+
+You can change the limit by specifying the limit option. For example, to limit
+to only 3 messages being sent at any one time, you could say:
+
+.. code-block:: python
+
+    await target.script(msg).run_with_all(reference, afr, limit=3)
+
+You may also specify no limit by passing in limit as None:
+
+.. code-block:: python
+
+    await target.script(msg).run_with_all(reference, afr, limit=None)
+
+Or you may share a limit between multiple run_with calls by sharing an
+asyncio.Semaphore object. This makes sense if you're doing multiple run_withs
+at the same time:
+
+.. code-block:: python
+
+    from photons_app import helpers as hp
+
+    import asyncio
+
+    async def send(limit):
+        msg = ...
+        await target.script(msg).run_with_all(reference, afr, limit=limit)
+
+    limit = asyncio.Semaphore(20)
+
+    ts = [
+          hp.async_as_background(send(limit))
+        , hp.async_as_background(send(limit))
+        ]
+
+    await asyncio.wait(ts)
+
 The AFR
 -------
 

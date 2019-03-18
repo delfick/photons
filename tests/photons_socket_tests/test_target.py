@@ -60,7 +60,7 @@ describe AsyncTestCase, "SocketTarget":
 
             found = []
             script = self.target.script(DiscoveryMessages.GetService(ack_required=False))
-            async for pkt, _, _ in script.run_with([target], self.bridge, timeout=3):
+            async for pkt, _, _ in script.run_with([target], self.bridge, message_timeout=3):
                 found.append(pkt)
 
             self.assertEqual(len(found), 1)

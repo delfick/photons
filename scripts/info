@@ -39,20 +39,9 @@ async def info(collector, target, reference, **kwargs):
     And will get zone information if your device is multizone capable
     """
     async with target.session() as afr:
-        found, serials = await reference.find(afr, target.default_broadcast, 30)
-        log.info(f"Found {len(serials)} devices")
+        await gather(reference, target, afr)
 
-        buf = []
-        for serial in serials:
-            buf.append(serial)
-            if len(buf) == 20:
-                await gather(buf, target, afr, found)
-                buf = []
-
-        if buf:
-            await gather(buf, target, afr, found)
-
-async def gather(reference, target, afr, found):
+async def gather(reference, target, afr):
     info = defaultdict(dict)
     multizone = []
 
@@ -67,10 +56,14 @@ async def gather(reference, target, afr, found):
     def gatherer(serial, *states):
         for s in states:
             if s | DeviceMessages.StateVersion:
-                capability = capability_for_ids(s.product, s.vendor)
-                info[serial]["capability"] = capability
-                if capability.has_multizone:
-                    multizone.append(serial)
+                try:
+                    capability = capability_for_ids(s.product, s.vendor)
+                except:
+                    pass
+                else:
+                    info[serial]["capability"] = capability
+                    if capability.has_multizone:
+                        multizone.append(serial)
             elif s | LightMessages.LightState:
                 info[serial]["label"] = s.label
                 info[serial]["power"] = "off" if s.power is 0 else "on"
@@ -87,7 +80,7 @@ async def gather(reference, target, afr, found):
         return []
 
     errors = []
-    await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors, found=found, accept_found=True)
+    await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors, find_timeout=30)
 
     if multizone:
         res = await zones_from_reference(target, multizone, afr, error_catcher=errors)

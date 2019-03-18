@@ -9,6 +9,13 @@ from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import asyncio
 import mock
 
+class Sem:
+    def __init__(self, limit):
+        self.limit = limit
+
+    def __eq__(self, other):
+        return isinstance(other, asyncio.Semaphore) and other._value == self.limit
+
 describe AsyncTestCase, "ScriptRunner":
     async it "takes in script and target":
         script = mock.Mock(name="script")
@@ -119,7 +126,69 @@ describe AsyncTestCase, "ScriptRunnerIterator":
 
             self.assertEqual(found, [self.res1, self.res2])
             self.assertEqual(self.called
-                , [ ("run_with", (reference, args_for_run), {"b": a})
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})
+                  ]
+                )
+
+        async it "does not impose a limit if limit is given as None":
+            self.assertEqual(self.called, [])
+
+            a = mock.Mock(name="a")
+            reference = mock.Mock(name="reference")
+            args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
+
+            async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a, limit=None):
+                pass
+
+            self.assertEqual(self.called
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": None})
+                  ]
+                )
+
+        async it "turns limit into a semaphore":
+            self.assertEqual(self.called, [])
+
+            a = mock.Mock(name="a")
+            reference = mock.Mock(name="reference")
+            args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
+
+            async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a, limit=50):
+                pass
+
+            self.assertEqual(self.called
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(50)})
+                  ]
+                )
+
+        async it "passes on limit if it has acquire":
+            self.assertEqual(self.called, [])
+
+            a = mock.Mock(name="a")
+            reference = mock.Mock(name="reference")
+            args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
+            limit = mock.NonCallableMock(name="limit", spec=["acquire"])
+
+            async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a, limit=limit):
+                pass
+
+            self.assertEqual(self.called
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": limit})
+                  ]
+                )
+
+        async it "passes on limit if it is already a Semaphore":
+            self.assertEqual(self.called, [])
+
+            a = mock.Mock(name="a")
+            reference = mock.Mock(name="reference")
+            args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
+            limit = asyncio.Semaphore(1)
+
+            async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a, limit=limit):
+                pass
+
+            self.assertEqual(self.called
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": limit})
                   ]
                 )
 
@@ -136,7 +205,7 @@ describe AsyncTestCase, "ScriptRunnerIterator":
 
             self.assertEqual(found, [self.res1, self.res2])
             self.assertEqual(self.called
-                , [ ("run_with", ([reference], args_for_run), {"b": a})
+                , [ ("run_with", ([reference], args_for_run), {"b": a, "limit": Sem(30)})
                   ]
                 )
 
@@ -153,7 +222,7 @@ describe AsyncTestCase, "ScriptRunnerIterator":
             self.assertEqual(found, [self.res1, self.res2])
             self.assertEqual(self.called
                 , [ ("args_for_run", (), {})
-                  , ("run_with", ([reference], self.afr), {"b": a})
+                  , ("run_with", ([reference], self.afr), {"b": a, "limit": Sem(30)})
                   , ("close_args_for_run", (self.afr, ), {})
                   ]
                 )
@@ -170,7 +239,7 @@ describe AsyncTestCase, "ScriptRunnerIterator":
 
             self.assertEqual(found, [self.res1, self.res2])
             self.assertEqual(self.called
-                , [ ("run_with", (reference, args_for_run), {"b": a})
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})
                   ]
                 )
 
@@ -199,6 +268,6 @@ describe AsyncTestCase, "ScriptRunnerIterator":
                 self.assertEqual(error.errors, [error1])
 
             self.assertEqual(self.called
-                , [ ("run_with", (reference, args_for_run), {"b": a})
+                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})
                   ]
                 )

@@ -3,6 +3,13 @@
 ChangeLog
 =========
 
+0.11.0 - TBD
+    * Implemented a limit on inflight messages per run_with call
+
+      * As part of this, the timeout option to run_with is now message_timeout
+        and represents the timeout for each message rather than the whole
+        run_with call
+
 0.10.2 - 3 March 2019
     * Fixed a bug when applying a theme to multiple devices
 

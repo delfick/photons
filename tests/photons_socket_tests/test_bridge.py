@@ -83,7 +83,7 @@ describe AsyncTestCase, "SocketBridge":
             self.s_run_with.assert_called_once_with([], self.bridge
                 , broadcast = "255.255.255.255"
                 , accept_found = True
-                , timeout = 60
+                , message_timeout = 60
                 )
 
         async it "forgets devices by default":

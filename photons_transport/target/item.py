@@ -15,6 +15,29 @@ log = logging.getLogger("photons_transport.target.item")
 class Done:
     """Used to specify when we should close a queue"""
 
+class NoLimit:
+    """Used when we don't have a limit semaphore to impose no limit on concurrent access"""
+    async def __aenter__(self):
+        pass
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
+    async def acquire(self):
+        pass
+
+    def release(self):
+        pass
+
+    def locked(self):
+        return False
+
+def timeout_task(task, errf, serial):
+    """Used to cancel sending a messages and record a timed out exception"""
+    if not task.done():
+        errf.set_exception(TimedOut("Waiting for reply to a packet", serial=serial))
+        task.cancel()
+
 def throw_error(serials, error_catcher):
     """Throw the errors from our error catcher"""
     error_catcher = list(set(error_catcher))
@@ -71,8 +94,8 @@ class TransportItem(object):
         connect_timeout
             timeout for connecting to devices
 
-        timeout
-            timeout for writing messages
+        message_timeout
+            A per message timeout for receiving replies for that message
 
         found
             A dictionary of
@@ -96,11 +119,28 @@ class TransportItem(object):
             ``photons_app.errors.RunErrors``, with all the errors in a list on
             the ``errors`` property of the RunErrors exception.
 
+        limit
+            An async context manager used to limit inflight messages. So for each message, we do
+
+            .. code-block:: python
+
+                async with limit:
+                    send_and_wait_for_reply(message)
+
+            For example, an ``asyncio.Semaphore(30)``
+
+            Note that if you saying ``target.script(msgs).run_with(....)`` then limit will be set
+            to a semaphore with max 30 by default. You may specify just a number and it will turn it
+            into a semaphore.
+
         * First we make the packets.
         * Then we find the devices (unless found is supplied)
         * Then we send the packets to the devices
         * Then we gather results and errors
         """
+        if "timeout" in kwargs:
+            log.warning(hp.lc("Please use message_timeout instead of timeout when calling run_with"))
+
         afr = args_for_run
 
         do_raise = error_catcher is None
@@ -179,7 +219,8 @@ class TransportItem(object):
         writer_args = (
               packets
             , check_packet, make_writer, make_waiter
-            , kwargs.get("timeout", 10), error_catcher
+            , kwargs.get("message_timeout", 10), error_catcher
+            , kwargs.get("limit")
             )
 
         # Finally use our message_writer helper to get us some results
@@ -262,7 +303,7 @@ class TransportItem(object):
 
         return looked, found, catcher
 
-    async def write_messages(self, packets, check_packet, make_writer, make_waiter, timeout, error_catcher):
+    async def write_messages(self, packets, check_packet, make_writer, make_waiter, message_timeout, error_catcher, limit=None):
         """Make a bunch of writers and then use them to create waiters"""
         writers = []
         writing_packets = []
@@ -293,8 +334,13 @@ class TransportItem(object):
         futures = []
         gatherers = []
 
-        def process(packet, res):
-            if res.cancelled():
+        def process(packet, errf, res):
+            if errf.done() and not errf.cancelled():
+                exc = errf.exception()
+                if exc:
+                    hp.add_error(error_catcher, exc)
+
+            elif res.cancelled():
                 e = TimedOut("Message was cancelled"
                     , serial=packet.serial
                     )
@@ -318,22 +364,35 @@ class TransportItem(object):
             # To avoid AssertionError: _step(): already done logs
             waiter = make_waiter(writer)
 
-            async def doit(w):
-                for info in await w:
-                    await queue.put(info)
-            f = asyncio.ensure_future(doit(waiter))
+            async def doit(w, serial, errf):
+                async with (limit or NoLimit()):
+                    if hasattr(asyncio, "current_task"):
+                        current_task = asyncio.current_task()
+                    else:
+                        current_task = asyncio.Task.current_task()
+
+                    asyncio.get_event_loop().call_later(message_timeout, timeout_task, current_task, errf, serial)
+
+                    try:
+                        for info in await w:
+                            await queue.put(info)
+                    finally:
+                        w.cancel()
+
+            errf = asyncio.Future()
+            f = asyncio.ensure_future(doit(waiter, packet.serial, errf))
             gatherers.append(f)
-            f.add_done_callback(partial(process, packet))
+            f.add_done_callback(partial(process, packet, errf))
             futures.append(waiter)
 
-        def canceller():
-            for f, packet in zip(futures, writing_packets):
-                if not f.done():
-                    f.set_exception(TimedOut("Waiting for reply to a packet", serial=packet.serial))
-        asyncio.get_event_loop().call_later(timeout, canceller)
-
         while True:
-            nxt = await queue.get()
+            try:
+                nxt = await queue.get()
+            except asyncio.CancelledError:
+                for f in gatherers:
+                    f.cancel()
+                raise
+
             if nxt is Done:
                 break
             yield nxt

@@ -1,6 +1,7 @@
 from photons_app.errors import RunErrors, BadRunWithResults, PhotonsAppError
 
 from input_algorithms import spec_base as sb
+import asyncio
 
 class InvalidScript(PhotonsAppError):
     desc = "Script is invalid"
@@ -61,6 +62,12 @@ class ScriptRunnerIterator(object):
             specified = False
             args_for_run = await self.target.args_for_run()
         try:
+            if "limit" not in kwargs:
+                kwargs["limit"] = 30
+
+            if kwargs["limit"] is not None and not hasattr(kwargs["limit"], "acquire"):
+                kwargs["limit"] = asyncio.Semaphore(kwargs["limit"])
+
             async for thing in self.script.run_with(reference, args_for_run, **kwargs):
                 yield thing
         finally:

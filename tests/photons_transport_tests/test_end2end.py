@@ -371,7 +371,7 @@ describe AsyncTestCase, "End2End":
 
             found = []
             async def doit():
-                async for info in self.target.script(msg).run_with(None, afr, broadcast=True, timeout=0.1):
+                async for info in self.target.script(msg).run_with(None, afr, broadcast=True, message_timeout=0.1):
                     found.append(info)
 
             with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=None):
@@ -385,7 +385,7 @@ describe AsyncTestCase, "End2End":
 
             found = []
             async def doit():
-                async for info in self.target.script(msg).run_with([afr.devices[0].target], afr, timeout=0.1):
+                async for info in self.target.script(msg).run_with([afr.devices[0].target], afr, message_timeout=0.1):
                     found.append(info)
 
             with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=afr.devices[0].serial):
@@ -400,7 +400,7 @@ describe AsyncTestCase, "End2End":
             found = []
 
             async def doit():
-                async for info in self.target.script(msg).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1):
+                async for info in self.target.script(msg).run_with([afr.devices[0].target, afr.devices[1].target], afr, message_timeout=0.1):
                     found.append(info)
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
@@ -419,7 +419,7 @@ describe AsyncTestCase, "End2End":
             results = []
 
             async def doit():
-                async for info in self.target.script([msg1, msg2]).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1, error_catcher=errors):
+                async for info in self.target.script([msg1, msg2]).run_with([afr.devices[0].target, afr.devices[1].target], afr, message_timeout=0.1, error_catcher=errors):
                     results.append(info)
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
@@ -464,7 +464,7 @@ describe AsyncTestCase, "End2End":
                 errors.append(e)
 
             async def doit():
-                async for _ in self.target.script(msg1).run_with([afr.devices[0].target, afr.devices[1].target], afr, timeout=0.1, error_catcher=catcher):
+                async for _ in self.target.script(msg1).run_with([afr.devices[0].target, afr.devices[1].target], afr, message_timeout=0.1, error_catcher=catcher):
                     pass
 
             t1 = TimedOut("Waiting for reply to a packet", serial=afr.devices[0].serial)
