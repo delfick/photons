@@ -216,7 +216,7 @@ async def apply_tile(applier, target, afr, serial, theme, overrides):
 
         colors = reorient(colors, orientations.get(i, O.RightSideUp))
 
-        messages.append(TileMessages.SetState64(
+        messages.append(TileMessages.Set64(
               tile_index=i, length=1, x=0, y=0, width=coords_and_size[1][0], duration=overrides.get("duration", 1), colors=colors
             , res_required = False
             , ack_required = True

@@ -10,6 +10,14 @@ ChangeLog
         and represents the timeout for each message rather than the whole
         run_with call
 
+    * Updated the protocol definition
+
+      * Biggest change is StateHostFirmware and StateWifiFirmware now represent
+        the firmware version as two Uint16 instead of one Uint32. The two numbers
+        represent the major and minor component of the version
+      * TileMessages.SetState64 and TileMessages.GetState64 are now Set64 and
+        Get64 respectively
+
 0.10.2 - 3 March 2019
     * Fixed a bug when applying a theme to multiple devices
 

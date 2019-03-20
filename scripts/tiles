@@ -54,7 +54,7 @@ async def tiles(collector, target, reference, **kwargs):
         msgs = [DeviceMessages.SetPower(level=65535)]
 
         for i, colors in enumerate(colors):
-            msgs.append(TileMessages.SetState64(
+            msgs.append(TileMessages.Set64(
                   x = 0
                 , y = 0
                 , width = 8

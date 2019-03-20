@@ -75,7 +75,7 @@ async def gather(reference, target, afr):
             elif s | DeviceMessages.StateLocation:
                 info[serial]["location"] = s.label
             elif s | DeviceMessages.StateHostFirmware:
-                info[serial]["firmware"] = "{0} ({1})".format(s.version, s.build)
+                info[serial]["firmware"] = "{0}.{1} ({2})".format(s.version_major, s.version_minor, s.build)
 
         return []
 

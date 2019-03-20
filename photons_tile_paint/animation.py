@@ -1,4 +1,4 @@
-from photons_tile_paint.set_state import set_state_64_maker
+from photons_tile_paint.set_64 import set_64_maker
 from photons_tile_paint.orientation import Orientation as O
 from photons_tile_paint import orientation
 
@@ -58,7 +58,7 @@ def canvas_to_msgs(canvas, coords, duration=1, acks=True, orientations=None):
         if orientations:
             colors = orientation.reorient(colors, orientations.get(i, O.RightSideUp))
 
-        yield set_state_64_maker(
+        yield set_64_maker(
               tile_index = i
             , width = coord[1][0]
             , duration = duration
@@ -148,7 +148,7 @@ class TileStateGetter:
     async def fill(self, random_orientations=False):
         msgs = []
         if self.background_option.type == "current":
-            msgs.append(TileMessages.GetState64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
+            msgs.append(TileMessages.Get64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
 
         msgs.append(TileMessages.GetDeviceChain())
 

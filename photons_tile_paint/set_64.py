@@ -1,7 +1,7 @@
 """
-Tile animations requires packing many SetState64 messages in a short amount of
+Tile animations requires packing many Set64 messages in a short amount of
 time. This file exists to make that as efficient as possible by creating a class
-that can pack a SetState64 for tile animation with as much caching power as
+that can pack a Set64 for tile animation with as much caching power as
 possible
 
 Don't use this directly, always use it via the
@@ -19,10 +19,10 @@ import binascii
 import operator
 import struct
 
-class SetState64Maker:
+class Set64Maker:
     """
-    One of these is made as the set_state_64_maker callable. It contains as much
-    of the SetState64 message packd as we can and then provides a fake SetState64
+    One of these is made as the set_64_maker callable. It contains as much
+    of the Set64 message packd as we can and then provides a fake Set64
     that photons can use to create the messages
     """
     class Target:
@@ -34,7 +34,7 @@ class SetState64Maker:
             self.packd = bitarray(endian="little")
             self.packd.frombytes(val)
 
-    class SetState64:
+    class Set64:
         """
         The actual fake message
 
@@ -47,8 +47,8 @@ class SetState64Maker:
         Because this is for tile animations, the rest of the payload is always
         length=1, x=0, y=0; and res_required is always False
 
-        We use a real TileMessages.SetState64 to get the packed bits for the parts
-        that do not change, which is stored on the maker (the instance of SetState64Maker)
+        We use a real TileMessages.Set64 to get the packed bits for the parts
+        that do not change, which is stored on the maker (the instance of Set64Maker)
         """
         def __init__(self, maker, **kwargs):
             self.kwargs = kwargs
@@ -151,7 +151,7 @@ class SetState64Maker:
 
         self.cache = ProtocolColor.Meta.cache
 
-        msg = TileMessages.SetState64(
+        msg = TileMessages.Set64(
               source = 0
             , sequence = 0
             , target = None
@@ -226,9 +226,9 @@ class SetState64Maker:
         return self.targets_cache[target]
 
     def __call__(self, **kwargs):
-        return self.SetState64(self, **kwargs)
+        return self.Set64(self, **kwargs)
 
-# Used to create a message that photons thinks is a valid SetState64
+# Used to create a message that photons thinks is a valid Set64
 # It is a callable that requires keyword arguments for
 # ack_required, tile_index, width, duration, colors
-set_state_64_maker = SetState64Maker()
+set_64_maker = Set64Maker()

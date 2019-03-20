@@ -217,16 +217,6 @@ changes:
       Downtime:
         special_type: nano_to_seconds
 
-  DeviceStateHostFirmware:
-    fields:
-      Version:
-        extras: ["version_number()"]
-
-  DeviceStateWifiFirmware:
-    fields:
-      Version:
-        extras: ["version_number()"]
-
   LightGet:
     rename: GetColor
 
@@ -392,14 +382,14 @@ changes:
     many_options:
       name: Tile
 
-  TileGetState64:
+  TileGet64:
     multi: |
       MultiOptions(
            lambda req: TileMessages.State64
          , lambda req, res: MultiOptions.Max(req.length)
          )
 
-  TileSetState64:
+  TileSet64:
     fields:
       Duration:
         special_type: duration_type

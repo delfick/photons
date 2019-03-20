@@ -49,7 +49,8 @@ class DeviceMessages(Messages):
     StateHostFirmware = msg(15
         , ("build", T.Uint64)
         , ("reserved6", T.Reserved(64))
-        , ("version", T.Uint32.version_number())
+        , ("version_minor", T.Uint16)
+        , ("version_major", T.Uint16)
         )
 
     GetWifiInfo = msg(16)
@@ -66,7 +67,8 @@ class DeviceMessages(Messages):
     StateWifiFirmware = msg(19
         , ("build", T.Uint64)
         , ("reserved6", T.Reserved(64))
-        , ("version", T.Uint32.version_number())
+        , ("version_minor", T.Uint16)
+        , ("version_major", T.Uint16)
         )
 
     GetPower = msg(20)
@@ -265,7 +267,7 @@ class TileMessages(Messages):
     StateDeviceChain = msg(702
         , ("start_index", T.Uint8)
         , ("tile_devices", T.Bytes(440 * 16).many(lambda pkt: fields.Tile))
-        , ("total_count", T.Uint8)
+        , ("tile_devices_count", T.Uint8)
         )
 
     SetUserPosition = msg(703
@@ -275,7 +277,7 @@ class TileMessages(Messages):
         , ("user_y", T.Float)
         )
 
-    GetState64 = msg(707
+    Get64 = msg(707
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
@@ -292,7 +294,7 @@ class TileMessages(Messages):
         , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
         )
 
-    SetState64 = msg(715
+    Set64 = msg(715
         , ("tile_index", T.Uint8)
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect

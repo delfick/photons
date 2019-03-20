@@ -247,7 +247,7 @@ describe TestCase, "Device":
             assert location_uuid2 in self.collections.collections["location"]
 
         it "takes in StateHostFirmware":
-            pkt = DeviceMessages.StateHostFirmware.empty_normalise(version="1.20")
+            pkt = DeviceMessages.StateHostFirmware.empty_normalise(version_major=1, version_minor=20)
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.FIRMWARE)
             self.assertEqual(self.device.firmware_version, "1.20")
 

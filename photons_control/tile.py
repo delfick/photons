@@ -16,10 +16,10 @@ def tiles_from(state_pkt):
     """
     Given a StateTile packet, return the tile devices that are valid.
 
-    This works by taking into account ``total_count`` and ``start_index``
+    This works by taking into account ``tile_devices_count`` and ``start_index``
     on the packet.
     """
-    amount = state_pkt.total_count - state_pkt.start_index
+    amount = state_pkt.tile_devices_count - state_pkt.start_index
     return state_pkt.tile_devices[:amount]
 
 @an_action(needs_target=True, special_reference=True)
@@ -41,7 +41,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
     options = collector.configuration['photons_app'].extra_as_json
 
     missing = []
-    for field in TileMessages.GetState64.Payload.Meta.all_names:
+    for field in TileMessages.Get64.Payload.Meta.all_names:
         if field not in options and field not in ("reserved6", ):
             missing.append(field)
 
@@ -52,7 +52,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     got = defaultdict(list)
 
-    msg = TileMessages.GetState64.empty_normalise(**options)
+    msg = TileMessages.Get64.empty_normalise(**options)
 
     async for pkt, _, _ in target.script(msg).run_with(reference):
         if pkt | response_kls:
@@ -193,7 +193,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Please specify colors in options after -- as a grid of [h, s, b, k]")
 
     missing = []
-    for field in TileMessages.SetState64.Payload.Meta.all_names:
+    for field in TileMessages.Set64.Payload.Meta.all_names:
         if field not in options and field not in ("duration", "reserved6"):
             missing.append(field)
 
@@ -201,7 +201,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Missing options for the SetTileState message", missing=missing)
 
     options["res_required"] = False
-    msg = TileMessages.SetState64.empty_normalise(**options)
+    msg = TileMessages.Set64.empty_normalise(**options)
     await target.script(msg).run_with_all(reference)
 
 @an_action(needs_target=True, special_reference=True)

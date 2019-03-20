@@ -156,7 +156,7 @@ hue, saturation, brightness, kelvin
     and 30 (inclusive).
 
 firmware_version
-    The version of the HostFirmware as a float.
+    The version of the HostFirmware as a string of "{major}.{minor}".
 
 product_id
     The product id of the device as an integer. You can see the hex product id
@@ -344,16 +344,16 @@ class Filter(dictobj.Spec):
 
     .. code-block:: python
 
-        filtr = Filter.FieldSpec().empty_normalise(force_refresh=True, firmware_version=1.22)
+        filtr = Filter.FieldSpec().empty_normalise(force_refresh=True, firmware_version="1.22")
 
         # or
-        filtr = Filter.from_json_str('{"force_refresh": true, "firmware_version": 1.22}')
+        filtr = Filter.from_json_str('{"force_refresh": true, "firmware_version": "1.22"}')
 
         # or
-        filtr = Filter.from_options({"force_refresh": True, "firmware_version": 1.22})
+        filtr = Filter.from_options({"force_refresh": True, "firmware_version": "1.22"})
 
         # or
-        filtr = Filter.from_kwargs(force_refresh=True, firmware_version=1.22)
+        filtr = Filter.from_kwargs(force_refresh=True, firmware_version="1.22")
 
         # or
         filtr = Filter.from_key_value_str("force_refresh=true firmware_version=1.22")
@@ -661,7 +661,7 @@ class Device(dictobj.Spec):
             return InfoPoints.LOCATION
 
         elif pkt | DeviceMessages.StateHostFirmware:
-            self.firmware_version = pkt.version
+            self.firmware_version = f"{pkt.version_major}.{pkt.version_minor}"
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:

@@ -31,7 +31,8 @@ class Device(FakeDevice):
         self.location_label = ""
         self.location_updated_at = 0
 
-        self.firmware_version = "1.22"
+        self.firmware_version_major = 1
+        self.firmware_version_minor = 22
         self.firmware_build_time = 1508567297
 
         self.vendor_id = 1
@@ -64,8 +65,9 @@ class Device(FakeDevice):
         self.location_label = label
         self.location_updated_at = updated_at
 
-    def change_firmware(self, version, build_time):
-        self.firmware_version = version
+    def change_firmware(self, version_major, version_minor, build_time):
+        self.firmware_version_major = version_major
+        self.firmware_version_minor = version_minor
         self.build_time = build_time
 
     def change_version(self, vendor_id, product_id):
@@ -97,7 +99,8 @@ class Device(FakeDevice):
 
         elif pkt | DeviceMessages.GetHostFirmware:
             return DeviceMessages.StateHostFirmware(
-                  version = self.firmware_version
+                  version_major = self.firmware_version_major
+                , version_minor = self.firmware_version_minor
                 , build = self.firmware_build_time
                 )
 
