@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.11.0 - TBD
+0.11.0 - 20 March 2019
     * Implemented a limit on inflight messages per run_with call
 
       * As part of this, the timeout option to run_with is now message_timeout
