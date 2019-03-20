@@ -86,19 +86,19 @@ async def do_apply_theme(target, reference, afr, options):
         if pkt | DeviceMessages.StateVersion:
             info[pkt.serial]["capability"] = capability_for_ids(pkt.product, pkt.vendor)
         elif pkt | DeviceMessages.StateHostFirmware:
-            info[pkt.serial]["firmware"] = pkt.build
+            info[pkt.serial]["firmware"] = (pkt.version_major, pkt.version_minor)
 
     tasks = []
     for serial, details in info.items():
         if "capability" not in details:
             continue
 
-        firmware = details.get("firmware")
+        firmware = details.get("firmware") or (None, None)
         capability = details["capability"]
 
         if capability.has_multizone:
             log.info(hp.lc("Found a strip", serial=serial))
-            if capability.has_extended_multizone(firmware):
+            if capability.has_extended_multizone(*firmware):
                 t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides))
             else:
                 t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides))

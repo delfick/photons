@@ -18,6 +18,9 @@ ChangeLog
       * TileMessages.SetState64 and TileMessages.GetState64 are now Set64 and
         Get64 respectively
 
+    * We now determine if we have extended multizone using version_major and
+      version_minor instead of build on the StateHostFirmware
+
 0.10.2 - 3 March 2019
     * Fixed a bug when applying a theme to multiple devices
 

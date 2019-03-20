@@ -24,15 +24,15 @@ async def find_multizone(target, reference, afr):
         if pkt | DeviceMessages.StateVersion:
             info[pkt.serial]["capability"] = capability_for_ids(pkt.product, pkt.vendor)
         elif pkt | DeviceMessages.StateHostFirmware:
-            info[pkt.serial]["firmware"] = pkt.build
+            info[pkt.serial]["firmware"] = (pkt.version_major, pkt.version_minor)
 
     for serial, details in sorted(info.items()):
         capability = details.get("capability")
-        firmware = details.get("firmware")
+        firmware = details.get("firmware") or (None, None)
         if not capability or not capability.has_multizone:
             continue
 
-        yield serial, capability.has_extended_multizone(firmware)
+        yield serial, capability.has_extended_multizone(*firmware)
 
 async def zones_from_reference(target, reference, afr, **kwargs):
     """

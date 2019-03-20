@@ -140,13 +140,14 @@ class Capability(dictobj.Spec):
 
     min_kelvin = dictobj.Field(sb.integer_spec, default=2500)
     max_kelvin = dictobj.Field(sb.integer_spec, default=9000)
-    min_extended_fw = dictobj.NullableField(sb.integer_spec)
+    min_extended_fw = dictobj.NullableField(sb.tuple_spec(sb.integer_spec(), sb.integer_spec()))
 
-    def has_extended_multizone(self, firmware_build):
-        if self.min_extended_fw is None:
+    def has_extended_multizone(self, version_major, version_minor):
+        if any(thing is None for thing in (self.min_extended_fw, version_major, version_minor)):
             return False
 
-        return firmware_build is not None and firmware_build >= self.min_extended_fw
+        desired_major, desired_minor = self.min_extended_fw
+        return version_major >= desired_major and version_minor >= desired_minor
 
 def capability(name, company, identifier, **kwargs):
     return Capability.FieldSpec().empty_normalise(name=name, company=company, identifier=identifier, **kwargs)
@@ -170,12 +171,12 @@ class Capabilities(Enum):
     LCM2_A19_PLUS           = lc("LIFX+ A19", "a19_plus", has_ir=True)
     LCM2_BR30_PLUS          = lc("LIFX+ BR30", "br30_plus", has_ir=True)
     LCM1_Z                  = lc("LIFX Z", "z", has_multizone=True)
-    LCM2_Z                  = lc("LIFX Z", "z", has_multizone=True, min_extended_fw=1532997580)
+    LCM2_Z                  = lc("LIFX Z", "z", has_multizone=True, min_extended_fw=(2, 77))
 
     LCM2_DOWNLIGHT_OL       = lc("LIFX DOWNLIGHT O", "downlight_o")
     LCM2_DOWNLIGHT_NL       = lc("LIFX DOWNLIGHT N", "downlight_n")
 
-    LCM2_BEAM               = lc("LIFX Beam", "beam", has_multizone=True, min_extended_fw=1532997580)
+    LCM2_BEAM               = lc("LIFX Beam", "beam", has_multizone=True, min_extended_fw=(2, 77))
 
     LCM2_A19_HK             = lc("LIFX A19", "a19")
     LCM2_BR30_HK            = lc("LIFX BR30", "br30")
