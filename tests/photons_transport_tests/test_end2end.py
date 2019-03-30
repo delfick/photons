@@ -240,7 +240,7 @@ class MemoryBridge(TransportBridge):
         if conn is not True:
             await conn[1].put(bts)
 
-    async def _find_specific_serials(self, serials, broadcast, **kwargs):
+    async def _find_specific_serials(self, serials, **kwargs):
         found = {}
         for device in self.devices:
             if device.online:
@@ -271,9 +271,9 @@ describe AsyncTestCase, "End2End":
         called = []
 
         class Serials(SpecialReference):
-            async def find_serials(s, afr, broadcast, find_timeout):
-                called.append(("find_serials", afr, broadcast, find_timeout))
-                return await afr.find_devices(broadcast, find_timeout=find_timeout)
+            async def find_serials(s, afr, *, timeout, broadcast=True):
+                called.append(("find_serials", afr, broadcast, timeout))
+                return await afr.find_devices(timeout=timeout, broadcast=broadcast)
 
         async with self.target.session() as afr:
             msg = Adder(3, 4)

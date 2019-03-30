@@ -199,7 +199,8 @@ describe AsyncTestCase, "TransportItem":
                     def __eq__(self, other):
                         return sorted(other) == sorted(self.want)
 
-                self.find_specific_serials.assert_called_once_with(L([self.serial1, self.serial2]), self.broadcast_address
+                self.find_specific_serials.assert_called_once_with(L([self.serial1, self.serial2])
+                    , broadcast = self.broadcast_address
                     , raise_on_none = False
                     , timeout = 20
                     , a = self.a

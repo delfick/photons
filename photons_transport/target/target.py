@@ -103,10 +103,9 @@ class TransportTarget(dictobj.Spec):
         """Close an args_for_run"""
         args_for_run.finish()
 
-    async def get_list(self, args_for_run, broadcast=sb.NotSpecified, **kwargs):
+    async def get_list(self, args_for_run, **kwargs):
         """Return us the targets that we can find from this bridge"""
-        addr = broadcast if broadcast is not sb.NotSpecified else self.default_broadcast
-        found = await args_for_run.find_devices(addr, **kwargs)
+        found = await args_for_run.find_devices(**kwargs)
         return sorted([binascii.hexlify(target[:6]).decode() for target in found])
 
     def device_forgetter(self, args_for_run):

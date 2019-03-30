@@ -18,7 +18,6 @@ from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 import binascii
 import logging
-import time
 
 log = logging.getLogger("photons_socket.target")
 
@@ -50,8 +49,6 @@ class SocketBridge(TransportBridge):
     .. automethod:: photons_socket.target.SocketBridge.spawn_conn
 
     .. automethod:: photons_socket.target.SocketBridge.write_to_sock
-
-    .. automethod:: photons_socket.target.SocketBridge.find_devices
     """
     Sockets = Sockets
     Messages = Messages
@@ -97,12 +94,12 @@ class SocketBridge(TransportBridge):
         log.debug("SENDING {0}:{1} TO {2} {3}".format(packet.source, packet.sequence, addr[0], addr[1]))
         sock.sendto(bts, (addr[0], addr[1]))
 
-    async def _find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
+    async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
         """
         Broadcast a Discovery Packet (GetService) and interpret the return
         StateService messages.
         """
-        found_now = await self._do_search(broadcast, serials, self.found, timeout, **kwargs)
+        found_now = await self._do_search(serials, self.found, timeout, **kwargs)
 
         if not ignore_lost:
             for target in list(self.found):
@@ -117,7 +114,7 @@ class SocketBridge(TransportBridge):
 
         return self.found
 
-    async def _do_search(self, broadcast, serials, found, timeout, **kwargs):
+    async def _do_search(self, serials, found, timeout, **kwargs):
         found_now = set()
         wanted_targets = list(serials_to_targets(serials))
 
@@ -132,7 +129,7 @@ class SocketBridge(TransportBridge):
         script = self.transport_target.script(get_service)
 
         kwargs["no_retry"] = True
-        kwargs["broadcast"] = broadcast
+        kwargs["broadcast"] = kwargs.get("broadcast", True)
         kwargs["accept_found"] = True
         kwargs["error_catcher"] = []
 

@@ -82,14 +82,15 @@ describe AsyncTestCase, "SocketBridge":
 
             self.assertEqual(self.bridge.found, {})
             with mock.patch.object(self.bridge, "_do_search", do_search):
-                f = await self.bridge._find_specific_serials(serials, self.broadcast
+                f = await self.bridge._find_specific_serials(serials
+                    , broadcast = self.broadcast
                     , timeout = timeout
                     , a = 1
                     )
                 self.assertIs(f, self.bridge.found)
                 self.assertEqual(f, {self.target1: self.info1})
 
-            do_search.assert_called_once_with(self.broadcast, serials, self.bridge.found, timeout, a=1)
+            do_search.assert_called_once_with(serials, self.bridge.found, timeout, a=1, broadcast=self.broadcast)
 
         @with_timeout
         async it "removes items from found by default":
@@ -103,13 +104,13 @@ describe AsyncTestCase, "SocketBridge":
             serials = mock.Mock(name="serials")
 
             with mock.patch.object(self.bridge, "_do_search", do_search):
-                f = await self.bridge._find_specific_serials(serials, self.broadcast
+                f = await self.bridge._find_specific_serials(serials
                     , a = 1
                     )
                 self.assertIs(f, self.bridge.found)
                 self.assertEqual(f, {self.target2: self.info2})
 
-            do_search.assert_called_once_with(self.broadcast, serials, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(serials, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "doesn't remove existing items that were found":
@@ -123,13 +124,13 @@ describe AsyncTestCase, "SocketBridge":
             serials = mock.Mock(name="serials")
 
             with mock.patch.object(self.bridge, "_do_search", do_search):
-                f = await self.bridge._find_specific_serials(serials, self.broadcast
+                f = await self.bridge._find_specific_serials(serials
                     , a = 1
                     )
                 self.assertIs(f, self.bridge.found)
                 self.assertEqual(f, {self.target1: self.info1, self.target2: self.info2})
 
-            do_search.assert_called_once_with(self.broadcast, serials, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(serials, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "doesn't remove if ignore_lost is True":
@@ -143,14 +144,14 @@ describe AsyncTestCase, "SocketBridge":
             serials = mock.Mock(name="serials")
 
             with mock.patch.object(self.bridge, "_do_search", do_search):
-                f = await self.bridge._find_specific_serials(serials, self.broadcast
+                f = await self.bridge._find_specific_serials(serials
                     , ignore_lost = True
                     , a = 1
                     )
                 self.assertIs(f, self.bridge.found)
                 self.assertEqual(f, {self.target1: self.info1, self.target2: self.info2})
 
-            do_search.assert_called_once_with(self.broadcast, serials, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(serials, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "complains if no serials and no found and raise_on_none is True":
@@ -160,12 +161,12 @@ describe AsyncTestCase, "SocketBridge":
 
             with self.fuzzyAssertRaisesError(FoundNoDevices):
                 with mock.patch.object(self.bridge, "_do_search", do_search):
-                    await self.bridge._find_specific_serials(None, self.broadcast
+                    await self.bridge._find_specific_serials(None
                         , raise_on_none = True
                         , a = 1
                         )
 
-            do_search.assert_called_once_with(self.broadcast, None, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(None, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "does not complain if serials and no found and raise_on_none is True":
@@ -176,13 +177,13 @@ describe AsyncTestCase, "SocketBridge":
             serials = mock.Mock(name="serials")
 
             with mock.patch.object(self.bridge, "_do_search", do_search):
-                f = await self.bridge._find_specific_serials(serials, self.broadcast
+                f = await self.bridge._find_specific_serials(serials
                     , raise_on_none = True
                     , a = 1
                     )
                 self.assertEqual(f, {})
 
-            do_search.assert_called_once_with(self.broadcast, serials, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(serials, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "complains if raise_on_none is True and no found, but had existing found":
@@ -194,13 +195,13 @@ describe AsyncTestCase, "SocketBridge":
 
             with self.fuzzyAssertRaisesError(FoundNoDevices):
                 with mock.patch.object(self.bridge, "_do_search", do_search):
-                    await self.bridge._find_specific_serials(None, self.broadcast
+                    await self.bridge._find_specific_serials(None
                         , raise_on_none = True
                         , a = 1
                         )
 
             self.assertEqual(self.bridge.found, {})
-            do_search.assert_called_once_with(self.broadcast, None, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(None, self.bridge.found, 60, a=1)
 
         @with_timeout
         async it "does not remove targets if ignore_lost is True and we raise FoundNoDevices":
@@ -212,14 +213,14 @@ describe AsyncTestCase, "SocketBridge":
 
             with self.fuzzyAssertRaisesError(FoundNoDevices):
                 with mock.patch.object(self.bridge, "_do_search", do_search):
-                    await self.bridge._find_specific_serials(None, self.broadcast
+                    await self.bridge._find_specific_serials(None
                         , ignore_lost = True
                         , raise_on_none = True
                         , a = 1
                         )
 
             self.assertEqual(self.bridge.found, {self.target1: self.info1})
-            do_search.assert_called_once_with(self.broadcast, None, self.bridge.found, 60, a=1)
+            do_search.assert_called_once_with(None, self.bridge.found, 60, a=1)
 
     describe "_search_retry_iterator":
         @with_timeout
@@ -272,7 +273,7 @@ describe AsyncTestCase, "SocketBridge":
 
             call = mock.call(self.get_service, None, self.bridge
                 , no_retry = True
-                , broadcast = self.broadcast
+                , broadcast = True
                 , accept_found = True
                 , error_catcher = []
                 , message_timeout = 0.5
@@ -287,7 +288,7 @@ describe AsyncTestCase, "SocketBridge":
 
             found = {}
             with self.retries([(20, 0.5)]):
-                fn = await self.bridge._do_search(self.broadcast, None, found, 20, a=a)
+                fn = await self.bridge._do_search(None, found, 20, a=a)
                 self.assertEqual(fn, [self.target2])
 
             self.assertEqual(self.bridge.transport_target.call, 0)
@@ -350,7 +351,7 @@ describe AsyncTestCase, "SocketBridge":
 
             found = {}
             with self.retries([(20, 0.5), (19.5, 0.6), (18.9, 0.8), (18.1, 1), (17.1, 1)], expect_calls=3):
-                fn = await self.bridge._do_search(self.broadcast, [self.serial1, self.serial2, self.serial3], found, 20, a=a)
+                fn = await self.bridge._do_search([self.serial1, self.serial2, self.serial3], found, 20, broadcast=self.broadcast, a=a)
                 self.assertEqual(sorted(fn), sorted([self.target1, self.target2, self.target3]))
 
             self.assertEqual(self.bridge.transport_target.call, 2)
@@ -367,7 +368,7 @@ describe AsyncTestCase, "SocketBridge":
 
             call1 = mock.call(self.get_service, None, self.bridge
                 , no_retry = True
-                , broadcast = self.broadcast
+                , broadcast = True
                 , accept_found = True
                 , error_catcher = []
                 , message_timeout = 0.5
@@ -376,7 +377,7 @@ describe AsyncTestCase, "SocketBridge":
 
             call2 = mock.call(self.get_service, None, self.bridge
                 , no_retry = True
-                , broadcast = self.broadcast
+                , broadcast = True
                 , accept_found = True
                 , error_catcher = []
                 , message_timeout = 0.6
@@ -400,7 +401,7 @@ describe AsyncTestCase, "SocketBridge":
 
             found = {}
             with self.retries([(20, 0.5), (19.5, 0.6)]):
-                fn = await self.bridge._do_search(self.broadcast, [self.serial1, self.serial2, self.serial3], found, 20, a=a)
+                fn = await self.bridge._do_search([self.serial1, self.serial2, self.serial3], found, 20, a=a)
                 self.assertEqual(sorted(fn), sorted([self.target2, self.target3]))
 
             self.assertEqual(self.bridge.transport_target.call, 1)
@@ -416,7 +417,7 @@ describe AsyncTestCase, "SocketBridge":
 
             call1 = mock.call(self.get_service, None, self.bridge
                 , no_retry = True
-                , broadcast = self.broadcast
+                , broadcast = True
                 , accept_found = True
                 , error_catcher = []
                 , message_timeout = 0.5
@@ -425,7 +426,7 @@ describe AsyncTestCase, "SocketBridge":
 
             call2 = mock.call(self.get_service, None, self.bridge
                 , no_retry = True
-                , broadcast = self.broadcast
+                , broadcast = True
                 , accept_found = True
                 , error_catcher = []
                 , message_timeout = 0.6
@@ -449,7 +450,7 @@ describe AsyncTestCase, "SocketBridge":
 
             found = {self.target1: self.info1}
             with self.retries([(20, 0.5), (19.5, 0.6)]):
-                fn = await self.bridge._do_search(self.broadcast, [self.serial1, self.serial2, self.serial3], found, 20, a=a)
+                fn = await self.bridge._do_search([self.serial1, self.serial2, self.serial3], found, 20, a=a)
                 self.assertEqual(sorted(fn), sorted([self.target2, self.target3]))
 
             self.assertEqual(self.bridge.transport_target.call, 1)

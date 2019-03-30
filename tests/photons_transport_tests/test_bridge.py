@@ -100,7 +100,7 @@ describe AsyncTestCase, "TransportBridge":
                     await self.bridge.spawn_conn(m("address"), backoff=m("backoff"), target=m("target"))
 
                 with self.fuzzyAssertRaisesError(NotImplementedError):
-                    await self.bridge._find_specific_serials(m("serials"), m("broadcast")
+                    await self.bridge._find_specific_serials(m("serials")
                         , ignore_lost = m("ignore_lost")
                         , raise_on_none = m("raise_on_none")
                         # And arbitrary kwargs
@@ -121,16 +121,18 @@ describe AsyncTestCase, "TransportBridge":
                 find_specific_serials.return_value = (found, missing)
 
                 with mock.patch.object(self.bridge, "find_specific_serials", find_specific_serials):
-                    f = await self.bridge.find_devices(broadcast
-                        , ignore_lost = ignore_lost
+                    f = await self.bridge.find_devices(
+                          ignore_lost = ignore_lost
                         , raise_on_none = raise_on_none
+                        , broadcast = broadcast
                         , a = a
                         )
 
                 self.assertIs(f, found)
-                find_specific_serials.assert_called_once_with(None, broadcast
+                find_specific_serials.assert_called_once_with(None
                     , ignore_lost = ignore_lost
                     , raise_on_none = raise_on_none
+                    , broadcast = broadcast
                     , a = a
                     )
 
@@ -144,12 +146,10 @@ describe AsyncTestCase, "TransportBridge":
                 find_specific_serials.return_value = (found, missing)
 
                 with mock.patch.object(self.bridge, "find_specific_serials", find_specific_serials):
-                    f = await self.bridge.find_devices(broadcast
-                        , a = a
-                        )
+                    f = await self.bridge.find_devices(a=a)
 
                 self.assertIs(f, found)
-                find_specific_serials.assert_called_once_with(None, broadcast
+                find_specific_serials.assert_called_once_with(None
                     , ignore_lost = False
                     , raise_on_none = False
                     , a = a
@@ -176,31 +176,35 @@ describe AsyncTestCase, "TransportBridge":
                 _find_specific_serials.return_value = found
 
                 with mock.patch.object(self.bridge, "_find_specific_serials", _find_specific_serials):
-                    f, m = await self.bridge.find_specific_serials(serials, broadcast
+                    f, m = await self.bridge.find_specific_serials(serials
                         , ignore_lost = ignore_lost
                         , raise_on_none = raise_on_none
+                        , broadcast = broadcast
                         , a = a
                         )
 
                 self.assertIs(f, found)
                 self.assertEqual(m, missing)
-                _find_specific_serials.assert_called_once_with(serials, broadcast
+                _find_specific_serials.assert_called_once_with(serials
                     , ignore_lost = ignore_lost
                     , raise_on_none = raise_on_none
+                    , broadcast = broadcast
                     , a = a
                     )
 
                 _find_specific_serials.reset_mock()
                 with mock.patch.object(self.bridge, "_find_specific_serials", _find_specific_serials):
-                    f, m = await self.bridge.find_specific_serials(serials, broadcast
+                    f, m = await self.bridge.find_specific_serials(serials
+                        , broadcast = broadcast
                         , a = a
                         )
 
                 self.assertIs(f, found)
                 self.assertEqual(m, missing)
-                _find_specific_serials.assert_called_once_with(serials, broadcast
+                _find_specific_serials.assert_called_once_with(serials
                     , ignore_lost = False
                     , raise_on_none = False
+                    , broadcast = broadcast
                     , a = a
                     )
 

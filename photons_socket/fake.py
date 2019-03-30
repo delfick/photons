@@ -57,7 +57,7 @@ class MemorySocketBridge(SocketBridge):
     class RetryOptions(RetryOptions):
         timeouts = [(0.2, 0.2)]
 
-    async def _find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
+    async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, timeout=60, broadcast=True, **kwargs):
         res = {}
 
         broadcast_address = (

@@ -114,7 +114,7 @@ describe AsyncTestCase, "DeviceFinder":
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs)
-                reference.find.assert_called_once_with(afr, True, 5)
+                reference.find.assert_called_once_with(afr, timeout=5)
 
         describe "info_for":
             async it "gets info from the store given found from our special reference":
@@ -142,7 +142,7 @@ describe AsyncTestCase, "DeviceFinder":
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs, for_info=True)
-                reference.find.assert_called_once_with(afr, True, 5)
+                reference.find.assert_called_once_with(afr, timeout=5)
                 store.info_for.assert_called_once_with(["d1", "d2"])
 
         describe "private _find":
@@ -194,7 +194,7 @@ describe AsyncTestCase, "DeviceFinder":
                 reference = self.finder._reference(filtr)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, True, 1))
+                f, s = await self.wait_for(reference.find(afr, timeout=1))
                 self.assertEqual(f, self.found)
                 self.assertEqual(sorted(s), sorted(self.serials))
                 self.loops.refresh_from_filter.assert_called_once_with(filtr, for_info=False, find_timeout=1)
@@ -209,7 +209,7 @@ describe AsyncTestCase, "DeviceFinder":
                 reference = self.finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, True, 2))
+                f, s = await self.wait_for(reference.find(afr, timeout=2))
                 self.assertEqual(f, self.found)
                 self.assertEqual(sorted(s), sorted(self.serials))
                 self.loops.refresh_from_filter.assert_called_once_with(filtr, for_info=True, find_timeout=2)
@@ -227,7 +227,7 @@ describe AsyncTestCase, "DeviceFinder":
                 reference = self.finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, True, 3))
+                f, s = await self.wait_for(reference.find(afr, timeout=3))
                 self.assertEqual(f, self.found)
                 self.assertEqual(sorted(s), sorted(self.serials))
 
@@ -248,7 +248,7 @@ describe AsyncTestCase, "DeviceFinder":
                 assert isinstance(reference, SpecialReference)
 
                 with self.fuzzyAssertRaisesError(FoundNoDevices):
-                    await self.wait_for(reference.find(afr, True, 3))
+                    await self.wait_for(reference.find(afr, timeout=3))
 
                 self.assertEqual(len(self.loops.refresh_from_filter.mock_calls), 0)
                 store.found_from_filter.assert_called_once_with(filtr, for_info=True, find_timeout=3)
@@ -263,6 +263,6 @@ describe AsyncTestCase, "DeviceFinder":
                 assert isinstance(reference, SpecialReference)
 
                 with self.fuzzyAssertRaisesError(FoundNoDevices):
-                    await self.wait_for(reference.find(afr, True, 4))
+                    await self.wait_for(reference.find(afr, timeout=4))
 
                 self.loops.refresh_from_filter.assert_called_once_with(filtr, for_info=True, find_timeout=4)

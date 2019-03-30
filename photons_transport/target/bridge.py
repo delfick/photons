@@ -119,17 +119,17 @@ class TransportBridge(object):
         """Hook for spawning a connection for a particular address"""
         raise NotImplementedError()
 
-    async def find_devices(self, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
+    async def find_devices(self, *, ignore_lost=False, raise_on_none=False, **kwargs):
         """Hook for finding devices"""
         kwargs["ignore_lost"] = ignore_lost
         kwargs["raise_on_none"] = raise_on_none
-        found, _ = await self.find_specific_serials(None, broadcast, **kwargs)
+        found, _ = await self.find_specific_serials(None, **kwargs)
         return found
 
-    async def find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
+    async def find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, **kwargs):
         kwargs["ignore_lost"] = ignore_lost
         kwargs["raise_on_none"] = raise_on_none
-        found = await self._find_specific_serials(serials, broadcast, **kwargs)
+        found = await self._find_specific_serials(serials, **kwargs)
         missing = [] if serials is None else [serial for serial in serials if binascii.unhexlify(serial)[:6] not in found]
 
         if missing:
@@ -137,7 +137,7 @@ class TransportBridge(object):
 
         return found, missing
 
-    async def _find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
+    async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, **kwargs):
         raise NotImplementedError()
 
     def is_sock_active(self, sock):

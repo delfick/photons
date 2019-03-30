@@ -167,7 +167,7 @@ describe AsyncTestCase, "TransportTarget":
                     , [serial1, serial2, serial3]
                     )
 
-                args_for_run.find_devices.assert_called_once_with("255.255.255.255", a=a, b=b)
+                args_for_run.find_devices.assert_called_once_with(a=a, b=b)
 
             async it "uses passed in broadcast value":
                 a = mock.Mock(name="a")
@@ -186,11 +186,11 @@ describe AsyncTestCase, "TransportTarget":
                 args_for_run.find_devices = find_devices
 
                 self.assertEqual(
-                      await self.target.get_list(args_for_run, broadcast, a=a, b=b)
+                      await self.target.get_list(args_for_run, broadcast=broadcast, a=a, b=b)
                     , [serial1, serial2, serial3]
                     )
 
-                args_for_run.find_devices.assert_called_once_with(broadcast, a=a, b=b)
+                args_for_run.find_devices.assert_called_once_with(broadcast=broadcast, a=a, b=b)
 
         describe "device_forgetter":
             async it "returns the forget method of the args_for_run":

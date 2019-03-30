@@ -16,11 +16,34 @@ ChangeLog
 
       .. code-block:: python
         
-        found, serials = reference.find(afr, afr.default_broadcast, timeout=30)
+        found, serials = reference.find(afr, timeout=30)
         reference.raise_on_missing(found)
 
     * Reworked the internal API for discovery so that if we are trying to find
       known serials, we don't spam the network with too many discovery packets.
+
+    * Changed the api for finding devices such that timeout must now be a keyword
+      argument and broadcast is not necessary to specify.
+
+      So, if you have a special reference:
+
+      .. code-block:: python
+
+        # before
+        found, serials = await special_reference.find(afr, True, 30)
+
+        # after
+        found, serials = await special_reference.find(afr, timeout=30)
+
+      And if you are using find_devices on the afr:
+
+      .. code-block:: python
+
+        # before
+        found = await afr.find_devices(True)
+
+        # after
+        found = await afr.find_devices()
 
 0.11.0 - 20 March 2019
     * Implemented a limit on inflight messages per run_with call

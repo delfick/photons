@@ -977,7 +977,7 @@ class DeviceFinderLoops(object):
     async def _update_found(self, special_reference, find_timeout):
         """Update our idea of found from the provided special reference"""
         afr = await self.args_for_run()
-        found, _ = await special_reference.find(afr, True, find_timeout)
+        found, _ = await special_reference.find(afr, timeout=find_timeout)
         self.store.update_found(found)
 
     async def raw_search_loop(self, quickstart=False):
@@ -996,7 +996,7 @@ class DeviceFinderLoops(object):
 
             try:
                 afr = await self.args_for_run()
-                found = await afr.find_devices(afr.default_broadcast, ignore_lost=True)
+                found = await afr.find_devices(ignore_lost=True)
                 query_new_devices = quickstart or not first
                 self.store.update_found(found, query_new_devices=query_new_devices)
                 first = False
@@ -1129,7 +1129,7 @@ class DeviceFinder(object):
         """
         reference = self._find(kwargs)
         afr = await self.args_for_run()
-        _, serials = await reference.find(afr, True, 5)
+        _, serials = await reference.find(afr, timeout=5)
         return serials
 
     async def info_for(self, **kwargs):
@@ -1139,7 +1139,7 @@ class DeviceFinder(object):
         """
         reference = self._find(kwargs, for_info=True)
         afr = await self.args_for_run()
-        found, _ = await reference.find(afr, True, 5)
+        found, _ = await reference.find(afr, timeout=5)
         return self.loops.store.info_for(found.keys())
 
     def _find(self, kwargs, for_info=False):
@@ -1163,11 +1163,11 @@ class DeviceFinder(object):
     def _reference(self, filtr, for_info=False):
         """Return a SpecialReference instance that uses the provided filtr"""
         class Reference(SpecialReference):
-            async def find_serials(s, afr, broadcast, find_timeout):
+            async def find_serials(s, afr, *, timeout, broadcast=True):
                 if filtr.force_refresh or not self.daemon:
-                    found = await self.loops.refresh_from_filter(filtr, for_info=for_info, find_timeout=find_timeout)
+                    found = await self.loops.refresh_from_filter(filtr, for_info=for_info, find_timeout=timeout)
                 else:
-                    found = await self.loops.store.found_from_filter(filtr, for_info=for_info, find_timeout=find_timeout)
+                    found = await self.loops.store.found_from_filter(filtr, for_info=for_info, find_timeout=timeout)
 
                 if not found:
                     raise FoundNoDevices()
@@ -1186,8 +1186,8 @@ class DeviceFinderWrap(SpecialReference):
         self.finder = DeviceFinder(target)
         self.reference = self.finder.find(filtr=filtr)
 
-    async def find(self, afr, broadcast, find_timeout):
-        return await self.reference.find(afr, broadcast, find_timeout)
+    async def find(self, afr, *, timeout, broadcast=True):
+        return await self.reference.find(afr, timeout=timeout, broadcast=broadcast)
 
     def reset(self):
         self.reference.reset()

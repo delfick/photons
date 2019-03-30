@@ -51,7 +51,7 @@ describe AsyncTestCase, "SocketTarget":
 
         try:
             self.assertEqual(self.bridge.found, {})
-            await self.bridge.find_devices(('127.0.0.1', port), timeout=3)
+            await self.bridge.find_devices(timeout=3, broadcast=('127.0.0.1', port))
 
             self.assertEqual(self.bridge.found
                   , { binascii.unhexlify(target)[:6]: (set([(Services.UDP, ("127.0.0.1", port))]), "127.0.0.1")

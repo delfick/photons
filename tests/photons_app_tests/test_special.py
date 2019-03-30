@@ -59,25 +59,25 @@ describe AsyncTestCase, "SpecialReference":
 
         async it "transfers cancellation from find_serials":
             class Finder(SpecialReference):
-                async def find_serials(s, afr, broadcast, find_timeout):
+                async def find_serials(s, afr, *, timeout, broadcast=True):
                     f = asyncio.Future()
                     f.cancel()
                     return await f
 
             ref = Finder()
             with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                await ref.find(self.afr, self.broadcast, self.find_timeout)
+                await ref.find(self.afr, timeout=self.find_timeout)
 
         async it "transfers exceptions from find_serials":
             class Finder(SpecialReference):
-                async def find_serials(s, afr, broadcast, find_timeout):
+                async def find_serials(s, afr, *, timeout, broadcast=True):
                     f = asyncio.Future()
                     f.set_exception(PhotonsAppError("FIND SERIALS BAD"))
                     return await f
 
             ref = Finder()
             with self.fuzzyAssertRaisesError(PhotonsAppError, "FIND SERIALS BAD"):
-                await ref.find(self.afr, self.broadcast, self.find_timeout)
+                await ref.find(self.afr, timeout=self.find_timeout)
 
         async it "transfers result from find_serials":
             serial1 = "d073d5000001"
@@ -90,11 +90,11 @@ describe AsyncTestCase, "SpecialReference":
             services2 = mock.Mock(name="services2")
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, broadcast, find_timeout):
+                async def find_serials(s, afr, *, timeout, broadcast=True):
                     return {target1: services1, target2: services2}
 
             ref = Finder()
-            found, serials = await ref.find(self.afr, self.broadcast, self.find_timeout)
+            found, serials = await ref.find(self.afr, timeout=self.find_timeout)
             self.assertEqual(found, {target1: services1, target2: services2})
             self.assertEqual(serials, [serial1, serial2])
 
@@ -106,19 +106,19 @@ describe AsyncTestCase, "SpecialReference":
             called = []
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, broadcast, find_timeout):
+                async def find_serials(s, afr, *, timeout, broadcast=True):
                     await asyncio.sleep(0.2)
                     called.append(1)
                     return {target: services}
 
             ref = Finder()
             futs = []
-            futs.append(hp.async_as_background(ref.find(self.afr, self.broadcast, self.find_timeout)))
-            futs.append(hp.async_as_background(ref.find(self.afr, self.broadcast, self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
             await asyncio.sleep(0.05)
-            futs.append(hp.async_as_background(ref.find(self.afr, self.broadcast, self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
             await asyncio.sleep(0.2)
-            futs.append(hp.async_as_background(ref.find(self.afr, self.broadcast, self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
 
             for t in futs:
                 found, serials = await t
@@ -128,7 +128,7 @@ describe AsyncTestCase, "SpecialReference":
             self.assertEqual(called, [1])
 
             ref.reset()
-            found, serials = await ref.find(self.afr, self.broadcast, self.find_timeout)
+            found, serials = await ref.find(self.afr, timeout=self.find_timeout)
             self.assertEqual(found, {target: services})
             self.assertEqual(serials, [serial])
             self.assertEqual(called, [1, 1])
@@ -148,12 +148,12 @@ describe AsyncTestCase, "FoundSerials":
 
         ref = FoundSerials()
         with mock.patch.object(ref, "broadcast_address", broadcast_address):
-            res = await self.wait_for(ref.find_serials(afr, broadcast, find_timeout))
+            res = await self.wait_for(ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout))
 
         self.assertEqual(res, found)
 
         broadcast_address.assert_called_once_with(afr, broadcast)
-        afr.find_devices.assert_called_once_with(address, raise_on_none=True, timeout=find_timeout)
+        afr.find_devices.assert_called_once_with(broadcast=address, raise_on_none=True, timeout=find_timeout)
 
 describe AsyncTestCase, "HardCodedSerials":
     async before_each:
@@ -193,12 +193,13 @@ describe AsyncTestCase, "HardCodedSerials":
 
             ref = HardCodedSerials(serials)
             with mock.patch.object(ref, "broadcast_address", broadcast_address):
-                f = await ref.find_serials(afr, broadcast, find_timeout)
+                f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
             self.assertEqual(f, expected)
 
             broadcast_address.assert_called_once_with(afr, broadcast)
-            afr.find_specific_serials.assert_called_once_with(serials, address
+            afr.find_specific_serials.assert_called_once_with(serials
+                , broadcast = address
                 , raise_on_none = False
                 , timeout = find_timeout
                 )
@@ -276,5 +277,5 @@ describe AsyncTestCase, "ResolveReferencesFromFile":
 
         res = mock.Mock(name="res")
         resolver.find.return_value = res
-        self.assertIs(await self.wait_for(r.find(afr, broadcast, find_timeout)), res)
-        resolver.find.assert_called_once_with(afr, broadcast, find_timeout)
+        self.assertIs(await self.wait_for(r.find(afr, timeout=find_timeout)), res)
+        resolver.find.assert_called_once_with(afr, broadcast=True, timeout=find_timeout)

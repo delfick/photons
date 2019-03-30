@@ -300,7 +300,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 with mock.patch.object(self.loops.store, "update_found", update_found):
                     await self.wait_for(self.loops._update_found(reference, find_timeout))
 
-                reference.find.assert_called_once_with(self.afr, True, find_timeout)
+                reference.find.assert_called_once_with(self.afr, timeout=find_timeout)
                 update_found.assert_called_once_with(found)
 
         describe "raw_search_loop":
@@ -315,9 +315,8 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
                 rets = [found1, FoundNoDevices(), found2, error1, found3]
 
-                async def find_devices(b, ignore_lost=False):
+                async def find_devices(ignore_lost=False):
                     self.assertIs(ignore_lost, True)
-                    self.assertIs(b, self.afr.default_broadcast)
                     res = rets.pop(0)
                     if not rets:
                         await self.loops.finish()

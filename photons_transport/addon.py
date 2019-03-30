@@ -22,7 +22,7 @@ async def find_devices(collector, target, reference, **kwargs):
     Otherwise it will use the default broadcast address for the target you are
     using. (i.e. the lan target by default broadcasts to 255.255.255.255)
     """
-    broadcast = sb.NotSpecified
+    broadcast = True
     if reference not in (None, "", sb.NotSpecified):
         broadcast = reference
 

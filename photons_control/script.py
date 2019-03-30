@@ -111,7 +111,9 @@ class Pipeline(object):
 
         if isinstance(references, SpecialReference):
             try:
-                _, references = await references.find(args_for_run, kwargs.get("broadcast", False), kwargs.get("find_timeout", 5))
+                _, references = await references.find(args_for_run
+                    , timeout = kwargs.get("find_timeout", 5)
+                    )
             except asyncio.CancelledError:
                 raise
             except Exception as error:

@@ -3,14 +3,13 @@ from photons_app import helpers as hp
 
 import binascii
 import asyncio
-import time
 
 class SpecialReference:
     """
-    Subclasses of this implement an await find_serials(afr, broadcast, find_timeout)
+    Subclasses of this implement an await find_serials(afr, *, timeout, broadcast=True)
     that returns the serials to send messages to
 
-    If broadcast is a boolean then we use afr.default_broadcast
+    If broadcast is a boolean (True or False) then we use afr.default_broadcast
     if broadcast is a falsey value then we use afr.default_broadcast
     else we use broadcast as is as the broadcast address
 
@@ -20,8 +19,8 @@ class SpecialReference:
 
     This class exposes:
 
-    async find(afr, broadcast, find_timeout)
-        calls ``await self.find_serials(afr, broadcast, find_timeout)``, then determines
+    async find(afr, *, timeout, broadcast=True)
+        calls ``await self.find_serials(afr, timeout=timeout, broadcast=broadcast)``, then determines
         the list of serials from the result and memoizes ``(found, serials)``
 
         So that we only call it once regardless how many times find is called.
@@ -30,7 +29,7 @@ class SpecialReference:
     reset()
         Reset our cache from calling find
 
-    async find_serials(afr, broadcast, find_timeout)
+    async find_serials(afr, *,_timeout, broadcast=True)
         Must be implemented by the subclass, return ``found`` from this function
 
     def missing(found)
@@ -50,7 +49,7 @@ class SpecialReference:
         else:
             return broadcast or afr.default_broadcast
 
-    async def find_serials(self, afr, broadcast, find_timeout):
+    async def find_serials(self, afr, *, timeout, broadcast=True):
         raise NotImplementedError()
 
     async def finish(self):
@@ -66,12 +65,12 @@ class SpecialReference:
         if missing:
             raise DevicesNotFound(missing=missing)
 
-    async def find(self, afr, broadcast, find_timeout):
+    async def find(self, afr, *, timeout, broadcast=True):
         if self.finding.done():
             return await self.found
 
         self.finding.set_result(True)
-        t = asyncio.get_event_loop().create_task(self.find_serials(afr, broadcast, find_timeout))
+        t = asyncio.get_event_loop().create_task(self.find_serials(afr, timeout=timeout, broadcast=broadcast))
 
         def transfer(res):
             if res.cancelled():
@@ -98,10 +97,12 @@ class FoundSerials(SpecialReference):
     Can be used as the references value to say send packets
     to all the devices found on the network
     """
-    async def find_serials(self, afr, broadcast, find_timeout):
+    async def find_serials(self, afr, *, timeout, broadcast=True):
         address = self.broadcast_address(afr, broadcast)
-        return await afr.find_devices(address
-            , raise_on_none=True, timeout=find_timeout
+        return await afr.find_devices(
+              timeout = timeout
+            , broadcast = address
+            , raise_on_none = True
             )
 
 class HardCodedSerials(SpecialReference):
@@ -119,12 +120,13 @@ class HardCodedSerials(SpecialReference):
 
         super(HardCodedSerials, self).__init__()
 
-    async def find_serials(self, afr, broadcast, find_timeout):
+    async def find_serials(self, afr, *, timeout, broadcast=True):
         address = self.broadcast_address(afr, broadcast)
 
-        found, _ = await afr.find_specific_serials(self.serials, address
+        found, _ = await afr.find_specific_serials(self.serials
+            , broadcast = address
             , raise_on_none = False
-            , timeout = find_timeout
+            , timeout = timeout
             )
 
         return {target: found[target] for target in self.targets if target in found}
@@ -149,8 +151,8 @@ class ResolveReferencesFromFile(SpecialReference):
 
         self.reference = HardCodedSerials(serials)
 
-    async def find(self, afr, broadcast, find_timeout):
-        return await self.reference.find(afr, broadcast, find_timeout)
+    async def find(self, afr, *, timeout, broadcast=True):
+        return await self.reference.find(afr, timeout=timeout, broadcast=broadcast)
 
     def missing(self, found):
         """Hook for saying if anything is missing from found"""

@@ -187,7 +187,7 @@ describe AsyncTestCase, "Memory target":
             wrap = DeviceFinderWrap(Filter.from_kwargs(), target)
             try:
                 async with target.session() as afr:
-                    found = await wrap.find(afr, True, 5)
+                    found = await wrap.find(afr, timeout=5)
                     expected = {t: d.services for t, d in target.devices.items()}
                     serials = [d.serial for d in target.devices.values()]
                     self.assertEqual(found, (expected, serials))

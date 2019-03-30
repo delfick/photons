@@ -165,7 +165,7 @@ class TransportItem(object):
         if isinstance(serials, SpecialReference):
             try:
                 ref = serials
-                found, serials = await ref.find(afr, broadcast, kwargs.get("find_timeout", 5))
+                found, serials = await ref.find(afr, broadcast=broadcast, timeout=kwargs.get("find_timeout", 5))
                 missing = ref.missing(found)
                 serials.extend(missing)
             except asyncio.CancelledError:
@@ -306,7 +306,8 @@ class TransportItem(object):
             missing = [binascii.hexlify(target).decode() for target in targets if target not in found]
             return False, found, missing
 
-        found, missing = await afr.find_specific_serials(serials, broadcast_address
+        found, missing = await afr.find_specific_serials(serials
+            , broadcast = broadcast_address
             , raise_on_none = False
             , timeout = find_timeout
             , **kwargs
