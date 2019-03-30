@@ -249,7 +249,7 @@ async def find_with_filter(collector, target, **kwargs):
         await device_finder.finish()
 
 regexes = {
-      "key_value": re.compile("^(?P<key>[\w_]+)=(?P<value>.+)")
+      "key_value": re.compile(r"^(?P<key>[\w_]+)=(?P<value>.+)")
     }
 
 class Done:
@@ -308,7 +308,7 @@ class boolean(sb.Spec):
     """Take in int/string/bool and convert to a boolean"""
     def normalise_filled(self, meta, val):
         if type(val) is int:
-            return False if val is 0 else True
+            return False if val == 0 else True
         elif type(val) is str:
             return False if val.lower() in ("no", "false") else True
         return sb.boolean().normalise(meta, val)
@@ -643,7 +643,7 @@ class Device(dictobj.Spec):
         """
         if pkt | LightMessages.LightState:
             self.label = pkt.label
-            self.power = "off" if pkt.power is 0 else "on"
+            self.power = "off" if pkt.power == 0 else "on"
             self.hue = pkt.hue
             self.saturation = pkt.saturation
             self.brightness = pkt.brightness
