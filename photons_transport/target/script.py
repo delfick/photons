@@ -57,6 +57,9 @@ class ScriptRunnerIterator(object):
             return results
 
     async def run_with(self, reference, args_for_run=sb.NotSpecified, **kwargs):
+        if self.script is None:
+            return
+
         specified = True
         if args_for_run is sb.NotSpecified:
             specified = False

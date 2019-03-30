@@ -85,7 +85,7 @@ class Writer(object):
         if self.found is None:
             self.found = self.bridge.found
 
-    async def make(self):
+    async def make(self, services):
         """
         Return an asynchronous callable that when called and awaited returns a pair of futures
         representing the acknowledgement and result from sending this packet
@@ -93,21 +93,21 @@ class Writer(object):
 
         This function also ensures that the bridge has a receiver setup.
         """
-        executor = await self.prepare()
+        executor = await self.prepare(services)
 
         if executor.requires_response:
             await executor.create_receiver(self.bridge)
 
         return executor
 
-    async def prepare(self):
+    async def prepare(self, services):
         """
         Used by ``make`` to get us the ``Executor`` instance that'll be used to
         do the writing
         """
         packet = self.packet
         target, serial = self.normalise_target(packet)
-        addr = await self.determine_addr(target, serial)
+        addr = await self.determine_addr(serial, services)
         conn = await self.determine_conn(addr, target)
         return Executor(self, self.original, packet, conn, serial, addr, target, self.expect_zero)
 
@@ -129,7 +129,7 @@ class Writer(object):
 
         return target, serial
 
-    async def determine_addr(self, target, serial):
+    async def determine_addr(self, serial, services):
         """Use ``self.bridge.find`` to find the address of our target"""
         if type(self.broadcast) is tuple:
             return self.broadcast
@@ -137,11 +137,6 @@ class Writer(object):
         if self.broadcast not in (sb.NotSpecified, False):
             broadcast_addr = self.bridge.default_broadcast if self.broadcast in (True, None) else self.broadcast
             return (broadcast_addr, 56700)
-
-        if self.found and target in self.found:
-            services, _ = self.found[target]
-        else:
-            services, _ = await self.bridge.find(target, **self.kwargs)
 
         service, addr = self.match_address(serial, services)
 

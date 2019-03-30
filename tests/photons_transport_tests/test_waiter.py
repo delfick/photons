@@ -131,6 +131,47 @@ describe AsyncTestCase, "Waiter":
                         await self.waiter
                 await self.wait_for(doit())
 
+            async it "only one writings if no_retry is True":
+                request = mock.Mock(name="request", ack_required=False, res_required=True)
+                request.Meta.multi = None
+
+                result1 = Result(request, False, self.retry_options)
+
+                futs = [result1]
+
+                async def writer():
+                    self.assertEqual(len(self.ensure_conn.mock_calls), 1)
+                    return futs.pop(0)
+                self.writer.side_effect = writer
+
+                times = [0.05, 2]
+
+                def next_time(s):
+                    return times.pop(0)
+
+                async def doit():
+                    start = time.time()
+                    with mock.patch.object(RetryOptions, "next_time", property(next_time)):
+                        self.waiter.no_retry = True
+                        res = await self.waiter
+                    return res, time.time() - start
+
+                t = self.loop.create_task(doit())
+                await asyncio.sleep(0.005)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                await asyncio.sleep(0.06)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+
+                res = mock.Mock(name="res")
+                result1.set_result(res)
+
+                r, took = await self.wait_for(t)
+                self.assertLess(took, 0.1)
+                self.assertIs(r, res)
+                self.assertEqual(self.writer.mock_calls, [mock.call()])
+
+                self.assertEqual(await self.wait_for(result1), res)
+
             async it "two writings":
                 request = mock.Mock(name="request", ack_required=False, res_required=True)
                 request.Meta.multi = None

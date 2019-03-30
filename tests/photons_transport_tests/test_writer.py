@@ -76,6 +76,7 @@ describe AsyncTestCase, "Writer":
 
         describe "make":
             async it "prepares an executor and creates a receiver if we need to":
+                services = mock.Mock(name="services")
                 executor = mock.Mock(name="executor", spec=["requires_response", "create_receiver"])
                 executor.requires_response = True
                 executor.create_receiver = asynctest.mock.CoroutineMock(name="create_receiver")
@@ -83,11 +84,13 @@ describe AsyncTestCase, "Writer":
                 prepare = asynctest.mock.CoroutineMock(name="prepare", return_value=executor)
 
                 with mock.patch.object(self.writer, "prepare", prepare):
-                    self.assertIs(await self.writer.make(), executor)
+                    self.assertIs(await self.writer.make(services), executor)
 
+                prepare.assert_called_once_with(services)
                 executor.create_receiver.assert_called_once_with(self.bridge)
 
             async it "does not create a receiver if it's not needed":
+                services = mock.Mock(name="services")
                 executor = mock.Mock(name="executor", spec=["requires_response", "create_receiver"])
                 executor.requires_response = False
                 executor.create_receiver = asynctest.mock.CoroutineMock(name="create_receiver")
@@ -95,12 +98,14 @@ describe AsyncTestCase, "Writer":
                 prepare = asynctest.mock.CoroutineMock(name="prepare", return_value=executor)
 
                 with mock.patch.object(self.writer, "prepare", prepare):
-                    self.assertIs(await self.writer.make(), executor)
+                    self.assertIs(await self.writer.make(services), executor)
 
+                prepare.assert_called_once_with(services)
                 self.assertEqual(executor.create_receiver.mock_calls, [])
 
         describe "prepare":
             async it "normalises the target, creates an addr, creates a conn and creates an executor":
+                services = mock.Mock(name="services")
                 target = mock.Mock(name="target")
                 serial = mock.Mock(name="serial")
                 normalise_target = mock.Mock(name="normalise_target", return_value=(target, serial))
@@ -120,10 +125,10 @@ describe AsyncTestCase, "Writer":
                     , determine_conn = determine_conn
                     ):
                     with mock.patch("photons_transport.target.writer.Executor", FakeExecutor):
-                        self.assertIs(await self.writer.prepare(), executor)
+                        self.assertIs(await self.writer.prepare(services), executor)
 
                 normalise_target.assert_called_once_with(self.packet)
-                determine_addr.assert_called_once_with(target, serial)
+                determine_addr.assert_called_once_with(serial, services)
                 determine_conn.assert_called_once_with(addr, target)
                 FakeExecutor.assert_called_once_with(self.writer, self.original, self.packet, conn, serial, addr, target, self.expect_zero)
 
@@ -166,28 +171,14 @@ describe AsyncTestCase, "Writer":
 
                 self.assertEqual(await self.writer.determine_addr(self.target, self.serial), (broadcast, 56700))
 
-            async it "gets services from found if target is in it":
+            async it "uses passed in services in match_address":
                 self.writer.broadcast = sb.NotSpecified
                 services = mock.Mock(name="services")
                 self.writer.found = {self.target: (services, mock.ANY)}
 
                 match_address = mock.Mock(name="match_address", return_value=(self.service, self.addr))
                 with mock.patch.object(self.writer, "match_address", match_address):
-                    self.assertIs(await self.writer.determine_addr(self.target, self.serial), self.addr)
-
-                match_address.assert_called_once_with(self.serial, services)
-
-            async it "gets services from asking the bridge if not in found":
-                self.writer.broadcast = sb.NotSpecified
-                self.writer.found = {}
-
-                services = mock.Mock(name="services")
-                find = asynctest.mock.CoroutineMock(name="find", return_value=(services, mock.ANY))
-                self.bridge.find = find
-
-                match_address = mock.Mock(name="match_address", return_value=(self.service, self.addr))
-                with mock.patch.object(self.writer, "match_address", match_address):
-                    self.assertIs(await self.writer.determine_addr(self.target, self.serial), self.addr)
+                    self.assertIs(await self.writer.determine_addr(self.serial, services), self.addr)
 
                 match_address.assert_called_once_with(self.serial, services)
 
@@ -200,7 +191,7 @@ describe AsyncTestCase, "Writer":
                 match_address = mock.Mock(name="match_address", return_value=(self.service, None))
                 with mock.patch.object(self.writer, "match_address", match_address):
                     with self.fuzzyAssertRaisesError(NoDesiredService, wanted=self.desired_services, serial=self.serial, available=self.service):
-                        await self.writer.determine_addr(self.target, self.serial)
+                        await self.writer.determine_addr(self.serial, services)
 
             async it "fills in the ip to the default broadcast if it's gotten as notspecified":
                 self.writer.broadcast = sb.NotSpecified
@@ -210,7 +201,7 @@ describe AsyncTestCase, "Writer":
 
                 match_address = mock.Mock(name="match_address", return_value=(self.service, (sb.NotSpecified, self.port)))
                 with mock.patch.object(self.writer, "match_address", match_address):
-                    self.assertEqual(await self.writer.determine_addr(self.target, self.serial), (self.bridge.default_broadcast, self.port))
+                    self.assertEqual(await self.writer.determine_addr(self.serial, services), (self.bridge.default_broadcast, self.port))
 
         describe "determining conn":
             async before_each:

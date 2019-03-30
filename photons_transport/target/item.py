@@ -1,14 +1,14 @@
 from photons_transport.target.errors import FailedToFindDevice
 
-from photons_app.errors import TimedOut, RunErrors
+from photons_app.errors import TimedOut, RunErrors, DevicesNotFound
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
 from input_algorithms import spec_base as sb
 from functools import partial
+import binascii
 import asyncio
 import logging
-import time
 
 log = logging.getLogger("photons_transport.target.item")
 
@@ -119,6 +119,16 @@ class TransportItem(object):
             ``photons_app.errors.RunErrors``, with all the errors in a list on
             the ``errors`` property of the RunErrors exception.
 
+        no_retry
+            If True then the messages being sent will have no automatic retry. This defaults
+            to False and retry rates are determined by the target you are using.
+
+        require_all_devices
+            Defaults to False. If True then we will not send any messages if we haven't
+            found all the devices we want to send messages to. Otherwise we will send messages
+            to the devices we have found and add photons_transport.errors.FailedToFindDevice errors
+            for each device that wasn't found.
+
         limit
             An async context manager used to limit inflight messages. So for each message, we do
 
@@ -150,10 +160,14 @@ class TransportItem(object):
               afr.default_broadcast if broadcast is True else broadcast
             ) or afr.default_broadcast
 
+
+        missing = None
         if isinstance(serials, SpecialReference):
             try:
-                found, serials = await serials.find(afr, broadcast, kwargs.get("find_timeout", 5))
-                accept_found = True
+                ref = serials
+                found, serials = await ref.find(afr, broadcast, kwargs.get("find_timeout", 5))
+                missing = ref.missing(found)
+                serials.extend(missing)
             except asyncio.CancelledError:
                 raise
             except Exception as error:
@@ -171,25 +185,23 @@ class TransportItem(object):
             )
 
         # Determine found
-        looked = False
-        found = found if found is not None else afr.found
-        if not accept_found and not broadcast:
-            looked, found, catcher = await self.search(
+        looked = True
+        if missing is None:
+            looked, found, missing = await self.search(
                   afr
-                , found
+                , found if found is not None else afr.found
+                , accept_found or broadcast
                 , packets
                 , broadcast_address
                 , kwargs.get("find_timeout", 20)
+                , kwargs
                 )
 
-            if catcher:
-                for error in set(catcher):
-                    hp.add_error(error_catcher, error)
-
-                if do_raise:
-                    throw_error(serials, error_catcher)
-                else:
-                    return
+        if not broadcast and kwargs.get("require_all_devices") and missing:
+            hp.add_error(error_catcher, DevicesNotFound(missing=missing))
+            if do_raise:
+                throw_error(serials, error_catcher)
+            return
 
         # Work out where to send packets
         if type(broadcast) is tuple:
@@ -202,16 +214,24 @@ class TransportItem(object):
         retry_options = afr.make_retry_options()
 
         def check_packet(packet):
-            if packet.target is None or not looked or found and packet.target[:6] in found:
+            if packet.target is None or not looked or (found and packet.target[:6] in found):
                 return
             else:
                 return FailedToFindDevice(serial=packet.serial)
 
         def make_waiter(writer):
-            return afr.make_waiter(writer, retry_options=retry_options)
+            return afr.make_waiter(writer, retry_options=retry_options, no_retry=kwargs.get("no_retry", False))
 
         async def make_writer(original, packet):
-            return await afr.make_writer(original, packet
+            target = packet.target
+            services = None
+
+            if target is not None:
+                target = target[:6]
+                if target in found:
+                    services = found[target][0]
+
+            return await afr.make_writer(services, original, packet
                 , broadcast=broadcast, retry_options=retry_options
                 , addr=addr, found=found, **kwargs
                 )
@@ -277,31 +297,22 @@ class TransportItem(object):
 
         return packets
 
-    async def search(self, afr, found, packets, broadcast_address, find_timeout):
+    async def search(self, afr, found, accept_found, packets, broadcast_address, find_timeout, kwargs):
         """Search for the devices we want to send to"""
-        looked = False
-        start = time.time()
-        targets = set(p.target[:6] for _, p in packets)
-        catcher = None
+        serials = list(set([p.serial for _, p in packets if p.target is not None]))
+        targets = set(binascii.unhexlify(serial)[:6] for serial in serials)
 
-        need_check = lambda: not found or any(target not in found for target in targets)
+        if accept_found or (found is not None and all(target in found for target in targets)):
+            missing = [binascii.hexlify(target).decode() for target in targets if target not in found]
+            return False, found, missing
 
-        while need_check():
-            looked = True
-            catcher = []
-            found = await afr.find_devices(broadcast_address
-                , raise_on_none = False
-                , timeout = find_timeout
-                , error_catcher = catcher
-                )
-            if time.time() - start > find_timeout:
-                break
+        found, missing = await afr.find_specific_serials(serials, broadcast_address
+            , raise_on_none = False
+            , timeout = find_timeout
+            , **kwargs
+            )
 
-        if catcher and not need_check():
-            # We don't care about errors if we found all the devices we care about
-            catcher = []
-
-        return looked, found, catcher
+        return True, found, missing
 
     async def write_messages(self, packets, check_packet, make_writer, make_waiter, message_timeout, error_catcher, limit=None):
         """Make a bunch of writers and then use them to create waiters"""

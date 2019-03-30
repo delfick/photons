@@ -198,12 +198,6 @@ describe AsyncTestCase, "TransportTarget":
                 args_for_run = mock.Mock(name="args_for_run", forget=forget)
                 self.assertIs(self.target.device_forgetter(args_for_run), forget)
 
-        describe "find":
-            async it "returns the find method of the args_for_run":
-                find = mock.Mock(name="find")
-                args_for_run = mock.Mock(name="args_for_run", find=find)
-                self.assertIs(self.target.find(args_for_run), find)
-
         describe "simplify":
             async it "complains if it has no pack method or has_children":
                 part = mock.Mock(name="part", has_children=False, spec=["has_chidren"])

@@ -19,6 +19,9 @@ ChangeLog
         found, serials = reference.find(afr, afr.default_broadcast, timeout=30)
         reference.raise_on_missing(found)
 
+    * Reworked the internal API for discovery so that if we are trying to find
+      known serials, we don't spam the network with too many discovery packets.
+
 0.11.0 - 20 March 2019
     * Implemented a limit on inflight messages per run_with call
 

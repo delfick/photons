@@ -21,10 +21,12 @@ class Waiter(object):
 
     We keep writing writer with an exponential backoff.
     """
-    def __init__(self, stop_fut, writer, retry_options):
+    def __init__(self, stop_fut, writer, retry_options, no_retry=False):
         self.writer = writer
 
         self.results = []
+        self.no_retry = no_retry
+        self.written_once = False
         self.retry_options = retry_options
         self.final_future = hp.ChildOfFuture(stop_fut)
 
@@ -102,8 +104,10 @@ class Waiter(object):
             loop.call_later(next_check, self._writings_cb)
             return
 
-        t = loop.create_task(self.do_write())
-        t.add_done_callback(hp.transfer_result(self.final_future, errors_only=True))
+        if not self.no_retry or not self.written_once:
+            self.written_once = True
+            t = loop.create_task(self.do_write())
+            t.add_done_callback(hp.transfer_result(self.final_future, errors_only=True))
 
         loop.call_later(self.retry_options.next_time, self._writings_cb)
 

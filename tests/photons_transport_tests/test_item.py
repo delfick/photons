@@ -5,7 +5,7 @@ from photons_transport.target.item import TransportItem
 from photons_transport.target.waiter import Waiter
 
 from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
-from photons_app.test_helpers import AsyncTestCase
+from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
@@ -123,113 +123,86 @@ describe AsyncTestCase, "TransportItem":
                 c5.update.assert_called_once_with(dict(source=source, sequence=1))
 
         describe "search":
-            async it "doesn't search and returns found if we have found and it has all the targets":
-                target1 = binascii.unhexlify('d073d5000000')
-                target2 = binascii.unhexlify('d073d5000001')
-                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
-                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
+            async before_each:
+                self.afr = mock.Mock(name="afr")
+                self.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+                self.afr.find_specific_serials = self.find_specific_serials
 
-                afr = mock.Mock(name="afr", spec=[])
-                broadcast_address = mock.Mock(name="broadcast_address")
-                find_timeout = mock.Mock(name="find_timeout")
-                found = {target1: True, target2: True}
-                looked, f, catcher = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
+                self.serial1 = "d073d5000000"
+                self.serial2 = "d073d5000001"
+                self.target1 = binascii.unhexlify(self.serial1)[:6]
+                self.target2 = binascii.unhexlify(self.serial2)[:6]
 
-                self.assertEqual(looked, False)
-                self.assertEqual(catcher, None)
+                self.o1, self.p1 = mock.Mock(name="original1"), mock.Mock(name="packet1", serial=self.serial1)
+                self.o2, self.p2 = mock.Mock(name="original2"), mock.Mock(name="packet2", serial=self.serial1)
+                self.o3, self.p3 = mock.Mock(name="original3"), mock.Mock(name="packet3", serial=self.serial2)
+                self.o4, self.p4 = mock.Mock(name="original4"), mock.Mock(name="packet4", serial=self.serial2)
+
+                self.packets = [
+                      (self.o1, self.p1)
+                    , (self.o2, self.p2)
+                    , (self.o3, self.p3)
+                    , (self.o4, self.p4)
+                    ]
+
+                self.broadcast_address = mock.Mock(name="broadcast_address")
+
+                self.a = mock.Mock(name="a")
+                self.kwargs = {"a": self.a}
+
+                self.found_info1 = mock.Mock(name="found_info1")
+                self.found_info2 = mock.Mock(name="found_info2")
+
+            async def search(self, found, accept_found, find_timeout=1):
+                return await self.item.search(self.afr, found, accept_found, self.packets, self.broadcast_address, find_timeout, self.kwargs)
+
+            @with_timeout
+            async it "returns without looking if we have all the targets":
+                found = {self.target1: self.found_info1, self.target2: self.found_info2}
+                looked, f, missing = await self.search(found, False)
+                assert not looked
+                self.assertEqual(f, found)
+                self.assertEqual(missing, [])
+                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
+
+            @with_timeout
+            async it "returns without looking if accept_found is True":
+                found = {self.target1: self.found_info1, self.target2: self.found_info2}
+                looked, f, missing = await self.search(found, True)
+                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
+                assert not looked
+                self.assertEqual(f, found)
+                self.assertEqual(missing, [])
+
+                found = {self.target1: self.found_info1}
+                looked, f, missing = await self.search(found, True)
+                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
+                assert not looked
+                self.assertEqual(f, found)
+                self.assertEqual(missing, [self.serial2])
+
+            @with_timeout
+            async it "otherwise uses find_specific_serials":
+                found = mock.Mock(name="found")
+                missing = mock.Mock(name="missing")
+                self.find_specific_serials.return_value = (found, missing)
+
+                looked, f, missing = await self.search(None, False, find_timeout=20)
+                assert looked
                 self.assertIs(f, found)
+                self.assertIs(missing, missing)
 
-            async it "returns errors caught in find_devices":
-                target1 = binascii.unhexlify('d073d5000000')
-                target2 = binascii.unhexlify('d073d5000001')
-                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
-                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
+                class L:
+                    def __init__(self, want):
+                        self.want = want
 
-                afr = mock.Mock(name="afr")
-                found = {}
-
-                class Error(PhotonsAppError):
-                    pass
-
-                def find_devices(*args, **kwargs):
-                    kwargs["error_catcher"].append(Error())
-                    return {}
-                afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
-
-                broadcast_address = mock.Mock(name="broadcast_address")
-                find_timeout = 0.1
-                looked, f, catcher = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
-
-                self.assertEqual(looked, True)
-                self.assertEqual(set(catcher), set([Error()]))
-                self.assertEqual(f, {})
-
-            async it "keeps searching till we have all the targets":
-                target1 = binascii.unhexlify('d073d5000000')
-                target2 = binascii.unhexlify('d073d5000001')
-                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
-                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
-
-                afr = mock.Mock(name="afr")
-                found = {}
-
-                def find_devices(*args, **kwargs):
-                    if target1 not in found:
-                        found[target1] = True
-                        return found
-
-                    if target2 not in found:
-                        found[target2] = True
-                        return found
-                afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
-
-                broadcast_address = mock.Mock(name="broadcast_address")
-                find_timeout = 1
-                looked, f, catcher = await self.item.search(afr, None, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
-
-                self.assertEqual(looked, True)
-                self.assertEqual(catcher, [])
-                self.assertEqual(f, {target1: True, target2: True})
-
-                class List:
                     def __eq__(self, other):
-                        return other == []
+                        return sorted(other) == sorted(self.want)
 
-                self.assertEqual(afr.find_devices.mock_calls
-                    , [ mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
-                      , mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
-                      ]
-                    )
-
-            async it "keeps searching till we have all the targets even if we start with targets":
-                target1 = binascii.unhexlify('d073d5000000')
-                target2 = binascii.unhexlify('d073d5000001')
-                o1, p1 = mock.Mock(name="o1"), mock.Mock(name="p1", target=target1)
-                o2, p2 = mock.Mock(name="o2"), mock.Mock(name="p2", target=target2)
-
-                afr = mock.Mock(name="afr")
-                found = {target1: True}
-
-                def find_devices(*args, **kwargs):
-                    found[target2] = True
-                    return found
-                afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
-
-                broadcast_address = mock.Mock(name="broadcast_address")
-                find_timeout = 1
-                looked, f, catcher = await self.item.search(afr, found, [(o1, p1), (o2, p2)], broadcast_address, find_timeout)
-
-                self.assertEqual(looked, True)
-                self.assertEqual(catcher, [])
-                self.assertEqual(f, {target1: True, target2: True})
-
-                class List:
-                    def __eq__(self, other):
-                        return other == []
-
-                self.assertEqual(afr.find_devices.mock_calls
-                    , [ mock.call(broadcast_address, raise_on_none=False, timeout=find_timeout, error_catcher=List())
-                      ]
+                self.find_specific_serials.assert_called_once_with(L([self.serial1, self.serial2]), self.broadcast_address
+                    , raise_on_none = False
+                    , timeout = 20
+                    , a = self.a
                     )
 
         describe "write_messages":

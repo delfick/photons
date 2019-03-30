@@ -60,7 +60,9 @@ class TransportBridge(object):
 
         .. automethod:: photons_transport.target.bridge.TransportBridge.target_is_at
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.find
+        .. automethod:: photons_transport.target.bridge.TransportBridge.find_devices
+
+        .. automethod:: photons_transport.target.bridge.TransportBridge.find_specific_serials
 
         .. automethod:: photons_transport.target.bridge.TransportBridge.make_writer
 
@@ -73,7 +75,7 @@ class TransportBridge(object):
 
         .. automethod:: photons_transport.target.bridge.TransportBridge.spawn_conn
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.find_devices
+        .. automethod:: photons_transport.target.bridge.TransportBridge._find_specific_serials
     """
     Waiter = Waiter
     Writer = Writer
@@ -119,6 +121,23 @@ class TransportBridge(object):
 
     async def find_devices(self, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
         """Hook for finding devices"""
+        kwargs["ignore_lost"] = ignore_lost
+        kwargs["raise_on_none"] = raise_on_none
+        found, _ = await self.find_specific_serials(None, broadcast, **kwargs)
+        return found
+
+    async def find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
+        kwargs["ignore_lost"] = ignore_lost
+        kwargs["raise_on_none"] = raise_on_none
+        found = await self._find_specific_serials(serials, broadcast, **kwargs)
+        missing = [] if serials is None else [serial for serial in serials if binascii.unhexlify(serial)[:6] not in found]
+
+        if missing:
+            log.error(hp.lc("Didn't find some devices", missing=missing))
+
+        return found, missing
+
+    async def _find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, **kwargs):
         raise NotImplementedError()
 
     def is_sock_active(self, sock):
@@ -156,42 +175,6 @@ class TransportBridge(object):
         target = binascii.unhexlify(serial)
         self.found[target] = (set([(service, (address, port))]), address)
 
-    async def find(self, target, broadcast=sb.NotSpecified, **kwargs):
-        """Find all the devices we can"""
-        if type(target) is str:
-            target = binascii.unhexlify(target)
-        target = target[:6]
-
-        if target in self.found:
-            return self.found[target]
-
-        log.debug("Finding address for {0}, broadcasting on {1}".format(target, broadcast))
-
-        kw = dict(kwargs)
-        kw["broadcast"] = broadcast if broadcast is not sb.NotSpecified else self.default_broadcast
-
-        start = time.time()
-        end = start + kwargs.get("timeout", 20)
-
-        while target not in self.found:
-            left = end - time.time()
-            if left < 0:
-                raise TimedOut("Waiting for state messages", serial=binascii.hexlify(target[:6]).decode())
-
-            kw["timeout"] = left
-            fut = asyncio.ensure_future(self.find_devices(**kw))
-            d, _ = await asyncio.wait([asyncio.sleep(left), fut], return_when=asyncio.FIRST_COMPLETED)
-
-            if fut not in d:
-                fut.cancel()
-            else:
-                self.found = await fut
-
-            if target in self.found:
-                break
-
-        return self.found[target]
-
     def received_data(self, data, addr, address):
         """What to do when we get some data"""
         if type(data) is bytes:
@@ -220,11 +203,11 @@ class TransportBridge(object):
         """Make a future for waiting on a writer to get a reply"""
         return self.Waiter(self.stop_fut, writer, **kwargs)
 
-    async def make_writer(self, original, packet, **kwargs):
+    async def make_writer(self, services, original, packet, **kwargs):
         """Make an object for writing to this bridge"""
         writer = self.Writer(self, original, packet, **kwargs)
-        return await writer.make()
+        return await writer.make(services)
 
-    def make_retry_options(self):
+    def make_retry_options(self, **kwargs):
         """Return a new retry options object"""
-        return self.RetryOptions()
+        return self.RetryOptions(**kwargs)

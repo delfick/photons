@@ -7,7 +7,8 @@
 """
 from photons_socket.connection import Sockets
 
-from photons_app.errors import TimedOut, FoundNoDevices
+from photons_app.errors import FoundNoDevices
+from photons_app import helpers as hp
 
 from photons_transport.target import TransportItem, TransportBridge, TransportTarget
 from photons_messages import DiscoveryMessages, Services
@@ -15,9 +16,19 @@ from photons_protocol.messages import Messages
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
+import binascii
 import logging
+import time
 
 log = logging.getLogger("photons_socket.target")
+
+def serials_to_targets(serials):
+    if serials is not None:
+        for serial in serials:
+            target = serial
+            if isinstance(serial, str):
+                target = binascii.unhexlify(serial)
+            yield target[:6]
 
 class SocketItem(TransportItem):
     """Just a subclass of ``photons_protocol.target.item.TransportItem``"""
@@ -86,39 +97,68 @@ class SocketBridge(TransportBridge):
         log.debug("SENDING {0}:{1} TO {2} {3}".format(packet.source, packet.sequence, addr[0], addr[1]))
         sock.sendto(bts, (addr[0], addr[1]))
 
-    async def find_devices(self, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
+    async def _find_specific_serials(self, serials, broadcast, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
         """
         Broadcast a Discovery Packet (GetService) and interpret the return
         StateService messages.
         """
-        discovery = DiscoveryMessages.GetService(
-              ack_required=False, res_required=True
-            , target=None, addressable=True, tagged=True
-            )
-
-        script = self.transport_target.script(discovery)
-        found_now = []
-        try:
-            kwargs["broadcast"] = broadcast
-            kwargs["accept_found"] = True
-            kwargs["message_timeout"] = timeout
-            async for pkt, addr, broadcast in script.run_with([], self, **kwargs):
-                target = pkt.target[:6]
-                found_now.append(target)
-                if target not in self.found:
-                    self.found[target] = (set(), broadcast)
-
-                if pkt.protocol == 1024 and pkt.pkt_type == 3:
-                    service = pkt.payload.service
-                    self.found[target][0].add((service, addr))
-        except TimedOut as error:
-            if raise_on_none:
-                raise FoundNoDevices()
-            log.error("Didn't find any devices!\terror=%s", error)
+        found_now = await self._do_search(broadcast, serials, self.found, timeout, **kwargs)
 
         if not ignore_lost:
             for target in list(self.found):
                 if target not in found_now:
                     del self.found[target]
 
+        if serials is None and not found_now:
+            if raise_on_none:
+                raise FoundNoDevices()
+            else:
+                log.error(hp.lc("Didn't find any devices"))
+
         return self.found
+
+    async def _do_search(self, broadcast, serials, found, timeout, **kwargs):
+        found_now = set()
+        wanted_targets = list(serials_to_targets(serials))
+
+        get_service = DiscoveryMessages.GetService(
+              target = None
+            , tagged = True
+            , addressable = True
+            , res_required = True
+            , ack_required = False
+            )
+
+        script = self.transport_target.script(get_service)
+
+        kwargs["no_retry"] = True
+        kwargs["broadcast"] = broadcast
+        kwargs["accept_found"] = True
+        kwargs["error_catcher"] = []
+
+        async for time_left, time_till_next in self._search_retry_iterator(timeout):
+            kwargs["message_timeout"] = time_till_next
+
+            async for pkt, addr, broadcast in script.run_with(None, self, **kwargs):
+                target = pkt.target[:6]
+                found_now.add(target)
+                if target not in found:
+                    found[target] = (set(), broadcast)
+
+                if pkt.protocol == 1024 and pkt.pkt_type == 3:
+                    found[target][0].add((pkt.service, (addr[0], pkt.port)))
+
+            if serials is None:
+                if found_now:
+                    break
+            elif all(target in found for target in wanted_targets):
+                break
+
+        return list(found_now)
+
+    async def _search_retry_iterator(self, end_after):
+        timeouts = [(0.6, 1.8), (1, 4)]
+        retrier = self.make_retry_options(timeouts=timeouts)
+
+        async for info in retrier.iterator(end_after=end_after):
+            yield info

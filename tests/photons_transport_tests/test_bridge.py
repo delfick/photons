@@ -100,11 +100,149 @@ describe AsyncTestCase, "TransportBridge":
                     await self.bridge.spawn_conn(m("address"), backoff=m("backoff"), target=m("target"))
 
                 with self.fuzzyAssertRaisesError(NotImplementedError):
-                    await self.bridge.find_devices(m("broadcast")
-                        , ignore_lost=m("ignore_lost"), raise_on_none=m("raise_on_none")
+                    await self.bridge._find_specific_serials(m("serials"), m("broadcast")
+                        , ignore_lost = m("ignore_lost")
+                        , raise_on_none = m("raise_on_none")
                         # And arbitrary kwargs
-                        , random=m("random"), other_random=m("other_random")
+                        , random = m("random")
+                        , other_random = m("other_random")
                         )
+
+        describe "find_devices":
+            async it "uses find_specific_serials":
+                a = mock.Mock(name="a")
+                broadcast = mock.Mock(name="broadcast")
+                ignore_lost = mock.Mock(name="ignore_lost")
+                raise_on_none = mock.Mock(name="raise_on_none")
+
+                found = mock.Mock(name="found")
+                missing = mock.Mock(name="missing")
+                find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+                find_specific_serials.return_value = (found, missing)
+
+                with mock.patch.object(self.bridge, "find_specific_serials", find_specific_serials):
+                    f = await self.bridge.find_devices(broadcast
+                        , ignore_lost = ignore_lost
+                        , raise_on_none = raise_on_none
+                        , a = a
+                        )
+
+                self.assertIs(f, found)
+                find_specific_serials.assert_called_once_with(None, broadcast
+                    , ignore_lost = ignore_lost
+                    , raise_on_none = raise_on_none
+                    , a = a
+                    )
+
+            async it "has defaults for ignore_lost and raise_on_none":
+                a = mock.Mock(name="a")
+                broadcast = mock.Mock(name="broadcast")
+
+                found = mock.Mock(name="found")
+                missing = mock.Mock(name="missing")
+                find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+                find_specific_serials.return_value = (found, missing)
+
+                with mock.patch.object(self.bridge, "find_specific_serials", find_specific_serials):
+                    f = await self.bridge.find_devices(broadcast
+                        , a = a
+                        )
+
+                self.assertIs(f, found)
+                find_specific_serials.assert_called_once_with(None, broadcast
+                    , ignore_lost = False
+                    , raise_on_none = False
+                    , a = a
+                    )
+
+        describe "find_specific_serials":
+            async before_each:
+                self.serial1 = "d073d5000001"
+                self.serial2 = "d073d5000002"
+
+                self.target1 = binascii.unhexlify(self.serial1)[:6]
+                self.target2 = binascii.unhexlify(self.serial2)[:6]
+
+                self.info1 = mock.Mock(name="info1")
+                self.info2 = mock.Mock(name="info2")
+
+            async def assertSpecificSerials(self, serials, found, missing):
+                a = mock.Mock(name="a")
+                broadcast = mock.Mock(name="broadcast")
+                ignore_lost = mock.Mock(name="ignore_lost")
+                raise_on_none = mock.Mock(name="raise_on_none")
+
+                _find_specific_serials = asynctest.mock.CoroutineMock(name="_find_specific_serials")
+                _find_specific_serials.return_value = found
+
+                with mock.patch.object(self.bridge, "_find_specific_serials", _find_specific_serials):
+                    f, m = await self.bridge.find_specific_serials(serials, broadcast
+                        , ignore_lost = ignore_lost
+                        , raise_on_none = raise_on_none
+                        , a = a
+                        )
+
+                self.assertIs(f, found)
+                self.assertEqual(m, missing)
+                _find_specific_serials.assert_called_once_with(serials, broadcast
+                    , ignore_lost = ignore_lost
+                    , raise_on_none = raise_on_none
+                    , a = a
+                    )
+
+                _find_specific_serials.reset_mock()
+                with mock.patch.object(self.bridge, "_find_specific_serials", _find_specific_serials):
+                    f, m = await self.bridge.find_specific_serials(serials, broadcast
+                        , a = a
+                        )
+
+                self.assertIs(f, found)
+                self.assertEqual(m, missing)
+                _find_specific_serials.assert_called_once_with(serials, broadcast
+                    , ignore_lost = False
+                    , raise_on_none = False
+                    , a = a
+                    )
+
+            async it "No missing if no found and no serials":
+                serials = None
+                found = {}
+                missing = []
+                await self.assertSpecificSerials(serials, found, missing)
+
+            async it "No missing if found has all the serials":
+                serials = [self.serial1, self.serial2]
+
+                found = {self.target1: self.info1, self.target2: self.info2}
+                missing = []
+                await self.assertSpecificSerials(serials, found, missing)
+
+            async it "No missing if more found than serials":
+                serials = [self.serial1]
+
+                found = {self.target1: self.info1, self.target2: self.info2}
+                missing = []
+                await self.assertSpecificSerials(serials, found, missing)
+
+            async it "has missing if less found than serials":
+                serials = [self.serial1, self.serial2]
+
+                found = {self.target1: self.info1}
+                missing = [self.serial2]
+                await self.assertSpecificSerials(serials, found, missing)
+
+            async it "has missing if no found":
+                serials = [self.serial1, self.serial2]
+
+                found = {}
+                missing = [self.serial1, self.serial2]
+                await self.assertSpecificSerials(serials, found, missing)
+
+            async it "no missing if found and no serials":
+                serials = None
+                found = {self.target1: self.info1, self.target2: self.info2}
+                missing = []
+                await self.assertSpecificSerials(serials, found, missing)
 
         describe "generating source":
             async it "uses random to create a number in the particular range":
@@ -192,104 +330,6 @@ describe AsyncTestCase, "TransportBridge":
 
                 self.assertEqual(self.bridge.found, {target: (set([(service, (address, port))]), address)})
 
-        describe "find":
-            async before_each:
-                self.find_devices = asynctest.mock.CoroutineMock(name="find_devices")
-
-            async it "returns what it finds in found":
-                serial = "d073d5000001"
-                target = binascii.unhexlify(serial)
-
-                res = mock.Mock(name='res')
-                self.bridge.found = {target: res}
-
-                self.assertIs(await self.bridge.find(serial), res)
-                self.assertIs(await self.bridge.find(target), res)
-
-            async it "uses find_devices to get found":
-                serial = "d073d5000001"
-                target = binascii.unhexlify(serial)
-
-                res = mock.Mock(name='res')
-                self.bridge.found = {}
-
-                self.find_devices.return_value = {target: res}
-                with mock.patch.object(self.bridge, "find_devices", self.find_devices):
-                    self.assertIs(await self.bridge.find(serial), res)
-
-                self.find_devices.assert_called_once_with(broadcast=self.default_broadcast, timeout=mock.ANY)
-
-            async it "passes in broadcast and other kwargs into find_devices to get found":
-                serial = "d073d5000001"
-                target = binascii.unhexlify(serial)
-
-                res = mock.Mock(name='res')
-                self.bridge.found = {}
-
-                a = mock.Mock(name="a")
-                b = mock.Mock(name="b")
-                broadcast = mock.Mock(name="broadcast")
-
-                self.find_devices.return_value = {target: res}
-                with mock.patch.object(self.bridge, "find_devices", self.find_devices):
-                    self.assertIs(await self.bridge.find(serial, broadcast=broadcast, a=a, b=b), res)
-
-                self.find_devices.assert_called_once_with(broadcast=broadcast, timeout=mock.ANY, a=a, b=b)
-
-            async it "keeps trying till it finds it":
-                serial = "d073d5000001"
-                target = binascii.unhexlify(serial)
-                target2 = mock.Mock(name="target2")
-
-                res = mock.Mock(name='res')
-                self.bridge.found = {}
-
-                found = [{}, {target2: True}, {target: res}]
-
-                def find_devices(**kwargs):
-                    return found.pop(0)
-                self.find_devices.side_effect = find_devices
-
-                with mock.patch.object(self.bridge, "find_devices", self.find_devices):
-                    self.assertIs(await self.bridge.find(serial), res)
-
-                self.assertEqual(self.find_devices.mock_calls
-                    , [ mock.call(broadcast=self.default_broadcast, timeout=mock.ANY)
-                      , mock.call(broadcast=self.default_broadcast, timeout=mock.ANY)
-                      , mock.call(broadcast=self.default_broadcast, timeout=mock.ANY)
-                      ]
-                    )
-
-            async it "keeps trying till it times out":
-                serial = "d073d5000001"
-                target = binascii.unhexlify(serial)
-                target2 = mock.Mock(name="target2")
-
-                res = mock.Mock(name='res')
-                self.bridge.found = {}
-
-                fut = asyncio.Future()
-
-                called = []
-                async def find_devices(**kwargs):
-                    if len(called) == 0:
-                        called.append(1)
-                        return {}
-
-                    start = time.time()
-                    try:
-                        return await fut
-                    finally:
-                        called.append(time.time() - start)
-
-                with mock.patch.object(self.bridge, "find_devices", find_devices):
-                    with self.fuzzyAssertRaisesError(TimedOut, serial=serial):
-                        await self.wait_for(self.bridge.find(serial, timeout=0.01))
-
-                assert fut.cancelled()
-                self.assertEqual(called[0], 1)
-                self.assertLess(called[1], 0.02)
-
         describe "received_data":
             async before_each:
                 self.Messages = mock.Mock(name="messages")
@@ -358,13 +398,14 @@ describe AsyncTestCase, "TransportBridge":
                 b = mock.Mock(name="b")
                 original = mock.Mock(name="original")
                 packet = mock.Mock(name="packet")
+                services = mock.Mock(name="services")
 
                 FakeWriter = mock.Mock(name='Writer', return_value=res)
 
                 self.bridge.Writer = FakeWriter
-                self.assertIs(await self.bridge.make_writer(original, packet, a=a, b=b), executor)
+                self.assertIs(await self.bridge.make_writer(services, original, packet, a=a, b=b), executor)
                 FakeWriter.assert_called_once_with(self.bridge, original, packet, a=a, b=b)
-                make.assert_called_once_with()
+                make.assert_called_once_with(services)
 
         describe "make_retry_options":
             async it "creates RetryOptions by default":
@@ -376,6 +417,6 @@ describe AsyncTestCase, "TransportBridge":
                 FakeRetryOptions = mock.Mock(name='Writer', return_value=res)
 
                 self.bridge.RetryOptions = FakeRetryOptions
-                options = self.bridge.make_retry_options()
+                options = self.bridge.make_retry_options(a=1)
                 self.assertIs(options, res)
-                FakeRetryOptions.assert_called_once_with()
+                FakeRetryOptions.assert_called_once_with(a=1)

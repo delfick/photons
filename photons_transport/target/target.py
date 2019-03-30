@@ -68,7 +68,9 @@ class TransportTarget(dictobj.Spec):
     def script(self, raw):
         """Return us a ScriptRunnerIterator for the given `raw` against this `target`"""
         items = list(self.simplify(raw))
-        if len(items) > 1:
+        if not items:
+            items = None
+        elif len(items) > 1:
             items = Pipeline(*items)
         else:
             items = items[0]
@@ -110,10 +112,6 @@ class TransportTarget(dictobj.Spec):
     def device_forgetter(self, args_for_run):
         """Return a function that may be used to forget a device on this args_for_run"""
         return args_for_run.forget
-
-    def find(self, args_for_run):
-        """Return a function that may be used to find a device on this args_for_run"""
-        return args_for_run.find
 
     def simplify(self, script_part, chain=None):
         """

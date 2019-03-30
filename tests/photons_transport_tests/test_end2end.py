@@ -3,9 +3,9 @@
 from photons_transport.target import TransportItem, TransportBridge, TransportTarget
 from photons_transport.target.errors import FailedToFindDevice
 
-from photons_app.errors import PhotonsAppError, TimedOut, RunErrors
-from photons_app.test_helpers import AsyncTestCase
-from photons_app.special import SpecialReference
+from photons_app.errors import PhotonsAppError, TimedOut, RunErrors, DevicesNotFound
+from photons_app.special import SpecialReference, HardCodedSerials
+from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app import helpers as hp
 
 from photons_protocol.messages import MultiOptions
@@ -240,7 +240,7 @@ class MemoryBridge(TransportBridge):
         if conn is not True:
             await conn[1].put(bts)
 
-    async def find_devices(self, broadcast, **kwargs):
+    async def _find_specific_serials(self, serials, broadcast, **kwargs):
         found = {}
         for device in self.devices:
             if device.online:
@@ -259,6 +259,13 @@ describe AsyncTestCase, "End2End":
 
     async after_each:
         self.final_future.cancel()
+
+    @with_timeout
+    async it "doesn't fail if we run_with nothing":
+        got = []
+        async for info in self.target.script([]).run_with(None):
+            got.append(info)
+        self.assertEqual(got, [])
 
     async it "works with a special reference":
         called = []
@@ -298,6 +305,112 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(len(set(hash(p) for p, _, _ in results)), 3)
 
             self.assertEqual(called, [("find_serials", afr, False, find_timeout)])
+
+    async it "can get partial found with special reference":
+        called = []
+
+        async with self.target.session() as afr:
+            ref = HardCodedSerials([afr.devices[0].serial, "d073d5001337"])
+
+            msg = Adder(3, 4)
+            results = []
+            errors = []
+
+            async def doit():
+                async for info in self.target.script(msg).run_with(ref, afr, find_timeout=0.1, error_catcher=errors):
+                    results.append(info)
+            await self.wait_for(doit())
+
+            self.assertEqual(len(afr.devices[0].connections), 1)
+            self.assertEqual(len(afr.devices[1].connections), 0)
+            self.assertEqual(len(afr.devices[2].connections), 0)
+
+            self.assertEqual(len(afr.devices[0].received), 1)
+            self.assertEqual(len(afr.devices[1].received), 0)
+            self.assertEqual(len(afr.devices[2].received), 0)
+
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0][0].payload, {"uid": msg.payload["uid"], "result": 7})
+            self.assertEqual(errors, [FailedToFindDevice(serial="d073d5001337")])
+
+    async it "can get partial found without special reference":
+        called = []
+
+        async with self.target.session() as afr:
+            ref = [afr.devices[0].serial, "d073d5001337"]
+
+            msg = Adder(3, 4)
+            results = []
+            errors = []
+
+            async def doit():
+                async for info in self.target.script(msg).run_with(ref, afr, find_timeout=0.1, error_catcher=errors):
+                    results.append(info)
+            await self.wait_for(doit())
+
+            self.assertEqual(len(afr.devices[0].connections), 1)
+            self.assertEqual(len(afr.devices[1].connections), 0)
+            self.assertEqual(len(afr.devices[2].connections), 0)
+
+            self.assertEqual(len(afr.devices[0].received), 1)
+            self.assertEqual(len(afr.devices[1].received), 0)
+            self.assertEqual(len(afr.devices[2].received), 0)
+
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0][0].payload, {"uid": msg.payload["uid"], "result": 7})
+            self.assertEqual(errors, [FailedToFindDevice(serial="d073d5001337")])
+
+    async it "can not send partial results if not all devices are found":
+        called = []
+
+        async with self.target.session() as afr:
+            ref = HardCodedSerials([afr.devices[0].serial, "d073d5001337"])
+
+            msg = Adder(3, 4)
+            results = []
+            errors = []
+
+            async def doit():
+                async for info in self.target.script(msg).run_with(ref, afr, require_all_devices=True, find_timeout=0.1, error_catcher=errors):
+                    results.append(info)
+            await self.wait_for(doit())
+
+            self.assertEqual(len(afr.devices[0].connections), 0)
+            self.assertEqual(len(afr.devices[1].connections), 0)
+            self.assertEqual(len(afr.devices[2].connections), 0)
+
+            self.assertEqual(len(afr.devices[0].received), 0)
+            self.assertEqual(len(afr.devices[1].received), 0)
+            self.assertEqual(len(afr.devices[2].received), 0)
+
+            self.assertEqual(len(results), 0)
+            self.assertEqual(errors, [DevicesNotFound(missing=["d073d5001337"])])
+
+    async it "can not send partial results if not all devices are found without special reference":
+        called = []
+
+        async with self.target.session() as afr:
+            ref = [afr.devices[0].serial, "d073d5001337"]
+
+            msg = Adder(3, 4)
+            results = []
+            errors = []
+
+            async def doit():
+                async for info in self.target.script(msg).run_with(ref, afr, require_all_devices=True, find_timeout=0.1, error_catcher=errors):
+                    results.append(info)
+            await self.wait_for(doit())
+
+            self.assertEqual(len(afr.devices[0].connections), 0)
+            self.assertEqual(len(afr.devices[1].connections), 0)
+            self.assertEqual(len(afr.devices[2].connections), 0)
+
+            self.assertEqual(len(afr.devices[0].received), 0)
+            self.assertEqual(len(afr.devices[1].received), 0)
+            self.assertEqual(len(afr.devices[2].received), 0)
+
+            self.assertEqual(len(results), 0)
+            self.assertEqual(errors, [DevicesNotFound(missing=["d073d5001337"])])
 
     async it "works":
         async with self.target.session() as afr:

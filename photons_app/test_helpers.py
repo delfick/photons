@@ -58,6 +58,20 @@ class FakeTarget(object):
     async def close_args_for_run(self, afr):
         afr.close()
 
+    def session(self):
+        info = {}
+
+        class Session:
+            async def __aenter__(s):
+                afr = info["afr"] = await self.args_for_run()
+                return afr
+
+            async def __aexit__(s, exc_type, exc, tb):
+                if "afr" in info:
+                    await self.close_args_for_run(info["afr"])
+
+        return Session()
+
     def script(self, part):
         return FakeScript(self, part)
 
