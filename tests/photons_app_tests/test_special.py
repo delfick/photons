@@ -156,9 +156,19 @@ describe AsyncTestCase, "FoundSerials":
         afr.find_devices.assert_called_once_with(address, raise_on_none=True, timeout=find_timeout)
 
 describe AsyncTestCase, "HardCodedSerials":
+    async before_each:
+        self.serial1 = "d073d5000001"
+        self.serial2 = "d073d5000002"
+
+        self.target1 = binascii.unhexlify(self.serial1)[:6]
+        self.target2 = binascii.unhexlify(self.serial2)[:6]
+
+        self.info1 = mock.Mock(name="info1")
+        self.info2 = mock.Mock(name="info2")
+
     async it "takes in a list of serials":
-        serials = "d073d5000001,d073d5000002"
-        wanted = [binascii.unhexlify(ref) for ref in serials.split(",")]
+        serials = "d073d5000001,d073d500000200"
+        wanted = [binascii.unhexlify(ref)[:6] for ref in serials.split(",")]
 
         afr = mock.Mock(name="afr")
         broadcast = mock.Mock(name="broadcast")
@@ -167,71 +177,61 @@ describe AsyncTestCase, "HardCodedSerials":
         for s in (serials, serials.split(",")):
             ref = HardCodedSerials(s)
             self.assertEqual(ref.targets, wanted)
+            self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
 
-    async it "keeps searching until it finds all the devices":
-        serials = "d073d5000001,d073d5000002"
-        wanted = [binascii.unhexlify(ref) for ref in serials.split(",")]
+    describe "find_serials":
+        async def assertFindSerials(self, found, serials, expected, missing):
+            broadcast = mock.Mock(name='broadcast')
+            find_timeout = mock.Mock(name="find_timeout")
 
-        service0 = mock.Mock(name="service0")
-        service1 = mock.Mock(name="service1")
+            afr = mock.Mock(name="afr")
+            afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+            afr.find_specific_serials.return_value = (found, missing)
 
-        address = mock.Mock(name="address")
-        broadcast_address = mock.Mock(name="broadcast_address", return_value=address)
+            address = mock.Mock(name="address")
+            broadcast_address = mock.Mock(name="broadcast_address", return_value=address)
 
-        afr = mock.Mock(name="afr")
-
-        founds = [
-              {wanted[0]: service0}
-            , {wanted[1]: service0}
-            , {wanted[0]: service0, wanted[1]: service1}
-            ]
-
-        def find_devices(*args, **kwargs):
-            return founds.pop(0)
-        afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
-
-        broadcast = mock.Mock(name="broadcast")
-
-        ref = HardCodedSerials(serials)
-        with mock.patch.object(ref, "broadcast_address", broadcast_address):
-            res = await self.wait_for(ref.find_serials(afr, broadcast, 10))
-
-        self.assertEqual(res, {wanted[0]: service0, wanted[1]: service1})
-
-        broadcast_address.assert_called_once_with(afr, broadcast)
-        self.assertEqual(afr.find_devices.mock_calls
-            , [ mock.call(address, raise_on_none=False, timeout=10)
-              , mock.call(address, raise_on_none=False, timeout=10)
-              , mock.call(address, raise_on_none=False, timeout=10)
-              ]
-            )
-
-    async it "stops after timeout":
-        serials = "d073d5000001,d073d5000002"
-        wanted = [binascii.unhexlify(ref) for ref in serials.split(",")]
-
-        service0 = mock.Mock(name="service0")
-        service1 = mock.Mock(name="service1")
-
-        address = mock.Mock(name="address")
-        broadcast_address = mock.Mock(name="broadcast_address", return_value=address)
-
-        afr = mock.Mock(name="afr")
-
-        async def find_devices(*args, **kwargs):
-            await asyncio.sleep(0.1)
-            return {wanted[0]: service0}
-        afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
-
-        broadcast = mock.Mock(name="broadcast")
-
-        ref = HardCodedSerials(serials)
-        with self.fuzzyAssertRaisesError(DevicesNotFound, missing=["d073d5000002"]):
+            ref = HardCodedSerials(serials)
             with mock.patch.object(ref, "broadcast_address", broadcast_address):
-                res = await self.wait_for(ref.find_serials(afr, broadcast, 0.1))
+                f = await ref.find_serials(afr, broadcast, find_timeout)
 
-        broadcast_address.assert_called_once_with(afr, broadcast)
-        self.assertGreater(len(afr.find_devices.mock_calls), 0)
+            self.assertEqual(f, expected)
+
+            broadcast_address.assert_called_once_with(afr, broadcast)
+            afr.find_specific_serials.assert_called_once_with(serials, address
+                , raise_on_none = False
+                , timeout = find_timeout
+                )
+
+            self.assertEqual(ref.missing(f), missing)
+
+        async it "uses find_specific_serials":
+            found = {self.target1: self.info1, self.target2: self.info2}
+            serials = [self.serial1, self.serial2]
+            expected = {self.target1: self.info1, self.target2: self.info2}
+            missing = []
+            await self.assertFindSerials(found, serials, expected, missing)
+
+        async it "only returns from the serials it cares about":
+            found = {self.target1: self.info1, self.target2: self.info2}
+            serials = [self.serial1]
+            expected = {self.target1: self.info1}
+            missing = []
+            await self.assertFindSerials(found, serials, expected, missing)
+
+        async it "doesn't care if no found":
+            found = {}
+            serials = [self.serial1, self.serial2]
+            expected = {}
+            missing = [self.serial1, self.serial2]
+            await self.assertFindSerials(found, serials, expected, missing)
+
+        async it "can see partial missing":
+            found = {self.target2: self.info2}
+            serials = [self.serial1, self.serial2]
+            expected = {self.target2: self.info2}
+            missing = [self.serial1]
+            await self.assertFindSerials(found, serials, expected, missing)
 
 describe AsyncTestCase, "ResolveReferencesFromFile":
     async it "complains if filename can't be read or is empty":

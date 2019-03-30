@@ -1,4 +1,4 @@
-from photons_app.errors import DevicesNotFound, PhotonsAppError
+from photons_app.errors import PhotonsAppError, DevicesNotFound
 from photons_app import helpers as hp
 
 import binascii
@@ -32,6 +32,13 @@ class SpecialReference:
 
     async find_serials(afr, broadcast, find_timeout)
         Must be implemented by the subclass, return ``found`` from this function
+
+    def missing(found)
+        Given this found dictionary return the serials we were expecting to find but
+        did not find.
+
+    def raise_on_missing(found)
+        Same as missing, but instead of return the missing devies, raise a DevicesNotFound error
     """
     def __init__(self):
         self.found = hp.ResettableFuture()
@@ -44,10 +51,20 @@ class SpecialReference:
             return broadcast or afr.default_broadcast
 
     async def find_serials(self, afr, broadcast, find_timeout):
-        raise NotImplemented
+        raise NotImplementedError()
 
     async def finish(self):
         """Hook for cleanup"""
+
+    def missing(self, found):
+        """Hook for saying if anything is missing from found"""
+        return []
+
+    def raise_on_missing(self, found):
+        """Used to raise an exception if there are missing serials in found"""
+        missing = self.missing(found)
+        if missing:
+            raise DevicesNotFound(missing=missing)
 
     async def find(self, afr, broadcast, find_timeout):
         if self.finding.done():
@@ -96,26 +113,24 @@ class HardCodedSerials(SpecialReference):
     def __init__(self, serials):
         if type(serials) is str:
             serials = serials.split(",")
-        self.targets = [binascii.unhexlify(serial) for serial in serials]
+
+        self.targets = [binascii.unhexlify(serial)[:6] for serial in serials]
+        self.serials = [binascii.hexlify(target).decode() for target in self.targets]
+
         super(HardCodedSerials, self).__init__()
 
     async def find_serials(self, afr, broadcast, find_timeout):
-        start = time.time()
-        found = None
         address = self.broadcast_address(afr, broadcast)
 
-        while not found or any(target[:6] not in found for target in self.targets):
-            found = await afr.find_devices(address
-                , raise_on_none=False, timeout=find_timeout
-                )
-            if time.time() - start > find_timeout:
-                break
+        found, _ = await afr.find_specific_serials(self.serials, address
+            , raise_on_none = False
+            , timeout = find_timeout
+            )
 
-        missing = [binascii.hexlify(target[:6]).decode() for target in self.targets if target[:6] not in found]
-        if missing:
-            raise DevicesNotFound(missing=missing)
+        return {target: found[target] for target in self.targets if target in found}
 
-        return {target[:6]: found[target[:6]] for target in self.targets}
+    def missing(self, found):
+        return [binascii.hexlify(target).decode() for target in self.targets if target not in found]
 
 class ResolveReferencesFromFile(SpecialReference):
     """
@@ -136,6 +151,10 @@ class ResolveReferencesFromFile(SpecialReference):
 
     async def find(self, afr, broadcast, find_timeout):
         return await self.reference.find(afr, broadcast, find_timeout)
+
+    def missing(self, found):
+        """Hook for saying if anything is missing from found"""
+        return self.reference.missing(found)
 
     def reset(self):
         self.reference.reset()

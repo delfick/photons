@@ -3,6 +3,22 @@
 ChangeLog
 =========
 
+0.12.0 - TBD
+    * The find method on SpecialReference objects will now return even if we
+      didn't find all the serials we were looking for. The pattern is now:
+
+      .. code-block:: python
+        
+        found, serials = reference.find(afr, afr.default_broadcast, timeout=30)
+        missing = reference.missing(found)
+
+      Or:
+
+      .. code-block:: python
+        
+        found, serials = reference.find(afr, afr.default_broadcast, timeout=30)
+        reference.raise_on_missing(found)
+
 0.11.0 - 20 March 2019
     * Implemented a limit on inflight messages per run_with call
 
