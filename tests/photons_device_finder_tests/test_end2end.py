@@ -40,8 +40,8 @@ class Device(FakeDevice):
 
         self.infrared = 0
 
-    def change_infrared(self, level):
-        self.infrared = level
+    def change_infrared(self, brightness):
+        self.infrared = brightness
 
     def change_label(self, label):
         self.label = label

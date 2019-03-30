@@ -39,7 +39,7 @@ describe TestCase, "Device":
         self.device.saturation = 0.5
         self.device.brightness = 0.6
         self.device.kelvin = 2500
-        self.device.firmware_version = 1.2
+        self.device.firmware_version = "1.2"
         self.device.product_id = 22
         self.device.product_identifier = "color_a19"
         self.device.cap = ["multizone", "color"]
@@ -56,7 +56,7 @@ describe TestCase, "Device":
               , "saturation": 0.5
               , "brightness": 0.6
               , "kelvin": 2500
-              , "firmware_version": 1.2
+              , "firmware_version": "1.2"
               , "product_id": 22
               , "product_identifier": "color_a19"
               , 'cap': ["multizone", "color"]
