@@ -98,7 +98,7 @@ async def do_apply_theme(target, reference, afr, options):
 
         if capability.has_multizone:
             log.info(hp.lc("Found a strip", serial=serial))
-            if capability.has_extended_multizone(*firmware):
+            if firmware and capability.has_extended_multizone(*firmware):
                 t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides))
             else:
                 t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides))

@@ -28,7 +28,7 @@ async def find_multizone(target, reference, afr):
 
     for serial, details in sorted(info.items()):
         capability = details.get("capability")
-        firmware = details.get("firmware") or (None, None)
+        firmware = details.get("firmware")
         if not capability or not capability.has_multizone:
             continue
 
@@ -45,6 +45,9 @@ async def zones_from_reference(target, reference, afr, **kwargs):
         else:
             msg = MultiZoneMessages.GetColorZones(target=serial, start_index=0, end_index=255)
         msgs.append(msg)
+
+    if not msgs:
+        return {}
 
     by_serial = defaultdict(list)
     async for pkt, _, _ in target.script(msgs).run_with(None, afr, **kwargs):

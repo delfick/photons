@@ -14,7 +14,7 @@ from collections import defaultdict
 
 def tiles_from(state_pkt):
     """
-    Given a StateTile packet, return the tile devices that are valid.
+    Given a Tile State packet, return the tile devices that are valid.
 
     This works by taking into account ``tile_devices_count`` and ``start_index``
     on the packet.
