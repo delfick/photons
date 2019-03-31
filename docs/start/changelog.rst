@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.12.1 - TBD
+0.12.1 - 31 March 2019
     * Removed an unnecessary option from the implementation of Transformer
 
 0.12.0 - 31 March 2019
