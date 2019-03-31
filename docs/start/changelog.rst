@@ -48,6 +48,17 @@ ChangeLog
         # after
         found = await afr.find_devices()
 
+      Note that if you know what serials you are searching for you can ask the
+      afr to find them specifically by saying:
+
+      .. code-block:: python
+
+         serials = ["d073d5000001", "d073d5000002"]
+         found, missing = await afr.find_specific_serials(serials, timeout=20)
+
+      This method is much less spammy on the network than calling find_devices
+      till you have all your devices.
+
 0.11.0 - 20 March 2019
     * Implemented a limit on inflight messages per run_with call
 
