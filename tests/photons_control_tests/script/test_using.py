@@ -202,9 +202,9 @@ describe AsyncTestCase, "Decider":
                 self.assertEqual(res, [rep1, rep2, rep3, rep4, rep5])
 
                 self.assertEqual(called
-                    , [ (msg1, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
-                      , (msg2, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
-                      , (msg3, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher, accept_found=True))
+                    , [ (msg1, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher))
+                      , (msg2, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher))
+                      , (msg3, "run_with", ([], args_for_run), dict(a=a, error_catcher=error_catcher))
                       ]
                     )
 

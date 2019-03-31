@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.12.1 - TBD
+    * Removed an unnecessary option from the implementation of Transformer
+
 0.12.0 - 31 March 2019
     * Moved tile orientation logic into photons_control instead of being in
       photons_tile_paint

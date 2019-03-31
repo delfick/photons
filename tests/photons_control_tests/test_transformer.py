@@ -173,7 +173,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(first_colour_message, [], self.afr
-                        , error_catcher=mock.ANY, accept_found=True
+                        , error_catcher=mock.ANY
                         )
                     , []
                     )
@@ -185,7 +185,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(power_message, [], self.afr
-                        , error_catcher=mock.ANY, accept_found=True
+                        , error_catcher=mock.ANY
                         )
                     , []
                     )
@@ -197,7 +197,7 @@ describe AsyncTestCase, "Transformer":
 
                 self.target.expect_call(
                     mock.call(second_colour_message, [], self.afr
-                        , error_catcher=mock.ANY, accept_found=True
+                        , error_catcher=mock.ANY
                         )
                     , []
                     )

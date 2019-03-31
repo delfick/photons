@@ -250,7 +250,7 @@ class Decider(object):
                 log.warning("Didn't find reference from getter %s\tavailable=%s", reference, list(got.keys()))
 
     async def send_msgs(self, msgs, args_for_run, kwargs, error_catcher):
-        kw = {"error_catcher": error_catcher, "accept_found": True}
+        kw = {"error_catcher": error_catcher}
         kw.update(kwargs)
 
         for g in self.simplifier(msgs):
