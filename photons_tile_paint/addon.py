@@ -8,6 +8,7 @@ __shortdesc__ = "Utilities for painting on the tiles"
 @option_merge_addon_hook(extras=[
       ("lifx.photons", "messages")
     , ("lifx.photons", "themes")
+    , ("lifx.photons", "control")
     , ("lifx.photons", "products_registry")
     ])
 def __lifx__(*args, **kwargs):

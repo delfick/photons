@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_tile_paint.orientation import Orientation as O
-from photons_tile_paint import orientation
+from photons_control.orientation import Orientation as O
+from photons_control import orientation
 
 from photons_app.test_helpers import TestCase
 

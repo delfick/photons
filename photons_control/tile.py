@@ -1,6 +1,8 @@
 """
 .. autofunction:: photons_control.tile.tiles_from
 """
+from photons_control.orientation import nearest_orientation
+
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
@@ -21,6 +23,12 @@ def tiles_from(state_pkt):
     """
     amount = state_pkt.tile_devices_count - state_pkt.start_index
     return state_pkt.tile_devices[:amount]
+
+def orientations_from(pkt):
+    orientations = {}
+    for i, tile in enumerate(tiles_from(pkt)):
+        orientations[i] = nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
+    return orientations
 
 @an_action(needs_target=True, special_reference=True)
 async def get_device_chain(collector, target, reference, **kwargs):

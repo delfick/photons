@@ -2,10 +2,11 @@ from photons_app.actions import an_action
 from photons_app import helpers as hp
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_control.orientation import Orientation as O, reorient
+from photons_control.tile import tiles_from, orientations_from
 from photons_products_registry import capability_for_ids
 from photons_themes.appliers import types as appliers
 from photons_control.script import Pipeline
-from photons_control.tile import tiles_from
 from photons_themes.theme import Theme
 from photons_colour import Parser
 
@@ -187,9 +188,6 @@ async def apply_light(applier, target, afr, serial, theme, overrides):
     await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(serial, afr)
 
 async def apply_tile(applier, target, afr, serial, theme, overrides):
-    from photons_tile_paint.orientation import Orientation as O, reorient
-    from photons_tile_paint.animation import orientations_from
-
     chain = []
     orientations = {}
     async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(serial, afr):

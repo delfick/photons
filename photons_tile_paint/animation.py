@@ -1,16 +1,16 @@
 from photons_tile_paint.set_64 import set_64_maker
-from photons_tile_paint.orientation import Orientation as O
-from photons_tile_paint import orientation
 
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from photons_messages import LightMessages, DeviceMessages, TileMessages
 from photons_themes.coords import user_coords_to_pixel_coords
+from photons_control.orientation import Orientation as O
 from photons_products_registry import capability_for_ids
 from photons_themes.theme import ThemeColor as Color
 from photons_control.tile import tiles_from
 from photons_themes.canvas import Canvas
+from photons_control import orientation
 
 from collections import defaultdict
 import logging
@@ -45,12 +45,6 @@ async def tile_serials_from_reference(target, reference, afr):
                 serials.append(pkt.serial)
 
     return serials
-
-def orientations_from(pkt):
-    orientations = {}
-    for i, tile in enumerate(tiles_from(pkt)):
-        orientations[i] = orientation.nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
-    return orientations
 
 def canvas_to_msgs(canvas, coords, duration=1, acks=True, orientations=None):
     for i, coord in enumerate(coords):

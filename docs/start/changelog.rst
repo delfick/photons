@@ -4,6 +4,9 @@ ChangeLog
 =========
 
 0.12.0 - TBD
+    * Moved tile orientation logic into photons_control instead of being in
+      photons_tile_paint
+
     * The find method on SpecialReference objects will now return even if we
       didn't find all the serials we were looking for. The pattern is now:
 
