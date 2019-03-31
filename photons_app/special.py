@@ -6,7 +6,7 @@ import asyncio
 
 class SpecialReference:
     """
-    Subclasses of this implement an await find_serials(afr, *, timeout, broadcast=True)
+    Subclasses of this implement an await ``find_serials(afr, *, timeout, broadcast=True)``
     that returns the serials to send messages to
 
     If broadcast is a boolean (True or False) then we use afr.default_broadcast
@@ -17,27 +17,15 @@ class SpecialReference:
     where serials is ``["d073d500001", "d073d500002", ...]``
     and found is ``{target: {(service, (ip, port)), ...}, ...}``
 
-    This class exposes:
+    .. automethod:: photons_app.special.SpecialReference.find
 
-    async find(afr, *, timeout, broadcast=True)
-        calls ``await self.find_serials(afr, timeout=timeout, broadcast=broadcast)``, then determines
-        the list of serials from the result and memoizes ``(found, serials)``
+    .. automethod:: photons_app.special.SpecialReference.reset
 
-        So that we only call it once regardless how many times find is called.
-        The reset function is used to remove the cache
+    .. automethod:: photons_app.special.SpecialReference.find_serials
 
-    reset()
-        Reset our cache from calling find
+    .. automethod:: photons_app.special.SpecialReference.missing
 
-    async find_serials(afr, *,_timeout, broadcast=True)
-        Must be implemented by the subclass, return ``found`` from this function
-
-    def missing(found)
-        Given this found dictionary return the serials we were expecting to find but
-        did not find.
-
-    def raise_on_missing(found)
-        Same as missing, but instead of return the missing devies, raise a DevicesNotFound error
+    .. automethod:: photons_app.special.SpecialReference.raise_on_missing
     """
     def __init__(self):
         self.found = hp.ResettableFuture()
@@ -50,6 +38,7 @@ class SpecialReference:
             return broadcast or afr.default_broadcast
 
     async def find_serials(self, afr, *, timeout, broadcast=True):
+        """Must be implemented by the subclass, return ``found`` from this function"""
         raise NotImplementedError()
 
     async def finish(self):
@@ -66,6 +55,13 @@ class SpecialReference:
             raise DevicesNotFound(missing=missing)
 
     async def find(self, afr, *, timeout, broadcast=True):
+        """
+        calls ``await self.find_serials(afr, timeout=timeout, broadcast=broadcast)``, then determines
+        the list of serials from the result and memoizes ``(found, serials)``
+
+        So that we only call it once regardless how many times find is called.
+        The reset function is used to remove the cache
+        """
         if self.finding.done():
             return await self.found
 
@@ -89,6 +85,7 @@ class SpecialReference:
         return await self.found
 
     def reset(self):
+        """Reset our cache from calling find"""
         self.found.reset()
         self.finding.reset()
 
