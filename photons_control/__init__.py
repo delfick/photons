@@ -28,4 +28,7 @@ Tile Helpers
 ------------
 
 .. automodule:: photons_control.tile
+
+.. automodule:: photons_control.orientation
+    :members:
 """
