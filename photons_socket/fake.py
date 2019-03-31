@@ -39,6 +39,7 @@ set ``device.online = False``.
 """
 from photons_socket.target import SocketTarget, SocketBridge
 
+from photons_app.errors import FoundNoDevices
 from photons_app import helpers as hp
 
 from photons_transport.target.retry_options import RetryOptions
@@ -68,7 +69,16 @@ class MemorySocketBridge(SocketBridge):
             if device.is_reachable(broadcast_address):
                 res[target[:6]] = device.services
 
-        return res
+        if not ignore_lost:
+            for target in list(self.found):
+                if target not in res:
+                    del self.found[target]
+
+        if raise_on_none and not res:
+            raise FoundNoDevices()
+
+        self.found.update(res)
+        return self.found
 
 class WithDevices(object):
     def __init__(self, target, devices):
