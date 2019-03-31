@@ -1,0 +1,13 @@
+#!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ ! -e $DIR/.lifx ]]; then
+    echo "Please run ./setup_venv first"
+    exit 1
+fi
+
+if [[ -z $LIFX_CONFIG ]]; then
+    export LIFX_CONFIG=$DIR/lifx.yml
+fi
+
+exec $DIR/.lifx/bin/python "$@"

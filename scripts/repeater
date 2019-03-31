@@ -1,4 +1,4 @@
-#!/usr/bin/env python -cos=__import__("os");sys=__import__("sys");python=os.path.join(os.path.dirname(sys.argv[1]),".lifx/bin/python");os.execv(python,sys.argv)
+#!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
 from photons_app.actions import an_action
 from photons_app import helpers as hp
