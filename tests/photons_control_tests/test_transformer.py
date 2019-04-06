@@ -1,32 +1,32 @@
 # coding: spec
 
+from photons_app.test_helpers import TestCase, AsyncTestCase
+
+from photons_control.test_helpers import Device, Color, ModuleLevelRunner
+from photons_messages import DeviceMessages, LightMessages
 from photons_control.transform import Transformer
 from photons_control.script import Pipeline
-
-from photons_app.test_helpers import AsyncTestCase, FakeTargetIterator, print_packet_difference
-
-from photons_messages import DeviceMessages, LightMessages
 from photons_colour import Parser
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
-from functools import partial
+from input_algorithms.dictobj import dictobj
 import itertools
+import asyncio
 import random
-import mock
 
-def simplify(item_kls, script_part, chain=None):
-    if type(script_part) is not list:
-        script_part = [script_part]
+light1 = Device("d073d5000001"
+    , power = 0
+    , color = Color(0, 1, 0.3, 2500)
+    )
 
-    final = []
-    for p in script_part:
-        if getattr(p, "has_children", False):
-            final.append(p.simplified(partial(simplify, item_kls), []))
-            continue
-        else:
-            final.append(p)
+light2 = Device("d073d5000002"
+    , power = 65535
+    , color = Color(100, 1, 0.5, 2500)
+    )
 
-    yield item_kls(final)
+light3 = Device("d073d5000003"
+    , power = 65535
+    , color = Color(100, 0, 0.8, 2500)
+    )
 
 def generate_options(color, exclude=None):
     zero_to_one = [v / 10 for v in range(1, 10, 1)]
@@ -78,270 +78,202 @@ def generate_options(color, exclude=None):
 
                         yield make_state(comb, comb2)
 
+mlr = ModuleLevelRunner([light1, light2, light3])
+
+setUp = mlr.setUp
+tearDown = mlr.tearDown
+
 describe AsyncTestCase, "Transformer":
-    describe "just a power message":
-        async it "Uses SetPower if no duration":
-            msg = Transformer.using({"power": "off"})
-            self.assertEqual(msg.pkt_type, DeviceMessages.SetPower.Payload.message_type)
-            self.assertEqual(msg.payload.as_dict(), {"level": 0})
+    use_default_loop = True
 
-            msg = Transformer.using({"power": "on"})
-            self.assertEqual(msg.pkt_type, DeviceMessages.SetPower.Payload.message_type)
-            self.assertEqual(msg.payload.as_dict(), {"level": 65535})
+    async def transform(self, runner, state, *, expected, keep_brightness=False):
+        msg = Transformer.using(state, keep_brightness=keep_brightness)
+        await runner.target.script(msg).run_with_all(runner.serials)
 
-        async it "uses SetLightPower if we have duration":
-            msg = Transformer.using({"power": "off", "duration": 100})
-            self.assertEqual(msg.pkt_type, LightMessages.SetLightPower.Payload.message_type)
-            self.assertEqual(msg.payload.as_dict(), {"level": 0, "duration": 100})
+        assert len(runner.devices) > 0
 
-            msg = Transformer.using({"power": "on", "duration": 20})
-            self.assertEqual(msg.pkt_type, LightMessages.SetLightPower.Payload.message_type)
-            self.assertEqual(msg.payload.as_dict(), {"level": 65535, "duration": 20})
+        for device in runner.devices:
+            if device not in expected:
+                assert False, f"No expectation for {device.serial}"
 
-    describe "just color options":
-        async it "just uses Parser.color_to_msg":
-            for color in (random.choice(["red", "blue", "green", "yellow"]), None):
-                for state in generate_options(color, exclude=["power"]):
-                    want = Parser.color_to_msg(color, overrides=state)
-                    want.res_required = False
+            device.compare_received(expected[device])
 
-                    got = Transformer.using(state, keep_brightness=False)
-                    self.assertEqual(got, want)
+    async it "returns an empty list if no power or color options":
+        self.assertEqual(Transformer.using({}), [])
 
-    describe "color and power=off":
-        async it "pipelines turn off and color":
-            for state in generate_options("red"):
-                state["power"] = "off"
-                transformer = Transformer()
-                color_message = transformer.color_message(state)
-                power_message = transformer.power_message(state)
+    @mlr.test
+    async it "Uses SetPower if no duration", runner:
+        msg = DeviceMessages.SetPower(level=0, res_required=False)
+        expected = {device: [msg] for device in runner.devices}
+        await self.transform(runner, {"power": "off"}, expected=expected)
 
-                assert color_message is not None
-                assert power_message is not None
+        runner.reset_devices()
+        msg = DeviceMessages.SetPower(level=65535, res_required=False)
+        expected = {device: [msg] for device in runner.devices}
+        await self.transform(runner, {"power": "on"}, expected=expected)
 
-                got = Transformer.using(state, keep_brightness=False)
-                self.assertEqual(type(got), Pipeline)
-                self.assertEqual(len(got.children), 2, got.children)
-                self.assertEqual(got.children, (power_message, color_message))
+    @mlr.test
+    async it "uses SetLightPower if we have duration", runner:
+        msg = LightMessages.SetLightPower(level=0, duration=100, res_required=False)
+        expected = {device: [msg] for device in runner.devices}
+        await self.transform(runner, {"power": "off", "duration": 100}, expected=expected)
 
-    describe "no power or color options":
-        async it "returns an empty list":
-            self.assertEqual(Transformer.using({}), [])
+        runner.reset_devices()
+        msg = LightMessages.SetLightPower(level=65535, duration=20, res_required=False)
+        expected = {device: [msg] for device in runner.devices}
+        await self.transform(runner, {"power": "on", "duration": 20}, expected=expected)
 
-    describe "when we need a transition":
-        async before_each:
-            self.target = FakeTargetIterator()
-            self.afr = mock.Mock(name='afr')
-            self.serial = "d073d5000000"
+    @mlr.test
+    async it "just uses Parser.color_to_msg", runner:
+        for color in (random.choice(["red", "blue", "green", "yellow"]), None):
+            for state in generate_options(color, exclude=["power"]):
+                want = Parser.color_to_msg(color, overrides=state)
+                want.res_required = False
 
-        async def transform(self, state, keep_brightness=False):
-            class item_kls:
-                def __init__(s, parts):
-                    s.parts = parts
+                runner.reset_devices()
+                expected = {device: [want] for device in runner.devices}
+                await self.transform(runner, state, expected=expected)
 
-                async def run_with(s, *args, **kwargs):
-                    for part in s.parts:
-                        if isinstance(part, Pipeline):
-                            async for info in part.run_with(*args, **kwargs):
-                                yield info
-                        else:
-                            async for info in self.target.script(part).run_with(*args, **kwargs):
-                                yield info
+    @mlr.test
+    async it "can ignore brightness", runner:
+        want = Parser.color_to_msg("hue:200 saturation:1")
+        want.res_required = False
 
-            msg = Transformer.using(state, keep_brightness=keep_brightness)
-            simplified = msg.simplified(partial(simplify, item_kls))
+        expected = {device: [want] for device in runner.devices}
+        await self.transform(runner, {"color": "hue:200 saturation:1 brightness:0.3"}, expected=expected, keep_brightness=True)
 
-            async def doit():
-                async for _ in simplified.run_with([self.serial], self.afr):
-                    pass
-            await self.wait_for(doit())
+    @mlr.test
+    async it "sets color with duration", runner:
+        state = {"color": "blue", "duration": 10}
+        want = Parser.color_to_msg("blue", overrides={"duration": 10})
+        expected = {device: [want] for device in runner.devices}
+        await self.transform(runner, state, expected=expected, keep_brightness=True)
 
-        async def assertTransformBehaves(self, transform_into, state, first_colour_message, power_message, second_colour_message, **kwargs):
-            expected = 0
-            getter = LightMessages.GetColor(ack_required=False, res_required=True)
-            self.target.expect_call(
-                mock.call(getter, [self.serial], self.afr
-                    , error_catcher=mock.ANY
-                    )
-                  , [(state, None, None)]
-                  )
+    @mlr.test
+    async it "sets power off even if light already off", runner:
+        state = {"color": "blue", "power": "off", "duration": 10}
+        power = LightMessages.SetLightPower(level=0, duration=10)
+        set_color = Parser.color_to_msg("blue", overrides={"duration": 10})
+        expected = {device: [power, set_color] for device in runner.devices}
+        await self.transform(runner, state, expected=expected)
 
-            if first_colour_message is not None:
-                expected += 1
-                first_colour_message.target = self.serial
-                first_colour_message.res_required = False
+    @mlr.test
+    async it "pipelines turn off and color when both color and power=off", runner:
+        for state in generate_options("red"):
+            state["power"] = "off"
+            transformer = Transformer()
+            color_message = transformer.color_message(state, False)
+            power_message = transformer.power_message(state)
 
-                self.target.expect_call(
-                    mock.call(first_colour_message, [], self.afr
-                        , error_catcher=mock.ANY
-                        )
-                    , []
-                    )
+            assert color_message is not None
+            assert power_message is not None
 
-            if power_message is not None:
-                expected += 1
-                power_message.target = self.serial
-                power_message.res_required = False
+            runner.reset_devices()
+            expected = {device: [power_message, color_message] for device in runner.devices}
+            await self.transform(runner, state, expected=expected)
 
-                self.target.expect_call(
-                    mock.call(power_message, [], self.afr
-                        , error_catcher=mock.ANY
-                        )
-                    , []
-                    )
+    describe "When power on and need color":
+        @mlr.test
+        async it "sets power on if it needs to", runner:
+            state = {"color": "blue", "power": "on"}
+            expected = {
+                  light1:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
+                  , DeviceMessages.SetPower(level=65535)
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness})
+                  ]
+                , light2:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue")
+                  ]
+                , light3:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue")
+                  ]
+                }
+            await self.transform(runner, state, expected=expected)
 
-            if second_colour_message is not None:
-                expected += 1
-                second_colour_message.target = self.serial
-                second_colour_message.res_required = False
+        @mlr.test
+        async it "sets power on if it needs to with duration", runner:
+            state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
+            expected = {
+                  light1:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
+                  , LightMessages.SetLightPower(level=65535, duration=10)
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10})
+                  ]
+                , light2:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
+                  ]
+                , light3:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
+                  ]
+                }
+            await self.transform(runner, state, expected=expected)
 
-                self.target.expect_call(
-                    mock.call(second_colour_message, [], self.afr
-                        , error_catcher=mock.ANY
-                        )
-                    , []
-                    )
+        @mlr.test
+        async it "can see brightness in state", runner:
+            state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
+            expected = {
+                  light1:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
+                  , LightMessages.SetLightPower(level=65535, duration=10)
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10})
+                  ]
+                , light2:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
+                  ]
+                , light3:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
+                  ]
+                }
+            await self.transform(runner, state, expected=expected)
 
-            await self.transform(transform_into, **kwargs)
-            self.assertEqual(self.target.call, expected)
+        @mlr.test
+        async it "can ignore brightness in color", runner:
+            state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
+            expected = {
+                  light1:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
+                  , LightMessages.SetLightPower(level=65535, duration=10)
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness, "duration": 10})
+                  ]
+                , light2:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"duration": 10})
+                  ]
+                , light3:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"duration": 10})
+                  ]
+                }
+            await self.transform(runner, state, expected=expected, keep_brightness=True)
 
-        async it "sets power on if it needs to":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=0, label="blah"
-                )
-
-            first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = DeviceMessages.SetPower(level=65535)
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "on"}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                )
-
-        async it "sets power on if it needs to with duration":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=0, label="blah"
-                )
-
-            first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = LightMessages.SetLightPower(level=65535, duration=10)
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "on", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                )
-
-        async it "doesn't set power if it doesn't need to":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=0, label="blah"
-                )
-
-            first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "off", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness = True
-                )
-
-        async it "doesn't set power if it doesn't need to because power not provided":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.6, kelvin=3500
-                , power=0, label="blah"
-                )
-
-            first_colour_message = Parser.color_to_msg("blue", {"brightness": 0})
-            power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.6, "duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness = True
-                )
-
-        async it "doesn't reset if it doesn't need to":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.4, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.4, "duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness = True
-                )
-
-        async it "doesn't reset if it doesn't need to and power is specified on":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = None
-            second_colour_message = Parser.color_to_msg("blue", {"duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "on", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                )
-
-        async it "doesn't reset if it doesn't need to and power is specified off":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = LightMessages.SetLightPower(level=0, duration=10)
-            second_colour_message = Parser.color_to_msg("blue", {"brightness": 0.5, "duration": 10})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "off", "duration": 10}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness = True
-                )
-
-        async it "doesn't reset if it doesn't need to and power is specified off and not duration":
-            state = LightMessages.LightState.empty_normalise(
-                  target=self.serial, source=0, sequence=0
-                , hue=0, saturation=0, brightness=0.5, kelvin=3500
-                , power=65535, label="blah"
-                )
-
-            first_colour_message = None
-            power_message = DeviceMessages.SetPower(level=0)
-            second_colour_message = Parser.color_to_msg("blue", overrides={"brightness": 0.5})
-
-            await self.assertTransformBehaves({"color": "blue", "power": "off"}, state
-                , first_colour_message
-                , power_message
-                , second_colour_message
-                , keep_brightness = True
-                )
+        @mlr.test
+        async it "can ignore brightness in state", runner:
+            state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
+            expected = {
+                  light1:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
+                  , LightMessages.SetLightPower(level=65535, duration=10)
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness, "duration": 10})
+                  ]
+                , light2:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"duration": 10})
+                  ]
+                , light3:
+                  [ LightMessages.GetColor()
+                  , Parser.color_to_msg("blue", overrides={"duration": 10})
+                  ]
+                }
+            await self.transform(runner, state, expected=expected, keep_brightness=True)

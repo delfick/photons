@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.12.2 - TBD
+   * Slight improvement to photons_control.transform.Transformer
+
 0.12.1 - 31 March 2019
     * Removed an unnecessary option from the implementation of Transformer
 

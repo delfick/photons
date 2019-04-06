@@ -25,17 +25,17 @@ class Transformer(object):
     If there are no color related attributes specified then we just generate a
     message to set the power on or off as specified.
 
-    If we have ``keep_brightness=True`` or ``power=on``; and ``color`` options
-    then we first ask the devices what their current colour is and use that to
-    make the transition to the new state smooth. Essentially when turning a
-    light on from off we first set it's brightness to 0 in the new color, then
-    turn the light on, then turn the brightness up to the desired level. The
-    ``keep_brightness`` option will ensure the light stays the same brightness
-    regardless of the ``color`` options.
+    If we are turning the light on and have color options then we will first
+    ask the device what it's current state is. Lights that are off will be set
+    to brightness 0 on the new color and on, and then the brightness will be
+    changed to match the end result.
 
     For the color options we use ``photons_colour.Parser`` to create the
     ``SetWaveformOptional`` message that is needed to change the device. This
     means that we support an ``effect`` option for setting different waveforms.
+
+    If keep_brightness is True then we do not change the brightness of the device
+    despite any brightness options in the color options.
     """
     @classmethod
     def using(kls, state, keep_brightness=False):
@@ -45,15 +45,15 @@ class Transformer(object):
         if "power" not in state and not has_color_options:
             return []
 
-        if keep_brightness or (state.get("power") == "on" and has_color_options):
-            return transformer.transition(state, keep_brightness=keep_brightness)
+        if state.get("power") == "on" and has_color_options:
+            return transformer.power_on_and_color(state, keep_brightness=keep_brightness)
 
         msgs = []
         if "power" in state:
             msgs.append(transformer.power_message(state))
 
         if has_color_options:
-            msgs.append(transformer.color_message(state))
+            msgs.append(transformer.color_message(state, keep_brightness))
 
         if len(msgs) == 1:
             return msgs[0]
@@ -71,58 +71,52 @@ class Transformer(object):
         else:
             return LightMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
 
-    def color_message(self, state):
+    def color_message(self, state, keep_brightness):
         msg = Parser.color_to_msg(state.get("color", None), overrides=state)
         msg.res_required = False
+        if keep_brightness:
+            msg.brightness = 0
+            msg.set_brightness = False
         return msg
 
-    def transition(self, state, keep_brightness=False):
-        def receiver(reference, *states):
+    def power_on_and_color(self, state, keep_brightness=False):
+        power_message = self.power_message(state)
+        color_message = self.color_message(state, keep_brightness)
+
+        def receiver(serial, *states):
             if not states:
                 return
 
-            current_state = states[0].as_dict()["payload"]
-            power_message = None if "power" not in state else self.power_message(state)
+            current_state = states[0].payload
 
-            msg_dict = dict(state)
-            h, s, b, k = Parser.hsbk(state.get("color", None), overrides=state)
-            msg_dict.update({"hue": h, "saturation": s, "brightness": b, "kelvin": k})
-
-            final_overrides = dict(msg_dict)
+            want_brightness = color_message.brightness if color_message.set_brightness else None
 
             pipeline = []
+            currently_off = current_state.power == 0
 
-            reset = False
+            if currently_off:
+                clone = color_message.clone()
+                clone.period = 0
+                clone.brightness = 0
+                clone.set_brightness = True
+                clone.target = serial
+                pipeline.append(clone)
 
-            now_off = current_state["power"] in (None, 0)
+                clone = power_message.clone()
+                clone.target = serial
+                pipeline.append(clone)
 
-            if now_off:
-                overrides = dict(msg_dict)
-                overrides["brightness"] = 0
-                if "duration" in overrides:
-                    del overrides["duration"]
-                msg = Parser.color_to_msg(None, overrides=overrides)
-                msg.target = reference
-                msg.ack_required = True
-                msg.res_required = False
-                reset = True
-                pipeline.append(msg)
+            set_color = color_message.clone()
+            set_color.target = serial
 
-            if power_message is not None:
-                want_off = power_message.level == 0
+            if currently_off:
+                set_color.brightness = current_state.brightness if want_brightness is None else want_brightness
+                set_color.set_brightness = True
+            elif want_brightness is not None:
+                set_color.brightness = want_brightness
+                set_color.set_brightness = True
 
-                if now_off ^ want_off:
-                    power_message.target = reference
-                    pipeline.append(power_message)
-
-            if keep_brightness or (reset and "brightness" not in state):
-                final_overrides["brightness"] = current_state["brightness"]
-
-            msg = Parser.color_to_msg(None, overrides=final_overrides)
-            msg.target = reference
-            msg.ack_required = True
-            msg.res_required = False
-            pipeline.append(msg)
+            pipeline.append(set_color)
 
             yield Pipeline(*pipeline)
 
