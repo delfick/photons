@@ -34,6 +34,30 @@ Usage looks like:
         for device in target.devices.values():
             await device.finish()
 
+Note that if you want to either not have the cost of talking over udp sockets
+or want to do something async in the response to a message you can do the same
+but the following differences:
+
+.. code-block:: python
+
+    # Tell the device you don't want to start a udp socket
+    device1 = MyDevice("d073d5000001", protocol_register, use_sockets=False)
+
+    # Use MemoryTarget instead of MemorySocketTarget
+    target = MemoryTarget.create(options)
+
+In this scenario you can override async_got_messages to do something when you
+get a message, like:
+
+.. code-block:: python
+
+    class MyDevice(FakeDevice):
+        async def async_got_message(pkt):
+            await asyncio.sleep(some_delay)
+
+            async for msg in super().async_got_message(pkt):
+                yield msg
+
 If you want a device to not appear when the target finds devices then
 set ``device.online = False``.
 """
@@ -51,8 +75,12 @@ import binascii
 import logging
 import asyncio
 import socket
+import time
 
 log = logging.getLogger("photons_socket.fake")
+
+class Done:
+    pass
 
 class MemorySocketBridge(SocketBridge):
     class RetryOptions(RetryOptions):
@@ -108,19 +136,101 @@ class MemorySocketTarget(SocketTarget):
     def with_devices(self, *devices):
         return WithDevices(self, devices)
 
-class FakeDevice(object):
-    def __init__(self, serial, protocol_register, port=None):
+class MemoryTarget(MemorySocketTarget):
+    bridge_kls = lambda s: MemoryBridge
+
+class MemoryBridge(MemorySocketBridge):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.receivers = {}
+        self.connections = {}
+
+    def is_sock_active(self, sock):
+        if isinstance(sock, tuple):
+            return True
+        return super().is_sock_active(sock)
+
+    def finish(self):
+        super().finish()
+        for target, task in self.receivers.items():
+            task.cancel()
+
+    async def create_receiver(self, conn, packet, addr):
+        if packet.target not in self.receivers:
+            async def receive():
+                while not self.stop_fut.finished():
+                    if conn is True:
+                        await asyncio.sleep(0.1)
+                    else:
+                        nxt = await conn[0].get()
+                        self.received_data(nxt, addr, conn)
+            self.receivers[packet.target] = hp.async_as_background(receive())
+
+    async def spawn_conn(self, address, backoff=0.05, target=None, timeout=10):
+        if address[0] == "255.255.255.255":
+            return True
+        device = self.transport_target.devices[target]
+        if target not in self.connections:
+            self.connections[target] = device.connect()
+        return self.connections[target]
+
+    async def write_to_conn(self, conn, addr, packet, bts):
+        if conn is not True:
+            await conn[1].put(bts)
+
+class FakeDevice:
+    def __init__(self, serial, protocol_register, port=None, use_sockets=True):
         self.serial = serial
         self.online = False
         self.chosen_port = port
+        self.use_sockets = use_sockets
         self.protocol_register = protocol_register
+
+        # Used if we use MemoryTarget instead of MemorySocketTarget
+        self.memory_repliers = []
+        self.memory_connections = []
 
     async def start(self):
         await self.start_services()
         self.online = True
 
+    async def finish(self):
+        if hasattr(self, "udp_remote"):
+            self.udp_remote.close()
+
+        for f in self.memory_repliers:
+            f.cancel()
+
+        for stop_fut, queue, conn in self.memory_connections:
+            stop_fut.cancel()
+            await queue.put(Done)
+            await asyncio.wait([conn], timeout=1)
+            conn.cancel()
+
+    async def async_got_message(self, pkt):
+        for msg in self.got_message(pkt):
+            yield msg
+
+    def got_message(self, pkt):
+        ack = self.ack_for(pkt, "udp")
+        if ack:
+            ack.sequence = pkt.sequence
+            ack.source = pkt.source
+            ack.target = self.serial
+            yield ack
+
+        for res in self.response_for(pkt, "udp"):
+            res.sequence = pkt.sequence
+            res.source = pkt.source
+            res.target = self.serial
+            yield res
+
     async def start_services(self):
-        await self.start_udp()
+        if self.use_sockets:
+            await self.start_udp()
+        else:
+            self.port = self.make_port()
+
         self.services = (
               set(
                 [ (Services.UDP, ("127.0.0.1", self.port))
@@ -144,19 +254,8 @@ class FakeDevice(object):
                 if pkt.serial not in ("000000000000", self.serial):
                     return
 
-                ack = self.ack_for(pkt, "udp")
-                if ack:
-                    ack.sequence = pkt.sequence
-                    ack.source = pkt.source
-                    ack.target = self.serial
-                    self.udp_transport.sendto(ack.tobytes(serial=self.serial), addr)
-
-                for res in self.response_for(pkt, "udp"):
-                    res.sequence = pkt.sequence
-                    res.source = pkt.source
-                    res.target = self.serial
-                    self.udp_transport.sendto(res.tobytes(serial=self.serial), addr)
-
+                for msg in self.got_message(pkt):
+                    self.udp_transport.sendto(msg.tobytes(serial=self.serial), addr)
         remote = None
 
         for i in range(3):
@@ -176,9 +275,39 @@ class FakeDevice(object):
         self.udp_remote = remote
         self.port = port
 
-    async def finish(self):
-        if hasattr(self, "udp_remote"):
-            self.udp_remote.close()
+    def connect(self):
+        """Used if MemoryTarget is used instead of MemorySocketTarget"""
+        stop_fut = asyncio.Future()
+        recv_queue = asyncio.Queue()
+        res_queue = asyncio.Queue()
+
+        async def receive():
+            while True:
+                data = await recv_queue.get()
+                if stop_fut.done():
+                    return
+                if not self.online:
+                    continue
+
+                pkt = Messages.unpack(data, self.protocol_register, unknown_ok=True)
+                if pkt.serial not in ("000000000000", self.serial):
+                    continue
+
+                log.debug(hp.lc("RECV", bts=binascii.hexlify(data).decode(), protocol="udp", serial=self.serial))
+
+                async def reply(pkt):
+                    async for response in self.async_got_message(pkt):
+                        await res_queue.put(response.tobytes(serial=self.serial))
+
+                if not hasattr(self, "memory_repliers"):
+                    self.memory_repliers = []
+                self.memory_repliers.append(hp.async_as_background(reply(pkt)))
+
+        if not hasattr(self, "memory_connections"):
+            self.memory_connections = []
+        self.memory_connections.append((stop_fut, recv_queue, hp.async_as_background(receive())))
+
+        return res_queue, recv_queue
 
     def ack_for(self, pkt, protocol):
         if pkt.ack_required:

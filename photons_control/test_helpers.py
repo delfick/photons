@@ -1,14 +1,13 @@
 from photons_messages import protocol_register, LightMessages, DeviceMessages
-from photons_socket.fake import FakeDevice, MemorySocketTarget
+from photons_socket.fake import FakeDevice, MemorySocketTarget, MemoryTarget
 from photons_protocol.types import Type as T
 
-from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
+from input_algorithms import spec_base as sb
 import asyncio
 
 def pktkeys(msgs):
     keys = []
-
     for msg in msgs:
         clone = msg.payload.clone()
         for name, typ in clone.Meta.field_types:
@@ -24,13 +23,15 @@ class Color(dictobj):
     fields = ["hue", "saturation", "brightness", "kelvin"]
 
 class Device(FakeDevice):
-    def __init__(self, serial, *, power, color):
-        super().__init__(serial, protocol_register)
+    def __init__(self, serial, *, label="", power=0, color=Color(0, 0, 1, 3500), **kwargs):
+        super().__init__(serial, protocol_register, **kwargs)
 
         def reset():
             self.online = True
+            self.label = label
 
             self.received = []
+            self.received_processing = None
 
             self.change_hsbk(color)
             self.change_power(power)
@@ -38,8 +39,16 @@ class Device(FakeDevice):
         self.reset = reset
         reset()
 
+    def set_received_processing(self, processor):
+        if self.use_sockets:
+            assert False, "Setting received_processing callback on a device that won't ever use it"
+        self.received_processing = processor
+
     def change_power(self, power):
         self.power = power
+
+    def change_label(self, label):
+        self.label = label
 
     def change_hsbk(self, color):
         self.hue = color.hue
@@ -77,6 +86,14 @@ class Device(FakeDevice):
             do_print()
             assert False, "Expected messages to be the same"
 
+    async def async_got_message(self, pkt):
+        if self.received_processing:
+            if await self.received_processing(pkt) is False:
+                return
+
+        async for msg in super().async_got_message(pkt):
+            yield msg
+
     def make_response(self, pkt, protocol):
         self.received.append(pkt)
 
@@ -92,6 +109,13 @@ class Device(FakeDevice):
             self.change_hsbk(Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin))
             return self.light_state_message()
 
+        elif pkt | DeviceMessages.SetLabel:
+            self.change_label(pkt.label)
+            return DeviceMessages.StateLabel(label=self.label)
+
+        elif pkt | DeviceMessages.GetLabel:
+            return DeviceMessages.StateLabel(label=self.label)
+
     def light_state_message(self):
         return LightMessages.LightState(
               hue = self.hue
@@ -102,12 +126,16 @@ class Device(FakeDevice):
             )
 
 class MemoryTargetRunner:
-    def __init__(self, final_future, devices):
+    def __init__(self, final_future, devices, use_sockets=True):
         options = {
               "final_future": final_future
             , "protocol_register": protocol_register
             }
-        self.target = MemorySocketTarget.create(options)
+        if use_sockets:
+            self.target = MemorySocketTarget.create(options)
+        else:
+            self.target = MemoryTarget.create(options)
+
         self.devices = devices
 
     async def __aenter__(self):
@@ -136,10 +164,10 @@ class MemoryTargetRunner:
         return [device.serial for device in self.devices]
 
 def with_runner(func):
-    async def test(s):
+    async def test(s, **kwargs):
         final_future = asyncio.Future()
         try:
-            runner = MemoryTargetRunner(final_future, s.devices)
+            runner = MemoryTargetRunner(final_future, s.devices, **kwargs)
             async with runner:
                 await s.wait_for(func(s, runner))
         finally:
@@ -155,9 +183,9 @@ class ModuleLevelRunner:
         self.args = args
         self.kwargs = kwargs
 
-    async def server_runner(self, devices):
+    async def server_runner(self, devices, **kwargs):
         final_future = asyncio.Future()
-        runner = MemoryTargetRunner(final_future, devices)
+        runner = MemoryTargetRunner(final_future, devices, **kwargs)
         await runner.start()
 
         async def close():
