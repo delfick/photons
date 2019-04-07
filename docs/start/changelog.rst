@@ -13,6 +13,8 @@ ChangeLog
    * Specifying an array of complex messages in a run_with will now send those
      complex messages in parallel rather than one after each other. (i.e. if
      you specify ``run_with([Pipeline(...), Pipeline(...)])``
+   * Pipeline and Repeater are now written in terms of FromGenerator
+   * Decider no longer exists
 
 0.12.1 - 31 March 2019
     * Removed an unnecessary option from the implementation of Transformer

@@ -7,7 +7,7 @@ from photons_app.errors import FoundNoDevices
 from photons_app.special import FoundSerials
 from photons_app import helpers as hp
 
-from photons_control.script import Pipeline, Repeater
+from photons_control.script import FromGenerator
 from photons_messages import DeviceMessages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
@@ -168,12 +168,12 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
                 async def send_to_device(s, m):
                     self.assertEqual(s, serial)
-                    self.assertIs(type(m), Pipeline)
+                    self.assertIs(type(m), FromGenerator)
                     self.assertEqual(
-                          [c.as_dict() for c in m.children]
+                          [c.as_dict() for c in m.pipeline_children]
                         , [e.value.msg.as_dict() for e in InfoPoints]
                         )
-                    self.assertEqual(m.spread, 0.2)
+                    self.assertEqual(m.pipeline_spread, 0.2)
                 send_to_device = asynctest.mock.CoroutineMock(name="send_to_device"
                     , side_effect = send_to_device
                     )
@@ -343,15 +343,20 @@ describe AsyncTestCase, "DeviceFinderLoops":
             async it "uses a Repeater":
                 called = []
 
+                self.afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices")
+                self.afr.find_devices.return_value = {binascii.unhexlify("d073d5000001"): (set(), None)}
+
                 async def send_to_device(ref, msg):
                     assert isinstance(ref, FoundSerials)
-                    assert isinstance(msg, Repeater)
-                    assert isinstance(msg.msg, Pipeline)
+                    assert isinstance(msg, FromGenerator)
+
+                    gen = msg.generator(ref, self.afr)
+                    pipeline = await gen.asend(None)
                     expected = [e.value.msg.as_dict() for e in InfoPoints]
-                    got = [m.as_dict() for m in msg.msg.children]
+                    got = [m.as_dict() for m in pipeline.pipeline_children]
                     self.assertEqual(got, expected)
-                    self.assertEqual(msg.msg.spread, 1)
-                    self.assertEqual(msg.msg.short_circuit_on_error, True)
+                    self.assertEqual(pipeline.pipeline_spread, 1)
+                    self.assertEqual(pipeline.pipeline_short_circuit_on_error, True)
                     called.append(1)
 
                 send_to_device = asynctest.mock.CoroutineMock(name="send_to_device", side_effect=send_to_device)

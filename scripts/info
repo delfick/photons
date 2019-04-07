@@ -8,7 +8,6 @@ from photons_products_registry import capability_for_ids, DefaultCapability
 from photons_transport.target.errors import FailedToFindDevice
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.multizone import zones_from_reference
-from photons_control.script import Decider
 
 from option_merge_addons import option_merge_addon_hook
 from collections import defaultdict
@@ -53,34 +52,32 @@ async def gather(reference, target, afr):
         , LightMessages.GetColor()
         ]
 
-    def gatherer(serial, *states):
-        for s in states:
-            if s | DeviceMessages.StateVersion:
-                try:
-                    capability = capability_for_ids(s.product, s.vendor)
-                except:
-                    pass
-                else:
-                    info[serial]["capability"] = capability
-                    if capability.has_multizone:
-                        multizone.append(serial)
-            elif s | LightMessages.LightState:
-                info[serial]["label"] = s.label
-                info[serial]["power"] = "off" if s.power is 0 else "on"
-                info[serial]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(
-                    s.hue, s.saturation, s.brightness, s.kelvin
-                )
-            elif s | DeviceMessages.StateGroup:
-                info[serial]["group"] = s.label
-            elif s | DeviceMessages.StateLocation:
-                info[serial]["location"] = s.label
-            elif s | DeviceMessages.StateHostFirmware:
-                info[serial]["firmware"] = "{0}.{1} ({2})".format(s.version_major, s.version_minor, s.build)
-
-        return []
-
     errors = []
-    await target.script(Decider(getter, gatherer, None)).run_with_all(reference, afr, error_catcher=errors, find_timeout=30)
+
+    async for pkt, _, _ in target.script(getter).run_with(reference, afr, error_catcher=errors, find_timeout=30):
+        serial = pkt.serial
+
+        if pkt | DeviceMessages.StateVersion:
+            try:
+                capability = capability_for_ids(pkt.product, pkt.vendor)
+            except:
+                pass
+            else:
+                info[serial]["capability"] = capability
+                if capability.has_multizone:
+                    multizone.append(serial)
+        elif pkt | LightMessages.LightState:
+            info[serial]["label"] = pkt.label
+            info[serial]["power"] = "off" if pkt.power is 0 else "on"
+            info[serial]["color"] = "hue: {0} | saturation: {1} | brightness: {2} | kelvin: {3}".format(
+                pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin
+            )
+        elif pkt | DeviceMessages.StateGroup:
+            info[serial]["group"] = pkt.label
+        elif pkt | DeviceMessages.StateLocation:
+            info[serial]["location"] = pkt.label
+        elif pkt | DeviceMessages.StateHostFirmware:
+            info[serial]["firmware"] = "{0}.{1} ({2})".format(pkt.version_major, pkt.version_minor, pkt.build)
 
     if multizone:
         res = await zones_from_reference(target, multizone, afr, error_catcher=errors)

@@ -1,9 +1,8 @@
 from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
-from photons_app.errors import RunErrors, PhotonsAppError
+from photons_app.errors import RunErrors
 from photons_app import helpers as hp
 
 from input_algorithms import spec_base as sb
-from collections import defaultdict
 import asyncio
 import logging
 import time
@@ -35,10 +34,10 @@ async def find_serials(reference, args_for_run, timeout):
     missing = reference.missing(found)
     return serials, missing
 
-class Pipeline(object):
+def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=False):
     """
-    This Provides a ``run_with`` method that will send and wait for multiple
-    messages to each ``reference``.
+    This allows you to send messages in order, so that each message isn't sent
+    until the previous message gets a reply or times out.
 
     For example:
 
@@ -86,101 +85,114 @@ class Pipeline(object):
         If this is set to True then we wait on the slowest bulb before going to
         the next message.
     """
-    name = "Pipeline"
-    has_children = True
+    async def gen(reference, args_for_run, **kwargs):
+        for i, child in enumerate(children):
+            if i > 0:
+                await asyncio.sleep(spread)
 
-    def __init__(self, *children, spread=0, short_circuit_on_error=False, synchronized=False):
-        self.spread = spread
-        self.children = children
-        self.synchronized = synchronized
-        self.short_circuit_on_error = short_circuit_on_error
-
-    def simplified(self, simplifier, chain=None):
-        chain = [] if chain is None else chain
-        simple_children = []
-        for child in self.children:
-            simple_children.extend(simplifier(child, chain=chain))
-        return Pipeline(*simple_children
-            , spread = self.spread
-            , synchronized = self.synchronized
-            , short_circuit_on_error = self.short_circuit_on_error
-            )
-
-    async def run_children(self, queue, references, args_for_run, **kwargs):
-        len_children = len(self.children)
-        original_ec = kwargs["error_catcher"]
-
-        data = {"found_error": False}
-
-        def new_error_catcher(e):
-            data["found_error"] = True
-            hp.add_error(original_ec, e)
-        kwargs["error_catcher"] = new_error_catcher
-
-        for i, child in enumerate(self.children):
-            async for info in child.run_with(references, args_for_run, **kwargs):
-                await queue.put(info)
-
-            if self.short_circuit_on_error and data["found_error"]:
+            t = yield child
+            success = await t
+            if not success and short_circuit_on_error:
                 break
 
-            if self.spread and i < len_children - 1:
-                await asyncio.sleep(self.spread)
+    if synchronized:
+        m = FromGenerator(gen, reference_override=True)
+    else:
+        m = FromGeneratorPerSerial(gen)
 
-    async def run_with(self, references, args_for_run, **kwargs):
-        do_raise = kwargs.get("error_catcher") is None
-        error_catcher = [] if do_raise else kwargs["error_catcher"]
-        kwargs["error_catcher"] = error_catcher
+    m.pipeline_children = children
+    m.pipeline_spread = spread
+    m.pipeline_short_circuit_on_error = short_circuit_on_error
 
-        queue = asyncio.Queue()
-        futs = []
+    return m
 
-        if isinstance(references, SpecialReference):
-            try:
-                _, references = await references.find(args_for_run
-                    , timeout = kwargs.get("find_timeout", 5)
-                    )
-            except asyncio.CancelledError:
-                raise
-            except Exception as error:
-                if do_raise:
-                    raise
-                hp.add_error(error_catcher, error)
-                return
+def Repeater(msg, min_loop_time=30, on_done_loop=None):
+    """
+    This will send the provided msg in an infinite loop
 
-        if type(references) is not list:
-            references = [references]
+    For example:
 
-        if not references:
-            references = [[]]
-        elif self.synchronized:
-            references = [references]
+    .. code-block:: python
 
-        for reference in references:
-            futs.append(hp.async_as_background(self.run_children(queue, reference, args_for_run, **kwargs), silent=True))
+        msg1 = MessageOne()
+        msg2 = MessageTwo()
 
-        class Done:
-            pass
+        reference = ["d073d500000", "d073d500001"]
 
-        async def wait_all():
-            await asyncio.wait(futs, return_when=asyncio.ALL_COMPLETED)
-            await queue.put(Done)
-        waiter = hp.async_as_background(wait_all())
+        def error_catcher(e):
+            print(e)
 
-        try:
+        async with target.session() as afr:
+            pipeline = Pipeline(msg1, msg2, spread=1)
+            repeater = Repeater(pipeline, min_loop_time=20)
+            async for result in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher):
+                ....
+
+    Is equivalent to:
+
+    .. code-block:: python
+
+        async with target.session() as afr:
             while True:
-                nxt = await queue.get()
-                if nxt is Done:
-                    break
-                else:
-                    yield nxt
-        finally:
-            waiter.cancel()
-            for f in futs:
-                f.cancel()
+                start = time.time()
+                async for result in target.script(pipeline).run_with(reference, afr):
+                    ...
+                await asyncio.sleep(20 - (time.time() - start))
 
-        if do_raise and error_catcher:
-            raise RunErrors(_errors=list(set(error_catcher)))
+    Note that if references is a photons_app.special.SpecialReference then we
+    call reset on it after every loop.
+
+    Also it is highly recommended that error_catcher is a callable that takes
+    each error as they happen.
+
+    Repeater takes in the following keyword arguments:
+
+    min_loop_time
+        The minimum amount of time a loop should take, in seconds.
+
+        So if min_loop_time is 30 and the loop takes 10 seconds, then we'll wait
+        20 seconds before going again
+
+    on_done_loop
+        An async callable that is called with no arguments when a loop completes
+        (before any sleep from min_loop_time)
+
+        Note that if you raise ``Repeater.Stop()`` in this function then the
+        Repeater will stop.
+    """
+    async def gen(reference, args_for_run, **kwargs):
+        while True:
+            start = time.time()
+            f = yield msg
+            await f
+
+            if isinstance(reference, SpecialReference):
+                reference.reset()
+
+            if callable(on_done_loop):
+                try:
+                    await on_done_loop()
+                except Repeater.Stop:
+                    break
+                except asyncio.CancelledError:
+                    raise
+                except Exception as error:
+                    hp.add_error(kwargs["error_catcher"], error)
+
+            took = time.time() - start
+            diff = min_loop_time - took
+            if diff > 0:
+                await asyncio.sleep(diff)
+
+    m = FromGenerator(gen, reference_override=True)
+    m.repeater_msg = msg
+    m.repeater_on_done_loop = on_done_loop
+    m.repeater_min_loop_time = min_loop_time
+    return m
+
+class Stop(Exception):
+    pass
+Repeater.Stop = Stop
 
 def FromGeneratorPerSerial(inner_gen):
     """
@@ -412,194 +424,3 @@ class FromGenerator(object):
                 complete.set_result(True)
             waiter = hp.async_as_background(asyncio.wait(fs))
             waiter.add_done_callback(finish)
-
-class Decider(object):
-    """
-    This one is a complex beast used for determining what to do based on the
-    response from a particular message.
-
-    getter
-        A list of messages that are sent to each ``reference``.
-
-    decider
-        A function that takes in ``(reference, received1, received2, ...)`` where
-        each ``received`` is a reply from ``getter`` and yields messages to send
-        to that reference.
-
-    wanted
-        A list of messages that we want to get back from the ``getter``. Any
-        reply that doesn't match this message type is dropped before we call
-        ``decider``
-
-    .. automethod:: photons_control.script.Decider.run_with
-    """
-    name = "using"
-    has_children = True
-
-    def __init__(self, getter, decider, wanted, simplifier=None):
-        self.decider = decider
-        self.wanted = wanted
-        self.getter = getter
-        self.simplifier = simplifier
-
-    def simplified(self, simplifier, chain=None):
-        chain = [] if chain is None else chain
-        return self.__class__(simplifier(self.getter, chain=chain)
-            , self.decider, self.wanted
-            , simplifier = simplifier
-            )
-
-    async def run_with(self, references, args_for_run, **kwargs):
-        """
-        For each msg in ``getter``, run it against all the references and
-        collect all the reply packets per reference for all the packets that
-        match the ``wanted`` message types.
-
-        For each reference that has results from ``getter``, call ``decider`` with
-        the reference and the replies from ``getter``. This function yields
-        messages which we simplify and send.
-
-        .. note:: The messages from decider must already have a target set on them
-
-        Any errors are collected and if they have a serial, will be returned
-        with the results.
-
-        We raise the errors we find that don't have an associated serial.
-        """
-        do_raise = kwargs.get("error_catcher") is None
-        error_catcher = [] if do_raise else kwargs["error_catcher"]
-
-        got = await self.do_getters(references, args_for_run, kwargs, error_catcher)
-        if type(references) not in (str, list):
-            references = got.keys()
-
-        if type(references) is str:
-            references = [references]
-
-        msgs = list(self.transform_got(got, references))
-
-        async for info in self.send_msgs(msgs, args_for_run, kwargs, error_catcher):
-            yield info
-
-        if do_raise and error_catcher:
-            raise RunErrors(_errors=list(set(error_catcher)))
-
-    async def do_getters(self, references, args_for_run, kwargs, error_catcher):
-        results = defaultdict(list)
-
-        kw = {"error_catcher": error_catcher}
-        kw.update(kwargs)
-
-        for g in self.getter:
-            async for pkt, _, _ in g.run_with(references, args_for_run, **kw):
-                if self.wanted and not any(pkt | w for w in self.wanted):
-                    continue
-                results[pkt.serial].append(pkt)
-
-        return results
-
-    def transform_got(self, got, references):
-        for reference in references:
-            if reference in got:
-                for msg in self.decider(reference, *got[reference]):
-                    yield msg
-            else:
-                log.warning("Didn't find reference from getter %s\tavailable=%s", reference, list(got.keys()))
-
-    async def send_msgs(self, msgs, args_for_run, kwargs, error_catcher):
-        kw = {"error_catcher": error_catcher}
-        kw.update(kwargs)
-
-        for g in self.simplifier(msgs):
-            async for info in g.run_with([], args_for_run, **kw):
-                yield info
-
-class Repeater(object):
-    """
-    This Provides a ``run_with`` method that will repeat it's messages forever
-
-    For example:
-
-    .. code-block:: python
-
-        msg1 = MessageOne()
-        msg2 = MessageTwo()
-
-        reference1 = "d073d500000"
-        reference2 = "d073d500001"
-
-        def error_catcher(e):
-            print(e)
-
-        async with target.session() as afr:
-            pipeline = Pipeline(msg1, msg2, spread=1)
-            async for result in target.script(Repeater(pipeline, min_loop_time=20).run_with([reference1, reference2], afr, error_catcher=error_catcher):
-                ....
-
-    Is equivalent to:
-
-    .. code-block:: python
-
-        async with target.session() as afr:
-            while True:
-                async for result in target.script(pipeline).run_with([reference1], afr):
-                    ...
-                await asyncio.sleep(20)
-
-    Note that if references is a photons_app.special.SpecialReference then we call reset on it after every loop.
-
-    Also error_catcher *must* be specified and be a callable that takes each error as they happen.
-
-    Repeater takes in the following keyword arguments:
-
-    min_loop_time
-        The minimum amount of time a loop should take, in seconds.
-
-        So if min_loop_time is 30 and the loop takes 10 seconds, then we'll wait 20 seconds before going again
-
-    on_done_loop
-        An async callable that is called with no arguments when a loop completes (before any sleep from min_loop_time)
-
-        Note that if you raise ``Repeater.Stop()`` in this function then the Repeater will stop.
-    """
-    name = "Repeater"
-    has_children = True
-
-    class Stop(Exception):
-        pass
-
-    def __init__(self, msg, min_loop_time=30, on_done_loop=None):
-        self.msg = msg
-        self.on_done_loop = on_done_loop
-        self.min_loop_time = min_loop_time
-
-    def simplified(self, simplifier, chain=None):
-        chain = [] if chain is None else chain
-        simple_msg = list(simplifier(self.msg, chain=chain))
-        return Repeater(simple_msg, min_loop_time=self.min_loop_time, on_done_loop=self.on_done_loop)
-
-    async def run_with(self, references, args_for_run, **kwargs):
-        error_catcher = kwargs.get("error_catcher")
-        if not callable(error_catcher):
-            raise PhotonsAppError("error_catcher must be specified as a callable when Repeater is used")
-
-        while True:
-            start = time.time()
-
-            for m in self.msg:
-                async for info in m.run_with(references, args_for_run, **kwargs):
-                    yield info
-
-            if isinstance(references, SpecialReference):
-                references.reset()
-
-            if callable(self.on_done_loop):
-                try:
-                    await self.on_done_loop()
-                except Repeater.Stop:
-                    break
-
-            took = time.time() - start
-            diff = self.min_loop_time - took
-            if diff > 0:
-                await asyncio.sleep(diff)

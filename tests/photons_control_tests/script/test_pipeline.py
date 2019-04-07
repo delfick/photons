@@ -102,8 +102,8 @@ describe AsyncTestCase, "Pipeline":
         for serial, times in got_times.items():
             self.assertEqual(len(times), 2, times)
             ts = [t for _, t in sorted(times)]
-            self.assertLess(ts[0] - start, 0.05)
-            self.assertGreater(ts[1] - start, 0.05)
+            self.assertLess(ts[0] - start, 0.06)
+            self.assertGreater(ts[1] - start, 0.04)
 
     @mlr.test
     async it "can wait between messages", runner:

@@ -102,7 +102,7 @@ describe AsyncTestCase, "Repeater":
                 self.assertLess(current - first, 0.1)
 
                 nxt = pkts.pop(0)[1]
-                self.assertGreater(nxt - current, 0.3) 
+                self.assertGreater(nxt - current, 0.3)
                 current = nxt
 
                 if pkts:

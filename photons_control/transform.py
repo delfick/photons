@@ -1,7 +1,7 @@
 """
 .. autoclass:: photons_control.transform.Transformer
 """
-from photons_control.script import Decider, Pipeline
+from photons_control.script import FromGenerator, Pipeline
 
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
@@ -83,12 +83,7 @@ class Transformer(object):
         power_message = self.power_message(state)
         color_message = self.color_message(state, keep_brightness)
 
-        def receiver(serial, *states):
-            if not states:
-                return
-
-            current_state = states[0].payload
-
+        def receiver(serial, current_state):
             want_brightness = color_message.brightness if color_message.set_brightness else None
 
             pipeline = []
@@ -118,10 +113,16 @@ class Transformer(object):
 
             pipeline.append(set_color)
 
-            yield Pipeline(*pipeline)
+            return Pipeline(*pipeline, synchronized=True)
 
-        getter = LightMessages.GetColor(ack_required=False, res_required=True)
-        return Decider(getter, receiver, [LightMessages.LightState])
+        async def gen(reference, afr, **kwargs):
+            get_color = LightMessages.GetColor(ack_required=False, res_required=True)
+
+            async for pkt, _, _ in afr.transport_target.script(get_color).run_with(reference, afr, **kwargs):
+                if pkt | LightMessages.LightState:
+                    yield receiver(pkt.serial, pkt.payload)
+
+        return FromGenerator(gen)
 
 @an_action(needs_target=True, special_reference=True)
 async def transform(collector, target, reference, **kwargs):
