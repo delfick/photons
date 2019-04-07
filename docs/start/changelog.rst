@@ -15,6 +15,7 @@ ChangeLog
      you specify ``run_with([Pipeline(...), Pipeline(...)])``
    * Pipeline and Repeater are now written in terms of FromGenerator
    * Decider no longer exists
+   * Created a photons_control.transform.PowerToggle message
 
 0.12.1 - 31 March 2019
     * Removed an unnecessary option from the implementation of Transformer

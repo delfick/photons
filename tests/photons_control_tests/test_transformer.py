@@ -3,8 +3,8 @@
 from photons_app.test_helpers import TestCase, AsyncTestCase
 
 from photons_control.test_helpers import Device, Color, ModuleLevelRunner
+from photons_control.transform import Transformer, PowerToggle
 from photons_messages import DeviceMessages, LightMessages
-from photons_control.transform import Transformer
 from photons_control.script import Pipeline
 from photons_colour import Parser
 
@@ -82,6 +82,57 @@ mlr = ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
+
+describe AsyncTestCase, "PowerToggle":
+    use_default_loop = True
+
+    async def run_and_compare(self, runner, msg, *, expected):
+        await runner.target.script(msg).run_with_all(runner.serials)
+
+        assert len(runner.devices) > 0
+
+        for device in runner.devices:
+            if device not in expected:
+                assert False, f"No expectation for {device.serial}"
+
+            device.compare_received(expected[device])
+
+    @mlr.test
+    async it "toggles the power", runner:
+        expected = {
+              light1:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=65535, duration=1)
+              ]
+            , light2:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=0, duration=1)
+              ]
+            , light3:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=0, duration=1)
+              ]
+            }
+        await self.run_and_compare(runner, PowerToggle(), expected=expected)
+
+        for device in runner.devices:
+            device.received = []
+
+        expected = {
+              light1:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=0, duration=2)
+              ]
+            , light2:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=65535, duration=2)
+              ]
+            , light3:
+              [ DeviceMessages.GetPower()
+              , LightMessages.SetLightPower(level=65535, duration=2)
+              ]
+            }
+        await self.run_and_compare(runner, PowerToggle(duration=2), expected=expected)
 
 describe AsyncTestCase, "Transformer":
     use_default_loop = True

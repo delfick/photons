@@ -11,6 +11,26 @@ from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
 
+def PowerToggle(duration=1):
+    """
+    Returns a valid message that will toggle the power of devices used against it.
+
+    For example:
+
+    .. code-block:: python
+
+        await target.script(PowerToggle()).run_with_all(["d073d5000001", "d073d5000001"])
+    """
+    async def gen(reference, afr, **kwargs):
+        get_power = DeviceMessages.GetPower()
+        async for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+            if pkt.level == 0:
+                yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration, target=pkt.serial)
+            else:
+                yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration, target=pkt.serial)
+
+    return FromGenerator(gen)
+
 class Transformer(object):
     """
     This is responsible for creating the messages to send to a device for a
