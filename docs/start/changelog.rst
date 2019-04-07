@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.12.2 - TBD
+0.13.0 - 7 April 2019
    * Slight improvement to photons_control.transform.Transformer
    * Introduced photons_control.script.FromGenerator which is a complex message
      that let's you define an async generator function that yields messages to
