@@ -1,13 +1,39 @@
+from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
 from photons_app.errors import RunErrors, PhotonsAppError
-from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
+from input_algorithms import spec_base as sb
 from collections import defaultdict
 import asyncio
 import logging
 import time
 
 log = logging.getLogger("photons_control.script")
+
+async def find_serials(reference, args_for_run, timeout):
+    """
+    Return (serials, missing) for all the serials that can be found in the
+    provided reference
+
+    If the reference is an empty string, a single underscore or None then we
+    find all devices on the network
+
+    if it is a string or a list of strings, we treat those strings as the serials
+    to find.
+
+    Otherwise we assume it's a special reference
+    """
+    if not isinstance(reference, SpecialReference):
+        if reference in ("", "_", None, sb.NotSpecified):
+            reference = FoundSerials()
+        else:
+            if isinstance(reference, str):
+                reference = reference.split(",")
+            reference = HardCodedSerials(reference)
+
+    found, serials = await reference.find(args_for_run, timeout=timeout)
+    missing = reference.missing(found)
+    return serials, missing
 
 class Pipeline(object):
     """
