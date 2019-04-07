@@ -254,6 +254,12 @@ class FromGenerator(object):
         return self.Item(simplifier, self.generator, self.Runner, self.reference_override)
 
     class Item:
+        name = "from_generator_item"
+        has_children = True
+
+        def simplified(self, *args, **kwargs):
+            return self
+
         def __init__(self, simplifier, generator, runner_kls, reference_override):
             self.generator = generator
             self.runner_kls = runner_kls

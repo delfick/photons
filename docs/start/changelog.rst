@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.13.1 - TBD
+   * Fixed behaviour when you provide a list of complex messages to run_with
+
 0.13.0 - 7 April 2019
    * Slight improvement to photons_control.transform.Transformer
    * Introduced photons_control.script.FromGenerator which is a complex message

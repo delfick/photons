@@ -88,33 +88,6 @@ describe AsyncTestCase, "TransportTarget":
                 simplify.assert_called_with(raw)
                 FakeScriptRunnerIterator.assert_called_once_with(simplified, target=self.target)
 
-            async it "groups simplified in a FromGenerator if there are multiple simplified items":
-                raw = mock.Mock(name="raw")
-                simplified = mock.Mock(name="simpified")
-                simplified2 = mock.Mock(name="simpified2")
-                simplify = mock.Mock(name="simplify", return_value=[simplified, simplified2])
-
-                res = mock.Mock(name="res")
-                FakeScriptRunnerIterator = mock.Mock(name="FakeScriptRunnerIterator", return_value=res)
-
-                class IsFromGenerator:
-                    def __eq__(self, other):
-                        return isinstance(other, FromGenerator)
-
-                with mock.patch.object(self.target, "simplify", simplify):
-                    with mock.patch("photons_transport.target.target.ScriptRunnerIterator", FakeScriptRunnerIterator):
-                        self.assertIs(self.target.script(raw), res)
-
-                simplify.assert_called_with(raw)
-                FakeScriptRunnerIterator.assert_called_once_with(IsFromGenerator(), target=self.target)
-
-                msg = FakeScriptRunnerIterator.mock_calls[0].call_list()[0][1][0]
-
-                got = []
-                async for item in msg.generator(None, None):
-                    got.append(item)
-                self.assertEqual(got, [simplified, simplified2])
-
         describe "args_for_run":
             async it "creates the bridge_kls and calls start on it":
                 bridge = mock.Mock(name="bridge")
