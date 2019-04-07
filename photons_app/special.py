@@ -125,13 +125,15 @@ class HardCodedSerials(SpecialReference):
         super(HardCodedSerials, self).__init__()
 
     async def find_serials(self, afr, *, timeout, broadcast=True):
-        address = self.broadcast_address(afr, broadcast)
+        found = getattr(afr, "found", {})
 
-        found, _ = await afr.find_specific_serials(self.serials
-            , broadcast = address
-            , raise_on_none = False
-            , timeout = timeout
-            )
+        if not all(target in found for target in self.targets):
+            address = self.broadcast_address(afr, broadcast)
+            found, _ = await afr.find_specific_serials(self.serials
+                , broadcast = address
+                , raise_on_none = False
+                , timeout = timeout
+                )
 
         return {target: found[target] for target in self.targets if target in found}
 

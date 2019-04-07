@@ -189,6 +189,7 @@ describe AsyncTestCase, "HardCodedSerials":
             find_timeout = mock.Mock(name="find_timeout")
 
             afr = mock.Mock(name="afr")
+            afr.found = {}
             afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
             afr.find_specific_serials.return_value = (found, missing)
 
@@ -223,6 +224,21 @@ describe AsyncTestCase, "HardCodedSerials":
             expected = {self.target1: self.info1}
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
+
+        async it "doesn't call to find_specific_serials if the serials are already on the afr":
+            broadcast = mock.Mock(name='broadcast')
+            find_timeout = mock.Mock(name="find_timeout")
+
+            afr = mock.Mock(name="afr")
+            afr.found = {self.target1: self.info1, self.target2: self.info2}
+            afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials", side_effect=AssertionError("Shouldn't be called"))
+
+            ref = HardCodedSerials([self.serial1])
+            with mock.patch.object(ref, "broadcast_address", mock.NonCallableMock(name="broadcast_address")):
+                f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+
+            self.assertEqual(f, {self.target1: self.info1})
+            self.assertEqual(ref.missing(f), [])
 
         async it "doesn't care if no found":
             found = {}

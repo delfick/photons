@@ -5,6 +5,7 @@ ChangeLog
 
 0.13.1 - 7 April 2019
    * Fixed behaviour when you provide a list of complex messages to run_with
+   * Made HardCodedSerials more efficient when the afr has already found devices
 
 0.13.0 - 7 April 2019
    * Slight improvement to photons_control.transform.Transformer

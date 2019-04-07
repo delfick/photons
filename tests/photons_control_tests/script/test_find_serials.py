@@ -41,5 +41,6 @@ describe AsyncTestCase, "Repeater":
             async with runner.target.session() as afr:
                 self.assertEqual(await find_serials(ref, afr, timeout=1), ([light1.serial, light2.serial], []))
 
-                with light1.offline():
+            with light1.offline():
+                async with runner.target.session() as afr:
                     self.assertEqual(await find_serials(ref, afr, timeout=0.5), ([light2.serial], [light1.serial]))
