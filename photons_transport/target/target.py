@@ -4,7 +4,7 @@ from photons_transport.target.item import TransportItem
 
 from photons_app.formatter import MergedOptionStringFormatter
 
-from photons_control.script import Pipeline
+from photons_control.script import FromGenerator
 
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
@@ -71,7 +71,12 @@ class TransportTarget(dictobj.Spec):
         if not items:
             items = None
         elif len(items) > 1:
-            items = Pipeline(*items)
+            original = items
+
+            async def gen(*args, **kwargs):
+                for item in original:
+                    yield item
+            items = FromGenerator(gen)
         else:
             items = items[0]
         return ScriptRunnerIterator(items, target=self)

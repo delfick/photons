@@ -6,6 +6,8 @@ from photons_transport.target.script import InvalidScript
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 
+from photons_control.script import FromGenerator
+
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
@@ -86,7 +88,7 @@ describe AsyncTestCase, "TransportTarget":
                 simplify.assert_called_with(raw)
                 FakeScriptRunnerIterator.assert_called_once_with(simplified, target=self.target)
 
-            async it "groups simplified in a Pipeline if there are multiple simplified items":
+            async it "groups simplified in a FromGenerator if there are multiple simplified items":
                 raw = mock.Mock(name="raw")
                 simplified = mock.Mock(name="simpified")
                 simplified2 = mock.Mock(name="simpified2")
@@ -95,17 +97,23 @@ describe AsyncTestCase, "TransportTarget":
                 res = mock.Mock(name="res")
                 FakeScriptRunnerIterator = mock.Mock(name="FakeScriptRunnerIterator", return_value=res)
 
-                pipeline = mock.Mock(name="pipeline")
-                FakePipeline = mock.Mock(name="Pipeline", return_value=pipeline)
+                class IsFromGenerator:
+                    def __eq__(self, other):
+                        return isinstance(other, FromGenerator)
 
                 with mock.patch.object(self.target, "simplify", simplify):
                     with mock.patch("photons_transport.target.target.ScriptRunnerIterator", FakeScriptRunnerIterator):
-                        with mock.patch("photons_transport.target.target.Pipeline", FakePipeline):
-                            self.assertIs(self.target.script(raw), res)
+                        self.assertIs(self.target.script(raw), res)
 
                 simplify.assert_called_with(raw)
-                FakePipeline.assert_called_with(simplified, simplified2)
-                FakeScriptRunnerIterator.assert_called_once_with(pipeline, target=self.target)
+                FakeScriptRunnerIterator.assert_called_once_with(IsFromGenerator(), target=self.target)
+
+                msg = FakeScriptRunnerIterator.mock_calls[0].call_list()[0][1][0]
+
+                got = []
+                async for item in msg.generator(None, None):
+                    got.append(item)
+                self.assertEqual(got, [simplified, simplified2])
 
         describe "args_for_run":
             async it "creates the bridge_kls and calls start on it":

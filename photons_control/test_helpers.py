@@ -105,6 +105,9 @@ class Device(FakeDevice):
             self.change_power(pkt.level)
             return res
 
+        elif pkt | DeviceMessages.GetPower:
+            return DeviceMessages.StatePower(level=self.power)
+
         elif pkt | LightMessages.SetWaveformOptional or pkt | LightMessages.SetColor:
             self.change_hsbk(Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin))
             return self.light_state_message()

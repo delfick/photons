@@ -5,6 +5,12 @@ ChangeLog
 
 0.12.2 - TBD
    * Slight improvement to photons_control.transform.Transformer
+   * Introduced photons_control.script.FromGenerator which is a complex message
+     that let's you define an async generator function that yields messages to
+     be sent to devices
+   * Specifying an array of complex messages in a run_with will now send those
+     complex messages in parallel rather than one after each other. (i.e. if
+     you specify ``run_with([Pipeline(...), Pipeline(...)])``
 
 0.12.1 - 31 March 2019
     * Removed an unnecessary option from the implementation of Transformer
