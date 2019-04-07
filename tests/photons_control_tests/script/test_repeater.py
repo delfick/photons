@@ -1,234 +1,200 @@
 # coding: spec
 
-from photons_control.script import Repeater
+from photons_control.test_helpers import Device, ModuleLevelRunner
+from photons_control.script import Repeater, Pipeline
 
-from photons_app.errors import PhotonsAppError, RunErrors
 from photons_app.test_helpers import AsyncTestCase
-from photons_app.special import SpecialReference
+from photons_app.special import FoundSerials
+
+from photons_messages import DeviceMessages, LightMessages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
-from input_algorithms import spec_base as sb
 from collections import defaultdict
-import asynctest
-import asyncio
-import mock
 import time
-import uuid
+
+light1 = Device("d073d5000001", use_sockets=False)
+light2 = Device("d073d5000002", use_sockets=False)
+light3 = Device("d073d5000003", use_sockets=False)
+
+mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
+
+setUp = mlr.setUp
+tearDown = mlr.tearDown
 
 describe AsyncTestCase, "Repeater":
-    async it "specifies has_children as True":
-        self.assertIs(Repeater.has_children, True)
+    use_default_loop = True
 
-    async it "takes in a message and some options":
-        msg = mock.Mock(name="msg")
-        min_loop_time = mock.Mock(name='min_loop_time')
-        on_done_loop = mock.Mock(name="on_done_loop")
+    @mlr.test
+    async it "repeats messages", runner:
+        for use_pipeline in (True, False):
+            pipeline = [
+                  DeviceMessages.SetPower(level=0)
+                , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
+                ]
 
-        repeater = Repeater(msg, min_loop_time=min_loop_time, on_done_loop=on_done_loop)
-        self.assertIs(repeater.msg, msg)
-        self.assertIs(repeater.min_loop_time, min_loop_time)
-        self.assertIs(repeater.on_done_loop, on_done_loop)
+            if use_pipeline:
+                pipeline = Pipeline(*pipeline)
 
-    async it "has some defaults":
-        msg = mock.Mock(name="msg")
+            msg = Repeater(pipeline, min_loop_time=0)
 
-        repeater = Repeater(msg)
-        self.assertIs(repeater.msg, msg)
-        self.assertIs(repeater.min_loop_time, 30)
-        self.assertIs(repeater.on_done_loop, None)
+            def no_errors(err):
+                assert False, f"Got an error: {err}"
 
-    describe "simplified":
-        async it "uses the simplifier on the msg and returns a new Repeater with simplified msg":
-            result = mock.Mock(name="result")
-            FakeRepeater = mock.Mock(name="Repeater", return_value=result)
+            got = defaultdict(list)
+            async for pkt, _, _ in runner.target.script(msg).run_with(FoundSerials(), error_catcher=no_errors):
+                got[pkt.serial].append(pkt)
+                if all(len(pkts) >= 6 for pkts in got.values()):
+                    break
 
-            child = mock.Mock(name="child")
-            simplified = mock.Mock(name="simplified")
+            assert all(serial in got for serial in runner.serials), got
 
-            action = lambda c, chain: {child: [simplified]}[c]
-            simplifier = mock.Mock(name="simplifier", side_effect=action)
+            for pkts in got.values():
+                got_power = False
+                got_light = False
+                if len(pkts) < 6:
+                    assert False, ("Expected at least 6 replies", pkts, serial)
 
-            min_loop_time = mock.Mock(name='min_loop_time')
-            on_done_loop = asynctest.mock.CoroutineMock(name="on_done_loop")
-            with mock.patch("photons_control.script.Repeater", FakeRepeater):
-                repeater = Repeater(child, min_loop_time=min_loop_time, on_done_loop=on_done_loop)
-                self.assertIs(repeater.simplified(simplifier), result)
-
-            simplifier.assert_called_once_with(child, chain=[])
-            FakeRepeater.assert_called_once_with([simplified], min_loop_time=min_loop_time, on_done_loop=on_done_loop)
-
-    describe "run_with":
-        async it "complains if error_catcher isn't a callable":
-            msg = mock.Mock(name='msg')
-            repeater = Repeater([msg])
-
-            afr = mock.Mock(name="afr")
-            references = mock.Mock(name='references')
-
-            for ec in (None, [], sb.NotSpecified):
-                with self.fuzzyAssertRaisesError(PhotonsAppError, "error_catcher must be specified as a callable when Repeater is used"):
-                    async def doit():
-                        kwargs = {}
-                        if ec is not sb.NotSpecified:
-                            kwargs["error_catcher"] = ec
-                        async for _ in repeater.run_with(references, afr, **kwargs):
-                            pass
-                    await self.wait_for(doit())
-
-        async it "stops when on_done_loop raises Repeater.Stop":
-            called = []
-
-            r1 = mock.Mock(name="r1")
-            r2 = mock.Mock(name="r2")
-            r3 = mock.Mock(name="r3")
-
-            results = [[r1], [r2], [r3]]
-
-            class Child(object):
-                async def run_with(s, *args, **kwargs):
-                    called.append(("run_with", args, kwargs))
-                    for thing in results.pop(0):
-                        yield thing
-
-            def on_done_loop():
-                called.append("done_loop")
-                if len(results) == 0:
-                    called.append("stop")
-                    raise Repeater.Stop()
-            on_done_loop = asynctest.mock.CoroutineMock(name="on_done_loop", side_effect=on_done_loop)
-            repeater = Repeater([Child()], min_loop_time=0.2, on_done_loop=on_done_loop)
-
-            afr = mock.Mock(name="afr")
-            errors = mock.Mock(name="errors")
-            references = "d073d500001"
-
-            async def doit():
-                async for info in repeater.run_with(references, afr, error_catcher=errors):
-                    pass
-            await self.wait_for(doit())
-
-            self.assertEqual(called
-                , [ ("run_with", (references, afr), {"error_catcher": errors})
-                  , "done_loop"
-                  , ("run_with", (references, afr), {"error_catcher": errors})
-                  , "done_loop"
-                  , ("run_with", (references, afr), {"error_catcher": errors})
-                  , "done_loop"
-                  , "stop"
-                  ]
-                )
-
-        async it "repeatedly calls the msg":
-            called = []
-
-            r1 = mock.Mock(name="r1")
-            r2 = mock.Mock(name="r2")
-            r3 = mock.Mock(name="r3")
-            r4 = mock.Mock(name="r4")
-            r5 = mock.Mock(name="r5")
-            r6 = mock.Mock(name="r6")
-
-            results = [[r1, r2], [r3, r4], [r5, r6]]
-
-            timings = {'last': None, "gaps": []}
-
-            class Child(object):
-                async def run_with(s, *args, **kwargs):
-                    if timings['last'] is None:
-                        timings['last'] = time.time()
+                while pkts:
+                    nxt = pkts.pop()
+                    if nxt | DeviceMessages.StatePower:
+                        if got_power:
+                            assert False, "Expected a LightState"
+                        got_power = True
+                    elif nxt | LightMessages.LightState:
+                        if got_light:
+                            assert False, "Expected a StatePower"
+                        got_light = True
                     else:
-                        timings['gaps'].append(time.time() - timings['last'])
+                        assert False, f"Got an unexpected packet: {nxt}"
 
-                    called.append(("run_with", args, kwargs))
-                    for thing in results.pop(0):
-                        yield thing
+                    if got_power and got_light:
+                        got_power = False
+                        got_light = False
 
-            a = mock.Mock(name="a")
-            afr = mock.Mock(name="afr")
+    @mlr.test
+    async it "can have a min loop time", runner:
+        msgs = [
+              DeviceMessages.SetPower(level=0)
+            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
+            ]
 
-            def on_done_loop():
-                called.append("done_loop")
-            on_done_loop = asynctest.mock.CoroutineMock(name="on_done_loop", side_effect=on_done_loop)
-            repeater = Repeater([Child()], min_loop_time=0.2, on_done_loop=on_done_loop)
+        msg = Repeater(msgs, min_loop_time=0.5)
 
-            resets = []
+        def no_errors(err):
+            assert False, f"Got an error: {err}"
 
-            class Finder(SpecialReference):
-                def reset(s):
-                    resets.append(True)
+        got = defaultdict(list)
+        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+            got[pkt.serial].append((pkt, time.time()))
+            if all(len(pkts) >= 6 for pkts in got.values()):
+                break
 
-            found = []
-            references = Finder()
-            error_catcher = mock.Mock(name='error_catcher')
+        assert all(serial in got for serial in runner.serials), got
 
-            async def doit():
-                async for info in repeater.run_with(references, afr, a=a, error_catcher=error_catcher):
-                    found.append(info)
-                    if len(found) == 6:
-                        break
-            await self.wait_for(doit())
-            self.assertEqual(found, [r1, r2, r3, r4, r5, r6])
+        for pkts in got.values():
+            if len(pkts) < 6:
+                assert False, ("Expected at least 6 replies", pkts, serial)
 
-            self.assertEqual(called
-                , [ ("run_with", (references, afr), {"a": a, "error_catcher": error_catcher})
-                  , "done_loop"
-                  , ("run_with", (references, afr), {"a": a, "error_catcher": error_catcher})
-                  , "done_loop"
-                  , ("run_with", (references, afr), {"a": a, "error_catcher": error_catcher})
-                  ]
-                )
+            first = pkts.pop(0)[1]
+            current = pkts.pop(0)[1]
 
-            self.assertEqual(len(timings["gaps"]), 2)
-            self.assertGreater(sum(timings["gaps"]) / 2, 0.1)
-            self.assertEqual(resets, [True, True])
+            while pkts:
+                self.assertLess(current - first, 0.1)
 
-        async it "works with non special reference":
-            called = []
+                nxt = pkts.pop(0)[1]
+                self.assertGreater(nxt - current, 0.3) 
+                current = nxt
 
-            r1 = mock.Mock(name="r1")
-            r2 = mock.Mock(name="r2")
-            r3 = mock.Mock(name="r3")
-            r4 = mock.Mock(name="r4")
+                if pkts:
+                    first = pkts.pop(0)[1]
 
-            ref1 = mock.Mock(name="ref1")
-            ref2 = mock.Mock(name="ref2")
+    @mlr.test
+    async it "can have a on_done_loop", runner:
+        msgs = [
+              DeviceMessages.SetPower(level=0)
+            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
+            ]
 
-            results = [[r1, r2], [r3, r4]]
+        done = []
 
-            timings = {'last': None, "gaps": []}
+        async def on_done():
+            done.append(True)
 
-            class Child(object):
-                async def run_with(s, *args, **kwargs):
-                    if timings['last'] is None:
-                        timings['last'] = time.time()
-                    else:
-                        timings['gaps'].append(time.time() - timings['last'])
+        msg = Repeater(msgs, on_done_loop=on_done, min_loop_time=0)
 
-                    called.append(("run_with", args, kwargs))
-                    for thing in results.pop(0):
-                        yield thing
+        def no_errors(err):
+            assert False, f"Got an error: {err}"
 
-            a = mock.Mock(name="a")
-            afr = mock.Mock(name="afr")
-            repeater = Repeater([Child()], min_loop_time=0.2)
+        got = defaultdict(list)
+        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+            got[pkt.serial].append((pkt, time.time()))
+            if all(len(pkts) >= 7 for pkts in got.values()):
+                break
 
-            found = []
-            references = [ref1, ref2]
-            error_catcher = mock.Mock(name='error_catcher')
+        assert all(serial in got for serial in runner.serials), got
+        self.assertEqual(len(done), 3)
 
-            async def doit():
-                async for info in repeater.run_with(references, afr, a=a, error_catcher=error_catcher):
-                    found.append(info)
-                    if len(found) == 4:
-                        break
-            await self.wait_for(doit())
-            self.assertEqual(found, [r1, r2, r3, r4])
+    @mlr.test
+    async it "can be stopped by a on_done_loop", runner:
+        msgs = [
+              DeviceMessages.SetPower(level=0)
+            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
+            ]
 
-            self.assertEqual(called
-                , [ ("run_with", (references, afr), {"a": a, "error_catcher": error_catcher})
-                  , ("run_with", (references, afr), {"a": a, "error_catcher": error_catcher})
-                  ]
-                )
+        done = []
 
-            self.assertEqual(len(timings["gaps"]), 1)
-            self.assertGreater(timings["gaps"][0], 0.1)
+        async def on_done():
+            done.append(True)
+            if len(done) == 3:
+                raise Repeater.Stop
+
+        msg = Repeater(msgs, on_done_loop=on_done, min_loop_time=0)
+
+        def no_errors(err):
+            assert False, f"Got an error: {err}"
+
+        got = defaultdict(list)
+        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+            got[pkt.serial].append((pkt, time.time()))
+
+        assert all(serial in got for serial in runner.serials), got
+        assert all(len(pkts) == 6 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
+        self.assertEqual(len(done), 3)
+
+    @mlr.test
+    async it "is not stopped by errors", runner:
+        async def waiter(pkt):
+            if pkt | DeviceMessages.SetPower:
+                return False
+
+        light1.set_received_processing(waiter)
+        light2.set_received_processing(waiter)
+        light3.set_received_processing(waiter)
+
+        msgs = [
+              DeviceMessages.SetPower(level=0)
+            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
+            ]
+
+        done = []
+
+        async def on_done():
+            done.append(True)
+            if len(done) == 2:
+                raise Repeater.Stop
+
+        msg = Repeater(msgs, on_done_loop=on_done, min_loop_time=0)
+
+        errors = []
+
+        def got_error(err):
+            errors.append(err)
+
+        got = defaultdict(list)
+        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=got_error, message_timeout=0.1):
+            got[pkt.serial].append(pkt)
+
+        assert all(serial in got for serial in runner.serials), got
+        assert all(len(pkts) == 2 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
+        assert all(all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()), got
+        self.assertEqual(len(done), 2)
