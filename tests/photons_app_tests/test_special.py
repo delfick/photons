@@ -170,14 +170,18 @@ describe AsyncTestCase, "HardCodedSerials":
         serials = "d073d5000001,d073d500000200"
         wanted = [binascii.unhexlify(ref)[:6] for ref in serials.split(",")]
 
-        afr = mock.Mock(name="afr")
-        broadcast = mock.Mock(name="broadcast")
-        find_timeout = mock.Mock(name="find_timeout")
-
         for s in (serials, serials.split(",")):
             ref = HardCodedSerials(s)
             self.assertEqual(ref.targets, wanted)
             self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
+
+    async it "can take in list of unhexlified serials":
+        serials = [binascii.unhexlify("d073d500000100"), binascii.unhexlify("d073d5000002")]
+        wanted = [binascii.unhexlify(ref)[:6] for ref in ["d073d5000001", "d073d5000002"]]
+
+        ref = HardCodedSerials(serials)
+        self.assertEqual(ref.targets, wanted)
+        self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
 
     describe "find_serials":
         async def assertFindSerials(self, found, serials, expected, missing):

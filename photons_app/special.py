@@ -112,7 +112,14 @@ class HardCodedSerials(SpecialReference):
         if type(serials) is str:
             serials = serials.split(",")
 
-        self.targets = [binascii.unhexlify(serial)[:6] for serial in serials]
+        self.targets = []
+        for serial in serials:
+            if isinstance(serial, bytes):
+                serial = serial[:6]
+            else:
+                serial = binascii.unhexlify(serial)[:6]
+            self.targets.append(serial)
+
         self.serials = [binascii.hexlify(target).decode() for target in self.targets]
 
         super(HardCodedSerials, self).__init__()
