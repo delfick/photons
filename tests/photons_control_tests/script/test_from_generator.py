@@ -1,7 +1,7 @@
 # coding: spec
 
+from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeline
 from photons_control.test_helpers import Device, Color, ModuleLevelRunner
-from photons_control.script import FromGenerator, Pipeline
 
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
 from photons_app.test_helpers import TestCase, AsyncTestCase
@@ -51,6 +51,42 @@ describe AsyncTestCase, "FromGenerator":
                 assert False, f"No expectation for {device.serial}"
 
             device.compare_received(expected[device])
+
+    @mlr.test
+    async it "is able to do a FromGenerator per serial", runner:
+        async def gen(serial, afr, **kwargs):
+            assert serial in (light1.serial, light2.serial)
+            yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
+
+        msg = FromGeneratorPerSerial(gen)
+
+        expected = {
+              light1: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")]
+            , light2: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")]
+            , light3: []
+            }
+
+        errors = []
+
+        got = defaultdict(list)
+        with light3.offline():
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors):
+                got[pkt.serial].append(pkt)
+
+        assert len(runner.devices) > 0
+
+        for device in runner.devices:
+            if device not in expected:
+                assert False, f"No expectation for {device.serial}"
+
+            device.compare_received(expected[device])
+
+            if expected[device]:
+                self.assertEqual(len(got[device.serial]), 2)
+                assert got[device.serial][0] | DeviceMessages.StatePower
+                assert got[device.serial][1] | DeviceMessages.StateLabel
+
+        self.assertEqual(errors, [FailedToFindDevice(serial=light3.serial)])
 
     @mlr.test
     async it "Can get results", runner:

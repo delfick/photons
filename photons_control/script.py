@@ -182,6 +182,23 @@ class Pipeline(object):
         if do_raise and error_catcher:
             raise RunErrors(_errors=list(set(error_catcher)))
 
+def FromGeneratorPerSerial(inner_gen):
+    """
+    Same as a FromGenerator except it will call your inner_gen per serial in
+    the reference given to run_with.
+
+    This handles resolving the reference into serials and complaining if a serial
+    does not exist
+    """
+    async def gen(reference, args_for_run, **kwargs):
+        serials, missing = await find_serials(reference, args_for_run, timeout=kwargs.get("find_timeout", 20))
+        for serial in missing:
+            from photons_transport.target.errors import FailedToFindDevice
+            yield FailedToFindDevice(serial=serial)
+
+        yield [FromGenerator(inner_gen, reference_override=serial) for serial in serials]
+    return FromGenerator(gen)
+
 class FromGenerator(object):
     """
     FromGenerator let's you determine what messages to send in an async generator.

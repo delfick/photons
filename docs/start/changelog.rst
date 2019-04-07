@@ -8,6 +8,8 @@ ChangeLog
    * Introduced photons_control.script.FromGenerator which is a complex message
      that let's you define an async generator function that yields messages to
      be sent to devices
+   * Introduced FromGeneratorPerSerial which is like FromGenerator but calls
+     the generator function per serial found in the reference.
    * Specifying an array of complex messages in a run_with will now send those
      complex messages in parallel rather than one after each other. (i.e. if
      you specify ``run_with([Pipeline(...), Pipeline(...)])``
