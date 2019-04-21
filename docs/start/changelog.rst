@@ -7,6 +7,7 @@ ChangeLog
    * Fixed a bug with giving an array of complex messgaes to target.script where
      it would send the messages to all devices rather than just the devices you
      care about.
+   * Some minor internal code shuffling
 
 0.13.2 - 7 April 2019
    * Fixed behaviour when you provide a list of complex messages to run_with

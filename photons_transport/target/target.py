@@ -1,4 +1,4 @@
-from photons_transport.target.script import ScriptRunnerIterator, InvalidScript
+from photons_transport.target.script import ScriptRunner, InvalidScript
 from photons_transport.target.bridge import TransportBridge
 from photons_transport.target.item import TransportItem
 
@@ -66,7 +66,7 @@ class TransportTarget(dictobj.Spec):
         return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, options)
 
     def script(self, raw):
-        """Return us a ScriptRunnerIterator for the given `raw` against this `target`"""
+        """Return us a ScriptRunnerfor the given `raw` against this `target`"""
         items = list(self.simplify(raw))
         if not items:
             items = None
@@ -79,7 +79,7 @@ class TransportTarget(dictobj.Spec):
             items = list(self.simplify(FromGenerator(gen, reference_override=True)))[0]
         else:
             items = items[0]
-        return ScriptRunnerIterator(items, target=self)
+        return ScriptRunner(items, target=self)
 
     def session(self):
         info = {}

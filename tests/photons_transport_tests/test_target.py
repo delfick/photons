@@ -71,20 +71,20 @@ describe AsyncTestCase, "TransportTarget":
             self.target = spec.normalise(meta, {})
 
         describe "script":
-            async it "returns us a ScriptRunnerIterator with simplified input":
+            async it "returns us a ScriptRunner with simplified input":
                 raw = mock.Mock(name="raw")
                 simplified = mock.Mock(name="simpified")
                 simplify = mock.Mock(name="simplify", return_value=[simplified])
 
                 res = mock.Mock(name="res")
-                FakeScriptRunnerIterator = mock.Mock(name="FakeScriptRunnerIterator", return_value=res)
+                FakeScriptRunner = mock.Mock(name="FakeScriptRunner", return_value=res)
 
                 with mock.patch.object(self.target, "simplify", simplify):
-                    with mock.patch("photons_transport.target.target.ScriptRunnerIterator", FakeScriptRunnerIterator):
+                    with mock.patch("photons_transport.target.target.ScriptRunner", FakeScriptRunner):
                         self.assertIs(self.target.script(raw), res)
 
                 simplify.assert_called_with(raw)
-                FakeScriptRunnerIterator.assert_called_once_with(simplified, target=self.target)
+                FakeScriptRunner.assert_called_once_with(simplified, target=self.target)
 
         describe "args_for_run":
             async it "creates the bridge_kls and calls start on it":

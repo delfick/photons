@@ -16,10 +16,6 @@ class FakeScript(object):
         self.target = target
 
     async def run_with(self, *args, **kwargs):
-        return await self.target.run_with(self.part, *args, **kwargs)
-
-class FakeScriptIterator(FakeScript):
-    async def run_with(self, *args, **kwargs):
         async for info in self.target.run_with(self.part, *args, **kwargs):
             yield info
 
@@ -127,18 +123,11 @@ class FakeTarget(object):
             add_error(ret)
             raise ret
         else:
-            return ret
+            for thing in ret:
+                yield thing
 
     def expect_call(self, call, result):
         self.expected_run_with.append((call, result))
-
-class FakeTargetIterator(FakeTarget):
-    def script(self, part):
-        return FakeScriptIterator(self, part)
-
-    async def run_with(self, *args, **kwargs):
-        for thing in await super(FakeTargetIterator, self).run_with(*args, **kwargs):
-            yield thing
 
 class TestCase(TestCase, DelfickErrorTestMixin):
     pass

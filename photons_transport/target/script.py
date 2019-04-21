@@ -6,33 +6,9 @@ import asyncio
 class InvalidScript(PhotonsAppError):
     desc = "Script is invalid"
 
-class ScriptRunner(object):
+class ScriptRunner:
     """
-    Create a runner for our script.
-
-    The ``script`` is an object with a ``run_with`` method on it.
-
-    This helper will create the ``afr`` if none is passed in and clean it up if
-    we created it.
-    """
-    def __init__(self, script, target):
-        self.script = script
-        self.target = target
-
-    async def run_with(self, reference, args_for_run=sb.NotSpecified, **kwargs):
-        specified = True
-        if args_for_run is sb.NotSpecified:
-            specified = False
-            args_for_run = await self.target.args_for_run()
-        try:
-            return await self.script.run_with(reference, args_for_run, **kwargs)
-        finally:
-            if not specified:
-                await self.target.close_args_for_run(args_for_run)
-
-class ScriptRunnerIterator(object):
-    """
-    Create an iterator runner for our script.
+    Create an runner for our script.
 
     The ``script`` is an object with a ``run_with`` method on it.
 

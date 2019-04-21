@@ -2,7 +2,7 @@
 
 from photons_socket.target import SocketTarget, SocketBridge, serials_to_targets
 
-from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout, FakeTargetIterator
+from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout, FakeTarget
 from photons_app.errors import TimedOut, FoundNoDevices
 
 from photons_messages import DiscoveryMessages, Services, protocol_register
@@ -240,7 +240,7 @@ describe AsyncTestCase, "SocketBridge":
 
     describe "_do_search":
         async before_each:
-            self.bridge.transport_target = FakeTargetIterator(mock.NonCallableMock(name="afr_maker"))
+            self.bridge.transport_target = FakeTarget(mock.NonCallableMock(name="afr_maker"))
 
             self.get_service = DiscoveryMessages.GetService(
                   target = None
