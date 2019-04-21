@@ -9,7 +9,7 @@ from photons_app.registers import Target
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms.errors import BadSpecValue
 from input_algorithms.meta import Meta
-import mock
+from unittest import mock
 
 describe TestCase, "PhotonsAppSpec":
     before_each:

@@ -5,7 +5,7 @@ from photons_themes.theme import ThemeColor, Theme
 
 from photons_app.test_helpers import TestCase
 
-import mock
+from unittest import mock
 
 describe TestCase, "ZoneColors":
     it "has colors":

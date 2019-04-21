@@ -6,8 +6,8 @@ from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asyncio
-import mock
 
 class Sem:
     def __init__(self, limit):

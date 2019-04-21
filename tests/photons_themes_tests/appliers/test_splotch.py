@@ -8,7 +8,7 @@ from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
-import mock
+from unittest import mock
 
 describe TestCase, "StripApplierSplotch":
     before_each:

@@ -11,10 +11,10 @@ from photons_control.script import FromGenerator
 from photons_messages import DeviceMessages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asynctest
 import binascii
 import asyncio
-import mock
 
 describe AsyncTestCase, "DeviceFinderLoops":
     async it "sets itself up":

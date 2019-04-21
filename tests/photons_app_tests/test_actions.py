@@ -5,8 +5,8 @@ from photons_app.test_helpers import TestCase
 from photons_app.actions import an_action
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
+from unittest import mock
 import uuid
-import mock
 
 describe TestCase, "an_action":
     it "takes in some options":

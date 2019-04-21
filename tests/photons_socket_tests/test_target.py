@@ -9,12 +9,12 @@ from photons_app import helpers as hp
 from photons_messages import Services, DiscoveryMessages, protocol_register
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
+from unittest import mock
 import threading
 import asynctest
 import binascii
 import asyncio
 import socket
-import mock
 
 describe AsyncTestCase, "SocketTarget":
     async before_each:

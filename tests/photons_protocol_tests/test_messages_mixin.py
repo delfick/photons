@@ -12,9 +12,9 @@ from photons_messages import LIFXPacket
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
 from bitarray import bitarray
+from unittest import mock
 import binascii
 import struct
-import mock
 
 describe TestCase, "MessagesMixin":
     before_each:

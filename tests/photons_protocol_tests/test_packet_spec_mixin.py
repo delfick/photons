@@ -9,9 +9,9 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from bitarray import bitarray
+from unittest import mock
 import binascii
 import enum
-import mock
 import uuid
 
 describe TestCase, "PacketSpecMixin":

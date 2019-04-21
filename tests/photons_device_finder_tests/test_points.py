@@ -6,7 +6,7 @@ from photons_app.test_helpers import TestCase
 
 from photons_messages import LIFXPacket
 
-import mock
+from unittest import mock
 
 describe TestCase, "Point":
     it "takes in msg and keys":

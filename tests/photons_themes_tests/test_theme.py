@@ -4,7 +4,7 @@ from photons_themes.theme import Theme, ThemeColor
 
 from photons_app.test_helpers import TestCase
 
-import mock
+from unittest import mock
 
 describe TestCase, "ThemeColor":
     it "takes in hsbk":

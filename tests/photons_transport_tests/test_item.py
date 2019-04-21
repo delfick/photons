@@ -10,10 +10,10 @@ from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
+from unittest import mock
 import asynctest
 import binascii
 import asyncio
-import mock
 
 class LargeRetryOptions(RetryOptions):
     timeouts = [(1, 5)]

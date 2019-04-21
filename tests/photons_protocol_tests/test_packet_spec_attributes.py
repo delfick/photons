@@ -9,9 +9,9 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from bitarray import bitarray
+from unittest import mock
 import binascii
 import uuid
-import mock
 
 describe TestCase, "Packet attributes":
     describe "__getitem__":

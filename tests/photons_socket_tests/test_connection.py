@@ -6,10 +6,10 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
+from unittest import mock
 import asynctest
 import asyncio
 import socket
-import mock
 
 describe AsyncTestCase, "Sockets":
     async before_each:

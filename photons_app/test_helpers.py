@@ -4,8 +4,8 @@ from delfick_error import DelfickErrorTestMixin
 from asynctest import TestCase as AsyncTestCase
 from collections import defaultdict
 from unittest import TestCase
+from unittest import mock
 import asyncio
-import mock
 
 class BadTest(PhotonsAppError):
     desc = "bad test"

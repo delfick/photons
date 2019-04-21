@@ -8,10 +8,10 @@ from photons_app.test_helpers import AsyncTestCase
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from input_algorithms import spec_base as sb
+from unittest import mock
 import asynctest
 import binascii
 import asyncio
-import mock
 import time
 
 describe AsyncTestCase, "TransportBridge":

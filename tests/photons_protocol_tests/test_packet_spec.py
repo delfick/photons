@@ -8,7 +8,7 @@ from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
-import mock
+from unittest import mock
 import uuid
 
 describe TestCase, "PacketSpecMetaKls":

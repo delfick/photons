@@ -15,8 +15,8 @@ from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from bitarray import bitarray
 from textwrap import dedent
+from unittest import mock
 import binascii
-import mock
 
 describe TestCase, "FrameHeader":
     before_each:

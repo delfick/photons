@@ -8,9 +8,9 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from option_merge import MergedOptions
+from unittest import mock
 import asyncio
 import uuid
-import mock
 
 describe TestCase, "MergedOptionStringFormatter":
     before_each:

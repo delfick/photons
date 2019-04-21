@@ -13,9 +13,9 @@ from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from bitarray import bitarray
 from textwrap import dedent
+from unittest import mock
 from enum import Enum
 import binascii
-import mock
 import json
 import uuid
 

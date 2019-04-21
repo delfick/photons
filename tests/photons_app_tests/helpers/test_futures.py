@@ -5,10 +5,10 @@ from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asyncio
 import uuid
 import time
-import mock
 
 describe AsyncTestCase, "ResettableFuture":
     async it "ensure_future returns the ResettableFuture as is":

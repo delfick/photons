@@ -6,7 +6,7 @@ from photons_app.test_helpers import TestCase
 
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
-import mock
+from unittest import mock
 import json
 
 describe TestCase, "Filter":

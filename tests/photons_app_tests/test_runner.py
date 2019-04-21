@@ -3,11 +3,11 @@
 from photons_app.test_helpers import TestCase, AsyncTestCase
 from photons_app.runner import run, runner
 
+from unittest import mock
 import asynctest
 import platform
 import asyncio
 import signal
-import mock
 import nose
 import os
 

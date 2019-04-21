@@ -10,9 +10,9 @@ from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
+from unittest import mock
 import asynctest
 import binascii
-import mock
 
 describe AsyncTestCase, "TransportTarget":
     describe "create":

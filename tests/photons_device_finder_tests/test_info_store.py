@@ -8,10 +8,10 @@ from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms import spec_base as sb
+from unittest import mock
 import binascii
 import asyncio
 import time
-import mock
 
 describe AsyncTestCase, "InfoStore":
     describe "init":

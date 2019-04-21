@@ -5,9 +5,9 @@ from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import threading
 import asyncio
-import mock
 import time
 import uuid
 

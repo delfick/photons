@@ -13,7 +13,7 @@ from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from bitarray import bitarray
-import mock
+from unittest import mock
 import json
 
 describe TestCase, "the json spec":

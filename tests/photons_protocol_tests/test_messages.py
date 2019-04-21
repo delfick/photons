@@ -5,7 +5,7 @@ from photons_protocol.types import Type as T
 
 from photons_app.test_helpers import TestCase
 
-import mock
+from unittest import mock
 
 describe TestCase, "MessagesMeta":
     it "calls any _lifx_packet_message attribute with the name and put onto resulting kls":

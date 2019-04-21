@@ -8,7 +8,7 @@ from photons_app.actions import all_tasks
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
-import mock
+from unittest import mock
 
 describe TestCase, "TaskFinder":
     before_each:

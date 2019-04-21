@@ -6,8 +6,8 @@ from photons_themes.theme import ThemeColor, Theme
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
+from unittest import mock
 import random
-import mock
 
 white = ThemeColor(0, 0, 1, 3500)
 

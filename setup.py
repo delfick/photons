@@ -50,7 +50,6 @@ setup(
         [ "noseOfYeti>=1.7"
         , "asynctest==0.10.0"
         , "nose"
-        , "mock"
         ]
       }
 

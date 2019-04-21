@@ -8,8 +8,8 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_protocol.messages import MultiOptions
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asyncio
-import mock
 import time
 
 describe AsyncTestCase, "Result":

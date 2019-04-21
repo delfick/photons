@@ -6,10 +6,10 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app import helpers as hp
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asynctest
 import binascii
 import asyncio
-import mock
 import os
 
 describe AsyncTestCase, "SpecialReference":

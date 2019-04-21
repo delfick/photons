@@ -10,7 +10,7 @@ from photons_themes.theme import Theme
 from photons_app.test_helpers import TestCase
 
 from contextlib import contextmanager
-import mock
+from unittest import mock
 
 def assertTileHues(t, got, *expect):
     t.assertEqual(len(got), len(expect))

@@ -7,10 +7,10 @@ from photons_app.errors import BadOption
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms.meta import Meta
+from unittest import mock
 import asynctest
 import platform
 import asyncio
-import mock
 
 describe TestCase, "PhotonsApp":
     before_each:

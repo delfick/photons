@@ -16,10 +16,10 @@ from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from option_merge.path import Path
 from textwrap import dedent
+from unittest import mock
 import pkg_resources
 import asyncio
 import uuid
-import mock
 import os
 
 describe TestCase, "Collector":

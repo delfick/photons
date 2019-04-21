@@ -7,7 +7,7 @@ from photons_app.test_helpers import TestCase
 from photons_messages import LightMessages, Waveform
 
 from input_algorithms import spec_base as sb
-import mock
+from unittest import mock
 
 describe TestCase, "split_color_string":
     it "returns empty list if not color_string":

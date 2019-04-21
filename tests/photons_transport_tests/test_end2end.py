@@ -15,10 +15,10 @@ from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_su
 from input_algorithms import spec_base as sb
 from contextlib import contextmanager
 from collections import defaultdict
+from unittest import mock
 import binascii
 import asyncio
 import base64
-import mock
 import uuid
 import json
 import enum

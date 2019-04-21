@@ -7,7 +7,7 @@ from photons_themes.canvas import Canvas
 from photons_app.test_helpers import TestCase
 
 from contextlib import contextmanager
-import mock
+from unittest import mock
 
 describe TestCase, "TileApplier":
     it "takes in coords and sizes":

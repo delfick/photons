@@ -5,7 +5,7 @@ from photons_themes.theme import Theme, ThemeColor
 
 from photons_app.test_helpers import TestCase
 
-import mock
+from unittest import mock
 
 describe TestCase, "LightApplier":
     it "just returns a random color from the theme":

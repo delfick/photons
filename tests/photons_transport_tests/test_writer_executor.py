@@ -5,8 +5,8 @@ from photons_transport.target.writer import Executor
 from photons_app.test_helpers import AsyncTestCase
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asynctest
-import mock
 
 describe AsyncTestCase, "Executor":
     async it "takes in a few things":

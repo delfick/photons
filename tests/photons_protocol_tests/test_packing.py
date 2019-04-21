@@ -12,10 +12,10 @@ from input_algorithms import spec_base as sb
 from contextlib import contextmanager
 from bitarray import bitarray
 from textwrap import dedent
+from unittest import mock
 import binascii
 import struct
 import uuid
-import mock
 
 describe TestCase, "val_to_bitarray":
     it "returns value as is if already bitarray":

@@ -9,8 +9,8 @@ from photons_app.executor import App
 from input_algorithms import spec_base as sb
 from delfick_app import App as DelfickApp
 from textwrap import dedent
+from unittest import mock
 import uuid
-import mock
 
 describe TestCase, "App":
     describe "setup_collector":

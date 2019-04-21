@@ -3,7 +3,7 @@
 from photons_app.test_helpers import TestCase
 from photons_app import helpers as hp
 
-import mock
+from unittest import mock
 import os
 
 describe TestCase, "add_error":

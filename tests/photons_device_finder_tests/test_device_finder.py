@@ -7,9 +7,9 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import SpecialReference
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import asynctest
 import binascii
-import mock
 
 describe AsyncTestCase, "DeviceFinder":
     async it "makes itself a loops and sets daemon to False":

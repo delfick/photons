@@ -5,8 +5,8 @@ from photons_device_finder import Collection, Collections
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
+from unittest import mock
 import uuid
-import mock
 
 describe TestCase, "Collection":
     it "has properties":
