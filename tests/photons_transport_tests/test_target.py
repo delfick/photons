@@ -178,15 +178,24 @@ describe AsyncTestCase, "TransportTarget":
                 self.assertIs(self.target.device_forgetter(args_for_run), forget)
 
         describe "simplify":
-            async it "complains if it has no pack method or has_children":
-                part = mock.Mock(name="part", has_children=False, spec=["has_chidren"])
-                with self.fuzzyAssertRaisesError(InvalidScript, "Script part has no pack method!", parts=[part]):
-                    list(self.target.simplify(part))
+            async it "complains if it has no pack method or has_children or run_with":
+                invalid = [
+                      mock.Mock(name="part nothing", spec=[])
+                    , mock.Mock(name="part no children", has_children=False, spec=["has_children"])
+                    ]
+
+                for part in invalid:
+                    with self.fuzzyAssertRaisesError(InvalidScript, "Script part has no pack/run_with/has_children", parts=[part]):
+                        list(self.target.simplify(part))
+
+            async it "uses part as is if it already has a run_with on it":
+                part = mock.Mock(name="part", spec=["run_with"])
+                self.assertEqual(list(self.target.simplify(part)), [part])
 
             async it "simplifies items that have children":
                 res = mock.Mock(name="res")
                 simplified = mock.Mock(name="simplified")
-                part = mock.Mock(name="part", has_children=True)
+                part = mock.Mock(name="part", has_children=True, spec=["has_children", "simplified", "name"])
 
                 part.simplified.return_value = simplified
                 self.item_kls.return_value = res
@@ -197,16 +206,16 @@ describe AsyncTestCase, "TransportTarget":
                 self.item_kls.assert_called_once_with([simplified])
 
             async it "splits out items into groups with pack and without and only item_kls for groups with pack":
-                part11 = mock.Mock(name="part11", pack=mock.Mock(name="pack"), has_children=False)
-                part12 = mock.Mock(name="part12", pack=mock.Mock(name="pack"), has_children=False)
-                part13 = mock.Mock(name="part13", pack=mock.Mock(name="pack"), has_children=False)
+                part11 = mock.Mock(name="part11", has_children=False, spec=['pack', 'has_children'])
+                part12 = mock.Mock(name="part12", has_children=False, spec=['pack', 'has_children'])
+                part13 = mock.Mock(name="part13", has_children=False, spec=['pack', 'has_children'])
 
-                part2 = mock.Mock(name="part2", has_children=True)
+                part2 = mock.Mock(name="part2", has_children=True, spec=['has_children', 'simplified', "name"])
                 part2simplified = mock.Mock(name="part2simplified", spec=[])
                 part2.simplified.return_value = part2simplified
 
-                part31 = mock.Mock(name="part31", pack=mock.Mock(name="pack"), has_children=False)
-                part32 = mock.Mock(name="part32", pack=mock.Mock(name="pack"), has_children=False)
+                part31 = mock.Mock(name="part31", has_children=False, spec=['pack', 'has_children'])
+                part32 = mock.Mock(name="part32", has_children=False, spec=['pack', 'has_children'])
 
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")
@@ -232,16 +241,16 @@ describe AsyncTestCase, "TransportTarget":
                     )
 
             async it "doesn't seperate simplified items if they have a pack method":
-                part11 = mock.Mock(name="part11", pack=mock.Mock(name="pack"), has_children=False)
-                part12 = mock.Mock(name="part12", pack=mock.Mock(name="pack"), has_children=False)
-                part13 = mock.Mock(name="part13", pack=mock.Mock(name="pack"), has_children=False)
+                part11 = mock.Mock(name="part11", spec=["pack"])
+                part12 = mock.Mock(name="part12", spec=["pack"])
+                part13 = mock.Mock(name="part13", spec=["pack"])
 
-                part2 = mock.Mock(name="part2", has_children=True)
+                part2 = mock.Mock(name="part2", has_children=True, spec=["name", "has_children", "name", "simplified"])
                 part2simplified = mock.Mock(name="part2simplified", spec=["pack"])
                 part2.simplified.return_value = part2simplified
 
-                part31 = mock.Mock(name="part31", pack=mock.Mock(name="pack"), has_children=False)
-                part32 = mock.Mock(name="part32", pack=mock.Mock(name="pack"), has_children=False)
+                part31 = mock.Mock(name="part31", spec=["pack"])
+                part32 = mock.Mock(name="part32", spec=["pack"])
 
                 res1 = mock.Mock(name="res1")
                 self.item_kls.return_value = res1

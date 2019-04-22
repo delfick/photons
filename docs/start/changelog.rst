@@ -8,6 +8,8 @@ ChangeLog
      it would send the messages to all devices rather than just the devices you
      care about.
    * Some minor internal code shuffling
+   * target.script() can now take objects that already have a run_with method
+     and they won't be converted before use.
 
 0.13.2 - 7 April 2019
    * Fixed behaviour when you provide a list of complex messages to run_with

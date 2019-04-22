@@ -139,7 +139,9 @@ class TransportTarget(dictobj.Spec):
         final = []
         errors = []
         for p in script_part:
-            if getattr(p, "has_children", False):
+            if hasattr(p, "run_with"):
+                final.append(p)
+            elif getattr(p, "has_children", False):
                 final.append(p.simplified(self.simplify, chain + [p.name]))
                 continue
             else:
@@ -149,7 +151,7 @@ class TransportTarget(dictobj.Spec):
                     final.append(p)
 
         if errors:
-            raise InvalidScript("Script part has no pack method!", parts=errors, chain=chain)
+            raise InvalidScript("Script part has no pack/run_with/has_children!", parts=errors, chain=chain)
 
         buf = []
         for p in final:
