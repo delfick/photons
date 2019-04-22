@@ -178,44 +178,34 @@ describe AsyncTestCase, "TransportTarget":
                 self.assertIs(self.target.device_forgetter(args_for_run), forget)
 
         describe "simplify":
-            async it "complains if it has no pack method or has_children or run_with":
-                invalid = [
-                      mock.Mock(name="part nothing", spec=[])
-                    , mock.Mock(name="part no children", has_children=False, spec=["has_children"])
-                    ]
-
-                for part in invalid:
-                    with self.fuzzyAssertRaisesError(InvalidScript, "Script part has no pack/run_with/has_children", parts=[part]):
-                        list(self.target.simplify(part))
-
             async it "uses part as is if it already has a run_with on it":
                 part = mock.Mock(name="part", spec=["run_with"])
                 self.assertEqual(list(self.target.simplify(part)), [part])
 
-            async it "simplifies items that have children":
-                res = mock.Mock(name="res")
-                simplified = mock.Mock(name="simplified")
-                part = mock.Mock(name="part", has_children=True, spec=["has_children", "simplified", "name"])
-
+            async it "simplifies items that have a simplified method":
+                simplified = mock.Mock(name="simplified", spec=[])
+                part = mock.Mock(name="part", spec=["simplified"])
                 part.simplified.return_value = simplified
+
+                res = mock.Mock(name="res")
                 self.item_kls.return_value = res
 
                 self.assertEqual(list(self.target.simplify(part)), [res])
 
-                part.simplified.assert_called_once_with(self.target.simplify, [part.name])
+                part.simplified.assert_called_once_with(self.target.simplify)
                 self.item_kls.assert_called_once_with([simplified])
 
             async it "splits out items into groups with pack and without and only item_kls for groups with pack":
-                part11 = mock.Mock(name="part11", has_children=False, spec=['pack', 'has_children'])
-                part12 = mock.Mock(name="part12", has_children=False, spec=['pack', 'has_children'])
-                part13 = mock.Mock(name="part13", has_children=False, spec=['pack', 'has_children'])
+                part11 = mock.Mock(name="part11", spec=[])
+                part12 = mock.Mock(name="part12", spec=[])
+                part13 = mock.Mock(name="part13", spec=[])
 
-                part2 = mock.Mock(name="part2", has_children=True, spec=['has_children', 'simplified', "name"])
-                part2simplified = mock.Mock(name="part2simplified", spec=[])
+                part2 = mock.Mock(name="part2", spec=['simplified'])
+                part2simplified = mock.Mock(name="part2simplified", spec=["run_with"])
                 part2.simplified.return_value = part2simplified
 
-                part31 = mock.Mock(name="part31", has_children=False, spec=['pack', 'has_children'])
-                part32 = mock.Mock(name="part32", has_children=False, spec=['pack', 'has_children'])
+                part31 = mock.Mock(name="part31", spec=[])
+                part32 = mock.Mock(name="part32", spec=[])
 
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")
@@ -232,7 +222,7 @@ describe AsyncTestCase, "TransportTarget":
                 res = list(self.target.simplify([part11, part12, part13, part2, part31, part32]))
                 self.assertEqual(res, [res1, part2simplified, res2])
 
-                part2.simplified.assert_called_once_with(self.target.simplify, [part2.name])
+                part2.simplified.assert_called_once_with(self.target.simplify)
 
                 self.assertEqual(self.item_kls.mock_calls
                     , [ mock.call([part11, part12, part13])
@@ -240,17 +230,17 @@ describe AsyncTestCase, "TransportTarget":
                       ]
                     )
 
-            async it "doesn't seperate simplified items if they have a pack method":
-                part11 = mock.Mock(name="part11", spec=["pack"])
-                part12 = mock.Mock(name="part12", spec=["pack"])
-                part13 = mock.Mock(name="part13", spec=["pack"])
+            async it "doesn't seperate simplified items if they don't have a run_with method":
+                part11 = mock.Mock(name="part11", spec=[])
+                part12 = mock.Mock(name="part12", spec=[])
+                part13 = mock.Mock(name="part13", spec=[])
 
-                part2 = mock.Mock(name="part2", has_children=True, spec=["name", "has_children", "name", "simplified"])
-                part2simplified = mock.Mock(name="part2simplified", spec=["pack"])
+                part2 = mock.Mock(name="part2", spec=["simplified"])
+                part2simplified = mock.Mock(name="part2simplified", spec=[])
                 part2.simplified.return_value = part2simplified
 
-                part31 = mock.Mock(name="part31", spec=["pack"])
-                part32 = mock.Mock(name="part32", spec=["pack"])
+                part31 = mock.Mock(name="part31", spec=[])
+                part32 = mock.Mock(name="part32", spec=[])
 
                 res1 = mock.Mock(name="res1")
                 self.item_kls.return_value = res1
@@ -258,7 +248,7 @@ describe AsyncTestCase, "TransportTarget":
                 res = list(self.target.simplify([part11, part12, part13, part2, part31, part32]))
                 self.assertEqual(res, [res1])
 
-                part2.simplified.assert_called_once_with(self.target.simplify, [part2.name])
+                part2.simplified.assert_called_once_with(self.target.simplify)
 
                 self.assertEqual(self.item_kls.mock_calls
                     , [ mock.call([part11, part12, part13, part2simplified, part31, part32])

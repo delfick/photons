@@ -243,9 +243,6 @@ class FromGenerator(object):
     The return value from yield will be a future that resolves to True if the
     message(s) were sent without error, and False if they were sent with error.
     """
-    name = "from_generator"
-    has_children = True
-
     def __init__(self, generator, *, reference_override=None):
         self.generator = generator
         self.reference_override = reference_override

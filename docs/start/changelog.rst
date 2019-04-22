@@ -10,6 +10,9 @@ ChangeLog
    * Some minor internal code shuffling
    * target.script() can now take objects that already have a run_with method
      and they won't be converted before use.
+   * The simplify method on targets has been simplified (this is used by the
+     script mechanism to convert items into objects with a run_with method for
+     use)
 
 0.13.2 - 7 April 2019
    * Fixed behaviour when you provide a list of complex messages to run_with

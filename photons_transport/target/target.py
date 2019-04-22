@@ -117,45 +117,42 @@ class TransportTarget(dictobj.Spec):
         """Return a function that may be used to forget a device on this args_for_run"""
         return args_for_run.forget
 
-    def simplify(self, script_part, chain=None):
+    def simplify(self, script_part):
         """
         Used by ``self.script`` to convert ``raw`` into TransportItems
 
-        For each leaf child that is found, we gather messages into groups of
-        messages with a ``pack`` method and yield ``self.item_kls()(group)`` with
-        messages that don't have a ``pack`` method yield as is.
+        For each item that is found:
 
-        For example, let's say we have ``[p1, p2, m1, p3]`` where ``m1`` does
-        not have a ``pack`` method and the others do, we'll yield:
+        * Use as is if it already has a run_with method on it
+        * Use item.simplified(self.simplify) if it has a simplified method
+        * Otherwise, provide to self.item_kls 
+
+        For each leaf child that is found, we gather messages into groups of
+        messages without a ``run_with`` method and yield ``self.item_kls()(group)``.
+
+        For example, let's say we have ``[p1, p2, m1, p3]`` where ``m1`` has
+        a ``run_with`` method on it and the others don't, we'll yield:
 
         * ``self.item_kls()([p1, p2])``
         * ``m1``
         * ``self.item_kls()([p3])``
         """
-        chain = [] if chain is None else chain
         if type(script_part) is not list:
             script_part = [script_part]
 
         final = []
-        errors = []
         for p in script_part:
             if hasattr(p, "run_with"):
                 final.append(p)
-            elif getattr(p, "has_children", False):
-                final.append(p.simplified(self.simplify, chain + [p.name]))
+            elif hasattr(p, "simplified"):
+                final.append(p.simplified(self.simplify))
                 continue
             else:
-                if not hasattr(p, "pack"):
-                    errors.append(p)
-                else:
-                    final.append(p)
-
-        if errors:
-            raise InvalidScript("Script part has no pack/run_with/has_children!", parts=errors, chain=chain)
+                final.append(p)
 
         buf = []
         for p in final:
-            if hasattr(p, "pack"):
+            if not hasattr(p, "run_with"):
                 buf.append(p)
             else:
                 if buf:
