@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.13.3 - TBD
+0.13.3 - 23 April 2019
    * Fixed a bug with giving an array of complex messgaes to target.script where
      it would send the messages to all devices rather than just the devices you
      care about.
