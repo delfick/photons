@@ -6,8 +6,6 @@ from photons_transport.target.script import InvalidScript
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
 
-from photons_control.script import FromGenerator
-
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
@@ -185,7 +183,7 @@ describe AsyncTestCase, "TransportTarget":
                 with self.fuzzyAssertRaisesError(InvalidScript, "Script part has no pack method!", parts=[part]):
                     list(self.target.simplify(part))
 
-            async it "simplifies items that have chidren":
+            async it "simplifies items that have children":
                 res = mock.Mock(name="res")
                 simplified = mock.Mock(name="simplified")
                 part = mock.Mock(name="part", has_children=True)

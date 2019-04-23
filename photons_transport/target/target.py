@@ -76,7 +76,7 @@ class TransportTarget(dictobj.Spec):
             async def gen(*args, **kwargs):
                 for item in original:
                     yield item
-            items = list(self.simplify(FromGenerator(gen)))[0]
+            items = list(self.simplify(FromGenerator(gen, reference_override=True)))[0]
         else:
             items = items[0]
         return ScriptRunnerIterator(items, target=self)

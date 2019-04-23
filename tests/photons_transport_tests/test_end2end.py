@@ -478,6 +478,50 @@ describe AsyncTestCase, "End2End":
             self.assertEqual(dict(by_target), expected)
             self.assertEqual(len(set(hash(p) for p, _, _ in results)), 9)
 
+    async it "uses correct targets when we have multiple complex messages":
+        async with self.target.session() as afr:
+            msg2 = Subtractor(7, 8, ack_required=True)
+            msg3 = Multiplier(8, 8, ack_required=False)
+            msg4 = Many(9001, 9002, ack_required=False)
+            results = []
+
+            async def doit():
+                reference = [afr.devices[0].target, afr.devices[2].target]
+                async for info in self.target.script([Pipeline(msg2, msg3), Pipeline(msg4)]).run_with(reference, afr):
+                    results.append(info)
+            await self.wait_for(doit())
+
+            self.assertEqual(len(afr.devices[0].connections), 1)
+            self.assertEqual(len(afr.devices[1].connections), 0)
+            self.assertEqual(len(afr.devices[2].connections), 1)
+
+            self.assertEqual(len(afr.devices[0].received), 3)
+            self.assertEqual(len(afr.devices[1].received), 0)
+            self.assertEqual(len(afr.devices[2].received), 3)
+
+            self.assertEqual(len(results), 8)
+            by_target = defaultdict(list)
+            for pkt, _, _ in results:
+                by_target[pkt.target].append(pkt.payload)
+
+            expected = {
+                  afr.devices[0].target: [
+                      {"uid": msg2.payload["uid"], "result": -1}
+                    , {"uid": msg4.payload["uid"], "result": 9001, "many": True}
+                    , {"uid": msg4.payload["uid"], "result": 9002, "many": True}
+                    , {"uid": msg3.payload["uid"], "result": 64}
+                    ]
+                , afr.devices[2].target: [
+                      {"uid": msg2.payload["uid"], "result": -1}
+                    , {"uid": msg4.payload["uid"], "result": 9001, "many": True}
+                    , {"uid": msg4.payload["uid"], "result": 9002, "many": True}
+                    , {"uid": msg3.payload["uid"], "result": 64}
+                    ]
+                }
+
+            self.assertEqual(dict(by_target), expected)
+            self.assertEqual(len(set(hash(p) for p, _, _ in results)), 6)
+
     async it "raises a single error if serials is None":
         async with self.target.session() as afr:
             msg = NoReply()
