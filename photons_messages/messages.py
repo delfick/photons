@@ -5,6 +5,7 @@ from photons_protocol.messages import T, Messages, MultiOptions
 from photons_protocol.types import Optional
 
 from input_algorithms import spec_base as sb
+import math
 
 def empty(pkt, attr):
     return pkt.actual(attr) in (Optional, sb.NotSpecified)
@@ -216,7 +217,7 @@ class MultiZoneMessages(Messages):
 
         , multi = MultiOptions(
               lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
-            , lambda req, res: min((req.end_index // 8) + 1, res.zones_count // 8)
+            , lambda req, res: min((req.end_index // 8) + 1, math.ceil(res.zones_count / 8))
             )
         )
 

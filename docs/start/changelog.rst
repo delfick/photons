@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.13.4 - TBD
+   * Tiny fix to how we determine if we have enough multizone messages that
+     shouldn't make a difference in practice.
+
 0.13.3 - 23 April 2019
    * Fixed a bug with giving an array of complex messgaes to target.script where
      it would send the messages to all devices rather than just the devices you
