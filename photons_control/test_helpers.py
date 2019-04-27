@@ -1,12 +1,16 @@
-from photons_messages import protocol_register, LightMessages, DeviceMessages
+from photons_messages import protocol_register, LightMessages, DeviceMessages, MultiZoneMessages
 from photons_socket.fake import FakeDevice, MemorySocketTarget, MemoryTarget
+from photons_products_registry import capability_for_ids
 from photons_protocol.types import Type as T
+
+from photons_app.errors import PhotonsAppError
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
+from contextlib import contextmanager
 import asyncio
 
-def pktkeys(msgs):
+def pktkeys(msgs, keep_duplicates=False):
     keys = []
     for msg in msgs:
         clone = msg.payload.clone()
@@ -15,7 +19,7 @@ def pktkeys(msgs):
                 clone[name] = None
 
         key = (msg.protocol, msg.pkt_type, repr(clone))
-        if key not in keys:
+        if key not in keys or keep_duplicates:
             keys.append(key)
     return keys
 
@@ -23,8 +27,22 @@ class Color(dictobj):
     fields = ["hue", "saturation", "brightness", "kelvin"]
 
 class Device(FakeDevice):
-    def __init__(self, serial, *, label="", power=0, color=Color(0, 0, 1, 3500), **kwargs):
+    def __init__(self, serial, *
+        , label = ""
+        , power = 0
+        , infrared = 0
+        , product_id = 22
+        , firmware_major = 1
+        , firmware_minor = 22
+        , firmware_build = 1502237570000000000
+        , color = Color(0, 0, 1, 3500)
+        , zones = [Color(0, 0, 0, 3500)] * 8
+        , **kwargs
+        ):
         super().__init__(serial, protocol_register, **kwargs)
+
+        self.product_id = product_id
+        self.capability = capability_for_ids(self.product_id, 1)
 
         def reset():
             self.online = True
@@ -35,9 +53,19 @@ class Device(FakeDevice):
 
             self.change_hsbk(color)
             self.change_power(power)
+            self.change_zones(zones)
+            self.change_infrared(infrared)
+
+            self.change_firmware(firmware_build, firmware_major, firmware_minor)
+
+            self._no_reply_to = ()
 
         self.reset = reset
         reset()
+
+    @property
+    def has_extended_multizone(self):
+        return self.capability.has_multizone and self.capability.has_extended_multizone(self.firmware_major, self.firmware_minor)
 
     def set_received_processing(self, processor):
         if self.use_sockets:
@@ -47,8 +75,16 @@ class Device(FakeDevice):
     def change_power(self, power):
         self.power = power
 
+    def change_infrared(self, infrared):
+        self.infrared = infrared
+
     def change_label(self, label):
         self.label = label
+
+    def change_zones(self, zones):
+        if len(zones) > 82:
+            raise PhotonsAppError("Can only have up to 82 zones!")
+        self.zones = zones
 
     def change_hsbk(self, color):
         self.hue = color.hue
@@ -56,9 +92,14 @@ class Device(FakeDevice):
         self.brightness = color.brightness
         self.kelvin = color.kelvin
 
-    def compare_received(self, expected):
-        expect_keys = pktkeys(expected)
-        got_keys = pktkeys(self.received)
+    def change_firmware(self, firmware_build, firmware_major, firmware_minor):
+        self.firmware_build = firmware_build
+        self.firmware_major = firmware_major
+        self.firmware_minor = firmware_minor
+
+    def compare_received(self, expected, keep_duplicates=False):
+        expect_keys = pktkeys(expected, keep_duplicates)
+        got_keys = pktkeys(self.received, keep_duplicates)
 
         def do_print():
             print(self.serial)
@@ -86,6 +127,9 @@ class Device(FakeDevice):
             do_print()
             assert False, "Expected messages to be the same"
 
+    def reset_received(self):
+        self.received = []
+
     async def async_got_message(self, pkt):
         if self.received_processing:
             if await self.received_processing(pkt) is False:
@@ -93,6 +137,24 @@ class Device(FakeDevice):
 
         async for msg in super().async_got_message(pkt):
             yield msg
+
+    @contextmanager
+    def no_reply_to(self, *types):
+        previous_no_reply_to = self._no_reply_to
+        try:
+            self._no_reply_to = self._no_reply_to + types
+            yield
+        finally:
+            self._no_reply_to = previous_no_reply_to
+
+    def ack_for(self, pkt, protocol):
+        if not any(pkt | t for t in self._no_reply_to):
+            return super().ack_for(pkt, protocol)
+
+    def response_for(self, pkt, protocol):
+        for res in super().response_for(pkt, protocol):
+            if not any(pkt | t for t in self._no_reply_to):
+                yield res
 
     def make_response(self, pkt, protocol):
         self.received.append(pkt)
@@ -108,6 +170,13 @@ class Device(FakeDevice):
         elif pkt | DeviceMessages.GetPower:
             return DeviceMessages.StatePower(level=self.power)
 
+        elif pkt | LightMessages.GetInfrared:
+            return LightMessages.StateInfrared(brightness=self.infrared)
+
+        elif pkt | LightMessages.SetInfrared:
+            self.change_infrared(pkt.brightness)
+            return LightMessages.StateInfrared(brightness=self.infrared)
+
         elif pkt | LightMessages.SetWaveformOptional or pkt | LightMessages.SetColor:
             self.change_hsbk(Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin))
             return self.light_state_message()
@@ -119,13 +188,52 @@ class Device(FakeDevice):
         elif pkt | DeviceMessages.GetLabel:
             return DeviceMessages.StateLabel(label=self.label)
 
+        elif pkt | DeviceMessages.GetVersion:
+            return DeviceMessages.StateVersion(vendor=1, product=self.product_id, version=0)
+
+        elif pkt | DeviceMessages.GetHostFirmware:
+            return DeviceMessages.StateHostFirmware(build=self.firmware_build, version_major=self.firmware_major, version_minor=self.firmware_minor)
+
+        elif pkt | MultiZoneMessages.GetColorZones:
+            if self.capability.has_multizone:
+                if pkt.start_index != 0 or pkt.end_index != 255:
+                    raise PhotonsAppError("Fake device only supports getting all color zones", got=pkt.payload)
+
+                buf = []
+                bufs = []
+
+                for i, zone in enumerate(self.zones):
+                    if len(buf) == 8:
+                        bufs.append(buf)
+                        buf = []
+
+                    buf.append((i, zone))
+
+                if buf:
+                    bufs.append(buf)
+
+                return [
+                      MultiZoneMessages.StateMultiZone(zones_count=len(self.zones), zone_index=buf[0][0], colors=[b.as_dict() for _, b in buf])
+                      for buf in bufs
+                    ]
+
+        elif pkt | MultiZoneMessages.GetExtendedColorZones:
+            if self.has_extended_multizone:
+                return MultiZoneMessages.StateExtendedColorZones(
+                      zones_count = len(self.zones)
+                    , zone_index = 0
+                    , colors_count = len(self.zones)
+                    , colors = [z.as_dict() for z in self.zones]
+                    )
+
     def light_state_message(self):
         return LightMessages.LightState(
               hue = self.hue
             , saturation = self.saturation
             , brightness = self.brightness
+            , kelvin = self.kelvin
             , power = self.power
-            , label = "light"
+            , label = self.label
             )
 
 class MemoryTargetRunner:

@@ -8,6 +8,11 @@ See :ref:`tasks`.
 
 .. photons_module_tasks::
 
+Planner
+-------
+
+See :ref:`planner`.
+
 Script helpers
 --------------
 

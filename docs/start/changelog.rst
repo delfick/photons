@@ -6,6 +6,7 @@ ChangeLog
 0.13.4 - TBD
    * Tiny fix to how we determine if we have enough multizone messages that
      shouldn't make a difference in practice.
+   * Implemented a new "Planner" API for gathering information from devices
 
 0.13.3 - 23 April 2019
    * Fixed a bug with giving an array of complex messgaes to target.script where

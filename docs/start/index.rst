@@ -7,6 +7,7 @@
   library
   venvstarter
   script_mechanism
+  planner
   finding_serials
   tile_animations
   packets
