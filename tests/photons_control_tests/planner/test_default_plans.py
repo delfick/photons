@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner, Color
+from photons_control.test_helpers import Device, ModuleLevelRunner, Color, HSBKClose
 from photons_control.planner import Gatherer, make_plans, Skip
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
@@ -243,34 +243,14 @@ describe AsyncTestCase, "Default Plans":
             striplcm2noextended.change_zones(zones2)
             striplcm2extended.change_zones(zones3)
 
-            class Close:
-                def __init__(self, data):
-                    self.data = data
-
-                def __repr__(self):
-                    return repr(self.data)
-
-                def __eq__(self, other):
-                    if any(k not in other for k in self.data):
-                        return False
-                    if any(k not in self.data for k in other):
-                        return False
-
-                    for k in other: 
-                        diff = abs(other[k] - self.data[k])
-                        if round(diff) > 1:
-                            return False
-
-                    return True
-
             got = await self.gather(runner, runner.serials, "zones")
             expected =  { 
                     light1.serial: (True, {"zones": Skip})
                   , light2.serial: (True, {"zones": Skip})
 
-                  , striplcm1.serial: (True, {"zones": [(i, Close(z.as_dict())) for i, z in enumerate(zones1)]})
-                  , striplcm2noextended.serial: (True, {"zones": [(i, Close(z.as_dict())) for i, z in enumerate(zones2)]})
-                  , striplcm2extended.serial: (True, {"zones": [(i, Close(z.as_dict())) for i, z in enumerate(zones3)]})
+                  , striplcm1.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]})
+                  , striplcm2noextended.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]})
+                  , striplcm2extended.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]})
                   }
             self.assertEqual(got, expected)
 

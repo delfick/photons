@@ -3,6 +3,7 @@ from photons_socket.fake import FakeDevice, MemorySocketTarget, MemoryTarget
 from photons_products_registry import capability_for_ids
 from photons_protocol.types import Type as T
 
+from photons_messages import MultiZoneEffectType
 from photons_app.errors import PhotonsAppError
 
 from input_algorithms.dictobj import dictobj
@@ -10,10 +11,36 @@ from input_algorithms import spec_base as sb
 from contextlib import contextmanager
 import asyncio
 
+class HSBKClose:
+    """
+    Used to compare hsbk dictionaries without caring too much about complete accuracy
+    """
+    def __init__(self, data):
+        self.data = data
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def __eq__(self, other):
+        if any(k not in other for k in self.data):
+            return False
+        if any(k not in self.data for k in other):
+            return False
+
+        for k in other: 
+            diff = abs(other[k] - self.data[k])
+            precision = 1 if k in ("hue", "kelvin") else 0.1
+            if round(diff) > precision:
+                return False
+
+        return True
+
 def pktkeys(msgs, keep_duplicates=False):
     keys = []
     for msg in msgs:
         clone = msg.payload.clone()
+        if hasattr(clone, "instanceid"):
+            clone.instanceid = 0
         for name, typ in clone.Meta.field_types:
             if clone.actual(name) is sb.NotSpecified and isinstance(typ, type(T.Reserved)):
                 clone[name] = None
@@ -55,6 +82,7 @@ class Device(FakeDevice):
             self.change_power(power)
             self.change_zones(zones)
             self.change_infrared(infrared)
+            self.change_zones_effect(MultiZoneEffectType.OFF)
 
             self.change_firmware(firmware_build, firmware_major, firmware_minor)
 
@@ -85,6 +113,9 @@ class Device(FakeDevice):
         if len(zones) > 82:
             raise PhotonsAppError("Can only have up to 82 zones!")
         self.zones = zones
+
+    def change_zones_effect(self, effect):
+        self.zones_effect = effect
 
     def change_hsbk(self, color):
         self.hue = color.hue
@@ -119,6 +150,36 @@ class Device(FakeDevice):
         different = False
         for i, (got, expect) in enumerate(zip(got_keys, expect_keys)):
             if got != expect:
+                print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
+                different = True
+
+        if different:
+            print("=" * 80)
+            do_print()
+            assert False, "Expected messages to be the same"
+
+    def compare_received_klses(self, expected, keep_duplicates=False):
+        got = self.received
+        got_keys = pktkeys(self.received, keep_duplicates)
+
+        def do_print():
+            print(self.serial)
+            print("GOT:")
+            for key in got_keys:
+                print(f"\t{key}")
+            print()
+            print("EXPECTED:")
+            for kls in expected:
+                print(f"\t{kls}")
+            print()
+
+        if len(expected) != len(got):
+            do_print()
+            assert False, "Expected a different number of messages to what we got"
+
+        different = False
+        for i, (got, expect) in enumerate(zip(got, expected)):
+            if not got | expect:
                 print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
                 different = True
 
@@ -217,6 +278,16 @@ class Device(FakeDevice):
                       for buf in bufs
                     ]
 
+        elif pkt | MultiZoneMessages.SetColorZones:
+            if self.capability.has_multizone:
+                for i in range(pkt.start_index, pkt.end_index + 1):
+                    self.zones[i] = {
+                          "hue": pkt.hue
+                        , "saturation": pkt.saturation
+                        , "brightness": pkt.brightness
+                        , "kelvin": pkt.kelvin
+                        }
+
         elif pkt | MultiZoneMessages.GetExtendedColorZones:
             if self.has_extended_multizone:
                 return MultiZoneMessages.StateExtendedColorZones(
@@ -225,6 +296,15 @@ class Device(FakeDevice):
                     , colors_count = len(self.zones)
                     , colors = [z.as_dict() for z in self.zones]
                     )
+
+        elif pkt | MultiZoneMessages.SetExtendedColorZones:
+            if self.has_extended_multizone:
+                for i, c in enumerate(pkt.colors[:pkt.colors_count]):
+                    self.zones[i + pkt.zone_index] = c.as_dict()
+
+        elif pkt | MultiZoneMessages.SetMultiZoneEffect:
+            if self.capability.has_multizone:
+                self.change_zones_effect(pkt.type)
 
     def light_state_message(self):
         return LightMessages.LightState(
