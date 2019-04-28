@@ -453,6 +453,50 @@ describe AsyncTestCase, "Gatherer":
                 )
 
         @mlr.test
+        async it "adds errors from info", runner:
+            error = ValueError("ERROR")
+
+            class ErrorPlan(Plan):
+                messages = [DeviceMessages.GetLabel()]
+
+                class Instance(Plan.Instance):
+                    def process(s, pkt):
+                        if pkt | DeviceMessages.StateLabel:
+                            self.label = pkt.label
+                            return True
+
+                    async def info(s):
+                        if s.serial == light1.serial:
+                            raise error
+                        return self.label
+
+            gatherer = Gatherer(runner.target)
+            plans = make_plans(label=ErrorPlan())
+
+            found = []
+            with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
+                async for serial, label, info in gatherer.gather(plans, runner.serials):
+                    found.append((serial, label, info))
+
+            self.assertEqual(found
+                , [ (light2.serial, "label", "sam")
+                  , (light3.serial, "label", "strip")
+                  ]
+                )
+
+            errors = []
+            found.clear()
+            async for serial, label, info in gatherer.gather(plans, runner.serials, error_catcher=errors):
+                found.append((serial, label, info))
+            self.assertEqual(errors, [error])
+
+            self.assertEqual(found
+                , [ (light2.serial, "label", "sam")
+                  , (light3.serial, "label", "strip")
+                  ]
+                )
+
+        @mlr.test
         async it "raises errors after yielding everything", runner:
             called = []
 

@@ -33,13 +33,15 @@ describe TestCase, "Session":
         plans = mock.Mock(name="plans")
         serial = mock.Mock(name="serial")
         depinfo = mock.Mock(name="depinfo")
-        planner = self.session.planner(plans, depinfo, serial)
+        error_catcher = mock.Mock(name="error_catcher")
+        planner = self.session.planner(plans, depinfo, serial, error_catcher)
 
         self.assertIsInstance(planner, Planner)
         self.assertIs(planner.session, self.session)
         self.assertIs(planner.plans, plans)
         self.assertIs(planner.depinfo, depinfo)
         self.assertIs(planner.serial, serial)
+        self.assertIs(planner.error_catcher, error_catcher)
 
     it "can add received packets":
         t1 = mock.Mock(name="t1")

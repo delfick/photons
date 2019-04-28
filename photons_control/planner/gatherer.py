@@ -55,11 +55,12 @@ class Planner:
     """
     A class for managing getting results from our plans for this serial
     """
-    def __init__(self, session, plans, depinfo, serial):
+    def __init__(self, session, plans, depinfo, serial, error_catcher):
         self.plans = plans
         self.serial = serial
         self.session = session
         self.depinfo = depinfo
+        self.error_catcher = error_catcher
 
     def find_msgs_to_send(self):
         """
@@ -201,8 +202,15 @@ class Planner:
         instance = info.instance
 
         if pkt is NoMessages or instance.process(pkt):
-            result = await instance.info()
             info.mark_done()
+
+            try:
+                result = await instance.info()
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                hp.add_error(self.error_catcher, error)
+                return
 
             if plankey is not None:
                 self.session.fill(plankey, instance.serial, result)
@@ -218,9 +226,9 @@ class Session:
         self.received = defaultdict(lambda: defaultdict(list))
         self.filled = defaultdict(dict)
 
-    def planner(self, plans, depinfo, serial):
+    def planner(self, plans, depinfo, serial, error_catcher):
         """Return a Planner instance for managing packets and results"""
-        return Planner(self, plans, depinfo, serial)
+        return Planner(self, plans, depinfo, serial, error_catcher)
 
     def receive(self, key, pkt):
         """
@@ -479,7 +487,7 @@ class Gatherer:
           completed results.
         """
         depinfo = await self._deps(plans, serial, afr, **kwargs)
-        planner = self.session.planner(plans, depinfo, serial)
+        planner = self.session.planner(plans, depinfo, serial, kwargs["error_catcher"])
 
         msgs_to_send = list(planner.find_msgs_to_send())
 
