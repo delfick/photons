@@ -11,7 +11,7 @@ from photons_messages import (
     , TileEffectType, MultiZoneEffectType
     , Direction
     )
-from photons_products_registry import capability_for_ids
+from photons_products_registry import capability_for_ids, enum_for_ids, UnknownProduct
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
@@ -199,11 +199,11 @@ describe AsyncTestCase, "Default Plans":
     describe "CapabilityPlan":
         @mlr.test
         async it "gets the power", runner:
-            l1c = {"cap": capability_for_ids(55, 1), "has_extended_multizone": False}
-            l2c = {"cap": capability_for_ids(1, 1), "has_extended_multizone": False}
-            slcm1c = {"cap": capability_for_ids(31, 1), "has_extended_multizone": False}
-            slcm2nec = {"cap": capability_for_ids(32, 1), "has_extended_multizone": False}
-            slcm2ec = {"cap": capability_for_ids(32, 1), "has_extended_multizone": True}
+            l1c = {"cap": capability_for_ids(55, 1), "has_extended_multizone": False, "product": enum_for_ids(55, 1)}
+            l2c = {"cap": capability_for_ids(1, 1), "has_extended_multizone": False, "product": enum_for_ids(1, 1)}
+            slcm1c = {"cap": capability_for_ids(31, 1), "has_extended_multizone": False, "product": enum_for_ids(31, 1)}
+            slcm2nec = {"cap": capability_for_ids(32, 1), "has_extended_multizone": False, "product": enum_for_ids(32, 1)}
+            slcm2ec = {"cap": capability_for_ids(32, 1), "has_extended_multizone": True, "product": enum_for_ids(32, 1)}
 
             got = await self.gather(runner, runner.serials, "capability")
             self.assertEqual(got
@@ -215,6 +215,20 @@ describe AsyncTestCase, "Default Plans":
                   , striplcm2extended.serial: (True, {"capability": slcm2ec})
                   }
                 )
+        @mlr.test
+        async it "adds unknown products to error catcher", runner:
+            errors = []
+
+            def efi(pid, vid):
+                if pid == 55:
+                    raise UnknownProduct(product_id=pid, vendor_id=vid)
+                return enum_for_ids(pid, vid)
+
+            with mock.patch("photons_control.planner.plans.enum_for_ids", efi):
+                got = await self.gather(runner, runner.serials, "capability", error_catcher=errors)
+
+            assert sorted(list(got)), sorted([light2, striplcm1, striplcm2noextended, striplcm2extended])
+            self.assertEqual(errors, [UnknownProduct(product_id=55, vendor_id=1)])
 
     describe "FirmwarePlan":
         @mlr.test

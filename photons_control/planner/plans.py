@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
-from photons_products_registry import capability_for_ids
+from photons_products_registry import capability_for_ids, enum_for_ids
 
 from input_algorithms import spec_base as sb
 from collections import defaultdict
@@ -318,9 +318,11 @@ class ZonesPlan(Plan):
 @a_plan("capability")
 class CapabilityPlan(Plan):
     """
-    Return ``{"cap": <capability>, "has_extended_multizone": <bool>}`` for this device
+    Return ``{"cap": <capability>, "has_extended_multizone": <bool>, "product": <product>}`` for this device
 
     Where capability is from photons_products_registry.capability_for_ids
+
+    And product is from photons_products_registry.enum_for_ids
     """
     messages = [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
 
@@ -333,9 +335,10 @@ class CapabilityPlan(Plan):
             return hasattr(self, "firmware") and hasattr(self, "version")
 
         async def info(self):
+            product = enum_for_ids(self.version.product, self.version.vendor)
             cap = capability_for_ids(self.version.product, self.version.vendor)
             has_extended = cap.has_extended_multizone(self.firmware.version_major, self.firmware.version_minor)
-            return {"cap": cap, "has_extended_multizone": has_extended}
+            return {"cap": cap, "has_extended_multizone": has_extended, "product": product}
 
 @a_plan("firmware")
 class FirmwarePlan(Plan):
