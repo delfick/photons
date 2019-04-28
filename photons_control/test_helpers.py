@@ -9,6 +9,7 @@ from photons_app.errors import PhotonsAppError
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 from contextlib import contextmanager
+from collections import defaultdict
 import asyncio
 
 class HSBKClose:
@@ -74,6 +75,7 @@ class Device(FakeDevice):
         def reset():
             self.online = True
             self.label = label
+            self.set_replies = defaultdict(list)
 
             self.received = []
             self.received_processing = None
@@ -90,6 +92,9 @@ class Device(FakeDevice):
 
         self.reset = reset
         reset()
+
+    def set_reply(self, kls, msg):
+        self.set_replies[kls].append(msg)
 
     @property
     def has_extended_multizone(self):
@@ -219,6 +224,10 @@ class Device(FakeDevice):
 
     def make_response(self, pkt, protocol):
         self.received.append(pkt)
+
+        for kls, msgs in self.set_replies.items():
+            if msgs and pkt | kls:
+                return msgs.pop()
 
         if pkt | LightMessages.GetColor:
             return self.light_state_message()

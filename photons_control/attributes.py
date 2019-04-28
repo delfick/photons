@@ -1,3 +1,5 @@
+from photons_control.planner import Gatherer, Skip, make_plans
+
 from photons_app.actions import an_action
 from photons_app.errors import BadOption
 
@@ -170,31 +172,18 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
 
 @an_action(needs_target=True, special_reference=True)
 async def get_effects(collector, target, reference, **kwargs):
-    types = {}
-    async with target.session() as afr:
-        async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
-            if pkt | DeviceMessages.StateVersion:
-                types[pkt.serial] = capability_for_ids(pkt.product, pkt.vendor)
+    plans = make_plans("firmware_effects")
+    async for serial, _, info in Gatherer(target).gather(plans, reference):
+        if info is Skip:
+            continue
 
-        msgs = []
-        for serial, cap in types.items():
-            if cap.has_chain:
-                msgs.append(TileMessages.GetTileEffect(target=serial))
-            elif cap.has_multizone:
-                msgs.append(MultiZoneMessages.GetMultiZoneEffect(target=serial))
-
-        async for pkt, _, _ in target.script(msgs).run_with(None, afr):
-            print(f"{pkt.serial}: {pkt.type}")
-            for field, value in sorted(pkt.payload.as_dict().items()):
-                if "reserved" not in field and field != "type":
-                    if field == "palette":
-                        print("\tpalette:")
-                        for color in value:
-                            print(f"\t\t{repr(color)}")
-                    elif field == "parameters":
-                        for name, val in value.items():
-                            if not name.startswith("parameter"):
-                                print(f"\t{name}: {val}")
-                    else:
-                        print(f"\t{field}: {value}")
-            print()
+        print(f"{serial}: {info['type']}")
+        for field, value in info["options"].items():
+            if field == "palette":
+                if value:
+                    print("\tpalette:")
+                    for c in value:
+                        print(f"\t\t{repr(c)}")
+            else:
+                print(f"\t{field}: {value}")
+        print()

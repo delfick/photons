@@ -1,6 +1,6 @@
 from photons_app.errors import PhotonsAppError
 
-from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages
+from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products_registry import capability_for_ids
 
 from input_algorithms import spec_base as sb
@@ -350,3 +350,59 @@ class FirmwarePlan(Plan):
 
         async def info(self):
             return self.dct
+
+@a_plan("firmware_effects")
+class FirmwareEffectsPlan(Plan):
+    """
+    Return ``{"type": <enum>, "options": {...}}``` for each device where strips
+    return multizone effect data and tiles return tile effect data.
+
+    Returns Skip for devices that don't have firmware effects
+    """
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan()}
+
+    class Instance(Plan.Instance):
+        @property
+        def is_multizone(self):
+            return self.deps["c"]["cap"].has_multizone
+
+        @property
+        def is_tile(self):
+            return self.deps["c"]["cap"].has_chain
+
+        @property
+        def messages(self):
+            if self.is_multizone:
+                return [MultiZoneMessages.GetMultiZoneEffect()]
+            elif self.is_tile:
+                return [TileMessages.GetTileEffect()]
+            return Skip
+
+        def process(self, pkt):
+            if pkt | MultiZoneMessages.StateMultiZoneEffect:
+                self.pkt = pkt
+                return True
+
+            elif pkt | TileMessages.StateTileEffect:
+                self.pkt = pkt
+                return True
+
+        async def info(self):
+            info = {"type": self.pkt.type, "options": {}}
+
+            for k, v in self.pkt.payload.as_dict().items():
+                if "reserved" not in k and k not in ("type", "palette_count"):
+                    if k == "parameters":
+                        for k2 in v:
+                            if not k2.startswith("parameter"):
+                                info["options"][k2] = v[k2]
+                    elif k == "palette":
+                        info["options"]["palette"] = v[:self.pkt.palette_count]
+                    else:
+                        info["options"][k] = v
+
+            return info

@@ -6,10 +6,15 @@ from photons_control.planner import Gatherer, make_plans, Skip
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase
 
-from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages
+from photons_messages import (
+      DeviceMessages, LightMessages, MultiZoneMessages, TileMessages
+    , TileEffectType, MultiZoneEffectType
+    , Direction
+    )
 from photons_products_registry import capability_for_ids
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from unittest import mock
 import uuid
 
 light1 = Device("d073d5000001", use_sockets=False
@@ -244,7 +249,7 @@ describe AsyncTestCase, "Default Plans":
             striplcm2extended.change_zones(zones3)
 
             got = await self.gather(runner, runner.serials, "zones")
-            expected =  { 
+            expected = {
                     light1.serial: (True, {"zones": Skip})
                   , light2.serial: (True, {"zones": Skip})
 
@@ -285,3 +290,77 @@ describe AsyncTestCase, "Default Plans":
                     assert False, f"No expectation for {device.serial}"
 
                 device.compare_received(expected[device])
+
+    describe "FirmwareEffectsPlan":
+        @mlr.test
+        async it "gets firmware effects", runner:
+            light1.set_reply(TileMessages.GetTileEffect
+                , TileMessages.StateTileEffect.empty_normalise(
+                      type = TileEffectType.FLAME
+                    , speed = 10
+                    , duration = 1
+                    , palette_count = 2
+                    , palette = [Color(120, 1, 1, 3500).as_dict(), Color(360, 1, 1, 3500).as_dict()]
+                    )
+                )
+
+            striplcm1.set_reply(MultiZoneMessages.GetMultiZoneEffect
+                , MultiZoneMessages.StateMultiZoneEffect.empty_normalise(
+                      type = MultiZoneEffectType.MOVE
+                    , speed = 5
+                    , duration = 2
+                    , parameters  = {"speed_direction": Direction.LEFT}
+                    )
+                )
+
+            l1 = {
+                  "type": TileEffectType.FLAME
+                , "options":
+                  { "duration": 1
+                  , 'palette':
+                    [ {'brightness': 1.0, 'hue': 120.0, 'kelvin': 3500, 'saturation': 1.0}
+                    , {'brightness': 1.0, 'hue': 360.0, 'kelvin': 3500, 'saturation': 1.0}
+                    ]
+                  , 'speed': 10.0
+                  , 'instanceid': mock.ANY
+                  }
+                }
+
+            slcm1 = {
+                  "type": MultiZoneEffectType.MOVE
+                , "options":
+                  { 'duration': 2
+                  , 'speed': 5.0
+                  , 'speed_direction': Direction.LEFT
+                  , 'instanceid': mock.ANY
+                  }
+                }
+
+            serials = [light1.serial, light2.serial, striplcm1.serial]
+            got = await self.gather(runner, serials, "firmware_effects")
+            expected =  {
+                    light1.serial: (True, {"firmware_effects": l1})
+                  , light2.serial: (True, {"firmware_effects": Skip})
+                  , striplcm1.serial: (True, {"firmware_effects": slcm1})
+                  }
+            self.assertEqual(got, expected)
+
+            expected = {
+                  light1:
+                  [ DeviceMessages.GetHostFirmware()
+                  , DeviceMessages.GetVersion()
+                  , TileMessages.GetTileEffect()
+                  ]
+                , light2:
+                  [ DeviceMessages.GetHostFirmware()
+                  , DeviceMessages.GetVersion()
+                  ]
+                , striplcm1:
+                  [ DeviceMessages.GetHostFirmware()
+                  , DeviceMessages.GetVersion()
+                  , MultiZoneMessages.GetMultiZoneEffect()
+                  ]
+                }
+
+            for device, e in expected.items():
+                device.compare_received(e)
