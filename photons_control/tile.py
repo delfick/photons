@@ -1,18 +1,29 @@
 """
 .. autofunction:: photons_control.tile.tiles_from
+
+.. autofunction:: photons_control.tile.orientations_from
+
+.. autofunction:: SetTileEffect
 """
 from photons_control.orientation import nearest_orientation
+from photons_control.planner import Gatherer, make_plans
+from photons_control.attributes import make_colors
+from photons_control.script import FromGenerator
 
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_messages import TileMessages, TileEffectType
-from photons_colour import Parser
+from photons_messages import TileMessages, TileEffectType, LightMessages
 
 from input_algorithms.errors import BadSpecValue
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
 from collections import defaultdict
+
+default_tile_palette = [
+      {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
+      for hue in [0, 40, 60, 122, 239, 271, 294]
+    ]
 
 def tiles_from(state_pkt):
     """
@@ -29,6 +40,90 @@ def orientations_from(pkt):
     for i, tile in enumerate(tiles_from(pkt)):
         orientations[i] = nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
     return orientations
+
+def SetTileEffect(effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options):
+    """
+    Set an effect on your tiles
+
+    Where effect is one of the available effect types:
+
+    OFF
+        Turn the animation off
+
+    FLAME
+        A flame effect
+
+    MORPH
+        A Morph effect
+
+    Options include:
+    - speed
+    - duration
+    - palette
+
+    Usage looks like:
+
+    .. code-block:: python
+
+        msg = SetTileEffect("MORPH", palette=["red", "blue", "green"])
+        await target.script(msg).run_with_all(reference)
+
+    By default the devices will be powered on. If you don't want this to happen
+    then pass in power_on=False
+
+    If you want to target a particular device or devices, pass in reference as a
+    run_with reference.
+    """
+    typ = effect
+    if type(effect) is str:
+        for e in TileEffectType:
+            if e.name.lower() == effect.lower():
+                typ = e
+                break
+
+    if typ is None:
+        available = [e.name for e in TileEffectType]
+        raise PhotonsAppError("Please specify a valid type", wanted=effect, available=available)
+
+    options["type"] = typ
+    options["res_required"] = False
+
+    if "palette" not in options:
+        options["palette"] = default_tile_palette
+
+    if len(options["palette"]) > 16:
+        raise PhotonsAppError("Palette can only be up to 16 colors", got=len(options["palette"]))
+
+    options["palette"] = list(make_colors([c, 1] for c in options["palette"]))
+    options["palette_count"] = len(options["palette"])
+
+    set_effect = TileMessages.SetTileEffect.empty_normalise(**options)
+
+    async def gen(ref, afr, **kwargs):
+        plans = make_plans("capability")
+
+        g = gatherer
+        if g is None:
+            g = Gatherer(afr.transport_target)
+
+        r = ref if reference is None else reference
+
+        async for serial, _, info in g.gather(plans, r, afr, **kwargs):
+            if info["cap"].has_chain:
+                if power_on:
+                    yield LightMessages.SetLightPower(
+                          level = 65535
+                        , target = serial
+                        , duration = power_on_duration
+                        , ack_required = True
+                        , res_required = False
+                        )
+
+                msg = set_effect.clone()
+                msg.target = serial
+                yield msg
+
+    return FromGenerator(gen)
 
 @an_action(needs_target=True, special_reference=True)
 async def get_device_chain(collector, target, reference, **kwargs):
@@ -86,18 +181,12 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
     OFF
         Turn of the animation off
 
-    MOVE
-        No supported on tile
-
     MORPH
         Move through a perlin noise map, assigning pixel values from a
         16-color palette
 
     FLAME
-        Behaviour TBD
-
-    RIPPLE
-        Behaviour TBD
+        A flame effect
 
     For effects that take in a palette option, you may specify palette as
     ``[{"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 2500}, ...]``
@@ -106,50 +195,12 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
 
     or as ``["red", "hue:100 saturation:1", "blue"]``
     """
+    options = collector.configuration["photons_app"].extra_as_json
+
     if artifact in ("", None, sb.NotSpecified):
         raise PhotonsAppError("Please specify type of effect with --artifact")
 
-    typ = None
-    for e in TileEffectType:
-        if e.name.lower() == artifact.lower():
-            typ = e
-            break
-
-    if typ is None:
-        available = [e.name for e in TileEffectType]
-        raise PhotonsAppError("Please specify a valid type", wanted=artifact, available=available)
-
-    options = collector.configuration["photons_app"].extra_as_json or {}
-
-    options["type"] = typ
-    if "palette" not in options:
-        options["palette"] = [
-              {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
-              for hue in [0, 40, 60, 122, 239, 271, 294]
-            ]
-
-    if typ is not TileEffectType.OFF:
-        if len(options["palette"]) > 16:
-            raise PhotonsAppError("Palette can only be up to 16 colors", got=len(options["palette"]))
-
-        palette = []
-        for thing in options["palette"]:
-            if type(thing) is list:
-                if len(thing) == 3:
-                    thing.append(2500)
-                palette.append({"hue": thing[0], "saturation": thing[1], "brightness": thing[2], "kelvin": thing[3]})
-            elif type(thing) is str:
-                h, s, b, k = Parser.hsbk(thing, {"brightness": 1})
-                palette.append({"hue": h or 0, "saturation": s or 1, "brightness": b or 1, "kelvin": k or 3500})
-            else:
-                palette.append(thing)
-
-        options["palette"] = palette
-
-    options["palette_count"] = len(options["palette"])
-    options["res_required"] = False
-    msg = TileMessages.SetTileEffect.empty_normalise(**options)
-    await target.script(msg).run_with_all(reference)
+    await target.script(SetTileEffect(artifact, **options)).run_with_all(reference)
 
 class list_spec(sb.Spec):
     def setup(self, *specs):

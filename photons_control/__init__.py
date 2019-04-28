@@ -8,6 +8,8 @@ See :ref:`tasks`.
 
 .. photons_module_tasks::
 
+.. automodule:: photons_control.attributes
+
 Planner
 -------
 

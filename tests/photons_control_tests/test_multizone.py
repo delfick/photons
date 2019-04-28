@@ -9,7 +9,6 @@ from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
-from photons_products_registry import capability_for_ids
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid

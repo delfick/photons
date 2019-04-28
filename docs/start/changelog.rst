@@ -8,6 +8,8 @@ ChangeLog
      shouldn't make a difference in practice.
    * Implemented a new "Planner" API for gathering information from devices
    * Making code in photons_control.multizone easier to re-use
+   * Added a photons_control.tile.SetTileEffect helper for easily setting tile
+     effects
 
 0.13.3 - 23 April 2019
    * Fixed a bug with giving an array of complex messgaes to target.script where

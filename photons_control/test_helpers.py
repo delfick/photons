@@ -1,10 +1,13 @@
-from photons_messages import protocol_register, LightMessages, DeviceMessages, MultiZoneMessages
+from photons_app.errors import PhotonsAppError
+
+from photons_messages import (
+      LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+    , MultiZoneEffectType, TileEffectType
+    , protocol_register
+    )
 from photons_socket.fake import FakeDevice, MemorySocketTarget, MemoryTarget
 from photons_products_registry import capability_for_ids
 from photons_protocol.types import Type as T
-
-from photons_messages import MultiZoneEffectType
-from photons_app.errors import PhotonsAppError
 
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
@@ -28,7 +31,7 @@ class HSBKClose:
         if any(k not in self.data for k in other):
             return False
 
-        for k in other: 
+        for k in other:
             diff = abs(other[k] - self.data[k])
             precision = 1 if k in ("hue", "kelvin") else 0.1
             if round(diff) > precision:
@@ -85,6 +88,7 @@ class Device(FakeDevice):
             self.change_zones(zones)
             self.change_infrared(infrared)
             self.change_zones_effect(MultiZoneEffectType.OFF)
+            self.change_tile_effect(TileEffectType.OFF)
 
             self.change_firmware(firmware_build, firmware_major, firmware_minor)
 
@@ -120,7 +124,12 @@ class Device(FakeDevice):
         self.zones = zones
 
     def change_zones_effect(self, effect):
-        self.zones_effect = effect
+        if self.capability.has_multizone:
+            self.zones_effect = effect
+
+    def change_tile_effect(self, effect):
+        if self.capability.has_chain:
+            self.tile_effect = effect
 
     def change_hsbk(self, color):
         self.hue = color.hue
@@ -314,6 +323,10 @@ class Device(FakeDevice):
         elif pkt | MultiZoneMessages.SetMultiZoneEffect:
             if self.capability.has_multizone:
                 self.change_zones_effect(pkt.type)
+
+        elif pkt | TileMessages.SetTileEffect:
+            if self.capability.has_chain:
+                self.change_tile_effect(pkt.type)
 
     def light_state_message(self):
         return LightMessages.LightState(

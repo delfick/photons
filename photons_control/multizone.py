@@ -241,7 +241,7 @@ def SetZonesEffect(effect, gatherer=None, power_on=True, power_on_duration=1, re
 
     .. code-block:: python
 
-        msg = SetMultiZoneEffect("MOVE", speed=1)
+        msg = SetZonesEffect("MOVE", speed=1)
         await target.script(msg).run_with_all(reference)
 
     By default the devices will be powered on. If you don't want this to happen

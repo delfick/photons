@@ -1,3 +1,8 @@
+"""
+.. autofunction:: make_color
+
+.. autofunction:: make_colors
+"""
 from photons_control.planner import Gatherer, Skip, make_plans
 
 from photons_app.errors import BadOption, PhotonsAppError
@@ -49,7 +54,7 @@ def make_color(specifier):
 
 def make_colors(colors, overrides=None):
     """
-    Return [{"hue", "saturation", "brightness", "kelvin"}, ...] colors for these colors and overrides
+    yield [{"hue", "saturation", "brightness", "kelvin"}, ...] colors for these colors and overrides
 
     Colors must be an array of [[specifier, length], ...]
 
