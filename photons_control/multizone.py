@@ -9,6 +9,8 @@
 
 .. autofunction:: photons_control.multizone.SetZonesEffect
 """
+from photons_control.attributes import make_colors
+
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
@@ -16,7 +18,6 @@ from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessag
 from photons_control.planner import Gatherer, make_plans, Skip, Plan, NoMessages
 from photons_control.planner.plans import CapabilityPlan
 from photons_control.script import FromGenerator
-from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
 
@@ -143,44 +144,7 @@ class SetZonesPlan(Plan):
             )
 
     def make_colors(self, colors, overrides):
-        results = []
-
-        for color in colors:
-            if not isinstance(color, list) or len(color) != 2:
-                raise PhotonsAppError("Each color must be [color, length]")
-
-            color, length = color
-
-            if isinstance(color, str):
-                h, s, b, k = Parser.hsbk(color)
-                if b is None:
-                    b = 1
-            elif isinstance(color, list):
-                h, s, b, k = 0, 0, 1, 3500
-                if len(color) > 0: h = color[0]
-                if len(color) > 1: s = color[1]
-                if len(color) > 2: b = color[2]
-                if len(color) > 3: k = color[3]
-            elif isinstance(color, dict):
-                h = color.get("hue", 0)
-                s = color.get("saturation", 0)
-                b = color.get("brightness", 1)
-                k = color.get("kelvin", 3500)
-
-            result = {
-                  "hue": h or 0
-                , "saturation": s or 0
-                , "brightness": b if b is not None else 1
-                , "kelvin": k if k is not None else 3500
-                }
-
-            if overrides:
-                for k in result:
-                    if k in overrides:
-                        result[k] = overrides[k]
-
-            for _ in range(length):
-                results.append(result)
+        results = list(make_colors(colors, overrides))
 
         if len(results) > 82:
             raise PhotonsAppError("colors can only go up to 82 colors", got=len(results))

@@ -1,14 +1,76 @@
 from photons_control.planner import Gatherer, Skip, make_plans
 
+from photons_app.errors import BadOption, PhotonsAppError
 from photons_app.actions import an_action
-from photons_app.errors import BadOption
 
-from photons_messages import DeviceMessages, MultiZoneMessages, TileMessages
-from photons_products_registry import capability_for_ids
+from photons_messages import DeviceMessages
+from photons_colour import Parser
 
 from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 import sys
+
+def make_color(specifier):
+    """
+    Return {"hue", "saturation", "brightness", "kelvin"} dictionary for this specifier.
+
+    If it's a string, use photons_colour.Parser.hsbk
+
+    If it's a list, then take h, s, b, k from the list and default to 0, 0, 1, 3500
+    The list can be 0 to 4 items long
+
+    If it's a dictionary, get hue, saturation, brightness, kelvin from it
+    values default to 0, 0, 1, 3500
+    """
+    if isinstance(specifier, str):
+        h, s, b, k = Parser.hsbk(specifier)
+        if b is None:
+            b = 1
+
+    elif isinstance(specifier, list):
+        h, s, b, k = 0, 0, 1, 3500
+        if len(specifier) > 0: h = specifier[0]
+        if len(specifier) > 1: s = specifier[1]
+        if len(specifier) > 2: b = specifier[2]
+        if len(specifier) > 3: k = specifier[3]
+
+    elif isinstance(specifier, dict):
+        h = specifier.get("hue", 0)
+        s = specifier.get("saturation", 0)
+        b = specifier.get("brightness", 1)
+        k = specifier.get("kelvin", 3500)
+
+    return {
+          "hue": h or 0
+        , "saturation": s or 0
+        , "brightness": b if b is not None else 1
+        , "kelvin": k if k is not None else 3500
+        }
+
+def make_colors(colors, overrides=None):
+    """
+    Return [{"hue", "saturation", "brightness", "kelvin"}, ...] colors for these colors and overrides
+
+    Colors must be an array of [[specifier, length], ...]
+
+    We use make_color with each specifier and apply overrides to the result and then
+    yield length amount of the resulting dictionary for each specifier.
+    """
+    for color in colors:
+        if not isinstance(color, list) or len(color) != 2:
+            raise PhotonsAppError("Each color must be [color, length]")
+
+        color, length = color
+
+        result = make_color(color)
+
+        if overrides:
+            for k in result:
+                if k in overrides:
+                    result[k] = overrides[k]
+
+        for _ in range(length):
+            yield result
 
 def find_packet(protocol_register, value, prefix):
     """
