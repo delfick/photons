@@ -354,6 +354,20 @@ class FirmwarePlan(Plan):
         async def info(self):
             return self.dct
 
+@a_plan("version")
+class VersionPlan(Plan):
+    """Return StateVersion.as_dict() for this device"""
+    messages = [DeviceMessages.GetVersion()]
+
+    class Instance(Plan.Instance):
+        def process(self, pkt):
+            if pkt | DeviceMessages.StateVersion:
+                self.dct = pkt.payload.as_dict()
+                return True
+
+        async def info(self):
+            return self.dct
+
 @a_plan("firmware_effects")
 class FirmwareEffectsPlan(Plan):
     """

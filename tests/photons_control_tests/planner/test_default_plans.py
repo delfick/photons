@@ -232,7 +232,7 @@ describe AsyncTestCase, "Default Plans":
 
     describe "FirmwarePlan":
         @mlr.test
-        async it "gets the power", runner:
+        async it "gets the firmware", runner:
             empty = b'\x00\x00\x00\x00\x00\x00\x00\x00'
             l1c = {"build": 1548977726000000000, "reserved6": empty, "version_major": 3, "version_minor": 50}
             l2c = {"build": 1448861477000000000, "reserved6": empty, "version_major": 2, "version_minor": 2}
@@ -248,6 +248,20 @@ describe AsyncTestCase, "Default Plans":
                   , striplcm1.serial: (True, {"firmware": slcm1c})
                   , striplcm2noextended.serial: (True, {"firmware": slcm2nec})
                   , striplcm2extended.serial: (True, {"firmware": slcm2ec})
+                  }
+                )
+
+    describe "VersionPlan":
+        @mlr.test
+        async it "gets the version", runner:
+            got = await self.gather(runner, runner.serials, "version")
+            self.assertEqual(got
+                , { light1.serial: (True, {"version": {"product": 55, "vendor": 1, "version": 0}})
+                  , light2.serial: (True, {"version": {"product": 1, "vendor": 1, "version": 0}})
+
+                  , striplcm1.serial: (True, {"version": {"product": 31, "vendor": 1, "version": 0}})
+                  , striplcm2noextended.serial: (True, {"version": {"product": 32, "vendor": 1, "version": 0}})
+                  , striplcm2extended.serial: (True, {"version": {"product": 32, "vendor": 1, "version": 0}})
                   }
                 )
 
