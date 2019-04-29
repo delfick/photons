@@ -170,10 +170,10 @@ class Canvas:
         Multiple calls to this function will not override existing points on the
         canvas
         """
-        from_x = left_x - tile_width * 1.5
-        to_x = left_x + tile_width * 1.5
-        from_y = top_y - tile_height * 1.5
-        to_y = top_y + tile_height * 1.5
+        from_x = int(left_x - tile_width * 1.5)
+        to_x = int(left_x + tile_width * 1.5)
+        from_y = int(top_y - tile_height * 1.5)
+        to_y = int(top_y + tile_height * 1.5)
 
         i = from_x
         while i < to_x:
