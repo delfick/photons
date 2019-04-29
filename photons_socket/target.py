@@ -148,7 +148,7 @@ class SocketBridge(TransportBridge):
             if serials is None:
                 if found_now:
                     break
-            elif all(target in found for target in wanted_targets):
+            elif all(target in found_now for target in wanted_targets):
                 break
 
         return list(found_now)
