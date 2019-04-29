@@ -1172,6 +1172,9 @@ class DeviceFinder(object):
                 if not found:
                     raise FoundNoDevices()
 
+                if hasattr(afr, "found") and isinstance(afr.found, dict):
+                    afr.found.update(found)
+
                 return found
 
         return Reference()
