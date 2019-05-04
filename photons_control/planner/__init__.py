@@ -19,7 +19,7 @@ Usage is via the Gatherer class:
 
 .. autoclass:: photons_control.planner.gatherer.Gatherer
 
-.. autoclass:: photons_control.planner.plans.make_plans
+.. autofunction:: photons_control.planner.plans.make_plans
 
 Plans
 -----
