@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.13.4 - TBD
+0.13.4 - 4 May 2019
    * Tiny fix to how we determine if we have enough multizone messages that
      shouldn't make a difference in practice.
    * Implemented a new "Planner" API for gathering information from devices
