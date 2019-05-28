@@ -66,9 +66,9 @@ from photons_socket.target import SocketTarget, SocketBridge
 from photons_app.errors import FoundNoDevices
 from photons_app import helpers as hp
 
-from photons_transport.target.retry_options import RetryOptions
 from photons_messages import Services, CoreMessages
 from photons_protocol.messages import Messages
+from photons_transport import RetryOptions
 
 from contextlib import contextmanager
 import binascii
@@ -150,8 +150,8 @@ class MemoryBridge(MemorySocketBridge):
             return True
         return super().is_sock_active(sock)
 
-    def finish(self):
-        super().finish()
+    async def finish(self):
+        await super().finish()
         for target, task in self.receivers.items():
             task.cancel()
 

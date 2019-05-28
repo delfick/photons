@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.target.script import ScriptRunner
+from photons_transport.base.script import ScriptRunner
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase

@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.target.retry_options import RetryOptions, RetryIterator
+from photons_transport import RetryOptions, RetryIterator
 
 from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout
 

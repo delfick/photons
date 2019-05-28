@@ -1,6 +1,6 @@
-from photons_transport.target.script import ScriptRunner, InvalidScript
-from photons_transport.target.bridge import TransportBridge
-from photons_transport.target.item import TransportItem
+from photons_transport.base.bridge import TransportBridge
+from photons_transport.base.script import ScriptRunner
+from photons_transport.base.item import TransportItem
 
 from photons_app.formatter import MergedOptionStringFormatter
 
@@ -12,7 +12,7 @@ from input_algorithms.meta import Meta
 import binascii
 import logging
 
-log = logging.getLogger("photons_transport.target.target")
+log = logging.getLogger("photons_transport.base.target")
 
 class TransportTarget(dictobj.Spec):
     """
@@ -106,16 +106,7 @@ class TransportTarget(dictobj.Spec):
 
     async def close_args_for_run(self, args_for_run):
         """Close an args_for_run"""
-        args_for_run.finish()
-
-    async def get_list(self, args_for_run, **kwargs):
-        """Return us the targets that we can find from this bridge"""
-        found = await args_for_run.find_devices(**kwargs)
-        return sorted([binascii.hexlify(target[:6]).decode() for target in found])
-
-    def device_forgetter(self, args_for_run):
-        """Return a function that may be used to forget a device on this args_for_run"""
-        return args_for_run.forget
+        await args_for_run.finish()
 
     def simplify(self, script_part):
         """

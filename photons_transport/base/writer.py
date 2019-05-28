@@ -1,5 +1,5 @@
-from photons_transport.target.errors import NoDesiredService, CouldntMakeConnection
-from photons_transport.target.result import Result
+from photons_transport.errors import NoDesiredService, CouldntMakeConnection
+from photons_transport.base.result import Result
 
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
@@ -9,7 +9,7 @@ import binascii
 import logging
 import asyncio
 
-log = logging.getLogger("photons_transport.target.writer")
+log = logging.getLogger("photons_transport.base.writer")
 
 class Executor(object):
     """

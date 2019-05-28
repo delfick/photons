@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.target.writer import Writer, NoDesiredService, CouldntMakeConnection
+from photons_transport.base.writer import Writer, NoDesiredService, CouldntMakeConnection
 
 from photons_app.errors import ProgrammerError, PhotonsAppError
 from photons_app.test_helpers import AsyncTestCase
@@ -124,7 +124,7 @@ describe AsyncTestCase, "Writer":
                     , determine_addr = determine_addr
                     , determine_conn = determine_conn
                     ):
-                    with mock.patch("photons_transport.target.writer.Executor", FakeExecutor):
+                    with mock.patch("photons_transport.base.writer.Executor", FakeExecutor):
                         self.assertIs(await self.writer.prepare(services), executor)
 
                 normalise_target.assert_called_once_with(self.packet)
@@ -307,7 +307,7 @@ describe AsyncTestCase, "Writer":
 
                 requests = []
 
-                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                with mock.patch("photons_transport.base.writer.Result", FakeResult):
                     r = await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
                         , self.conn, self.addr
                         , requests = requests
@@ -331,7 +331,7 @@ describe AsyncTestCase, "Writer":
 
                 requests = []
 
-                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                with mock.patch("photons_transport.base.writer.Result", FakeResult):
                     r = await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
                         , self.conn, self.addr
                         , requests = requests
@@ -361,7 +361,7 @@ describe AsyncTestCase, "Writer":
                     self.assertEqual(cl.source, self.source + 5)
                 self.bridge.receiver.register.side_effect = register
 
-                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                with mock.patch("photons_transport.base.writer.Result", FakeResult):
                     await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
                         , self.conn, self.addr
                         , requests = requests
@@ -380,7 +380,7 @@ describe AsyncTestCase, "Writer":
 
                 self.bridge.write_to_conn = asynctest.mock.CoroutineMock(name="write_to_conn")
 
-                with mock.patch("photons_transport.target.writer.Result", FakeResult):
+                with mock.patch("photons_transport.base.writer.Result", FakeResult):
                     await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
                         , self.conn, self.addr
                         , requests = requests

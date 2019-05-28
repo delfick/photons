@@ -3,7 +3,7 @@ import binascii
 import logging
 import asyncio
 
-log = logging.getLogger("photons_transport.target.receiver")
+log = logging.getLogger("photons_transport.base.receiver")
 
 class Receiver(object):
     """Hold onto and routes replies from the bridge"""

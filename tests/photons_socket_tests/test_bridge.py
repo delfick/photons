@@ -6,7 +6,7 @@ from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout, Fake
 from photons_app.errors import TimedOut, FoundNoDevices
 
 from photons_messages import DiscoveryMessages, Services, protocol_register
-from photons_transport.target.retry_options import RetryOptions
+from photons_transport import RetryOptions
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from contextlib import contextmanager

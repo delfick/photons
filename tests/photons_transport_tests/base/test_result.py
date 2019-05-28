@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_transport.target.retry_options import RetryOptions
-from photons_transport.target.result import Result
+from photons_transport.base.result import Result
+from photons_transport import RetryOptions
 
 from photons_app.test_helpers import AsyncTestCase
 

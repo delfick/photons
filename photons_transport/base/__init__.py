@@ -1,6 +1,6 @@
 """
 A transport is essentially functionality for getting messages as objects and sending
-them to devices as binary (or as http) (or as nats messages, etc)
+them to devices as binary
 
 We have three concepts here:
 
@@ -19,47 +19,47 @@ TransportTarget
 The target
 ----------
 
-.. automodule:: photons_transport.target.target
+.. automodule:: photons_transport.base.target
     :members:
 
 The bridge
 ----------
 
-.. automodule:: photons_transport.target.bridge
+.. automodule:: photons_transport.base.bridge
 
 The item
 --------
 
-.. automodule:: photons_transport.target.item
+.. automodule:: photons_transport.base.item
     :members:
 
 The waiter
 ----------
 
-.. automodule:: photons_transport.target.waiter
+.. automodule:: photons_transport.base.waiter
     :members:
 
 The writer
 ----------
 
-.. automodule:: photons_transport.target.writer
+.. automodule:: photons_transport.base.writer
     :members:
 
 Result
 ------
 
-.. automodule:: photons_transport.target.result
+.. automodule:: photons_transport.base.result
     :members:
 
 Retry options
 -------------
 
-.. automodule:: photons_transport.target.retry_options
+.. automodule:: photons_transport.retry_options
     :members:
 """
-from photons_transport.target.target import TransportTarget
-from photons_transport.target.bridge import TransportBridge
-from photons_transport.target.item import TransportItem
+from photons_transport.base.target import TransportTarget
+from photons_transport.base.bridge import TransportBridge
+from photons_transport.base.item import TransportItem
 
 # Aaaand, make vim be quiet
 TransportItem = TransportItem

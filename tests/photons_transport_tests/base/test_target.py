@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_transport.target.target import TransportTarget
-from photons_transport.target.script import InvalidScript
+from photons_transport.base.target import TransportTarget
+from photons_transport.base.script import InvalidScript
 
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.test_helpers import AsyncTestCase
@@ -80,7 +80,7 @@ describe AsyncTestCase, "TransportTarget":
                 FakeScriptRunner = mock.Mock(name="FakeScriptRunner", return_value=res)
 
                 with mock.patch.object(self.target, "simplify", simplify):
-                    with mock.patch("photons_transport.target.target.ScriptRunner", FakeScriptRunner):
+                    with mock.patch("photons_transport.base.target.ScriptRunner", FakeScriptRunner):
                         self.assertIs(self.target.script(raw), res)
 
                 simplify.assert_called_with(raw)
@@ -104,6 +104,7 @@ describe AsyncTestCase, "TransportTarget":
         describe "close_args_for_run":
             async it "just calls finish on the args_for_run":
                 args_for_run = mock.Mock(name="args_for_run")
+                args_for_run.finish = asynctest.mock.CoroutineMock(name="finish")
                 await self.target.close_args_for_run(args_for_run)
                 args_for_run.finish.assert_called_once_with()
 
@@ -124,58 +125,6 @@ describe AsyncTestCase, "TransportTarget":
 
                     args_for_run.assert_called_once_with()
                     close_args_for_run.assert_called_once_with(afr)
-
-        describe "get_list":
-            async it "uses find_devices on the args_for_run":
-                a = mock.Mock(name="a")
-                b = mock.Mock(name="b")
-
-                serial1 = "d073d5000001"
-                serial2 = "d073d5000002"
-                serial3 = "d073d5000003"
-                args_for_run = mock.Mock(name="args_for_run")
-
-                find_devices = asynctest.mock.CoroutineMock(name="find_devices")
-                find_devices.return_value = [
-                    binascii.unhexlify(s) for s in (serial1, serial3, serial2)
-                ]
-                args_for_run.find_devices = find_devices
-
-                self.assertEqual(
-                      await self.target.get_list(args_for_run, a=a, b=b)
-                    , [serial1, serial2, serial3]
-                    )
-
-                args_for_run.find_devices.assert_called_once_with(a=a, b=b)
-
-            async it "uses passed in broadcast value":
-                a = mock.Mock(name="a")
-                b = mock.Mock(name="b")
-                broadcast = mock.Mock(name="broadcast")
-
-                serial1 = "d073d5000001"
-                serial2 = "d073d5000002"
-                serial3 = "d073d5000003"
-                args_for_run = mock.Mock(name="args_for_run")
-
-                find_devices = asynctest.mock.CoroutineMock(name="find_devices")
-                find_devices.return_value = [
-                    binascii.unhexlify(s) for s in (serial1, serial3, serial2)
-                ]
-                args_for_run.find_devices = find_devices
-
-                self.assertEqual(
-                      await self.target.get_list(args_for_run, broadcast=broadcast, a=a, b=b)
-                    , [serial1, serial2, serial3]
-                    )
-
-                args_for_run.find_devices.assert_called_once_with(broadcast=broadcast, a=a, b=b)
-
-        describe "device_forgetter":
-            async it "returns the forget method of the args_for_run":
-                forget = mock.Mock(name="forget")
-                args_for_run = mock.Mock(name="args_for_run", forget=forget)
-                self.assertIs(self.target.device_forgetter(args_for_run), forget)
 
         describe "simplify":
             async it "uses part as is if it already has a run_with on it":

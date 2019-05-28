@@ -125,7 +125,7 @@ For example, inside ``photons_socket``:
 
     from photons_app.errors import TimedOut, FoundNoDevices
 
-    from photons_transport.target import TransportItem, TransportBridge, TransportTarget
+    from photons_transport.base import TransportItem, TransportBridge, TransportTarget
     from photons_messages import DiscoveryMessages, Services
     from photons_protocol.messages import Messages
 

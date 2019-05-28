@@ -6,7 +6,7 @@ from photons_control.test_helpers import Device, Color, ModuleLevelRunner
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
 from photons_app.test_helpers import TestCase, AsyncTestCase
 
-from photons_transport.target.errors import FailedToFindDevice
+from photons_transport.errors import FailedToFindDevice
 from photons_messages import DeviceMessages
 
 from collections import defaultdict

@@ -12,5 +12,10 @@ See :ref:`tasks`.
 Target
 ------
 
-.. automodule:: photons_transport.target
+.. automodule:: photons_transport.base
 """
+
+from photons_transport.retry_options import RetryOptions, RetryIterator
+
+RetryOptions = RetryOptions
+RetryIterator = RetryIterator

@@ -3,7 +3,7 @@ from photons_app import helpers as hp
 import asyncio
 import logging
 
-log = logging.getLogger("photons_transport.target.waiter")
+log = logging.getLogger("photons_transport.base.waiter")
 
 class Waiter(object):
     """

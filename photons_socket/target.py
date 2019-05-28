@@ -10,7 +10,7 @@ from photons_socket.connection import Sockets
 from photons_app.errors import FoundNoDevices
 from photons_app import helpers as hp
 
-from photons_transport.target import TransportItem, TransportBridge, TransportTarget
+from photons_transport.base import TransportItem, TransportBridge, TransportTarget
 from photons_messages import DiscoveryMessages, Services
 from photons_protocol.messages import Messages
 
@@ -58,9 +58,9 @@ class SocketBridge(TransportBridge):
         super(SocketBridge, self).__init__(*args, **kwargs)
         self.sockets = self.Sockets(self.stop_fut, self.received_data)
 
-    def finish(self):
+    async def finish(self):
         self.sockets.finish()
-        super(SocketBridge, self).finish()
+        await super(SocketBridge, self).finish()
 
     # Following methods is only used if it is defined
     # async def write_to_connection(self, conn, addr, packet, bts):

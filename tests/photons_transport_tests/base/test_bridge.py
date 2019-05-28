@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_transport.target.retry_options import RetryOptions
-from photons_transport.target.bridge import TransportBridge
+from photons_transport.base.bridge import TransportBridge
+from photons_transport import RetryOptions
 
 from photons_app.errors import PhotonsAppError, TimedOut
 from photons_app.test_helpers import AsyncTestCase
@@ -71,20 +71,14 @@ describe AsyncTestCase, "TransportBridge":
         describe "finish":
             async it "cancels the stop_fut":
                 assert not self.bridge.stop_fut.done()
-                self.bridge.finish()
+                await self.bridge.finish()
                 assert self.bridge.stop_fut.cancelled()
 
             async it "doesn't break if the stop_fut hasn't been set yet":
                 bridge = mock.Mock(name="bridge", spec=[])
                 assert not hasattr(bridge, "stop_fut")
-                TransportBridge.finish(bridge)
+                await TransportBridge.finish(bridge)
                 assert True, "nothing broke... *shrugs*"
-
-            async it "is called when the bridge is deleted":
-                stop_fut = self.bridge.stop_fut
-                assert not stop_fut.done()
-                del self.bridge
-                assert stop_fut.cancelled()
 
         describe "hooks":
             async it "raise NotImplementedError for them":

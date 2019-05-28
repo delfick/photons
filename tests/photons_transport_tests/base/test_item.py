@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_transport.target.retry_options import RetryOptions
-from photons_transport.target.item import TransportItem
-from photons_transport.target.waiter import Waiter
+from photons_transport.base.item import TransportItem
+from photons_transport.base.waiter import Waiter
+from photons_transport import RetryOptions
 
 from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase, with_timeout

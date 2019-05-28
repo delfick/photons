@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.target.writer import Executor
+from photons_transport.base.writer import Executor
 
 from photons_app.test_helpers import AsyncTestCase
 

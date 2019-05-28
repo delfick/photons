@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.target.receiver import Receiver
+from photons_transport.base.receiver import Receiver
 
 from photons_app.test_helpers import AsyncTestCase
 

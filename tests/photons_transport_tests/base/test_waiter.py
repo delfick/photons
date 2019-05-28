@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_transport.target.retry_options import RetryOptions
-from photons_transport.target.waiter import Waiter
-from photons_transport.target.result import Result
+from photons_transport.base.waiter import Waiter
+from photons_transport.base.result import Result
+from photons_transport import RetryOptions
 
 from photons_app.test_helpers import AsyncTestCase, assertFutCallbacks
 from photons_app.errors import PhotonsAppError
@@ -380,7 +380,7 @@ describe AsyncTestCase, "Waiter":
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
                 self.waiter.results = results
-                with mock.patch("photons_transport.target.waiter.hp.find_and_apply_result", find_and_apply_result):
+                with mock.patch("photons_transport.base.waiter.hp.find_and_apply_result", find_and_apply_result):
                     await self.waiter.writings()
 
                 self.assertIs(self.waiter.result(), res)
@@ -399,7 +399,7 @@ describe AsyncTestCase, "Waiter":
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
                 self.waiter.results = results
-                with mock.patch("photons_transport.target.waiter.hp.find_and_apply_result", find_and_apply_result):
+                with mock.patch("photons_transport.base.waiter.hp.find_and_apply_result", find_and_apply_result):
                     await self.waiter.writings()
 
                 assert self.waiter.cancelled()

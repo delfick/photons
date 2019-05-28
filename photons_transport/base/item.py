@@ -1,4 +1,4 @@
-from photons_transport.target.errors import FailedToFindDevice
+from photons_transport.errors import FailedToFindDevice
 
 from photons_app.errors import TimedOut, RunErrors, DevicesNotFound
 from photons_app.special import SpecialReference
@@ -10,7 +10,7 @@ import binascii
 import asyncio
 import logging
 
-log = logging.getLogger("photons_transport.target.item")
+log = logging.getLogger("photons_transport.base.item")
 
 class Done:
     """Used to specify when we should close a queue"""

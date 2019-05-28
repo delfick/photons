@@ -3,6 +3,15 @@
 ChangeLog
 =========
 
+0.13.5 - TBD
+    * Some code shuffling in photons_transport
+    * Removed get_list and device_forgetter from transport targets
+    * Made TransportBridge.finish an async function
+    * "lifx lan:find_devices" now takes a reference as the first argument, so you
+      can find by filter now. For example, to find all multizone devices::
+         
+         lifx lan:find_devices match:cap=multizone
+
 0.13.4 - 4 May 2019
    * Tiny fix to how we determine if we have enough multizone messages that
      shouldn't make a difference in practice.

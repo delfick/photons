@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_transport.target import TransportItem, TransportBridge, TransportTarget
-from photons_transport.target.errors import FailedToFindDevice
+from photons_transport.base import TransportItem, TransportBridge, TransportTarget
+from photons_transport.errors import FailedToFindDevice
 
 from photons_app.errors import PhotonsAppError, TimedOut, RunErrors, DevicesNotFound
 from photons_app.special import SpecialReference, HardCodedSerials
@@ -210,8 +210,8 @@ class MemoryBridge(TransportBridge):
             for d in self.devices:
                 d.online = True
 
-    def finish(self):
-        super(MemoryBridge, self).finish()
+    async def finish(self):
+        await super(MemoryBridge, self).finish()
         for target, task in self.receivers.items():
             task.cancel()
         for device in self.devices:

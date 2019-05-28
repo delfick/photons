@@ -36,7 +36,7 @@ options to ``run_with``.
 
 For example, the lan target ``run_with`` takes in:
 
-.. automethod:: photons_transport.target.item.TransportItem.run_with
+.. automethod:: photons_transport.base.item.TransportItem.run_with
     :noindex:
 
 Sending multiple packets

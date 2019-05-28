@@ -2,6 +2,8 @@ from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
 from photons_app.errors import RunErrors
 from photons_app import helpers as hp
 
+from photons_transport.errors import FailedToFindDevice
+
 from input_algorithms import spec_base as sb
 import asyncio
 import logging
@@ -205,7 +207,6 @@ def FromGeneratorPerSerial(inner_gen):
     async def gen(reference, args_for_run, **kwargs):
         serials, missing = await find_serials(reference, args_for_run, timeout=kwargs.get("find_timeout", 20))
         for serial in missing:
-            from photons_transport.target.errors import FailedToFindDevice
             yield FailedToFindDevice(serial=serial)
 
         yield [FromGenerator(inner_gen, reference_override=serial) for serial in serials]

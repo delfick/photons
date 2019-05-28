@@ -1,22 +1,19 @@
 """
-.. autoclass:: photons_transport.target.bridge.TransportBridge
+.. autoclass:: photons_transport.base.bridge.TransportBridge
 """
-from photons_transport.target.retry_options import RetryOptions
-from photons_transport.target.receiver import Receiver
-from photons_transport.target.writer import Writer
-from photons_transport.target.waiter import Waiter
+from photons_transport.base.receiver import Receiver
+from photons_transport.base.writer import Writer
+from photons_transport.base.waiter import Waiter
+from photons_transport import RetryOptions
 
-from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
 from input_algorithms import spec_base as sb
 import binascii
-import asyncio
 import logging
 import random
-import time
 
-log = logging.getLogger("photons_transport.target.bridge")
+log = logging.getLogger("photons_transport.base.bridge")
 
 class TransportBridge(object):
     """
@@ -37,7 +34,7 @@ class TransportBridge(object):
 
         # Interact with bridge
 
-        bridge.finish()
+        await bridge.finish()
 
     Writing to the bridge and waiting for a reply looks like:
 
@@ -47,35 +44,35 @@ class TransportBridge(object):
         writer = await bridge.make_writer(packet)
         reply = await bridge.make_waiter(writer)
 
-    .. automethod:: photons_transport.target.bridge.TransportBridge.start
+    .. automethod:: photons_transport.base.bridge.TransportBridge.start
 
-    .. automethod:: photons_transport.target.bridge.TransportBridge.finish
+    .. automethod:: photons_transport.base.bridge.TransportBridge.finish
 
     Useful
-        .. automethod:: photons_transport.target.bridge.TransportBridge.source
+        .. automethod:: photons_transport.base.bridge.TransportBridge.source
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.seq
+        .. automethod:: photons_transport.base.bridge.TransportBridge.seq
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.forget
+        .. automethod:: photons_transport.base.bridge.TransportBridge.forget
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.target_is_at
+        .. automethod:: photons_transport.base.bridge.TransportBridge.target_is_at
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.find_devices
+        .. automethod:: photons_transport.base.bridge.TransportBridge.find_devices
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.find_specific_serials
+        .. automethod:: photons_transport.base.bridge.TransportBridge.find_specific_serials
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.make_writer
+        .. automethod:: photons_transport.base.bridge.TransportBridge.make_writer
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.make_waiter
+        .. automethod:: photons_transport.base.bridge.TransportBridge.make_waiter
 
     Hooks
-        .. automethod:: photons_transport.target.bridge.TransportBridge.write_to_sock
+        .. automethod:: photons_transport.base.bridge.TransportBridge.write_to_sock
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.create_receiver
+        .. automethod:: photons_transport.base.bridge.TransportBridge.create_receiver
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge.spawn_conn
+        .. automethod:: photons_transport.base.bridge.TransportBridge.spawn_conn
 
-        .. automethod:: photons_transport.target.bridge.TransportBridge._find_specific_serials
+        .. automethod:: photons_transport.base.bridge.TransportBridge._find_specific_serials
     """
     Waiter = Waiter
     Writer = Writer
@@ -97,10 +94,9 @@ class TransportBridge(object):
     async def start(self):
         """Hook for logic that happens when the bridge starts"""
 
-    def finish(self):
+    async def finish(self):
         if hasattr(self, "stop_fut"):
             self.stop_fut.cancel()
-    __del__ = finish
 
     # Following method is only used if it is defined
     # async def write_to_conn(self, conn, addr, packet, bts):
