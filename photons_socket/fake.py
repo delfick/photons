@@ -88,9 +88,9 @@ class MemorySocketBridge(SocketBridge):
     async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, timeout=60, broadcast=True, **kwargs):
         res = {}
 
-        broadcast_address = (
-              self.transport_target.default_broadcast if broadcast is True else broadcast
-            ) or self.transport_target.default_broadcast
+        broadcast_address = self.transport_target.default_broadcast
+        if broadcast and broadcast is not True:
+            broadcast_address = broadcast
 
         for target, device in self.transport_target.devices.items():
             if device.is_reachable(broadcast_address):
