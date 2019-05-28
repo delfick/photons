@@ -156,11 +156,6 @@ class TransportItem(object):
         do_raise = error_catcher is None
         error_catcher = [] if do_raise else error_catcher
 
-        broadcast_address = (
-              afr.default_broadcast if broadcast is True else broadcast
-            ) or afr.default_broadcast
-
-
         missing = None
         if isinstance(serials, SpecialReference):
             try:
@@ -192,7 +187,7 @@ class TransportItem(object):
                 , found if found is not None else afr.found
                 , accept_found or broadcast
                 , packets
-                , broadcast_address
+                , broadcast
                 , kwargs.get("find_timeout", 20)
                 , kwargs
                 )
@@ -204,13 +199,7 @@ class TransportItem(object):
             return
 
         # Work out where to send packets
-        if type(broadcast) is tuple:
-            addr = broadcast
-        else:
-            addr = None if broadcast is False else (broadcast_address, 56700)
-
-        # Create our helpers that channel particular arguments into the correct places
-
+        addr = broadcast or None
         retry_options = afr.make_retry_options()
 
         def check_packet(packet):
@@ -297,7 +286,7 @@ class TransportItem(object):
 
         return packets
 
-    async def search(self, afr, found, accept_found, packets, broadcast_address, find_timeout, kwargs):
+    async def search(self, afr, found, accept_found, packets, broadcast, find_timeout, kwargs):
         """Search for the devices we want to send to"""
         serials = list(set([p.serial for _, p in packets if p.target is not None]))
         targets = set(binascii.unhexlify(serial)[:6] for serial in serials)
@@ -307,7 +296,7 @@ class TransportItem(object):
             return False, found, missing
 
         found, missing = await afr.find_specific_serials(serials
-            , broadcast = broadcast_address
+            , broadcast = broadcast
             , raise_on_none = False
             , timeout = find_timeout
             , **kwargs

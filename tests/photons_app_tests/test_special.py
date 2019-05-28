@@ -30,27 +30,6 @@ describe AsyncTestCase, "SpecialReference":
         assert not ref.finding.done()
         assert not ref.found.done()
 
-    describe "broadcast_address":
-        async before_each:
-            self.ref = SpecialReference()
-
-            self.default_broadcast = mock.Mock(name="default_broadcast")
-            self.afr = mock.Mock(name="afr", default_broadcast=self.default_broadcast)
-
-        async it "uses default_broadcast if True":
-            self.assertIs(self.ref.broadcast_address(self.afr, True), self.default_broadcast)
-
-        async it "uses default_broadcast if False":
-            self.assertIs(self.ref.broadcast_address(self.afr, False), self.default_broadcast)
-
-        async it "uses default_broadcast if empty":
-            for b in (None, ""):
-                self.assertIs(self.ref.broadcast_address(self.afr, b), self.default_broadcast)
-
-        async it "uses broadcast otherwise":
-            b = "255.255.255.255"
-            self.assertIs(self.ref.broadcast_address(self.afr, b), b)
-
     describe "find":
         async before_each:
             self.afr = mock.Mock(name="afr")
@@ -134,11 +113,9 @@ describe AsyncTestCase, "SpecialReference":
             self.assertEqual(called, [1, 1])
 
 describe AsyncTestCase, "FoundSerials":
-    async it "calls afr.find_devices with calculated broadcast_address":
+    async it "calls afr.find_devices with broadcast":
         found = mock.Mock(name="found")
         address = mock.Mock(name="address")
-
-        broadcast_address = mock.Mock(name="broadcast_address", return_value=address)
 
         afr = mock.Mock(name="afr")
         afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", return_value=found)
@@ -147,13 +124,10 @@ describe AsyncTestCase, "FoundSerials":
         find_timeout = mock.Mock(name="find_timeout")
 
         ref = FoundSerials()
-        with mock.patch.object(ref, "broadcast_address", broadcast_address):
-            res = await self.wait_for(ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout))
+        res = await self.wait_for(ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout))
 
         self.assertEqual(res, found)
-
-        broadcast_address.assert_called_once_with(afr, broadcast)
-        afr.find_devices.assert_called_once_with(broadcast=address, raise_on_none=True, timeout=find_timeout)
+        afr.find_devices.assert_called_once_with(broadcast=broadcast, raise_on_none=True, timeout=find_timeout)
 
 describe AsyncTestCase, "HardCodedSerials":
     async before_each:
@@ -193,18 +167,13 @@ describe AsyncTestCase, "HardCodedSerials":
             afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
             afr.find_specific_serials.return_value = (found, missing)
 
-            address = mock.Mock(name="address")
-            broadcast_address = mock.Mock(name="broadcast_address", return_value=address)
-
             ref = HardCodedSerials(serials)
-            with mock.patch.object(ref, "broadcast_address", broadcast_address):
-                f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+            f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
             self.assertEqual(f, expected)
 
-            broadcast_address.assert_called_once_with(afr, broadcast)
             afr.find_specific_serials.assert_called_once_with(serials
-                , broadcast = address
+                , broadcast = broadcast
                 , raise_on_none = False
                 , timeout = find_timeout
                 )
@@ -234,8 +203,7 @@ describe AsyncTestCase, "HardCodedSerials":
             afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials", side_effect=AssertionError("Shouldn't be called"))
 
             ref = HardCodedSerials([self.serial1])
-            with mock.patch.object(ref, "broadcast_address", mock.NonCallableMock(name="broadcast_address")):
-                f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+            f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
             self.assertEqual(f, {self.target1: self.info1})
             self.assertEqual(ref.missing(f), [])

@@ -19,7 +19,6 @@ describe AsyncTestCase, "TransportBridge":
         self.stop_fut = asyncio.Future()
         self.transport_target = mock.Mock(name="transport_target")
         self.protocol_register = mock.Mock(name="protocol_register")
-        self.default_broadcast = mock.Mock(name="default_broadcast")
 
     async after_each:
         self.stop_fut.cancel()
@@ -33,16 +32,13 @@ describe AsyncTestCase, "TransportBridge":
         generate_source = mock.Mock(name="generate_source", side_effect=generate_source)
 
         with mock.patch.object(TransportBridge, "generate_source", generate_source):
-            bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register
-                , default_broadcast=self.default_broadcast
-                )
+            bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register)
 
         assert not bridge.stop_fut.done()
         self.assertIs(bridge.transport_target, self.transport_target)
         self.assertIs(bridge.protocol_register, self.protocol_register)
         self.assertIs(bridge.device_source, s1)
         self.assertIs(bridge.broadcast_source, s2)
-        self.assertIs(bridge.default_broadcast, self.default_broadcast)
 
         self.stop_fut.cancel()
         assert bridge.stop_fut.cancelled()
@@ -55,13 +51,10 @@ describe AsyncTestCase, "TransportBridge":
         self.assertIs(bridge.protocol_register, self.protocol_register)
 
         self.assertEqual(bridge.found, {})
-        self.assertEqual(bridge.default_broadcast, "255.255.255.255")
 
     describe "usage":
         async before_each:
-            self.bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register
-                , default_broadcast=self.default_broadcast
-                )
+            self.bridge = TransportBridge(self.stop_fut, self.transport_target, self.protocol_register)
 
         describe "start":
             async it "does nothing by default":

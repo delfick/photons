@@ -99,7 +99,6 @@ class TransportTarget(dictobj.Spec):
         """Create an instance of args_for_run. This is designed to be shared amongst many `script`"""
         afr = self.bridge_kls()(self.final_future, self
             , protocol_register=self.protocol_register
-            , default_broadcast=self.default_broadcast
             )
         await afr.start()
         return afr

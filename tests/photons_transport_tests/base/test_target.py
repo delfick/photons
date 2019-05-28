@@ -96,7 +96,7 @@ describe AsyncTestCase, "TransportTarget":
                 self.assertIs(ret, bridge)
 
                 self.bridge_kls.assert_called_once_with(self.final_future, self.target
-                    , protocol_register=self.protocol_register, default_broadcast="255.255.255.255"
+                    , protocol_register=self.protocol_register
                     )
 
                 bridge.start.assert_called_with()

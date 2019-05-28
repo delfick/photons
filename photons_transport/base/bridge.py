@@ -82,14 +82,13 @@ class TransportBridge(object):
     default_desired_services = None
     _merged_options_formattable = True
 
-    def __init__(self, stop_fut, transport_target, protocol_register, default_broadcast="255.255.255.255"):
+    def __init__(self, stop_fut, transport_target, protocol_register):
         self.transport_target = transport_target
         self.found = {}
         self.stop_fut = hp.ChildOfFuture(stop_fut)
         self.device_source = self.generate_source()
         self.broadcast_source = self.generate_source()
         self.protocol_register = protocol_register
-        self.default_broadcast = default_broadcast
 
     async def start(self):
         """Hook for logic that happens when the bridge starts"""

@@ -129,7 +129,7 @@ class SocketBridge(TransportBridge):
         script = self.transport_target.script(get_service)
 
         kwargs["no_retry"] = True
-        kwargs["broadcast"] = kwargs.get("broadcast", True)
+        kwargs["broadcast"] = kwargs.get("broadcast", True) or True
         kwargs["accept_found"] = True
         kwargs["error_catcher"] = []
 

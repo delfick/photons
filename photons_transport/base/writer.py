@@ -135,7 +135,7 @@ class Writer(object):
             return self.broadcast
 
         if self.broadcast not in (sb.NotSpecified, False):
-            broadcast_addr = self.bridge.default_broadcast if self.broadcast in (True, None) else self.broadcast
+            broadcast_addr = self.bridge.transport_target.default_broadcast if self.broadcast in (True, None) else self.broadcast
             return (broadcast_addr, 56700)
 
         service, addr = self.match_address(serial, services)
@@ -144,7 +144,7 @@ class Writer(object):
             raise NoDesiredService(wanted=self.desired_services, serial=serial, available=service)
 
         if addr and addr[0] is sb.NotSpecified:
-            addr = (self.bridge.default_broadcast, addr[1])
+            addr = (self.bridge.transport_target.default_broadcast, addr[1])
 
         return addr
 

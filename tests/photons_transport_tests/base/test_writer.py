@@ -20,9 +20,14 @@ describe AsyncTestCase, "Writer":
         self.conn = mock.Mock(name="conn")
         self.addr = mock.Mock(name="addr")
         self.found = mock.Mock(name="found")
+
+        self.default_broadcast = "192.168.0.255"
+        self.target = mock.Mock(name="target", default_broadcast=self.default_broadcast)
         self.bridge = mock.Mock(name="bridge"
-            , spec=["receiver", "write_to_sock", "default_desired_services", "default_broadcast", "found"]
+            , spec=["receiver", "write_to_sock", "default_desired_services", "found", "transport_target"]
+            , transport_target = self.target
             )
+
         self.packet = mock.Mock(name="packet")
         self.original = mock.Mock(name="original")
         self.broadcast = mock.Mock(name="broadcast")
@@ -149,7 +154,6 @@ describe AsyncTestCase, "Writer":
 
         describe "determining addr":
             async before_each:
-                self.target = mock.Mock(name="target")
                 self.serial = mock.Mock(name="serial")
                 self.service = mock.Mock(name="service")
 
@@ -159,11 +163,7 @@ describe AsyncTestCase, "Writer":
 
             async it "uses default broadcast if broadcast is True":
                 self.writer.broadcast = True
-
-                default_broadcast = mock.Mock(name="default_broadcast")
-                self.bridge.default_broadcast = default_broadcast
-
-                self.assertEqual(await self.writer.determine_addr(self.target, self.serial), (default_broadcast, 56700))
+                self.assertEqual(await self.writer.determine_addr(self.target, self.serial), (self.default_broadcast, 56700))
 
             async it "uses broadcast if truthy but not True":
                 broadcast = mock.Mock(name="broadcast")
@@ -201,12 +201,11 @@ describe AsyncTestCase, "Writer":
 
                 match_address = mock.Mock(name="match_address", return_value=(self.service, (sb.NotSpecified, self.port)))
                 with mock.patch.object(self.writer, "match_address", match_address):
-                    self.assertEqual(await self.writer.determine_addr(self.serial, services), (self.bridge.default_broadcast, self.port))
+                    self.assertEqual(await self.writer.determine_addr(self.serial, services), (self.default_broadcast, self.port))
 
         describe "determining conn":
             async before_each:
                 self.timeout = mock.Mock(name="timeout")
-                self.target = mock.Mock(name="target")
                 self.addr = mock.Mock(name="addr")
 
             async it "returns the conn as is if it's not None":

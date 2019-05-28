@@ -9,10 +9,6 @@ class SpecialReference:
     Subclasses of this implement an await ``find_serials(afr, *, timeout, broadcast=True)``
     that returns the serials to send messages to
 
-    If broadcast is a boolean (True or False) then we use afr.default_broadcast
-    if broadcast is a falsey value then we use afr.default_broadcast
-    else we use broadcast as is as the broadcast address
-
     find must be an async function that returns ``(found, serials)``
     where serials is ``["d073d500001", "d073d500002", ...]``
     and found is ``{target: {(service, (ip, port)), ...}, ...}``
@@ -30,12 +26,6 @@ class SpecialReference:
     def __init__(self):
         self.found = hp.ResettableFuture()
         self.finding = hp.ResettableFuture()
-
-    def broadcast_address(self, afr, broadcast):
-        if type(broadcast) is bool:
-            return afr.default_broadcast
-        else:
-            return broadcast or afr.default_broadcast
 
     async def find_serials(self, afr, *, timeout, broadcast=True):
         """Must be implemented by the subclass, return ``found`` from this function"""
@@ -95,10 +85,9 @@ class FoundSerials(SpecialReference):
     to all the devices found on the network
     """
     async def find_serials(self, afr, *, timeout, broadcast=True):
-        address = self.broadcast_address(afr, broadcast)
         return await afr.find_devices(
               timeout = timeout
-            , broadcast = address
+            , broadcast = broadcast
             , raise_on_none = True
             )
 
@@ -128,9 +117,8 @@ class HardCodedSerials(SpecialReference):
         found = getattr(afr, "found", {})
 
         if not all(target in found for target in self.targets):
-            address = self.broadcast_address(afr, broadcast)
             found, _ = await afr.find_specific_serials(self.serials
-                , broadcast = address
+                , broadcast = broadcast
                 , raise_on_none = False
                 , timeout = timeout
                 )

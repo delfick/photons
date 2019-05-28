@@ -75,7 +75,6 @@ import binascii
 import logging
 import asyncio
 import socket
-import time
 
 log = logging.getLogger("photons_socket.fake")
 
@@ -90,8 +89,8 @@ class MemorySocketBridge(SocketBridge):
         res = {}
 
         broadcast_address = (
-              self.default_broadcast if broadcast is True else broadcast
-            ) or self.default_broadcast
+              self.transport_target.default_broadcast if broadcast is True else broadcast
+            ) or self.transport_target.default_broadcast
 
         for target, device in self.transport_target.devices.items():
             if device.is_reachable(broadcast_address):

@@ -11,6 +11,8 @@ ChangeLog
       can find by filter now. For example, to find all multizone devices::
          
          lifx lan:find_devices match:cap=multizone
+    * Removed afr.default_broadcast. broadcast=True will use it or you can say
+      afr.transport_target.default_broadcast
 
 0.13.4 - 4 May 2019
    * Tiny fix to how we determine if we have enough multizone messages that
