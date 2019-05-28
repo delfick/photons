@@ -201,6 +201,7 @@ from option_merge_addons import option_merge_addon_hook
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 from input_algorithms.meta import Meta
+from collections.abc import Iterable
 from urllib.parse import parse_qs
 from functools import partial
 import binascii
@@ -1177,7 +1178,14 @@ class DeviceFinder(object):
 
                 return found
 
-        return Reference()
+        ref = Reference()
+        items = filtr.items()
+        if isinstance(items, Iterable):
+            if all(v is sb.NotSpecified for k, v in items if k not in ("force_refresh", "serial")):
+                if filtr["serial"] != sb.NotSpecified:
+                    ref.serials = filtr["serial"]
+
+        return ref
 
 class DeviceFinderWrap(SpecialReference):
     """

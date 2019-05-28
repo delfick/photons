@@ -143,6 +143,7 @@ class ResolveReferencesFromFile(SpecialReference):
         if not serials:
             raise PhotonsAppError("Found no serials in file", filename=self.filename)
 
+        self.serials = serials
         self.reference = HardCodedSerials(serials)
 
     async def find(self, afr, *, timeout, broadcast=True):

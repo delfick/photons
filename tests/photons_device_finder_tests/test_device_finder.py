@@ -184,6 +184,23 @@ describe AsyncTestCase, "DeviceFinder":
                 self.found = {target1: mock.Mock(name="target1"), target2: mock.Mock(name="target2")}
                 self.serials = ["d071", "d072"]
 
+            async it "sets serials if that's the only thing in the filter":
+                filtr = Filter.from_kwargs(serial=["d1", "d2"])
+                ref = self.finder._reference(filtr)
+                self.assertEqual(ref.serials, ["d1", "d2"])
+
+                filtr = Filter.from_kwargs(serial=["d1", "d2"], label="den")
+                ref = self.finder._reference(filtr)
+                assert not hasattr(ref, "serials")
+
+                filtr = Filter.from_kwargs(label="den")
+                ref = self.finder._reference(filtr)
+                assert not hasattr(ref, "serials")
+
+                filtr = Filter.from_kwargs()
+                ref = self.finder._reference(filtr)
+                assert not hasattr(ref, "serials")
+
             async it "does a refresh_from_filter if force_refresh":
                 self.finder.daemon = True
 

@@ -251,6 +251,7 @@ describe AsyncTestCase, "ResolveReferencesFromFile":
             with mock.patch("photons_app.special.HardCodedSerials", FakeHardCodedSerials):
                 r = ResolveReferencesFromFile(fle.name)
 
+        self.assertEqual(r.serials, [serial1, serial2])
         self.assertEqual(r.reference, resolver)
         FakeHardCodedSerials.assert_called_once_with([serial1, serial2])
 
