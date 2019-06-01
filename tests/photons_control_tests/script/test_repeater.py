@@ -10,7 +10,7 @@ from photons_messages import DeviceMessages, LightMessages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from collections import defaultdict
-import time
+import asyncio
 
 light1 = Device("d073d5000001", use_sockets=False)
 light2 = Device("d073d5000002", use_sockets=False)
@@ -20,6 +20,9 @@ mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
+
+def loop_time():
+    return asyncio.get_event_loop().time()
 
 describe AsyncTestCase, "Repeater":
     use_default_loop = True
@@ -85,7 +88,7 @@ describe AsyncTestCase, "Repeater":
 
         got = defaultdict(list)
         async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
-            got[pkt.serial].append((pkt, time.time()))
+            got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 6 for pkts in got.values()):
                 break
 
@@ -127,7 +130,7 @@ describe AsyncTestCase, "Repeater":
 
         got = defaultdict(list)
         async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
-            got[pkt.serial].append((pkt, time.time()))
+            got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 7 for pkts in got.values()):
                 break
 
@@ -155,7 +158,7 @@ describe AsyncTestCase, "Repeater":
 
         got = defaultdict(list)
         async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
-            got[pkt.serial].append((pkt, time.time()))
+            got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(pkts) == 6 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]

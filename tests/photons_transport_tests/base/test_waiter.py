@@ -247,7 +247,7 @@ describe AsyncTestCase, "Waiter":
                 result.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
+                self.assertLess(took, 0.15)
                 self.assertIs(r, res)
                 self.assertEqual(self.writer.mock_calls, [mock.call()])
 
@@ -292,7 +292,7 @@ describe AsyncTestCase, "Waiter":
                 result2.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.15)
+                self.assertLess(took, 0.2)
                 self.assertIs(r, res)
                 self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
 

@@ -12,7 +12,6 @@ from photons_messages import DeviceMessages
 from collections import defaultdict
 from functools import partial
 import asyncio
-import time
 
 light1 = Device("d073d5000001"
     , power = 0
@@ -36,6 +35,9 @@ mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
+
+def loop_time():
+    return asyncio.get_event_loop().time()
 
 describe AsyncTestCase, "FromGenerator":
     use_default_loop = True
@@ -204,7 +206,7 @@ describe AsyncTestCase, "FromGenerator":
         await self.assertScript(runner, gen
             , generator_kwargs = {"reference_override": True}
             , expected = expected
-            , message_timeout = 0.1
+            , message_timeout = 0.2
             , error_catcher = errors
             )
 
@@ -251,7 +253,7 @@ describe AsyncTestCase, "FromGenerator":
 
         async def waiter(pkt):
             if pkt | DeviceMessages.GetPower:
-                got.append(time.time())
+                got.append(loop_time())
             else:
                 assert false, "unknown message"
 
@@ -270,7 +272,7 @@ describe AsyncTestCase, "FromGenerator":
             , light3: [DeviceMessages.GetPower()]
             }
 
-        start = time.time()
+        start = loop_time()
         await self.assertScript(runner, gen, expected=expected)
         self.assertEqual(len(got), 3)
         for t in got:
@@ -283,7 +285,7 @@ describe AsyncTestCase, "FromGenerator":
         async def waiter(pkt):
             if pkt | DeviceMessages.GetPower:
                 if pkt.serial not in got:
-                    got[pkt.serial] = time.time()
+                    got[pkt.serial] = loop_time()
                 if pkt.serial == light2.serial:
                     return False
             else:
@@ -304,9 +306,9 @@ describe AsyncTestCase, "FromGenerator":
             , light3: [DeviceMessages.GetPower()]
             }
 
-        start = time.time()
+        start = loop_time()
         errors = []
-        await self.assertScript(runner, gen, expected=expected, error_catcher=errors, message_timeout=0.15)
+        await self.assertScript(runner, gen, expected=expected, error_catcher=errors, message_timeout=0.2)
         got = list(got.values())
         self.assertEqual(len(got), 3)
         self.assertLess(got[0] - start, 0.1)

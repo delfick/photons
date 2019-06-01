@@ -100,8 +100,8 @@ describe AsyncTestCase, "Default Plans":
             with light2.no_reply_to(DeviceMessages.GetLabel):
                 got = await self.gather(runner, self.two_lights, "presence", "label"
                     , error_catcher = errors
-                    , message_timeout = 0.05
-                    , find_timeout = 0.01
+                    , message_timeout = 0.1
+                    , find_timeout = 0.1
                     )
 
                 self.assertEqual(got
@@ -116,8 +116,8 @@ describe AsyncTestCase, "Default Plans":
             with light2.offline():
                 got = await self.gather(runner, self.two_lights, "presence", "label"
                     , error_catcher = errors
-                    , message_timeout = 0.05
-                    , find_timeout = 0.01
+                    , message_timeout = 0.1
+                    , find_timeout = 0.1
                     )
 
                 self.assertEqual(got

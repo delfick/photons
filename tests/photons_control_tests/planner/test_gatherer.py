@@ -548,7 +548,7 @@ describe AsyncTestCase, "Gatherer":
             error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
             with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
                 with light1.no_reply_to(DeviceMessages.GetLabel):
-                    async for serial, label, info in gatherer.gather(plans, self.two_lights, message_timeout=0.05):
+                    async for serial, label, info in gatherer.gather(plans, self.two_lights, message_timeout=0.1):
                         found.append((serial, label, info))
 
             self.assertEqual(found
@@ -592,7 +592,7 @@ describe AsyncTestCase, "Gatherer":
             called.clear()
             with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
                 with light1.no_reply_to(DeviceMessages.GetLabel):
-                    async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, message_timeout=0.05):
+                    async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, message_timeout=0.1):
                         found.append((serial, completed, info))
 
             self.compare_received(
@@ -616,7 +616,7 @@ describe AsyncTestCase, "Gatherer":
             called.clear()
             try:
                 with light1.no_reply_to(DeviceMessages.GetLabel):
-                    await gatherer.gather_all(plans, self.two_lights, message_timeout=0.05)
+                    await gatherer.gather_all(plans, self.two_lights, message_timeout=0.1)
             except BadRunWithResults as e:
                 self.assertEqual(e.errors, [error])
                 found = e.kwargs["results"]
@@ -687,7 +687,7 @@ describe AsyncTestCase, "Gatherer":
             gatherer = Gatherer(runner.target)
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
             error_catcher = []
-            kwargs = {"message_timeout": 0.05, "error_catcher": error_catcher}
+            kwargs = {"message_timeout": 0.1, "error_catcher": error_catcher}
 
             found = []
             error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
@@ -1614,7 +1614,7 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("presence", plan2=Plan2())
             errors = []
             with light3.no_reply_to(DeviceMessages.GetLabel):
-                got = dict(await gatherer.gather_all(plans, runner.serials, error_catcher=errors, message_timeout=0.05))
+                got = dict(await gatherer.gather_all(plans, runner.serials, error_catcher=errors, message_timeout=0.1))
             self.assertEqual(len(errors), 1)
 
             self.assertEqual(got

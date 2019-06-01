@@ -9,7 +9,11 @@ from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_su
 from unittest import mock
 import asynctest
 import asyncio
+import logging
 import socket
+import time
+
+log = logging.getLogger("tests")
 
 describe AsyncTestCase, "Sockets":
     async before_each:
@@ -374,10 +378,6 @@ describe AsyncTestCase, "Sockets":
             await self.sockets.connect_socket(sock, None, fut, None, 1)
             conn = await self.wait_for(fut, timeout=2)
 
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('0.0.0.0', 0))
-                port = s.getsockname()[1]
-
             class ServerProtocol(asyncio.Protocol):
                 def connection_made(sp, transport):
                     self.transport = transport
@@ -385,7 +385,18 @@ describe AsyncTestCase, "Sockets":
                 def datagram_received(sp, data, addr):
                     self.transport.sendto(data + data, addr)
 
-            remote, _ = await self.loop.create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
+            start = time.time()
+            while time.time() - start < 5:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('0.0.0.0', 0))
+                    port = s.getsockname()[1]
+
+                try:
+                    remote, _ = await self.loop.create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
+                    break
+                except OSError as error:
+                    log.exception(error)
+                    await asyncio.sleep(0.1)
 
             try:
                 conn.sendto(b"wat", ("127.0.0.1", port))

@@ -13,7 +13,6 @@ from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from collections import defaultdict
 from itertools import chain
 import asyncio
-import time
 
 light1 = Device("d073d5000001", use_sockets=False)
 light2 = Device("d073d5000002", use_sockets=False)
@@ -24,18 +23,20 @@ mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
 setUp = mlr.setUp
 tearDown = mlr.tearDown
 
+def loop_time():
+    return asyncio.get_event_loop().time()
+
 describe AsyncTestCase, "Pipeline":
     use_default_loop = True
 
     @mlr.test
     async it "does all messages at once if pipeline isn't used", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = time.time()
+            got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.1)
 
         light1.set_received_processing(waiter)
         light2.set_received_processing(waiter)
@@ -47,10 +48,12 @@ describe AsyncTestCase, "Pipeline":
             ]
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msgs).run_with(runner.serials):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.3)
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msgs).run_with(runner.serials):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 0.2)
 
         assert all(serial in got for serial in runner.serials), got
 
@@ -59,18 +62,16 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[0] | LightMessages.LightState, pkts
             assert pkts[1] | DeviceMessages.StatePower, pkts
 
-        got_times = {serial: times.values() for serial, times in got_times.items()}
-        assert all(serial in got_times for serial in runner.serials), got
+        assert all(serial in got_times for serial in runner.serials), got_times
         diffs = list(chain.from_iterable([t - start for t in ts] for serial, ts in got_times.items()))
-        assert all(diff < 0.05 for diff in diffs), diffs
+        assert all(diff < 0.1 for diff in diffs), diffs
 
     @mlr.test
     async it "waits on replies before sending next if we have a pipeline", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = (len(got_times[pkt.serial]), time.time())
+            got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.05)
 
@@ -84,10 +85,12 @@ describe AsyncTestCase, "Pipeline":
             )
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.4)
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 0.4)
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(got[serial]) == 2 for serial in runner.serials), got
@@ -96,22 +99,19 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-        got_times = {serial: times.values() for serial, times in got_times.items()}
-        assert all(serial in got_times for serial in runner.serials), got
+        assert all(serial in got_times for serial in runner.serials), got_times
 
         for serial, times in got_times.items():
             self.assertEqual(len(times), 2, times)
-            ts = [t for _, t in sorted(times)]
-            self.assertLess(ts[0] - start, 0.06)
-            self.assertGreater(ts[1] - start, 0.04)
+            self.assertLess(times[0] - start, 0.07)
+            self.assertGreater(times[1] - times[0], 0.07)
 
     @mlr.test
     async it "can wait between messages", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = (len(got_times[pkt.serial]), time.time())
+            got_times[pkt.serial].append(loop_time())
 
         light1.set_received_processing(waiter)
         light2.set_received_processing(waiter)
@@ -125,10 +125,12 @@ describe AsyncTestCase, "Pipeline":
             )
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.6)
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 1)
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(got[serial]) == 3 for serial in runner.serials), got
@@ -138,24 +140,21 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[1] | DeviceMessages.StateLabel, pkts
             assert pkts[2] | LightMessages.LightState, pkts
 
-        got_times = {serial: times.values() for serial, times in got_times.items()}
-        assert all(serial in got_times for serial in runner.serials), got
+        assert all(serial in got_times for serial in runner.serials), got_times
 
         for serial, times in got_times.items():
-            ts = [t for _, t in sorted(times)]
-            self.assertEqual(len(ts), 3, ts)
-            self.assertGreater(ts[1] - ts[0], 0.2)
-            self.assertGreater(ts[2] - ts[1], 0.2)
+            self.assertEqual(len(times), 3, times)
+            self.assertLess(times[0] - start, 0.07)
+            self.assertGreater(times[1] - start, 0.2)
 
     @mlr.test
     async it "understands SpecialReference objects", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = (len(got_times[pkt.serial]), time.time())
+            got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.1)
 
         light1.set_received_processing(waiter)
         light2.set_received_processing(waiter)
@@ -167,10 +166,13 @@ describe AsyncTestCase, "Pipeline":
             )
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(FoundSerials()):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.3)
+        async with runner.target.session() as afr:
+            reference = FoundSerials()
+            await reference.find(afr, timeout=1)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(reference, afr):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 0.4)
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(got[serial]) == 2 for serial in runner.serials), got
@@ -179,24 +181,21 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-        got_times = {serial: times.values() for serial, times in got_times.items()}
-        assert all(serial in got_times for serial in runner.serials), got
+        assert all(serial in got_times for serial in runner.serials), got_times
 
         for serial, times in got_times.items():
             self.assertEqual(len(times), 2, times)
-            ts = [t for _, t in sorted(times)]
-            self.assertLess(ts[0] - start, 0.03)
-            self.assertGreater(ts[1] - start, 0.05)
+            self.assertLess(times[0] - start, 0.06)
+            self.assertGreater(times[1] - start, 0.1)
 
     @mlr.test
     async it "devices aren't slowed down by other slow devices", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = (len(got_times[pkt.serial]), time.time())
+            got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.01)
                 if pkt.serial == light1.serial:
                     await asyncio.sleep(0.1)
 
@@ -210,10 +209,12 @@ describe AsyncTestCase, "Pipeline":
             )
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.3)
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 0.4)
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(got[serial]) == 2 for serial in runner.serials), got
@@ -222,28 +223,27 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
+        assert light1.serial in got_times, got_times
         assert light2.serial in got_times, got_times
         assert light3.serial in got_times, got_times
-        gts = {serial: times.values() for serial, times in got_times.items() if serial in (light2.serial, light3.serial)}
 
-        for serial, times in gts.items():
+        for serial in (light2.serial, light3.serial):
+            times = got_times[serial]
             self.assertEqual(len(times), 2, times)
-            ts = [t for _, t in sorted(times)]
-            self.assertLess(ts[0] - start, 0.03)
-            self.assertGreater(ts[1] - start, 0.05)
+            self.assertLess(times[0] - start, 0.07, serial)
+            self.assertLess(times[1] - times[0], 0.07, serial)
 
-        l1ts = [t for _, t in sorted(got_times[light1.serial].values())]
+        l1ts = got_times[light1.serial]
         self.assertEqual(len(l1ts), 2)
-        self.assertLess(l1ts[0] - start, 0.03)
-        self.assertGreater(l1ts[1] - start, 0.15)
+        self.assertLess(l1ts[0] - start, 0.07)
+        self.assertGreater(l1ts[1] - l1ts[0], 0.09)
 
     @mlr.test
     async it "devices are slowed down by other slow devices if synchronized is True", runner:
-        got_times = defaultdict(dict)
+        got_times = defaultdict(list)
 
         async def waiter(pkt):
-            if pkt.pkt_type not in got_times[pkt.serial]:
-                got_times[pkt.serial][pkt.pkt_type] = (len(got_times[pkt.serial]), time.time())
+            got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.05)
                 if pkt.serial == light1.serial:
@@ -260,10 +260,12 @@ describe AsyncTestCase, "Pipeline":
             )
 
         got = defaultdict(list)
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
-            got[pkt.serial].append(pkt)
-        self.assertLess(time.time() - start, 0.3)
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, afr):
+                got[pkt.serial].append(pkt)
+        self.assertLess(loop_time() - start, 0.4)
 
         assert all(serial in got for serial in runner.serials), got
         assert all(len(got[serial]) == 2 for serial in runner.serials), got
@@ -272,19 +274,15 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-        got_times = {serial: times.values() for serial, times in got_times.items()}
-        assert all(serial in got_times for serial in runner.serials), got
+        assert all(serial in got_times for serial in runner.serials), got_times
 
         for serial, times in got_times.items():
             self.assertEqual(len(times), 2, times)
-            ts = [t for _, t in sorted(times)]
-            self.assertLess(ts[0] - start, 0.03)
-            self.assertGreater(ts[1] - start, 0.15)
+            self.assertLess(times[0] - start, 0.07)
+            self.assertGreater(times[1] - times[0], 0.1)
 
     @mlr.test
     async it "doesn't stop on errors", runner:
-        got_times = defaultdict(dict)
-
         async def waiter(pkt):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -302,9 +300,11 @@ describe AsyncTestCase, "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        start = time.time()
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors, message_timeout=0.2):
-            got[pkt.serial].append((pkt, time.time()))
+        async with runner.target.session() as afr:
+            await afr.find_specific_serials(runner.serials)
+            start = loop_time()
+            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors, message_timeout=0.2):
+                got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
         self.assertEqual(len(errors), 1)
@@ -327,8 +327,6 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors", runner:
-        got_times = defaultdict(dict)
-
         async def waiter(pkt):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -366,8 +364,6 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors with synchronized", runner:
-        got_times = defaultdict(dict)
-
         async def waiter(pkt):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -405,8 +401,6 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can raise all errors", runner:
-        got_times = defaultdict(dict)
-
         async def waiter(pkt):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial in (light1.serial, light2.serial):

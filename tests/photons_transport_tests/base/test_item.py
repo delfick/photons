@@ -523,4 +523,4 @@ describe AsyncTestCase, "TransportItem":
                     }
 
                 expected = [r1, r2, r3, r4]
-                await self.assertLimits(results, waits, expected, 1, asyncio.Semaphore(1), timeout=0.1)
+                await self.assertLimits(results, waits, expected, 1, asyncio.Semaphore(1), timeout=0.2)
