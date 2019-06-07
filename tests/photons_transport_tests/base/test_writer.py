@@ -24,7 +24,7 @@ describe AsyncTestCase, "Writer":
         self.default_broadcast = "192.168.0.255"
         self.target = mock.Mock(name="target", default_broadcast=self.default_broadcast)
         self.bridge = mock.Mock(name="bridge"
-            , spec=["receiver", "write_to_sock", "default_desired_services", "found", "transport_target"]
+            , spec=["receiver", "write_to_sock", "default_desired_services", "found", "transport_target", "seq"]
             , transport_target = self.target
             )
 
@@ -284,12 +284,13 @@ describe AsyncTestCase, "Writer":
         describe "write":
             async before_each:
                 self.serial = mock.Mock(name="serial")
-                self.clone = mock.Mock(name="clone")
+                self.source = 666
+
+                self.clone = mock.Mock(name="clone", serial=self.serial, source=self.source)
                 self.bts = mock.Mock(name="bts")
                 self.clone.tobytes.return_value = self.bts
                 self.requests = []
 
-                self.source = 666
 
                 self.register = mock.Mock(name="register")
                 self.receiver = mock.Mock(name="receiver", register=self.register)
@@ -347,28 +348,44 @@ describe AsyncTestCase, "Writer":
                 self.bridge.write_to_sock.assert_called_once_with(self.conn, self.addr, self.clone, self.bts)
                 self.display_written.assert_called_once_with(self.bts, self.serial)
 
-            async it "sets source on the clone to the original source plus number of requests":
+            async it "changes sequence for retries":
                 result = mock.Mock(name="result", spec=["done", "add_done_callback"])
                 result.done.return_value = False
                 FakeResult = mock.Mock(name="Result", return_value=result)
 
-                requests = list(range(5))
                 called = []
 
+                newseq = mock.Mock(name="newseq")
+                oldseq = mock.Mock(name="oldseq")
+                self.clone.sequence = oldseq
+
+                def seq(serial):
+                    self.assertEqual(serial, self.serial)
+                    return newseq
+                self.bridge.seq.side_effect = seq
+
                 def register(cl, *args):
-                    called.append("register")
-                    self.assertEqual(cl.source, self.source + 5)
+                    called.append(("register", cl.source, cl.sequence))
                 self.bridge.receiver.register.side_effect = register
 
                 with mock.patch("photons_transport.base.writer.Result", FakeResult):
                     await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
                         , self.conn, self.addr
-                        , requests = requests
+                        , requests = []
+                        , expect_zero = self.expect_zero
+                        ))
+                    await self.wait_for(self.writer.write(self.serial, self.original, self.clone, self.source
+                        , self.conn, self.addr
+                        , requests = [1]
                         , expect_zero = self.expect_zero
                         ))
 
-                self.bridge.receiver.register.assert_called_once_with(self.clone, result, self.expect_zero)
-                self.assertEqual(called, ["register"])
+                self.bridge.seq.assert_called_once_with(self.serial)
+                self.assertEqual(called
+                    , [ ("register", self.source, oldseq)
+                      , ("register", self.source, newseq)
+                      ]
+                    )
 
             async it "uses write_to_conn if that's available":
                 result = mock.Mock(name="result", spec=["done", "add_done_callback"])

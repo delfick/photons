@@ -199,7 +199,8 @@ class Writer(object):
         depending on how many times we have retried this packet.
         """
         # Set new source on the clone
-        clone.source = original_source + len(requests)
+        if len(requests) > 0:
+            clone.sequence = self.bridge.seq(clone.serial)
 
         result = Result(original, self.broadcast, self.retry_options)
         if not result.done():
