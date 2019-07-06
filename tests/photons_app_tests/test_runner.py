@@ -1,17 +1,274 @@
 # coding: spec
 
-from photons_app.test_helpers import TestCase, AsyncTestCase
-from photons_app.runner import run, runner
+from photons_app.runner import run, on_done_task
+from photons_app.test_helpers import TestCase
+from photons_app import helpers as hp
 
+from textwrap import dedent
 from unittest import mock
-import asynctest
+import subprocess
 import platform
 import asyncio
 import signal
-import nose
+import socket
+import time
+import sys
 import os
 
 describe TestCase, "run":
+    def assertRunnerBehaviour(self, script, expected_finally_block, expected_stdout, expected_stderr, sig=signal.SIGINT):
+        with hp.a_temp_file() as fle:
+            fle.write(script.encode())
+            fle.flush()
+
+            with hp.a_temp_file() as out, hp.a_temp_file() as ss:
+                out.close()
+                ss.close()
+
+                os.remove(out.name)
+                os.remove(ss.name)
+
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.bind(ss.name)
+                s.listen(1)
+
+                pipe = subprocess.PIPE
+                p = subprocess.Popen([sys.executable, fle.name, out.name, ss.name], stdout=pipe, stderr=pipe)
+                s.accept()
+                time.sleep(0.1)
+
+                p.send_signal(sig)
+                p.wait(timeout=2)
+
+                got_stdout = p.stdout.read().decode()
+                got_stderr = p.stderr.read().decode()
+
+                print("=== STDOUT:")
+                print(got_stdout)
+                print("=== STDERR:")
+                print(got_stderr)
+
+                def assertOutput(out, regex):
+                    out = out.strip()
+                    regex = regex.strip()
+                    self.assertEqual(len(out.split("\n")), len(regex.split("\n")))
+                    self.assertRegex(out, f"(?m){regex}")
+
+                assertOutput(got_stdout, expected_stdout)
+                assertOutput(got_stderr, expected_stderr)
+
+                with open(out.name) as o:
+                    got = o.read()
+                self.assertEqual(got.strip(), expected_finally_block.strip())
+
+    it "ensures with statements get cleaned up on SIGINT":
+        script = dedent("""
+        from photons_app.actions import an_action
+
+        from option_merge_addons import option_merge_addon_hook
+        import asyncio
+        import socket
+        import sys
+
+        @option_merge_addon_hook()
+        def __lifx__(*args, **kwargs):
+            pass
+
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(artifact)
+                s.close()
+
+                await asyncio.sleep(20)
+            finally:
+                with open(reference, 'w') as fle:
+                    fle.write("FINALLY")
+
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+            main(["a_test"] + sys.argv[1:])
+        """)
+
+        expected_stdout = dedent("""
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Something went wrong! -- UserQuit
+        \t"User Quit"
+        """)
+
+        expected_stderr = dedent("""
+        [^I]+INFO\s+option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+option_merge.collector Converting photons_app
+        [^I]+INFO\s+option_merge.collector Converting target_register
+        [^I]+INFO\s+option_merge.collector Converting targets
+        """)
+
+        self.assertRunnerBehaviour(script, "FINALLY", expected_stdout, expected_stderr)
+
+    it "ensures with statements get cleaned up on SIGINT when we have an exception":
+        script = dedent("""
+        from photons_app.errors import PhotonsAppError
+        from photons_app.actions import an_action
+
+        from option_merge_addons import option_merge_addon_hook
+        import socket
+        import sys
+
+        @option_merge_addon_hook()
+        def __lifx__(*args, **kwargs):
+            pass
+
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(artifact)
+                s.close()
+                raise PhotonsAppError("WAT")
+            finally:
+                with open(reference, 'w') as fle:
+                    fle.write("FINALLY")
+
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+            main(["a_test"] + sys.argv[1:])
+        """)
+
+        expected_stdout = dedent("""
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Something went wrong! -- PhotonsAppError
+        \t"WAT"
+        """)
+
+        expected_stderr = dedent("""
+        [^I]+INFO\s+option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+option_merge.collector Converting photons_app
+        [^I]+INFO\s+option_merge.collector Converting target_register
+        [^I]+INFO\s+option_merge.collector Converting targets
+        """)
+
+        self.assertRunnerBehaviour(script, "FINALLY", expected_stdout, expected_stderr)
+
+    it "ensures async generators are closed on SIGINT":
+        script = dedent("""
+        from photons_app.actions import an_action
+
+        from option_merge_addons import option_merge_addon_hook
+        import asyncio
+        import socket
+        import sys
+
+        @option_merge_addon_hook()
+        def __lifx__(*args, **kwargs):
+            pass
+
+        async def gen(out, sock):
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(sock)
+                s.close()
+
+                await asyncio.sleep(10)
+                yield 1
+            except GeneratorExit:
+                with open(out, 'w') as fle:
+                    fle.write("GENEXIT")
+                raise
+            finally:
+                with open(out, 'a') as fle:
+                    fle.write(str(sys.exc_info()[0]))
+
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
+            async for i in gen(reference, artifact):
+                pass
+
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+            main(["a_test"] + sys.argv[1:])
+        """)
+
+        expected_stdout = dedent("""
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Something went wrong! -- UserQuit
+        \t"User Quit"
+        """)
+
+        expected_stderr = dedent("""
+        [^I]+INFO\s+option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+option_merge.collector Converting photons_app
+        [^I]+INFO\s+option_merge.collector Converting target_register
+        [^I]+INFO\s+option_merge.collector Converting targets
+        """)
+
+        self.assertRunnerBehaviour(script, "GENEXIT<class 'GeneratorExit'>", expected_stdout, expected_stderr)
+
+    it "stops the program on SIGTERM":
+        if platform.system() == "Windows":
+            return
+
+        script = dedent("""
+        from photons_app.actions import an_action
+
+        from option_merge_addons import option_merge_addon_hook
+        import asyncio
+        import socket
+        import sys
+
+        @option_merge_addon_hook()
+        def __lifx__(*args, **kwargs):
+            pass
+
+        async def gen(out, sock):
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(sock)
+                s.close()
+
+                await asyncio.sleep(10)
+                yield 1
+            except GeneratorExit:
+                with open(out, 'w') as fle:
+                    fle.write("GENEXIT")
+                raise
+            finally:
+                with open(out, 'a') as fle:
+                    fle.write(str(sys.exc_info()[0]))
+
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
+            async for i in gen(reference, artifact):
+                pass
+
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+            main(["a_test"] + sys.argv[1:])
+        """)
+
+        expected_stdout = dedent("""
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Something went wrong! -- ApplicationCancelled
+        \t"The application itself was shutdown"
+        """)
+
+        expected_stderr = dedent("""
+        [^I]+INFO\s+option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+option_merge.collector Converting photons_app
+        [^I]+INFO\s+option_merge.collector Converting target_register
+        [^I]+INFO\s+option_merge.collector Converting targets
+        """)
+
+        self.assertRunnerBehaviour(script, "GENEXIT<class 'GeneratorExit'>", expected_stdout, expected_stderr, sig=signal.SIGTERM)
+
     it "runs the collector and runs cleanup when that's done":
         info = {"cleaned": False, "ran": False}
 
@@ -21,7 +278,7 @@ describe TestCase, "run":
         target_register = mock.Mock(name='target_register')
 
         async def cleanup(tr):
-            self.assertEqual(tr, target_register.target_values)
+            self.assertEqual(tr, target_register.used_targets)
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
@@ -48,7 +305,7 @@ describe TestCase, "run":
         target_register = mock.Mock(name='target_register')
 
         async def cleanup(tr):
-            self.assertEqual(tr, target_register.target_values)
+            self.assertEqual(tr, target_register.used_targets)
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
@@ -69,108 +326,67 @@ describe TestCase, "run":
 
         self.assertEqual(info, {"cleaned": True, "ran": True})
 
-describe AsyncTestCase, "runner":
-    async it "cancels final_future if it gets a SIGTERM":
-        if platform.system() == "Windows":
-            raise nose.SkipTest()
+    describe "on_done_task":
+        it "sets exception on final future if one is risen":
+            final_future = asyncio.Future()
 
-        final = asyncio.Future()
-        reference = mock.Mock(name="reference")
-        chosen_task = mock.Mock(name="chosen_task")
-        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
+            error = Exception("wat")
+            fut = asyncio.Future()
+            fut.set_exception(error)
 
-        async def sleep(*args, **kwargs):
-            await asyncio.sleep(2)
-        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=sleep)
+            on_done_task(final_future, fut)
+            self.assertEqual(final_future.exception(), error)
 
-        configuration = {"photons_app": photons_app, "task_runner": task_runner}
-        collector = mock.Mock(name="collector", configuration=configuration)
+        it "sets exception on final future if one is risen unless it's already cancelled":
+            final_future = asyncio.Future()
+            final_future.cancel()
 
-        t = self.loop.create_task(runner(collector))
-        await asyncio.sleep(0)
-        os.kill(os.getpid(), signal.SIGTERM)
-        await asyncio.sleep(0)
+            error = Exception("wat")
+            fut = asyncio.Future()
+            fut.set_exception(error)
 
-        with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-            await self.wait_for(t)
+            on_done_task(final_future, fut)
+            assert final_future.cancelled()
 
-        assert final.cancelled()
-        task_runner.assert_called_once_with(chosen_task, reference)
+        it "doesn't fail if the final_future is already cancelled when the task finishes":
+            final_future = asyncio.Future()
+            final_future.cancel()
 
-    async it "sets exception on final future if one is risen":
-        final = asyncio.Future()
-        error = Exception("wat")
-        reference = mock.Mock(name="reference")
-        chosen_task = mock.Mock(name="chosen_task")
-        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
-        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=error)
-        configuration = {"photons_app": photons_app, "task_runner": task_runner}
-        collector = mock.Mock(name="collector", configuration=configuration)
+            fut = asyncio.Future()
+            fut.set_result(None)
 
-        t = self.loop.create_task(runner(collector))
-        with self.fuzzyAssertRaisesError(Exception, "wat"):
-            await self.wait_for(t)
+            on_done_task(final_future, fut)
+            assert final_future.cancelled()
 
-        self.assertEqual(final.exception(), error)
-        task_runner.assert_called_once_with(chosen_task, reference)
+        it "doesn't fail if the final_future is already done when the task finishes":
+            final_future = asyncio.Future()
+            final_future.set_result(None)
 
-    async it "sets exception on final future if one is risen unless it's already cancelled":
-        final = asyncio.Future()
-        error = Exception("wat")
-        reference = mock.Mock(name="reference")
-        chosen_task = mock.Mock(name="chosen_task")
-        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
+            fut = asyncio.Future()
+            fut.set_result(None)
 
-        def tr(*args, **kwargs):
-            final.cancel()
-            raise error
-        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=tr)
+            on_done_task(final_future, fut)
+            self.assertEqual(final_future.result(), None)
 
-        configuration = {"photons_app": photons_app, "task_runner": task_runner}
-        collector = mock.Mock(name="collector", configuration=configuration)
+        it "doesn't fail if the final_future already has an exception when the task finishes":
+            final_future = asyncio.Future()
+            error = Exception("WAT")
+            final_future.set_exception(error)
 
-        t = self.loop.create_task(runner(collector))
-        with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-            await self.wait_for(t)
+            fut = asyncio.Future()
+            fut.set_result(None)
 
-        assert final.cancelled()
-        task_runner.assert_called_once_with(chosen_task, reference)
+            on_done_task(final_future, fut)
+            self.assertEqual(final_future.exception(), error)
 
-    async it "doesn't fail if the final_future is already cancelled when the task finishes":
-        final = asyncio.Future()
-        reference = mock.Mock(name="reference")
-        chosen_task = mock.Mock(name="chosen_task")
-        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
+        it "doesn't fail if the final_future already has an exception when the task has an error":
+            final_future = asyncio.Future()
+            error = Exception("WAT")
+            final_future.set_exception(error)
 
-        def tr(*args, **kwargs):
-            final.cancel()
-        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=tr)
+            fut = asyncio.Future()
+            error2 = Exception("WAT2")
+            fut.set_exception(error2)
 
-        configuration = {"photons_app": photons_app, "task_runner": task_runner}
-        collector = mock.Mock(name="collector", configuration=configuration)
-
-        t = self.loop.create_task(runner(collector))
-        with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-            await self.wait_for(t)
-
-        assert final.cancelled()
-        task_runner.assert_called_once_with(chosen_task, reference)
-
-    async it "doesn't fail if the final_future is already done when the task finishes":
-        final = asyncio.Future()
-        reference = mock.Mock(name="reference")
-        chosen_task = mock.Mock(name="chosen_task")
-        photons_app = mock.Mock(name="photons_app", chosen_task=chosen_task, final_future=final, reference=reference)
-
-        def tr(*args, **kwargs):
-            final.set_result(True)
-        task_runner = asynctest.mock.CoroutineMock(name="task_runner", side_effect=tr)
-
-        configuration = {"photons_app": photons_app, "task_runner": task_runner}
-        collector = mock.Mock(name="collector", configuration=configuration)
-
-        t = self.loop.create_task(runner(collector))
-        await self.wait_for(t)
-
-        assert final.done()
-        task_runner.assert_called_once_with(chosen_task, reference)
+            on_done_task(final_future, fut)
+            self.assertEqual(final_future.exception(), error)

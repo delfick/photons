@@ -29,7 +29,7 @@ class Task(dictobj):
         , ("label", "Project"): "The namespace when listing tasks"
         }
 
-    def run(self, target, collector, reference, available_actions, tasks, **extras):
+    async def run(self, target, collector, reference, available_actions, tasks, **extras):
         """Run this task"""
         task_func = self.resolve_task_func(collector, target, available_actions)
 
@@ -37,16 +37,14 @@ class Task(dictobj):
         artifact = self.resolve_artifact(collector)
         reference = self.resolve_reference(collector, task_func, reference, target)
 
-        async def runner():
-            try:
-                return await task_func(collector
-                    , target=target, reference=reference, tasks=tasks, artifact=artifact
-                    , **extras
-                    )
-            finally:
-                if isinstance(reference, SpecialReference):
-                    await reference.finish()
-        return runner()
+        try:
+            return await task_func(collector
+                , target=target, reference=reference, tasks=tasks, artifact=artifact
+                , **extras
+                )
+        finally:
+            if isinstance(reference, SpecialReference):
+                await reference.finish()
 
     def resolve_task_func(self, collector, target, available_actions):
         """

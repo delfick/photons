@@ -97,7 +97,6 @@ describe TestCase, "Collector":
                 , { "$@": extra
                   , "collector": collector
                   , "photons_app": photons_app
-                  , "final_future": AFuture()
                   }
                 )
 
@@ -268,15 +267,22 @@ describe TestCase, "Collector":
             collector = Collector()
             collector.register = register
 
-            configuration = {}
+            final_future = asyncio.Future()
+            photons_app = mock.Mock(name="photons_app", final_future=final_future)
+
+            configuration = {"photons_app": photons_app}
             args_dict = mock.Mock(name="args_dict")
 
             collector.extra_prepare_after_activation(configuration, args_dict)
+            self.assertIs(configuration["final_future"], final_future)
 
             register.post_register.assert_called_once_with({"lifx.photons": {}})
 
         it "creates and sets up a task finder":
-            configuration = {}
+            final_future = asyncio.Future()
+            photons_app = mock.Mock(name="photons_app", final_future=final_future)
+
+            configuration = {"photons_app": photons_app}
             args_dict = mock.Mock(name='args_dict')
 
             collector = Collector()
@@ -443,8 +449,7 @@ describe TestCase, "Collector":
         it "registers converters for serveral things":
             f = asyncio.Future()
             configuration = MergedOptions.using(
-                  { "final_future": f
-                  , "targets":
+                  { "targets":
                     { "one":
                       { "type": "special"
                       , "options": {1: 2}

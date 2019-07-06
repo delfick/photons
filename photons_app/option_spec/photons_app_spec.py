@@ -6,8 +6,8 @@ The specifications are responsible for sanitation, validation and normalisation.
 
 from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.helpers import memoized_property
 from photons_app.errors import BadOption
+from photons_app import helpers as hp
 
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
@@ -53,21 +53,23 @@ class PhotonsApp(dictobj.Spec):
     cleaners = dictobj.Field(lambda: sb.overridden([])
         , help="A list of functions to call when cleaning up at the end of the program"
         )
-    final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True
-        , help="A future representing the end of the program"
-        )
     default_activate_all_modules = dictobj.Field(sb.boolean, default=False
         , help="The collector looks at this to determine if we should default to activating all photons modules"
         )
 
-    @memoized_property
+    @hp.memoized_property
+    def final_future(self):
+        return self.loop.create_future()
+
+    @hp.memoized_property
     def loop(self):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         if self.debug:
             loop.set_debug(True)
         return loop
 
-    @memoized_property
+    @hp.memoized_property
     def extra_as_json(self):
         options = "{}" if self.extra in (None, "", sb.NotSpecified) else self.extra
         try:
@@ -102,7 +104,7 @@ class PhotonsApp(dictobj.Spec):
 class PhotonsAppSpec(object):
     """Knows about photons_app specific configuration"""
 
-    @memoized_property
+    @hp.memoized_property
     def target_name_spec(self):
         """Just needs to be ascii"""
         return sb.valid_string_spec(
@@ -110,7 +112,7 @@ class PhotonsAppSpec(object):
             , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
             )
 
-    @memoized_property
+    @hp.memoized_property
     def photons_app_spec(self):
         """
         Get us an instance of PhotonsApp:
@@ -119,7 +121,7 @@ class PhotonsAppSpec(object):
         """
         return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter)
 
-    @memoized_property
+    @hp.memoized_property
     def target_register_spec(self):
         """
         Make a TargetRegister object
@@ -130,7 +132,7 @@ class PhotonsAppSpec(object):
             , collector=sb.formatted(sb.overridden("{collector}"), formatter=MergedOptionStringFormatter)
             )
 
-    @memoized_property
+    @hp.memoized_property
     def reference_resolver_register_spec(self):
         """
         Make a ReferenceResolerRegister object
@@ -139,7 +141,7 @@ class PhotonsAppSpec(object):
         """
         return sb.create_spec(ReferenceResolerRegister)
 
-    @memoized_property
+    @hp.memoized_property
     def targets_spec(self):
         """
         Get us a dictionary of target name to Target object

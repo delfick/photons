@@ -12,7 +12,7 @@ class TaskFinder(object):
         self.tasks = all_tasks
         self.collector = collector
 
-    def task_runner(self, task, reference, **kwargs):
+    async def task_runner(self, task, reference, **kwargs):
         target = NotSpecified
         if ":" in task:
             target, task = task.split(":", 1)
@@ -20,4 +20,4 @@ class TaskFinder(object):
         if task not in self.tasks:
             raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
 
-        return self.tasks[task].run(target, self.collector, reference, available_actions, self.tasks, **kwargs)
+        return await self.tasks[task].run(target, self.collector, reference, available_actions, self.tasks, **kwargs)

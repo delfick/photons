@@ -62,6 +62,10 @@ class TargetRegister(object):
     def target_values(self):
         return [m()[1] for m in self.targets.values()]
 
+    @property
+    def used_targets(self):
+        return [m()[1] for m in self.targets.values() if m.resolved]
+
     def type_for(self, name):
         """Given the name of a target, return it's type as a string"""
         if name is NotSpecified:
@@ -111,9 +115,12 @@ class TargetRegister(object):
 
         def make():
             if cache["info"] is None:
+                make.resolved = True
                 meta = Meta(self.collector.configuration, []).at("targets").at(name).at("options")
                 cache["info"] = (target.type, self.types[target.type].normalise(meta, target.options))
             return cache["info"]
+
+        make.resolved = False
 
         self.targets[name] = make
 

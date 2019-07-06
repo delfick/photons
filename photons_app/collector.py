@@ -24,7 +24,6 @@ from option_merge import MergedOptions
 from ruamel.yaml import YAML
 import pkg_resources
 import ruamel.yaml
-import asyncio
 import logging
 import os
 
@@ -93,7 +92,6 @@ class Collector(Collector):
             { "$@": photons_app.get("extra", "")
             , "collector": self
             , "photons_app": photons_app
-            , "final_future": asyncio.Future()
             }
         , source = "<args_dict>"
         )
@@ -174,6 +172,12 @@ class Collector(Collector):
         This will determine the target and artifact for you given the
         configuration in the collector.
         """
+        configuration.update(
+              { "final_future": configuration["photons_app"].final_future
+              }
+            , source = "<photons_app>"
+            )
+
         # Post register our addons
         extra_args = {"lifx.photons": {}}
         self.register.post_register(extra_args)

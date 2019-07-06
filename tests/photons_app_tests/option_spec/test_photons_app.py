@@ -14,8 +14,7 @@ import asyncio
 
 describe TestCase, "PhotonsApp":
     before_each:
-        self.final_future = asyncio.Future()
-        self.meta = Meta({"final_future": self.final_future}, []).at("photons_app")
+        self.meta = Meta({}, []).at("photons_app")
 
     def make_photons_app(self, **kwargs):
         return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(self.meta, kwargs)
@@ -33,9 +32,10 @@ describe TestCase, "PhotonsApp":
             assert loop.get_debug()
 
     describe "final_future":
-        it "Is the final future":
+        it "belongs to the loop":
             photons_app = self.make_photons_app()
-            self.assertIs(photons_app.final_future, self.final_future)
+            final_future = photons_app.final_future
+            self.assertIs(final_future._loop, photons_app.loop)
 
     describe "extra_as_json":
         it "converts extra into json dictionary":

@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.20.0 - TBD
+   * Fixed shutdown logic so that finally blocks work when we get a SIGINT
+
 0.13.5 - 6 July 2019
     * Some code shuffling in photons_transport
     * Removed get_list and device_forgetter from transport targets

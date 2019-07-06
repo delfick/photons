@@ -1,11 +1,13 @@
 # coding: spec
 
 from photons_app.registers import Target, TargetRegister, ProtocolRegister, MessagesRegister, ReferenceResolerRegister
+from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import TargetNotFound, ResolverNotFound
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from input_algorithms import spec_base as sb
+from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
 from option_merge import MergedOptions
 from unittest import mock
@@ -140,6 +142,32 @@ describe TestCase, "TargetRegister":
         register.targets["target2"] = maker2
 
         self.assertEqual(register.target_values, [target1, target2])
+
+    it "can get used targets":
+        meta = Meta({}, []).at("targets")
+        targets = PhotonsAppSpec().targets_spec.normalise(meta
+            , { "target1": {"type": "example", "options": {"one": 1}}
+              , "target2": {"type": "example", "options": {"one": 2}}
+              }
+            )
+
+        class T(dictobj.Spec):
+            one = dictobj.Field(sb.integer_spec)
+
+        register = TargetRegister(self.collector)
+        register.register_type("example", T.FieldSpec())
+        for name, options in targets.items():
+            register.add_target(name, options)
+
+        self.assertEqual(register.used_targets, [])
+
+        first = register.resolve("target1")
+        self.assertEqual(first.one, 1)
+        self.assertEqual(register.used_targets, [first])
+
+        second = register.resolve("target2")
+        self.assertEqual(second.one, 2)
+        self.assertEqual(register.used_targets, [first, second])
 
     it "can get type for a target name":
         target1 = mock.Mock(name="target1")
