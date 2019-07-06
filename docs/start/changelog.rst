@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.13.5 - TBD
+0.13.5 - 6 July 2019
     * Some code shuffling in photons_transport
     * Removed get_list and device_forgetter from transport targets
     * Made TransportBridge.finish an async function
