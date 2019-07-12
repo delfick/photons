@@ -61,7 +61,6 @@ def run(collector):
         try:
             targets = target_register.used_targets
             loop.run_until_complete(photons_app.cleanup(targets))
-            loop.run_until_complete(loop.shutdown_asyncgens())
             cancel_all_tasks(loop, task, waiter)
         finally:
             loop.close()

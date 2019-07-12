@@ -175,9 +175,9 @@ describe TestCase, "run":
 
                 await asyncio.sleep(10)
                 yield 1
-            except GeneratorExit:
+            except asyncio.CancelledError:
                 with open(out, 'w') as fle:
-                    fle.write("GENEXIT")
+                    fle.write("CANCELLED")
                 raise
             finally:
                 with open(out, 'a') as fle:
@@ -208,7 +208,7 @@ describe TestCase, "run":
         [^I]+INFO\s+option_merge.collector Converting targets
         """)
 
-        self.assertRunnerBehaviour(script, "GENEXIT<class 'GeneratorExit'>", expected_stdout, expected_stderr)
+        self.assertRunnerBehaviour(script, "CANCELLED<class 'concurrent.futures._base.CancelledError'>", expected_stdout, expected_stderr)
 
     it "stops the program on SIGTERM":
         if platform.system() == "Windows":
@@ -234,9 +234,9 @@ describe TestCase, "run":
 
                 await asyncio.sleep(10)
                 yield 1
-            except GeneratorExit:
+            except asyncio.CancelledError:
                 with open(out, 'w') as fle:
-                    fle.write("GENEXIT")
+                    fle.write("CANCELLED")
                 raise
             finally:
                 with open(out, 'a') as fle:
@@ -267,7 +267,7 @@ describe TestCase, "run":
         [^I]+INFO\s+option_merge.collector Converting targets
         """)
 
-        self.assertRunnerBehaviour(script, "GENEXIT<class 'GeneratorExit'>", expected_stdout, expected_stderr, sig=signal.SIGTERM)
+        self.assertRunnerBehaviour(script, "CANCELLED<class 'concurrent.futures._base.CancelledError'>", expected_stdout, expected_stderr, sig=signal.SIGTERM)
 
     it "runs the collector and runs cleanup when that's done":
         info = {"cleaned": False, "ran": False}

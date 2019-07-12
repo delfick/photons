@@ -404,7 +404,10 @@ class FromGenerator(object):
                     return
 
                 if res.cancelled():
+                    for f in fs:
+                        f.cancel()
                     complete.cancel()
+                    return
 
                 for f in fs:
                     if f.cancelled():
