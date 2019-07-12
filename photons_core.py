@@ -7,7 +7,7 @@ __shortdesc__ = "Requiring this module will in turn require all lifx-photons-cor
 
 wanted = [
       "protocol"
-    , "socket"
+    , "transport"
     , "control"
     , "messages"
     , "colour"

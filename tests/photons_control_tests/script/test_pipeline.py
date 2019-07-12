@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner
+from photons_control import test_helpers as chp
 from photons_control.script import Pipeline
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
@@ -8,17 +8,18 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, LightMessages
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from collections import defaultdict
 from itertools import chain
 import asyncio
 
-light1 = Device("d073d5000001", use_sockets=False)
-light2 = Device("d073d5000002", use_sockets=False)
-light3 = Device("d073d5000003", use_sockets=False)
+light1 = FakeDevice("d073d5000001", chp.default_responders())
+light2 = FakeDevice("d073d5000002", chp.default_responders())
+light3 = FakeDevice("d073d5000003", chp.default_responders())
 
-mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
+mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -33,14 +34,14 @@ describe AsyncTestCase, "Pipeline":
     async it "does all messages at once if pipeline isn't used", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.1)
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msgs = [
               DeviceMessages.SetPower(level=0)
@@ -70,14 +71,14 @@ describe AsyncTestCase, "Pipeline":
     async it "waits on replies before sending next if we have a pipeline", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.05)
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -110,12 +111,12 @@ describe AsyncTestCase, "Pipeline":
     async it "can wait between messages", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -151,14 +152,14 @@ describe AsyncTestCase, "Pipeline":
     async it "understands SpecialReference objects", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.1)
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -192,16 +193,16 @@ describe AsyncTestCase, "Pipeline":
     async it "devices aren't slowed down by other slow devices", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.01)
                 if pkt.serial == light1.serial:
                     await asyncio.sleep(0.1)
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -242,16 +243,16 @@ describe AsyncTestCase, "Pipeline":
     async it "devices are slowed down by other slow devices if synchronized is True", runner:
         got_times = defaultdict(list)
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             got_times[pkt.serial].append(loop_time())
             if pkt | DeviceMessages.SetPower:
                 await asyncio.sleep(0.05)
                 if pkt.serial == light1.serial:
                     await asyncio.sleep(0.1)
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -283,14 +284,14 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "doesn't stop on errors", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
                     return False
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -327,14 +328,14 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
                     return False
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -364,14 +365,14 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors with synchronized", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
                     return False
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)
@@ -401,14 +402,14 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can raise all errors", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial in (light1.serial, light2.serial):
                     return False
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
               DeviceMessages.SetPower(level=0)

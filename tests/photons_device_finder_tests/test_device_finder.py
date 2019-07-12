@@ -124,9 +124,7 @@ describe AsyncTestCase, "DeviceFinder":
                 self.loops.store = store
 
                 found = mock.Mock(name="found")
-                found.keys.return_value = ["d1", "d2"]
-
-                serials = mock.Mock(name="serials")
+                serials = ["d1", "d2"]
 
                 reference = mock.Mock(name="reference")
                 reference.find = asynctest.mock.CoroutineMock(name="find", return_value=(found, serials))

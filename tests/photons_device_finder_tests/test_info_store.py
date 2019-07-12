@@ -6,9 +6,12 @@ from photons_app.test_helpers import AsyncTestCase
 from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
+from photons_transport.comms.base import Found
+
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from input_algorithms import spec_base as sb
 from unittest import mock
+import asynctest
 import binascii
 import asyncio
 import time
@@ -40,6 +43,11 @@ describe AsyncTestCase, "InfoStore":
         async before_each:
             self.loops = mock.Mock(name="loops")
             self.store = InfoStore(self.loops)
+
+        def pretend_services(self):
+            transport = mock.Mock(name="transport")
+            transport.close = asynctest.mock.CoroutineMock(name="close")
+            return {"UDP": transport}
 
         describe "finish":
             async it "cancels everything in tasks_by_target":
@@ -189,7 +197,9 @@ describe AsyncTestCase, "InfoStore":
             async it "sets or resets found":
                 t1 = binascii.unhexlify("d073d5000001")
                 t2 = binascii.unhexlify("d073d5000002")
-                found = {t1: mock.Mock(name="services")}
+                found = Found()
+                found[t1] = self.pretend_services()
+
                 self.store.update_found(found, query_new_devices=False)
                 self.assertEqual(await self.wait_for(self.store.found), found)
 
@@ -203,7 +213,10 @@ describe AsyncTestCase, "InfoStore":
                 t3 = binascii.unhexlify("d073d5000003")
 
                 self.store.by_target[t3] = mock.Mock(name="five")
-                found = {t1: mock.Mock(name="three"), t2: mock.Mock(name="four"), t3: mock.Mock(name="five")}
+                found = Found()
+                found[t1] = self.pretend_services()
+                found[t2] = self.pretend_services()
+                found[t3] = self.pretend_services()
 
                 futs = {t1: asyncio.Future(), t2: asyncio.Future()}
 
@@ -216,11 +229,13 @@ describe AsyncTestCase, "InfoStore":
                 await self.wait_for(asyncio.wait(futs.values()))
 
             async it "stores a task in tasks_by_target until it is finished":
-                self.store.by_target["five"] = mock.Mock(name="five")
                 t1 = binascii.unhexlify("d073d5000001")
                 t2 = binascii.unhexlify("d073d5000002")
-                t3 = binascii.unhexlify("d073d5000002")
-                found = {t1: mock.Mock(name="three"), t2: mock.Mock(name="four"), t3: mock.Mock(name="five")}
+                t3 = binascii.unhexlify("d073d5000003")
+                found = Found()
+                found[t1] = self.pretend_services()
+                found[t2] = self.pretend_services()
+                found[t3] = self.pretend_services()
 
                 futs = {t1: asyncio.Future(), t2: asyncio.Future()}
 
@@ -231,7 +246,7 @@ describe AsyncTestCase, "InfoStore":
                 self.loops.add_new_device = add_new_device
                 self.store.update_found(found)
 
-                self.assertEqual(len(self.store.tasks_by_target), 2)
+                self.assertEqual(len(self.store.tasks_by_target), 3)
                 await self.wait_for(asyncio.wait(futs.values()))
                 await asyncio.sleep(0.01)
                 self.assertEqual(len(self.store.tasks_by_target), 0)
@@ -276,11 +291,10 @@ describe AsyncTestCase, "InfoStore":
 
         describe "found_from_filter":
             async it "waits on points from filtr and removes found that doesn't match":
-                found = {
-                      "one": mock.Mock(name="one_services")
-                    , "two": mock.Mock(name="two_services")
-                    , "three": mock.Mock(name="three_services")
-                    }
+                found = Found()
+                found["d073d5000001"] = self.pretend_services()
+                found["d073d5000002"] = self.pretend_services()
+                found["d073d5000003"] = self.pretend_services()
 
                 one = mock.Mock(name="one_device")
                 one.matches.return_value = False
@@ -288,26 +302,37 @@ describe AsyncTestCase, "InfoStore":
                 two = mock.Mock(name="two_device")
                 two.matches.return_value = True
 
-                self.store.by_target["one"] = one
-                self.store.by_target["two"] = two
+                self.store.by_target[binascii.unhexlify("d073d5000001")] = one
+                self.store.by_target[binascii.unhexlify("d073d5000002")] = two
+
+                ts = []
+                called = []
 
                 async def set_light_state():
+                    called.append("set_light_state")
                     self.store.futures[InfoPoints.LIGHT_STATE].set_result(True)
                     self.store.found.set_result(found)
 
                 async def set_group_state():
+                    called.append('set_group_state')
                     self.store.futures[InfoPoints.GROUP].set_result(True)
-                    hp.async_as_background(set_light_state())
+                    ts.append(hp.async_as_background(set_light_state()))
 
                 async def start_chain():
+                    called.append("start_chain")
                     await asyncio.sleep(0.1)
-                    hp.async_as_background(set_group_state())
+                    ts.append(hp.async_as_background(set_group_state()))
 
                 filtr = mock.Mock(name="filtr", points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP], matches_all=False)
-                hp.async_as_background(start_chain())
+                ts.append(hp.async_as_background(start_chain()))
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
-                self.assertEqual(res, {"two": found["two"]})
+                self.assertEqual(called, ["start_chain", "set_group_state", 'set_light_state'])
+                for t in ts:
+                    await t
+                want = Found()
+                want["d073d5000002"] = found["d073d5000002"]
+                self.assertEqual(res, want)
 
                 one.matches.assert_called_once_with(filtr)
                 two.matches.assert_called_once_with(filtr)
@@ -315,17 +340,16 @@ describe AsyncTestCase, "InfoStore":
                 self.assertEqual(await self.wait_for(self.store.found), found)
 
             async it "matches all found if filtr.matches_all":
-                found = {
-                      "one": mock.Mock(name="one_services")
-                    , "two": mock.Mock(name="two_services")
-                    , "three": mock.Mock(name="three_services")
-                    }
+                found = Found()
+                found["d073d5000001"] = self.pretend_services()
+                found["d073d5000002"] = self.pretend_services()
+                found["d073d5000003"] = self.pretend_services()
 
                 one = mock.Mock(name="one_device")
                 two = mock.Mock(name="two_device")
 
-                self.store.by_target["one"] = one
-                self.store.by_target["two"] = two
+                self.store.by_target["d073d5000001"] = one
+                self.store.by_target["d073d5000002"] = two
 
                 async def set_light_state():
                     self.store.futures[InfoPoints.LIGHT_STATE].set_result(True)
@@ -343,7 +367,10 @@ describe AsyncTestCase, "InfoStore":
                 hp.async_as_background(start_chain())
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
-                self.assertEqual(res, {"one": found["one"], "two": found["two"]})
+                want = Found()
+                want["d073d5000001"] = found["d073d5000001"]
+                want["d073d5000002"] = found["d073d5000002"]
+                self.assertEqual(res, want)
 
                 self.assertEqual(len(one.matches.mock_calls), 0)
                 self.assertEqual(len(two.matches.mock_calls), 0)
@@ -351,53 +378,67 @@ describe AsyncTestCase, "InfoStore":
                 self.assertEqual(await self.wait_for(self.store.found), found)
 
             async it "waits on all points if for_info":
-                found1 = {"four": mock.Mock(name="four_services")}
+                found1 = Found()
+                found1["d073d5000004"] = self.pretend_services()
 
-                found2 = {
-                      "one": mock.Mock(name="one_services")
-                    , "two": mock.Mock(name="two_services")
-                    , "three": mock.Mock(name="three_services")
-                    }
+                found2 = Found()
+                found2["d073d5000001"] = self.pretend_services()
+                found2["d073d5000002"] = self.pretend_services()
+                found2["d073d5000003"] = self.pretend_services()
 
                 one = mock.Mock(name="one_device")
                 two = mock.Mock(name="two_device")
 
-                self.store.by_target["one"] = one
-                self.store.by_target["two"] = two
+                self.store.by_target["d073d5000001"] = one
+                self.store.by_target["d073d5000002"] = two
 
                 done = asyncio.Future()
+                ts = []
+                called = []
 
                 async def set_rest_state():
+                    called.append('set_rest_state')
                     for point in InfoPoints:
                         if point not in (InfoPoints.LIGHT_STATE, InfoPoints.GROUP):
                             self.store.futures[point].set_result(True)
                         self.store.found.reset()
                         self.store.found.set_result(found2)
 
-                        # We do an await here and set done so that we can be sure that
-                        # found_from_filter did wait for LIGHT_STATE to finish
-                        await asyncio.sleep(0.1)
-                        self.store.futures[InfoPoints.LIGHT_STATE].set_result(True)
-                        done.set_result(True)
+                    # We do an await here and set done so that we can be sure that
+                    # found_from_filter did wait for LIGHT_STATE to finish
+                    await asyncio.sleep(0.1)
+                    self.store.futures[InfoPoints.LIGHT_STATE].set_result(True)
+                    done.set_result(True)
+                    called.append("done")
 
                 async def set_group_state():
+                    called.append('set_group_state')
                     self.store.futures[InfoPoints.GROUP].set_result(True)
 
                     # Set found to make sure we aren't just waiting on found
                     # but are waiting for all the info points first
                     self.store.found.set_result(found1)
-                    hp.async_as_background(set_rest_state())
+                    ts.append(hp.async_as_background(set_rest_state()))
 
                 async def start_chain():
+                    called.append('start_chain')
                     await asyncio.sleep(0.1)
-                    hp.async_as_background(set_group_state())
+                    ts.append(hp.async_as_background(set_group_state()))
 
                 filtr = mock.Mock(name="filtr", points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP], matches_all=True)
-                hp.async_as_background(start_chain())
+                ts.append(hp.async_as_background(start_chain()))
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
+                self.assertEqual(called, ["start_chain", "set_group_state", "set_rest_state", "done"])
                 self.assertEqual(done.result(), True)
-                self.assertEqual(res, {"one": found2["one"], "two": found2["two"]})
+                await done
+                for t in ts:
+                    await t
+
+                want = Found()
+                want["d073d5000001"] = found2["d073d5000001"]
+                want["d073d5000002"] = found2["d073d5000002"]
+                self.assertEqual(res, want)
 
                 self.assertEqual(await self.wait_for(self.store.found), found2)
 

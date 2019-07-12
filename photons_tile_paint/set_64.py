@@ -137,6 +137,14 @@ class Set64Maker:
             return self.extra["sequence"]
 
         @property
+        def pkt_type(self):
+            return TileMessages.Set64.Payload.message_type
+
+        @property
+        def protocol(self):
+            return 1024
+
+        @property
         def is_dynamic(self):
             return False
 

@@ -1,19 +1,25 @@
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from photons_messages import (
       LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
     , MultiZoneEffectType, TileEffectType
     , protocol_register
     )
-from photons_socket.fake import FakeDevice, MemorySocketTarget, MemoryTarget
-from photons_products_registry import capability_for_ids
-from photons_protocol.types import Type as T
+from photons_products_registry import (
+      capability_for_ids
+    , ProductRegistries, VendorRegistry, LIFIProductRegistry
+    )
+from photons_transport.targets import MemoryTarget
+from photons_protocol.types import enum_spec
+from photons_transport.fake import Responder
 
 from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
-from contextlib import contextmanager
-from collections import defaultdict
+from input_algorithms.meta import Meta
+import logging
 import asyncio
+
+log = logging.getLogger("photons_control.test_helpers")
 
 class HSBKClose:
     """
@@ -34,321 +40,305 @@ class HSBKClose:
         for k in other:
             diff = abs(other[k] - self.data[k])
             precision = 1 if k in ("hue", "kelvin") else 0.1
-            if round(diff) > precision:
+            if diff > precision:
                 return False
 
         return True
 
-def pktkeys(msgs, keep_duplicates=False):
-    keys = []
-    for msg in msgs:
-        clone = msg.payload.clone()
-        if hasattr(clone, "instanceid"):
-            clone.instanceid = 0
-        for name, typ in clone.Meta.field_types:
-            if clone.actual(name) is sb.NotSpecified and isinstance(typ, type(T.Reserved)):
-                clone[name] = None
-
-        key = (msg.protocol, msg.pkt_type, repr(clone))
-        if key not in keys or keep_duplicates:
-            keys.append(key)
-    return keys
-
 class Color(dictobj):
     fields = ["hue", "saturation", "brightness", "kelvin"]
 
-class Device(FakeDevice):
-    def __init__(self, serial, *
-        , label = ""
-        , power = 0
-        , infrared = 0
-        , product_id = 22
-        , firmware_major = 1
-        , firmware_minor = 22
-        , firmware_build = 1502237570000000000
-        , color = Color(0, 0, 1, 3500)
-        , zones = [Color(0, 0, 0, 3500)] * 8
-        , **kwargs
-        ):
-        super().__init__(serial, protocol_register, **kwargs)
+class LightStateResponder(Responder):
+    _fields = [
+          ("color", lambda: Color(0, 0, 1, 3500))
+        , ("power", lambda: 0)
+        , ("label", lambda: "")
+        ]
 
-        self.product_id = product_id
-        self.capability = capability_for_ids(self.product_id, 1)
-
-        def reset():
-            self.online = True
-            self.label = label
-            self.set_replies = defaultdict(list)
-
-            self.received = []
-            self.received_processing = None
-
-            self.change_hsbk(color)
-            self.change_power(power)
-            self.change_zones(zones)
-            self.change_infrared(infrared)
-            self.change_zones_effect(MultiZoneEffectType.OFF)
-            self.change_tile_effect(TileEffectType.OFF)
-
-            self.change_firmware(firmware_build, firmware_major, firmware_minor)
-
-            self._no_reply_to = ()
-
-        self.reset = reset
-        reset()
-
-    def set_reply(self, kls, msg):
-        self.set_replies[kls].append(msg)
-
-    @property
-    def has_extended_multizone(self):
-        return self.capability.has_multizone and self.capability.has_extended_multizone(self.firmware_major, self.firmware_minor)
-
-    def set_received_processing(self, processor):
-        if self.use_sockets:
-            assert False, "Setting received_processing callback on a device that won't ever use it"
-        self.received_processing = processor
-
-    def change_power(self, power):
-        self.power = power
-
-    def change_infrared(self, infrared):
-        self.infrared = infrared
-
-    def change_label(self, label):
-        self.label = label
-
-    def change_zones(self, zones):
-        if len(zones) > 82:
-            raise PhotonsAppError("Can only have up to 82 zones!")
-        self.zones = zones
-
-    def change_zones_effect(self, effect):
-        if self.capability.has_multizone:
-            self.zones_effect = effect
-
-    def change_tile_effect(self, effect):
-        if self.capability.has_chain:
-            self.tile_effect = effect
-
-    def change_hsbk(self, color):
-        self.hue = color.hue
-        self.saturation = color.saturation
-        self.brightness = color.brightness
-        self.kelvin = color.kelvin
-
-    def change_firmware(self, firmware_build, firmware_major, firmware_minor):
-        self.firmware_build = firmware_build
-        self.firmware_major = firmware_major
-        self.firmware_minor = firmware_minor
-
-    def compare_received(self, expected, keep_duplicates=False):
-        expect_keys = pktkeys(expected, keep_duplicates)
-        got_keys = pktkeys(self.received, keep_duplicates)
-
-        def do_print():
-            print(self.serial)
-            print("GOT:")
-            for key in got_keys:
-                print(f"\t{key}")
-            print()
-            print("EXPECTED:")
-            for key in expect_keys:
-                print(f"\t{key}")
-            print()
-
-        if len(expect_keys) != len(got_keys):
-            do_print()
-            assert False, "Expected a different number of messages to what we got"
-
-        different = False
-        for i, (got, expect) in enumerate(zip(got_keys, expect_keys)):
-            if got != expect:
-                print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
-                different = True
-
-        if different:
-            print("=" * 80)
-            do_print()
-            assert False, "Expected messages to be the same"
-
-    def compare_received_klses(self, expected, keep_duplicates=False):
-        got = self.received
-        got_keys = pktkeys(self.received, keep_duplicates)
-
-        def do_print():
-            print(self.serial)
-            print("GOT:")
-            for key in got_keys:
-                print(f"\t{key}")
-            print()
-            print("EXPECTED:")
-            for kls in expected:
-                print(f"\t{kls}")
-            print()
-
-        if len(expected) != len(got):
-            do_print()
-            assert False, "Expected a different number of messages to what we got"
-
-        different = False
-        for i, (got, expect) in enumerate(zip(got, expected)):
-            if not got | expect:
-                print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
-                different = True
-
-        if different:
-            print("=" * 80)
-            do_print()
-            assert False, "Expected messages to be the same"
-
-    def reset_received(self):
-        self.received = []
-
-    async def async_got_message(self, pkt):
-        if self.received_processing:
-            if await self.received_processing(pkt) is False:
-                return
-
-        async for msg in super().async_got_message(pkt):
-            yield msg
-
-    @contextmanager
-    def no_reply_to(self, *types):
-        previous_no_reply_to = self._no_reply_to
-        try:
-            self._no_reply_to = self._no_reply_to + types
-            yield
-        finally:
-            self._no_reply_to = previous_no_reply_to
-
-    def ack_for(self, pkt, protocol):
-        if not any(pkt | t for t in self._no_reply_to):
-            return super().ack_for(pkt, protocol)
-
-    def response_for(self, pkt, protocol):
-        for res in super().response_for(pkt, protocol):
-            if not any(pkt | t for t in self._no_reply_to):
-                yield res
-
-    def make_response(self, pkt, protocol):
-        self.received.append(pkt)
-
-        for kls, msgs in self.set_replies.items():
-            if msgs and pkt | kls:
-                return msgs.pop()
-
-        if pkt | LightMessages.GetColor:
-            return self.light_state_message()
-
-        elif pkt | DeviceMessages.SetPower or pkt | LightMessages.SetLightPower:
-            res = DeviceMessages.StatePower(level=pkt.level)
-            self.change_power(pkt.level)
-            return res
+    async def respond(self, device, pkt, source):
+        if pkt | DeviceMessages.GetLabel:
+            yield self.make_label_response(device)
+        elif pkt | DeviceMessages.SetLabel:
+            device.attrs.label = pkt.label
+            yield self.make_label_response(device)
 
         elif pkt | DeviceMessages.GetPower:
-            return DeviceMessages.StatePower(level=self.power)
+            yield self.make_power_response(device)
+        elif pkt | DeviceMessages.SetPower or pkt | LightMessages.SetLightPower:
+            res = self.make_power_response(device)
+            device.attrs.power = pkt.level
+            yield res
 
-        elif pkt | LightMessages.GetInfrared:
-            return LightMessages.StateInfrared(brightness=self.infrared)
+        elif pkt | LightMessages.GetColor:
+            yield self.make_light_response(device)
+        elif pkt | LightMessages.SetColor or pkt | LightMessages.SetWaveform:
+            res = self.make_light_response(device)
+            device.attrs.color = Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin)
+            yield res
+        elif pkt | LightMessages.SetWaveformOptional:
+            res = self.make_light_response(device)
 
-        elif pkt | LightMessages.SetInfrared:
-            self.change_infrared(pkt.brightness)
-            return LightMessages.StateInfrared(brightness=self.infrared)
+            color = Color(**device.attrs.color.as_dict())
+            for p in ("hue", "saturation", "brightness", "kelvin"):
+                if getattr(pkt, f"set_{p}"):
+                    color[p] = pkt[p]
 
-        elif pkt | LightMessages.SetWaveformOptional or pkt | LightMessages.SetColor:
-            self.change_hsbk(Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin))
-            return self.light_state_message()
+            device.attrs.color = color
+            yield res
 
-        elif pkt | DeviceMessages.SetLabel:
-            self.change_label(pkt.label)
-            return DeviceMessages.StateLabel(label=self.label)
+    def make_label_response(self, device):
+        return DeviceMessages.StateLabel(label=device.attrs.label)
 
-        elif pkt | DeviceMessages.GetLabel:
-            return DeviceMessages.StateLabel(label=self.label)
+    def make_power_response(self, device):
+        return DeviceMessages.StatePower(level=device.attrs.power)
 
-        elif pkt | DeviceMessages.GetVersion:
-            return DeviceMessages.StateVersion(vendor=1, product=self.product_id, version=0)
-
-        elif pkt | DeviceMessages.GetHostFirmware:
-            return DeviceMessages.StateHostFirmware(build=self.firmware_build, version_major=self.firmware_major, version_minor=self.firmware_minor)
-
-        elif pkt | MultiZoneMessages.GetColorZones:
-            if self.capability.has_multizone:
-                if pkt.start_index != 0 or pkt.end_index != 255:
-                    raise PhotonsAppError("Fake device only supports getting all color zones", got=pkt.payload)
-
-                buf = []
-                bufs = []
-
-                for i, zone in enumerate(self.zones):
-                    if len(buf) == 8:
-                        bufs.append(buf)
-                        buf = []
-
-                    buf.append((i, zone))
-
-                if buf:
-                    bufs.append(buf)
-
-                return [
-                      MultiZoneMessages.StateMultiZone(zones_count=len(self.zones), zone_index=buf[0][0], colors=[b.as_dict() for _, b in buf])
-                      for buf in bufs
-                    ]
-
-        elif pkt | MultiZoneMessages.SetColorZones:
-            if self.capability.has_multizone:
-                for i in range(pkt.start_index, pkt.end_index + 1):
-                    self.zones[i] = {
-                          "hue": pkt.hue
-                        , "saturation": pkt.saturation
-                        , "brightness": pkt.brightness
-                        , "kelvin": pkt.kelvin
-                        }
-
-        elif pkt | MultiZoneMessages.GetExtendedColorZones:
-            if self.has_extended_multizone:
-                return MultiZoneMessages.StateExtendedColorZones(
-                      zones_count = len(self.zones)
-                    , zone_index = 0
-                    , colors_count = len(self.zones)
-                    , colors = [z.as_dict() for z in self.zones]
-                    )
-
-        elif pkt | MultiZoneMessages.SetExtendedColorZones:
-            if self.has_extended_multizone:
-                for i, c in enumerate(pkt.colors[:pkt.colors_count]):
-                    self.zones[i + pkt.zone_index] = c.as_dict()
-
-        elif pkt | MultiZoneMessages.SetMultiZoneEffect:
-            if self.capability.has_multizone:
-                self.change_zones_effect(pkt.type)
-
-        elif pkt | TileMessages.SetTileEffect:
-            if self.capability.has_chain:
-                self.change_tile_effect(pkt.type)
-
-    def light_state_message(self):
-        return LightMessages.LightState(
-              hue = self.hue
-            , saturation = self.saturation
-            , brightness = self.brightness
-            , kelvin = self.kelvin
-            , power = self.power
-            , label = self.label
+    def make_light_response(self, device):
+        return LightMessages.LightState.empty_normalise(
+              label = device.attrs.label
+            , power = device.attrs.power
+            , **device.attrs.color.as_dict()
             )
 
+class InfraredResponder(Responder):
+    _fields = [("infrared", lambda: 0)]
+
+    def has_infrared(self, device):
+        return ProductResponder.capability(device)[0].has_ir
+
+    async def reset(self, device, *, zero=False):
+        if self.has_infrared(device):
+            await super().reset(device, zero=zero)
+
+    async def respond(self, device, pkt, source):
+        if not self.has_infrared(device):
+            return
+
+        if pkt | LightMessages.GetInfrared:
+            yield self.make_response(device)
+        elif pkt | LightMessages.SetInfrared:
+            res = self.make_response(device)
+            device.attrs.infrared = pkt.brightness
+            yield res
+
+    def make_response(self, device):
+        return LightMessages.StateInfrared(brightness=device.attrs.infrared)
+
+class TilesResponder(Responder):
+    _fields = [("tiles_effect", lambda: TileEffectType.OFF)]
+
+    def has_chain(self, device):
+        return ProductResponder.capability(device)[0].has_chain
+
+    async def reset(self, device, *, zero=False):
+        if self.has_chain(device):
+            await super().reset(device, zero=zero)
+
+    async def respond(self, device, pkt, source):
+        if not self.has_chain(device):
+            return
+
+        if pkt | TileMessages.GetTileEffect:
+            yield self.make_state_tile_effect(device)
+        elif pkt | TileMessages.SetTileEffect:
+            res = self.make_state_tile_effect(device)
+            device.attrs.tiles_effect = pkt.type
+            yield res
+
+    def make_state_tile_effect(self, device):
+        return TileMessages.StateTileEffect(type=device.attrs.tiles_effect)
+
+class ZonesResponder(Responder):
+    _fields = ["zones", ("zones_effect", lambda: MultiZoneEffectType.OFF)]
+
+    def has_multizone(self, device):
+        return ProductResponder.capability(device)[0].has_multizone
+
+    def has_extended_multizone(self, device):
+        cap, major, minor = ProductResponder.capability(device)
+        return cap.has_extended_multizone(major, minor)
+
+    def validate_attr(self, device, field, val):
+        if field == "zones" and len(val) > 82:
+            raise PhotonsAppError("Can only have up to 82 zones!")
+
+    async def reset(self, device, *, zero=False):
+        if self.has_multizone(device):
+            await super().reset(device, zero=zero)
+
+    def effect_response(self, device):
+        return MultiZoneMessages.StateMultiZoneEffect(type=device.attrs.zones_effect)
+
+    def extended_multizone_response(self, device):
+        return MultiZoneMessages.StateExtendedColorZones(
+              zones_count = len(device.attrs.zones)
+            , zone_index = 0
+            , colors_count = len(device.attrs.zones)
+            , colors = [z.as_dict() for z in device.attrs.zones]
+            )
+
+    def multizone_responses(self, device):
+        buf = []
+        bufs = []
+
+        for i, zone in enumerate(device.attrs.zones):
+            if len(buf) == 8:
+                bufs.append(buf)
+                buf = []
+
+            buf.append((i, zone))
+
+        if buf:
+            bufs.append(buf)
+
+        for buf in bufs:
+            yield MultiZoneMessages.StateMultiZone(
+                  zones_count = len(device.attrs.zones)
+                , zone_index = buf[0][0]
+                , colors = [b.as_dict() for _, b in buf]
+                )
+
+    def set_zone(self, device, index, hue, saturation, brightness, kelvin):
+        if index >= len(device.attrs.zones):
+            log.warning(hp.lc("Setting zone outside range of the device", number_zones=len(device.attrs.zones), want=index))
+            return
+
+        device.attrs.zones[index] = Color(hue, saturation, brightness, kelvin)
+
+    async def respond(self, device, pkt, source):
+        if not self.has_multizone(device):
+            return
+
+        if pkt | MultiZoneMessages.SetMultiZoneEffect:
+            res = self.effect_response(device)
+            device.attrs.zones_effect = pkt.type
+            yield res
+        elif pkt | MultiZoneMessages.GetMultiZoneEffect:
+            yield self.effect_response(device)
+
+        elif pkt | MultiZoneMessages.GetColorZones:
+            if pkt.start_index != 0 or pkt.end_index != 255:
+                raise PhotonsAppError("Fake device only supports getting all color zones", got=pkt.payload)
+
+            for r in self.multizone_responses(device):
+                yield r
+        elif pkt | MultiZoneMessages.SetColorZones:
+            res = []
+            for r in self.multizone_responses(device):
+                res.append(r)
+            for i in range(pkt.start_index, pkt.end_index + 1):
+                self.set_zone(device, i, pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin)
+
+            for r in res:
+                yield r
+
+        if self.has_extended_multizone(device):
+            if pkt | MultiZoneMessages.GetExtendedColorZones:
+                yield self.extended_multizone_response(device)
+
+            elif pkt | MultiZoneMessages.SetExtendedColorZones:
+                res = self.extended_multizone_response(device)
+                for i, c in enumerate(pkt.colors[:pkt.colors_count]):
+                    self.set_zone(device, i + pkt.zone_index, c.hue, c.saturation, c.brightness, c.kelvin)
+                yield res
+
+class Firmware(dictobj):
+    fields = ["major", "minor", "build"]
+
+class ProductResponder(Responder):
+    _fields = ["vendor_id", "product_id", "firmware"]
+
+    @classmethod
+    def from_enum(self, enum, firmware=Firmware(0, 0, 0)):
+        vendor_id = None
+        product_id = None
+        for e in ProductRegistries.__members__.values():
+            if enum.__class__ == e.value:
+                vendor_id = VendorRegistry[e.name].value
+                product_id = enum.value
+                break
+
+        if vendor_id is None or product_id is None:
+            assert False, f"Couldn't determine vid and pid from product: {enum}"
+
+        return ProductResponder(
+              product_id = product_id
+            , vendor_id = vendor_id
+            , firmware = firmware
+            )
+
+    @classmethod
+    def capability(kls, device):
+        assert any(isinstance(r, kls) for r in device.responders)
+        return capability_for_ids(device.attrs.product_id, device.attrs.vendor_id), device.attrs.firmware.major, device.attrs.firmware.minor
+
+    async def respond(self, device, pkt, source):
+        if pkt | DeviceMessages.GetVersion:
+            yield DeviceMessages.StateVersion(
+                  vendor = device.attrs.vendor_id
+                , product = device.attrs.product_id
+                , version = 0
+                )
+
+        elif pkt | DeviceMessages.GetHostFirmware:
+            yield DeviceMessages.StateHostFirmware(
+                  build = device.attrs.firmware.build
+                , version_major = device.attrs.firmware.major
+                , version_minor = device.attrs.firmware.minor
+                )
+
+        elif pkt | DeviceMessages.GetWifiFirmware:
+            yield DeviceMessages.StateWifiFirmware(
+                  build = 0
+                , version_major = 0
+                , version_minor = 0
+                )
+
+def default_responders(
+      product = LIFIProductRegistry.LCM2_A19
+    , *, power = 0
+    , label = ""
+    , color = Color(0, 1, 1, 3500)
+    , infrared = 0
+    , zones = None
+    , firmware = Firmware(0, 0, 0)
+    , zones_effect = MultiZoneEffectType.OFF
+    , tiles_effect = TileEffectType.OFF
+    , **kwargs
+    ):
+    product_responder = ProductResponder.from_enum(product, firmware)
+
+    responders = [
+          product_responder
+        , LightStateResponder(power=power, color=color, label=label)
+        ]
+
+    cap = capability_for_ids(product_responder._attr_default_product_id, product_responder._attr_default_vendor_id)
+
+    if cap.has_ir:
+        responders.append(InfraredResponder(infrared=infrared))
+
+    meta = Meta.empty()
+
+    if cap.has_multizone:
+        if zones is None:
+            assert False, "Product has multizone capability but no zones specified"
+        zones_effect = enum_spec(None, MultiZoneEffectType, unpacking=True).normalise(meta, zones_effect)
+        responders.append(ZonesResponder(zones=zones, zones_effect=zones_effect))
+
+    if cap.has_chain:
+        tiles_effect = enum_spec(None, TileEffectType, unpacking=True).normalise(meta, tiles_effect)
+        responders.append(TilesResponder(tiles_effect=tiles_effect))
+
+    return responders
+
 class MemoryTargetRunner:
-    def __init__(self, final_future, devices, use_sockets=True):
+    def __init__(self, final_future, devices):
         options = {
-              "final_future": final_future
+              "devices": devices
+            , "final_future": final_future
             , "protocol_register": protocol_register
             }
-        if use_sockets:
-            self.target = MemorySocketTarget.create(options)
-        else:
-            self.target = MemoryTarget.create(options)
-
+        self.target = MemoryTarget.create(options)
         self.devices = devices
 
     async def __aenter__(self):
@@ -357,7 +347,6 @@ class MemoryTargetRunner:
     async def start(self):
         for device in self.devices:
             await device.start()
-            self.target.add_device(device)
         self.afr = await self.target.args_for_run()
 
     async def __aexit__(self, typ, exc, tb):
@@ -365,12 +354,12 @@ class MemoryTargetRunner:
 
     async def close(self):
         await self.target.close_args_for_run(self.afr)
-        for device in self.target.devices.values():
+        for device in self.target.devices:
             await device.finish()
 
-    def reset_devices(self):
+    async def reset_devices(self):
         for device in self.devices:
-            device.reset()
+            await device.reset()
 
     @property
     def serials(self):
@@ -385,7 +374,7 @@ def with_runner(func):
                 await s.wait_for(func(s, runner))
         finally:
             final_future.cancel()
-            runner.reset_devices()
+            await runner.reset_devices()
     test.__name__ = func.__name__
     return test
 
@@ -427,7 +416,7 @@ class ModuleLevelRunner:
 
     def test(self, func):
         async def test(s):
-            self.runner.reset_devices()
+            await self.runner.reset_devices()
             await s.wait_for(func(s, self.runner), timeout=10)
         test.__name__ = func.__name__
         return test

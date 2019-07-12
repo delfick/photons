@@ -1,10 +1,12 @@
 # coding: spec
 
+from photons_control import test_helpers as chp
+
 from photons_app.test_helpers import TestCase, AsyncTestCase
 
-from photons_control.test_helpers import Device, Color, ModuleLevelRunner
 from photons_control.transform import Transformer, PowerToggle
 from photons_messages import DeviceMessages, LightMessages
+from photons_transport.fake import FakeDevice
 from photons_control.script import Pipeline
 from photons_colour import Parser
 
@@ -13,19 +15,24 @@ import itertools
 import asyncio
 import random
 
-light1 = Device("d073d5000001"
-    , power = 0
-    , color = Color(0, 1, 0.3, 2500)
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(
+          color = chp.Color(0, 1, 0.3, 2500)
+        )
     )
 
-light2 = Device("d073d5000002"
-    , power = 65535
-    , color = Color(100, 1, 0.5, 2500)
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(
+          power = 65535
+        , color = chp.Color(100, 1, 0.5, 2500)
+        )
     )
 
-light3 = Device("d073d5000003"
-    , power = 65535
-    , color = Color(100, 0, 0.8, 2500)
+light3 = FakeDevice("d073d5000003"
+    , chp.default_responders(
+          power = 65535
+        , color = chp.Color(100, 0, 0.8, 2500)
+        )
     )
 
 def generate_options(color, exclude=None):
@@ -78,7 +85,7 @@ def generate_options(color, exclude=None):
 
                         yield make_state(comb, comb2)
 
-mlr = ModuleLevelRunner([light1, light2, light3])
+mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -158,7 +165,7 @@ describe AsyncTestCase, "Transformer":
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "off"}, expected=expected)
 
-        runner.reset_devices()
+        await runner.reset_devices()
         msg = DeviceMessages.SetPower(level=65535, res_required=False)
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "on"}, expected=expected)
@@ -169,7 +176,7 @@ describe AsyncTestCase, "Transformer":
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "off", "duration": 100}, expected=expected)
 
-        runner.reset_devices()
+        await runner.reset_devices()
         msg = LightMessages.SetLightPower(level=65535, duration=20, res_required=False)
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "on", "duration": 20}, expected=expected)
@@ -181,7 +188,7 @@ describe AsyncTestCase, "Transformer":
                 want = Parser.color_to_msg(color, overrides=state)
                 want.res_required = False
 
-                runner.reset_devices()
+                await runner.reset_devices()
                 expected = {device: [want] for device in runner.devices}
                 await self.transform(runner, state, expected=expected)
 
@@ -219,7 +226,7 @@ describe AsyncTestCase, "Transformer":
             assert color_message is not None
             assert power_message is not None
 
-            runner.reset_devices()
+            await runner.reset_devices()
             expected = {device: [power_message, color_message] for device in runner.devices}
             await self.transform(runner, state, expected=expected)
 
@@ -232,7 +239,7 @@ describe AsyncTestCase, "Transformer":
                   [ LightMessages.GetColor()
                   , Parser.color_to_msg("blue", overrides={"brightness": 0})
                   , DeviceMessages.SetPower(level=65535)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness})
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness})
                   ]
                 , light2:
                   [ LightMessages.GetColor()
@@ -295,7 +302,7 @@ describe AsyncTestCase, "Transformer":
                   [ LightMessages.GetColor()
                   , Parser.color_to_msg("blue", overrides={"brightness": 0})
                   , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness, "duration": 10})
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness, "duration": 10})
                   ]
                 , light2:
                   [ LightMessages.GetColor()
@@ -316,7 +323,7 @@ describe AsyncTestCase, "Transformer":
                   [ LightMessages.GetColor()
                   , Parser.color_to_msg("blue", overrides={"brightness": 0})
                   , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.brightness, "duration": 10})
+                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness, "duration": 10})
                   ]
                 , light2:
                   [ LightMessages.GetColor()

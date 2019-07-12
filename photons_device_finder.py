@@ -742,6 +742,10 @@ class InfoStore(object):
         """
         res = {}
         for target in targets:
+            if isinstance(target, str):
+                target = binascii.unhexlify(target)
+            target = target[:6]
+
             if target in self.by_target:
                 info = { k: v
                       for k, v in self.by_target[target].as_dict().items()
@@ -782,23 +786,23 @@ class InfoStore(object):
                     await self.futures[point]
 
             if not waited.done():
-                waited.set_result(dict(await self.found))
+                f = await self.found
+                if isinstance(f, dict):
+                    f = dict(f)
+                waited.set_result(f)
 
         try:
             await asyncio.wait_for(wait(), timeout=find_timeout)
         except asyncio.TimeoutError:
             raise TimedOut("Waiting for information to be available")
         else:
-            found = dict(await waited)
+            found = await waited
 
-        for target in list(found):
-            if target not in self.by_target:
-                del found[target]
-                continue
+        await found.remove_lost(self.by_target)
 
-            if not filtr.matches_all:
-                if not self.by_target[target].matches(filtr):
-                    del found[target]
+        if not filtr.matches_all:
+            found_now = [target for target in list(found) if self.by_target[target].matches(filtr)]
+            await found.remove_lost(found_now)
 
         return found
 
@@ -1140,8 +1144,8 @@ class DeviceFinder(object):
         """
         reference = self._find(kwargs, for_info=True)
         afr = await self.args_for_run()
-        found, _ = await reference.find(afr, timeout=5)
-        return self.loops.store.info_for(found.keys())
+        _, serials = await reference.find(afr, timeout=5)
+        return self.loops.store.info_for(serials)
 
     def _find(self, kwargs, for_info=False):
         """
@@ -1173,8 +1177,8 @@ class DeviceFinder(object):
                 if not found:
                     raise FoundNoDevices()
 
-                if hasattr(afr, "found") and isinstance(afr.found, dict):
-                    afr.found.update(found)
+                if hasattr(afr, "found") and hasattr(afr.found, "borrow"):
+                    afr.found.borrow(found, afr)
 
                 return found
 

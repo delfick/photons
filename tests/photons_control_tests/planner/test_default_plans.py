@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner, Color, HSBKClose
 from photons_control.planner import Gatherer, make_plans, Skip
+from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase
@@ -11,63 +11,69 @@ from photons_messages import (
     , TileEffectType, MultiZoneEffectType
     , Direction
     )
-from photons_products_registry import capability_for_ids, enum_for_ids, UnknownProduct
+from photons_products_registry import (
+      capability_for_ids, enum_for_ids, UnknownProduct
+    , LIFIProductRegistry
+    )
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
 import uuid
 
-light1 = Device("d073d5000001", use_sockets=False
-    , power = 0
-    , label = "bob"
-    , infrared = 100
-    , color = Color(100, 0.5, 0.5, 4500)
-    , product_id = 55
-    , firmware_build = 1548977726000000000
-    , firmware_major = 3
-    , firmware_minor = 50
+zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
+zones2 = [chp.Color(60 - i, 1, 1, 6500) for i in range(20)]
+zones3 = [chp.Color(90 - i, 1, 1, 9000) for i in range(40)]
+
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(LIFIProductRegistry.LCM3_TILE
+        , power = 0
+        , label = "bob"
+        , infrared = 100
+        , color = chp.Color(100, 0.5, 0.5, 4500)
+        , firmware = chp.Firmware(3, 50, 1548977726000000000)
+        )
     )
 
-light2 = Device("d073d5000002", use_sockets=False
-    , power = 65535
-    , label = "sam"
-    , infrared = 0
-    , color = Color(200, 0.3, 1, 9000)
-    , product_id = 1
-    , firmware_build = 1448861477000000000
-    , firmware_major = 2
-    , firmware_minor = 2
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
+        , power = 65535
+        , label = "sam"
+        , infrared = 0
+        , color = chp.Color(200, 0.3, 1, 9000)
+        , firmware = chp.Firmware(2, 2, 1448861477000000000)
+        )
     )
 
-striplcm1 = Device("d073d5000003", use_sockets=False
-    , power = 0
-    , label = "lcm1-no-extended"
-    , product_id = 31
-    , firmware_build = 1502237570000000000
-    , firmware_major = 1
-    , firmware_minor = 22
+striplcm1 = FakeDevice("d073d5000003"
+    , chp.default_responders(LIFIProductRegistry.LCM1_Z
+        , power = 0
+        , label = "lcm1-no-extended"
+        , firmware = chp.Firmware(1, 22, 1502237570000000000)
+        , zones = zones1
+        )
     )
 
-striplcm2noextended = Device("d073d5000004", use_sockets=False
-    , power = 0
-    , label = "lcm2-no-extended"
-    , product_id = 32
-    , firmware_build = 1508122125000000000
-    , firmware_major = 2
-    , firmware_minor = 70
+striplcm2noextended = FakeDevice("d073d5000004"
+    , chp.default_responders(LIFIProductRegistry.LCM2_Z
+        , power = 0
+        , label = "lcm2-no-extended"
+        , firmware = chp.Firmware(2, 70, 1508122125000000000)
+        , zones = zones2
+        )
     )
 
-striplcm2extended = Device("d073d5000005", use_sockets=False
-    , power = 0
-    , label = "lcm2-extended"
-    , product_id = 32
-    , firmware_build = 1543215651000000000
-    , firmware_major = 2
-    , firmware_minor = 77
+striplcm2extended = FakeDevice("d073d5000005"
+    , chp.default_responders(LIFIProductRegistry.LCM2_Z
+        , power = 0
+        , label = "lcm2-extended"
+        , firmware = chp.Firmware(2, 77, 1543215651000000000)
+        , zones = zones3
+        )
     )
 
 lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
-mlr = ModuleLevelRunner(lights, use_sockets=False)
+mlr = chp.ModuleLevelRunner(lights)
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -97,7 +103,7 @@ describe AsyncTestCase, "Default Plans":
         @mlr.test
         async it "allows us to get serials that otherwise wouldn't", runner:
             errors = []
-            with light2.no_reply_to(DeviceMessages.GetLabel):
+            with light2.no_replies_for(DeviceMessages.GetLabel):
                 got = await self.gather(runner, self.two_lights, "presence", "label"
                     , error_catcher = errors
                     , message_timeout = 0.1
@@ -130,8 +136,8 @@ describe AsyncTestCase, "Default Plans":
         async it "gets the address", runner:
             got = await self.gather(runner, self.two_lights, "label", "address")
             self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "address": ("127.0.0.1", light1.port)})
-                  , light2.serial: (True, {"label": "sam", "address": ("127.0.0.1", light2.port)})
+                , { light1.serial: (True, {"label": "bob", "address": (f"fake://{light1.serial}/memory", 56700)})
+                  , light2.serial: (True, {"label": "sam", "address": (f"fake://{light2.serial}/memory", 56700)})
                   }
                 )
 
@@ -268,22 +274,14 @@ describe AsyncTestCase, "Default Plans":
     describe "ZonesPlan":
         @mlr.test
         async it "gets zones", runner:
-            zones1 = [Color(i, 1, 1, 3500) for i in range(30)]
-            zones2 = [Color(60 - i, 1, 1, 6500) for i in range(20)]
-            zones3 = [Color(90 - i, 1, 1, 9000) for i in range(40)]
-
-            striplcm1.change_zones(zones1)
-            striplcm2noextended.change_zones(zones2)
-            striplcm2extended.change_zones(zones3)
-
             got = await self.gather(runner, runner.serials, "zones")
             expected = {
                     light1.serial: (True, {"zones": Skip})
                   , light2.serial: (True, {"zones": Skip})
 
-                  , striplcm1.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]})
-                  , striplcm2noextended.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]})
-                  , striplcm2extended.serial: (True, {"zones": [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]})
+                  , striplcm1.serial: (True, {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]})
+                  , striplcm2noextended.serial: (True, {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]})
+                  , striplcm2extended.serial: (True, {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]})
                   }
             self.assertEqual(got, expected)
 
@@ -328,7 +326,7 @@ describe AsyncTestCase, "Default Plans":
                     , speed = 10
                     , duration = 1
                     , palette_count = 2
-                    , palette = [Color(120, 1, 1, 3500).as_dict(), Color(360, 1, 1, 3500).as_dict()]
+                    , palette = [chp.Color(120, 1, 1, 3500).as_dict(), chp.Color(360, 1, 1, 3500).as_dict()]
                     )
                 )
 

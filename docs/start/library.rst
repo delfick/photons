@@ -20,7 +20,7 @@ So our script from the :ref:`lifx_photons_script` would look like:
     # This will load all the modules under the lifx.photons entry_point namespace
     # You can load only particular entry_points by
     # setting find_all_photons_modules to False
-    # and core_modules to a list like ["sockets", "color"]
+    # and core_modules to a list like ["transport", "color"]
     collector = library_setup()
 
     # We can get a loop from the photons_app object

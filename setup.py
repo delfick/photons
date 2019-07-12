@@ -48,7 +48,7 @@ setup(
     , extras_require =
       { "tests":
         [ "noseOfYeti>=1.7"
-        , "asynctest==0.10.0"
+        , "asynctest==0.12.2"
         , "nose"
         ]
       }

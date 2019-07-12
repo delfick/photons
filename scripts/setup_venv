@@ -24,6 +24,7 @@ remove("photons_multizone.pyc")
 remove("photons_tile_messages.pyc")
 remove("photons_transform")
 remove("photons_script")
+remove("photons_socket")
 
 from venvstarter import ignite
 ignite(__file__, "lifx"

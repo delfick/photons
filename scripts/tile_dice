@@ -17,7 +17,7 @@ from photons_themes.canvas import Canvas
 from option_merge_addons import option_merge_addon_hook
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "socket")
+      ("lifx.photons", "transport")
     , ("lifx.photons", "themes")
     , ("lifx.photons", "control")
     , ("lifx.photons", "tile_paint")

@@ -1,51 +1,50 @@
 # coding: spec
 
 from photons_control.planner import Gatherer, make_plans, Plan, NoMessages, Skip
-from photons_control.test_helpers import Device, ModuleLevelRunner, Color
+from photons_control import test_helpers as chp
 
-from photons_app.errors import PhotonsAppError, RunErrors, TimedOut, BadRunWithResults
+from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages
+from photons_products_registry import LIFIProductRegistry
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from contextlib import contextmanager
 from unittest import mock
 import uuid
 
-light1 = Device("d073d5000001", use_sockets=False
-    , power = 0
-    , label = "bob"
-    , infrared = 100
-    , color = Color(100, 0.5, 0.5, 4500)
-    , product_id = 55
-    , firmware_build = 1548977726000000000
-    , firmware_major = 3
-    , firmware_minor = 50
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
+        , power = 0
+        , label = "bob"
+        , infrared = 100
+        , color = chp.Color(100, 0.5, 0.5, 4500)
+        , firmware = chp.Firmware(2, 77, 1543215651000000000)
+        )
     )
 
-light2 = Device("d073d5000002", use_sockets=False
-    , power = 65535
-    , label = "sam"
-    , infrared = 0
-    , color = Color(200, 0.3, 1, 9000)
-    , product_id = 1
-    , firmware_build = 1448861477000000000
-    , firmware_major = 2
-    , firmware_minor = 2
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
+        , power = 65535
+        , label = "sam"
+        , color = chp.Color(200, 0.3, 1, 9000)
+        , firmware = chp.Firmware(2, 2, 1448861477000000000)
+        )
     )
 
-light3 = Device("d073d5000003", use_sockets=False
-    , power = 0
-    , label = "strip"
-    , product_id = 31
-    , firmware_build = 1502237570000000000
-    , firmware_major = 1
-    , firmware_minor = 22
+light3 = FakeDevice("d073d5000003"
+    , chp.default_responders(LIFIProductRegistry.LCM1_Z
+        , power = 0
+        , label = "strip"
+        , firmware = chp.Firmware(1, 22, 1502237570000000000)
+        , zones = [chp.Color(0, 1, 1, 3500)]
+        )
     )
 
 lights = [light1, light2, light3]
-mlr = ModuleLevelRunner(lights, use_sockets=False)
+mlr = chp.ModuleLevelRunner(lights)
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -474,7 +473,7 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(label=ErrorPlan())
 
             found = []
-            with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
+            with self.fuzzyAssertRaisesError(ValueError, "ERROR"):
                 async for serial, label, info in gatherer.gather(plans, runner.serials):
                     found.append((serial, label, info))
 
@@ -545,9 +544,8 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
 
             found = []
-            error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
-            with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
-                with light1.no_reply_to(DeviceMessages.GetLabel):
+            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
+                with light1.no_replies_for(DeviceMessages.GetLabel):
                     async for serial, label, info in gatherer.gather(plans, self.two_lights, message_timeout=0.1):
                         found.append((serial, label, info))
 
@@ -590,8 +588,8 @@ describe AsyncTestCase, "Gatherer":
 
             found.clear()
             called.clear()
-            with self.fuzzyAssertRaisesError(RunErrors, _errors=[error]):
-                with light1.no_reply_to(DeviceMessages.GetLabel):
+            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
+                with light1.no_replies_for(DeviceMessages.GetLabel):
                     async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, message_timeout=0.1):
                         found.append((serial, completed, info))
 
@@ -615,9 +613,10 @@ describe AsyncTestCase, "Gatherer":
 
             called.clear()
             try:
-                with light1.no_reply_to(DeviceMessages.GetLabel):
+                with light1.no_replies_for(DeviceMessages.GetLabel):
                     await gatherer.gather_all(plans, self.two_lights, message_timeout=0.1)
             except BadRunWithResults as e:
+                error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
                 self.assertEqual(e.errors, [error])
                 found = e.kwargs["results"]
 
@@ -692,7 +691,7 @@ describe AsyncTestCase, "Gatherer":
             found = []
             error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
 
-            with light1.no_reply_to(DeviceMessages.GetLabel):
+            with light1.no_replies_for(DeviceMessages.GetLabel):
                 async for serial, label, info in gatherer.gather(plans, self.two_lights, **kwargs):
                     found.append((serial, label, info))
 
@@ -738,7 +737,7 @@ describe AsyncTestCase, "Gatherer":
 
             found.clear()
             called.clear()
-            with light1.no_reply_to(DeviceMessages.GetLabel):
+            with light1.no_replies_for(DeviceMessages.GetLabel):
                 async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, **kwargs):
                     found.append((serial, completed, info))
 
@@ -764,7 +763,7 @@ describe AsyncTestCase, "Gatherer":
                 )
 
             called.clear()
-            with light1.no_reply_to(DeviceMessages.GetLabel):
+            with light1.no_replies_for(DeviceMessages.GetLabel):
                 found = dict(await gatherer.gather_all(plans, self.two_lights, **kwargs))
 
             self.assertEqual(error_catcher, [error])
@@ -1613,7 +1612,7 @@ describe AsyncTestCase, "Gatherer":
             gatherer = Gatherer(runner.target)
             plans = make_plans("presence", plan2=Plan2())
             errors = []
-            with light3.no_reply_to(DeviceMessages.GetLabel):
+            with light3.no_replies_for(DeviceMessages.GetLabel):
                 got = dict(await gatherer.gather_all(plans, runner.serials, error_catcher=errors, message_timeout=0.1))
             self.assertEqual(len(errors), 1)
 

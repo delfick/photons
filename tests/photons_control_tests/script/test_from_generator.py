@@ -1,37 +1,40 @@
 # coding: spec
 
 from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeline
-from photons_control.test_helpers import Device, Color, ModuleLevelRunner
+from photons_control import test_helpers as chp
 
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
 from photons_app.test_helpers import TestCase, AsyncTestCase
 
 from photons_transport.errors import FailedToFindDevice
+from photons_transport.fake import FakeDevice
 from photons_messages import DeviceMessages
 
 from collections import defaultdict
 from functools import partial
 import asyncio
 
-light1 = Device("d073d5000001"
-    , power = 0
-    , color = Color(0, 1, 0.3, 2500)
-    , use_sockets = False
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(
+          power = 0
+        , color = chp.Color(0, 1, 0.3, 2500)
+        )
     )
 
-light2 = Device("d073d5000002"
-    , power = 65535
-    , color = Color(100, 1, 0.5, 2500)
-    , use_sockets = False
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(
+          power = 65535
+        , color = chp.Color(100, 1, 0.5, 2500)
+        )
     )
 
-light3 = Device("d073d5000003"
-    , power = 0
-    , color = Color(100, 1, 0.5, 2500)
-    , use_sockets = False
+light3 = FakeDevice("d073d5000003"
+    , chp.default_responders(
+          color = chp.Color(100, 1, 0.5, 2500)
+        )
     )
 
-mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
+mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -185,11 +188,11 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "it can know if the message was not sent successfully", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.GetPower:
                 return False
 
-        light1.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
 
         async def gen(reference, afr, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -251,15 +254,15 @@ describe AsyncTestCase, "FromGenerator":
     async it "it sends messages in parallel", runner:
         got = []
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.GetPower:
                 got.append(loop_time())
             else:
                 assert false, "unknown message"
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         async def gen(reference, afr, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
@@ -282,7 +285,7 @@ describe AsyncTestCase, "FromGenerator":
     async it "can wait for other messages", runner:
         got = {}
 
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.GetPower:
                 if pkt.serial not in got:
                     got[pkt.serial] = loop_time()
@@ -291,9 +294,9 @@ describe AsyncTestCase, "FromGenerator":
             else:
                 assert false, "unknown message"
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         async def gen(reference, afr, **kwargs):
             assert await (yield DeviceMessages.GetPower(target=light1.serial))

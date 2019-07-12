@@ -268,6 +268,9 @@ class FromGenerator(object):
             try:
                 async for result in runner:
                     yield result
+            except asyncio.CancelledError:
+                await runner.finish(cancelled=True)
+                raise
             finally:
                 await runner.finish()
 
@@ -312,7 +315,11 @@ class FromGenerator(object):
                     except Exception as error:
                         hp.add_error(self.error_catcher, error)
 
-        async def finish(self):
+        async def finish(self, cancelled=False):
+            if cancelled:
+                for t in self.ts:
+                    t.cancel()
+
             await self.wait_for_ts()
 
             self.stop_fut.cancel()
@@ -322,7 +329,7 @@ class FromGenerator(object):
             except:
                 pass
 
-            await self._stop_ts()
+            await self._stop_ts(cancelled=cancelled)
 
         def __aiter__(self):
             self.getter_t = hp.async_as_background(self.getter())
@@ -341,9 +348,11 @@ class FromGenerator(object):
 
             return nxt
 
-        async def _stop_ts(self):
+        async def _stop_ts(self, cancelled=False):
             try:
                 if hasattr(self, "getter_t"):
+                    if cancelled:
+                        self.getter_t.cancel()
                     await self.getter_t
             except asyncio.CancelledError:
                 pass

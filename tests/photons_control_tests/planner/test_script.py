@@ -1,27 +1,33 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner
 from photons_control.planner.script import WithSender
+from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages
+from photons_products_registry import LIFIProductRegistry
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
-light1 = Device("d073d5000001", use_sockets=False
-    , power = 0
-    , infrared = 100
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
+        , power = 0
+        , infrared = 100
+        )
     )
 
-light2 = Device("d073d5000002", use_sockets=False
-    , power = 65535
-    , infrared = 0
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
+        , power = 65535
+        , infrared = 0
+        )
     )
 
-mlr = ModuleLevelRunner([light1, light2], use_sockets=False)
+mlr = chp.ModuleLevelRunner([light1, light2])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -63,7 +69,7 @@ describe AsyncTestCase, "WithSender":
         assertCorrect(got[key4], LightMessages.StateInfrared, light2.serial, brightness=0)
 
         for pkt in (got[key1], got[key2]):
-            self.assertEqual(pkt._with_sender_address, ("127.0.0.1", light1.port))
+            self.assertEqual(pkt._with_sender_address, (f"fake://{light1.serial}/memory", 56700))
 
         for pkt in (got[key3], got[key4]):
-            self.assertEqual(pkt._with_sender_address, ("127.0.0.1", light2.port))
+            self.assertEqual(pkt._with_sender_address, (f"fake://{light2.serial}/memory", 56700))

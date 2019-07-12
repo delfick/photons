@@ -13,7 +13,7 @@ log = logging.getLogger("repeater")
 
 @option_merge_addon_hook(extras=[
       ("lifx.photons", "control")
-    , ("lifx.photons", "socket")
+    , ("lifx.photons", "transport")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "device_finder")
     ])

@@ -44,6 +44,6 @@ class WithSender(object):
             self.item = item
 
         async def run_with(self, reference, args_for_run, **kwargs):
-            async for pkt, addr, sentto in self.item.run_with(reference, args_for_run, **kwargs):
+            async for pkt, addr, _ in self.item.run_with(reference, args_for_run, **kwargs):
                 pkt.__dict__["_with_sender_address"] = addr
                 yield self.key, pkt

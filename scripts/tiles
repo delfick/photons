@@ -13,7 +13,7 @@ import random
 log = logging.getLogger("info")
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "socket")
+      ("lifx.photons", "transport")
     , ("lifx.photons", "messages")
     , ("lifx.photons", "products_registry")
     , ("lifx.photons", "device_finder")

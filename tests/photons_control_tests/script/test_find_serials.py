@@ -1,18 +1,20 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner
+from photons_control import test_helpers as chp
 from photons_control.script import find_serials
 
 from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import FoundSerials
 
+from photons_transport.fake import FakeDevice
+
 from input_algorithms import spec_base as sb
 
-light1 = Device("d073d5000001", use_sockets=False)
-light2 = Device("d073d5000002", use_sockets=False)
-light3 = Device("d073d5000003", use_sockets=False)
+light1 = FakeDevice("d073d5000001", chp.default_responders())
+light2 = FakeDevice("d073d5000002", chp.default_responders())
+light3 = FakeDevice("d073d5000003", chp.default_responders())
 
-mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
+mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown

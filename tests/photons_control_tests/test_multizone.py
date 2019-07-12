@@ -1,71 +1,74 @@
 # coding: spec
 
 from photons_control.multizone import find_multizone, zones_from_reference, SetZonesPlan, SetZones, SetZonesEffect
-from photons_control.test_helpers import Device, ModuleLevelRunner, Color, HSBKClose
 from photons_control.planner import Gatherer, Skip, NoMessages
+from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
+from photons_products_registry import LIFIProductRegistry
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
-zeroColor = Color(0, 0, 0, 3500)
+zeroColor = chp.Color(0, 0, 0, 3500)
+zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
+zones2 = [chp.Color(90 - i, 1, 1, 3500) for i in range(6)]
+zones3 = [chp.Color(300 - i, 1, 1, 3500) for i in range(16)]
 
-light1 = Device("d073d5000001", use_sockets=False
-    , power = 0
-    , label = "bob"
-    , infrared = 100
-    , color = Color(100, 0.5, 0.5, 4500)
-    , product_id = 55
-    , firmware_build = 1548977726000000000
-    , firmware_major = 3
-    , firmware_minor = 50
+light1 = FakeDevice("d073d5000001"
+    , chp.default_responders(LIFIProductRegistry.LCM3_TILE
+        , power = 0
+        , label = "bob"
+        , infrared = 100
+        , color = chp.Color(100, 0.5, 0.5, 4500)
+        , firmware = chp.Firmware(3, 50, 1548977726000000000)
+        )
     )
 
-light2 = Device("d073d5000002", use_sockets=False
-    , power = 65535
-    , label = "sam"
-    , infrared = 0
-    , color = Color(200, 0.3, 1, 9000)
-    , product_id = 1
-    , firmware_build = 1448861477000000000
-    , firmware_major = 2
-    , firmware_minor = 2
+light2 = FakeDevice("d073d5000002"
+    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
+        , power = 65535
+        , label = "sam"
+        , infrared = 0
+        , color = chp.Color(200, 0.3, 1, 9000)
+        , firmware = chp.Firmware(2, 2, 1448861477000000000)
+        )
     )
 
-striplcm1 = Device("d073d5000003", use_sockets=False
-    , power = 0
-    , label = "lcm1-no-extended"
-    , product_id = 31
-    , firmware_build = 1502237570000000000
-    , firmware_major = 1
-    , firmware_minor = 22
+striplcm1 = FakeDevice("d073d5000003"
+    , chp.default_responders(LIFIProductRegistry.LCM1_Z
+        , power = 0
+        , label = "lcm1-no-extended"
+        , firmware = chp.Firmware(1, 22, 1502237570000000000)
+        , zones = zones1
+        )
     )
 
-striplcm2noextended = Device("d073d5000004", use_sockets=False
-    , power = 0
-    , label = "lcm2-no-extended"
-    , product_id = 32
-    , firmware_build = 1508122125000000000
-    , firmware_major = 2
-    , firmware_minor = 70
+striplcm2noextended = FakeDevice("d073d5000004"
+    , chp.default_responders(LIFIProductRegistry.LCM2_Z
+        , power = 0
+        , label = "lcm2-no-extended"
+        , firmware = chp.Firmware(2, 70, 1508122125000000000)
+        , zones = zones2
+        )
     )
 
-striplcm2extended = Device("d073d5000005", use_sockets=False
-    , power = 0
-    , label = "lcm2-extended"
-    , product_id = 32
-    , firmware_build = 1543215651000000000
-    , firmware_major = 2
-    , firmware_minor = 77
+striplcm2extended = FakeDevice("d073d5000005"
+    , chp.default_responders(LIFIProductRegistry.LCM2_Z
+        , power = 0
+        , label = "lcm2-extended"
+        , firmware = chp.Firmware(2, 77, 1543215651000000000)
+        , zones = zones3
+        )
     )
 
 lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
-mlr = ModuleLevelRunner(lights, use_sockets=False)
+mlr = chp.ModuleLevelRunner(lights)
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -302,13 +305,13 @@ describe AsyncTestCase, "Multizone helpers":
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
             assert light in lights
-            light.compare_received(msgs, keep_duplicates=True)
+            light.compare_received(msgs)
             light.reset_received()
 
     def compare_received_klses(self, by_light):
         for light, msgs in by_light.items():
             assert light in lights
-            light.compare_received_klses(msgs, keep_duplicates=True)
+            light.compare_received_klses(msgs)
             light.reset_received()
 
     describe "find_multizone":
@@ -360,21 +363,8 @@ describe AsyncTestCase, "Multizone helpers":
                 self.compare_received(want)
 
     describe "zones_from_reference":
-        def set_zones(self):
-            zones1 = [Color(i, 1, 1, 3500) for i in range(30)]
-            zones2 = [Color(90 - i, 1, 1, 3500) for i in range(6)]
-            zones3 = [Color(300 - i, 1, 1, 3500) for i in range(16)]
-
-            striplcm1.change_zones(zones1)
-            striplcm2noextended.change_zones(zones2)
-            striplcm2extended.change_zones(zones3)
-
-            return (zones1, zones2, zones3)
-
         @mlr.test
         async it "yield zones", runner:
-            zones1, zones2, zones3 = self.set_zones()
-
             got = {}
             async with runner.target.session() as afr:
                 async for serial, zones in zones_from_reference(runner.target, runner.serials, afr):
@@ -382,16 +372,14 @@ describe AsyncTestCase, "Multizone helpers":
                     got[serial] = zones
 
             self.assertEqual(got
-                , { striplcm1.serial: [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]
-                  , striplcm2noextended.serial: [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]
-                  , striplcm2extended.serial: [(i, HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]
+                , { striplcm1.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]
+                  , striplcm2noextended.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]
+                  , striplcm2extended.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]
                   }
                 )
 
         @mlr.test
         async it "resends messages if no gatherer is provided", runner:
-            self.set_zones()
-
             async with runner.target.session() as afr:
                 async for serial, zones in zones_from_reference(runner.target, runner.serials, afr):
                     pass
@@ -410,8 +398,6 @@ describe AsyncTestCase, "Multizone helpers":
 
         @mlr.test
         async it "caches messages if gatherer is provided", runner:
-            self.set_zones()
-
             gatherer = Gatherer(runner.target)
             async with runner.target.session() as afr:
                 async for serial, zones in zones_from_reference(runner.target, runner.serials, afr, gatherer=gatherer):
@@ -433,7 +419,7 @@ describe AsyncTestCase, "Multizone helpers":
         @mlr.test
         async it "can power on devices and set zones", runner:
             for device in self.strips:
-                device.change_zones([zeroColor] * 16)
+                device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["red", 7], ["blue", 5]])
             got = await runner.target.script(msg).run_with_all(runner.serials)
@@ -441,9 +427,9 @@ describe AsyncTestCase, "Multizone helpers":
 
             red = {"hue": 0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
             blue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            self.assertEqual(striplcm1.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
 
             self.compare_received_klses(
                   { light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
@@ -475,7 +461,7 @@ describe AsyncTestCase, "Multizone helpers":
         @mlr.test
         async it "can skip turning on lights", runner:
             for device in self.strips:
-                device.change_zones([zeroColor] * 16)
+                device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["red", 7], ["blue", 5]], power_on=False)
             got = await runner.target.script(msg).run_with_all(runner.serials)
@@ -508,7 +494,7 @@ describe AsyncTestCase, "Multizone helpers":
         @mlr.test
         async it "can target particular lights", runner:
             for device in self.strips:
-                device.change_zones([zeroColor] * 16)
+                device.attrs.zones = [zeroColor] * 16
 
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
@@ -519,12 +505,12 @@ describe AsyncTestCase, "Multizone helpers":
 
             red = {"hue": 0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
             blue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            self.assertEqual(striplcm1.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
 
             green = {"hue": 120.0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
             yellow = {"hue": 59.997253376058595, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            self.assertEqual(striplcm2extended.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
+            self.assertEqual(striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
 
             self.compare_received_klses(
                   { striplcm1:
@@ -551,7 +537,7 @@ describe AsyncTestCase, "Multizone helpers":
         @mlr.test
         async it "can give duration to messages", runner:
             for device in self.strips:
-                device.change_zones([zeroColor] * 16)
+                device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["green", 7], ["yellow", 5]], duration=5)
             got = await runner.target.script(msg).run_with_all([s.serial for s in self.strips])
@@ -569,7 +555,7 @@ describe AsyncTestCase, "Multizone helpers":
             gatherer = Gatherer(runner.target)
 
             for device in self.strips:
-                device.change_zones([zeroColor] * 16)
+                device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all(runner.serials)
@@ -632,7 +618,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.MOVE)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
                   { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -666,7 +652,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.MOVE)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
                   { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -700,7 +686,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.MOVE)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
                   { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -734,7 +720,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.MOVE)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
                   { striplcm1:
@@ -766,7 +752,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.MOVE)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
                   { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -798,7 +784,7 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             for strip in self.strips:
-                self.assertIs(strip.zones_effect, MultiZoneEffectType.OFF)
+                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.OFF)
 
             self.compare_received(
                   { light1: []

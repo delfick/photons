@@ -41,7 +41,7 @@ our ``my_script`` file.
     log = logging.getLogger("my_script")
 
     @option_merge_addon_hook(extras=[
-          ("lifx.photons", "socket")
+          ("lifx.photons", "transport")
         , ("lifx.photons", "messages")
         ])
     def __lifx__(collector, *args, **kwargs):
@@ -116,7 +116,7 @@ So now, running our app should spit out something like::
     $ ./my_script
     15:11:04 INFO    option_merge.collector Adding configuration from /Users/stephenmoore/.photons_apprc.yml
     15:11:04 INFO    option_merge.addons Found lifx.photons.__main__ addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.socket addon
+    15:11:04 INFO    option_merge.addons Found lifx.photons.transport addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.protocol addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.transport addon
     15:11:04 INFO    option_merge.addons Found lifx.photons.messages addon

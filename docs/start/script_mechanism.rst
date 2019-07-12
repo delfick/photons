@@ -13,7 +13,7 @@ against the serials of your devices:
 
     script = target.script(DeviceMessages.GetPower())
 
-    async for pkt, addr, sent_to in script.run_with(["d073d5000000", "d073d5000001"]):
+    async for pkt, addr, original in script.run_with(["d073d5000000", "d073d5000001"]):
         if pkt | DeviceMessages.StatePower:
             print(pkt.serial, pkt.level)
 
@@ -25,18 +25,17 @@ Photons knows that the returned ``pkt`` objects are for our messages because
 they have the same ``target``, ``source`` and ``sequence_id`` of the messages
 that were sent.
 
-The return of ``run_with`` is a list of ``[(pkt, addr, sent_to), ...)]`` where
+The return of ``run_with`` is a list of ``[(pkt, addr, original), ...)]`` where
 ``pkt`` is the Packet object representing the packet the device sent back; ``addr``
-is a tuple of the ip address and port of the device; and ``sent_to`` is the
-address that was sent to (i.e. the broadcast address if the message was broadcast,
-or the ip of the device if it was unicast).
+is a tuple of the ip address and port of the device; and ``original`` is the
+original message that was sent.
 
 This mechanism is responsible for timeouts and retries, which are configured by
 options to ``run_with``.
 
 For example, the lan target ``run_with`` takes in:
 
-.. automethod:: photons_transport.base.item.TransportItem.run_with
+.. automethod:: photons_transport.targets.item.Item.run_with
     :noindex:
 
 Sending multiple packets
@@ -146,7 +145,7 @@ it like so:
 
 .. code-block:: python
     
-    async for pkt, addr, sent_to in script.run_with(references):
+    async for pkt, addr, original in script.run_with(references):
         ...
 
 Note that this will raise any errors after giving back any results we got from

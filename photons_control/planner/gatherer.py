@@ -5,8 +5,8 @@ from photons_app.errors import RunErrors, BadRunWithResults
 from photons_app import helpers as hp
 
 from photons_transport.errors import FailedToFindDevice
-from photons_transport.base.item import throw_error
 from photons_control.script import find_serials
+from photons_transport import catch_errors
 
 from input_algorithms import spec_base as sb
 from collections import defaultdict
@@ -393,27 +393,14 @@ class Gatherer:
         if hasattr(self, "_session"):
             del self.session
 
-    async def gather(self, plans, reference, args_for_run=sb.NotSpecified, limit=30, error_catcher=None, **kwargs):
+    async def gather(self, plans, reference, args_for_run=sb.NotSpecified, error_catcher=None, **kwargs):
         """
         Yield (serial, label, info) information as we get it
         """
         if not plans:
             return
 
-        do_raise = error_catcher is None
-        error_catcher = [] if do_raise else error_catcher
-        kwargs["error_catcher"] = error_catcher
-
-        if isinstance(limit, int):
-            limit = asyncio.Semaphore(limit)
-        kwargs["limit"] = limit
-
-        async with self._ensure_afr(self.target, args_for_run) as afr:
-            serials, missing = await find_serials(reference, afr, timeout=kwargs.get("find_timeout", 20))
-
-            for serial in missing:
-                hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
-
+        async def gathering(serials, afr, kwargs):
             class Done:
                 pass
 
@@ -438,8 +425,19 @@ class Gatherer:
                     break
                 yield nxt
 
-            if do_raise:
-                throw_error(serials, error_catcher)
+        from photons_transport.targets.script import AFRWrapper
+
+        with catch_errors(error_catcher) as error_catcher:
+            kwargs["error_catcher"] = error_catcher
+
+            async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+                serials, missing = await find_serials(reference, afr, timeout=kwargs.get("find_timeout", 20))
+
+                for serial in missing:
+                    hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
+
+                async for item in gathering(serials, afr, kwargs):
+                    yield item
 
     async def gather_all(self, plans, reference, args_for_run=sb.NotSpecified, **kwargs):
         """Return {serial: (completed, info)} dictionary with all information"""
@@ -538,19 +536,3 @@ class Gatherer:
                         depinfo[plan][l] = info
 
         return depinfo
-
-    class _ensure_afr:
-        """Used to make sure we have an afr"""
-        def __init__(self, target, afr):
-            self.afr = afr
-            self.target = target
-
-        async def __aenter__(self):
-            if self.afr is sb.NotSpecified:
-                self.own_afr = True
-                self.afr = await self.target.args_for_run()
-            return self.afr
-
-        async def __aexit__(self, exc_type, exc, tb):
-            if hasattr(self, "own_afr") and self.afr is not sb.NotSpecified:
-                await self.target.close_args_for_run(self.afr)

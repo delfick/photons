@@ -10,7 +10,7 @@ import logging
 log = logging.getLogger("info")
 
 @option_merge_addon_hook(extras=[
-      ("lifx.photons", "socket")
+      ("lifx.photons", "transport")
     , ("lifx.photons", "control")
     , ("lifx.photons", "device_finder")
     ])

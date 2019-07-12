@@ -5,6 +5,15 @@ ChangeLog
 
 0.20.0 - TBD
    * Fixed shutdown logic so that finally blocks work when we get a SIGINT
+   * Refactored the transport target mechanism. There are two breaking changes
+     from this work, otherwise everything should behave the same as before:
+
+     * photons_socket no longer exists, all that functionality now belongs in
+       photons_transport. It is likely that you don't need to change anything
+       other than enabling the ``("lifx.photons", "transport")`` in your script
+       instead of ``("lifx.photons", "socket")``
+     * The third variable in a run_with call is now the original message that
+       was sent to get that reply
 
 0.13.5 - 6 July 2019
     * Some code shuffling in photons_transport

@@ -1,22 +1,23 @@
 # coding: spec
 
-from photons_control.test_helpers import Device, ModuleLevelRunner
 from photons_control.script import Repeater, Pipeline
+from photons_control import test_helpers as chp
 
 from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, LightMessages
+from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from collections import defaultdict
 import asyncio
 
-light1 = Device("d073d5000001", use_sockets=False)
-light2 = Device("d073d5000002", use_sockets=False)
-light3 = Device("d073d5000003", use_sockets=False)
+light1 = FakeDevice("d073d5000001", chp.default_responders())
+light2 = FakeDevice("d073d5000002", chp.default_responders())
+light3 = FakeDevice("d073d5000003", chp.default_responders())
 
-mlr = ModuleLevelRunner([light1, light2, light3], use_sockets=False)
+mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
@@ -166,13 +167,13 @@ describe AsyncTestCase, "Repeater":
 
     @mlr.test
     async it "is not stopped by errors", runner:
-        async def waiter(pkt):
+        async def waiter(pkt, source):
             if pkt | DeviceMessages.SetPower:
                 return False
 
-        light1.set_received_processing(waiter)
-        light2.set_received_processing(waiter)
-        light3.set_received_processing(waiter)
+        light1.set_intercept_got_message(waiter)
+        light2.set_intercept_got_message(waiter)
+        light3.set_intercept_got_message(waiter)
 
         msgs = [
               DeviceMessages.SetPower(level=0)
