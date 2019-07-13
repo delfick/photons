@@ -24,10 +24,11 @@ def PowerToggle(duration=1):
     async def gen(reference, afr, **kwargs):
         get_power = DeviceMessages.GetPower()
         async for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
-            if pkt.level == 0:
-                yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration, target=pkt.serial)
-            else:
-                yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration, target=pkt.serial)
+            if pkt | DeviceMessages.StatePower:
+                if pkt.level == 0:
+                    yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration, target=pkt.serial)
+                else:
+                    yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration, target=pkt.serial)
 
     return FromGenerator(gen)
 
