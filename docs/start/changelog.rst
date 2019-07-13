@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.20.0 - TBD
+0.20.0 - 13 July 2019
    * Fixed shutdown logic so that finally blocks work when we get a SIGINT
    * Refactored the transport target mechanism. There are two breaking changes
      from this work, otherwise everything should behave the same as before:
