@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+0.20.1 - TBD
+   * Fixed a bug in the device finder when you use the same device finder more
+     than once with a different filter. It was forgetting devices from one filter
+     and making that device not there for a subsequent filter.
+
 0.20.0 - 13 July 2019
    * Fixed shutdown logic so that finally blocks work when we get a SIGINT
    * Refactored the transport target mechanism. There are two breaking changes

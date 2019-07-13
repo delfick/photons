@@ -115,7 +115,7 @@ describe AsyncTestCase, "Device finder":
                 await finder.finish()
 
     @mlr.test
-    async ignore "can find a particular serial", runner:
+    async it "can find a particular serial", runner:
         async with runner.target.session() as afr:
             finder = DeviceFinder(runner.target)
             try:
@@ -125,7 +125,7 @@ describe AsyncTestCase, "Device finder":
                 await finder.finish()
 
     @mlr.test
-    async ignore "can find with the device finder wrap", runner:
+    async it "can find with the device finder wrap", runner:
         wrap = DeviceFinderWrap(Filter.from_kwargs(), runner.target)
         try:
             async with runner.target.session() as afr:
@@ -137,7 +137,7 @@ describe AsyncTestCase, "Device finder":
             await wrap.finish()
 
     @mlr.test
-    async ignore "can be used to get info", runner:
+    async it "can be used to get info", runner:
         class W:
             async def __aenter__(self):
                 self.finder = DeviceFinder(runner.target
@@ -225,6 +225,11 @@ describe AsyncTestCase, "Device finder":
             self.expect_received(device2, DeviceMessages.GetGroup)
             self.expect_received(device3, DeviceMessages.GetGroup)
             self.assertEqual(set(serials), set([device1.serial, device2.serial]))
+
+            # And make sure filters without refresh don't ruin other filters
+            self.assertEqual(set(await finder.serials()), set([device1.serial, device2.serial, device3.serial]))
+            self.assertEqual(set(await finder.serials(label="kitchen")), set([device1.serial]))
+            self.assertEqual(set(await finder.serials(group_name="two")), set([device1.serial, device2.serial]))
 
             device1.attrs.color = chp.Color(72, 0.8, 0.6, 2500)
             device2.attrs.label = "blah"

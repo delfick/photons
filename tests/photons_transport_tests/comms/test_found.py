@@ -21,6 +21,39 @@ describe TestCase, "Found":
         assert self.found == Found()
         self.assertEqual(list(self.found), [])
 
+    it "can be cloned":
+        found = Found()
+        found["d073d5000001"] = {"one": 1, "two": 2}
+        found["d073d5000002"] = {"three": 3, "four": 4}
+
+        h = lambda serial: binascii.unhexlify(serial)[:6]
+
+        found2 = found.clone()
+        del found2["d073d5000001"]["one"]
+        self.assertEqual(found.found
+            , { h("d073d5000001"): {"one": 1, "two": 2}
+              , h("d073d5000002"): {"three": 3, "four": 4}
+              }
+            )
+
+        self.assertEqual(found2.found
+            , { h("d073d5000001"): {"two": 2}
+              , h("d073d5000002"): {"three": 3, "four": 4}
+              }
+            )
+
+        del found2["d073d5000002"]
+        self.assertEqual(found.found
+            , { h("d073d5000001"): {"one": 1, "two": 2}
+              , h("d073d5000002"): {"three": 3, "four": 4}
+              }
+            )
+
+        self.assertEqual(found2.found
+            , { h("d073d5000001"): {"two": 2}
+              }
+            )
+
     it "can cleanse a serial":
         def assertCleansed(i, o):
             self.assertEqual(self.found.cleanse_serial(i), o)

@@ -20,6 +20,12 @@ class Found:
     def __init__(self):
         self.found = {}
 
+    def clone(self):
+        found = self.__class__()
+        for serial, services in self.found.items():
+            found[serial] = dict(services)
+        return found
+
     def cleanse_serial(self, serial):
         if isinstance(serial, str):
             serial = binascii.unhexlify(serial)

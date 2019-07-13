@@ -798,6 +798,8 @@ class InfoStore(object):
         else:
             found = await waited
 
+        found = found.clone()
+
         await found.remove_lost(self.by_target)
 
         if not filtr.matches_all:
