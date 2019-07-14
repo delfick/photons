@@ -2,10 +2,13 @@ from photons_app.errors import PhotonsAppError
 
 from delfick_error import DelfickErrorTestMixin
 from asynctest import TestCase as AsyncTestCase
+from input_algorithms import spec_base as sb
+from contextlib import contextmanager
 from collections import defaultdict
 from unittest import TestCase
 from unittest import mock
 import asyncio
+import os
 
 class BadTest(PhotonsAppError):
     desc = "bad test"
@@ -203,3 +206,36 @@ def assertFutCallbacks(fut, *cbs):
     for cb in cbs:
         msg = f"Expected {expected[cb]} instances of {cb}, got {counts[cb]} in {callbacks}"
         assert counts[cb] == expected[cb], msg
+
+@contextmanager
+def modified_env(**env):
+    """
+    A context manager that let's you modify environment variables until the block
+    has ended where the environment is returned to how it was
+
+    .. code-block:: python
+
+        import os
+
+        assert "ONE" not in os.environ
+        assert os.environ["TWO"] == "two"
+
+        with modified_env(ONE="1", TWO="2"):
+            assert os.environ["ONE"] == "1"
+            assert os.environ["TWO"] == "1"
+
+        assert "ONE" not in os.environ
+        assert os.environ["TWO"] == "two"
+    """
+    previous = {key: os.environ.get(key, sb.NotSpecified) for key in env}
+    try:
+        for key, val in env.items():
+            os.environ[key] = val
+        yield
+    finally:
+        for key, val in previous.items():
+            if val is sb.NotSpecified:
+                if key in os.environ:
+                    del os.environ[key]
+            else:
+                os.environ[key] = val
