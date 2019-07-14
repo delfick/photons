@@ -72,7 +72,7 @@ class LIFIProductRegistry(Enum):
 
     LCM3_MINI_COLOR         = 49
     LCM3_MINI_DAY_DUSK      = 50
-    LCM3_MINI_DAY           = 51
+    LCM3_MINI_WHITE         = 51
 
     LCM3_GU10_COLOR         = 52
 
@@ -178,14 +178,14 @@ class Capabilities(Enum):
 
     LCM2_BEAM               = lc("LIFX Beam", "beam", has_multizone=True, min_extended_fw=(2, 77))
 
-    LCM2_A19_HK             = lc("LIFX A19", "a19")
-    LCM2_BR30_HK            = lc("LIFX BR30", "br30")
-    LCM2_A19_PLUS_HK        = lc("LIFX+ A19", "a19_plus", has_ir=True)
-    LCM2_BR30_PLUS_HK       = lc("LIFX+ BR30", "br30_plus", has_ir=True)
+    LCM2_A19_HK             = lc("LIFX A19", "a19_hk")
+    LCM2_BR30_HK            = lc("LIFX BR30", "br30_hk")
+    LCM2_A19_PLUS_HK        = lc("LIFX+ A19", "a19_hk_plus", has_ir=True)
+    LCM2_BR30_PLUS_HK       = lc("LIFX+ BR30", "br30_hk_plus", has_ir=True)
 
     LCM3_MINI_COLOR         = lc("LIFX Mini Color", "mini_color")
     LCM3_MINI_DAY_DUSK      = lc("LIFX Mini Day Dusk", "mini_day_dusk", has_color=False, min_kelvin=1500, max_kelvin=4000)
-    LCM3_MINI_DAY           = lc("LIFX Mini Day", "mini_day", has_color=False, min_kelvin=2700, max_kelvin=2700)
+    LCM3_MINI_WHITE         = lc("LIFX Mini White", "mini_white", has_color=False, min_kelvin=2700, max_kelvin=2700)
 
     LCM3_GU10_COLOR         = lc("LIFX GU10 Color", "gu10_color")
 
