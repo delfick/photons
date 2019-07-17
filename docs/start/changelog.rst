@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.20.2 - TBD
+0.20.2 - 17 July 2019
    * Added a hook to tile animations for overriding the default_color_func on
      the canvas
 
