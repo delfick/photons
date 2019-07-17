@@ -191,6 +191,9 @@ class Animation:
     def make_canvas(self, state, coords):
         raise NotImplementedError()
 
+    def set_canvas_default_color_func(self, canvas, default_color_func):
+        canvas.set_default_color_func(default_color_func)
+
     async def animate(self, reference, final_future, pauser=None):
         if pauser is None:
             pauser = asyncio.Condition()
@@ -235,7 +238,8 @@ class Animation:
                     info["state"] = self.next_state(info["state"], coords)
                     canvas = self.make_canvas(info["state"], coords)
 
-                canvas.set_default_color_func(state.info_by_serial[serial].default_color_func)
+                self.set_canvas_default_color_func(canvas, state.info_by_serial[serial].default_color_func)
+
                 orientations = state.info_by_serial[serial].orientations
                 for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks, orientations=orientations):
                     msg.target = serial

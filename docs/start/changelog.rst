@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.20.2 - TBD
+   * Added a hook to tile animations for overriding the default_color_func on
+     the canvas
+
 0.20.1 - 13 July 2019
    * Fixed a bug in the device finder when you use the same device finder more
      than once with a different filter. It was forgetting devices from one filter
