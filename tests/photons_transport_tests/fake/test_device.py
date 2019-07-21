@@ -191,10 +191,10 @@ describe AsyncTestCase, "FakeDevice":
             broadcast_address = mock.NonCallableMock(name="broadcast_address", spec=[])
 
             self.device.attrs.online = False
-            assert not self.device.is_reachable(broadcast_address)
+            assert not await self.device.is_reachable(broadcast_address)
 
             self.device.attrs.online = True
-            assert self.device.is_reachable(broadcast_address)
+            assert await self.device.is_reachable(broadcast_address)
 
         async it "has a decorator for making a device offline":
             self.device.attrs.online = True
@@ -339,6 +339,81 @@ describe AsyncTestCase, "FakeDevice":
             async for r in self.device.extra_make_response(pkt, source):
                 got.apend(r)
             self.assertEqual(got, [])
+
+        describe "discoverable":
+            async it "is discoverable if we are reachable and no responders have undiscoverable":
+                r1 = mock.Mock(name="r1", spec=[])
+                r2 = mock.Mock(name="r2", spec=[])
+                broadcast = mock.Mock(name="broadcast")
+                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                with mock.patch.multiple(FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable):
+                    assert await self.device.discoverable(broadcast)
+                is_reachable.assert_called_once_with(broadcast)
+
+            async it "is not discoverable if we are not reachable":
+                r1 = mock.Mock(name="r1", spec=[])
+                r2 = mock.Mock(name="r2", spec=[])
+                broadcast = mock.Mock(name="broadcast")
+                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=False)
+                with mock.patch.multiple(FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable):
+                    assert not await self.device.discoverable(broadcast)
+                is_reachable.assert_called_once_with(broadcast)
+
+            async it "is not discoverable if we are reachable but a responder is undiscoverable":
+                r1 = mock.Mock(name="r1", spec=["undiscoverable"])
+                r1.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=True)
+
+                r2 = mock.Mock(name="r2", spec=[])
+                broadcast = mock.Mock(name="broadcast")
+                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                with mock.patch.multiple(FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable):
+                    assert not await self.device.discoverable(broadcast)
+                is_reachable.assert_called_once_with(broadcast)
+                r1.undiscoverable.assert_called_once_with(self.device)
+
+            async it "is not discoverable if we are reachable but a responder is undiscoverable even if others are":
+                r1 = mock.Mock(name="r1", spec=["undiscoverable"])
+                r1.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=False)
+
+                r2 = mock.Mock(name="r2", spec=["undiscoverable"])
+                r2.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=True)
+
+                r3 = mock.Mock(name="r3", spec=[])
+
+                r4 = mock.Mock(name="r4", spec=["undiscoverable"])
+                r4.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=None)
+
+                broadcast = mock.Mock(name="broadcast")
+                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                with mock.patch.multiple(FakeDevice, all_responders=[r1, r2, r3, r4], is_reachable=is_reachable):
+                    assert not await self.device.discoverable(broadcast)
+                is_reachable.assert_called_once_with(broadcast)
+                r1.undiscoverable.assert_called_once_with(self.device)
+                r2.undiscoverable.assert_called_once_with(self.device)
+
+                # We shortcut after r2 returns True
+                self.assertEqual(len(r4.undiscoverable.mock_calls), 0)
+
+            async it "is discoverable if we are reachable but responder say False to undiscoverable":
+                r1 = mock.Mock(name="r1", spec=["undiscoverable"])
+                r1.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=False)
+
+                r2 = mock.Mock(name="r2", spec=["undiscoverable"])
+                r2.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=False)
+
+                r3 = mock.Mock(name="r3", spec=[])
+
+                r4 = mock.Mock(name="r4", spec=["undiscoverable"])
+                r4.undiscoverable = asynctest.mock.CoroutineMock(name="undiscoverable", return_value=None)
+
+                broadcast = mock.Mock(name="broadcast")
+                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                with mock.patch.multiple(FakeDevice, all_responders=[r1, r2, r3, r4], is_reachable=is_reachable):
+                    assert await self.device.discoverable(broadcast)
+                is_reachable.assert_called_once_with(broadcast)
+                r1.undiscoverable.assert_called_once_with(self.device)
+                r2.undiscoverable.assert_called_once_with(self.device)
+                r4.undiscoverable.assert_called_once_with(self.device)
 
         describe "reset":
             async it "resets the device":

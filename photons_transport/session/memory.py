@@ -26,7 +26,7 @@ def makeMemorySession(basedon):
         async def _do_search(self, serials, timeout, **kwargs):
             found_now = []
             for device in self.transport_target.devices:
-                if device.is_reachable(self.transport_target.default_broadcast):
+                if await device.discoverable(self.transport_target.default_broadcast):
                     found_now.append(device.serial)
                     await device.add_services(self.add_service)
             return found_now
@@ -43,7 +43,7 @@ def makeMemorySession(basedon):
             if broadcast not in self.broadcast_transports:
                 async def writer(received_data, bts):
                     for device in self.transport_target.devices:
-                        if device.is_reachable(broadcast):
+                        if await device.is_reachable(broadcast):
                             await device.write("udp", received_data, bts)
 
                 self.broadcast_transports[broadcast] = Memory(self, writer)

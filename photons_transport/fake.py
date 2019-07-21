@@ -317,8 +317,19 @@ class FakeDevice:
         async for msg in self.got_message(pkt, source):
             received_data(msg.tobytes(serial=self.serial), addr)
 
-    def is_reachable(self, broadcast_address):
+    async def is_reachable(self, broadcast_address):
         return self.attrs.online
+
+    async def discoverable(self, broadcast_address):
+        if not await self.is_reachable(broadcast_address):
+            return False
+
+        for responder in self.all_responders:
+            if hasattr(responder, "undiscoverable"):
+                if await responder.undiscoverable(self):
+                    return False
+
+        return True
 
     @contextmanager
     def offline(self):
