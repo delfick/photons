@@ -752,6 +752,8 @@ describe AsyncTestCase, "FakeDevice":
             async it "yields ack and results":
                 await self.device.reset()
 
+                process_reply = asynctest.mock.CoroutineMock(name="process_reply")
+
                 source = mock.Mock(name="source")
                 sequence = mock.Mock(name="sequence")
                 serial = mock.Mock(name="serial")
@@ -772,7 +774,7 @@ describe AsyncTestCase, "FakeDevice":
                 got = []
                 message_source = mock.Mock(name="message_source")
 
-                with mock.patch.multiple(self.device, ack_for=ack_for, response_for=response_for):
+                with mock.patch.multiple(self.device, ack_for=ack_for, response_for=response_for, process_reply=process_reply):
                     async for m in self.device.got_message(pkt, message_source):
                         got.append(m)
 
@@ -784,6 +786,12 @@ describe AsyncTestCase, "FakeDevice":
 
                 ack_for.assert_called_once_with(pkt, message_source)
                 response_for.assert_called_once_with(pkt, message_source)
+                self.assertEqual(process_reply.mock_calls
+                    , [ mock.call(ack, message_source)
+                      , mock.call(res1, message_source)
+                      , mock.call(res2, message_source)
+                      ]
+                    )
 
             async it "yields nothing if intercept_got_message returns False":
                 await self.device.reset()
@@ -835,6 +843,25 @@ describe AsyncTestCase, "FakeDevice":
                         self.assertEqual(g.source, 1)
                         self.assertEqual(g.sequence, 2)
                         self.assertEqual(g.serial, self.serial)
+
+        describe "process_reply":
+            async it "gives every responder a chance to do something with the packet":
+                r1 = mock.Mock(name="r1", spec=[])
+                r2 = mock.Mock(name="r2", spec=["process_reply"])
+                r3 = mock.Mock(name="r3", spec=[])
+                r4 = mock.Mock(name="r4", spec=["process_reply"])
+
+                r2.process_reply = asynctest.mock.CoroutineMock(name="process_reply")
+                r4.process_reply = asynctest.mock.CoroutineMock(name="process_reply")
+
+                pkt = mock.Mock(name="pkt")
+                message_source = mock.Mock(name="message_source")
+
+                with mock.patch.object(FakeDevice, "all_responders", [r1, r2, r3, r4]):
+                    await self.device.process_reply(pkt, message_source)
+
+                r2.process_reply.assert_called_once_with(self.device, pkt, message_source)
+                r4.process_reply.assert_called_once_with(self.device, pkt, message_source)
 
         describe "stop_service":
             async it "does nothing if no such service already":

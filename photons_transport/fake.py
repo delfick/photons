@@ -382,12 +382,19 @@ class FakeDevice:
             ack.source = pkt.source
             ack.target = self.serial
             yield ack
+            await self.process_reply(ack, source)
 
         async for res in self.response_for(pkt, source):
             res.sequence = pkt.sequence
             res.source = pkt.source
             res.target = self.serial
             yield res
+            await self.process_reply(res, source)
+
+    async def process_reply(self, pkt, source):
+        for responder in self.all_responders:
+            if hasattr(responder, "process_reply"):
+                await responder.process_reply(self, pkt, source)
 
     async def stop_service(self, service):
         services = []
