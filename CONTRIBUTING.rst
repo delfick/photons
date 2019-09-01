@@ -93,116 +93,77 @@ get clobbered by these test files.
 Code style
 ----------
 
-Pep8 is great and all, but I don't follow all of it. Notable mentions include
-the following:
+We use the black project (https://black.readthedocs.io/en/stable/) to format the
+python code in this repository.
 
-Double empty lines
-++++++++++++++++++
+Note that because of the noseOfYeti tests, I need to use the master branch of
+black combined with a monkey patch of black to support the different grammar.
 
-I cannot stand double empty lines. I always use a single empty line between
-anything.
+All you need to know is that you can run from the root of this project::
 
-Import statement groups
-+++++++++++++++++++++++
+   $ ./format
 
-I group import blocks into groups and then by length of line within the group.
+And everything will be formatted.
 
-.. code-block:: plain
+You can setup vim to do this for you with something like:
 
-    <imports from to the current module>
+.. code-block:: vim
 
-    <imports from photons_app>
+   Plug 'sbdchd/neoformat'
 
-    <imports from other photons modules>
+   augroup fmt
+      autocmd!
+      autocmd BufWritePre *.py Neoformat
+      autocmd BufWritePre */photons/scripts/* Neoformat
+   augroup END
 
-    <other imports>
+   let g:neoformat_enabled_python = ['black']
 
-For example, inside ``photons_socket``:
+   function SetBlackOptions()
+      let g:neoformat_enabled_python = ['black']
+   endfunction
 
-.. code-block:: python
+   function SetNoyBlackOptions()
+      let g:neoformat_enabled_python = ['noy_black']
+   endfunction
 
-    from photons_socket.connection import Sockets
+   function SetNoBlackOptions()
+      let g:neoformat_enabled_python = []
+   endfunction
 
-    from photons_app.errors import TimedOut, FoundNoDevices
+   autocmd BufEnter * call SetBlackOptions()
+   autocmd BufEnter *test*.py call SetNoyBlackOptions()
+   autocmd BufEnter */site-packages/*.py call SetNoBlackOptions()
 
-    from photons_transport.base import TransportItem, TransportBridge, TransportTarget
-    from photons_messages import DiscoveryMessages, Services
-    from photons_protocol.messages import Messages
+Note that for this to work you need black and noy_black in your python
+environment when you open up vim.
 
-    from input_algorithms.dictobj import dictobj
-    from input_algorithms import spec_base as sb
-    import logging
+I recommend creating a virtualenv somewhere and doing::
 
-Using import as
-+++++++++++++++
+   $ cd tools/black/black
+   $ pip install -e .
+   $ cd ../noy_black
+   $ pip install -e .
 
-I tend to import things directly, but there are two notable exceptions:
+In VSCode you will need the following options to enable formatting on save:
 
-.. code-block:: python
+.. code-block:: json
 
-    from photons_app import helpers as hp
+   "editor.formatOnSave": true,
+   "python.formatting.blackPath": "/path/to/photons/extra/black/vscode_black",
+   "python.formatting.provider": "black",
+   "python.linting.pylamaArgs": ["-o", "/path/to/photons/pylama.ini"],
+   "editor.formatOnSaveTimeout": 5000
 
-    from input_algorithms import spec_base as sb
+The formatOnSaveTimeout is so that black has enough time to format the test files.
 
-These two happen in many places within the photons codebase because they are both
-common and have many different objects underneath them
+Linting
+-------
 
-PyLama
-++++++
+I use pylama as my code linter, just run::
 
-I use pylama as my code linter, with the following ``~/.config/pycodestyle`` file
+   $ ./lint
 
-.. code-block:: ini
+If you don't want the "too complicated" warnings, then run::
 
-    [pycodestyle]
-    ignore = E203,E128,E124,E251,E121,E123,E131,E126,E302,E731,E201,E305,E202,E125,E221,E222,E266,E241,E122,E211
-
-And the following ``~/.pylama.ini``
-
-.. code-block:: init
-
-    [pylama:pyflakes]
-    builtins = _
-
-    [pylama:pycodestyle]
-    max_line_length = 150
-
-    [pylama:pylint]
-    max_line_length = 150
-    disable = R
-
-Leading commas
-++++++++++++++
-
-I use leading commas because I believe they are easier to read and check.
-
-Basically this means the following:
-
-.. code-block:: python
-
-    my_list = [
-          "one"
-        , "two"
-        , "three"
-        ]
-
-    long_function_name_for_example(
-          "one"
-        , "two"
-        )
-
-    nested_thing = {
-          "one": "two"
-        , "three":
-          { "four": "five"
-          , "six": ["seven", "eight"]
-          , "nine":
-            [ "ten"
-            , "eleven"
-            , "twelve"
-            ]
-          }
-        }
-
-I never indent to the opening brace of something. If it's on a newline then it's
-one tab away from the beginning of the last line.
+   $ ./lint -i C901

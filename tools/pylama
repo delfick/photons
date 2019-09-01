@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+from venvstarter import ignite
+
+ignite(__file__, "pylama", deps=["pylama==7.5.5"], min_python_version=3.6)

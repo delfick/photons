@@ -21,6 +21,8 @@ for filename in os.listdir(this_dir):
         if filename != 'photons_app':
             photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
 
+# fmt: off
+
 setup(
       name = "lifx-photons-core"
     , version = VERSION
@@ -69,3 +71,5 @@ setup(
     , license = "MIT"
     , keywords = "lifx photons"
     )
+
+# fmt: on
