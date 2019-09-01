@@ -540,7 +540,7 @@ class version_number_spec(sb.Spec):
         if self.unpacking:
             if type(val) is str:
                 if not regexes["version_number"].match(val):
-                    raise BadSpecValue("Expected string to match \d+.\d+", got=val, meta=meta)
+                    raise BadSpecValue(r"Expected string to match \d+.\d+", got=val, meta=meta)
                 return val
 
             val = sb.integer_spec().normalise(meta, val)
@@ -554,7 +554,7 @@ class version_number_spec(sb.Spec):
             val = sb.string_spec().normalise(meta, val)
             m = regexes["version_number"].match(val)
             if not m:
-                raise BadSpecValue("Expected version string to match (\d+.\d+)", wanted=val, meta=meta)
+                raise BadSpecValue(r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta)
 
             groups = m.groupdict()
             major = int(groups["major"])
@@ -988,7 +988,7 @@ class bytes_spec(sb.Spec):
         else:
             try:
                 b.frombytes(val)
-            except TypeError as error:
+            except TypeError:
                 raise BadConversion("Failed to get a bitarray from the value", value=val, meta=meta)
 
         return b

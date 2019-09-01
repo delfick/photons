@@ -47,7 +47,7 @@ class Receiver(object):
         target = pkt.target[:6]
         serial = binascii.hexlify(target).decode()
 
-        if pkt.source is 0 and pkt.sequence is 0:
+        if pkt.source == 0 and pkt.sequence == 0:
             if not allow_zero:
                 log.warning("Received message with 0 source and sequence")
                 return

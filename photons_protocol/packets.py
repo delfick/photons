@@ -66,7 +66,7 @@ class packet_spec(sb.Spec):
             if callable(spec):
                 spec = spec(pkt, False)
 
-            v = val.get(attr, sb.NotSpecified)
+            v = val.get(attr, pkt.actual(attr))
             if attr not in val and attr in self.name_to_group:
                 g = self.name_to_group[attr]
                 if g in val and attr in val[g]:
