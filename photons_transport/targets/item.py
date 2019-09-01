@@ -14,6 +14,13 @@ log = logging.getLogger("photons_transport.targets.item")
 class Done:
     """Used to specify when we should close a queue"""
 
+def choose_source(pkt, source):
+    """Used to decide what we use as source for the packet"""
+    if pkt.actual("source") is not sb.NotSpecified:
+        return pkt.source
+    else:
+        return source
+
 class Item(object):
     def __init__(self, parts):
         self.parts = parts
@@ -179,14 +186,14 @@ class Item(object):
                     clone.update(
                           dict(
                             target = serial
-                          , source = afr.source
+                          , source = choose_source(clone, afr.source)
                           , sequence = afr.seq(serial)
                           )
                         )
                     packets.append((original, clone))
             else:
                 clone = p.clone()
-                clone.update(dict(source=afr.source, sequence=afr.seq(p.target)))
+                clone.update(dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.target)))
                 packets.append((original, clone))
 
         return packets

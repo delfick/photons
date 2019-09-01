@@ -69,11 +69,15 @@ describe AsyncTestCase, "Item":
                 serials = [s1, s2]
 
                 c1 = mock.Mock(name="clone1")
+                c1.actual.return_value = sb.NotSpecified
                 c2 = mock.Mock(name="clone2")
+                c2.actual.return_value = sb.NotSpecified
                 p1clones = [c1, c2]
 
                 c3 = mock.Mock(name="clone3")
+                c3.actual.return_value = sb.NotSpecified
                 c4 = mock.Mock(name="clone4")
+                c4.actual.return_value = sb.NotSpecified
                 p2clones = [c3, c4]
 
                 def part1clone():
@@ -86,7 +90,9 @@ describe AsyncTestCase, "Item":
                 part2 = mock.Mock(name="part2", target=sb.NotSpecified)
                 part2.clone.side_effect = part2clone
 
-                c5 = mock.Mock(name="clone5")
+                c5source = mock.Mock(name="c5source")
+                c5 = mock.Mock(name="clone5", source=c5source)
+                c5.actual.return_value = 123
                 target = mock.Mock(name="target")
                 part3 = mock.Mock(name="part3", target=target)
                 part3.clone.return_value = c5
@@ -125,7 +131,9 @@ describe AsyncTestCase, "Item":
                 c3.update.assert_called_once_with(dict(source=source, sequence=2, target=s1))
                 c4.update.assert_called_once_with(dict(source=source, sequence=2, target=s2))
 
-                c5.update.assert_called_once_with(dict(source=source, sequence=1))
+                # c5 had an overridden source
+                c5.update.assert_called_once_with(dict(source=c5source, sequence=1))
+                c5.actual.assert_called_once_with("source")
 
         describe "search":
             async before_each:
