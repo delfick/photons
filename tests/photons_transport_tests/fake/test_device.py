@@ -18,6 +18,14 @@ import asyncio
 import time
 
 describe AsyncTestCase, "FakeDevice":
+    it "has a repr":
+        device = FakeDevice("d073d5001337", [])
+        self.assertEqual(repr(device), "<FakeDevice d073d5001337>")
+
+        device.attrs.vendor_id = 1
+        device.attrs.product_id = 55
+        self.assertEqual(repr(device), "<FakeDevice d073d5001337: LIFX Tile>")
+
     describe "init":
         async it "takes in serial and responders":
             serial = mock.Mock(name="serial")
@@ -426,6 +434,7 @@ describe AsyncTestCase, "FakeDevice":
                 self.device.no_res = mock.Mock(name="no_res")
                 self.device.no_acks = mock.Mock(name="no_acks")
                 self.device.reboots = mock.Mock(name="reboots")
+                self.device.waiters = mock.Mock(name="waiters")
                 self.device.received = mock.Mock(name="received")
                 self.device.set_replies = mock.Mock(name="set_replies")
                 self.device.intercept_got_message = mock.Mock(name="intercept_got_message")
@@ -437,6 +446,7 @@ describe AsyncTestCase, "FakeDevice":
                 self.assertEqual(self.device.no_res, {})
                 self.assertEqual(self.device.no_acks, {})
                 self.assertEqual(self.device.reboots, [])
+                self.assertEqual(self.device.waiters, {})
 
                 self.assertEqual(self.device.set_replies, {})
                 self.device.set_replies[1].append(2)
@@ -787,9 +797,9 @@ describe AsyncTestCase, "FakeDevice":
                 ack_for.assert_called_once_with(pkt, message_source)
                 response_for.assert_called_once_with(pkt, message_source)
                 self.assertEqual(process_reply.mock_calls
-                    , [ mock.call(ack, message_source)
-                      , mock.call(res1, message_source)
-                      , mock.call(res2, message_source)
+                    , [ mock.call(ack, message_source, pkt)
+                      , mock.call(res1, message_source, pkt)
+                      , mock.call(res2, message_source, pkt)
                       ]
                     )
 
@@ -844,6 +854,56 @@ describe AsyncTestCase, "FakeDevice":
                         self.assertEqual(g.sequence, 2)
                         self.assertEqual(g.serial, self.serial)
 
+            @with_timeout
+            async it "resolves waiters":
+                class R(Responder):
+                    async def respond(s, device, pkt, source):
+                        if pkt | DeviceMessages.SetLabel:
+                            yield DeviceMessages.StateLabel(label=pkt.label)
+                        if pkt | DeviceMessages.SetPower:
+                            yield DeviceMessages.StatePower(level=pkt.level)
+
+                self.device.responders = [R()]
+                await self.device.start()
+
+                fut = self.device.wait_for("udp", DeviceMessages.SetLabel)
+                fut2 = self.device.wait_for("udp", DeviceMessages.SetGroup)
+                self.assertEqual(self.device.waiters
+                    , { ("udp", DeviceMessages.SetGroup): mock.ANY
+                      , ("udp", DeviceMessages.SetLabel): mock.ANY
+                      }
+                    )
+
+                label_msg = DeviceMessages.SetLabel(label="hello", source=1, sequence=2, target=self.serial)
+                power_msg = DeviceMessages.SetPower(level=0, source=1, sequence=2, target=self.serial)
+
+                assert not fut.done()
+
+                got = []
+                async for m in self.device.got_message(power_msg, "memory"):
+                    got.append(m)
+                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
+                assert not fut.done()
+
+                got = []
+                async for m in self.device.got_message(label_msg, "memory"):
+                    got.append(m)
+                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
+                assert not fut.done()
+
+                self.assertEqual(self.device.waiters
+                    , { ("udp", DeviceMessages.SetGroup): mock.ANY
+                      , ("udp", DeviceMessages.SetLabel): mock.ANY
+                      }
+                    )
+
+                got = []
+                async for m in self.device.got_message(label_msg, "udp"):
+                    got.append(m)
+                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
+                self.assertEqual(await fut, label_msg)
+                self.assertEqual(self.device.waiters, {("udp", DeviceMessages.SetGroup): mock.ANY})
+
         describe "process_reply":
             async it "gives every responder a chance to do something with the packet":
                 r1 = mock.Mock(name="r1", spec=[])
@@ -855,13 +915,14 @@ describe AsyncTestCase, "FakeDevice":
                 r4.process_reply = asynctest.mock.CoroutineMock(name="process_reply")
 
                 pkt = mock.Mock(name="pkt")
+                request = mock.Mock(name="request")
                 message_source = mock.Mock(name="message_source")
 
                 with mock.patch.object(FakeDevice, "all_responders", [r1, r2, r3, r4]):
-                    await self.device.process_reply(pkt, message_source)
+                    await self.device.process_reply(pkt, message_source, request)
 
-                r2.process_reply.assert_called_once_with(self.device, pkt, message_source)
-                r4.process_reply.assert_called_once_with(self.device, pkt, message_source)
+                r2.process_reply.assert_called_once_with(self.device, pkt, message_source, request)
+                r4.process_reply.assert_called_once_with(self.device, pkt, message_source, request)
 
         describe "stop_service":
             async it "does nothing if no such service already":

@@ -3,6 +3,7 @@ from photons_transport.session.memory import MemoryService
 from photons_app import helpers as hp
 
 from photons_messages import Services, CoreMessages, DiscoveryMessages, DeviceMessages
+from photons_products_registry import capability_for_ids
 from photons_protocol.messages import Messages
 from photons_protocol.types import Type as T
 
@@ -192,6 +193,13 @@ class FakeDevice:
 
         self.setup()
 
+    def __repr__(self):
+        product = ""
+        if "product_id" in self.attrs and "vendor_id" in self.attrs:
+            cap = capability_for_ids(self.attrs.product_id, self.attrs.vendor_id)
+            product = f": {cap.name}"
+        return f"<FakeDevice {self.serial}{product}>"
+
     def setup(self):
         pass
 
@@ -217,6 +225,7 @@ class FakeDevice:
         self.no_res = {}
         self.no_acks = {}
         self.reboots = []
+        self.waiters = {}
         self.set_replies = defaultdict(list)
         self.intercept_got_message = None
 
@@ -364,13 +373,26 @@ class FakeDevice:
         with self.no_acks_for(kls), self.no_replies_for(kls):
             yield
 
+    def wait_for(self, source, kls):
+        assert (source, kls) not in self.waiters
+        fut = asyncio.Future()
+        self.waiters[(source ,kls)] = fut
+        return fut
+
     async def got_message(self, pkt, source):
         log.info(hp.lc("Got packet"
             , source = source
             , pkt = pkt.__class__.__name__
             , payload = repr(pkt.payload)
+            , pkt_source = pkt.source
             , serial = self.serial
             ))
+
+        for key, fut in list(self.waiters.items()):
+            s, kls = key
+            if s == source and pkt | kls:
+                fut.set_result(pkt)
+                del self.waiters[key]
 
         if self.intercept_got_message:
             if await self.intercept_got_message(pkt, source) is False:
@@ -382,19 +404,19 @@ class FakeDevice:
             ack.source = pkt.source
             ack.target = self.serial
             yield ack
-            await self.process_reply(ack, source)
+            await self.process_reply(ack, source, pkt)
 
         async for res in self.response_for(pkt, source):
             res.sequence = pkt.sequence
             res.source = pkt.source
             res.target = self.serial
             yield res
-            await self.process_reply(res, source)
+            await self.process_reply(res, source, pkt)
 
-    async def process_reply(self, pkt, source):
+    async def process_reply(self, pkt, source, request):
         for responder in self.all_responders:
             if hasattr(responder, "process_reply"):
-                await responder.process_reply(self, pkt, source)
+                await responder.process_reply(self, pkt, source, request)
 
     async def stop_service(self, service):
         services = []

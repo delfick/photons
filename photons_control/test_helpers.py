@@ -48,6 +48,12 @@ class HSBKClose:
 class Color(dictobj):
     fields = ["hue", "saturation", "brightness", "kelvin"]
 
+def TColor(hue, saturation, brightness, kelvin):
+    hue = (int(hue / 360 * 65535) / 65535 * 360)
+    saturation = (int(saturation * 65535) / 65535)
+    brightness = (int(brightness * 65535) / 65535)
+    return Color(hue, saturation, brightness, kelvin)
+
 class LightStateResponder(Responder):
     _fields = [
           ("color", lambda: Color(0, 0, 1, 3500))
