@@ -23,37 +23,37 @@ def multizone_effect_parameters_for(typ):
 
 duration_type = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
-    , lambda value: float(value) / 1000
+    , lambda _, value: float(value) / 1000
     ).allow_float()
 
 extended_duration_type = T.Uint64.default(0).transform(
       lambda _, value: int(1e9 * float(value))
-    , lambda value: float(value) / 1e9
+    , lambda _, value: float(value) / 1e9
     ).allow_float()
 
 scaled_hue = T.Uint16.transform(
       lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
-    , lambda v: float(v) * 360 / 65535
+    , lambda _, v: float(v) * 360 / 65535
     ).allow_float()
 
 scaled_to_65535 = T.Uint16.transform(
       lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-    , lambda v: float(v) / 65535
+    , lambda _, v: float(v) / 65535
     ).allow_float()
 
 nano_to_seconds = T.Uint64.transform(
       lambda _, v: int(v * 1e9)
-    , lambda v: v / 1e9
+    , lambda _, v: v / 1e9
     ).allow_float()
 
 waveform_period = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
-    , lambda value: float(value) / 1000
+    , lambda _, value: float(value) / 1000
     ).allow_float()
 
 waveform_skew_ratio = T.Int16.default(0).transform(
       lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v))) - 32768
-    , lambda v: float(v + 32768) / 65535
+    , lambda _, v: float(v + 32768) / 65535
     ).allow_float()
 
 hsbk_with_optional = (

@@ -689,8 +689,8 @@ describe TestCase, "Type":
 
         describe "untransform":
             it "does nothing if no untransformer":
-                self.assertIs(self.t.untransform(self.value), self.value)
+                self.assertIs(self.t.untransform(self.pkt, self.value), self.value)
 
             it "transforms if we have an untransformer":
-                self.assertIs(self.t.transform(self.transformer, self.untransformer).untransform(self.value), self.untransformed)
-                self.untransformer.assert_called_once_with(self.value)
+                self.assertIs(self.t.transform(self.transformer, self.untransformer).untransform(self.pkt, self.value), self.untransformed)
+                self.untransformer.assert_called_once_with(self.pkt, self.value)

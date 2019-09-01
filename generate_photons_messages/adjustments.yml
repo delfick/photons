@@ -78,7 +78,7 @@ types:
       - |
         transform(
               lambda _, value: int(1000 * float(value))
-            , lambda value: float(value) / 1000
+            , lambda _, value: float(value) / 1000
             )
       - "allow_float()"
 
@@ -90,7 +90,7 @@ types:
       - |
         transform(
               lambda _, value: int(1e9 * float(value))
-            , lambda value: float(value) / 1e9
+            , lambda _, value: float(value) / 1e9
             )
       - "allow_float()"
 
@@ -101,7 +101,7 @@ types:
       - |
         transform(
               lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
-            , lambda v: float(v) * 360 / 65535
+            , lambda _, v: float(v) * 360 / 65535
             )
       - "allow_float()"
 
@@ -112,7 +112,7 @@ types:
       - |
         transform(
               lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-            , lambda v: float(v) / 65535
+            , lambda _, v: float(v) / 65535
             )
       - "allow_float()"
 
@@ -123,7 +123,7 @@ types:
       - |
         transform(
               lambda _, v: int(v * 1e9)
-            , lambda v: v / 1e9
+            , lambda _, v: v / 1e9
             )
       - "allow_float()"
 
@@ -135,7 +135,7 @@ types:
       - |
         transform(
               lambda _, value: int(1000 * float(value))
-            , lambda value: float(value) / 1000
+            , lambda _, value: float(value) / 1000
             )
       - "allow_float()"
 
@@ -147,7 +147,7 @@ types:
       - |
         transform(
               lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v))) - 32768
-            , lambda v: float(v + 32768) / 65535
+            , lambda _, v: float(v + 32768) / 65535
             )
       - "allow_float()"
 

@@ -240,7 +240,7 @@ describe TestCase, "PacketSpecMixin":
                 fields = [
                       ( "two", T.Int16.transform(
                               lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
-                            , lambda v: float("{0}.{1}".format(v >> 0x10, v & 0xFF))
+                            , lambda _, v: float("{0}.{1}".format(v >> 0x10, v & 0xFF))
                             )
                         )
                     , ( "mod", T.String.default(lambda p: "{0}.modified".format(p["two"])))
@@ -397,7 +397,7 @@ describe TestCase, "PacketSpecMixin":
                 else:
                     return v
 
-            def unpack_t_sideeffect(v):
+            def unpack_t_sideeffect(p, v):
                 if v is for_packing:
                     called.append("unpack")
                     return for_user
@@ -540,7 +540,7 @@ describe TestCase, "PacketSpecMixin":
             def pack_t(p, v):
                 return v + 2
 
-            def unpack_t(v):
+            def unpack_t(p, v):
                 return v - 2
 
             class G(dictobj.PacketSpec):
@@ -556,7 +556,7 @@ describe TestCase, "PacketSpecMixin":
             def pack_t(p, v):
                 return v + 2
 
-            def unpack_t(v):
+            def unpack_t(p, v):
                 return v - 2
 
             class G(dictobj.PacketSpec):
@@ -613,7 +613,7 @@ describe TestCase, "PacketSpecMixin":
                 fields = [
                       ( "one", T.Int16.transform(
                             lambda _, v: int(v / 1000)
-                          , lambda v: v * 1000
+                          , lambda _, v: v * 1000
                           )
                        )
                     ]

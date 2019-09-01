@@ -291,7 +291,7 @@ describe TestCase, "PacketPacking":
     before_each:
         self.other_typ = T.Int16.transform(
               lambda _, v: v + 5
-            , lambda v: v - 5
+            , lambda _, v: v - 5
             )
 
         self.two_typ = T.String(20 * 8).allow_callable()

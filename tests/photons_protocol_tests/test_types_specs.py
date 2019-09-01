@@ -262,7 +262,7 @@ describe TestCase, "complex many_spec":
                 , ("two", T.String(lambda pkt: pkt.size))
                 , ('three', T.Uint16.transform(
                           lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-                        , lambda v: float(v) / 65535
+                        , lambda _, v: float(v) / 65535
                         ).allow_float()
                       )
                 ]

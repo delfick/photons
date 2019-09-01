@@ -361,12 +361,12 @@ class Type(object):
         else:
             return self._transform(pkt, value)
 
-    def untransform(self, value):
+    def untransform(self, pkt, value):
         """Perform the reverse transformation on a value"""
         if self._unpack_transform is sb.NotSpecified:
             return value
         else:
-            return self._unpack_transform(value)
+            return self._unpack_transform(pkt, value)
 
 class callable_spec(sb.Spec):
     """Allow callables to pass through"""

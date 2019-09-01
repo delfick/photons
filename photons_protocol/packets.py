@@ -212,7 +212,7 @@ class PacketSpecMixin:
         res = spec.normalise(Meta.empty().at(key), actual)
 
         if do_transform and unpacking and res is not sb.NotSpecified and res is not Optional:
-            res = typ.untransform(res)
+            res = typ.untransform(self, res)
 
         if type(res) is bitarray and not allow_bitarray:
             return res.tobytes()

@@ -155,7 +155,7 @@ describe TestCase, "Packet attributes":
             def pack_t(p, v):
                 return v + 5
 
-            def unpack_t(v):
+            def unpack_t(p, v):
                 return v - 5
 
             class P(dictobj.PacketSpec):
@@ -227,7 +227,7 @@ describe TestCase, "Packet attributes":
             actual.assert_called_with(self.parent, self.serial)
             self.typ.spec.assert_called_once_with(p, self.unpacking, transform=False)
             self.initd_spec.normalise.assert_called_with(meta.at(self.key), cald)
-            self.untransform.assert_called_with(self.normalised)
+            self.untransform.assert_called_with(p, self.normalised)
 
         it "does not call the value if it's not allowed to be callable and is callable":
             actual = mock.Mock(name='actual')
@@ -242,7 +242,7 @@ describe TestCase, "Packet attributes":
             self.assertEqual(len(actual.mock_calls), 0)
             self.typ.spec.assert_called_once_with(p, self.unpacking, transform=False)
             self.initd_spec.normalise.assert_called_with(meta.at(self.key), actual)
-            self.untransform.assert_called_with(self.normalised)
+            self.untransform.assert_called_with(p, self.normalised)
 
         it "does not transform if do_transform is False":
             actual = mock.Mock(name='actual')
@@ -296,7 +296,7 @@ describe TestCase, "Packet attributes":
 
             p = P()
             meta = Meta.empty()
-            self.assertIs(self.getitem_spec(p, actual, do_transform=False, allow_bitarray=False), b'\x00')
+            self.assertEqual(self.getitem_spec(p, actual, do_transform=False, allow_bitarray=False), b'\x00')
 
             self.typ.spec.assert_called_once_with(p, self.unpacking, transform=False)
             self.initd_spec.normalise.assert_called_with(meta.at(self.key), actual)
@@ -311,11 +311,11 @@ describe TestCase, "Packet attributes":
 
             p = P()
             meta = Meta.empty()
-            self.assertIs(self.getitem_spec(p, actual, do_transform=True, allow_bitarray=False), b'\x00')
+            self.assertEqual(self.getitem_spec(p, actual, do_transform=True, allow_bitarray=False), b'\x00')
 
             self.typ.spec.assert_called_once_with(p, self.unpacking, transform=False)
             self.initd_spec.normalise.assert_called_with(meta.at(self.key), actual)
-            self.untransform.assert_called_with(self.normalised)
+            self.untransform.assert_called_with(p, self.normalised)
 
         it "keeps transformed values as bitarrays if allow_bitarray":
             actual = b'\x00'
@@ -330,7 +330,7 @@ describe TestCase, "Packet attributes":
 
             self.typ.spec.assert_called_once_with(p, self.unpacking, transform=False)
             self.initd_spec.normalise.assert_called_with(meta.at(self.key), actual)
-            self.untransform.assert_called_with(self.normalised)
+            self.untransform.assert_called_with(p, self.normalised)
 
         it "keeps untransformed values as bitarrays if allow_bitarray":
             actual = b'\x00'
@@ -499,7 +499,7 @@ describe TestCase, "Packet attributes":
             def pack_t(p, v):
                 return v + 5
 
-            def unpack_t(v):
+            def unpack_t(p, v):
                 return v - 5
 
             class P(dictobj.PacketSpec):
@@ -600,7 +600,7 @@ describe TestCase, "Packet attributes":
                 self.assertEqual(len(self.unpack_t.mock_calls), 0)
 
                 self.assertEqual(p.one, self.for_user)
-                self.unpack_t.assert_called_once_with(self.for_packing)
+                self.unpack_t.assert_called_once_with(p, self.for_packing)
                 self.pack_t.assert_called_once_with(p, self.for_user)
 
     describe "_set_group_item":

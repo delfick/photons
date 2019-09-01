@@ -34,7 +34,7 @@ describe TestCase, "MessagesMixin":
             Three = msg(98
                 , ("three", T.Int8.transform(
                       lambda _, v: v + 5
-                    , lambda v: v - 5
+                    , lambda _, v: v - 5
                     )
                   )
                 )
