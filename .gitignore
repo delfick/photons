@@ -9,4 +9,3 @@ scripts/secrets.yml
 .tox/
 examples/.lifx/
 dist/
-generate_photons_messages/.generate_photons_messages/ 

@@ -9,7 +9,7 @@ this_dir = os.path.abspath(os.path.dirname(__file__))
 env = {
       "SRC": os.path.join(this_dir, "public-protocol", "protocol.yml")
     , "ADJUSTMENTS": os.path.join(this_dir, "adjustments.yml")
-    , "OUTPUT_FOLDER": os.path.join(this_dir, "..", "photons_messages")
+    , "OUTPUT_FOLDER": os.path.join(this_dir, "..", "..", "photons_messages")
     }
 
 from venvstarter import ignite
