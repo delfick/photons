@@ -88,9 +88,15 @@ class Transformer(object):
         power_level = 65535 if state["power"] == "on" else 0
 
         if state.get("duration") in (sb.NotSpecified, "", 0, None):
-            return DeviceMessages.SetPower(level=power_level, res_required=False)
+            s = dict(state)
+            s["level"] = power_level
+            s["res_required"] = False
+            return DeviceMessages.SetPower.empty_normalise(**s)
         else:
-            return LightMessages.SetLightPower(level=power_level, duration=state["duration"], res_required=False)
+            s = dict(state)
+            s["level"] = power_level
+            s["res_required"] = False
+            return LightMessages.SetLightPower.empty_normalise(**s)
 
     def color_message(self, state, keep_brightness):
         msg = Parser.color_to_msg(state.get("color", None), overrides=state)
