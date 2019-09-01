@@ -3,6 +3,14 @@
 ChangeLog
 =========
 
+0.20.3 - TBD
+   * Mainly just minor changes
+   * Also, changed the transform functionality on packet definitions. This method
+     is used to give a pack and an unpack function to the packet definition to
+     transform values when going between the raw value and value used by the
+     programmer. Previously only the pack received the packet being worked on,
+     now both functions do.
+
 0.20.2 - 17 July 2019
    * Added a hook to tile animations for overriding the default_color_func on
      the canvas
