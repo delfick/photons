@@ -15,6 +15,7 @@ from input_algorithms import validators
 
 import asyncio
 import logging
+import signal
 import json
 import sys
 
@@ -76,6 +77,25 @@ class PhotonsApp(dictobj.Spec):
             return json.loads(options)
         except (TypeError, ValueError) as error:
             raise BadOption("The options after -- wasn't valid json", error=error)
+
+    def separate_final_future(self, sleep=0):
+        other_future = asyncio.Future()
+
+        def stop():
+            other_future.cancel()
+        self.loop.remove_signal_handler(signal.SIGTERM)
+        self.loop.add_signal_handler(signal.SIGTERM, stop)
+
+        class CM:
+            async def __aenter__(s):
+                return other_future
+
+            async def __aexit__(s, exc_typ, exc, tb):
+                if sleep > 0:
+                    await asyncio.sleep(sleep)
+                self.final_future.cancel()
+
+        return CM()
 
     async def cleanup(self, targets):
         for cleaner in self.cleaners:
