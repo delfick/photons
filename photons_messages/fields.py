@@ -23,6 +23,7 @@ def multizone_effect_parameters_for(typ):
         for i in range(8):
             yield ("parameter{0}".format(i), T.Reserved(32))
 
+
 # fmt: off
 
 duration_type = T.Uint32.default(0).transform(

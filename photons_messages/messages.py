@@ -11,6 +11,7 @@ import math
 def empty(pkt, attr):
     return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
+
 # fmt: off
 
 ########################
@@ -324,4 +325,11 @@ class TileMessages(Messages):
 
 # fmt: on
 
-__all__ = ["CoreMessages", "DiscoveryMessages", "DeviceMessages", "LightMessages", "MultiZoneMessages", "TileMessages"]
+__all__ = [
+    "CoreMessages",
+    "DiscoveryMessages",
+    "DeviceMessages",
+    "LightMessages",
+    "MultiZoneMessages",
+    "TileMessages",
+]

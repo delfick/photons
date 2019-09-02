@@ -17,6 +17,7 @@ from photons_messages.enums import *
 # Make this explicitly part of this module
 LIFXPacket = LIFXPacket
 
+
 def make_protocol_register():
     from photons_app.registers import ProtocolRegister
 
@@ -30,5 +31,6 @@ def make_protocol_register():
         message_register.add(kls)
 
     return protocol_register
+
 
 protocol_register = make_protocol_register()

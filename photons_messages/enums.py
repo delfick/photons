@@ -7,12 +7,14 @@ class Direction(Enum):
     BACKWARD = 0
     FORWARD = 1
 
+
 class Services(Enum):
     UDP = 1
     RESERVED1 = 2
     RESERVED2 = 3
     RESERVED3 = 4
     RESERVED4 = 5
+
 
 class Waveform(Enum):
     SAW = 0
@@ -21,10 +23,12 @@ class Waveform(Enum):
     TRIANGLE = 3
     PULSE = 4
 
+
 class MultiZoneApplicationRequest(Enum):
     NO_APPLY = 0
     APPLY = 1
     APPLY_ONLY = 2
+
 
 class MultiZoneEffectType(Enum):
     OFF = 0
@@ -32,10 +36,12 @@ class MultiZoneEffectType(Enum):
     RESERVED1 = 2
     RESERVED2 = 3
 
+
 class MultiZoneExtendedApplicationRequest(Enum):
     NO_APPLY = 0
     APPLY = 1
     APPLY_ONLY = 2
+
 
 class TileEffectType(Enum):
     OFF = 0

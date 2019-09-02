@@ -1,6 +1,7 @@
 from docutils.parsers.rst import Directive
 from docutils import statemachine
 
+
 class ShowMessagesDirective(Directive):
     has_content = True
 
@@ -25,8 +26,8 @@ class ShowMessagesDirective(Directive):
         klses = protocol_register.message_register(protocol).message_classes
 
         if wanted and "." in wanted:
-            want = wanted.split('.')
-            mod = __import__('.'.join(want[:-1]), globals(), locals(), want[-1], 0)
+            want = wanted.split(".")
+            mod = __import__(".".join(want[:-1]), globals(), locals(), want[-1], 0)
             kls = getattr(mod, want[-1])
             klses = list(klses) + [kls]
             wanted = kls.__name__
@@ -53,18 +54,29 @@ class ShowMessagesDirective(Directive):
                     else:
                         title = msg.__name__
 
-                    template.extend([title, '+' * len(title)])
-                    template.extend(["", "``{1}.{2}.{3}``".format(num, "photons_messages", kls.__name__, msg.__name__), ""])
+                    template.extend([title, "+" * len(title)])
+                    template.extend(
+                        [
+                            "",
+                            "``{1}.{2}.{3}``".format(
+                                num, "photons_messages", kls.__name__, msg.__name__
+                            ),
+                            "",
+                        ]
+                    )
                     template.extend(["", ".. code-block:: python", ""])
                     for line in msg.Meta.caller_source.split("\n"):
                         template.append("    {0}".format(line))
                     template.append("")
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
 
+
 def setup(app):
-    app.add_directive('lifx_messages', ShowMessagesDirective(app))
+    app.add_directive("lifx_messages", ShowMessagesDirective(app))

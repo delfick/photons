@@ -4,32 +4,42 @@ from photons_protocol.messages import T
 from input_algorithms import spec_base as sb
 import binascii
 
+
 class FrameHeader(dictobj.PacketSpec):
     fields = [
-          ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8)))
-        , ("protocol", T.Uint16.S(12).default(1024))
-        , ("addressable", T.Bool.default(lambda pkt: False if getattr(pkt, "target", None) is None else True))
-        , ("tagged", T.Bool.default(lambda pkt: True if getattr(pkt, "target", None) is None else False))
-        , ("reserved1", T.Reserved(2, left=True))
-        , ("source", T.Uint32)
-        ]
+        ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8))),
+        ("protocol", T.Uint16.S(12).default(1024)),
+        (
+            "addressable",
+            T.Bool.default(lambda pkt: False if getattr(pkt, "target", None) is None else True),
+        ),
+        (
+            "tagged",
+            T.Bool.default(lambda pkt: True if getattr(pkt, "target", None) is None else False),
+        ),
+        ("reserved1", T.Reserved(2, left=True)),
+        ("source", T.Uint32),
+    ]
+
 
 class FrameAddress(dictobj.PacketSpec):
     fields = [
-          ("target", T.Bytes(64))
-        , ("reserved2", T.Reserved(48))
-        , ("res_required", T.Bool.default(True))
-        , ("ack_required", T.Bool.default(True))
-        , ("reserved3", T.Reserved(6))
-        , ("sequence", T.Uint8)
-        ]
+        ("target", T.Bytes(64)),
+        ("reserved2", T.Reserved(48)),
+        ("res_required", T.Bool.default(True)),
+        ("ack_required", T.Bool.default(True)),
+        ("reserved3", T.Reserved(6)),
+        ("sequence", T.Uint8),
+    ]
+
 
 class ProtocolHeader(dictobj.PacketSpec):
     fields = [
-          ('reserved4', T.Reserved(64))
-        , ('pkt_type', T.Uint16.default(lambda pkt: pkt.Payload.message_type))
-        , ('reserved5', T.Reserved(16))
-        ]
+        ("reserved4", T.Reserved(64)),
+        ("pkt_type", T.Uint16.default(lambda pkt: pkt.Payload.message_type)),
+        ("reserved5", T.Reserved(16)),
+    ]
+
 
 class LIFXPacket(dictobj.PacketSpec):
     """
@@ -44,14 +54,15 @@ class LIFXPacket(dictobj.PacketSpec):
 
     .. automethod:: photons_messages.frame.LIFXPacket.message
     """
+
     parent_packet = True
 
     fields = [
-          ("frame_header", FrameHeader)
-        , ("frame_address", FrameAddress)
-        , ("protocol_header", ProtocolHeader)
-        , ("payload", "Payload")
-        ]
+        ("frame_header", FrameHeader),
+        ("frame_address", FrameAddress),
+        ("protocol_header", ProtocolHeader),
+        ("payload", "Payload"),
+    ]
 
     @property
     def serial(self):
@@ -151,23 +162,26 @@ class LIFXPacket(dictobj.PacketSpec):
                     , multi = -1
                     )
         """
+
         def maker(name):
             Payload = type(
-                  "{0}Payload".format(name)
-                , (dictobj.PacketSpec, )
-                , { "fields": list(payload_fields)
-                  , "message_type": message_type
-                  , "represents_ack": message_type == 45
-                  }
-                )
+                "{0}Payload".format(name),
+                (dictobj.PacketSpec,),
+                {
+                    "fields": list(payload_fields),
+                    "message_type": message_type,
+                    "represents_ack": message_type == 45,
+                },
+            )
             Payload.Meta.protocol = 1024
             Payload.Meta.multi = multi
 
-            res = type(name, (LIFXPacket, ), {"Payload": Payload, "parent_packet": False})
+            res = type(name, (LIFXPacket,), {"Payload": Payload, "parent_packet": False})
             res.Meta.parent = LIFXPacket
             res.Meta.multi = multi
 
             return res
+
         maker._lifx_packet_message = True
         maker.using = lambda mt, **kwargs: kls.message(mt, *payload_fields, **kwargs)
         return maker
@@ -175,6 +189,8 @@ class LIFXPacket(dictobj.PacketSpec):
     class Payload(dictobj.PacketSpec):
         message_type = 0
         fields = []
+
+
 LIFXPacket.Meta.protocol = 1024
 LIFXPacket.Payload.Meta.protocol = 1024
 
