@@ -9,3 +9,4 @@ scripts/secrets.yml
 .tox/
 examples/.lifx/
 dist/
+pip-wheel-metadata/
