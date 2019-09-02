@@ -22,8 +22,10 @@ mlr = chp.ModuleLevelRunner([light1, light2, light3])
 setUp = mlr.setUp
 tearDown = mlr.tearDown
 
+
 def loop_time():
     return asyncio.get_event_loop().time()
+
 
 describe AsyncTestCase, "Repeater":
     use_default_loop = True
@@ -32,9 +34,9 @@ describe AsyncTestCase, "Repeater":
     async it "repeats messages", runner:
         for use_pipeline in (True, False):
             pipeline = [
-                  DeviceMessages.SetPower(level=0)
-                , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-                ]
+                DeviceMessages.SetPower(level=0),
+                LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+            ]
 
             if use_pipeline:
                 pipeline = Pipeline(*pipeline)
@@ -45,7 +47,9 @@ describe AsyncTestCase, "Repeater":
                 assert False, f"Got an error: {err}"
 
             got = defaultdict(list)
-            async for pkt, _, _ in runner.target.script(msg).run_with(FoundSerials(), error_catcher=no_errors):
+            async for pkt, _, _ in runner.target.script(msg).run_with(
+                FoundSerials(), error_catcher=no_errors
+            ):
                 got[pkt.serial].append(pkt)
                 if all(len(pkts) >= 6 for pkts in got.values()):
                     break
@@ -78,9 +82,9 @@ describe AsyncTestCase, "Repeater":
     @mlr.test
     async it "can have a min loop time", runner:
         msgs = [
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            ]
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        ]
 
         msg = Repeater(msgs, min_loop_time=0.5)
 
@@ -88,7 +92,9 @@ describe AsyncTestCase, "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=no_errors
+        ):
             got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 6 for pkts in got.values()):
                 break
@@ -115,9 +121,9 @@ describe AsyncTestCase, "Repeater":
     @mlr.test
     async it "can have a on_done_loop", runner:
         msgs = [
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            ]
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        ]
 
         done = []
 
@@ -130,7 +136,9 @@ describe AsyncTestCase, "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=no_errors
+        ):
             got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 7 for pkts in got.values()):
                 break
@@ -141,9 +149,9 @@ describe AsyncTestCase, "Repeater":
     @mlr.test
     async it "can be stopped by a on_done_loop", runner:
         msgs = [
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            ]
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        ]
 
         done = []
 
@@ -158,15 +166,20 @@ describe AsyncTestCase, "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=no_errors):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=no_errors
+        ):
             got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), got
-        assert all(len(pkts) == 6 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
+        assert all(len(pkts) == 6 for pkts in got.values()), [
+            (serial, len(pkts)) for serial, pkts in got.items()
+        ]
         self.assertEqual(len(done), 3)
 
     @mlr.test
     async it "is not stopped by errors", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.SetPower:
                 return False
@@ -176,9 +189,9 @@ describe AsyncTestCase, "Repeater":
         light3.set_intercept_got_message(waiter)
 
         msgs = [
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            ]
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        ]
 
         done = []
 
@@ -195,10 +208,16 @@ describe AsyncTestCase, "Repeater":
             errors.append(err)
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=got_error, message_timeout=0.1):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=got_error, message_timeout=0.1
+        ):
             got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in runner.serials), got
-        assert all(len(pkts) == 2 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
-        assert all(all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()), got
+        assert all(len(pkts) == 2 for pkts in got.values()), [
+            (serial, len(pkts)) for serial, pkts in got.items()
+        ]
+        assert all(
+            all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()
+        ), got
         self.assertEqual(len(done), 2)

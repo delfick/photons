@@ -18,7 +18,7 @@ describe AsyncTestCase, "WithDevices":
         devices = [device1, device2]
 
         for d in devices:
-            d.start = asynctest.mock.CoroutineMock(name='start')
+            d.start = asynctest.mock.CoroutineMock(name="start")
             d.finish = asynctest.mock.CoroutineMock(name="finish")
 
         async with WithDevices(devices):
@@ -35,7 +35,7 @@ describe AsyncTestCase, "WithDevices":
         devices = [device1, device2]
 
         for d in devices:
-            d.start = asynctest.mock.CoroutineMock(name='start')
+            d.start = asynctest.mock.CoroutineMock(name="start")
             d.finish = asynctest.mock.CoroutineMock(name="finish")
 
         with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
@@ -55,11 +55,7 @@ describe TestCase, "pktkeys":
         msg3 = DeviceMessages.SetLabel(label="bob", source=5, sequence=6, target="d073d503")
         keys = pktkeys([msg1, msg2, msg3])
 
-        self.assertEqual(keys
-            , [ (1024, 21, '{"level": 65535}')
-              , (1024, 24, '{"label": "bob"}')
-              ]
-            )
+        self.assertEqual(keys, [(1024, 21, '{"level": 65535}'), (1024, 24, '{"label": "bob"}')])
 
     it "can be told to keep duplicates":
         msg1 = DeviceMessages.SetPower(level=65535, source=1, sequence=2, target="d073d501")
@@ -67,50 +63,45 @@ describe TestCase, "pktkeys":
         msg3 = DeviceMessages.SetLabel(label="bob", source=5, sequence=6, target="d073d503")
         keys = pktkeys([msg1, msg2, msg3], keep_duplicates=True)
 
-        self.assertEqual(keys
-            , [ (1024, 21, '{"level": 65535}')
-              , (1024, 24, '{"label": "bob"}')
-              , (1024, 24, '{"label": "bob"}')
-              ]
-            )
+        self.assertEqual(
+            keys,
+            [
+                (1024, 21, '{"level": 65535}'),
+                (1024, 24, '{"label": "bob"}'),
+                (1024, 24, '{"label": "bob"}'),
+            ],
+        )
 
     it "knows to zero instanceid":
         msg = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-              source = 1
-            , sequence = 2
-            , target = "d073d511"
-            , reserved6 = b"hell"
-            , parameters = {}
-            )
+            source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={}
+        )
 
         self.assertGreater(msg.instanceid, 0)
 
         keys = pktkeys([msg])
 
         reprd = {
-              "duration": 0.0
-            , "instanceid": 0
-            , "parameters":
-              { "parameter1": "00000000"
-              , "parameter2": "00000000"
-              , "parameter3": "00000000"
-              , "parameter4": "00000000"
-              , "parameter5": "00000000"
-              , "parameter6": "00000000"
-              , "parameter7": "00000000"
-              , "speed_direction": 0
-              }
-            , "reserved6": "6865"
-            , "reserved7": "00000000"
-            , "reserved8": "00000000"
-            , "speed": 5.0
-            , "type": "<MultiZoneEffectType.MOVE: 1>"
-            }
+            "duration": 0.0,
+            "instanceid": 0,
+            "parameters": {
+                "parameter1": "00000000",
+                "parameter2": "00000000",
+                "parameter3": "00000000",
+                "parameter4": "00000000",
+                "parameter5": "00000000",
+                "parameter6": "00000000",
+                "parameter7": "00000000",
+                "speed_direction": 0,
+            },
+            "reserved6": "6865",
+            "reserved7": "00000000",
+            "reserved8": "00000000",
+            "speed": 5.0,
+            "type": "<MultiZoneEffectType.MOVE: 1>",
+        }
 
-        self.assertEqual(keys
-            , [ (1024, 508, json.dumps(reprd))
-              ]
-            )
+        self.assertEqual(keys, [(1024, 508, json.dumps(reprd))])
         self.assertGreater(msg.instanceid, 0)
 
     it "knows to zero reserved fields":
@@ -118,22 +109,17 @@ describe TestCase, "pktkeys":
         from photons_messages.frame import msg
 
         class Messages(Messages):
-            SetExample = msg(9001
-                , ("one", T.Reserved(6))
-                , ("two", T.String(10))
-                )
+            SetExample = msg(9001, ("one", T.Reserved(6)), ("two", T.String(10)))
 
         msg = Messages.SetExample(source=1, sequence=2, target="d073d512", two="stuff")
         self.assertEqual(msg.actual("one"), sb.NotSpecified)
 
         keys = pktkeys([msg])
 
-        self.assertEqual(keys
-            , [ (1024, 9001, '{"one": "00", "two": "stuff"}')
-              ]
-            )
+        self.assertEqual(keys, [(1024, 9001, '{"one": "00", "two": "stuff"}')])
 
         self.assertEqual(msg.actual("one"), sb.NotSpecified)
-        self.assertEqual(repr(msg.payload)
-            , '''{"one": "<class 'input_algorithms.spec_base.NotSpecified'>", "two": "stuff"}'''
-            )
+        self.assertEqual(
+            repr(msg.payload),
+            """{"one": "<class 'input_algorithms.spec_base.NotSpecified'>", "two": "stuff"}""",
+        )

@@ -7,8 +7,10 @@ import asyncio
 
 log = logging.getLogger("photons_transport.comms.receiver")
 
+
 class Receiver(object):
     """Hold onto and routes replies from the bridge"""
+
     message_catcher = NotImplemented
 
     def __init__(self):
@@ -28,10 +30,13 @@ class Receiver(object):
             """
             Remove the future from our results after a small delay
             """
+
             def remove():
                 if key in self.results:
                     del self.results[key]
+
             self.loop.call_later(0.5, remove)
+
         result.add_done_callback(cleanup)
 
     def recv(self, pkt, addr, allow_zero=False):
@@ -39,7 +44,15 @@ class Receiver(object):
         if getattr(pkt, "represents_ack", False):
             log.debug(hp.lc("Got ACK", source=pkt.source, sequence=pkt.sequence, serial=pkt.serial))
         else:
-            log.debug(hp.lc("Got RES", source=pkt.source, sequence=pkt.sequence, serial=pkt.serial, pkt_type=pkt.pkt_type))
+            log.debug(
+                hp.lc(
+                    "Got RES",
+                    source=pkt.source,
+                    sequence=pkt.sequence,
+                    serial=pkt.serial,
+                    pkt_type=pkt.pkt_type,
+                )
+            )
 
         key = (pkt.source, pkt.sequence, pkt.target)
 
@@ -56,7 +69,9 @@ class Receiver(object):
             if self.message_catcher is not NotImplemented and callable(self.message_catcher):
                 self.message_catcher(pkt)
             else:
-                log.warning(hp.lc("Received message but was no future to set", key=key, serial=serial))
+                log.warning(
+                    hp.lc("Received message but was no future to set", key=key, serial=serial)
+                )
             return
 
         if key not in self.results:

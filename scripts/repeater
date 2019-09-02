@@ -11,14 +11,18 @@ import logging
 
 log = logging.getLogger("repeater")
 
-@option_merge_addon_hook(extras=[
-      ("lifx.photons", "control")
-    , ("lifx.photons", "transport")
-    , ("lifx.photons", "messages")
-    , ("lifx.photons", "device_finder")
-    ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "control"),
+        ("lifx.photons", "transport"),
+        ("lifx.photons", "messages"),
+        ("lifx.photons", "device_finder"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 @an_action(needs_target=True, special_reference=True)
 async def repeater(collector, target, reference, **kwargs):
@@ -38,12 +42,12 @@ async def repeater(collector, target, reference, **kwargs):
         log.info("loop done")
 
     getter = [
-          DeviceMessages.GetVersion()
-        , DeviceMessages.GetGroup()
-        , DeviceMessages.GetLocation()
-        , DeviceMessages.GetHostFirmware()
-        , LightMessages.GetColor()
-        ]
+        DeviceMessages.GetVersion(),
+        DeviceMessages.GetGroup(),
+        DeviceMessages.GetLocation(),
+        DeviceMessages.GetHostFirmware(),
+        LightMessages.GetColor(),
+    ]
     pipeline = Pipeline(*getter, spread=1)
     repeater = Repeater(pipeline, min_loop_time=10, on_done_loop=on_done_loop)
 
@@ -51,10 +55,14 @@ async def repeater(collector, target, reference, **kwargs):
         log.error(e)
 
     async with target.session() as afr:
-        async for pkt, _, _ in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher, message_timeout=5):
+        async for pkt, _, _ in target.script(repeater).run_with(
+            reference, afr, error_catcher=error_catcher, message_timeout=5
+        ):
             print(pkt.serial, repr(pkt.payload))
+
 
 if __name__ == "__main__":
     from photons_app.executor import main
     import sys
+
     main(["lan:repeater"] + sys.argv[1:])

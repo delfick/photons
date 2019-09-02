@@ -2,115 +2,150 @@ from photons_tile_paint.font.base import Character
 
 characters = []
 
+
 def character(pattern):
     char = Character(pattern)
     characters.append(char)
     return char
 
-Blinker = character("""
+
+Blinker = character(
+    """
         ###
-    """)
+    """
+)
 
-Block = character("""
+Block = character(
+    """
         ##
         ##
-    """)
+    """
+)
 
-Tub = character("""
+Tub = character(
+    """
         _#_
         #_#
         _#_
-    """)
+    """
+)
 
-Boat = character("""
+Boat = character(
+    """
         ##_
         #_#
         _#_
-    """)
+    """
+)
 
-Glider = character("""
+Glider = character(
+    """
         ###
         #__
         _#_
-    """)
+    """
+)
 
-Ship = character("""
+Ship = character(
+    """
         ##_
         #_#
         _##
-    """)
+    """
+)
 
-BeeHive = character("""
+BeeHive = character(
+    """
         _##_
         #__#
         _##_
-    """)
+    """
+)
 
-Barge = character("""
+Barge = character(
+    """
         _#__
         #_#_
         _#_#
         __#_
-    """)
+    """
+)
 
-Toad = character("""
+Toad = character(
+    """
         ###_
         _###
-    """)
+    """
+)
 
-Beacon = character("""
+Beacon = character(
+    """
         ##__
         #___
         ___#
         __##
-    """)
+    """
+)
 
-LongBoat = character("""
+LongBoat = character(
+    """
         ##__
         #_#_
         _#_#
         __#_
-    """)
+    """
+)
 
-Loaf = character("""
+Loaf = character(
+    """
         _##_
         #__#
         #_#_
         _#__
-    """)
+    """
+)
 
-Pond = character("""
+Pond = character(
+    """
         _##_
         #__#
         #__#
         _##_
-    """)
+    """
+)
 
-Mango = character("""
+Mango = character(
+    """
         _##__
         #__#_
         _#__#
         __##_
-    """)
+    """
+)
 
-LongBarge = character("""
+LongBarge = character(
+    """
         _#___
         #_#__
         _#_#_
         __#_#
         ___#_
-    """)
+    """
+)
 
-HalfFleet = character("""
+HalfFleet = character(
+    """
         ##____
         #_#___
         _##___
         ___##_
         ___#_#
         ____##
-    """)
+    """
+)
 
-HalfBakery = character("""
+HalfBakery = character(
+    """
         _##____
         #__#___
         _#_#___
@@ -118,4 +153,5 @@ HalfBakery = character("""
         ___#__#
         ____#_#
         _____#_
-    """)
+    """
+)

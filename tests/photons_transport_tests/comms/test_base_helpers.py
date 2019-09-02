@@ -10,8 +10,10 @@ from unittest import mock
 import asyncio
 
 describe AsyncTestCase, "timeout_task":
+
     @with_timeout
     async it "does nothing if the task has a result":
+
         async def doit():
             return 1
 
@@ -25,6 +27,7 @@ describe AsyncTestCase, "timeout_task":
 
     @with_timeout
     async it "does nothing if the task has an exception":
+
         async def doit():
             raise Exception("NOPE")
 
@@ -40,6 +43,7 @@ describe AsyncTestCase, "timeout_task":
 
     @with_timeout
     async it "does nothing if the task was cancelled":
+
         async def doit():
             return 1
 
@@ -165,6 +169,7 @@ describe AsyncTestCase, "timeout_task":
         assert errf.cancelled()
 
 describe AsyncTestCase, "NoLimit":
+
     @with_timeout
     async it "behaves like a normal semaphore context manager":
         called = []

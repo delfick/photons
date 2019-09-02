@@ -36,15 +36,18 @@ describe AsyncTestCase, "ThreadToAsyncQueue":
     async it "works":
         called = []
         async with self.ttaq(2) as ttaq:
+
             def action():
                 time.sleep(0.03)
                 called.append(1)
                 return 1
+
             res = ttaq.request(action)
 
             def action2():
                 called.append(2)
                 return 2
+
             res2 = ttaq.request(action2)
 
             self.assertEqual(await self.wait_for(res), 1)
@@ -79,7 +82,12 @@ describe AsyncTestCase, "ThreadToAsyncQueue":
             async it "does nothing if the key isn't known":
                 key = str(uuid.uuid1())
                 assert key not in self.ttaq.futures
-                self.assertIs(self.ttaq.find_and_set_future(key, mock.Mock(name="result"), mock.Mock(name="exception")), None)
+                self.assertIs(
+                    self.ttaq.find_and_set_future(
+                        key, mock.Mock(name="result"), mock.Mock(name="exception")
+                    ),
+                    None,
+                )
 
             async it "sets exception on the future if result is Nope":
                 key = str(uuid.uuid1())
@@ -119,7 +127,9 @@ describe AsyncTestCase, "ThreadToAsyncQueue":
                 thread.daemon = True
                 thread.start()
 
-                self.assertEqual(await self.wait_for(self.ttaq.result_queue.get()), (key, action_result, hp.Nope))
+                self.assertEqual(
+                    await self.wait_for(self.ttaq.result_queue.get()), (key, action_result, hp.Nope)
+                )
 
             async it "gives you the exception when it fails":
                 key = str(uuid.uuid1())
@@ -137,6 +147,8 @@ describe AsyncTestCase, "ThreadToAsyncQueue":
                 thread.daemon = True
                 thread.start()
 
-                self.assertEqual(await self.wait_for(self.ttaq.result_queue.get()), (key, hp.Nope, error))
+                self.assertEqual(
+                    await self.wait_for(self.ttaq.result_queue.get()), (key, hp.Nope, error)
+                )
                 self.assertEqual(called, ["action"])
                 onerror.assert_called_once_with((PhotonsAppError, error, mock.ANY))

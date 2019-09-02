@@ -15,6 +15,7 @@ from photons_products_registry import LIFIProductRegistry
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
+
 def convert(c):
     c2 = {}
     c2["hue"] = int(c["hue"] / 360 * 65535) / 65535 * 360
@@ -23,31 +24,38 @@ def convert(c):
     c2["kelvin"] = c["kelvin"]
     return c2
 
+
 default_tile_palette = [convert(c) for c in default_tile_palette]
 
-tile1 = FakeDevice("d073d5000001"
-    , chp.default_responders(LIFIProductRegistry.LCM3_TILE
-        , firmware_build = 1548977726000000000
-        , firmware_major = 3
-        , firmware_minor = 50
-        )
-    )
+tile1 = FakeDevice(
+    "d073d5000001",
+    chp.default_responders(
+        LIFIProductRegistry.LCM3_TILE,
+        firmware_build=1548977726000000000,
+        firmware_major=3,
+        firmware_minor=50,
+    ),
+)
 
-tile2 = FakeDevice("d073d5000002"
-    , chp.default_responders(LIFIProductRegistry.LCM3_TILE
-        , firmware_build = 1548977726000000000
-        , firmware_major = 3
-        , firmware_minor = 50
-        )
-    )
+tile2 = FakeDevice(
+    "d073d5000002",
+    chp.default_responders(
+        LIFIProductRegistry.LCM3_TILE,
+        firmware_build=1548977726000000000,
+        firmware_major=3,
+        firmware_minor=50,
+    ),
+)
 
-nottile = FakeDevice("d073d5000003"
-    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
-        , firmware_build = 1448861477000000000
-        , firmware_major = 2
-        , firmware_minor = 2
-        )
-    )
+nottile = FakeDevice(
+    "d073d5000003",
+    chp.default_responders(
+        LIFIProductRegistry.LMB_MESH_A21,
+        firmware_build=1448861477000000000,
+        firmware_major=2,
+        firmware_minor=2,
+    ),
+)
 
 lights = [tile1, tile2, nottile]
 mlr = chp.ModuleLevelRunner(lights)
@@ -69,9 +77,12 @@ describe AsyncTestCase, "Tile helpers":
             light.reset_received()
 
     describe "SetTileEffect":
+
         @mlr.test
         async it "complains if we have more than 16 colors in the palette", runner:
-            with self.fuzzyAssertRaisesError(PhotonsAppError, "Palette can only be up to 16 colors", got=17):
+            with self.fuzzyAssertRaisesError(
+                PhotonsAppError, "Palette can only be up to 16 colors", got=17
+            ):
                 SetTileEffect("flame", palette=["red"] * 17)
 
         @mlr.test
@@ -84,34 +95,36 @@ describe AsyncTestCase, "Tile helpers":
                 self.assertIs(tile.attrs.tiles_effect, TileEffectType.FLAME)
 
             self.compare_received(
-                  { nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , tile1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.FLAME
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  , tile2:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.FLAME
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  }
-                )
+                {
+                    nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    tile1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.FLAME,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                    tile2: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.FLAME,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "has options", runner:
-            msg = SetTileEffect("flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"])
+            msg = SetTileEffect(
+                "flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"]
+            )
             got = await runner.target.script(msg).run_with_all(runner.serials)
             self.assertEqual(got, [])
 
@@ -119,39 +132,39 @@ describe AsyncTestCase, "Tile helpers":
                 self.assertIs(tile.attrs.tiles_effect, TileEffectType.FLAME)
 
             palette = [
-                  {"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 3500}
-                , {"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 3500}
-                ]
+                {"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 3500},
+                {"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 3500},
+            ]
 
             self.compare_received(
-                  { nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , tile1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=20)
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.FLAME
-                        , duration = 10
-                        , speed = 5
-                        , palette = [convert(c) for c in palette]
-                        , palette_count = len(palette)
-                        )
-                    ]
-                  , tile2:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=20)
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.FLAME
-                        , duration = 10
-                        , speed = 5
-                        , palette = [convert(c) for c in palette]
-                        , palette_count = len(palette)
-                        )
-                    ]
-                  }
-                )
+                {
+                    nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    tile1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=20),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.FLAME,
+                            duration=10,
+                            speed=5,
+                            palette=[convert(c) for c in palette],
+                            palette_count=len(palette),
+                        ),
+                    ],
+                    tile2: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=20),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.FLAME,
+                            duration=10,
+                            speed=5,
+                            palette=[convert(c) for c in palette],
+                            palette_count=len(palette),
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can choose not to turn on devices", runner:
@@ -163,28 +176,28 @@ describe AsyncTestCase, "Tile helpers":
                 self.assertIs(tile.attrs.tiles_effect, TileEffectType.MORPH)
 
             self.compare_received(
-                  { nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , tile1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.MORPH
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  , tile2:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.MORPH
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  }
-                )
+                {
+                    nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    tile1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.MORPH,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                    tile2: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.MORPH,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can target particular devices", runner:
@@ -197,24 +210,25 @@ describe AsyncTestCase, "Tile helpers":
             self.assertIs(tile2.attrs.tiles_effect, TileEffectType.FLAME)
 
             self.compare_received(
-                  { tile1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.MORPH
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  , tile2:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , TileMessages.SetTileEffect.empty_normalise(
-                          type = TileEffectType.FLAME
-                        , palette = default_tile_palette
-                        , palette_count = len(default_tile_palette)
-                        )
-                    ]
-                  }
-                )
+                {
+                    tile1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.MORPH,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                    tile2: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        TileMessages.SetTileEffect.empty_normalise(
+                            type=TileEffectType.FLAME,
+                            palette=default_tile_palette,
+                            palette_count=len(default_tile_palette),
+                        ),
+                    ],
+                }
+            )

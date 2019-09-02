@@ -9,6 +9,7 @@ from photons_app import helpers as hp
 describe TestCase, "throw_error":
     it "passes on errors if error_catcher is a callable":
         es = []
+
         def ec(e):
             es.append(e)
 
@@ -40,6 +41,7 @@ describe TestCase, "throw_error":
             pass
 
         es = []
+
         def ec(e):
             es.append(e)
 

@@ -4,6 +4,7 @@ from photons_app import helpers as hp
 import binascii
 import asyncio
 
+
 class SpecialReference:
     """
     Subclasses of this implement an await ``find_serials(afr, *, timeout, broadcast=True)``
@@ -23,6 +24,7 @@ class SpecialReference:
 
     .. automethod:: photons_app.special.SpecialReference.raise_on_missing
     """
+
     def __init__(self):
         self.found = hp.ResettableFuture()
         self.finding = hp.ResettableFuture()
@@ -56,7 +58,9 @@ class SpecialReference:
             return await self.found
 
         self.finding.set_result(True)
-        t = asyncio.get_event_loop().create_task(self.find_serials(afr, timeout=timeout, broadcast=broadcast))
+        t = asyncio.get_event_loop().create_task(
+            self.find_serials(afr, timeout=timeout, broadcast=broadcast)
+        )
 
         def transfer(res):
             if res.cancelled():
@@ -71,6 +75,7 @@ class SpecialReference:
             found = res.result()
             serials = [binascii.hexlify(key).decode() for key in found]
             self.found.set_result((found, serials))
+
         t.add_done_callback(transfer)
         return await self.found
 
@@ -79,17 +84,16 @@ class SpecialReference:
         self.found.reset()
         self.finding.reset()
 
+
 class FoundSerials(SpecialReference):
     """
     Can be used as the references value to say send packets
     to all the devices found on the network
     """
+
     async def find_serials(self, afr, *, timeout, broadcast=True):
-        return await afr.find_devices(
-              timeout = timeout
-            , broadcast = broadcast
-            , raise_on_none = True
-            )
+        return await afr.find_devices(timeout=timeout, broadcast=broadcast, raise_on_none=True)
+
 
 class HardCodedSerials(SpecialReference):
     """
@@ -97,6 +101,7 @@ class HardCodedSerials(SpecialReference):
 
     It will raise DevicesNotFound if it can't find any of the serials
     """
+
     def __init__(self, serials):
         if type(serials) is str:
             serials = serials.split(",")
@@ -117,28 +122,30 @@ class HardCodedSerials(SpecialReference):
         found = getattr(afr, "found", {})
 
         if not all(target in found for target in self.targets):
-            found, _ = await afr.find_specific_serials(self.serials
-                , broadcast = broadcast
-                , raise_on_none = False
-                , timeout = timeout
-                )
+            found, _ = await afr.find_specific_serials(
+                self.serials, broadcast=broadcast, raise_on_none=False, timeout=timeout
+            )
 
         return {target: found[target] for target in self.targets if target in found}
 
     def missing(self, found):
         return [binascii.hexlify(target).decode() for target in self.targets if target not in found]
 
+
 class ResolveReferencesFromFile(SpecialReference):
     """
     Resolves to the serials found in the provided file
     """
+
     def __init__(self, filename):
         self.filename = filename
         try:
             with open(self.filename) as fle:
                 serials = [s.strip() for s in fle.readlines() if s.strip()]
         except OSError as error:
-            raise PhotonsAppError("Failed to read serials from a file", filename=self.filename, error=error)
+            raise PhotonsAppError(
+                "Failed to read serials from a file", filename=self.filename, error=error
+            )
 
         if not serials:
             raise PhotonsAppError("Found no serials in file", filename=self.filename)

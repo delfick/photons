@@ -81,8 +81,10 @@ describe TestCase, "ProtocolHeader":
         self.protocol_header = frame.ProtocolHeader()
 
     it "defaults pkt_type to Payload.message_type":
+
         class Payload:
             message_type = 62
+
         pkt = mock.Mock(name="pkt", Payload=Payload)
         spec = self.protocol_header.Meta.field_types_dict["pkt_type"].spec(pkt)
         val = spec.normalise(Meta.empty(), sb.NotSpecified)
@@ -90,18 +92,24 @@ describe TestCase, "ProtocolHeader":
 
 describe TestCase, "LIFXPacket":
     it "packs without target":
-        p = frame.LIFXPacket(source=1, sequence=1, target=None, payload=b'')
+        p = frame.LIFXPacket(source=1, sequence=1, target=None, payload=b"")
         self.assertEqual(p.size, 36)
-        expected = bitarray(dedent('''
+        expected = bitarray(
+            dedent(
+                """
               001001000000000000000000001010001000000000000000000000000000000000
               000000000000000000000000000000000000000000000000000000000000000000
               000000000000000000000000000000000000000000001100000010000000000000
               000000000000000000000000000000000000000000000000000000000000000000
-              000000000000000000000000''').replace("\n", "").strip()
+              000000000000000000000000"""
             )
+            .replace("\n", "")
+            .strip()
+        )
         self.assertEqual(p.pack(), expected)
 
     it "is an ack if the Payload is an ack":
+
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 represents_ack = True
@@ -111,6 +119,7 @@ describe TestCase, "LIFXPacket":
         assert p.represents_ack
 
     it "is not an ack if the Payload is not an ack":
+
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 represents_ack = True
@@ -120,6 +129,7 @@ describe TestCase, "LIFXPacket":
         assert p.represents_ack
 
     it "has the right size_bits for all the fields":
+
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 message_type = 52
@@ -133,28 +143,39 @@ describe TestCase, "LIFXPacket":
             found.append((info.name, info.val, info.to_sized_bitarray()))
 
         self.maxDiff = None
-        self.assertEqual(found
-            , [ ('size', 38, bitarray('0110010000000000'))
-              , ('protocol', 1024, bitarray('000000000010'))
-              , ('addressable', True, bitarray('1'))
-              , ('tagged', False, bitarray('0'))
-              , ('reserved1', sb.NotSpecified, bitarray('00'))
-              , ( 'source', 1, bitarray('10000000000000000000000000000000'))
-              , ( 'target'
-                , bitarray('0000000000000000000000000000000000000000000000000000000000000000')
-                , bitarray('0000000000000000000000000000000000000000000000000000000000000000')
-                )
-              , ('reserved2', sb.NotSpecified, bitarray('000000000000000000000000000000000000000000000000'))
-              , ('res_required', True, bitarray('1'))
-              , ('ack_required', True, bitarray('1'))
-              , ('reserved3', sb.NotSpecified, bitarray('000000'))
-              , ('sequence', 1, bitarray('10000000'))
-              , ('reserved4', sb.NotSpecified, bitarray('0000000000000000000000000000000000000000000000000000000000000000'))
-              , ('pkt_type', 52, bitarray('0010110000000000'))
-              , ('reserved5', sb.NotSpecified, bitarray('0000000000000000'))
-              , ('one', bitarray('0000000000000000'), bitarray('0000000000000000'))
-              ]
-            )
+        self.assertEqual(
+            found,
+            [
+                ("size", 38, bitarray("0110010000000000")),
+                ("protocol", 1024, bitarray("000000000010")),
+                ("addressable", True, bitarray("1")),
+                ("tagged", False, bitarray("0")),
+                ("reserved1", sb.NotSpecified, bitarray("00")),
+                ("source", 1, bitarray("10000000000000000000000000000000")),
+                (
+                    "target",
+                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+                ),
+                (
+                    "reserved2",
+                    sb.NotSpecified,
+                    bitarray("000000000000000000000000000000000000000000000000"),
+                ),
+                ("res_required", True, bitarray("1")),
+                ("ack_required", True, bitarray("1")),
+                ("reserved3", sb.NotSpecified, bitarray("000000")),
+                ("sequence", 1, bitarray("10000000")),
+                (
+                    "reserved4",
+                    sb.NotSpecified,
+                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+                ),
+                ("pkt_type", 52, bitarray("0010110000000000")),
+                ("reserved5", sb.NotSpecified, bitarray("0000000000000000")),
+                ("one", bitarray("0000000000000000"), bitarray("0000000000000000")),
+            ],
+        )
 
     it "is a parent_packet":
         self.assertEqual(frame.LIFXPacket.parent_packet, True)
@@ -168,16 +189,19 @@ describe TestCase, "LIFXPacket":
 
     describe "__or__":
         it "says yes if the protocol and pkt_type are the same as on kls.Payload":
+
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
                     message_type = 32
+
             One.Payload.Meta.protocol = 1024
 
             class Two(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
                     message_type = 33
+
             Two.Payload.Meta.protocol = 1024
 
             payloadone = One()
@@ -196,16 +220,19 @@ describe TestCase, "LIFXPacket":
             self.assertEqual(payloadtwo | One, False)
 
         it "can get the values from the packet data if already defined":
+
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
                     message_type = 32
+
             One.Payload.Meta.protocol = 1024
 
             class Two(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
                     message_type = 33
+
             Two.Payload.Meta.protocol = 1024
 
             # These values are already there if it's been unpacked from bytes for example
@@ -214,7 +241,9 @@ describe TestCase, "LIFXPacket":
             payloadone = One(pkt_type=32, protocol=1024)
             payloadtwo = Two(pkt_type=33, protocol=1024)
 
-            with mock.patch.object(frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")):
+            with mock.patch.object(
+                frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")
+            ):
                 self.assertEqual(payloadone | Two, False)
                 self.assertEqual(payloadone | One, True)
 
@@ -229,14 +258,14 @@ describe TestCase, "LIFXPacket":
 
         it "returns 0s if target is None":
             pkt = frame.LIFXPacket(target=None)
-            self.assertEqual(pkt.target, b'\x00\x00\x00\x00\x00\x00\x00\x00')
-            self.assertEqual(pkt.serial, '000000000000')
+            self.assertEqual(pkt.target, b"\x00\x00\x00\x00\x00\x00\x00\x00")
+            self.assertEqual(pkt.serial, "000000000000")
 
         it "hexlifies otherwise":
             serial = "d073d5000001"
             target = binascii.unhexlify(serial)
             pkt = frame.LIFXPacket(target=target)
-            self.assertEqual(pkt.target, target + b'\x00\x00')
+            self.assertEqual(pkt.target, target + b"\x00\x00")
             self.assertEqual(pkt.serial, serial)
 
         it "only deals with first six bytes":
@@ -322,7 +351,9 @@ describe TestCase, "LIFXPacket":
 describe TestCase, "MultiOptions":
     it "complains if we don't give it two functions":
         for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
-            with self.fuzzyAssertRaisesError(ProgrammerError, "Multi Options expects two callables"):
+            with self.fuzzyAssertRaisesError(
+                ProgrammerError, "Multi Options expects two callables"
+            ):
                 MultiOptions(a, b)
 
     it "sets the two callables":
@@ -347,25 +378,16 @@ describe TestCase, "Messages":
         msg = frame.LIFXPacket.message
 
         class M(Messages):
-            One = msg(42
-                , ("one", T.Int8)
-                )
+            One = msg(42, ("one", T.Int8))
 
             Two = One.using(46)
 
         class M2(Messages):
             Three = M.One
 
-        self.assertEqual(M.by_type
-            , { 42: M.One
-              , 46: M.Two
-              }
-            )
+        self.assertEqual(M.by_type, {42: M.One, 46: M.Two})
 
-        self.assertEqual(M2.by_type
-            , { 42: M.One
-              }
-            )
+        self.assertEqual(M2.by_type, {42: M.One})
 
         o = M.One(one=27)
         self.assertEqual(o.one, 27)

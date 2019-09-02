@@ -9,7 +9,7 @@ import asyncio
 
 collector = library_setup()
 
-lan_target = collector.configuration['target_register'].resolve("lan")
+lan_target = collector.configuration["target_register"].resolve("lan")
 
 color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purple", "pink"]
 
@@ -17,7 +17,11 @@ spread = 2
 
 power_on = DeviceMessages.SetPower(level=65535)
 get_color = LightMessages.GetColor()
-color_msgs = [Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread}) for name in color_names]
+color_msgs = [
+    Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread})
+    for name in color_names
+]
+
 
 async def doit():
     async with lan_target.session() as afr:
@@ -54,6 +58,7 @@ async def doit():
 
         # We share the afr we got from target.session() so that we don't have to search for the ips of the lights again
         await lan_target.script(msgs).run_with_all(None, afr)
+
 
 loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

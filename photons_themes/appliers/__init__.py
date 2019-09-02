@@ -31,16 +31,36 @@ and ``UP_DIAGONAL_STRIPE`` appliers.
 
 .. automodule:: photons_themes.appliers.stripes
 """
-from photons_themes.appliers.stripes import TileApplierDownDiagnoalStripe, TileApplierUpDiagnoalStripe, TileApplierSquareStripe
+from photons_themes.appliers.stripes import (
+    TileApplierDownDiagnoalStripe,
+    TileApplierUpDiagnoalStripe,
+    TileApplierSquareStripe,
+)
 from photons_themes.appliers.stripes import TileApplierHorizontalStripe, TileApplierVerticalStripe
 from photons_themes.appliers.splotch import StripApplierSplotch, TileApplierSplotch
 from photons_themes.appliers.single import LightApplier
 
 types = {
-      "SPLOTCH": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierSplotch}
-    , "VERTICAL_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierVerticalStripe}
-    , "HORIZONTAL_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierHorizontalStripe}
-    , "DOWN_DIAGONAL_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierDownDiagnoalStripe}
-    , "UP_DIAGONAL_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierUpDiagnoalStripe}
-    , "SQUARE_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierSquareStripe}
-    }
+    "SPLOTCH": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierSplotch},
+    "VERTICAL_STRIPE": {
+        "0d": LightApplier,
+        "1d": StripApplierSplotch,
+        "2d": TileApplierVerticalStripe,
+    },
+    "HORIZONTAL_STRIPE": {
+        "0d": LightApplier,
+        "1d": StripApplierSplotch,
+        "2d": TileApplierHorizontalStripe,
+    },
+    "DOWN_DIAGONAL_STRIPE": {
+        "0d": LightApplier,
+        "1d": StripApplierSplotch,
+        "2d": TileApplierDownDiagnoalStripe,
+    },
+    "UP_DIAGONAL_STRIPE": {
+        "0d": LightApplier,
+        "1d": StripApplierSplotch,
+        "2d": TileApplierUpDiagnoalStripe,
+    },
+    "SQUARE_STRIPE": {"0d": LightApplier, "1d": StripApplierSplotch, "2d": TileApplierSquareStripe},
+}

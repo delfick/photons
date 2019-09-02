@@ -9,8 +9,10 @@ import socket
 
 log = logging.getLogger("photons_transport.transports.udp")
 
+
 class UDP(Socket):
     """Knows how to send and receive over udp"""
+
     async def spawn_transport(self, timeout):
         sock = self.make_socket()
         fut, Protocol = self.make_socket_protocol()

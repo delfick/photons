@@ -16,11 +16,11 @@ describe TestCase, "an_action":
         needs_target = mock.Mock(name="needs_target")
 
         wrapper = an_action(
-              target = target
-            , needs_reference = needs_reference
-            , special_reference = special_reference
-            , needs_target = needs_target
-            )
+            target=target,
+            needs_reference=needs_reference,
+            special_reference=special_reference,
+            needs_target=needs_target,
+        )
 
         self.assertIs(wrapper.target, target)
         self.assertIs(wrapper.needs_reference, needs_reference)
@@ -35,14 +35,14 @@ describe TestCase, "an_action":
             self.needs_target = mock.Mock(name="needs_target")
 
             self.wrapper = an_action(
-                  target = self.target
-                , needs_reference = self.needs_reference
-                , special_reference = self.special_reference
-                , needs_target = self.needs_target
-                )
+                target=self.target,
+                needs_reference=self.needs_reference,
+                special_reference=self.special_reference,
+                needs_target=self.needs_target,
+            )
 
             self.func_name = str(uuid.uuid1())
-            self.func = mock.Mock(name='func', __name__=self.func_name)
+            self.func = mock.Mock(name="func", __name__=self.func_name)
 
         it "namespaces by target in available_actions":
             actions = {}
@@ -68,7 +68,9 @@ describe TestCase, "an_action":
                 with mock.patch("photons_app.actions.all_tasks", all_tasks):
                     self.assertIs(self.wrapper(self.func), self.func)
 
-            self.assertEqual(all_tasks, {self.func_name: Task(action=self.func_name, label="Project")})
+            self.assertEqual(
+                all_tasks, {self.func_name: Task(action=self.func_name, label="Project")}
+            )
 
         it "adds to all_tasks with specified label":
             label = str(uuid.uuid1())

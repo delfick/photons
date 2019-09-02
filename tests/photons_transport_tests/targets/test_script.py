@@ -11,12 +11,14 @@ from unittest import mock
 import asynctest
 import asyncio
 
+
 class Sem:
     def __init__(self, limit):
         self.limit = limit
 
     def __eq__(self, other):
         return isinstance(other, asyncio.Semaphore) and other._value == self.limit
+
 
 describe AsyncTestCase, "AFRWrapper":
     async before_each:
@@ -101,12 +103,14 @@ describe AsyncTestCase, "AFRWrapper":
             self.assertIs(afr, self.afr)
             self.called.append(("middle", kwargs))
 
-        self.assertEqual(self.called
-            , [ ("args_for_run", (), {})
-              , ("middle", {"b": a, "limit": Sem(30)})
-              , ("close_args_for_run", (self.afr, ), {})
-              ]
-            )
+        self.assertEqual(
+            self.called,
+            [
+                ("args_for_run", (), {}),
+                ("middle", {"b": a, "limit": Sem(30)}),
+                ("close_args_for_run", (self.afr,), {}),
+            ],
+        )
 
 describe AsyncTestCase, "ScriptRunner":
     async before_each:
@@ -169,10 +173,9 @@ describe AsyncTestCase, "ScriptRunner":
                 found.append(info)
 
             self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(self.called
-                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})
-                  ]
-                )
+            self.assertEqual(
+                self.called, [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            )
 
         async it "can create an args_for_run":
             a = mock.Mock(name="a")
@@ -185,12 +188,14 @@ describe AsyncTestCase, "ScriptRunner":
                 found.append(info)
 
             self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(self.called
-                , [ ("args_for_run", (), {})
-                  , ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)})
-                  , ("close_args_for_run", (self.afr, ), {})
-                  ]
-                )
+            self.assertEqual(
+                self.called,
+                [
+                    ("args_for_run", (), {}),
+                    ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
+                    ("close_args_for_run", (self.afr,), {}),
+                ],
+            )
 
     describe "run_with_all":
         async it "calls run_with on the script":
@@ -203,10 +208,9 @@ describe AsyncTestCase, "ScriptRunner":
             found = await self.runner.run_with_all(reference, args_for_run=args_for_run, b=a)
 
             self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(self.called
-                , [ ("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})
-                  ]
-                )
+            self.assertEqual(
+                self.called, [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            )
 
         async it "raises BadRunWithResults if we have risen exceptions":
             error1 = PhotonsAppError("failure")
@@ -232,9 +236,11 @@ describe AsyncTestCase, "ScriptRunner":
                 # self.assertEqual(error.errors, [error1])
                 pass
 
-            self.assertEqual(self.called
-                , [ ("args_for_run", (), {})
-                  , ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)})
-                  , ("close_args_for_run", (self.afr, ), {})
-                  ]
-                )
+            self.assertEqual(
+                self.called,
+                [
+                    ("args_for_run", (), {}),
+                    ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
+                    ("close_args_for_run", (self.afr,), {}),
+                ],
+            )

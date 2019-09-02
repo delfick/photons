@@ -12,14 +12,18 @@ import random
 
 log = logging.getLogger("info")
 
-@option_merge_addon_hook(extras=[
-      ("lifx.photons", "transport")
-    , ("lifx.photons", "messages")
-    , ("lifx.photons", "products_registry")
-    , ("lifx.photons", "device_finder")
-    ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "transport"),
+        ("lifx.photons", "messages"),
+        ("lifx.photons", "products_registry"),
+        ("lifx.photons", "device_finder"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 @an_action(needs_target=True, special_reference=True)
 async def tiles(collector, target, reference, **kwargs):
@@ -48,29 +52,37 @@ async def tiles(collector, target, reference, **kwargs):
         for i in range(5):
             nxt = []
             for i in range(64):
-                nxt.append({"hue": random.randint(0, 360), "saturation": 1, "brightness": 0.5, "kelvin": 3500})
+                nxt.append(
+                    {
+                        "hue": random.randint(0, 360),
+                        "saturation": 1,
+                        "brightness": 0.5,
+                        "kelvin": 3500,
+                    }
+                )
             colors.append(nxt)
 
         msgs = [DeviceMessages.SetPower(level=65535)]
 
         for i, colors in enumerate(colors):
-            msgs.append(TileMessages.Set64(
-                  x = 0
-                , y = 0
-                , width = 8
-                , length = 1
-                , duration = 2
-
-                , colors = colors
-                , tile_index = i
-
-                , res_required = False
+            msgs.append(
+                TileMessages.Set64(
+                    x=0,
+                    y=0,
+                    width=8,
+                    length=1,
+                    duration=2,
+                    colors=colors,
+                    tile_index=i,
+                    res_required=False,
                 )
             )
 
         await target.script(msgs).run_with_all(tiles, afr)
 
+
 if __name__ == "__main__":
     from photons_app.executor import main
     import sys
+
     main(["lan:tiles"] + sys.argv[1:])

@@ -2,14 +2,20 @@ from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from photons_messages import (
-      LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
-    , MultiZoneEffectType, TileEffectType
-    , protocol_register
-    )
+    LightMessages,
+    DeviceMessages,
+    MultiZoneMessages,
+    TileMessages,
+    MultiZoneEffectType,
+    TileEffectType,
+    protocol_register,
+)
 from photons_products_registry import (
-      capability_for_ids
-    , ProductRegistries, VendorRegistry, LIFIProductRegistry
-    )
+    capability_for_ids,
+    ProductRegistries,
+    VendorRegistry,
+    LIFIProductRegistry,
+)
 from photons_transport.targets import MemoryTarget
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
@@ -21,10 +27,12 @@ import asyncio
 
 log = logging.getLogger("photons_control.test_helpers")
 
+
 class HSBKClose:
     """
     Used to compare hsbk dictionaries without caring too much about complete accuracy
     """
+
     def __init__(self, data):
         self.data = data
 
@@ -45,21 +53,20 @@ class HSBKClose:
 
         return True
 
+
 class Color(dictobj):
     fields = ["hue", "saturation", "brightness", "kelvin"]
 
+
 def TColor(hue, saturation, brightness, kelvin):
-    hue = (int(hue / 360 * 65535) / 65535 * 360)
-    saturation = (int(saturation * 65535) / 65535)
-    brightness = (int(brightness * 65535) / 65535)
+    hue = int(hue / 360 * 65535) / 65535 * 360
+    saturation = int(saturation * 65535) / 65535
+    brightness = int(brightness * 65535) / 65535
     return Color(hue, saturation, brightness, kelvin)
 
+
 class LightStateResponder(Responder):
-    _fields = [
-          ("color", lambda: Color(0, 0, 1, 3500))
-        , ("power", lambda: 0)
-        , ("label", lambda: "")
-        ]
+    _fields = [("color", lambda: Color(0, 0, 1, 3500)), ("power", lambda: 0), ("label", lambda: "")]
 
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.GetLabel:
@@ -100,10 +107,9 @@ class LightStateResponder(Responder):
 
     def make_light_response(self, device):
         return LightMessages.LightState.empty_normalise(
-              label = device.attrs.label
-            , power = device.attrs.power
-            , **device.attrs.color.as_dict()
-            )
+            label=device.attrs.label, power=device.attrs.power, **device.attrs.color.as_dict()
+        )
+
 
 class InfraredResponder(Responder):
     _fields = [("infrared", lambda: 0)]
@@ -129,6 +135,7 @@ class InfraredResponder(Responder):
     def make_response(self, device):
         return LightMessages.StateInfrared(brightness=device.attrs.infrared)
 
+
 class TilesResponder(Responder):
     _fields = [("tiles_effect", lambda: TileEffectType.OFF)]
 
@@ -153,6 +160,7 @@ class TilesResponder(Responder):
     def make_state_tile_effect(self, device):
         return TileMessages.StateTileEffect(type=device.attrs.tiles_effect)
 
+
 class ZonesResponder(Responder):
     _fields = ["zones", ("zones_effect", lambda: MultiZoneEffectType.OFF)]
 
@@ -176,11 +184,11 @@ class ZonesResponder(Responder):
 
     def extended_multizone_response(self, device):
         return MultiZoneMessages.StateExtendedColorZones(
-              zones_count = len(device.attrs.zones)
-            , zone_index = 0
-            , colors_count = len(device.attrs.zones)
-            , colors = [z.as_dict() for z in device.attrs.zones]
-            )
+            zones_count=len(device.attrs.zones),
+            zone_index=0,
+            colors_count=len(device.attrs.zones),
+            colors=[z.as_dict() for z in device.attrs.zones],
+        )
 
     def multizone_responses(self, device):
         buf = []
@@ -198,14 +206,20 @@ class ZonesResponder(Responder):
 
         for buf in bufs:
             yield MultiZoneMessages.StateMultiZone(
-                  zones_count = len(device.attrs.zones)
-                , zone_index = buf[0][0]
-                , colors = [b.as_dict() for _, b in buf]
-                )
+                zones_count=len(device.attrs.zones),
+                zone_index=buf[0][0],
+                colors=[b.as_dict() for _, b in buf],
+            )
 
     def set_zone(self, device, index, hue, saturation, brightness, kelvin):
         if index >= len(device.attrs.zones):
-            log.warning(hp.lc("Setting zone outside range of the device", number_zones=len(device.attrs.zones), want=index))
+            log.warning(
+                hp.lc(
+                    "Setting zone outside range of the device",
+                    number_zones=len(device.attrs.zones),
+                    want=index,
+                )
+            )
             return
 
         device.attrs.zones[index] = Color(hue, saturation, brightness, kelvin)
@@ -223,7 +237,9 @@ class ZonesResponder(Responder):
 
         elif pkt | MultiZoneMessages.GetColorZones:
             if pkt.start_index != 0 or pkt.end_index != 255:
-                raise PhotonsAppError("Fake device only supports getting all color zones", got=pkt.payload)
+                raise PhotonsAppError(
+                    "Fake device only supports getting all color zones", got=pkt.payload
+                )
 
             for r in self.multizone_responses(device):
                 yield r
@@ -243,12 +259,16 @@ class ZonesResponder(Responder):
 
             elif pkt | MultiZoneMessages.SetExtendedColorZones:
                 res = self.extended_multizone_response(device)
-                for i, c in enumerate(pkt.colors[:pkt.colors_count]):
-                    self.set_zone(device, i + pkt.zone_index, c.hue, c.saturation, c.brightness, c.kelvin)
+                for i, c in enumerate(pkt.colors[: pkt.colors_count]):
+                    self.set_zone(
+                        device, i + pkt.zone_index, c.hue, c.saturation, c.brightness, c.kelvin
+                    )
                 yield res
+
 
 class Firmware(dictobj):
     fields = ["major", "minor", "build"]
+
 
 class ProductResponder(Responder):
     _fields = ["vendor_id", "product_id", "firmware"]
@@ -266,59 +286,54 @@ class ProductResponder(Responder):
         if vendor_id is None or product_id is None:
             assert False, f"Couldn't determine vid and pid from product: {enum}"
 
-        return ProductResponder(
-              product_id = product_id
-            , vendor_id = vendor_id
-            , firmware = firmware
-            )
+        return ProductResponder(product_id=product_id, vendor_id=vendor_id, firmware=firmware)
 
     @classmethod
     def capability(kls, device):
         assert any(isinstance(r, kls) for r in device.responders)
-        return capability_for_ids(device.attrs.product_id, device.attrs.vendor_id), device.attrs.firmware.major, device.attrs.firmware.minor
+        return (
+            capability_for_ids(device.attrs.product_id, device.attrs.vendor_id),
+            device.attrs.firmware.major,
+            device.attrs.firmware.minor,
+        )
 
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.GetVersion:
             yield DeviceMessages.StateVersion(
-                  vendor = device.attrs.vendor_id
-                , product = device.attrs.product_id
-                , version = 0
-                )
+                vendor=device.attrs.vendor_id, product=device.attrs.product_id, version=0
+            )
 
         elif pkt | DeviceMessages.GetHostFirmware:
             yield DeviceMessages.StateHostFirmware(
-                  build = device.attrs.firmware.build
-                , version_major = device.attrs.firmware.major
-                , version_minor = device.attrs.firmware.minor
-                )
+                build=device.attrs.firmware.build,
+                version_major=device.attrs.firmware.major,
+                version_minor=device.attrs.firmware.minor,
+            )
 
         elif pkt | DeviceMessages.GetWifiFirmware:
-            yield DeviceMessages.StateWifiFirmware(
-                  build = 0
-                , version_major = 0
-                , version_minor = 0
-                )
+            yield DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)
+
 
 def default_responders(
-      product = LIFIProductRegistry.LCM2_A19
-    , *, power = 0
-    , label = ""
-    , color = Color(0, 1, 1, 3500)
-    , infrared = 0
-    , zones = None
-    , firmware = Firmware(0, 0, 0)
-    , zones_effect = MultiZoneEffectType.OFF
-    , tiles_effect = TileEffectType.OFF
-    , **kwargs
-    ):
+    product=LIFIProductRegistry.LCM2_A19,
+    *,
+    power=0,
+    label="",
+    color=Color(0, 1, 1, 3500),
+    infrared=0,
+    zones=None,
+    firmware=Firmware(0, 0, 0),
+    zones_effect=MultiZoneEffectType.OFF,
+    tiles_effect=TileEffectType.OFF,
+    **kwargs,
+):
     product_responder = ProductResponder.from_enum(product, firmware)
 
-    responders = [
-          product_responder
-        , LightStateResponder(power=power, color=color, label=label)
-        ]
+    responders = [product_responder, LightStateResponder(power=power, color=color, label=label)]
 
-    cap = capability_for_ids(product_responder._attr_default_product_id, product_responder._attr_default_vendor_id)
+    cap = capability_for_ids(
+        product_responder._attr_default_product_id, product_responder._attr_default_vendor_id
+    )
 
     if cap.has_ir:
         responders.append(InfraredResponder(infrared=infrared))
@@ -328,7 +343,9 @@ def default_responders(
     if cap.has_multizone:
         if zones is None:
             assert False, "Product has multizone capability but no zones specified"
-        zones_effect = enum_spec(None, MultiZoneEffectType, unpacking=True).normalise(meta, zones_effect)
+        zones_effect = enum_spec(None, MultiZoneEffectType, unpacking=True).normalise(
+            meta, zones_effect
+        )
         responders.append(ZonesResponder(zones=zones, zones_effect=zones_effect))
 
     if cap.has_chain:
@@ -337,13 +354,14 @@ def default_responders(
 
     return responders
 
+
 class MemoryTargetRunner:
     def __init__(self, final_future, devices):
         options = {
-              "devices": devices
-            , "final_future": final_future
-            , "protocol_register": protocol_register
-            }
+            "devices": devices,
+            "final_future": final_future,
+            "protocol_register": protocol_register,
+        }
         self.target = MemoryTarget.create(options)
         self.devices = devices
 
@@ -371,6 +389,7 @@ class MemoryTargetRunner:
     def serials(self):
         return [device.serial for device in self.devices]
 
+
 def with_runner(func):
     async def test(s, **kwargs):
         final_future = asyncio.Future()
@@ -381,8 +400,10 @@ def with_runner(func):
         finally:
             final_future.cancel()
             await runner.reset_devices()
+
     test.__name__ = func.__name__
     return test
+
 
 class ModuleLevelRunner:
     def __init__(self, *args, **kwargs):
@@ -408,7 +429,9 @@ class ModuleLevelRunner:
         closer
         """
         asyncio.set_event_loop(self.loop)
-        self.runner, self.closer = self.loop.run_until_complete(self.server_runner(*self.args, **self.kwargs))
+        self.runner, self.closer = self.loop.run_until_complete(
+            self.server_runner(*self.args, **self.kwargs)
+        )
 
     def tearDown(self):
         """
@@ -424,5 +447,6 @@ class ModuleLevelRunner:
         async def test(s):
             await self.runner.reset_devices()
             await s.wait_for(func(s, self.runner), timeout=10)
+
         test.__name__ = func.__name__
         return test

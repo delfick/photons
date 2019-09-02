@@ -24,8 +24,10 @@ mlr = chp.ModuleLevelRunner([light1, light2, light3])
 setUp = mlr.setUp
 tearDown = mlr.tearDown
 
+
 def loop_time():
     return asyncio.get_event_loop().time()
+
 
 describe AsyncTestCase, "Pipeline":
     use_default_loop = True
@@ -44,9 +46,9 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msgs = [
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            ]
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        ]
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -64,7 +66,9 @@ describe AsyncTestCase, "Pipeline":
             assert pkts[1] | DeviceMessages.StatePower, pkts
 
         assert all(serial in got_times for serial in runner.serials), got_times
-        diffs = list(chain.from_iterable([t - start for t in ts] for serial, ts in got_times.items()))
+        diffs = list(
+            chain.from_iterable([t - start for t in ts] for serial, ts in got_times.items())
+        )
         assert all(diff < 0.1 for diff in diffs), diffs
 
     @mlr.test
@@ -81,9 +85,9 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            )
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        )
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -119,11 +123,11 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , DeviceMessages.SetLabel(label="wat")
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            , spread = 0.2
-            )
+            DeviceMessages.SetPower(level=0),
+            DeviceMessages.SetLabel(label="wat"),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+            spread=0.2,
+        )
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -162,9 +166,9 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            )
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        )
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -205,9 +209,9 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            )
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        )
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -255,10 +259,10 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            , synchronized = True
-            )
+            DeviceMessages.SetPower(level=0),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+            synchronized=True,
+        )
 
         got = defaultdict(list)
         async with runner.target.session() as afr:
@@ -284,6 +288,7 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "doesn't stop on errors", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -294,17 +299,19 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , DeviceMessages.SetLabel(label="wat")
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            )
+            DeviceMessages.SetPower(level=0),
+            DeviceMessages.SetLabel(label="wat"),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        )
 
         got = defaultdict(list)
         errors = []
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors, message_timeout=0.2):
+            async for pkt, _, _ in runner.target.script(msg).run_with(
+                runner.serials, error_catcher=errors, message_timeout=0.2
+            ):
                 got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
@@ -328,6 +335,7 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -338,15 +346,17 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , DeviceMessages.SetLabel(label="wat")
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            , short_circuit_on_error = True
-            )
+            DeviceMessages.SetPower(level=0),
+            DeviceMessages.SetLabel(label="wat"),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+            short_circuit_on_error=True,
+        )
 
         got = defaultdict(list)
         errors = []
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors, message_timeout=0.2):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=errors, message_timeout=0.2
+        ):
             got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
@@ -365,6 +375,7 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can short cut on errors with synchronized", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial == light1.serial:
@@ -375,16 +386,18 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , DeviceMessages.SetLabel(label="wat")
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            , synchronized = True
-            , short_circuit_on_error = True
-            )
+            DeviceMessages.SetPower(level=0),
+            DeviceMessages.SetLabel(label="wat"),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+            synchronized=True,
+            short_circuit_on_error=True,
+        )
 
         got = defaultdict(list)
         errors = []
-        async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors, message_timeout=0.1):
+        async for pkt, _, _ in runner.target.script(msg).run_with(
+            runner.serials, error_catcher=errors, message_timeout=0.1
+        ):
             got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
@@ -402,6 +415,7 @@ describe AsyncTestCase, "Pipeline":
 
     @mlr.test
     async it "can raise all errors", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.SetLabel:
                 if pkt.serial in (light1.serial, light2.serial):
@@ -412,14 +426,16 @@ describe AsyncTestCase, "Pipeline":
         light3.set_intercept_got_message(waiter)
 
         msg = Pipeline(
-              DeviceMessages.SetPower(level=0)
-            , DeviceMessages.SetLabel(label="wat")
-            , LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500)
-            )
+            DeviceMessages.SetPower(level=0),
+            DeviceMessages.SetLabel(label="wat"),
+            LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
+        )
 
         got = defaultdict(list)
         try:
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, message_timeout=0.1):
+            async for pkt, _, _ in runner.target.script(msg).run_with(
+                runner.serials, message_timeout=0.1
+            ):
                 got[pkt.serial].append(pkt)
         except RunErrors as errors:
             self.assertEqual(len(errors.errors), 2)

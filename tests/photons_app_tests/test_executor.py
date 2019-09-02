@@ -14,17 +14,14 @@ import uuid
 
 describe TestCase, "App":
     describe "setup_collector":
+
         def from_config(self, config):
             with hp.a_temp_file() as fle:
                 fle.write(dedent(config).encode())
                 fle.close()
 
                 with open(fle.name) as realfile:
-                    args_dict = {
-                          "photons_app":
-                          { "config": realfile
-                          }
-                        }
+                    args_dict = {"photons_app": {"config": realfile}}
 
                     app = App()
                     logging_handler = mock.Mock(name="logging_handler")
@@ -39,6 +36,7 @@ describe TestCase, "App":
 
             def prepare(*args, **kwargs):
                 return original_prepare(collector, *args, **kwargs)
+
             prepare = mock.Mock(name="prepare", side_effect=prepare)
 
             with mock.patch("photons_app.executor.Collector", FakeCollector):
@@ -48,33 +46,39 @@ describe TestCase, "App":
             prepare.assert_called_once_with(location, args_dict, extra_files=None)
 
         it "gets us the target from chosen_task if we haven't already got a target":
-            location, args_dict, logging_handler, collector = self.from_config("""
+            location, args_dict, logging_handler, collector = self.from_config(
+                """
                 ---
 
                 photons_app:
                   chosen_task: "blah:yeap"
-            """)
+            """
+            )
 
             self.assertEqual(collector.configuration["photons_app"].target, "blah")
 
         it "doesn't set target if chosen_task doesn't specify target":
-            location, args_dict, logging_handler, collector = self.from_config("""
+            location, args_dict, logging_handler, collector = self.from_config(
+                """
                 ---
 
                 photons_app:
                   chosen_task: "blah"
-            """)
+            """
+            )
 
             self.assertEqual(collector.configuration["photons_app"].target, sb.NotSpecified)
 
         it "doesn't set target if it's already specified":
-            location, args_dict, logging_handler, collector = self.from_config("""
+            location, args_dict, logging_handler, collector = self.from_config(
+                """
                 ---
 
                 photons_app:
                   target: other
                   chosen_task: "blah:yeap"
-            """)
+            """
+            )
 
             self.assertEqual(collector.configuration["photons_app"].target, "other")
 
@@ -82,11 +86,13 @@ describe TestCase, "App":
             setup_logging_theme = mock.Mock(name="setup_logging_theme")
 
             with mock.patch.object(App, "setup_logging_theme", setup_logging_theme):
-                location, args_dict, logging_handler, collector = self.from_config("""
+                location, args_dict, logging_handler, collector = self.from_config(
+                    """
                     ---
 
                     term_colors: light
-                """)
+                """
+                )
 
             setup_logging_theme.assert_called_once_with(logging_handler, colors="light")
 
@@ -94,19 +100,22 @@ describe TestCase, "App":
             add_targets = mock.Mock(name="add_targets")
 
             with mock.patch.object(TargetRegister, "add_targets", add_targets):
-                location, args_dict, logging_handler, collector = self.from_config("""
+                location, args_dict, logging_handler, collector = self.from_config(
+                    """
                     ---
 
                     targets:
                       one:
                         type: thing
                         options: {1: 2}
-                """)
+                """
+                )
 
             assert "one" in collector.configuration["targets"]
             add_targets.assert_called_once_with(collector.configuration["targets"])
 
     describe "mainline":
+
         def run_with(self, argv):
             original_mainline = mock.Mock(name="original_mainline")
 

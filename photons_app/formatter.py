@@ -22,6 +22,7 @@ from input_algorithms.meta import Meta
 import pkg_resources
 import asyncio
 
+
 class MergedOptionStringFormatter(StringFormatter):
     """
     Resolve format options into a MergedOptions dictionary
@@ -51,6 +52,7 @@ class MergedOptionStringFormatter(StringFormatter):
 
     For this to work, the object must be a subclass of dict and in the dont_prefix option of the configuration.
     """
+
     def get_string(self, key):
         """Get a string from all_options"""
         if key.startswith("targets."):
@@ -68,14 +70,14 @@ class MergedOptionStringFormatter(StringFormatter):
         if key not in self.all_options:
             kwargs = {}
             if len(self.chain) > 1:
-                kwargs['source'] = Meta(self.all_options, self.chain[-2]).source
+                kwargs["source"] = Meta(self.all_options, self.chain[-2]).source
             raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain, **kwargs)
 
         return super(MergedOptionStringFormatter, self).get_string(key)
 
     def special_get_field(self, value, args, kwargs, format_spec=None):
         """Also take the spec into account"""
-        if format_spec in ("resource", ):
+        if format_spec in ("resource",):
             return value, ()
 
         if value in self.chain:
@@ -86,5 +88,7 @@ class MergedOptionStringFormatter(StringFormatter):
         if format_spec == "resource":
             parts = obj.split("/")
             return pkg_resources.resource_filename(parts[0], "/".join(parts[1:]))
-        elif any(isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)):
+        elif any(
+            isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)
+        ):
             return obj

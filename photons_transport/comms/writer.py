@@ -7,11 +7,19 @@ import logging
 
 log = logging.getLogger("photons_transport.comms.writer")
 
+
 class Writer:
-    def __init__(self, session, transport, receiver, original, packet, retry_options
-        , did_broadcast = False
-        , connect_timeout = 10
-        ):
+    def __init__(
+        self,
+        session,
+        transport,
+        receiver,
+        original,
+        packet,
+        retry_options,
+        did_broadcast=False,
+        connect_timeout=10,
+    ):
         self.sent = 0
         self.clone = packet.clone()
         self.session = session
@@ -28,12 +36,12 @@ class Writer:
         bts = await self.write()
 
         lc = hp.lc.using(
-              serial = self.clone.serial
-            , pkt = self.clone.pkt_type
-            , protocol = self.clone.protocol
-            , source = self.clone.source
-            , sequence = self.clone.sequence
-            )
+            serial=self.clone.serial,
+            pkt=self.clone.pkt_type,
+            protocol=self.clone.protocol,
+            source=self.clone.source,
+            sequence=self.clone.sequence,
+        )
 
         if len(bts) < 256:
             log.debug(lc("Sent message", bts=binascii.hexlify(bts).decode()))

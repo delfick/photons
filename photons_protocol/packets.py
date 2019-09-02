@@ -43,8 +43,10 @@ import json
 
 log = logging.getLogger("photons_protocol.packets")
 
+
 class Initial:
     """Used for the default values on Packet groups"""
+
 
 class packet_spec(sb.Spec):
     """
@@ -53,6 +55,7 @@ class packet_spec(sb.Spec):
     This allows us to provide the pkt when making field specs; that has all fields
     up to the current field set on it.
     """
+
     def __init__(self, kls, attrs, name_to_group):
         self.kls = kls
         self.attrs = attrs
@@ -77,10 +80,12 @@ class packet_spec(sb.Spec):
 
         return pkt
 
+
 class PacketSpecMixin:
     """
     Functionality for our packet.
     """
+
     def pack(self, payload=None, parent=None, serial=None, packing_kls=PacketPacking):
         """
         Return us a ``bitarray`` representing this packet.
@@ -142,9 +147,16 @@ class PacketSpecMixin:
         """Return whether this object has this key in it's fields or groups"""
         return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
 
-    def __getitem__(self, key
-        , do_spec=True, do_transform=True, parent=None, serial=None, allow_bitarray=False, unpacking=True
-        ):
+    def __getitem__(
+        self,
+        key,
+        do_spec=True,
+        do_transform=True,
+        parent=None,
+        serial=None,
+        allow_bitarray=False,
+        unpacking=True,
+    ):
         """
         Dictionary access for a key on the object
 
@@ -194,13 +206,15 @@ class PacketSpecMixin:
 
         if do_spec and key in M.all_names:
             typ = M.all_field_types_dict[key]
-            return object.__getattribute__(self, "getitem_spec")(typ
-                , key, actual, parent, serial, do_transform, allow_bitarray, unpacking
-                )
+            return object.__getattribute__(self, "getitem_spec")(
+                typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
+            )
 
         return actual
 
-    def getitem_spec(self, typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking):
+    def getitem_spec(
+        self, typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
+    ):
         """
         Used by __getitem__ to use the spec on the type to transform the ``actual`` value
         """
@@ -409,12 +423,14 @@ class PacketSpecMixin:
 
     def __repr__(self):
         """Return this packet as a jsonified string"""
+
         def reprer(o):
             if type(o) is bytes:
                 return binascii.hexlify(o).decode()
             elif type(o) is bitarray:
                 return binascii.hexlify(o.tobytes()).decode()
             return repr(o)
+
         return json.dumps(self.as_dict(), sort_keys=True, default=reprer)
 
     @classmethod
@@ -426,6 +442,7 @@ class PacketSpecMixin:
     def normalise(kls, meta, val):
         """Create an instance of this class from a dictionary"""
         return kls.spec().normalise(meta, val)
+
 
 class PacketSpecMetaKls(FieldSpecMetakls):
     """
@@ -457,6 +474,7 @@ class PacketSpecMetaKls(FieldSpecMetakls):
     * Replace the ``fields`` attribute with all the fields from the groups
     * Ensure the class has the ``PacketSpecMixin`` class as a base class
     """
+
     def __new__(metaname, classname, baseclasses, attrs):
         groups = {}
         all_names = []
@@ -497,32 +515,43 @@ class PacketSpecMetaKls(FieldSpecMetakls):
             field_types.append((name, typ))
 
         if len(set(all_names)) != len(all_names):
-            raise ProgrammerError("Duplicated names!\t{0}".format([name for name in all_names if all_names.count(name) > 1]))
+            raise ProgrammerError(
+                "Duplicated names!\t{0}".format(
+                    [name for name in all_names if all_names.count(name) > 1]
+                )
+            )
 
         class MetaRepr(type):
             def __repr__(self):
                 return "<type {0}.Meta>".format(classname)
 
-        Meta = type.__new__(MetaRepr, "Meta", ()
-            , { "multi": None
-              , "groups": groups
-              , "all_names": all_names
-              , "field_types": field_types
-              , "format_types": format_types
-              , "name_to_group": name_to_group
-              , "all_field_types": all_fields
-              , "original_fields": fields
-
-              , "field_types_dict": dict(field_types)
-              , "all_field_types_dict": dict(all_fields)
-              }
-            )
+        Meta = type.__new__(
+            MetaRepr,
+            "Meta",
+            (),
+            {
+                "multi": None,
+                "groups": groups,
+                "all_names": all_names,
+                "field_types": field_types,
+                "format_types": format_types,
+                "name_to_group": name_to_group,
+                "all_field_types": all_fields,
+                "original_fields": fields,
+                "field_types_dict": dict(field_types),
+                "all_field_types_dict": dict(all_fields),
+            },
+        )
 
         attrs["Meta"] = Meta
 
         def dflt(in_group):
             return Initial if in_group else sb.NotSpecified
-        attrs["fields"] = [(name, partial(dflt, name in groups)) for name in (list(all_names) + list(groups.keys()))]
+
+        attrs["fields"] = [
+            (name, partial(dflt, name in groups))
+            for name in (list(all_names) + list(groups.keys()))
+        ]
 
         kls = type.__new__(metaname, classname, baseclasses, attrs)
 
@@ -531,8 +560,13 @@ class PacketSpecMetaKls(FieldSpecMetakls):
             if hasattr(kls, field):
                 already_attributes.append(field)
         if already_attributes:
-            raise ProgrammerError("Can't override attributes with fields\talready_attributes={0}".format(sorted(already_attributes)))
+            raise ProgrammerError(
+                "Can't override attributes with fields\talready_attributes={0}".format(
+                    sorted(already_attributes)
+                )
+            )
 
         return kls
+
 
 dictobj.PacketSpec = type.__new__(PacketSpecMetaKls, "PacketSpec", (PacketSpecMixin, dictobj), {})

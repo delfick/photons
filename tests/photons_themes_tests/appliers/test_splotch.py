@@ -63,23 +63,21 @@ describe TestCase, "StripApplierSplotch":
         with self.not_shuffled_theme():
             got = applier.apply_theme(self.theme)
 
-        self.assertHues(got
-            , 0
-            , 100
-            , 200
-            , 300
-            )
+        self.assertHues(got, 0, 100, 200, 300)
 
     it "transitions to each color":
         applier = StripApplierSplotch(16)
         with self.not_shuffled_theme():
             got = applier.apply_theme(self.theme)
 
-        self.assertHues(got
-            , 0, 25.0, 50.0, 75.0, 87.5, 100
-            , 125, 150.0, 175.0, 187.5, 200
-            , 225.0, 250.0, 275.0, 287.5, 300
-            )
+        # fmt: off
+        self.assertHues(
+            got,
+            0, 25.0, 50.0, 75.0, 87.5, 100,
+            125, 150.0, 175.0, 187.5, 200,
+            225.0, 250.0, 275.0, 287.5, 300
+        )
+        # fmt: on
 
     it "transitions nicely when the colors aren't sequential":
         self.theme.colors.insert(2, ThemeColor(40, 1, 1, 3500))
@@ -88,37 +86,42 @@ describe TestCase, "StripApplierSplotch":
         with self.not_shuffled_theme():
             got = applier.apply_theme(self.theme)
 
-        self.assertHues(got
-            , 0, 25.0, 50.0, 75.0, 100
-            , 85.0, 70.0, 55.0, 40
-            , 80.0, 120.0, 160.0, 200
-            , 225.0, 250.0, 275.0
-            )
+        # fmt: off
+        self.assertHues(
+            got,
+            0, 25.0, 50.0, 75.0, 100,
+            85.0, 70.0, 55.0, 40,
+            80.0, 120.0, 160.0, 200,
+            225.0, 250.0, 275.0
+        )
+        # fmt: on
 
 describe TestCase, "TileApplierSplotch":
     before_each:
         self.user_coords_and_sizes = [
-              ((0.5, 1.5), (6, 6))
-            , ((0.5, 0.5), (6, 6))
-            , ((1.5, 0.5), (6, 6))
-            ]
+            ((0.5, 1.5), (6, 6)),
+            ((0.5, 0.5), (6, 6)),
+            ((1.5, 0.5), (6, 6)),
+        ]
 
         self.applier = TileApplierSplotch.from_user_coords(self.user_coords_and_sizes)
 
+        # fmt: off
         points = [
-              (0, 12, 0),   None, None,        None, None, (5, 12, 300)
-            , None
-            , None
-            , None
-            , None
-            , (0,  7, 200), None, None,        None, None, (5,  7, 10)
-            , None
-            , None
-            , None,         None, (2,  4, 90), None, None, None,        (6,  4, 30), None, None, None, None, (11, 4, 45)
-            , None
-            , None
-            , (0,  1, 30),  None, None,        None, None, None,        None,        None, None, None, None, (11, 1, 89)
-            ]
+            (0, 12, 0),   None, None,        None, None, (5, 12, 300), # noqa
+            None,
+            None,
+            None,
+            None,
+            (0,  7, 200), None, None,        None, None, (5,  7, 10), # noqa
+            None,
+            None,
+            None,         None, (2,  4, 90), None, None, None,        (6,  4, 30), None, None, None, None, (11, 4, 45), # noqa
+            None,
+            None,
+            (0,  1, 30),  None, None,        None, None, None,        None,        None, None, None, None, (11, 1, 89) # noqa
+        ]
+        # fmt: on
 
         self.canvas = Canvas()
         for point in points:
@@ -154,11 +157,7 @@ describe TestCase, "TileApplierSplotch":
         theme.add_hsbk(200, 1, 1, 3500)
         theme.add_hsbk(300, 1, 1, 3500)
 
-        user_coords_and_sizes = [
-              ((0.5, 1.5), (8, 8))
-            , ((0.5, 0.5), (8, 8))
-            , ((1.5, 0.5), (8, 8))
-            ]
+        user_coords_and_sizes = [((0.5, 1.5), (8, 8)), ((0.5, 0.5), (8, 8)), ((1.5, 0.5), (8, 8))]
 
         applier = TileApplierSplotch.from_user_coords(user_coords_and_sizes)
         applier.just_points = True
@@ -180,60 +179,71 @@ describe TestCase, "TileApplierSplotch":
         tiles = self.applier.apply_theme(Theme(), canvas=self.canvas)
 
         self.assertEqual(len(tiles), 3)
-        self.assertHues(tiles[0]
-            , 0,    None, None, None, None, 300
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , 200,  None, None, None, None, 10
-            )
+        # fmt: off
+        self.assertHues(
+            tiles[0],
+            0,    None, None, None, None, 300, # noqa
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            200,  None, None, None, None, 10 # noqa
+        )
 
-        self.assertHues(tiles[1]
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , None, None, 90,   None, None, None
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , 30,   None, None, None, None, None
-            )
+        self.assertHues(
+            tiles[1],
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            None, None, 90,   None, None, None, # noqa
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            30,   None, None, None, None, None, # noqa
+        )
 
-        self.assertHues(tiles[2]
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , 30,   None, None, None, None, 45
-            , None, None, None, None, None, None
-            , None, None, None, None, None, None
-            , None, None, None, None, None, 89
-            )
+        self.assertHues(
+            tiles[2],
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            30,   None, None, None, None, 45, # noqa
+            None, None, None, None, None, None,
+            None, None, None, None, None, None,
+            None, None, None, None, None, 89
+        )
+        # fmt: on
 
     it "fills in the blanks and blurs":
         tiles = self.applier.apply_theme(Theme(), canvas=self.canvas)
 
         self.assertEqual(len(tiles), 3)
-        self.assertHues(tiles[0]
-            , 357.354, 353.317, 339.287, 319.357, 306.107, 302.67
-            , 353.766, 349.896, 337.188, 320.743, 309.286, 306.454
-            , 328.112, 326.612, 325.32, 323.28, 322.627, 321.775
-            , 232.074, 252.626, 302.539, 333.098, 344.066, 346.048
-            , 205.009, 204.271, 222.976, 356.996, 4.18, 5.037
-            , 193.706, 182.422, 146.255, 42.642, 18.126, 14.906
-            )
 
-        self.assertHues(tiles[1]
-            , 174.107, 155.588, 106.686, 61.209, 32.368, 23.087
-            , 132.642, 113.567, 92.548, 69.889, 45.433, 30.643
-            , 90.336,  89.807,  84.9,   72.523, 52.64,  36.584
-            , 63.926,  70.407,  74.462, 67.431, 51.996, 39.538
-            , 45.367,  52.496,  59.94,  58.018, 49.092, 42.479
-            , 36.441,  42.2,    49.52,  51.73,  46.591, 44.326
-            )
+        # fmt: off
+        self.assertHues(
+            tiles[0],
+            357.354, 353.317, 339.287, 319.357, 306.107, 302.67,
+            353.766, 349.896, 337.188, 320.743, 309.286, 306.454,
+            328.112, 326.612, 325.32,  323.28, 322.627, 321.775, # noqa
+            232.074, 252.626, 302.539, 333.098, 344.066, 346.048,
+            205.009, 204.271, 222.976, 356.996, 4.18, 5.037,
+            193.706, 182.422, 146.255, 42.642, 18.126, 14.906
+        )
 
-        self.assertHues(tiles[2]
-            , 23.207, 28.978, 34.586, 40.374, 43.704, 44.567
-            , 27.579, 30.666, 35.917, 41.011, 44.356, 45.532
-            , 31.345, 33.055, 38.142, 43.548, 47.317, 48.383
-            , 34.193, 36.0,   41.615, 50.267, 56.07,  57.67
-            , 40.739, 42.865, 50.169, 59.788, 68.084, 71.879
-            , 45.655, 49.739, 55.671, 66.534, 76.223, 80.183
-            )
+        self.assertHues(
+            tiles[1],
+            174.107, 155.588, 106.686, 61.209, 32.368, 23.087,
+            132.642, 113.567, 92.548,  69.889, 45.433, 30.643, # noqa
+            90.336,  89.807,  84.9,    72.523, 52.64,  36.584, # noqa
+            63.926,  70.407,  74.462,  67.431, 51.996, 39.538, # noqa
+            45.367,  52.496,  59.94,   58.018, 49.092, 42.479, # noqa
+            36.441,  42.2,    49.52,   51.73,  46.591, 44.326 # noqa
+        )
+
+        self.assertHues(
+            tiles[2],
+            23.207, 28.978, 34.586, 40.374, 43.704, 44.567,
+            27.579, 30.666, 35.917, 41.011, 44.356, 45.532,
+            31.345, 33.055, 38.142, 43.548, 47.317, 48.383,
+            34.193, 36.0,   41.615, 50.267, 56.07,  57.67, # noqa
+            40.739, 42.865, 50.169, 59.788, 68.084, 71.879,
+            45.655, 49.739, 55.671, 66.534, 76.223, 80.183
+        )
+        # fmt: on

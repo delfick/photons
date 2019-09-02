@@ -23,6 +23,7 @@ describe AsyncTestCase, "Transport":
             self.assertIs(transport.transport, None)
 
         async it "has a setup function":
+
             class T(Transport):
                 def setup(s, one, two, *, three):
                     s.one = one
@@ -46,6 +47,7 @@ describe AsyncTestCase, "Transport":
 
             def spawn(timeout):
                 return self.spawned
+
             self.spawn_transport = mock.Mock(name="spawn_transport", side_effect=spawn)
 
             class T(Transport):
@@ -136,6 +138,7 @@ describe AsyncTestCase, "Transport":
 
             @with_timeout
             async it "doesn't swallow cancellations":
+
                 async def getter():
                     await asyncio.sleep(2)
                     return self.spawned
@@ -173,7 +176,7 @@ describe AsyncTestCase, "Transport":
             @with_timeout
             async it "closes the transport if there is one":
                 close_transport = asynctest.mock.CoroutineMock(name="close_transport")
-                
+
                 fut = asyncio.Future()
                 fut.set_result(self.spawned)
                 self.transport.transport = fut
@@ -188,11 +191,11 @@ describe AsyncTestCase, "Transport":
                 self.transport = Transport(self.session)
 
             async it "does nothing for close_transport":
-                transport = mock.NonCallableMock(name='transport', spec=[])
+                transport = mock.NonCallableMock(name="transport", spec=[])
                 await self.transport.close_transport(transport)
 
             async it "says True for is_transport_active":
-                transport = mock.NonCallableMock(name='transport', spec=[])
+                transport = mock.NonCallableMock(name="transport", spec=[])
                 assert await self.transport.is_transport_active(self.original_message, transport)
 
             async it "must have spawn_transport implemented":
@@ -201,7 +204,7 @@ describe AsyncTestCase, "Transport":
 
             async it "must have write implemented":
                 bts = mock.Mock(name="bts")
-                transport = mock.NonCallableMock(name='transport', spec=[])
+                transport = mock.NonCallableMock(name="transport", spec=[])
                 original_message = mock.Mock(name="original_message")
 
                 with self.fuzzyAssertRaisesError(NotImplementedError):

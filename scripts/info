@@ -9,13 +9,17 @@ import logging
 
 log = logging.getLogger("info")
 
-@option_merge_addon_hook(extras=[
-      ("lifx.photons", "transport")
-    , ("lifx.photons", "control")
-    , ("lifx.photons", "device_finder")
-    ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "transport"),
+        ("lifx.photons", "control"),
+        ("lifx.photons", "device_finder"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 @an_action(needs_target=True, special_reference=True)
 async def info(collector, target, reference, **kwargs):
@@ -24,7 +28,9 @@ async def info(collector, target, reference, **kwargs):
 
     g = Gatherer(target)
     plans = make_plans("state", "address", "capability", "zones", "firmware")
-    async for serial, complete, info in g.gather_per_serial(plans, reference, error_catcher=error, find_timeout=30):
+    async for serial, complete, info in g.gather_per_serial(
+        plans, reference, error_catcher=error, find_timeout=30
+    ):
         infos = []
 
         for key, val in sorted(info.items()):
@@ -43,7 +49,7 @@ async def info(collector, target, reference, **kwargs):
                 vl = []
                 for zi, color in val:
                     vl.append(f"\t\tZone {zi}: {repr(color)}")
-                val = "\n{}".format('\n'.join(vl))
+                val = "\n{}".format("\n".join(vl))
 
             elif key == "power":
                 val = val["level"]
@@ -51,7 +57,9 @@ async def info(collector, target, reference, **kwargs):
             elif key == "state":
                 infos.append(f"power: {val['power']}")
                 infos.append(f"label: {val['label']}")
-                infos.append(f"color: hue: {val['hue']}, saturation: {val['saturation']}, brightness: {val['brightness']}, kelvin: {val['kelvin']}")
+                infos.append(
+                    f"color: hue: {val['hue']}, saturation: {val['saturation']}, brightness: {val['brightness']}, kelvin: {val['kelvin']}"
+                )
                 continue
 
             infos.append(f"{key}: {val}")
@@ -59,8 +67,10 @@ async def info(collector, target, reference, **kwargs):
         info_string = "\n\t{0}".format("\n\t".join(infos))
         print(f"{serial}: {info_string}\n")
 
+
 if __name__ == "__main__":
     from photons_app.executor import main
     import sys
     import os
+
     main(["lan:info"] + sys.argv[1:])

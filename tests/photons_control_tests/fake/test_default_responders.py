@@ -19,7 +19,7 @@ describe AsyncTestCase, "default_responders":
         self.assertEqual(device.attrs.firmware, chp.Firmware(0, 0, 0))
         self.assertEqual(device.attrs.color, chp.Color(0, 1, 1, 3500))
         self.assertEqual(device.attrs.power, 0)
-        
+
         assert not any(isinstance(r, chp.ZonesResponder) for r in device.responders)
         assert not any(isinstance(r, chp.TilesResponder) for r in device.responders)
         assert not any(isinstance(r, chp.InfraredResponder) for r in device.responders)
@@ -28,7 +28,9 @@ describe AsyncTestCase, "default_responders":
             assert any(isinstance(r, expect) for r in device.responders)
 
     async it "can be infrared":
-        device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS))
+        device = FakeDevice(
+            "d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS)
+        )
         await device.start()
 
         assert any(isinstance(r, chp.InfraredResponder) for r in device.responders)
@@ -36,16 +38,22 @@ describe AsyncTestCase, "default_responders":
         self.assertEqual(device.attrs.vendor_id, 1)
         self.assertEqual(device.attrs.product_id, 29)
 
-        device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, infrared=200))
+        device = FakeDevice(
+            "d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, infrared=200)
+        )
         await device.start()
         self.assertEqual(device.attrs.infrared, 200)
 
     async it "can be multizone":
-        with self.fuzzyAssertRaisesError(AssertionError, "Product has multizone capability but no zones specified"):
+        with self.fuzzyAssertRaisesError(
+            AssertionError, "Product has multizone capability but no zones specified"
+        ):
             device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM1_Z))
 
         zones = [chp.Color(0, 0, 0, 0), chp.Color(1, 1, 1, 1)]
-        device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM1_Z, zones=zones))
+        device = FakeDevice(
+            "d073d5000001", chp.default_responders(LIFIProductRegistry.LCM1_Z, zones=zones)
+        )
         await device.start()
 
         assert any(isinstance(r, chp.ZonesResponder) for r in device.responders)
@@ -54,7 +62,12 @@ describe AsyncTestCase, "default_responders":
         self.assertEqual(device.attrs.vendor_id, 1)
         self.assertEqual(device.attrs.product_id, 31)
 
-        device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM1_Z, zones=zones, zones_effect=MultiZoneEffectType.MOVE))
+        device = FakeDevice(
+            "d073d5000001",
+            chp.default_responders(
+                LIFIProductRegistry.LCM1_Z, zones=zones, zones_effect=MultiZoneEffectType.MOVE
+            ),
+        )
         await device.start()
         self.assertEqual(device.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
@@ -68,6 +81,11 @@ describe AsyncTestCase, "default_responders":
         assert any(isinstance(r, chp.TilesResponder) for r in device.responders)
         self.assertEqual(device.attrs.tiles_effect, TileEffectType.OFF)
 
-        device = FakeDevice("d073d5000001", chp.default_responders(LIFIProductRegistry.LCM3_TILE, tiles_effect=TileEffectType.FLAME))
+        device = FakeDevice(
+            "d073d5000001",
+            chp.default_responders(
+                LIFIProductRegistry.LCM3_TILE, tiles_effect=TileEffectType.FLAME
+            ),
+        )
         await device.start()
         self.assertEqual(device.attrs.tiles_effect, TileEffectType.FLAME)

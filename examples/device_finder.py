@@ -12,11 +12,13 @@ import sys
 
 collector = library_setup()
 
-lan_target = collector.configuration['target_register'].resolve("lan")
+lan_target = collector.configuration["target_register"].resolve("lan")
+
 
 def write_prompt():
     sys.stdout.write("> ")
     sys.stdout.flush()
+
 
 async def process_command(device_finder, command):
     if " " not in command:
@@ -25,7 +27,7 @@ async def process_command(device_finder, command):
         command, options = command.split(" ", 1)
 
     if command.endswith("_json"):
-        command = command[:command.rfind("_")]
+        command = command[: command.rfind("_")]
         filtr = Filter.from_json_str(options)
     else:
         filtr = Filter.from_key_value_str(options)
@@ -37,17 +39,24 @@ async def process_command(device_finder, command):
     elif command.startswith("set_"):
         color = command[4:]
         afr = await device_finder.args_for_run()
-        await lan_target.script(Parser.color_to_msg(color)).run_with_all(device_finder.find(filtr=filtr), afr)
-        info = ''
+        await lan_target.script(Parser.color_to_msg(color)).run_with_all(
+            device_finder.find(filtr=filtr), afr
+        )
+        info = ""
     else:
-        print(dedent("""
+        print(
+            dedent(
+                """
             commands are of the form '(serials|info|set_<color>) KEY=VALUE KEY=VALUE ...'
 
             or of the form '(serials_json|info_json|set_<color>_json) {"key": "value", "key": "value"}'
-        """))
+        """
+            )
+        )
         return
 
     print(json.dumps(info, indent=4, sort_keys=True))
+
 
 async def doit():
     readline.parse_and_bind("")
@@ -86,6 +95,7 @@ async def doit():
                 await final
     finally:
         await device_finder.finish()
+
 
 loop = collector.configuration["photons_app"].loop
 try:

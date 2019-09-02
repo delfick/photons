@@ -6,8 +6,10 @@ import logging
 
 log = logging.getLogger("photons_transport.transports.memory")
 
+
 class Memory(Transport):
     """Knows how to send and receive messages with an in memory Fake device"""
+
     def setup(self, writer):
         self.writer = writer
 

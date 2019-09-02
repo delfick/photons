@@ -1,4 +1,10 @@
-from photons_tile_paint.options import AnimationOptions, split_by_comma, hue_range_spec, HueRange, normalise_speed_options
+from photons_tile_paint.options import (
+    AnimationOptions,
+    split_by_comma,
+    hue_range_spec,
+    HueRange,
+    normalise_speed_options,
+)
 from photons_tile_paint.animation import Animation, Finish
 from photons_themes.theme import ThemeColor as Color
 from photons_themes.canvas import Canvas
@@ -8,8 +14,10 @@ from input_algorithms import spec_base as sb
 import random
 import math
 
+
 class Empty:
     pass
+
 
 class TileFallingOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
@@ -26,6 +34,7 @@ class TileFallingOptions(AnimationOptions):
         if self.num_iterations == -1:
             return False
         return self.num_iterations <= iteration
+
 
 class Line:
     def __init__(self, column, state):
@@ -136,6 +145,7 @@ class Line:
 
         yield from line
 
+
 class TileFallingState:
     def __init__(self, coords, options):
         self.options = options
@@ -186,6 +196,7 @@ class TileFallingState:
                 drawn.add(i)
 
         return self.canvas
+
 
 class TileFallingAnimation(Animation):
     def setup(self):

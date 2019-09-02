@@ -12,8 +12,8 @@ describe TestCase, "MessagesMeta":
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
 
-        one_msg = mock.Mock(name='one', _lifx_packet_message=True, return_value = omsg)
-        two_msg = mock.Mock(name='two', _lifx_packet_message=True, return_value = tmsg)
+        one_msg = mock.Mock(name="one", _lifx_packet_message=True, return_value=omsg)
+        two_msg = mock.Mock(name="two", _lifx_packet_message=True, return_value=tmsg)
 
         three_msg = mock.Mock(name="three", _lifx_packet_message=False)
         four_msg = mock.Mock(name="four", spec=[])
@@ -36,8 +36,8 @@ describe TestCase, "MessagesMeta":
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
 
-        one_msg = mock.Mock(name='one', _lifx_packet_message=True, return_value = omsg)
-        two_msg = mock.Mock(name='two', _lifx_packet_message=True, return_value = tmsg)
+        one_msg = mock.Mock(name="one", _lifx_packet_message=True, return_value=omsg)
+        two_msg = mock.Mock(name="two", _lifx_packet_message=True, return_value=tmsg)
 
         three_msg = mock.Mock(name="three", _lifx_packet_message=False)
         four_msg = mock.Mock(name="four", spec=[])
@@ -48,14 +48,17 @@ describe TestCase, "MessagesMeta":
             three = three_msg
             four = four_msg
 
-        self.assertEqual(M.by_type
-            , { omsg.Payload.message_type: omsg
-              , tmsg.Payload.message_type: tmsg
-              , three_msg.Payload.message_type: three_msg
-              }
-            )
+        self.assertEqual(
+            M.by_type,
+            {
+                omsg.Payload.message_type: omsg,
+                tmsg.Payload.message_type: tmsg,
+                three_msg.Payload.message_type: three_msg,
+            },
+        )
 
     it "has the MessagesMixin":
+
         class M(Messages):
             pass
 

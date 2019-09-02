@@ -8,6 +8,7 @@ import signal
 
 log = logging.getLogger("photons_app.runner")
 
+
 def on_done_task(final_future, res):
     if final_future.done():
         return
@@ -24,6 +25,7 @@ def on_done_task(final_future, res):
     res.result()
     final_future.set_result(None)
 
+
 def run(collector):
     """
     Get the loop, then use runner with cleanup in a finally block
@@ -38,8 +40,10 @@ def run(collector):
     final_future = photons_app.final_future
 
     if platform.system() != "Windows":
+
         def stop_final_fut():
             final_future.cancel()
+
         loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
     task = loop.create_task(task_runner(task, reference))
@@ -47,6 +51,7 @@ def run(collector):
 
     async def wait():
         await final_future
+
     waiter = loop.create_task(wait())
 
     try:
@@ -66,6 +71,7 @@ def run(collector):
             loop.close()
             del photons_app.loop
             del photons_app.final_future
+
 
 def cancel_all_tasks(loop, *ignore_errors):
     if hasattr(asyncio.tasks, "all_tasks"):
@@ -88,8 +94,9 @@ def cancel_all_tasks(loop, *ignore_errors):
 
         if task not in ignore_errors and task.exception() is not None:
             loop.call_exception_handler(
-                  { 'message': 'unhandled exception during shutdown'
-                  , 'exception': task.exception()
-                  , 'task': task
-                  }
-                )
+                {
+                    "message": "unhandled exception during shutdown",
+                    "exception": task.exception(),
+                    "task": task,
+                }
+            )

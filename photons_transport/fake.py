@@ -20,8 +20,10 @@ import uuid
 
 log = logging.getLogger("photons_transport.fake")
 
+
 class IgnoreMessage(Exception):
     pass
+
 
 class Attrs:
     def __init__(self, device):
@@ -59,6 +61,7 @@ class Attrs:
     def __dir__(self):
         return sorted(object.__dir__(self) + list(self._attrs.keys()))
 
+
 class Service:
     def __init__(self, service, closer, add_service, state_service, address):
         self.service = service
@@ -66,6 +69,7 @@ class Service:
         self.address = address
         self.add_service = add_service
         self.state_service = state_service
+
 
 class WithDevices(object):
     def __init__(self, devices):
@@ -78,6 +82,7 @@ class WithDevices(object):
     async def __aexit__(self, exc_type, exc, tb):
         for device in self.devices:
             await device.finish()
+
 
 def pktkeys(msgs, keep_duplicates=False):
     keys = []
@@ -93,6 +98,7 @@ def pktkeys(msgs, keep_duplicates=False):
         if key not in keys or keep_duplicates:
             keys.append(key)
     return keys
+
 
 class Responder:
     _fields = []
@@ -139,6 +145,7 @@ class Responder:
         if False:
             yield
 
+
 class ServicesResponder(Responder):
     _fields = [("limited_services", lambda: None)]
 
@@ -165,10 +172,12 @@ class ServicesResponder(Responder):
             for service in self.filtered_services(device):
                 yield service.state_service
 
+
 class EchoResponder(Responder):
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.EchoRequest:
             yield DeviceMessages.EchoResponse(echoing=pkt.echoing)
+
 
 class FakeDevice:
     def __init__(self, serial, responders, protocol_register=None, port=None, use_sockets=False):
@@ -311,13 +320,18 @@ class FakeDevice:
                 break
 
         if addr is None:
-            log.warning(hp.lc("Tried to write a packet to the fake device, but no appropriate service found"
-                , source = source
-                , serial = self.serial
-                ))
+            log.warning(
+                hp.lc(
+                    "Tried to write a packet to the fake device, but no appropriate service found",
+                    source=source,
+                    serial=self.serial,
+                )
+            )
             return
 
-        log.debug(hp.lc("RECV", bts=binascii.hexlify(bts).decode(), source=source, serial=self.serial))
+        log.debug(
+            hp.lc("RECV", bts=binascii.hexlify(bts).decode(), source=source, serial=self.serial)
+        )
 
         pkt = Messages.unpack(bts, self.protocol_register, unknown_ok=True)
         if pkt.serial not in ("000000000000", self.serial):
@@ -376,17 +390,20 @@ class FakeDevice:
     def wait_for(self, source, kls):
         assert (source, kls) not in self.waiters
         fut = asyncio.Future()
-        self.waiters[(source ,kls)] = fut
+        self.waiters[(source, kls)] = fut
         return fut
 
     async def got_message(self, pkt, source):
-        log.info(hp.lc("Got packet"
-            , source = source
-            , pkt = pkt.__class__.__name__
-            , payload = repr(pkt.payload)
-            , pkt_source = pkt.source
-            , serial = self.serial
-            ))
+        log.info(
+            hp.lc(
+                "Got packet",
+                source=source,
+                pkt=pkt.__class__.__name__,
+                payload=repr(pkt.payload),
+                pkt_source=pkt.source,
+                serial=self.serial,
+            )
+        )
 
         for key, fut in list(self.waiters.items()):
             s, kls = key
@@ -461,6 +478,7 @@ class FakeDevice:
 
                 def received_data(bts, a):
                     sp.udp_transport.sendto(bts, addr)
+
                 hp.async_as_background(self.write("udp", received_data, data))
 
             def error_received(sp, exc):
@@ -474,7 +492,9 @@ class FakeDevice:
                 port = self.make_port()
 
             try:
-                remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
+                remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(
+                    ServerProtocol, local_addr=("0.0.0.0", port)
+                )
                 break
             except OSError:
                 log.exception("Couldn't make datagram server")
@@ -528,7 +548,7 @@ class FakeDevice:
     def make_port(self):
         """Return the port to listen to"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('0.0.0.0', 0))
+            s.bind(("0.0.0.0", 0))
             return s.getsockname()[1]
 
     async def extra_make_response(self, pkt, source):
@@ -564,12 +584,15 @@ class FakeDevice:
         if extra:
             return extra
 
-        log.info(hp.lc("Message wasn't handled"
-            , source = source
-            , pkt = pkt.__class__.__name__
-            , payload = repr(pkt.payload)
-            , serial = self.serial
-            ))
+        log.info(
+            hp.lc(
+                "Message wasn't handled",
+                source=source,
+                pkt=pkt.__class__.__name__,
+                payload=repr(pkt.payload),
+                serial=self.serial,
+            )
+        )
 
     def compare_received(self, expected, keep_duplicates=False):
         expect_keys = pktkeys(expected, keep_duplicates)
@@ -593,7 +616,9 @@ class FakeDevice:
         different = False
         for i, (got, expect) in enumerate(zip(got_keys, expect_keys)):
             if got != expect:
-                print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
+                print(
+                    f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}"
+                )
                 different = True
 
         if different:
@@ -623,7 +648,9 @@ class FakeDevice:
         different = False
         for i, (got, expect) in enumerate(zip(got, expected)):
             if not got | expect:
-                print(f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}")
+                print(
+                    f"{self.serial} Message {i} is different\n\tGOT:\n\t\t{got}\n\tEXPECT:\n\t\t{expect}"
+                )
                 different = True
 
         if different:

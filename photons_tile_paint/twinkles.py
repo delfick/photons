@@ -9,25 +9,26 @@ import random
 
 # Palettes from https://www.color-hex.com/ (Using HSL)
 palettes = {
-      "twilight":
-      [ (0.65 * 360, 0.53, 0.33, 3500)
-      , (0.76 * 360, 0.42, 0.38, 3500)
-      , (0.79 * 360, 0.42, 0.73, 3500)
-      ]
-    , "summertime":
-      [ (0.11 * 360, 1   , 0.65, 3500)
-      , (0.51 * 360, 0.86, 0.38, 3500)
-      , (0.06 * 360, 0.81, 0.54, 3500)
-      , (0.58 * 360, 0.82, 0.27, 3500)
-      ]
-    , "rainbow_dash":
-      [ (0.01 * 360, 0.84, 0.57, 3500)
-      , (0.06 * 360, 0.89, 0.58, 3500)
-      , (0.15 * 360, 0.96, 0.79, 3500)
-      , (0.26 * 360, 0.50, 0.51, 3500)
-      , (0.55 * 360, 0.97, 0.41, 3500)
-      ]
-    }
+    "twilight": [
+        (0.65 * 360, 0.53, 0.33, 3500),
+        (0.76 * 360, 0.42, 0.38, 3500),
+        (0.79 * 360, 0.42, 0.73, 3500),
+    ],
+    "summertime": [
+        (0.11 * 360, 1, 0.65, 3500),
+        (0.51 * 360, 0.86, 0.38, 3500),
+        (0.06 * 360, 0.81, 0.54, 3500),
+        (0.58 * 360, 0.82, 0.27, 3500),
+    ],
+    "rainbow_dash": [
+        (0.01 * 360, 0.84, 0.57, 3500),
+        (0.06 * 360, 0.89, 0.58, 3500),
+        (0.15 * 360, 0.96, 0.79, 3500),
+        (0.26 * 360, 0.50, 0.51, 3500),
+        (0.55 * 360, 0.97, 0.41, 3500),
+    ],
+}
+
 
 class choose_palette(sb.Spec):
     def normalise_empty(self, meta):
@@ -36,6 +37,7 @@ class choose_palette(sb.Spec):
     def normalise_filled(self, meta, val):
         val = sb.string_choice_spec(list(palettes)).normalise(meta, val)
         return palettes[val]
+
 
 class TileTwinklesOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
@@ -49,6 +51,7 @@ class TileTwinklesOptions(AnimationOptions):
         if self.num_iterations == -1:
             return False
         return self.num_iterations <= iteration
+
 
 class TwinklesState:
     def __init__(self, coords, options):
@@ -111,6 +114,7 @@ class TwinklesState:
                     self.directions[(x, y)] = 0
 
         return self
+
 
 class TileTwinklesAnimation(Animation):
     coords = coords_for_horizontal_line

@@ -10,13 +10,15 @@ from unittest import mock
 import asyncio
 import socket
 
+
 def free_port():
     """
     Return an unused port number
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('0.0.0.0', 0))
+        s.bind(("0.0.0.0", 0))
         return s.getsockname()[1]
+
 
 class FakeDevice:
     def __init__(self, port, received):
@@ -32,12 +34,13 @@ class FakeDevice:
                 for msg in self.received(data, addr):
                     self.udp_transport.sendto(msg, addr)
 
-        self.remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(ServerProtocol
-            , local_addr = ("0.0.0.0", self.port)
-            )
+        self.remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(
+            ServerProtocol, local_addr=("0.0.0.0", self.port)
+        )
 
     async def finish(self):
         self.remote.close()
+
 
 describe AsyncTestCase, "UDP":
     async before_each:
@@ -108,6 +111,7 @@ describe AsyncTestCase, "UDP":
                 first_receive.set_result(True)
             elif message == reply3:
                 second_receive.set_result(True)
+
         self.session.received_data.side_effect = receive
 
         def translate(bts, addr):

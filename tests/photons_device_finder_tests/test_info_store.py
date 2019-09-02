@@ -174,11 +174,7 @@ describe AsyncTestCase, "InfoStore":
                 self.store.by_target[uh("d073")] = device3
 
                 result = self.store.info_for(targets)
-                self.assertEqual(result
-                    , { "d071": {"one": "two"}
-                      , "d073": {"four": "five"}
-                      }
-                    )
+                self.assertEqual(result, {"d071": {"one": "two"}, "d073": {"four": "five"}})
 
                 device1.as_dict.assert_called_once_with()
                 device2.as_dict.assert_called_once_with()
@@ -257,6 +253,7 @@ describe AsyncTestCase, "InfoStore":
 
                 async def blah():
                     pass
+
                 task = self.loop.create_task(blah())
                 self.store.tasks_by_target[target] = task
                 self.store.cleanup_task(target, task, None)
@@ -267,11 +264,13 @@ describe AsyncTestCase, "InfoStore":
 
                 async def blah():
                     pass
+
                 task = self.loop.create_task(blah())
                 self.store.tasks_by_target[target] = task
 
                 async def meh():
                     pass
+
                 task2 = self.loop.create_task(meh())
                 self.store.tasks_by_target[target] = task2
 
@@ -314,7 +313,7 @@ describe AsyncTestCase, "InfoStore":
                     self.store.found.set_result(found)
 
                 async def set_group_state():
-                    called.append('set_group_state')
+                    called.append("set_group_state")
                     self.store.futures[InfoPoints.GROUP].set_result(True)
                     ts.append(hp.async_as_background(set_light_state()))
 
@@ -323,11 +322,15 @@ describe AsyncTestCase, "InfoStore":
                     await asyncio.sleep(0.1)
                     ts.append(hp.async_as_background(set_group_state()))
 
-                filtr = mock.Mock(name="filtr", points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP], matches_all=False)
+                filtr = mock.Mock(
+                    name="filtr",
+                    points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP],
+                    matches_all=False,
+                )
                 ts.append(hp.async_as_background(start_chain()))
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
-                self.assertEqual(called, ["start_chain", "set_group_state", 'set_light_state'])
+                self.assertEqual(called, ["start_chain", "set_group_state", "set_light_state"])
                 for t in ts:
                     await t
                 want = Found()
@@ -363,7 +366,11 @@ describe AsyncTestCase, "InfoStore":
                     await asyncio.sleep(0.1)
                     hp.async_as_background(set_group_state())
 
-                filtr = mock.Mock(name="filtr", points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP], matches_all=True)
+                filtr = mock.Mock(
+                    name="filtr",
+                    points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP],
+                    matches_all=True,
+                )
                 hp.async_as_background(start_chain())
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
@@ -397,7 +404,7 @@ describe AsyncTestCase, "InfoStore":
                 called = []
 
                 async def set_rest_state():
-                    called.append('set_rest_state')
+                    called.append("set_rest_state")
                     for point in InfoPoints:
                         if point not in (InfoPoints.LIGHT_STATE, InfoPoints.GROUP):
                             self.store.futures[point].set_result(True)
@@ -412,7 +419,7 @@ describe AsyncTestCase, "InfoStore":
                     called.append("done")
 
                 async def set_group_state():
-                    called.append('set_group_state')
+                    called.append("set_group_state")
                     self.store.futures[InfoPoints.GROUP].set_result(True)
 
                     # Set found to make sure we aren't just waiting on found
@@ -421,15 +428,21 @@ describe AsyncTestCase, "InfoStore":
                     ts.append(hp.async_as_background(set_rest_state()))
 
                 async def start_chain():
-                    called.append('start_chain')
+                    called.append("start_chain")
                     await asyncio.sleep(0.1)
                     ts.append(hp.async_as_background(set_group_state()))
 
-                filtr = mock.Mock(name="filtr", points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP], matches_all=True)
+                filtr = mock.Mock(
+                    name="filtr",
+                    points=[InfoPoints.LIGHT_STATE, InfoPoints.GROUP],
+                    matches_all=True,
+                )
                 ts.append(hp.async_as_background(start_chain()))
 
                 res = await self.wait_for(self.store.found_from_filter(filtr))
-                self.assertEqual(called, ["start_chain", "set_group_state", "set_rest_state", "done"])
+                self.assertEqual(
+                    called, ["start_chain", "set_group_state", "set_rest_state", "done"]
+                )
                 self.assertEqual(done.result(), True)
                 await done
                 for t in ts:
@@ -444,5 +457,7 @@ describe AsyncTestCase, "InfoStore":
 
             async it "complains if we timeout waitig for info points":
                 filtr = Filter.empty()
-                with self.fuzzyAssertRaisesError(TimedOut, "Waiting for information to be available"):
+                with self.fuzzyAssertRaisesError(
+                    TimedOut, "Waiting for information to be available"
+                ):
                     await self.store.found_from_filter(filtr, find_timeout=0.1)

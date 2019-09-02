@@ -17,20 +17,19 @@ describe TestCase, "MergedOptionStringFormatter":
         self.target_register = mock.Mock(name="target_register")
         self.spec = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
         self.options = MergedOptions.using(
-              {"target_register": self.target_register}
-            , dont_prefix = [mock.Mock]
-            )
+            {"target_register": self.target_register}, dont_prefix=[mock.Mock]
+        )
         self.meta = Meta(self.options, [])
 
     it "routes targets.* into the target_register":
-        target = mock.Mock(name='target')
+        target = mock.Mock(name="target")
         self.target_register.resolve.return_value = target
         res = self.spec.normalise(self.meta, "{targets.one}")
         self.assertIs(res, target)
         self.target_register.resolve.assert_called_once_with("one")
 
     it "routes targets.* into the target_register and accesses from there":
-        target = mock.Mock(name='target')
+        target = mock.Mock(name="target")
         self.target_register.resolve.return_value = target
         res = self.spec.normalise(self.meta, "{targets.one.two.three}")
         self.assertIs(res, target.two.three)
@@ -51,10 +50,12 @@ describe TestCase, "MergedOptionStringFormatter":
             self.spec.normalise(self.meta.at("one"), "{one}")
 
     it "can use pkg_resources to find location of a resource":
-        res = mock.Mock(name='res')
+        res = mock.Mock(name="res")
         resource_filename = mock.Mock(name="resource_filename", return_value=res)
         with mock.patch("pkg_resources.resource_filename", resource_filename):
-            self.assertIs(self.spec.normalise(self.meta, "{somewhere.nice/really/cool:resource}"), res)
+            self.assertIs(
+                self.spec.normalise(self.meta, "{somewhere.nice/really/cool:resource}"), res
+            )
 
         resource_filename.assert_called_once_with("somewhere.nice", "really/cool")
 

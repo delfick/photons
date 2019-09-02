@@ -3,10 +3,12 @@ from photons_themes.collections import TileColors, ZoneColors
 from photons_themes.theme import ThemeColor
 from photons_themes.canvas import Canvas
 
+
 class TileApplier:
     """
     Base class for applying a theme to a tile
     """
+
     def __init__(self, coords_and_sizes):
         self.coords_and_sizes = coords_and_sizes
 
@@ -23,6 +25,7 @@ class TileApplier:
         """Add hsbks values to our colors given this canvas and our tile coords"""
         for (left_x, top_y), (tile_width, tile_height) in self.coords_and_sizes:
             colors.add_tile(canvas.points_for_tile(left_x, top_y, tile_width, tile_height))
+
 
 class TileApplierPattern(TileApplier):
     """

@@ -10,6 +10,7 @@ from photons_app.errors import BadOption, BadTarget, BadTask
 from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 
+
 class Task(dictobj):
     """
     A reference to an action with a label
@@ -24,10 +25,11 @@ class Task(dictobj):
     * Complain if there is no target but one is needed
     * Pass everything into the action
     """
+
     fields = {
-          ("action", "nop"): "The action to run with this reference"
-        , ("label", "Project"): "The namespace when listing tasks"
-        }
+        ("action", "nop"): "The action to run with this reference",
+        ("label", "Project"): "The namespace when listing tasks",
+    }
 
     async def run(self, target, collector, reference, available_actions, tasks, **extras):
         """Run this task"""
@@ -38,10 +40,14 @@ class Task(dictobj):
         reference = self.resolve_reference(collector, task_func, reference, target)
 
         try:
-            return await task_func(collector
-                , target=target, reference=reference, tasks=tasks, artifact=artifact
-                , **extras
-                )
+            return await task_func(
+                collector,
+                target=target,
+                reference=reference,
+                tasks=tasks,
+                artifact=artifact,
+                **extras
+            )
         finally:
             if isinstance(reference, SpecialReference):
                 await reference.finish()
@@ -59,16 +65,29 @@ class Task(dictobj):
         else:
             target_type = collector.configuration["target_register"].type_for(target)
             available = available_actions.get(target_type)
-            if (not available or self.action not in available) and self.action not in available_actions.get(None, {}):
-                target_types = [t for t, actions in available_actions.items() if self.action in actions]
+            if (
+                not available or self.action not in available
+            ) and self.action not in available_actions.get(None, {}):
+                target_types = [
+                    t for t, actions in available_actions.items() if self.action in actions
+                ]
                 if target_types:
                     choice = []
                     for target in collector.configuration["targets"]:
-                        if collector.configuration["target_register"].type_for(target) in target_types:
+                        if (
+                            collector.configuration["target_register"].type_for(target)
+                            in target_types
+                        ):
                             choice.append(target)
-                    raise BadTarget("Action only exists for other targets", action=self.action, target_choice=sorted(choice))
+                    raise BadTarget(
+                        "Action only exists for other targets",
+                        action=self.action,
+                        target_choice=sorted(choice),
+                    )
 
-        if (not available or self.action not in available) and self.action not in available_actions.get(None, {}):
+        if (
+            not available or self.action not in available
+        ) and self.action not in available_actions.get(None, {}):
             possible = set()
             for t, actions in available_actions.items():
                 for action in actions:
@@ -76,13 +95,22 @@ class Task(dictobj):
                         possible.add("<{0}>:{1}".format(t, action))
                     else:
                         possible.add(action)
-            raise BadTask("Can't find what to execute", action=self.action, target=target, available=sorted(possible))
+            raise BadTask(
+                "Can't find what to execute",
+                action=self.action,
+                target=target,
+                available=sorted(possible),
+            )
 
-        task_func = (available or available_actions[None]).get(self.action) or available_actions[None][self.action]
+        task_func = (available or available_actions[None]).get(self.action) or available_actions[
+            None
+        ][self.action]
 
         if task_func.needs_target and target in ("", None, sb.NotSpecified):
             usage = "lifx <target>:<task> <reference> <artifact> -- '{{<options>}}'"
-            raise BadTarget("This task requires you specify a target", usage=usage, action=self.action)
+            raise BadTarget(
+                "This task requires you specify a target", usage=usage, action=self.action
+            )
 
         return task_func
 
@@ -100,7 +128,9 @@ class Task(dictobj):
         empty = lambda r: r in ("", None, sb.NotSpecified)
 
         if task_func.needs_reference and empty(reference):
-            raise BadOption("This task requires you specify a reference, please do so!", action=self.action)
+            raise BadOption(
+                "This task requires you specify a reference, please do so!", action=self.action
+            )
 
         if task_func.special_reference:
             if empty(reference) or reference == "_":
@@ -109,7 +139,9 @@ class Task(dictobj):
             if type(reference) is str:
                 if ":" in reference:
                     typ, options = reference.split(":", 1)
-                    reference = collector.configuration["reference_resolver_register"].resolve(typ, options, target)
+                    reference = collector.configuration["reference_resolver_register"].resolve(
+                        typ, options, target
+                    )
 
             if not isinstance(reference, SpecialReference):
                 return HardCodedSerials(reference)

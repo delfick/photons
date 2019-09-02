@@ -39,6 +39,7 @@ log = logging.getLogger("photons_app.actions")
 all_tasks = {}
 available_actions = {}
 
+
 class an_action(object):
     """
     Records a task in the ``available_actions`` dictionary
@@ -68,7 +69,15 @@ class an_action(object):
     label
         A string used by the help tasks to sort the actions into groups.
     """
-    def __init__(self, target=None, special_reference=False, needs_reference=False, needs_target=False, label="Project"):
+
+    def __init__(
+        self,
+        target=None,
+        special_reference=False,
+        needs_reference=False,
+        needs_target=False,
+        label="Project",
+    ):
         self.label = label
         self.target = target
         self.needs_target = needs_target
@@ -90,9 +99,11 @@ class an_action(object):
         all_tasks[func.__name__] = Task(action=func.__name__, label=self.label)
         return func
 
+
 @an_action()
 async def nop(collector, **kwargs):
     """Literally do nothing"""
+
 
 @an_action()
 async def help(collector, tasks, reference, target, **kwargs):
@@ -135,7 +146,9 @@ async def help(collector, tasks, reference, target, **kwargs):
             kwargs["specific_target"] = target_name
 
         if target_name not in target_register.targets and target_name not in target_register.types:
-            raise PhotonsAppError("Sorry, cannot find help for non existing target", wanted=target_name)
+            raise PhotonsAppError(
+                "Sorry, cannot find help for non existing target", wanted=target_name
+            )
 
     if task_name is not sb.NotSpecified:
         kwargs["specific_task"] = task_name
@@ -144,8 +157,11 @@ async def help(collector, tasks, reference, target, **kwargs):
 
     await list_tasks(collector, tasks, **kwargs)
 
+
 @an_action()
-async def list_tasks(collector, tasks, specific_target=sb.NotSpecified, specific_task=sb.NotSpecified, **kwargs):
+async def list_tasks(
+    collector, tasks, specific_target=sb.NotSpecified, specific_task=sb.NotSpecified, **kwargs
+):
     """List the available_tasks"""
     print("Usage: (<target>:)<task> <options> -- <extra>")
     print("The following is targets and their associated tasks")
@@ -180,13 +196,23 @@ async def list_tasks(collector, tasks, specific_target=sb.NotSpecified, specific
                     if specific_task in (sb.NotSpecified, key):
                         if label.strip():
                             result.append(("", ""))
-                        desc = dedent(func.__doc__ or "").strip().split('\n')[0]
+                        desc = dedent(func.__doc__ or "").strip().split("\n")[0]
                         full_desc = func.__doc__ or ""
-                        base_str = "    {1} :: {2}{3}".format(" ", label, key, " " * (max_length - len(key)))
+                        base_str = "    {1} :: {2}{3}".format(
+                            " ", label, key, " " * (max_length - len(key))
+                        )
 
                         if specific_task is not sb.NotSpecified:
                             result.append((key, base_str))
-                            result.append((key, "\n".join("        {0}".format(line) for line in dedent(full_desc).split("\n"))))
+                            result.append(
+                                (
+                                    key,
+                                    "\n".join(
+                                        "        {0}".format(line)
+                                        for line in dedent(full_desc).split("\n")
+                                    ),
+                                )
+                            )
                         else:
                             result.append((key, "{0} :-: {1}".format(base_str, desc)))
                         label = " " * len(label)
@@ -201,7 +227,11 @@ async def list_tasks(collector, tasks, specific_target=sb.NotSpecified, specific
                 print("_" * 80)
                 for target, desc in infos:
                     if typ:
-                        print(("{0:%ss} - Type {1} -- {2}" % max_target_length).format(target, typ, desc))
+                        print(
+                            ("{0:%ss} - Type {1} -- {2}" % max_target_length).format(
+                                target, typ, desc
+                            )
+                        )
                     else:
                         print("Tasks that can be used with any target")
                 print("_" * 80)

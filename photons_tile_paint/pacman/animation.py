@@ -1,7 +1,13 @@
-from photons_tile_paint.animation import Animation, coords_for_horizontal_line, put_characters_on_canvas, Finish
+from photons_tile_paint.animation import (
+    Animation,
+    coords_for_horizontal_line,
+    put_characters_on_canvas,
+    Finish,
+)
 from photons_tile_paint.pacman import state
 
 from photons_themes.canvas import Canvas
+
 
 class TilePacmanAnimation(Animation):
     coords = coords_for_horizontal_line

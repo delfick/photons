@@ -23,10 +23,7 @@ describe AsyncTestCase, "Target":
         async it "works":
             protocol_register = mock.Mock(name="protocol_register")
             final_future = mock.Mock(name="final_future")
-            config = {
-                  "protocol_register": protocol_register
-                , "final_future": final_future
-                }
+            config = {"protocol_register": protocol_register, "final_future": final_future}
 
             class T(Target):
                 one = dictobj.Field(sb.integer_spec)
@@ -44,10 +41,7 @@ describe AsyncTestCase, "Target":
         async it "gets protocol_register and final_future from the meta":
             protocol_register = mock.Mock(name="protocol_register")
             final_future = mock.Mock(name="final_future")
-            config = {
-                  "protocol_register": protocol_register
-                , "final_future": final_future
-                }
+            config = {"protocol_register": protocol_register, "final_future": final_future}
             meta = Meta(config, []).at("transport")
 
             spec = Target.FieldSpec(formatter=MergedOptionStringFormatter)
@@ -62,15 +56,17 @@ describe AsyncTestCase, "Target":
             self.final_future = mock.Mock(name="final_future")
 
             config = {
-                  "protocol_register": self.protocol_register
-                , "final_future": self.final_future
-                }
+                "protocol_register": self.protocol_register,
+                "final_future": self.final_future,
+            }
             self.target = Target.create(config)
 
         describe "script":
             async before_each:
                 self.script = mock.Mock(name="script")
-                self.script_runner_kls = mock.Mock(name="script_runner_kls", return_value=self.script)
+                self.script_runner_kls = mock.Mock(
+                    name="script_runner_kls", return_value=self.script
+                )
                 self.target.script_runner_kls = self.script_runner_kls
 
             @contextmanager
@@ -86,6 +82,7 @@ describe AsyncTestCase, "Target":
                     else:
                         for rr in onsecond(r):
                             yield rr
+
                 simplify = mock.Mock(name="simplify", side_effect=simplify)
 
                 with mock.patch.object(self.target, "simplify", simplify):
@@ -159,7 +156,9 @@ describe AsyncTestCase, "Target":
                 close_args_for_run = asynctest.mock.CoroutineMock(name="close_args_for_run")
 
                 args_for_run_patch = mock.patch.object(self.target, "args_for_run", args_for_run)
-                close_args_for_run_patch = mock.patch.object(self.target, "close_args_for_run", close_args_for_run)
+                close_args_for_run_patch = mock.patch.object(
+                    self.target, "close_args_for_run", close_args_for_run
+                )
 
                 with args_for_run_patch, close_args_for_run_patch:
                     async with self.target.session() as a:
@@ -197,7 +196,7 @@ describe AsyncTestCase, "Target":
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])
 
-                part2 = mock.Mock(name="part2", spec=['simplified'])
+                part2 = mock.Mock(name="part2", spec=["simplified"])
                 part2simplified = mock.Mock(name="part2simplified", spec=["run_with"])
                 part2.simplified.return_value = part2simplified
 
@@ -214,6 +213,7 @@ describe AsyncTestCase, "Target":
                         return res2
                     else:
                         assert False, "Unknown args to item_kls, {0}".format(buf)
+
                 self.item_kls.side_effect = item_kls_init
 
                 res = list(self.target.simplify([part11, part12, part13, part2, part31, part32]))
@@ -221,11 +221,10 @@ describe AsyncTestCase, "Target":
 
                 part2.simplified.assert_called_once_with(self.target.simplify)
 
-                self.assertEqual(self.item_kls.mock_calls
-                    , [ mock.call([part11, part12, part13])
-                      , mock.call([part31, part32])
-                      ]
-                    )
+                self.assertEqual(
+                    self.item_kls.mock_calls,
+                    [mock.call([part11, part12, part13]), mock.call([part31, part32])],
+                )
 
             async it "doesn't separate simplified items if they don't have a run_with method":
                 part11 = mock.Mock(name="part11", spec=[])
@@ -247,7 +246,7 @@ describe AsyncTestCase, "Target":
 
                 part2.simplified.assert_called_once_with(self.target.simplify)
 
-                self.assertEqual(self.item_kls.mock_calls
-                    , [ mock.call([part11, part12, part13, part2simplified, part31, part32])
-                      ]
-                    )
+                self.assertEqual(
+                    self.item_kls.mock_calls,
+                    [mock.call([part11, part12, part13, part2simplified, part31, part32])],
+                )

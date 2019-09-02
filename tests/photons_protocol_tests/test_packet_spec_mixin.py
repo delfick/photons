@@ -38,14 +38,16 @@ describe TestCase, "PacketSpecMixin":
             self.packing_kls.pack.return_value = res
 
             r = self.packet.pack(
-                  payload=self.payload
-                , parent=self.parent
-                , serial=self.serial
-                , packing_kls=self.packing_kls
-                )
+                payload=self.payload,
+                parent=self.parent,
+                serial=self.serial,
+                packing_kls=self.packing_kls,
+            )
 
             self.assertIs(r, res)
-            self.packing_kls.pack.assert_called_once_with(self.packet, self.payload, self.parent, self.serial)
+            self.packing_kls.pack.assert_called_once_with(
+                self.packet, self.payload, self.parent, self.serial
+            )
 
         it "has defaults":
             res = mock.Mock(name="res")
@@ -110,7 +112,7 @@ describe TestCase, "PacketSpecMixin":
                 class Another(dictobj.PacketSpec):
                     fields = [("five", five_typ), ("six", six_typ)]
 
-            values = mock.Mock(name='values')
+            values = mock.Mock(name="values")
             self.assertEqual(Group1.size_bits(values), 21)
             self.assertEqual(Group2.size_bits(values), 1100)
             four_typ.size_bits.assert_called_once_with(values)
@@ -172,7 +174,7 @@ describe TestCase, "PacketSpecMixin":
             self.Together = Together
             self.Child = Child
 
-            self.spec = mock.Mock(name='spec')
+            self.spec = mock.Mock(name="spec")
             self.pkt = mock.Mock(name="pkt")
 
         @contextmanager
@@ -184,69 +186,70 @@ describe TestCase, "PacketSpecMixin":
         it "it works on a normal PacketSpec":
             with self.patched_packet_spec() as packet_spec:
                 self.assertIs(self.Group1.spec(), self.spec)
-            packet_spec.assert_called_once_with(self.Group1
-                , [("one", self.one_spec), ("two", self.two_spec)]
-                , {}
-                )
+            packet_spec.assert_called_once_with(
+                self.Group1, [("one", self.one_spec), ("two", self.two_spec)], {}
+            )
 
         it "it works on a PacketSpec with groups":
             with self.patched_packet_spec() as packet_spec:
                 self.assertIs(self.Together.spec(), self.spec)
 
-            packet_spec.assert_called_once_with(self.Together
-                , [ ("one", self.one_spec)
-                  , ("two", self.two_spec)
-                  , ("three", self.three_spec)
-                  , ("four", self.four_spec)
-                  , ("another", T.Bytes.spec)
-                  ]
-                , { "one": "g1"
-                  , "two": "g1"
-                  , "three": "g2"
-                  , "four": "g2"
-                  }
-                )
+            packet_spec.assert_called_once_with(
+                self.Together,
+                [
+                    ("one", self.one_spec),
+                    ("two", self.two_spec),
+                    ("three", self.three_spec),
+                    ("four", self.four_spec),
+                    ("another", T.Bytes.spec),
+                ],
+                {"one": "g1", "two": "g1", "three": "g2", "four": "g2"},
+            )
 
         it "it works on a child PacketSpec with string group":
             with self.patched_packet_spec() as packet_spec:
                 self.assertIs(self.Child.spec(), self.spec)
 
-            packet_spec.assert_called_once_with(self.Child
-                , [ ("one", self.one_spec)
-                  , ("two", self.two_spec)
-                  , ("three", self.three_spec)
-                  , ("four", self.four_spec)
-                  , ("five", self.five_spec)
-                  , ("six", self.six_spec)
-                  ]
-                , { "one": "g1"
-                  , "two": "g1"
-                  , "three": "g2"
-                  , "four": "g2"
-                  , "five": "another"
-                  , "six": "another"
-                  }
-                )
+            packet_spec.assert_called_once_with(
+                self.Child,
+                [
+                    ("one", self.one_spec),
+                    ("two", self.two_spec),
+                    ("three", self.three_spec),
+                    ("four", self.four_spec),
+                    ("five", self.five_spec),
+                    ("six", self.six_spec),
+                ],
+                {
+                    "one": "g1",
+                    "two": "g1",
+                    "three": "g2",
+                    "four": "g2",
+                    "five": "another",
+                    "six": "another",
+                },
+            )
 
     describe "spec without mocks":
         before_each:
             # Make our packet to test with
             class Group1(dictobj.PacketSpec):
-                fields = [
-                      ("one", T.Bool)
-                    ]
+                fields = [("one", T.Bool)]
 
             class Group2(dictobj.PacketSpec):
                 fields = [
-                      ( "two", T.Int16.transform(
-                              lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1])
-                            , lambda _, v: float("{0}.{1}".format(v >> 0x10, v & 0xFF))
-                            )
-                        )
-                    , ( "mod", T.String.default(lambda p: "{0}.modified".format(p["two"])))
-                    , ( "sb", T.Int8)
-                    , ( "bts", T.Bytes(lambda p: p["sb"]))
-                    ]
+                    (
+                        "two",
+                        T.Int16.transform(
+                            lambda _, v: (int(str(v).split(".")[0]) << 0x10)
+                            + int(str(v).split(".")[1]),
+                            lambda _, v: float("{0}.{1}".format(v >> 0x10, v & 0xFF)),
+                        ),
+                    ),
+                    ("mod", T.String.default(lambda p: "{0}.modified".format(p["two"]))),
+                    ("sb", T.Int8),
+                    ("bts", T.Bytes(lambda p: p["sb"])),
+                ]
 
             class Together(dictobj.PacketSpec):
                 parent_packet = True
@@ -256,9 +259,10 @@ describe TestCase, "PacketSpecMixin":
 
         it "works":
             spec = self.Together.spec()
-            t = spec.normalise(Meta.empty()
-                , {"one": False, "two": 1.2, "three": b"whatever\x00\x00", "sb": 24, "bts": b"\x01"}
-                )
+            t = spec.normalise(
+                Meta.empty(),
+                {"one": False, "two": 1.2, "three": b"whatever\x00\x00", "sb": 24, "bts": b"\x01"},
+            )
             self.assertIs(t.one, False)
             self.assertEqual(t.two, 1.2)
             self.assertEqual(t.mod, "1.2.modified")
@@ -271,12 +275,14 @@ describe TestCase, "PacketSpecMixin":
 
         it "works when value given as groups":
             spec = self.Together.spec()
-            t = spec.normalise(Meta.empty()
-                , { "g1": { "one": False }
-                  , "g2": { "sb": 24, "bts": b"\x01", "two": 1.2}
-                  , "three": b"whatever\x00\x00"
-                  }
-                )
+            t = spec.normalise(
+                Meta.empty(),
+                {
+                    "g1": {"one": False},
+                    "g2": {"sb": 24, "bts": b"\x01", "two": 1.2},
+                    "three": b"whatever\x00\x00",
+                },
+            )
 
             self.assertIs(t.one, False)
             self.assertEqual(t.two, 1.2)
@@ -302,7 +308,7 @@ describe TestCase, "PacketSpecMixin":
         it "works":
             b = bitarray(endian="little")
             b.frombytes("wat".encode())
-            b = b + bitarray('0' * 10)
+            b = b + bitarray("0" * 10)
 
             class Thing(dictobj.PacketSpec):
                 fields = [("one", T.String)]
@@ -313,6 +319,7 @@ describe TestCase, "PacketSpecMixin":
 
     describe "is_dynamic":
         it "says no if no field allows callable":
+
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -320,6 +327,7 @@ describe TestCase, "PacketSpecMixin":
             assert not p.is_dynamic
 
         it "says no if a field allows callable but has not a callable alue":
+
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String.allow_callable())]
 
@@ -327,6 +335,7 @@ describe TestCase, "PacketSpecMixin":
             assert not p.is_dynamic
 
         it "says yes if a field allows callable and has a callable alue":
+
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String.allow_callable())]
 
@@ -335,6 +344,7 @@ describe TestCase, "PacketSpecMixin":
 
     describe "__contains__":
         it "says yes if the field is on the packet":
+
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -343,6 +353,7 @@ describe TestCase, "PacketSpecMixin":
             assert "three" not in p
 
         it "says yes if the field is in a group":
+
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -354,6 +365,7 @@ describe TestCase, "PacketSpecMixin":
             assert "three" not in p
 
         it "says yes if the field is a group":
+
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -365,6 +377,7 @@ describe TestCase, "PacketSpecMixin":
 
     describe "cloning":
         it "works":
+
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -437,21 +450,15 @@ describe TestCase, "PacketSpecMixin":
             cb2 = mock.Mock(name="cb2", return_value=65)
 
             class G1(dictobj.PacketSpec):
-                fields = [
-                      ("one", T.Bool)
-                    , ("two", T.String)
-                    , ("cb", T.String.allow_callable())
-                    ]
+                fields = [("one", T.Bool), ("two", T.String), ("cb", T.String.allow_callable())]
 
             class G2(dictobj.PacketSpec):
-                fields = [
-                      ("typ", T.Int16.default(lambda pkt: pkt.Payload.message_type))
-                    ]
+                fields = [("typ", T.Int16.default(lambda pkt: pkt.Payload.message_type))]
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
 
-                fields = [("g1", G1), ('g2', G2), ('payload', 'Payload')]
+                fields = [("g1", G1), ("g2", G2), ("payload", "Payload")]
 
                 class Payload(dictobj.PacketSpec):
                     message_type = 0
@@ -460,37 +467,37 @@ describe TestCase, "PacketSpecMixin":
             class CPayload(dictobj.PacketSpec):
                 message_type = 25
 
-                fields = [
-                      ("three", T.Int16)
-                    , ("four", T.Bool)
-                    , ("cb2", T.Int8.allow_callable())
-                    ]
+                fields = [("three", T.Int16), ("four", T.Bool), ("cb2", T.Int8.allow_callable())]
 
             class Child(P):
                 parent_packet = False
                 Payload = CPayload
+
             Child.Meta.parent = P
 
             pkt = Child(one=True, two="wat", three=16, four=True, cb=cb, cb2=cb2)
-            serial = mock.Mock(name='serial')
+            serial = mock.Mock(name="serial")
             smpl = pkt.simplify(serial=serial)
 
             self.assertIs(type(smpl), P)
-            self.assertEqual(sorted(smpl.items())
-                , sorted(
-                    [ ("one", True)
-                    , ("two", "wat")
-                    , ("typ", 25)
-                    , ("cb", val)
-                    , ("payload", bitarray('0000100000000000110000010', endian="little"))
+            self.assertEqual(
+                sorted(smpl.items()),
+                sorted(
+                    [
+                        ("one", True),
+                        ("two", "wat"),
+                        ("typ", 25),
+                        ("cb", val),
+                        ("payload", bitarray("0000100000000000110000010", endian="little")),
                     ]
-                  )
-                )
+                ),
+            )
 
             cb.assert_called_once_with(pkt, serial)
 
     describe "tobytes":
         it "just packs if payload is already simple":
+
             class P(dictobj.PacketSpec):
                 fields = [("payload", T.Bytes)]
 
@@ -507,6 +514,7 @@ describe TestCase, "PacketSpecMixin":
             pack.assert_called_once_with(payload=b)
 
         it "simplifies first if payload is not str, bytes or bitarray":
+
             class P(dictobj.PacketSpec):
                 fields = [("payload", "Payload")]
 
@@ -537,6 +545,7 @@ describe TestCase, "PacketSpecMixin":
 
     describe "as_dict":
         it "returns groups with transformed values":
+
             def pack_t(p, v):
                 return v + 2
 
@@ -553,6 +562,7 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(dct, {"g": {"one": True, "two": 1}})
 
         it "returns groups with untransformed values if asked not to transform":
+
             def pack_t(p, v):
                 return v + 2
 
@@ -569,6 +579,7 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(dct, {"g": {"one": True, "two": 3}})
 
         it "includes payload as simple if we are a parent_packet":
+
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool)]
 
@@ -588,6 +599,7 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(dct, {"g": {"one": True}, "payload": b.tobytes()})
 
         it "includes payload as complex if we are not a parent_packet":
+
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool)]
 
@@ -609,14 +621,11 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(dct, {"g": {"one": True}, "payload": {"two": 65}})
 
         it "converts lists":
+
             class P(dictobj.PacketSpec):
                 fields = [
-                      ( "one", T.Int16.transform(
-                            lambda _, v: int(v / 1000)
-                          , lambda _, v: v * 1000
-                          )
-                       )
-                    ]
+                    ("one", T.Int16.transform(lambda _, v: int(v / 1000), lambda _, v: v * 1000))
+                ]
 
             class Q(dictobj.PacketSpec):
                 fields = [("things", T.Bytes(16 * 3).many(lambda pkt: P))]
@@ -640,15 +649,16 @@ describe TestCase, "PacketSpecMixin":
 
             p = P(payload=payload)
 
-            as_dict = mock.Mock(name='as_dict', return_value={"payload": b})
+            as_dict = mock.Mock(name="as_dict", return_value={"payload": b})
             with mock.patch.object(p, "as_dict", as_dict):
                 self.assertEqual(repr(p), '{"payload": "d073d5"}')
 
-            as_dict = mock.Mock(name='as_dict', return_value={"payload": payloadb})
+            as_dict = mock.Mock(name="as_dict", return_value={"payload": payloadb})
             with mock.patch.object(p, "as_dict", as_dict):
                 self.assertEqual(repr(p), '{"payload": "d073d5"}')
 
         it "reprs what isn't jsonfiable":
+
             class E(enum.Enum):
                 ONE = 1
 
@@ -661,6 +671,7 @@ describe TestCase, "PacketSpecMixin":
 
     describe "normalising":
         it "uses the spec on the kls":
+
             class P(dictobj.PacketSpec):
                 fields = []
 
@@ -679,6 +690,7 @@ describe TestCase, "PacketSpecMixin":
             initd_spec.normalise.assert_called_once_with(meta, val)
 
         it "allows kwargs val with empty_normalise":
+
             class P(dictobj.PacketSpec):
                 fields = []
 

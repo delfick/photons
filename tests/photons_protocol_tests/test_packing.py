@@ -37,13 +37,15 @@ describe TestCase, "val_to_bitarray":
     it "complains otherwise":
         doing = mock.Mock(name="doing")
         for val in (0, 1, None, True, False, [], [1], {1: 2}, lambda: 1, sb.NotSpecified):
-            with self.fuzzyAssertRaisesError(BadConversion, "Couldn't get bitarray from a value", doing=doing):
+            with self.fuzzyAssertRaisesError(
+                BadConversion, "Couldn't get bitarray from a value", doing=doing
+            ):
                 val_to_bitarray(val, doing)
 
 describe TestCase, "BitarraySlice":
     before_each:
         self.name = mock.Mock(name="name")
-        self.typ = mock.Mock(name='typ')
+        self.typ = mock.Mock(name="typ")
         self.val = mock.Mock(name="val")
         self.size_bits = mock.Mock(name="size_bits")
         self.group = mock.Mock(name="group")
@@ -78,10 +80,10 @@ describe TestCase, "BitarraySlice":
             self.slce.typ.struct_format = bool
             self.slce.size_bits = 1
 
-            self.slce.val = bitarray('0')
+            self.slce.val = bitarray("0")
             self.assertEqual(self.slce.unpackd, False)
 
-            self.slce.val = bitarray('1')
+            self.slce.val = bitarray("1")
             self.assertEqual(self.slce.unpackd, True)
 
         it "pads left if original_size is greater than actual val and we have left_cut":
@@ -112,13 +114,19 @@ describe TestCase, "BitarraySlice":
             self.slce.typ = T.Int8
             self.slce.val = bitarray("000010111", endian="little")
 
-            with self.fuzzyAssertRaisesError(BadConversion, "Failed to unpack field", group=self.group, field=self.name, typ=T.Int8):
+            with self.fuzzyAssertRaisesError(
+                BadConversion,
+                "Failed to unpack field",
+                group=self.group,
+                field=self.name,
+                typ=T.Int8,
+            ):
                 self.slce.unpackd
 
 describe TestCase, "FieldInfo":
     before_each:
         self.name = mock.Mock(name="name")
-        self.typ = mock.Mock(name='typ')
+        self.typ = mock.Mock(name="typ")
         self.val = mock.Mock(name="val")
         self.size_bits = mock.Mock(name="size_bits")
         self.group = mock.Mock(name="group")
@@ -141,7 +149,7 @@ describe TestCase, "FieldInfo":
             self.info.typ = T.Reserved(8)
             self.info.size_bits = 8
             self.info.val = sb.NotSpecified
-            self.assertEqual(self.info.value, bitarray('0' * 8))
+            self.assertEqual(self.info.value, bitarray("0" * 8))
 
         it "returns value as is if typ is Reserved but value is not NotSpecified":
             self.info.typ = T.Reserved(8)
@@ -153,7 +161,7 @@ describe TestCase, "FieldInfo":
             self.info.size_bits = 3
 
             to_bitarray = mock.Mock(name="to_bitarray")
-            to_bitarray.return_value = bitarray('110000', endian="little")
+            to_bitarray.return_value = bitarray("110000", endian="little")
 
             with mock.patch.object(self.info, "to_bitarray", to_bitarray):
                 self.assertEqual(self.info.to_sized_bitarray(), bitarray("110"))
@@ -165,7 +173,7 @@ describe TestCase, "FieldInfo":
             self.info.size_bits = 3
 
             to_bitarray = mock.Mock(name="to_bitarray")
-            to_bitarray.return_value = bitarray('110001', endian="little")
+            to_bitarray.return_value = bitarray("110001", endian="little")
 
             with mock.patch.object(self.info, "to_bitarray", to_bitarray):
                 self.assertEqual(self.info.to_sized_bitarray(), bitarray("001"))
@@ -177,7 +185,7 @@ describe TestCase, "FieldInfo":
             self.info.size_bits = 3
 
             to_bitarray = mock.Mock(name="to_bitarray")
-            to_bitarray.return_value = bitarray('1', endian="little")
+            to_bitarray.return_value = bitarray("1", endian="little")
 
             with mock.patch.object(self.info, "to_bitarray", to_bitarray):
                 self.assertEqual(self.info.to_sized_bitarray(), bitarray("1"))
@@ -189,7 +197,7 @@ describe TestCase, "FieldInfo":
             self.info.size_bits = 3
 
             to_bitarray = mock.Mock(name="to_bitarray")
-            to_bitarray.return_value = bitarray('101', endian="little")
+            to_bitarray.return_value = bitarray("101", endian="little")
 
             with mock.patch.object(self.info, "to_bitarray", to_bitarray):
                 self.assertEqual(self.info.to_sized_bitarray(), bitarray("101"))
@@ -197,25 +205,31 @@ describe TestCase, "FieldInfo":
             to_bitarray.assert_called_once_with()
 
     describe "to_bitarray":
+
         @contextmanager
         def a_val(self, val):
             with mock.patch.object(FieldInfo, "value", val):
                 yield
 
         it "complains if the value is NotSpecified":
-            with self.fuzzyAssertRaisesError(BadConversion
-                , "Cannot pack an unspecified value", got=sb.NotSpecified, field=self.name, group=self.group, typ=self.typ
-                ):
+            with self.fuzzyAssertRaisesError(
+                BadConversion,
+                "Cannot pack an unspecified value",
+                got=sb.NotSpecified,
+                field=self.name,
+                group=self.group,
+                typ=self.typ,
+            ):
                 with self.a_val(sb.NotSpecified):
                     self.info.to_bitarray()
 
         it "returns as is if it's a bitarray":
-            val = bitarray('01')
+            val = bitarray("01")
             with self.a_val(val):
                 self.assertIs(self.info.to_bitarray(), val)
 
         it "uses struct_format if the fmt is a string":
-            val = bitarray('01').tobytes()
+            val = bitarray("01").tobytes()
             res = mock.Mock(name="res")
 
             self.typ.struct_format = "<b"
@@ -229,7 +243,9 @@ describe TestCase, "FieldInfo":
 
         it "complains if fmt is bool but value is not":
             for val in (0, 1, None, "", "adsf", b"asf", [], [1], {1: 2}, lambda: 1):
-                with self.fuzzyAssertRaisesError(BadConversion, "Trying to convert a non boolean into 1 bit"):
+                with self.fuzzyAssertRaisesError(
+                    BadConversion, "Trying to convert a non boolean into 1 bit"
+                ):
                     self.info.typ.struct_format = bool
                     self.info.val = val
                     self.info.to_bitarray()
@@ -237,10 +253,10 @@ describe TestCase, "FieldInfo":
         it "converts True/False into a single bit if fmt is bool":
             self.info.typ.struct_format = bool
             self.info.val = True
-            self.assertEqual(self.info.to_bitarray(), bitarray('1'))
+            self.assertEqual(self.info.to_bitarray(), bitarray("1"))
 
             self.info.val = False
-            self.assertEqual(self.info.to_bitarray(), bitarray('0'))
+            self.assertEqual(self.info.to_bitarray(), bitarray("0"))
 
         it "creates bitarray from the bytes otherwise":
             self.info.typ.struct_format = None
@@ -279,7 +295,14 @@ describe TestCase, "FieldInfo":
         it "complains if can't pack":
             self.info.typ = T.Int8
 
-            with self.fuzzyAssertRaisesError(BadConversion, "Failed trying to convert a value", val=9000, fmt="<b", group=self.group, name=self.name):
+            with self.fuzzyAssertRaisesError(
+                BadConversion,
+                "Failed trying to convert a value",
+                val=9000,
+                fmt="<b",
+                group=self.group,
+                name=self.name,
+            ):
                 self.info.struct_format(self.info.typ.struct_format, 9000)
 
         it "understands the Optional value":
@@ -289,33 +312,24 @@ describe TestCase, "FieldInfo":
 
 describe TestCase, "PacketPacking":
     before_each:
-        self.other_typ = T.Int16.transform(
-              lambda _, v: v + 5
-            , lambda _, v: v - 5
-            )
+        self.other_typ = T.Int16.transform(lambda _, v: v + 5, lambda _, v: v - 5)
 
         self.two_typ = T.String(20 * 8).allow_callable()
 
         self.thing_typ = T.Reserved(lambda p: p.other * 8)
 
         class G1(dictobj.PacketSpec):
-            fields = [
-                  ("other", self.other_typ)
-                , ("thing", self.thing_typ)
-                ]
+            fields = [("other", self.other_typ), ("thing", self.thing_typ)]
 
         class P(dictobj.PacketSpec):
-            fields = [
-                  ("one", T.Bool)
-                , ("two", self.two_typ)
-                , ("g1", G1)
-                ]
+            fields = [("one", T.Bool), ("two", self.two_typ), ("g1", G1)]
 
         self.G1 = G1
         self.P = P
 
     describe "fields_in":
         it "yields FieldInfo objects":
+
             def cb(pkt, serial):
                 return "{0}.cb".format(serial)
 
@@ -323,29 +337,38 @@ describe TestCase, "PacketPacking":
 
             two_val = bitarray(endian="little")
             two_val.frombytes(b"d073d5.cb")
-            two_val += bitarray('0' * (20 * 8 - len(two_val)))
+            two_val += bitarray("0" * (20 * 8 - len(two_val)))
 
             fields = list(PacketPacking.fields_in(p, None, "d073d5"))
-            self.assertEqual(fields
-                , [ FieldInfo("one", T.Bool, True, 1, "P")
-                  , FieldInfo("two", self.two_typ, two_val, 20 * 8, "P")
-                  , FieldInfo("other", self.other_typ, 6, 16, "g1")
-                  , FieldInfo("thing", self.thing_typ, sb.NotSpecified, 8, "g1")
-                  ]
-                )
+            self.assertEqual(
+                fields,
+                [
+                    FieldInfo("one", T.Bool, True, 1, "P"),
+                    FieldInfo("two", self.two_typ, two_val, 20 * 8, "P"),
+                    FieldInfo("other", self.other_typ, 6, 16, "g1"),
+                    FieldInfo("thing", self.thing_typ, sb.NotSpecified, 8, "g1"),
+                ],
+            )
 
     describe "pkt_from_bitarray":
         it "creates a pkt field by field":
+
             def cb(pkt, serial):
                 return "{0}.cb2".format(serial)
 
             p = self.P(one=True, two=cb, other=1)
             packd = p.pack(serial="d073d5")
-            expected = bitarray(dedent('''
+            expected = bitarray(
+                dedent(
+                    """
                    100100110000011001110110011001100001001101010110001110100110001100100011001001100
                    000000000000000000000000000000000000000000000000000000000000000000000000000000000
                    11000000000000000000000
-                ''').replace('\n', '').strip())
+                """
+                )
+                .replace("\n", "")
+                .strip()
+            )
 
             self.assertEqual(packd, expected)
 
@@ -363,31 +386,36 @@ describe TestCase, "PacketPacking":
                 with mock.patch.object(BitarraySlice, "__setitem__", original__setitem__):
                     final, i = PacketPacking.pkt_from_bitarray(self.P, packd)
 
-            self.assertEqual(sorted(final.items())
-                , sorted(
-                      [ ('one', True)
-                      , ('two', b'd073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-                      , ('other', 6)
-                      , ('thing', b'\x00')
-                      ]
-                    )
-                )
+            self.assertEqual(
+                sorted(final.items()),
+                sorted(
+                    [
+                        ("one", True),
+                        ("two", b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
+                        ("other", 6),
+                        ("thing", b"\x00"),
+                    ]
+                ),
+            )
 
-            self.assertEqual(called
-                , [ ("one", sb.NotSpecified)
-                  , ("two", sb.NotSpecified)
-                  , ("other", sb.NotSpecified)
-                  , ("thing", sb.NotSpecified)
-                  , ("one", True)
-                  , ("two", b'd073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-                  , ("other", 6)
-                  , ("thing", b"\x00")
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("one", sb.NotSpecified),
+                    ("two", sb.NotSpecified),
+                    ("other", sb.NotSpecified),
+                    ("thing", sb.NotSpecified),
+                    ("one", True),
+                    ("two", b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
+                    ("other", 6),
+                    ("thing", b"\x00"),
+                ],
+            )
 
             self.assertEqual(i, len(packd))
 
         it "returns where we are in the bitarray which is helpful when we have an empty payload":
+
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("one", T.Int16), ("payload", "Payload")]
@@ -409,7 +437,7 @@ describe TestCase, "PacketPacking":
 
     describe "pack":
         it "gets fields from fields_in and joins the bitarrays to form a final bitarray":
-            b1 = bitarray('01', endian="little")
+            b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
 
@@ -427,12 +455,15 @@ describe TestCase, "PacketPacking":
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                self.assertEqual(PacketPacking.pack(pkt, parent=parent, serial=serial), bitarray('01111010', endian="little"))
+                self.assertEqual(
+                    PacketPacking.pack(pkt, parent=parent, serial=serial),
+                    bitarray("01111010", endian="little"),
+                )
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
         it "attaches provided payload to the end":
-            b1 = bitarray('01', endian="little")
+            b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
 
@@ -446,7 +477,7 @@ describe TestCase, "PacketPacking":
 
             fields_in = mock.Mock(name="fields_in", return_value=[info1, info2, info3])
 
-            payload = bitarray('01010101', endian="little")
+            payload = bitarray("01010101", endian="little")
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
@@ -460,12 +491,15 @@ describe TestCase, "PacketPacking":
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                self.assertEqual(PacketPacking.pack(pkt, payload=payload, parent=parent, serial=serial), bitarray('0111101001010101', endian="little"))
+                self.assertEqual(
+                    PacketPacking.pack(pkt, payload=payload, parent=parent, serial=serial),
+                    bitarray("0111101001010101", endian="little"),
+                )
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
         it "uses payload from the pkt if none is provided":
-            b1 = bitarray('01', endian="little")
+            b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
 
@@ -479,7 +513,7 @@ describe TestCase, "PacketPacking":
 
             fields_in = mock.Mock(name="fields_in", return_value=[info1, info2, info3])
 
-            payload = bitarray('01010101', endian="little")
+            payload = bitarray("01010101", endian="little")
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
@@ -493,11 +527,15 @@ describe TestCase, "PacketPacking":
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                self.assertEqual(PacketPacking.pack(pkt, parent=parent, serial=serial), bitarray('0111101001010101', endian="little"))
+                self.assertEqual(
+                    PacketPacking.pack(pkt, parent=parent, serial=serial),
+                    bitarray("0111101001010101", endian="little"),
+                )
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
         it "does not set payload if we aren't a parent packet":
+
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("payload", "Payload")]
@@ -514,13 +552,15 @@ describe TestCase, "PacketPacking":
                     fields = [("one", T.Int8)]
 
             pkt = Child(one=8)
-            self.assertEqual(PacketPacking.pack(pkt), bitarray('00010000', endian="little"))
+            self.assertEqual(PacketPacking.pack(pkt), bitarray("00010000", endian="little"))
 
-            payload = bitarray('010101', endian="little")
-            self.assertEqual(PacketPacking.pack(pkt, payload=payload), bitarray('00010000', endian="little"))
+            payload = bitarray("010101", endian="little")
+            self.assertEqual(
+                PacketPacking.pack(pkt, payload=payload), bitarray("00010000", endian="little")
+            )
 
         it "complains if we have a field with no value":
-            b1 = bitarray('01', endian="little")
+            b1 = bitarray("01", endian="little")
             b2 = None
 
             info1 = mock.Mock(name="info1")
@@ -534,9 +574,14 @@ describe TestCase, "PacketPacking":
             pkt = mock.Mock(name="pkt", spec=[])
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
-            with self.fuzzyAssertRaisesError(BadConversion, "Failed to convert field into a bitarray"):
+            with self.fuzzyAssertRaisesError(
+                BadConversion, "Failed to convert field into a bitarray"
+            ):
                 with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                    self.assertEqual(PacketPacking.pack(pkt, parent=parent, serial=serial), bitarray('01111010', endian="little"))
+                    self.assertEqual(
+                        PacketPacking.pack(pkt, parent=parent, serial=serial),
+                        bitarray("01111010", endian="little"),
+                    )
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
@@ -561,14 +606,17 @@ describe TestCase, "PacketPacking":
             with mock.patch.object(PacketPacking, "pkt_from_bitarray", pkt_from_bitarray):
                 self.assertEqual(PacketPacking.unpack(pkt_kls, expected), final)
 
-            self.assertEqual(pkt_from_bitarray.mock_calls
-                , [ mock.call(pkt_kls, expected)
-                  , mock.call(pkt_kls, expected)
-                  , mock.call(pkt_kls, expected)
-                  ]
-                )
+            self.assertEqual(
+                pkt_from_bitarray.mock_calls,
+                [
+                    mock.call(pkt_kls, expected),
+                    mock.call(pkt_kls, expected),
+                    mock.call(pkt_kls, expected),
+                ],
+            )
 
         it "assigns the remainder if we have a payload with message_type 0":
+
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("one", T.Int8), ("payload", "Payload")]
@@ -577,8 +625,8 @@ describe TestCase, "PacketPacking":
                     message_type = 0
                     fields = []
 
-            val = bitarray('0000000101010101', endian="little")
-            expected = bitarray('01010101', endian="little")
+            val = bitarray("0000000101010101", endian="little")
+            expected = bitarray("01010101", endian="little")
 
             f = PacketPacking.unpack(P, val)
             self.assertEqual(f.__getitem__("payload", allow_bitarray=True), expected)

@@ -9,10 +9,12 @@ We have classes for storing the final colours for multi color devices.
 """
 from photons_themes.theme import ThemeColor
 
+
 class ZoneColors:
     """
     Representation of colors on a zone
     """
+
     def __init__(self):
         self._colors = []
 
@@ -79,10 +81,12 @@ class ZoneColors:
         result.append(((start_index, end_index), current))
         return result
 
+
 class TileColors:
     """
     A very simple wrapper around multiple tiles
     """
+
     def __init__(self):
         self.tiles = []
 

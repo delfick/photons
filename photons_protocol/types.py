@@ -30,6 +30,7 @@ log = logging.getLogger("photons_protocol.packets.builder")
 
 Optional = type("Optional", (), {})()
 
+
 class UnknownEnum:
     def __init__(self, val):
         self.name = "UNKNOWN"
@@ -41,10 +42,12 @@ class UnknownEnum:
     def __eq__(self, other):
         return isinstance(other, self.__class__) and other.value == self.value
 
+
 regexes = {
-      "version_number": re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)")
-    , "unknown_enum": re.compile(r"<UNKNOWN: (?P<value>\d+)>")
-    }
+    "version_number": re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)"),
+    "unknown_enum": re.compile(r"<UNKNOWN: (?P<value>\d+)>"),
+}
+
 
 class Type(object):
     """
@@ -63,6 +66,7 @@ class Type(object):
     .. note:: Calling an instance allows us to set ``size_bits`` which is an integer
       representing the number of ``bits`` this field should use.
     """
+
     size_bits = NotImplemented
     _enum = sb.NotSpecified
     _bitmask = sb.NotSpecified
@@ -123,7 +127,7 @@ class Type(object):
     @classmethod
     def t(kls, name, struct_format, conversion):
         """Create a new type"""
-        return type(name, (kls, ), {})(struct_format, conversion)
+        return type(name, (kls,), {})(struct_format, conversion)
 
     def allow_float(self):
         """Set the _allow_float option"""
@@ -262,7 +266,9 @@ class Type(object):
         json
             Converts the value into a json compatible object
         """
-        spec = self._maybe_transform_spec(pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform)
+        spec = self._maybe_transform_spec(
+            pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform
+        )
 
         if self._allow_callable:
             spec = callable_spec(spec)
@@ -304,7 +310,11 @@ class Type(object):
             else:
                 return self.dynamic_wrapper(spec, pkt, unpacking=unpacking)
 
-        raise BadConversion("Cannot create a specification for this conversion", conversion=self.conversion, type=self.__class__.__name__)
+        raise BadConversion(
+            "Cannot create a specification for this conversion",
+            conversion=self.conversion,
+            type=self.__class__.__name__,
+        )
 
     def spec_from_conversion(self, pkt, unpacking):
         """Get us a specification from our conversion type"""
@@ -328,7 +338,8 @@ class Type(object):
     def dynamic_wrapper(self, spec, pkt, unpacking=False):
         """A wrapper to convert to and from dynamic fields"""
         from photons_protocol.packets import dictobj
-        kls = type("parameters", (dictobj.PacketSpec, ), {"fields": list(self._dynamic(pkt))})
+
+        kls = type("parameters", (dictobj.PacketSpec,), {"fields": list(self._dynamic(pkt))})
         return expand_spec(kls, spec, unpacking)
 
     def many_wrapper(self, spec, pkt, unpacking=False):
@@ -348,11 +359,14 @@ class Type(object):
         if self._version_number:
             return version_number_spec(unpacking=unpacking)
 
-        return integer_spec(pkt, enum, bitmask
-            , unpacking = unpacking
-            , allow_float = self._allow_float
-            , unknown_enum_values = self._unknown_enum_values
-            )
+        return integer_spec(
+            pkt,
+            enum,
+            bitmask,
+            unpacking=unpacking,
+            allow_float=self._allow_float,
+            unknown_enum_values=self._unknown_enum_values,
+        )
 
     def do_transform(self, pkt, value):
         """Perform transformation on a value"""
@@ -368,6 +382,7 @@ class Type(object):
         else:
             return self._unpack_transform(pkt, value)
 
+
 class callable_spec(sb.Spec):
     """Allow callables to pass through"""
 
@@ -379,12 +394,14 @@ class callable_spec(sb.Spec):
             return val
         return self.spec.normalise(meta, val)
 
+
 class transform_spec(sb.Spec):
     """
     Apply an untransform on some value
 
     This is only used when we get a spec for unpacking
     """
+
     def __init__(self, pkt, spec, do_transform):
         self.pkt = pkt
         self.spec = spec
@@ -394,6 +411,7 @@ class transform_spec(sb.Spec):
         if val not in (sb.NotSpecified, Optional):
             val = self.do_transform(self.pkt, val)
         return self.spec.normalise(meta, val)
+
 
 class many_spec(sb.Spec):
     """
@@ -407,6 +425,7 @@ class many_spec(sb.Spec):
     Either by unpacking using ``kls`` if val is bytes, or by instantiating ``kls``
     with each val if it is a list.
     """
+
     def __init__(self, kls, sizer, pkt, spec, unpacking):
         self.kls = kls
         self.pkt = pkt
@@ -440,7 +459,9 @@ class many_spec(sb.Spec):
         elif isinstance(val, list):
             return val
         else:
-            raise BadSpecValue("Expected to unpack bytes", found=val, transforming_into_list_of=self.kls)
+            raise BadSpecValue(
+                "Expected to unpack bytes", found=val, transforming_into_list_of=self.kls
+            )
 
     def pack(self, meta, val):
         if type(val) not in (bytes, bitarray):
@@ -450,7 +471,9 @@ class many_spec(sb.Spec):
 
                 items = sb.listof(sb.dictionary_spec()).normalise(meta, val)
             except BadSpecValue as error:
-                raise BadSpecValue("Sorry, many fields only supports a list of dictionary of values", error=error)
+                raise BadSpecValue(
+                    "Sorry, many fields only supports a list of dictionary of values", error=error
+                )
             else:
                 res = []
                 for i, v in enumerate(items):
@@ -478,6 +501,7 @@ class many_spec(sb.Spec):
             size = self.sizer
         return bytes_spec(self.pkt, size)
 
+
 class expand_spec(sb.Spec):
     """
     Expand our dynamic fields
@@ -490,6 +514,7 @@ class expand_spec(sb.Spec):
     Either by unpacking using ``kls`` if val is bytes, or by instantiating ``kls``
     with the val if it is a dictionary.
     """
+
     def __init__(self, kls, spec, unpacking):
         self.kls = kls
         self.spec = spec
@@ -502,21 +527,27 @@ class expand_spec(sb.Spec):
             elif isinstance(val, self.kls):
                 return val
             else:
-                raise BadSpecValue("Expected to unpack bytes", found=val, transforming_into=self.kls)
+                raise BadSpecValue(
+                    "Expected to unpack bytes", found=val, transforming_into=self.kls
+                )
         else:
             if type(val) not in (bytes, bitarray):
                 try:
                     fields = sb.dictionary_spec().normalise(meta, val)
                 except BadSpecValue as error:
-                    raise BadSpecValue("Sorry, dynamic fields only supports a dictionary of values", error=error)
+                    raise BadSpecValue(
+                        "Sorry, dynamic fields only supports a dictionary of values", error=error
+                    )
                 else:
                     val = self.kls.empty_normalise(**fields).pack()
 
             # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
             return self.spec.normalise(meta, val)
 
+
 class optional(sb.Spec):
     """Return Optional if NotSpecified, else use the spec"""
+
     def __init__(self, spec):
         self.spec = spec
 
@@ -528,8 +559,10 @@ class optional(sb.Spec):
             return val
         return self.spec.normalise(meta, val)
 
+
 class version_number_spec(sb.Spec):
     """Normalise a value as a version string"""
+
     def setup(self, unpacking=False):
         self.unpacking = unpacking
 
@@ -554,12 +587,15 @@ class version_number_spec(sb.Spec):
             val = sb.string_spec().normalise(meta, val)
             m = regexes["version_number"].match(val)
             if not m:
-                raise BadSpecValue(r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta)
+                raise BadSpecValue(
+                    r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta
+                )
 
             groups = m.groupdict()
             major = int(groups["major"])
             minor = int(groups["minor"])
             return (major << 0x10) + minor
+
 
 class integer_spec(sb.Spec):
     """
@@ -569,7 +605,10 @@ class integer_spec(sb.Spec):
 
     .. automethod:: photons_protocol.types.integer_spec.normalise_filled
     """
-    def setup(self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False):
+
+    def setup(
+        self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False
+    ):
         self.pkt = pkt
         self.enum = enum
         self.bitmask = bitmask
@@ -601,7 +640,10 @@ class integer_spec(sb.Spec):
             kwargs = dict(unpacking=self.unpacking, allow_unknown=self.unknown_enum_values)
             return enum_spec(self.pkt, self.enum, **kwargs).normalise(meta, val)
         else:
-            return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(meta, val)
+            return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(
+                meta, val
+            )
+
 
 class bitmask_spec(sb.Spec):
     """
@@ -621,6 +663,7 @@ class bitmask_spec(sb.Spec):
 
     The bitmask may also be a callable that takes in the whole pkt and must return an Enum
     """
+
     def setup(self, pkt, bitmask, unpacking=False):
         self.pkt = pkt
         self.bitmask = bitmask
@@ -675,7 +718,11 @@ class bitmask_spec(sb.Spec):
 
         for name, member in bitmask.__members__.items():
             if member.value == 0:
-                raise ProgrammerError("A bitmask with a zero value item makes no sense: {0} in {1}".format(name, repr(bitmask)))
+                raise ProgrammerError(
+                    "A bitmask with a zero value item makes no sense: {0} in {1}".format(
+                        name, repr(bitmask)
+                    )
+                )
 
         return bitmask
 
@@ -686,7 +733,13 @@ class bitmask_spec(sb.Spec):
             if isinstance(v, bitmask):
                 result.append(v)
             elif isinstance(v, enum.Enum):
-                raise BadConversion("Can't convert value of wrong Enum", val=v, wanted=bitmask, got=type(v), meta=meta)
+                raise BadConversion(
+                    "Can't convert value of wrong Enum",
+                    val=v,
+                    wanted=bitmask,
+                    got=type(v),
+                    meta=meta,
+                )
             else:
                 if type(v) is int:
                     for name, member in bitmask.__members__.items():
@@ -701,7 +754,9 @@ class bitmask_spec(sb.Spec):
                             break
 
                     if not found:
-                        raise BadConversion("Can't convert value into value from mask", val=v, wanted=bitmask)
+                        raise BadConversion(
+                            "Can't convert value into value from mask", val=v, wanted=bitmask
+                        )
 
         return set(result)
 
@@ -715,7 +770,13 @@ class bitmask_spec(sb.Spec):
                     final += v.value
                     used.append(v)
             elif isinstance(v, enum.Enum):
-                raise BadConversion("Can't convert value of wrong Enum", val=v, wanted=bitmask, got=type(v), meta=meta)
+                raise BadConversion(
+                    "Can't convert value of wrong Enum",
+                    val=v,
+                    wanted=bitmask,
+                    got=type(v),
+                    meta=meta,
+                )
             else:
                 found = False
                 for name, member in bitmask.__members__.items():
@@ -731,6 +792,7 @@ class bitmask_spec(sb.Spec):
 
         return final
 
+
 class enum_spec(sb.Spec):
     """
     Convert between enum members and their corresponding value.
@@ -741,6 +803,7 @@ class enum_spec(sb.Spec):
 
     When not unpacking, we are converting into the value of that member of the enum
     """
+
     def setup(self, pkt, enum, unpacking=False, allow_unknown=False):
         self.pkt = pkt
         self.enum = enum
@@ -760,7 +823,9 @@ class enum_spec(sb.Spec):
         if isinstance(val, em):
             return val
         elif isinstance(val, enum.Enum):
-            raise BadConversion("Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta)
+            raise BadConversion(
+                "Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta
+            )
 
         available = []
         for name, member in em.__members__.items():
@@ -779,7 +844,13 @@ class enum_spec(sb.Spec):
                     return UnknownEnum(int(m["value"]))
 
         # Only here if didn't match any members
-        raise BadConversion("Value is not a valid value of the enum", val=val, enum=em, available=available, meta=meta)
+        raise BadConversion(
+            "Value is not a valid value of the enum",
+            val=val,
+            enum=em,
+            available=available,
+            meta=meta,
+        )
 
     def pack(self, em, meta, val):
         """Get us the value of the specified member of the enum"""
@@ -800,9 +871,13 @@ class enum_spec(sb.Spec):
                     return int(m["value"])
 
         if isinstance(val, enum.Enum):
-            raise BadConversion("Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta)
+            raise BadConversion(
+                "Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta
+            )
         else:
-            raise BadConversion("Value wasn't a valid enum value", val=val, available=available, meta=meta)
+            raise BadConversion(
+                "Value wasn't a valid enum value", val=val, available=available, meta=meta
+            )
 
     def determine_enum(self):
         """
@@ -824,8 +899,10 @@ class enum_spec(sb.Spec):
 
         return em
 
+
 class overridden(sb.Spec):
     """Normalise any value into an overridden value"""
+
     def setup(self, default_func, pkt):
         self.pkt = pkt
         self.default_func = default_func
@@ -833,8 +910,10 @@ class overridden(sb.Spec):
     def normalise(self, meta, val):
         return self.default_func(self.pkt)
 
+
 class defaulted(sb.Spec):
     """Normalise NotSpecified into a default value"""
+
     def setup(self, spec, default_func, pkt):
         self.pkt = pkt
         self.spec = spec
@@ -846,12 +925,14 @@ class defaulted(sb.Spec):
     def normalise_filled(self, meta, val):
         return self.spec.normalise(meta, val)
 
+
 class boolean(sb.Spec):
     """
     Normalise a value into a boolean
 
     .. automethod:: photons_protocol.types.boolean.normalise_filled
     """
+
     def normalise_empty(self, meta):
         raise BadSpecValue("Must specify boolean values", meta=meta)
 
@@ -869,6 +950,7 @@ class boolean(sb.Spec):
             return bool(val)
         raise BadSpecValue("Could not convert value into a boolean", val=val, meta=meta)
 
+
 class boolean_as_int_spec(sb.Spec):
     """
     Normalise a boolean value into an integer
@@ -877,6 +959,7 @@ class boolean_as_int_spec(sb.Spec):
 
     .. automethod:: photons_protocol.types.boolean_as_int_spec.normalise_filled
     """
+
     def normalise_empty(self, meta):
         """Must specify boolean values"""
         raise BadSpecValue("Must specify boolean values", meta=meta)
@@ -895,12 +978,14 @@ class boolean_as_int_spec(sb.Spec):
             return val
         raise BadSpecValue("BoolInts must be True, False, 0 or 1", got=val, meta=meta)
 
+
 class csv_spec(sb.Spec):
     """
     Normalise csv in and out of being a list of string or bytes
 
     .. automethod:: photons_protocol.types.csv_spec.normalise_filled
     """
+
     def __init__(self, pkt, size_bits, unpacking=False):
         self.pkt = pkt
         self.size_bits = size_bits
@@ -919,13 +1004,18 @@ class csv_spec(sb.Spec):
             if type(val) is bitarray:
                 val = val.tobytes()
             if type(val) is bytes:
-                val = bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(meta, val)
+                val = bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
+                    meta, val
+                )
             if type(val) is str:
-                return val.split(',')
+                return val.split(",")
         else:
             if type(val) is list:
                 val = ",".join(val)
-            return bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(meta, val)
+            return bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
+                meta, val
+            )
+
 
 class bytes_spec(sb.Spec):
     """
@@ -938,6 +1028,7 @@ class bytes_spec(sb.Spec):
 
     .. automethod:: photons_protocol.types.bytes_spec.normalise_filled
     """
+
     def __init__(self, pkt, size_bits):
         self.pkt = pkt
         self.size_bits = size_bits
@@ -964,7 +1055,7 @@ class bytes_spec(sb.Spec):
         if len(b) > size_bits:
             return b[:size_bits]
         elif len(b) < size_bits:
-            return (b + bitarray('0' * (size_bits - len(b))))
+            return b + bitarray("0" * (size_bits - len(b)))
         else:
             return b
 
@@ -978,13 +1069,18 @@ class bytes_spec(sb.Spec):
             # We care about when the single quotes aren't here for when we copy output from `lifx unpack` into a `lifx pack`
             # This is because we say something like `lifx pack -- '{"thing": "<class 'input_algorithms.spec_base.NotSpecified'>"}'
             # And the quotes cancel each other out
-            if val in ("<class input_algorithms.spec_base.NotSpecified>", "<class 'input_algorithms.spec_base.NotSpecified'>"):
+            if val in (
+                "<class input_algorithms.spec_base.NotSpecified>",
+                "<class 'input_algorithms.spec_base.NotSpecified'>",
+            ):
                 val = ""
 
             try:
                 b.frombytes(binascii.unhexlify(val))
             except binascii.Error as error:
-                raise BadConversion("Failed to turn str into bytes", meta=meta, val=val, error=error)
+                raise BadConversion(
+                    "Failed to turn str into bytes", meta=meta, val=val, error=error
+                )
         else:
             try:
                 b.frombytes(val)
@@ -993,12 +1089,14 @@ class bytes_spec(sb.Spec):
 
         return b
 
+
 class bytes_as_string_spec(sb.Spec):
     """
     Look for the null byte and use that to create a str
 
     .. automethod:: photons_protocol.types.bytes_as_string_spec.normalise_filled
     """
+
     def __init__(self, pkt, size_bits, unpacking=False):
         self.pkt = pkt
         self.size_bits = size_bits
@@ -1021,19 +1119,24 @@ class bytes_as_string_spec(sb.Spec):
                 val = val.tobytes()
 
             if b"\x00" in val:
-                val = val[:val.find(b"\x00")]
+                val = val[: val.find(b"\x00")]
 
             try:
                 return val.decode()
             except UnicodeDecodeError as error:
-                log.warning(hp.lc("Can't turn bytes into string, so just returning bytes", error=error))
+                log.warning(
+                    hp.lc("Can't turn bytes into string, so just returning bytes", error=error)
+                )
                 return val
             except Exception as error:
-                raise BadSpecValue("String before the null byte could not be decoded", val=val, erorr=error)
+                raise BadSpecValue(
+                    "String before the null byte could not be decoded", val=val, erorr=error
+                )
         else:
             if type(val) is str:
                 val = val.encode()
             return bytes_spec(self.pkt, self.size_bits).normalise(meta, val)
+
 
 class float_spec(sb.Spec):
     """
@@ -1041,14 +1144,20 @@ class float_spec(sb.Spec):
 
     .. automethod:: photons_protocol.types.float_spec.normalise_filled
     """
+
     def normalise_filled(self, meta, val):
         if type(val) is bool:
-            raise BadSpecValue("Converting a boolean into a float makes no sense", got=val, meta=meta)
+            raise BadSpecValue(
+                "Converting a boolean into a float makes no sense", got=val, meta=meta
+            )
 
         try:
             return float(val)
         except (TypeError, ValueError) as error:
-            raise BadSpecValue("Failed to convert value into a float", got=val, error=error, meta=meta)
+            raise BadSpecValue(
+                "Failed to convert value into a float", got=val, error=error, meta=meta
+            )
+
 
 class MultiOptions:
     def __init__(self, determine_res_packet, adjust_expected_number):
@@ -1064,6 +1173,7 @@ class MultiOptions:
 
         or num_results if it is larger than our value.
         """
+
         def __init__(self, value):
             self.value = value
 
@@ -1073,48 +1183,42 @@ class MultiOptions:
                 return num_results
             return -1
 
+
 Type.install(
-      ("Bool",     1,    bool, bool)
-
-    , ("Int8",     8,    "<b",  int)
-    , ("Uint8",    8,    "<B",  int)
-    , ("BoolInt",  8,    "<?",  (bool, int))
-
-    , ("Int16",    16,   "<h",  int)
-    , ("Uint16",   16,   "<H",  int)
-
-    , ("Int32",    32,   "<i",  int)
-    , ("Uint32",   32,   "<I",  int)
-
-    , ("Int64",    64,   "<q",  int)
-    , ("Uint64",   64,   "<Q",  int)
-
-    , ("Float",    32,   "<f",  float)
-    , ("Double",   64,   "<d",  float)
-
-    , ("Bytes",    None, None, bytes)
-    , ("String",   None, None, str)
-    , ("Reserved", None, None, bytes)
-
-    , ("CSV",      None, None, (list, str, ","))
-    , ("JSON",     None, None, json)
-    )
+    ("Bool", 1, bool, bool),
+    ("Int8", 8, "<b", int),
+    ("Uint8", 8, "<B", int),
+    ("BoolInt", 8, "<?", (bool, int)),
+    ("Int16", 16, "<h", int),
+    ("Uint16", 16, "<H", int),
+    ("Int32", 32, "<i", int),
+    ("Uint32", 32, "<I", int),
+    ("Int64", 64, "<q", int),
+    ("Uint64", 64, "<Q", int),
+    ("Float", 32, "<f", float),
+    ("Double", 64, "<d", float),
+    ("Bytes", None, None, bytes),
+    ("String", None, None, str),
+    ("Reserved", None, None, bytes),
+    ("CSV", None, None, (list, str, ",")),
+    ("JSON", None, None, json),
+)
 
 json_spec = sb.match_spec(
-      (bool, sb.any_spec())
-    , (int, sb.any_spec())
-    , (float, sb.any_spec())
-    , (str, sb.any_spec())
-    , (list, lambda: sb.listof(json_spec))
-    , (type(None), sb.any_spec())
-    , fallback=lambda: sb.dictof(sb.string_spec(), json_spec)
-    )
+    (bool, sb.any_spec()),
+    (int, sb.any_spec()),
+    (float, sb.any_spec()),
+    (str, sb.any_spec()),
+    (list, lambda: sb.listof(json_spec)),
+    (type(None), sb.any_spec()),
+    fallback=lambda: sb.dictof(sb.string_spec(), json_spec),
+)
 
 # Here so we don't have to instantiate these every time we get a value from a packet
 static_conversion_from_spec = {
-      any: sb.any_spec()
-    , bool: boolean()
-    , float: float_spec()
-    , (bool, int): boolean_as_int_spec()
-    , json: json_spec
-    }
+    any: sb.any_spec(),
+    bool: boolean(),
+    float: float_spec(),
+    (bool, int): boolean_as_int_spec(),
+    json: json_spec,
+}

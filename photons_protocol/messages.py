@@ -31,10 +31,12 @@ log = logging.getLogger("photons_protocol.messages")
 T = Type
 MultiOptions = MultiOptions
 
+
 class MessagesMixin:
     """
     Functionality for a collection of Protocol Messages
     """
+
     @classmethod
     def get_message_type(kls, data, protocol_register):
         """
@@ -66,18 +68,20 @@ class MessagesMixin:
             b.frombytes(data)
             data = b
 
-        protocol = struct.unpack("<H", data[16:16 + 12].tobytes())[0]
+        protocol = struct.unpack("<H", data[16 : 16 + 12].tobytes())[0]
 
         prot = protocol_register.get(protocol)
         if prot is None:
-            raise BadConversion("Unknown packet protocol", wanted=protocol, available=list(protocol_register))
+            raise BadConversion(
+                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
+            )
         Packet, messages_register = prot
 
         pkt = Packet.unpack(data)
         message_type = dictobj.__getitem__(pkt, "pkt_type")
 
         k = None
-        for k in (messages_register or [kls]):
+        for k in messages_register or [kls]:
             if message_type in k.by_type:
                 if pkt.payload is NotSpecified and k.by_type[message_type].Payload.Meta.field_types:
                     raise BadConversion("packet had no payload", got=repr(pkt))
@@ -127,7 +131,7 @@ class MessagesMixin:
         Given some payload data as a dictionary and it's ``pkt_type``, return a
         hexlified string of the payload.
         """
-        for k in (messages_register or [kls]):
+        for k in messages_register or [kls]:
             if int(message_type) in k.by_type:
                 return k.by_type[int(message_type)].Payload.normalise(Meta.empty(), data).pack()
         raise BadConversion("Unknown message type!", pkt_type=message_type)
@@ -146,26 +150,33 @@ class MessagesMixin:
         elif "pkt_type" in data.get("protocol_header", {}):
             message_type = data["protocol_header"]["pkt_type"]
         else:
-            raise BadConversion("Don't know how to pack this dictionary, it doesn't specify a pkt_type!")
+            raise BadConversion(
+                "Don't know how to pack this dictionary, it doesn't specify a pkt_type!"
+            )
 
         if "protocol" in data:
             protocol = data["protocol"]
         elif "frame_header" in data and "protocol" in data["frame_header"]:
             protocol = data["frame_header"]["protocol"]
         else:
-            raise BadConversion("Don't know how to pack this dictionary, it doesn't specify a protocol!")
+            raise BadConversion(
+                "Don't know how to pack this dictionary, it doesn't specify a protocol!"
+            )
 
         prot = protocol_register.get(protocol)
         if prot is None:
-            raise BadConversion("Unknown packet protocol", wanted=protocol, available=list(protocol_register))
+            raise BadConversion(
+                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
+            )
         Packet, messages_register = prot
 
-        for k in (messages_register or [kls]):
+        for k in messages_register or [kls]:
             if message_type in k.by_type:
                 return k.by_type[message_type].normalise(Meta.empty(), data).pack()
         if unknown_ok:
             return Packet.normalise(Meta.empty(), data).pack()
         raise BadConversion("Unknown message type!", pkt_type=message_type)
+
 
 class MessagesMeta(type):
     """
@@ -177,6 +188,7 @@ class MessagesMeta(type):
     As a bonus, this puts ``caller_source`` on the ``Meta`` of each message which
     is the lines that make up it's definition. This is used for ``photons-docs``.
     """
+
     def __new__(metaname, classname, baseclasses, attrs):
         by_type = {}
         for attr, val in attrs.items():
@@ -188,7 +200,7 @@ class MessagesMeta(type):
                 by_type[attrs[attr].Payload.message_type] = attrs[attr]
 
         if MessagesMixin not in baseclasses:
-            baseclasses = baseclasses + (MessagesMixin, )
+            baseclasses = baseclasses + (MessagesMixin,)
 
         attrs["by_type"] = by_type
         kls = type.__new__(metaname, classname, baseclasses, attrs)
@@ -204,8 +216,8 @@ class MessagesMeta(type):
             else:
                 raise
         else:
-            for line in src.split('\n'):
-                attr = line[:line.find('=')].replace(' ', '')
+            for line in src.split("\n"):
+                attr = line[: line.find("=")].replace(" ", "")
                 if attr and attr[0].isupper() and attr in attrs:
                     if buf and in_kls:
                         if not hasattr(attrs[in_kls].Meta, "caller_source"):
@@ -221,6 +233,7 @@ class MessagesMeta(type):
                     attrs[in_kls].Meta.caller_source = dedent("\n".join(buf))
 
         return kls
+
 
 class Messages(metaclass=MessagesMeta):
     pass

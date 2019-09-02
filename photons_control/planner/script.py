@@ -25,6 +25,7 @@ class WithSender(object):
 
     It is not recommended that you use this class directly.
     """
+
     def __init__(self, original, key, serial):
         self.key = key
         self.serial = serial

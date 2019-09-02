@@ -1,6 +1,12 @@
 # coding: spec
 
-from photons_app.registers import Target, TargetRegister, ProtocolRegister, MessagesRegister, ReferenceResolerRegister
+from photons_app.registers import (
+    Target,
+    TargetRegister,
+    ProtocolRegister,
+    MessagesRegister,
+    ReferenceResolerRegister,
+)
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import TargetNotFound, ResolverNotFound
 from photons_app.test_helpers import TestCase
@@ -100,7 +106,7 @@ describe TestCase, "ProtocolRegister":
 
         self.assertEqual(register.get(protocol2), None)
 
-        dflt = mock.Mock(name='dflt')
+        dflt = mock.Mock(name="dflt")
         self.assertIs(register.get(protocol2, dflt), dflt)
 
     it "can get message_register for a protocol":
@@ -145,11 +151,13 @@ describe TestCase, "TargetRegister":
 
     it "can get used targets":
         meta = Meta({}, []).at("targets")
-        targets = PhotonsAppSpec().targets_spec.normalise(meta
-            , { "target1": {"type": "example", "options": {"one": 1}}
-              , "target2": {"type": "example", "options": {"one": 2}}
-              }
-            )
+        targets = PhotonsAppSpec().targets_spec.normalise(
+            meta,
+            {
+                "target1": {"type": "example", "options": {"one": 1}},
+                "target2": {"type": "example", "options": {"one": 2}},
+            },
+        )
 
         class T(dictobj.Spec):
             one = dictobj.Field(sb.integer_spec)
@@ -232,7 +240,9 @@ describe TestCase, "TargetRegister":
         self.assertIs(register.resolve("target1"), target1)
         self.assertIs(register.resolve("target2"), target2)
 
-        with self.fuzzyAssertRaisesError(TargetNotFound, name="target3", available=["target1", "target2"]):
+        with self.fuzzyAssertRaisesError(
+            TargetNotFound, name="target3", available=["target1", "target2"]
+        ):
             register.resolve("target3")
 
     it "can add a dictionary of targets":
@@ -240,17 +250,15 @@ describe TestCase, "TargetRegister":
 
         register = TargetRegister(self.collector)
 
-        target1 = mock.Mock(name='target1')
-        target2 = mock.Mock(name='target2')
+        target1 = mock.Mock(name="target1")
+        target2 = mock.Mock(name="target2")
 
         with mock.patch.object(register, "add_target", add_target):
             register.add_targets({"one": target1, "two": target2})
 
-        self.assertEqual(add_target.mock_calls
-            , [ mock.call("one", target1)
-              , mock.call("two", target2)
-              ]
-            )
+        self.assertEqual(
+            add_target.mock_calls, [mock.call("one", target1), mock.call("two", target2)]
+        )
 
     describe "adding a target":
         before_each:
@@ -260,7 +268,12 @@ describe TestCase, "TargetRegister":
 
         it "complains if the type doesn't exist":
             target = Target.FieldSpec().empty_normalise(type="blah")
-            with self.fuzzyAssertRaisesError(TargetNotFound, "Unknown type specified for target", name="target1", specified="blah"):
+            with self.fuzzyAssertRaisesError(
+                TargetNotFound,
+                "Unknown type specified for target",
+                name="target1",
+                specified="blah",
+            ):
                 self.register.add_target("target1", target)
 
         it "does not complain if it can't find type and target is optional":
@@ -270,15 +283,19 @@ describe TestCase, "TargetRegister":
 
         it "returns a function that creates our target":
             value = mock.Mock(name="value")
-            spec = mock.Mock(name='spec')
+            spec = mock.Mock(name="spec")
             spec.normalise.return_value = value
 
             self.register.register_type("blah", spec)
-            self.register.add_target("thing", Target.FieldSpec().empty_normalise(type="blah", options={"one": 2}))
+            self.register.add_target(
+                "thing", Target.FieldSpec().empty_normalise(type="blah", options={"one": 2})
+            )
 
             self.assertEqual(len(spec.normalise.mock_calls), 0)
             self.assertEqual(self.register.resolve("thing"), value)
-            spec.normalise.assert_called_once_with(Meta(self.configuration, []).at("targets").at("thing").at("options"), {"one": 2})
+            spec.normalise.assert_called_once_with(
+                Meta(self.configuration, []).at("targets").at("thing").at("options"), {"one": 2}
+            )
 
             # and it memoizes
             self.assertEqual(self.register.targets["thing"](), ("blah", value))
@@ -292,9 +309,13 @@ describe TestCase, "ReferenceResolerRegister":
         it "has file resolver by default":
             filename = mock.Mock(name="filename")
             resolver = mock.Mock(name="resolver")
-            FakeResolveReferencesFromFile = mock.Mock(name="ResolveReferencesFromFile", return_value=resolver)
+            FakeResolveReferencesFromFile = mock.Mock(
+                name="ResolveReferencesFromFile", return_value=resolver
+            )
 
-            with mock.patch("photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile):
+            with mock.patch(
+                "photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile
+            ):
                 r = self.register.resolve("file", filename, mock.Mock(name="target"))
 
             self.assertIs(r, resolver)
@@ -302,8 +323,8 @@ describe TestCase, "ReferenceResolerRegister":
 
     describe "adding a resolver":
         it "adds and overrides":
-            typ = mock.Mock(name='typ')
-            resolver = mock.Mock(name='resolver')
+            typ = mock.Mock(name="typ")
+            resolver = mock.Mock(name="resolver")
             self.register.add(typ, resolver)
             self.assertIs(self.register.resolvers[typ], resolver)
 
@@ -313,13 +334,13 @@ describe TestCase, "ReferenceResolerRegister":
 
     describe "resolving":
         it "complains if the typ isn't registered":
-            typ = mock.Mock(name='typ')
+            typ = mock.Mock(name="typ")
             with self.fuzzyAssertRaisesError(ResolverNotFound, wanted=typ):
                 self.register.resolve(typ, "blah", mock.Mock(name="target"))
 
         it "uses registered resolver":
             ret = mock.Mock(name="ret")
-            typ = mock.Mock(name='typ')
+            typ = mock.Mock(name="typ")
             target = mock.Mock(name="target")
             resolver = mock.Mock(name="resolver", return_value=ret)
             self.register.add(typ, resolver)

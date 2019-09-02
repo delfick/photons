@@ -16,7 +16,10 @@ import sys
 import os
 
 describe TestCase, "run":
-    def assertRunnerBehaviour(self, script, expected_finally_block, expected_stdout, expected_stderr, sig=signal.SIGINT):
+
+    def assertRunnerBehaviour(
+        self, script, expected_finally_block, expected_stdout, expected_stderr, sig=signal.SIGINT
+    ):
         with hp.a_temp_file() as fle:
             fle.write(script.encode())
             fle.flush()
@@ -33,7 +36,9 @@ describe TestCase, "run":
                 s.listen(1)
 
                 pipe = subprocess.PIPE
-                p = subprocess.Popen([sys.executable, fle.name, out.name, ss.name], stdout=pipe, stderr=pipe)
+                p = subprocess.Popen(
+                    [sys.executable, fle.name, out.name, ss.name], stdout=pipe, stderr=pipe
+                )
                 s.accept()
                 time.sleep(0.1)
 
@@ -62,7 +67,8 @@ describe TestCase, "run":
                 self.assertEqual(got.strip(), expected_finally_block.strip())
 
     it "ensures with statements get cleaned up on SIGINT":
-        script = dedent("""
+        script = dedent(
+            """
         from photons_app.actions import an_action
 
         from option_merge_addons import option_merge_addon_hook
@@ -90,26 +96,32 @@ describe TestCase, "run":
             from photons_app.executor import main
             import sys
             main(["a_test"] + sys.argv[1:])
-        """)
+        """
+        )
 
-        expected_stdout = dedent("""
+        expected_stdout = dedent(
+            """
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- UserQuit
         \t"User Quit"
-        """)
+        """
+        )
 
-        expected_stderr = dedent("""
+        expected_stderr = dedent(
+            """
         [^I]+INFO\s+option_merge.collector Adding configuration from .+
         [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+option_merge.collector Converting photons_app
         [^I]+INFO\s+option_merge.collector Converting target_register
         [^I]+INFO\s+option_merge.collector Converting targets
-        """)
+        """
+        )
 
         self.assertRunnerBehaviour(script, "FINALLY", expected_stdout, expected_stderr)
 
     it "ensures with statements get cleaned up on SIGINT when we have an exception":
-        script = dedent("""
+        script = dedent(
+            """
         from photons_app.errors import PhotonsAppError
         from photons_app.actions import an_action
 
@@ -136,26 +148,32 @@ describe TestCase, "run":
             from photons_app.executor import main
             import sys
             main(["a_test"] + sys.argv[1:])
-        """)
+        """
+        )
 
-        expected_stdout = dedent("""
+        expected_stdout = dedent(
+            """
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- PhotonsAppError
         \t"WAT"
-        """)
+        """
+        )
 
-        expected_stderr = dedent("""
+        expected_stderr = dedent(
+            """
         [^I]+INFO\s+option_merge.collector Adding configuration from .+
         [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+option_merge.collector Converting photons_app
         [^I]+INFO\s+option_merge.collector Converting target_register
         [^I]+INFO\s+option_merge.collector Converting targets
-        """)
+        """
+        )
 
         self.assertRunnerBehaviour(script, "FINALLY", expected_stdout, expected_stderr)
 
     it "ensures async generators are closed on SIGINT":
-        script = dedent("""
+        script = dedent(
+            """
         from photons_app.actions import an_action
 
         from option_merge_addons import option_merge_addon_hook
@@ -192,29 +210,40 @@ describe TestCase, "run":
             from photons_app.executor import main
             import sys
             main(["a_test"] + sys.argv[1:])
-        """)
+        """
+        )
 
-        expected_stdout = dedent("""
+        expected_stdout = dedent(
+            """
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- UserQuit
         \t"User Quit"
-        """)
+        """
+        )
 
-        expected_stderr = dedent("""
+        expected_stderr = dedent(
+            """
         [^I]+INFO\s+option_merge.collector Adding configuration from .+
         [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+option_merge.collector Converting photons_app
         [^I]+INFO\s+option_merge.collector Converting target_register
         [^I]+INFO\s+option_merge.collector Converting targets
-        """)
+        """
+        )
 
-        self.assertRunnerBehaviour(script, "CANCELLED<class 'concurrent.futures._base.CancelledError'>", expected_stdout, expected_stderr)
+        self.assertRunnerBehaviour(
+            script,
+            "CANCELLED<class 'concurrent.futures._base.CancelledError'>",
+            expected_stdout,
+            expected_stderr,
+        )
 
     it "stops the program on SIGTERM":
         if platform.system() == "Windows":
             return
 
-        script = dedent("""
+        script = dedent(
+            """
         from photons_app.actions import an_action
 
         from option_merge_addons import option_merge_addon_hook
@@ -251,23 +280,34 @@ describe TestCase, "run":
             from photons_app.executor import main
             import sys
             main(["a_test"] + sys.argv[1:])
-        """)
+        """
+        )
 
-        expected_stdout = dedent("""
+        expected_stdout = dedent(
+            """
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- ApplicationCancelled
         \t"The application itself was shutdown"
-        """)
+        """
+        )
 
-        expected_stderr = dedent("""
+        expected_stderr = dedent(
+            """
         [^I]+INFO\s+option_merge.collector Adding configuration from .+
         [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+option_merge.collector Converting photons_app
         [^I]+INFO\s+option_merge.collector Converting target_register
         [^I]+INFO\s+option_merge.collector Converting targets
-        """)
+        """
+        )
 
-        self.assertRunnerBehaviour(script, "CANCELLED<class 'concurrent.futures._base.CancelledError'>", expected_stdout, expected_stderr, sig=signal.SIGTERM)
+        self.assertRunnerBehaviour(
+            script,
+            "CANCELLED<class 'concurrent.futures._base.CancelledError'>",
+            expected_stdout,
+            expected_stderr,
+            sig=signal.SIGTERM,
+        )
 
     it "runs the collector and runs cleanup when that's done":
         info = {"cleaned": False, "ran": False}
@@ -275,7 +315,7 @@ describe TestCase, "run":
         loop = asyncio.new_event_loop()
         final_future = asyncio.Future(loop=loop)
 
-        target_register = mock.Mock(name='target_register')
+        target_register = mock.Mock(name="target_register")
 
         async def cleanup(tr):
             self.assertEqual(tr, target_register.used_targets)
@@ -285,12 +325,23 @@ describe TestCase, "run":
         async def task_runner(*args):
             await asyncio.sleep(0.01)
             info["ran"] = True
+
         task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
 
-        photons_app = mock.Mock(name="photons_app", loop=loop, chosen_task="task", reference="reference", final_future=final_future)
+        photons_app = mock.Mock(
+            name="photons_app",
+            loop=loop,
+            chosen_task="task",
+            reference="reference",
+            final_future=final_future,
+        )
         photons_app.cleanup.side_effect = cleanup
 
-        configuration = {"photons_app": photons_app, "target_register": target_register, "task_runner": task_runner}
+        configuration = {
+            "photons_app": photons_app,
+            "target_register": target_register,
+            "task_runner": task_runner,
+        }
         collector = mock.Mock(name="collector", configuration=configuration)
 
         run(collector)
@@ -302,7 +353,7 @@ describe TestCase, "run":
         loop = asyncio.new_event_loop()
         final_future = asyncio.Future(loop=loop)
 
-        target_register = mock.Mock(name='target_register')
+        target_register = mock.Mock(name="target_register")
 
         async def cleanup(tr):
             self.assertEqual(tr, target_register.used_targets)
@@ -313,12 +364,23 @@ describe TestCase, "run":
             await asyncio.sleep(0.01)
             info["ran"] = True
             raise ValueError("Nope")
+
         task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
 
-        photons_app = mock.Mock(name="photons_app", loop=loop, chosen_task="task", reference="reference", final_future=final_future)
+        photons_app = mock.Mock(
+            name="photons_app",
+            loop=loop,
+            chosen_task="task",
+            reference="reference",
+            final_future=final_future,
+        )
         photons_app.cleanup.side_effect = cleanup
 
-        configuration = {"photons_app": photons_app, "target_register": target_register, "task_runner": task_runner}
+        configuration = {
+            "photons_app": photons_app,
+            "target_register": target_register,
+            "task_runner": task_runner,
+        }
         collector = mock.Mock(name="collector", configuration=configuration)
 
         with self.fuzzyAssertRaisesError(ValueError, "Nope"):

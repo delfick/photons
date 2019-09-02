@@ -1,6 +1,12 @@
 # coding: spec
 
-from photons_control.multizone import find_multizone, zones_from_reference, SetZonesPlan, SetZones, SetZonesEffect
+from photons_control.multizone import (
+    find_multizone,
+    zones_from_reference,
+    SetZonesPlan,
+    SetZones,
+    SetZonesEffect,
+)
 from photons_control.planner import Gatherer, Skip, NoMessages
 from photons_control import test_helpers as chp
 
@@ -20,52 +26,62 @@ zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [chp.Color(90 - i, 1, 1, 3500) for i in range(6)]
 zones3 = [chp.Color(300 - i, 1, 1, 3500) for i in range(16)]
 
-light1 = FakeDevice("d073d5000001"
-    , chp.default_responders(LIFIProductRegistry.LCM3_TILE
-        , power = 0
-        , label = "bob"
-        , infrared = 100
-        , color = chp.Color(100, 0.5, 0.5, 4500)
-        , firmware = chp.Firmware(3, 50, 1548977726000000000)
-        )
-    )
+light1 = FakeDevice(
+    "d073d5000001",
+    chp.default_responders(
+        LIFIProductRegistry.LCM3_TILE,
+        power=0,
+        label="bob",
+        infrared=100,
+        color=chp.Color(100, 0.5, 0.5, 4500),
+        firmware=chp.Firmware(3, 50, 1548977726000000000),
+    ),
+)
 
-light2 = FakeDevice("d073d5000002"
-    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
-        , power = 65535
-        , label = "sam"
-        , infrared = 0
-        , color = chp.Color(200, 0.3, 1, 9000)
-        , firmware = chp.Firmware(2, 2, 1448861477000000000)
-        )
-    )
+light2 = FakeDevice(
+    "d073d5000002",
+    chp.default_responders(
+        LIFIProductRegistry.LMB_MESH_A21,
+        power=65535,
+        label="sam",
+        infrared=0,
+        color=chp.Color(200, 0.3, 1, 9000),
+        firmware=chp.Firmware(2, 2, 1448861477000000000),
+    ),
+)
 
-striplcm1 = FakeDevice("d073d5000003"
-    , chp.default_responders(LIFIProductRegistry.LCM1_Z
-        , power = 0
-        , label = "lcm1-no-extended"
-        , firmware = chp.Firmware(1, 22, 1502237570000000000)
-        , zones = zones1
-        )
-    )
+striplcm1 = FakeDevice(
+    "d073d5000003",
+    chp.default_responders(
+        LIFIProductRegistry.LCM1_Z,
+        power=0,
+        label="lcm1-no-extended",
+        firmware=chp.Firmware(1, 22, 1502237570000000000),
+        zones=zones1,
+    ),
+)
 
-striplcm2noextended = FakeDevice("d073d5000004"
-    , chp.default_responders(LIFIProductRegistry.LCM2_Z
-        , power = 0
-        , label = "lcm2-no-extended"
-        , firmware = chp.Firmware(2, 70, 1508122125000000000)
-        , zones = zones2
-        )
-    )
+striplcm2noextended = FakeDevice(
+    "d073d5000004",
+    chp.default_responders(
+        LIFIProductRegistry.LCM2_Z,
+        power=0,
+        label="lcm2-no-extended",
+        firmware=chp.Firmware(2, 70, 1508122125000000000),
+        zones=zones2,
+    ),
+)
 
-striplcm2extended = FakeDevice("d073d5000005"
-    , chp.default_responders(LIFIProductRegistry.LCM2_Z
-        , power = 0
-        , label = "lcm2-extended"
-        , firmware = chp.Firmware(2, 77, 1543215651000000000)
-        , zones = zones3
-        )
-    )
+striplcm2extended = FakeDevice(
+    "d073d5000005",
+    chp.default_responders(
+        LIFIProductRegistry.LCM2_Z,
+        power=0,
+        label="lcm2-extended",
+        firmware=chp.Firmware(2, 77, 1543215651000000000),
+        zones=zones3,
+    ),
+)
 
 lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
 mlr = chp.ModuleLevelRunner(lights)
@@ -76,21 +92,21 @@ tearDown = mlr.tearDown
 describe AsyncTestCase, "SetZonesPlan":
     async before_each:
         self.specifier = [
-              ["red", 10]
-            , ["blue", 3]
-            , ["hue:78 brightness:0.5", 5]
-            , ["#234455", 2]
-            , [[100], 1]
-            , [[100, 0.5], 1]
-            , [[100, 0.5, 0.5], 1]
-            , [[100, 0.5, 0.5, 9000], 1]
-            , [[0, 0, 0, 0], 1]
-            , [{"hue": 100}, 1]
-            , [{"hue": 100, "saturation": 0.5}, 1]
-            , [{"hue": 100, "saturation": 0.5, "brightness": 0.5}, 1]
-            , [{"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000}, 1]
-            , [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1]
-            ]
+            ["red", 10],
+            ["blue", 3],
+            ["hue:78 brightness:0.5", 5],
+            ["#234455", 2],
+            [[100], 1],
+            [[100, 0.5], 1],
+            [[100, 0.5, 0.5], 1],
+            [[100, 0.5, 0.5, 9000], 1],
+            [[0, 0, 0, 0], 1],
+            [{"hue": 100}, 1],
+            [{"hue": 100, "saturation": 0.5}, 1],
+            [{"hue": 100, "saturation": 0.5, "brightness": 0.5}, 1],
+            [{"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000}, 1],
+            [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1],
+        ]
 
     async it "works out old style and extended style messages":
         plan = SetZonesPlan(self.specifier)
@@ -98,58 +114,110 @@ describe AsyncTestCase, "SetZonesPlan":
         assert all(msg | MultiZoneMessages.SetColorZones for msg in plan.set_color_old)
         assert plan.set_color_new | MultiZoneMessages.SetExtendedColorZones
 
-        colorRed = {'hue': 0.0, 'saturation': 1.0, 'brightness': 1.0, 'kelvin': 3500}
-        colorBlue = {'hue': 249.9977111467155, 'saturation': 1.0, 'brightness': 1.0, 'kelvin': 3500}
-        colorHSBK = {'hue': 77.99862668802929, 'saturation': 0.0, 'brightness': 0.49999237048905165, 'kelvin': 3500}
-        colorHEX = {'hue': 200.39917601281758, 'saturation': 0.5882200350957504, 'brightness': 0.3333333333333333, 'kelvin': 3500}
+        colorRed = {"hue": 0.0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
+        colorBlue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
+        colorHSBK = {
+            "hue": 77.99862668802929,
+            "saturation": 0.0,
+            "brightness": 0.49999237048905165,
+            "kelvin": 3500,
+        }
+        colorHEX = {
+            "hue": 200.39917601281758,
+            "saturation": 0.5882200350957504,
+            "brightness": 0.3333333333333333,
+            "kelvin": 3500,
+        }
 
         hue100 = 99.9990844586862
         half = 0.49999237048905165
 
         expected_old = [
-              { 'start_index': 0, 'end_index': 9
-              , **colorRed
-              }
-            , { 'start_index': 10, 'end_index': 12
-              , **colorBlue
-              }
-            , { 'start_index': 13, 'end_index': 17
-              , **colorHSBK
-              }
-            , { 'start_index': 18, 'end_index': 19
-              , **colorHEX
-              }
-            , { 'start_index': 20, 'end_index': 20
-              , "hue": hue100, "saturation": 0.0, "brightness": 1.0, "kelvin": 3500
-              }
-            , { 'start_index': 21, 'end_index': 21
-              , "hue": hue100, "saturation": half, "brightness": 1.0, "kelvin": 3500
-              }
-            , { 'start_index': 22, 'end_index': 22
-              , "hue": hue100, "saturation": half, "brightness": half, "kelvin": 3500
-              }
-            , { 'start_index': 23, 'end_index': 23
-              , "hue": hue100, "saturation": half, "brightness": half, "kelvin": 9000
-              }
-            , { 'start_index': 24, 'end_index': 24
-              , "hue": 0.0, "saturation": 0.0, "brightness": 0.0, "kelvin": 0
-              }
-            , { 'start_index': 25, 'end_index': 25
-              , "hue": hue100, "saturation": 0.0, "brightness": 1.0, "kelvin": 3500
-              }
-            , { 'start_index': 26, 'end_index': 26
-              , "hue": hue100, "saturation": half, "brightness": 1.0, "kelvin": 3500
-              }
-            , { 'start_index': 27, 'end_index': 27
-              , "hue": hue100, "saturation": half, "brightness": half, "kelvin": 3500
-              }
-            , { 'start_index': 28, 'end_index': 28
-              , "hue": hue100, "saturation": half, "brightness": half, "kelvin": 9000
-              }
-            , { 'start_index': 29, 'end_index': 29
-              , "hue": 0.0, "saturation": 0.0, "brightness": 0.0, "kelvin": 0
-              }
-            ]
+            {"start_index": 0, "end_index": 9, **colorRed},
+            {"start_index": 10, "end_index": 12, **colorBlue},
+            {"start_index": 13, "end_index": 17, **colorHSBK},
+            {"start_index": 18, "end_index": 19, **colorHEX},
+            {
+                "start_index": 20,
+                "end_index": 20,
+                "hue": hue100,
+                "saturation": 0.0,
+                "brightness": 1.0,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 21,
+                "end_index": 21,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": 1.0,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 22,
+                "end_index": 22,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": half,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 23,
+                "end_index": 23,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": half,
+                "kelvin": 9000,
+            },
+            {
+                "start_index": 24,
+                "end_index": 24,
+                "hue": 0.0,
+                "saturation": 0.0,
+                "brightness": 0.0,
+                "kelvin": 0,
+            },
+            {
+                "start_index": 25,
+                "end_index": 25,
+                "hue": hue100,
+                "saturation": 0.0,
+                "brightness": 1.0,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 26,
+                "end_index": 26,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": 1.0,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 27,
+                "end_index": 27,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": half,
+                "kelvin": 3500,
+            },
+            {
+                "start_index": 28,
+                "end_index": 28,
+                "hue": hue100,
+                "saturation": half,
+                "brightness": half,
+                "kelvin": 9000,
+            },
+            {
+                "start_index": 29,
+                "end_index": 29,
+                "hue": 0.0,
+                "saturation": 0.0,
+                "brightness": 0.0,
+                "kelvin": 0,
+            },
+        ]
 
         self.assertEqual(len(plan.set_color_old), len(expected_old))
         for e, o in zip(expected_old, plan.set_color_old):
@@ -237,20 +305,20 @@ describe AsyncTestCase, "SetZonesPlan":
         plan = SetZonesPlan(self.specifier, zone_index=10)
 
         expected_old = [
-              { 'start_index': 10 + 0, 'end_index': 10 + 9}
-            , { 'start_index': 10 + 10, 'end_index': 10 + 12}
-            , { 'start_index': 10 + 13, 'end_index': 10 + 17}
-            , { 'start_index': 10 + 18, 'end_index': 10 + 19}
-            , { 'start_index': 10 + 20, 'end_index': 10 + 20}
-            , { 'start_index': 10 + 21, 'end_index': 10 + 21}
-            , { 'start_index': 10 + 22, 'end_index': 10 + 22}
-            , { 'start_index': 10 + 23, 'end_index': 10 + 23}
-            , { 'start_index': 10 + 24, 'end_index': 10 + 24}
-            , { 'start_index': 10 + 25, 'end_index': 10 + 25}
-            , { 'start_index': 10 + 26, 'end_index': 10 + 26}
-            , { 'start_index': 10 + 27, 'end_index': 10 + 27}
-            , { 'start_index': 10 + 28, 'end_index': 10 + 28}
-            ]
+            {"start_index": 10 + 0, "end_index": 10 + 9},
+            {"start_index": 10 + 10, "end_index": 10 + 12},
+            {"start_index": 10 + 13, "end_index": 10 + 17},
+            {"start_index": 10 + 18, "end_index": 10 + 19},
+            {"start_index": 10 + 20, "end_index": 10 + 20},
+            {"start_index": 10 + 21, "end_index": 10 + 21},
+            {"start_index": 10 + 22, "end_index": 10 + 22},
+            {"start_index": 10 + 23, "end_index": 10 + 23},
+            {"start_index": 10 + 24, "end_index": 10 + 24},
+            {"start_index": 10 + 25, "end_index": 10 + 25},
+            {"start_index": 10 + 26, "end_index": 10 + 26},
+            {"start_index": 10 + 27, "end_index": 10 + 27},
+            {"start_index": 10 + 28, "end_index": 10 + 28},
+        ]
 
         for e, o in zip(expected_old, plan.set_color_old):
             for k, v in e.items():
@@ -259,7 +327,9 @@ describe AsyncTestCase, "SetZonesPlan":
         self.assertEqual(plan.set_color_new.zone_index, 10)
 
     async it "complains if we have more than 82 colors":
-        with self.fuzzyAssertRaisesError(PhotonsAppError, "colors can only go up to 82 colors", got=87):
+        with self.fuzzyAssertRaisesError(
+            PhotonsAppError, "colors can only go up to 82 colors", got=87
+        ):
             SetZonesPlan([["red", 80], ["blue", 7]])
 
     async it "complains if we have no colors":
@@ -270,10 +340,26 @@ describe AsyncTestCase, "SetZonesPlan":
     async it "can create messages to send back":
         plan = SetZonesPlan(self.specifier)
 
-        instance1 = plan.Instance(light1.serial, plan, {"c": {"cap": {"has_multizone": False}, "has_extended_multizone": False}})
-        instance2 = plan.Instance(striplcm1.serial, plan, {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}})
-        instance3 = plan.Instance(striplcm2noextended.serial, plan, {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}})
-        instance4 = plan.Instance(striplcm2extended.serial, plan, {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": True}})
+        instance1 = plan.Instance(
+            light1.serial,
+            plan,
+            {"c": {"cap": {"has_multizone": False}, "has_extended_multizone": False}},
+        )
+        instance2 = plan.Instance(
+            striplcm1.serial,
+            plan,
+            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}},
+        )
+        instance3 = plan.Instance(
+            striplcm2noextended.serial,
+            plan,
+            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}},
+        )
+        instance4 = plan.Instance(
+            striplcm2extended.serial,
+            plan,
+            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": True}},
+        )
 
         self.assertIs(instance1.messages, Skip)
         for instance in (instance2, instance3, instance4):
@@ -315,34 +401,49 @@ describe AsyncTestCase, "Multizone helpers":
             light.reset_received()
 
     describe "find_multizone":
+
         @mlr.test
         async it "yields serials and whether we have extended multizone", runner:
             got = {}
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(runner.target, runner.serials, afr):
+                async for serial, has_extended_multizone in find_multizone(
+                    runner.target, runner.serials, afr
+                ):
                     assert serial not in got
                     got[serial] = has_extended_multizone
 
-            self.assertEqual(got
-                , { striplcm1.serial: False
-                  , striplcm2noextended.serial: False
-                  , striplcm2extended.serial: True
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    striplcm1.serial: False,
+                    striplcm2noextended.serial: False,
+                    striplcm2extended.serial: True,
+                },
+            )
 
         @mlr.test
         async it "resends messages each time if we don't give a gatherer", runner:
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(runner.target, runner.serials, afr):
+                async for serial, has_extended_multizone in find_multizone(
+                    runner.target, runner.serials, afr
+                ):
                     pass
 
-                want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in lights}
+                want = {
+                    device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
+                    for device in lights
+                }
                 self.compare_received(want)
 
-                async for serial, has_extended_multizone in find_multizone(runner.target, runner.serials, afr):
+                async for serial, has_extended_multizone in find_multizone(
+                    runner.target, runner.serials, afr
+                ):
                     pass
 
-                want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in lights}
+                want = {
+                    device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
+                    for device in lights
+                }
                 self.compare_received(want)
 
         @mlr.test
@@ -350,19 +451,27 @@ describe AsyncTestCase, "Multizone helpers":
             gatherer = Gatherer(runner.target)
 
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(runner.target, runner.serials, afr, gatherer=gatherer):
+                async for serial, has_extended_multizone in find_multizone(
+                    runner.target, runner.serials, afr, gatherer=gatherer
+                ):
                     pass
 
-                want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in lights}
+                want = {
+                    device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
+                    for device in lights
+                }
                 self.compare_received(want)
 
-                async for serial, has_extended_multizone in find_multizone(runner.target, runner.serials, afr, gatherer=gatherer):
+                async for serial, has_extended_multizone in find_multizone(
+                    runner.target, runner.serials, afr, gatherer=gatherer
+                ):
                     pass
 
                 want = {device: [] for device in lights}
                 self.compare_received(want)
 
     describe "zones_from_reference":
+
         @mlr.test
         async it "yield zones", runner:
             got = {}
@@ -371,12 +480,20 @@ describe AsyncTestCase, "Multizone helpers":
                     assert serial not in got
                     got[serial] = zones
 
-            self.assertEqual(got
-                , { striplcm1.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]
-                  , striplcm2noextended.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]
-                  , striplcm2extended.serial: [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    striplcm1.serial: [
+                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)
+                    ],
+                    striplcm2noextended.serial: [
+                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)
+                    ],
+                    striplcm2extended.serial: [
+                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)
+                    ],
+                },
+            )
 
         @mlr.test
         async it "resends messages if no gatherer is provided", runner:
@@ -384,9 +501,14 @@ describe AsyncTestCase, "Multizone helpers":
                 async for serial, zones in zones_from_reference(runner.target, runner.serials, afr):
                     pass
 
-            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in lights}
+            want = {
+                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
+                for device in lights
+            }
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
-            want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
+            want[striplcm2noextended].append(
+                MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
+            )
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
@@ -400,22 +522,32 @@ describe AsyncTestCase, "Multizone helpers":
         async it "caches messages if gatherer is provided", runner:
             gatherer = Gatherer(runner.target)
             async with runner.target.session() as afr:
-                async for serial, zones in zones_from_reference(runner.target, runner.serials, afr, gatherer=gatherer):
+                async for serial, zones in zones_from_reference(
+                    runner.target, runner.serials, afr, gatherer=gatherer
+                ):
                     pass
 
-            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in lights}
+            want = {
+                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
+                for device in lights
+            }
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
-            want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
+            want[striplcm2noextended].append(
+                MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
+            )
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
             async with runner.target.session() as afr:
-                async for serial, zones in zones_from_reference(runner.target, runner.serials, afr, gatherer=gatherer):
+                async for serial, zones in zones_from_reference(
+                    runner.target, runner.serials, afr, gatherer=gatherer
+                ):
                     pass
 
             self.compare_received({device: [] for device in lights})
 
     describe "SetZones":
+
         @mlr.test
         async it "can power on devices and set zones", runner:
             for device in self.strips:
@@ -428,35 +560,39 @@ describe AsyncTestCase, "Multizone helpers":
             red = {"hue": 0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
             blue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
             self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            self.assertEqual(
+                striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4
+            )
+            self.assertEqual(
+                striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4
+            )
 
             self.compare_received_klses(
-                  { light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-                  , light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetExtendedColorZones
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetExtendedColorZones,
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can skip turning on lights", runner:
@@ -468,28 +604,28 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             self.compare_received_klses(
-                  { light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-                  , light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , MultiZoneMessages.SetExtendedColorZones
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        MultiZoneMessages.SetExtendedColorZones,
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can target particular lights", runner:
@@ -508,31 +644,41 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
 
             green = {"hue": 120.0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            yellow = {"hue": 59.997253376058595, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            self.assertEqual(striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
-            self.assertEqual(striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4)
+            yellow = {
+                "hue": 59.997253376058595,
+                "saturation": 1.0,
+                "brightness": 1.0,
+                "kelvin": 3500,
+            }
+            self.assertEqual(
+                striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4
+            )
+            self.assertEqual(
+                striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4
+            )
 
             self.compare_received_klses(
-                  { striplcm1:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , MultiZoneMessages.SetExtendedColorZones
-                    ]
-                  }
-                )
+                {
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        MultiZoneMessages.SetExtendedColorZones,
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can give duration to messages", runner:
@@ -562,55 +708,57 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(got, [])
 
             self.compare_received_klses(
-                  { light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-                  , light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware
-                    , DeviceMessages.GetVersion
-                    , LightMessages.SetLightPower
-                    , MultiZoneMessages.SetExtendedColorZones
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware,
+                        DeviceMessages.GetVersion,
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetExtendedColorZones,
+                    ],
+                }
+            )
 
             msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all([s.serial for s in self.strips])
             self.assertEqual(got, [])
 
             self.compare_received_klses(
-                  { striplcm1:
-                    [ LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2noextended:
-                    [ LightMessages.SetLightPower
-                    , MultiZoneMessages.SetColorZones
-                    , MultiZoneMessages.SetColorZones
-                    ]
-                  , striplcm2extended:
-                    [ LightMessages.SetLightPower
-                    , MultiZoneMessages.SetExtendedColorZones
-                    ]
-                  }
-                )
+                {
+                    striplcm1: [
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2noextended: [
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetColorZones,
+                        MultiZoneMessages.SetColorZones,
+                    ],
+                    striplcm2extended: [
+                        LightMessages.SetLightPower,
+                        MultiZoneMessages.SetExtendedColorZones,
+                    ],
+                }
+            )
 
     describe "SetZonesEffect":
+
         @mlr.test
         async it "can power on devices and set zones effect", runner:
             msg = SetZonesEffect("move")
@@ -621,29 +769,35 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                  , light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "has options", runner:
@@ -655,29 +809,35 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                  , light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=20)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(duration=10, type=MultiZoneEffectType.MOVE, speed=5)
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=20)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(duration=10, type=MultiZoneEffectType.MOVE, speed=5)
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=20)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(duration=10, type=MultiZoneEffectType.MOVE, speed=5)
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=20),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=20),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                        ),
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=20),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can choose not to turn on devices", runner:
@@ -689,26 +849,32 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                  , light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can target particular devices", runner:
@@ -723,25 +889,32 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
-                  { striplcm1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(duration=5, type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(duration=5, type=MultiZoneEffectType.MOVE)
-                    ]
-                  }
-                )
+                {
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            duration=5, type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            duration=5, type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                }
+            )
 
         @mlr.test
         async it "can be passed in a gatherer", runner:
@@ -755,29 +928,35 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                  , light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-
-                  , striplcm1:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2noextended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  , striplcm2extended:
-                    [ DeviceMessages.GetHostFirmware()
-                    , DeviceMessages.GetVersion()
-                    , LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.MOVE)
-                    ]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                    striplcm1: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                    striplcm2extended: [
+                        DeviceMessages.GetHostFirmware(),
+                        DeviceMessages.GetVersion(),
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.MOVE
+                        ),
+                    ],
+                }
+            )
 
             msg = SetZonesEffect("off", gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all(runner.serials)
@@ -787,20 +966,26 @@ describe AsyncTestCase, "Multizone helpers":
                 self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.OFF)
 
             self.compare_received(
-                  { light1: []
-                  , light2: []
-
-                  , striplcm1:
-                    [ LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.OFF)
-                    ]
-                  , striplcm2noextended:
-                    [ LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.OFF)
-                    ]
-                  , striplcm2extended:
-                    [ LightMessages.SetLightPower(level=65535, duration=1)
-                    , MultiZoneMessages.SetMultiZoneEffect.empty_normalise(type=MultiZoneEffectType.OFF)
-                    ]
-                  }
-                )
+                {
+                    light1: [],
+                    light2: [],
+                    striplcm1: [
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.OFF
+                        ),
+                    ],
+                    striplcm2noextended: [
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.OFF
+                        ),
+                    ],
+                    striplcm2extended: [
+                        LightMessages.SetLightPower(level=65535, duration=1),
+                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                            type=MultiZoneEffectType.OFF
+                        ),
+                    ],
+                }
+            )

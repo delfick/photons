@@ -25,6 +25,7 @@ describe TestCase, "boolean":
         self.assertEqual(boolean().normalise(Meta.empty(), True), True)
 
     it "complains about anything else":
+
         class Wat:
             pass
 
@@ -59,6 +60,4 @@ describe TestCase, "str_ranges":
             self.assertEqual(len(error.errors[0].errors), 1)
             error = error.errors[0].errors[0]
             self.assertEqual(type(error), BadSpecValue)
-            self.assertEqual(str(error.kwargs["error"])
-                , "could not convert string to float: '2-3'"
-                )
+            self.assertEqual(str(error.kwargs["error"]), "could not convert string to float: '2-3'")

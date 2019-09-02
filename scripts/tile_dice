@@ -4,10 +4,11 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_tile_paint.animation import (
-      coords_for_horizontal_line
-    , tile_serials_from_reference, put_characters_on_canvas 
-    , canvas_to_msgs
-    )
+    coords_for_horizontal_line,
+    tile_serials_from_reference,
+    put_characters_on_canvas,
+    canvas_to_msgs,
+)
 from photons_messages import TileMessages, DeviceMessages
 from photons_themes.theme import ThemeColor as Color
 from photons_control.tile import orientations_from
@@ -16,15 +17,19 @@ from photons_themes.canvas import Canvas
 
 from option_merge_addons import option_merge_addon_hook
 
-@option_merge_addon_hook(extras=[
-      ("lifx.photons", "transport")
-    , ("lifx.photons", "themes")
-    , ("lifx.photons", "control")
-    , ("lifx.photons", "tile_paint")
-    , ("lifx.photons", "device_finder")
-    ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "transport"),
+        ("lifx.photons", "themes"),
+        ("lifx.photons", "control"),
+        ("lifx.photons", "tile_paint"),
+        ("lifx.photons", "device_finder"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 @an_action(needs_target=True, special_reference=True)
 async def tile_dice(collector, target, reference, **kwargs):
@@ -51,6 +56,7 @@ async def tile_dice(collector, target, reference, **kwargs):
             if j == -3:
                 return Color(0, 1, 0.4, 3500)
             return Color(0, 0, 0, 3500)
+
         canvas.set_default_color_func(default_color_func)
 
         numbers = ["1", "2", "3", "4", "5"]
@@ -60,7 +66,9 @@ async def tile_dice(collector, target, reference, **kwargs):
 
         orientations = {}
         if not ignore_orientation:
-            async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(serials, afr):
+            async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(
+                serials, afr
+            ):
                 if pkt | TileMessages.StateDeviceChain:
                     orientations[pkt.serial] = orientations_from(pkt)
 
@@ -69,13 +77,17 @@ async def tile_dice(collector, target, reference, **kwargs):
             os = orientations.get(serial)
             msgs.append(DeviceMessages.SetPower(level=65535, target=serial))
 
-            for msg in canvas_to_msgs(canvas, coords_for_horizontal_line, duration=1, acks=True, orientations=os):
+            for msg in canvas_to_msgs(
+                canvas, coords_for_horizontal_line, duration=1, acks=True, orientations=os
+            ):
                 msg.target = serial
                 msgs.append(msg)
 
         await target.script(msgs).run_with_all(None, afr)
 
+
 if __name__ == "__main__":
     from photons_app.executor import main
     import sys
+
     main(["lan:tile_dice"] + sys.argv[1:])

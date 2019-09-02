@@ -5,6 +5,7 @@ import logging
 
 log = logging.getLogger("photons_transport.comms.waiter")
 
+
 class Waiter(object):
     """
     Keep writing till we get a response!
@@ -21,6 +22,7 @@ class Waiter(object):
 
     We keep writing writer with an exponential backoff.
     """
+
     def __init__(self, stop_fut, writer, retry_options, no_retry=False):
         self.writer = writer
 
@@ -41,6 +43,7 @@ class Waiter(object):
             # I don't care about the exception from final_future
             if not f.cancelled():
                 f.exception()
+
         self.add_done_callback(ignore)
 
     def add_done_callback(self, cb):

@@ -7,6 +7,7 @@ from photons_app.errors import BadTask
 
 from input_algorithms.spec_base import NotSpecified
 
+
 class TaskFinder(object):
     def __init__(self, collector):
         self.tasks = all_tasks
@@ -20,4 +21,6 @@ class TaskFinder(object):
         if task not in self.tasks:
             raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
 
-        return await self.tasks[task].run(target, self.collector, reference, available_actions, self.tasks, **kwargs)
+        return await self.tasks[task].run(
+            target, self.collector, reference, available_actions, self.tasks, **kwargs
+        )

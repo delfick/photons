@@ -17,7 +17,7 @@ describe AsyncTestCase, "Receiver":
         receiver = Receiver()
         self.assertIs(receiver.loop, self.loop)
         self.assertEqual(receiver.results, {})
-        self.assertEqual(receiver.blank_target, b'\x00\x00\x00\x00\x00\x00\x00\x00')
+        self.assertEqual(receiver.blank_target, b"\x00\x00\x00\x00\x00\x00\x00\x00")
 
     describe "Usage":
         async before_each:
@@ -27,11 +27,8 @@ describe AsyncTestCase, "Receiver":
             self.sequence = random.randrange(0, 100)
             self.target = binascii.unhexlify("d073d50000000000")
             self.packet = LIFXPacket(
-                  source = self.source
-                , pkt_type = 20
-                , sequence = self.sequence
-                , target = self.target
-                )
+                source=self.source, pkt_type=20, sequence=self.sequence, target=self.target
+            )
 
             self.addr = mock.Mock(name="addr")
             self.original = self.packet.clone()
@@ -40,11 +37,7 @@ describe AsyncTestCase, "Receiver":
             self.result.add_packet = mock.Mock(name="add_packet")
 
         def register(self, source, sequence, target):
-            packet = LIFXPacket(
-                  source = source
-                , sequence = sequence
-                , target = target
-                )
+            packet = LIFXPacket(source=source, sequence=sequence, target=target)
 
             self.receiver.register(packet, self.result, self.original)
             return (source, sequence, target)
@@ -68,6 +61,7 @@ describe AsyncTestCase, "Receiver":
                     self.receiver.results["other"] = other
                     cb()
                     fut.set_result(True)
+
                 loop.call_later.side_effect = call_later
 
                 with mock.patch.object(Receiver, "loop", loop):
@@ -83,12 +77,16 @@ describe AsyncTestCase, "Receiver":
             async it "finds result based on source, sequence, target":
                 self.register(self.source, self.sequence, self.target)
                 self.receiver.recv(self.packet, self.addr)
-                self.result.add_packet.assert_called_once_with(self.packet, self.addr, self.original)
+                self.result.add_packet.assert_called_once_with(
+                    self.packet, self.addr, self.original
+                )
 
             async it "finds result based on broadcast key if that was used":
                 self.register(self.source, self.sequence, self.receiver.blank_target)
                 self.receiver.recv(self.packet, self.addr)
-                self.result.add_packet.assert_called_once_with(self.packet, self.addr, self.original)
+                self.result.add_packet.assert_called_once_with(
+                    self.packet, self.addr, self.original
+                )
 
             async it "does nothing if it can't find the key":
                 self.register(1, 2, binascii.unhexlify("d073d5000001"))
@@ -108,7 +106,9 @@ describe AsyncTestCase, "Receiver":
                 self.receiver.message_catcher = message_catcher
                 self.receiver.recv(self.packet, self.addr)
 
-                self.result.add_packet.assert_called_once_with(self.packet, self.addr, self.original)
+                self.result.add_packet.assert_called_once_with(
+                    self.packet, self.addr, self.original
+                )
                 self.assertEqual(len(message_catcher.mock_calls), 0)
 
                 self.result.add_packet.reset_mock()
@@ -118,5 +118,7 @@ describe AsyncTestCase, "Receiver":
                 self.receiver.message_catcher = message_catcher
                 self.receiver.recv(self.packet, self.addr)
 
-                self.result.add_packet.assert_called_once_with(self.packet, self.addr, self.original)
+                self.result.add_packet.assert_called_once_with(
+                    self.packet, self.addr, self.original
+                )
                 self.assertEqual(len(message_catcher.mock_calls), 0)

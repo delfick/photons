@@ -6,6 +6,7 @@ from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 import random
 
+
 class TileGameOfLifeOptions(AnimationOptions):
     user_coords = dictobj.Field(sb.boolean, default=True)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)

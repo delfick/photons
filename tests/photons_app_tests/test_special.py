@@ -1,6 +1,11 @@
 # coding: spec
 
-from photons_app.special import SpecialReference, FoundSerials, HardCodedSerials, ResolveReferencesFromFile
+from photons_app.special import (
+    SpecialReference,
+    FoundSerials,
+    HardCodedSerials,
+    ResolveReferencesFromFile,
+)
 from photons_app.errors import PhotonsAppError, DevicesNotFound
 from photons_app.test_helpers import AsyncTestCase
 from photons_app import helpers as hp
@@ -37,6 +42,7 @@ describe AsyncTestCase, "SpecialReference":
             self.find_timeout = mock.Mock(name="find_timeout")
 
         async it "transfers cancellation from find_serials":
+
             class Finder(SpecialReference):
                 async def find_serials(s, afr, *, timeout, broadcast=True):
                     f = asyncio.Future()
@@ -48,6 +54,7 @@ describe AsyncTestCase, "SpecialReference":
                 await ref.find(self.afr, timeout=self.find_timeout)
 
         async it "transfers exceptions from find_serials":
+
             class Finder(SpecialReference):
                 async def find_serials(s, afr, *, timeout, broadcast=True):
                     f = asyncio.Future()
@@ -65,7 +72,7 @@ describe AsyncTestCase, "SpecialReference":
             target1 = binascii.unhexlify(serial1)
             target2 = binascii.unhexlify(serial2)
 
-            services1 = mock.Mock(name='services1')
+            services1 = mock.Mock(name="services1")
             services2 = mock.Mock(name="services2")
 
             class Finder(SpecialReference):
@@ -80,7 +87,7 @@ describe AsyncTestCase, "SpecialReference":
         async it "only calls find_serials once":
             serial = "d073d5000001"
             target = binascii.unhexlify(serial)
-            services = mock.Mock(name='services')
+            services = mock.Mock(name="services")
 
             called = []
 
@@ -127,7 +134,9 @@ describe AsyncTestCase, "FoundSerials":
         res = await self.wait_for(ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout))
 
         self.assertEqual(res, found)
-        afr.find_devices.assert_called_once_with(broadcast=broadcast, raise_on_none=True, timeout=find_timeout)
+        afr.find_devices.assert_called_once_with(
+            broadcast=broadcast, raise_on_none=True, timeout=find_timeout
+        )
 
 describe AsyncTestCase, "HardCodedSerials":
     async before_each:
@@ -158,8 +167,9 @@ describe AsyncTestCase, "HardCodedSerials":
         self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
 
     describe "find_serials":
+
         async def assertFindSerials(self, found, serials, expected, missing):
-            broadcast = mock.Mock(name='broadcast')
+            broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
             afr = mock.Mock(name="afr")
@@ -172,11 +182,9 @@ describe AsyncTestCase, "HardCodedSerials":
 
             self.assertEqual(f, expected)
 
-            afr.find_specific_serials.assert_called_once_with(serials
-                , broadcast = broadcast
-                , raise_on_none = False
-                , timeout = find_timeout
-                )
+            afr.find_specific_serials.assert_called_once_with(
+                serials, broadcast=broadcast, raise_on_none=False, timeout=find_timeout
+            )
 
             self.assertEqual(ref.missing(f), missing)
 
@@ -195,12 +203,14 @@ describe AsyncTestCase, "HardCodedSerials":
             await self.assertFindSerials(found, serials, expected, missing)
 
         async it "doesn't call to find_specific_serials if the serials are already on the afr":
-            broadcast = mock.Mock(name='broadcast')
+            broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
             afr = mock.Mock(name="afr")
             afr.found = {self.target1: self.info1, self.target2: self.info2}
-            afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials", side_effect=AssertionError("Shouldn't be called"))
+            afr.find_specific_serials = asynctest.mock.CoroutineMock(
+                name="find_specific_serials", side_effect=AssertionError("Shouldn't be called")
+            )
 
             ref = HardCodedSerials([self.serial1])
             f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
@@ -260,8 +270,8 @@ describe AsyncTestCase, "ResolveReferencesFromFile":
         resolver.reset.assert_called_once_with()
 
         afr = mock.Mock(name="afr")
-        broadcast = mock.Mock(name='broadcast')
-        find_timeout = mock.Mock(name='find_timeout')
+        broadcast = mock.Mock(name="broadcast")
+        find_timeout = mock.Mock(name="find_timeout")
         self.assertEqual(len(resolver.find.mock_calls), 0)
 
         res = mock.Mock(name="res")

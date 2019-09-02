@@ -14,33 +14,25 @@ from collections import defaultdict
 from functools import partial
 import asyncio
 
-light1 = FakeDevice("d073d5000001"
-    , chp.default_responders(
-          power = 0
-        , color = chp.Color(0, 1, 0.3, 2500)
-        )
-    )
+light1 = FakeDevice(
+    "d073d5000001", chp.default_responders(power=0, color=chp.Color(0, 1, 0.3, 2500))
+)
 
-light2 = FakeDevice("d073d5000002"
-    , chp.default_responders(
-          power = 65535
-        , color = chp.Color(100, 1, 0.5, 2500)
-        )
-    )
+light2 = FakeDevice(
+    "d073d5000002", chp.default_responders(power=65535, color=chp.Color(100, 1, 0.5, 2500))
+)
 
-light3 = FakeDevice("d073d5000003"
-    , chp.default_responders(
-          color = chp.Color(100, 1, 0.5, 2500)
-        )
-    )
+light3 = FakeDevice("d073d5000003", chp.default_responders(color=chp.Color(100, 1, 0.5, 2500)))
 
 mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
 tearDown = mlr.tearDown
 
+
 def loop_time():
     return asyncio.get_event_loop().time()
+
 
 describe AsyncTestCase, "FromGenerator":
     use_default_loop = True
@@ -59,6 +51,7 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "is able to do a FromGenerator per serial", runner:
+
         async def gen(serial, afr, **kwargs):
             assert serial in (light1.serial, light2.serial)
             yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
@@ -66,16 +59,18 @@ describe AsyncTestCase, "FromGenerator":
         msg = FromGeneratorPerSerial(gen)
 
         expected = {
-              light1: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")]
-            , light2: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")]
-            , light3: []
-            }
+            light1: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
+            light2: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
+            light3: [],
+        }
 
         errors = []
 
         got = defaultdict(list)
         with light3.offline():
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, error_catcher=errors):
+            async for pkt, _, _ in runner.target.script(msg).run_with(
+                runner.serials, error_catcher=errors
+            ):
                 got[pkt.serial].append(pkt)
 
         assert len(runner.devices) > 0
@@ -95,16 +90,17 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "Can get results", runner:
+
         async def gen(reference, afr, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
             yield DeviceMessages.GetPower(target=light3.serial)
 
         expected = {
-              light1: [DeviceMessages.GetPower()]
-            , light2: [DeviceMessages.GetPower()]
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [DeviceMessages.GetPower()],
+            light2: [DeviceMessages.GetPower()],
+            light3: [DeviceMessages.GetPower()],
+        }
 
         got = defaultdict(list)
         async for pkt, _, _ in runner.target.script(FromGenerator(gen)).run_with(runner.serials):
@@ -123,10 +119,13 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "Sends all the messages that are yielded", runner:
+
         async def gen(reference, afr, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
+                reference, afr, **kwargs
+            ):
                 if pkt | DeviceMessages.StatePower:
                     if pkt.level == 0:
                         yield DeviceMessages.SetPower(level=65535, target=pkt.serial)
@@ -134,10 +133,10 @@ describe AsyncTestCase, "FromGenerator":
                         yield DeviceMessages.SetPower(level=0, target=pkt.serial)
 
         expected = {
-              light1: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=65535)]
-            , light2: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=0)]
-            , light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=65535)]
-            }
+            light1: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=65535)],
+            light2: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=0)],
+            light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=65535)],
+        }
 
         await self.assertScript(runner, gen, expected=expected)
 
@@ -156,6 +155,7 @@ describe AsyncTestCase, "FromGenerator":
     @mlr.test
     async it "adds exception from generator to error_catcher", runner:
         got = []
+
         def err(e):
             got.append(e)
 
@@ -171,23 +171,24 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "it can know if the message was sent successfully", runner:
+
         async def gen(reference, afr, **kwargs):
             t = yield DeviceMessages.GetPower()
-            assert (await t)
+            assert await t
 
         expected = {
-              light1: [DeviceMessages.GetPower()]
-            , light2: [DeviceMessages.GetPower()]
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [DeviceMessages.GetPower()],
+            light2: [DeviceMessages.GetPower()],
+            light3: [DeviceMessages.GetPower()],
+        }
 
-        await self.assertScript(runner, gen
-            , generator_kwargs = {"reference_override": True}
-            , expected = expected
-            )
+        await self.assertScript(
+            runner, gen, generator_kwargs={"reference_override": True}, expected=expected
+        )
 
     @mlr.test
     async it "it can know if the message was not sent successfully", runner:
+
         async def waiter(pkt, source):
             if pkt | DeviceMessages.GetPower:
                 return False
@@ -199,24 +200,27 @@ describe AsyncTestCase, "FromGenerator":
             assert not (await t)
 
         expected = {
-              light1: []
-            , light2: [DeviceMessages.GetPower()]
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [],
+            light2: [DeviceMessages.GetPower()],
+            light3: [DeviceMessages.GetPower()],
+        }
 
         errors = []
 
-        await self.assertScript(runner, gen
-            , generator_kwargs = {"reference_override": True}
-            , expected = expected
-            , message_timeout = 0.2
-            , error_catcher = errors
-            )
+        await self.assertScript(
+            runner,
+            gen,
+            generator_kwargs={"reference_override": True},
+            expected=expected,
+            message_timeout=0.2,
+            error_catcher=errors,
+        )
 
         self.assertEqual(errors, [TimedOut("Waiting for reply to a packet", serial=light1.serial)])
 
     @mlr.test
     async it "it can have a serial override", runner:
+
         async def gen(reference, afr, **kwargs):
             async def inner_gen(level, reference, afr2, **kwargs2):
                 self.assertIs(afr, afr2)
@@ -228,7 +232,9 @@ describe AsyncTestCase, "FromGenerator":
                 yield DeviceMessages.SetPower(level=level)
 
             get_power = DeviceMessages.GetPower()
-            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
+                reference, afr, **kwargs
+            ):
                 if pkt.serial == light1.serial:
                     level = 1
                 elif pkt.serial == light2.serial:
@@ -241,14 +247,12 @@ describe AsyncTestCase, "FromGenerator":
                 yield FromGenerator(partial(inner_gen, level), reference_override=pkt.serial)
 
         expected = {
-              light1: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=1)]
-            , light2: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=2)]
-            , light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=3)]
-            }
+            light1: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=1)],
+            light2: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=2)],
+            light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=3)],
+        }
 
-        await self.assertScript(runner, gen
-            , expected = expected
-            )
+        await self.assertScript(runner, gen, expected=expected)
 
     @mlr.test
     async it "it sends messages in parallel", runner:
@@ -270,10 +274,10 @@ describe AsyncTestCase, "FromGenerator":
             yield DeviceMessages.GetPower(target=light3.serial)
 
         expected = {
-              light1: [DeviceMessages.GetPower()]
-            , light2: [DeviceMessages.GetPower()]
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [DeviceMessages.GetPower()],
+            light2: [DeviceMessages.GetPower()],
+            light3: [DeviceMessages.GetPower()],
+        }
 
         start = loop_time()
         await self.assertScript(runner, gen, expected=expected)
@@ -304,14 +308,16 @@ describe AsyncTestCase, "FromGenerator":
             assert await (yield DeviceMessages.GetPower(target=light3.serial))
 
         expected = {
-              light1: [DeviceMessages.GetPower()]
-            , light2: []
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [DeviceMessages.GetPower()],
+            light2: [],
+            light3: [DeviceMessages.GetPower()],
+        }
 
         start = loop_time()
         errors = []
-        await self.assertScript(runner, gen, expected=expected, error_catcher=errors, message_timeout=0.2)
+        await self.assertScript(
+            runner, gen, expected=expected, error_catcher=errors, message_timeout=0.2
+        )
         got = list(got.values())
         self.assertEqual(len(got), 3)
         self.assertLess(got[0] - start, 0.1)
@@ -322,20 +328,23 @@ describe AsyncTestCase, "FromGenerator":
 
     @mlr.test
     async it "can provide errors", runner:
+
         async def gen(reference, afr, **kwargs):
             yield FailedToFindDevice(serial=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
             yield DeviceMessages.GetPower(target=light3.serial)
 
         expected = {
-              light1: []
-            , light2: [DeviceMessages.GetPower()]
-            , light3: [DeviceMessages.GetPower()]
-            }
+            light1: [],
+            light2: [DeviceMessages.GetPower()],
+            light3: [DeviceMessages.GetPower()],
+        }
 
         errors = []
         await self.assertScript(runner, gen, expected=expected, error_catcher=errors)
         self.assertEqual(errors, [FailedToFindDevice(serial=light1.serial)])
 
-        with self.fuzzyAssertRaisesError(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
+        with self.fuzzyAssertRaisesError(
+            BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]
+        ):
             await self.assertScript(runner, gen, expected=expected)

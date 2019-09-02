@@ -17,19 +17,23 @@ describe TestCase, "TileApplier":
 
     describe "from_user_coords":
         it "translates to top left corner":
+            # fmt: off
             coords_and_sizes = [
-                  ((1, 1), (8, 8))
-                , ((2, 2), (10, 9))
-                , ((3, 3), (6, 6))
-                ]
+                ((1, 1), (8, 8)),
+                ((2, 2), (10, 9)),
+                ((3, 3), (6, 6))
+            ]
 
             applier = TileApplier.from_user_coords(coords_and_sizes)
-            self.assertEqual(applier.coords_and_sizes
-                , [ ((8 - 4, 8 + 4), (8, 8))
-                  , ((20 - 5, int(18 + 4.5)), (10, 9))
-                  , ((18 - 3, 18 + 3), (6, 6))
-                  ]
-                )
+            self.assertEqual(
+                applier.coords_and_sizes,
+                [
+                    ((8 - 4, 8 + 4), (8, 8)),
+                    ((20 - 5, int(18 + 4.5)), (10, 9)),
+                    ((18 - 3, 18 + 3), (6, 6))
+                ]
+            )
+            # fmt: on
 
 describe TestCase, "TileApplierPattern":
     it "can apply a theme using the color func":
@@ -41,41 +45,47 @@ describe TestCase, "TileApplierPattern":
 
                 def f(i, j):
                     return ThemeColor(i * 10 + j, 1, 1, 3500)
+
                 return f
 
-        user_coords_and_sizes = [
-              ((2, 2), (6, 6))
-            , ((3, 3), (6, 6))
-            ]
+        user_coords_and_sizes = [((2, 2), (6, 6)), ((3, 3), (6, 6))]
 
         applier = Applier.from_user_coords(user_coords_and_sizes)
         tiles = applier.apply_theme(theme)
 
-        self.assertEqual([c.hue for c in tiles[0]]
-            , [ 105, 115, 125, 135, 145, 155
-              , 104, 114, 124, 134, 144, 154
-              , 103, 113, 123, 133, 143, 153
-              , 102, 112, 122, 132, 142, 152
-              , 101, 111, 121, 131, 141, 151
-              , 100, 110, 120, 130, 140, 150
-              ]
-            )
+        # fmt: off
+        self.assertEqual(
+            [c.hue for c in tiles[0]],
+            [
+                105, 115, 125, 135, 145, 155,
+                104, 114, 124, 134, 144, 154,
+                103, 113, 123, 133, 143, 153,
+                102, 112, 122, 132, 142, 152,
+                101, 111, 121, 131, 141, 151,
+                100, 110, 120, 130, 140, 150
+            ]
+        )
 
-        self.assertEqual([c.hue for c in tiles[1]]
-            , [ 171, 181, 191, 201, 211, 221
-              , 170, 180, 190, 200, 210, 220
-              , 169, 179, 189, 199, 209, 219
-              , 168, 178, 188, 198, 208, 218
-              , 167, 177, 187, 197, 207, 217
-              , 166, 176, 186, 196, 206, 216
-              ]
-            )
+        self.assertEqual(
+            [c.hue for c in tiles[1]],
+            [
+                171, 181, 191, 201, 211, 221,
+                170, 180, 190, 200, 210, 220,
+                169, 179, 189, 199, 209, 219,
+                168, 178, 188, 198, 208, 218,
+                167, 177, 187, 197, 207, 217,
+                166, 176, 186, 196, 206, 216
+            ]
+        )
 
-        self.assertEqual(applier.coords_and_sizes
-            , [ ((9, 15), (6, 6))
-              , ((15, 21), (6, 6))
-              ]
-            )
+        self.assertEqual(
+            applier.coords_and_sizes,
+            [
+                ((9, 15), (6, 6)),
+                ((15, 21), (6, 6))
+            ]
+        )
+        # fmt: on
 
     it "puts the corners of the tiles on the canvas":
         theme = Theme()
@@ -86,29 +96,30 @@ describe TestCase, "TileApplierPattern":
 
                 def f(i, j):
                     return ThemeColor(i * 10 + j, 1, 1, 3500)
+
                 return f
 
+        # fmt: off
         user_coords_and_sizes = [
-              ((2, 2), (6, 6))
-            , ((4, 3), (6, 6))
-            ]
+            ((2, 2), (6, 6)),
+            ((4, 3), (6, 6))
+        ]
+        # fmt: on
 
         applier = Applier.from_user_coords(user_coords_and_sizes)
         _, canvas = applier.apply_theme(theme, return_canvas=True)
 
-        self.assertEqual(sorted(canvas.points.keys())
-            , sorted([
-                  (9, 15), (9 + 6, 15 - 6)
-                , (21, 21), (21 + 6, 21 - 6)
-                ]
-              )
-            )
+        self.assertEqual(
+            sorted(canvas.points.keys()),
+            sorted([(9, 15), (9 + 6, 15 - 6), (21, 21), (21 + 6, 21 - 6)]),
+        )
 
         # 1 is added to the actual width and height
         self.assertEqual(canvas.width, 19)
         self.assertEqual(canvas.height, 13)
 
     it "can get a range of colors":
+
         def assertHues(got, *expect):
             self.assertEqual(len(got), len(expect))
             got_hues = [float("{:.3f}".format(c.hue)) for c in got]
@@ -132,19 +143,28 @@ describe TestCase, "TileApplierPattern":
         theme.add_hsbk(10, 1, 1, 3500)
         theme.add_hsbk(100, 1, 1, 3500)
         with no_shuffle():
-            assertHues(applier.make_colors(theme)
-                , 0.0, 2.5, 5.0, 7.5, 10.0, 32.5, 55.0, 77.5, 100.0
-                )
+            # fmt: off
+            assertHues(
+                applier.make_colors(theme),
+                0.0, 2.5, 5.0, 7.5, 10.0, 32.5, 55.0, 77.5, 100.0
+            )
+            # fmt: on
 
         with no_shuffle():
-            assertHues(applier.make_colors(theme, multiplier=4)
-                , 0.0, 2.5, 3.75, 5.0, 7.5, 8.75, 10.0, 32.5, 43.75, 55.0, 77.5, 88.75
-                )
+            # fmt: off
+            assertHues(
+                applier.make_colors(theme, multiplier=4),
+                0.0, 2.5, 3.75, 5.0, 7.5, 8.75, 10.0, 32.5, 43.75, 55.0, 77.5, 88.75
+            )
+            # fmt: on
 
         theme.add_hsbk(30, 1, 1, 3500)
         theme.add_hsbk(200, 1, 1, 3500)
 
         with no_shuffle():
-            assertHues(applier.make_colors(theme)
-                , 0.0, 5.0, 7.5, 10.0, 55.0, 77.5, 100.0, 65.0, 47.5, 30.0, 115.0, 157.5, 200.0, 200.0, 200.0
-                )
+            # fmt: off
+            assertHues(
+                applier.make_colors(theme),
+                0.0, 5.0, 7.5, 10.0, 55.0, 77.5, 100.0, 65.0, 47.5, 30.0, 115.0, 157.5, 200.0, 200.0, 200.0
+            )
+            # fmt: on

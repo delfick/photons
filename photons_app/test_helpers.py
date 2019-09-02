@@ -10,8 +10,10 @@ from unittest import mock
 import asyncio
 import os
 
+
 class BadTest(PhotonsAppError):
     desc = "bad test"
+
 
 class FakeScript(object):
     def __init__(self, target, part):
@@ -27,6 +29,7 @@ class FakeScript(object):
         async for msg in self.run_with(*args, **kwargs):
             msgs.append(msg)
         return msgs
+
 
 def print_packet_difference(one, two):
     if one != two:
@@ -44,6 +47,7 @@ def print_packet_difference(one, two):
             for k in dictw:
                 if k not in dictc:
                     print("\t\tGot key in wanted but not in what we got: {0}".format(k))
+
 
 class FakeTarget(object):
     def __init__(self, afr_maker=None):
@@ -132,8 +136,10 @@ class FakeTarget(object):
     def expect_call(self, call, result):
         self.expected_run_with.append((call, result))
 
+
 class TestCase(TestCase, DelfickErrorTestMixin):
     pass
+
 
 class AsyncTestCase(AsyncTestCase, DelfickErrorTestMixin):
     async def wait_for(self, fut, timeout=1):
@@ -141,6 +147,7 @@ class AsyncTestCase(AsyncTestCase, DelfickErrorTestMixin):
             return await asyncio.wait_for(fut, timeout=timeout)
         except asyncio.TimeoutError as error:
             assert False, "Failed to wait for future before timeout: {0}".format(error)
+
 
 def with_timeout(func):
     """
@@ -161,10 +168,13 @@ def with_timeout(func):
                 # This will assert False cause the function takes too long
                 await asyncio.sleep(20)
     """
+
     async def test(s):
         await s.wait_for(func(s))
+
     test.__name__ = func.__name__
     return test
+
 
 def assertFutCallbacks(fut, *cbs):
     callbacks = fut._callbacks
@@ -178,7 +188,9 @@ def assertFutCallbacks(fut, *cbs):
         if Context is not None:
             if callbacks:
                 assert len(callbacks) == 1, f"Expect only one context callback: got {callbacks}"
-                assert isinstance(callbacks[0], Context), f"Expected just a context callback: got {callbacks}"
+                assert isinstance(
+                    callbacks[0], Context
+                ), f"Expected just a context callback: got {callbacks}"
         else:
             assert callbacks == [], f"Expected no callbacks, got {callbacks}"
 
@@ -206,6 +218,7 @@ def assertFutCallbacks(fut, *cbs):
     for cb in cbs:
         msg = f"Expected {expected[cb]} instances of {cb}, got {counts[cb]} in {callbacks}"
         assert counts[cb] == expected[cb], msg
+
 
 @contextmanager
 def modified_env(**env):

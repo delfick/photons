@@ -1,5 +1,6 @@
 from input_algorithms.dictobj import dictobj
 
+
 def process_dictobj_signature(app, what, name, obj, options, signature, return_annotation):
     if what == "class" and issubclass(obj, dictobj):
         try:
@@ -7,7 +8,7 @@ def process_dictobj_signature(app, what, name, obj, options, signature, return_a
         except ImportError:
             pass
         else:
-            if obj in (LIFXPacket, ):
+            if obj in (LIFXPacket,):
                 return signature, return_annotation
 
         args = []
@@ -17,6 +18,7 @@ def process_dictobj_signature(app, what, name, obj, options, signature, return_a
             else:
                 args.append(f)
         return ("({0})".format(", ".join(args)), return_annotation)
+
 
 def process_dictobj_docstring(pp, what, name, obj, options, lines):
     if what == "class" and issubclass(obj, dictobj):
@@ -36,6 +38,7 @@ def process_dictobj_docstring(pp, what, name, obj, options, lines):
                 for line in reversed(for_adding):
                     lines.insert(index, line)
 
+
 def setup(app):
-    app.connect('autodoc-process-signature', process_dictobj_signature)
-    app.connect('autodoc-process-docstring', process_dictobj_docstring)
+    app.connect("autodoc-process-signature", process_dictobj_signature)
+    app.connect("autodoc-process-docstring", process_dictobj_docstring)

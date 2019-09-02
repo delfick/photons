@@ -12,6 +12,7 @@ import logging
 
 log = logging.getLogger("photons_transport.targets.base")
 
+
 class Target(dictobj.Spec):
     protocol_register = dictobj.Field(sb.overridden("{protocol_register}"), formatted=True)
     final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True)
@@ -40,6 +41,7 @@ class Target(dictobj.Spec):
             async def gen(*args, **kwargs):
                 for item in original:
                     yield item
+
             items = list(self.simplify(FromGenerator(gen, reference_override=True)))[0]
         else:
             items = items[0]

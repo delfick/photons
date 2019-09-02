@@ -1,17 +1,20 @@
 from docutils.parsers.rst import Directive
 from docutils import statemachine
 
+
 class ShowListDirective(Directive):
     has_content = True
 
     def run(self):
         want = self.content[0]
-        parts = want.split('.')
+        parts = want.split(".")
 
         if len(parts) is 1:
             thing = __import__(want)
         else:
-            thing = getattr(__import__('.'.join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1])
+            thing = getattr(
+                __import__(".".join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1]
+            )
 
         if len(self.content) > 1:
             thing = getattr(thing, self.content[1])
@@ -20,23 +23,28 @@ class ShowListDirective(Directive):
         for name in sorted(repr(t) for t in thing):
             template.append("``{0}``".format(name))
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
+
 
 class ShowDictionaryDirective(Directive):
     has_content = True
 
     def run(self):
         want = self.content[0]
-        parts = want.split('.')
+        parts = want.split(".")
 
         if len(parts) is 1:
             thing = __import__(want)
         else:
-            thing = getattr(__import__('.'.join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1])
+            thing = getattr(
+                __import__(".".join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1]
+            )
 
         if len(self.content) > 1:
             thing = getattr(thing, self.content[1])
@@ -45,23 +53,28 @@ class ShowDictionaryDirective(Directive):
         for name in sorted(thing):
             template.extend([name, "    {0}".format(repr(thing[name])), ""])
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
+
 
 class ShowRegexesDirective(Directive):
     has_content = True
 
     def run(self):
         want = self.content[0]
-        parts = want.split('.')
+        parts = want.split(".")
 
         if len(parts) is 1:
             thing = __import__(want)
         else:
-            thing = getattr(__import__('.'.join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1])
+            thing = getattr(
+                __import__(".".join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1]
+            )
 
         if len(self.content) > 1:
             thing = getattr(thing, self.content[1])
@@ -70,36 +83,45 @@ class ShowRegexesDirective(Directive):
         for name in sorted(thing):
             template.extend([name, "    ``{0}``".format(thing[name].pattern), ""])
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
+
 
 class ShowCapabilitiesDirective(Directive):
     has_content = True
 
     def run(self):
         want = self.content[0]
-        parts = want.split('.')
+        parts = want.split(".")
 
         if len(parts) is 1:
             thing = __import__(want)
         else:
-            thing = getattr(__import__('.'.join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1])
+            thing = getattr(
+                __import__(".".join(parts[:-1]), globals(), locals(), [parts[-1]], 0), parts[-1]
+            )
 
         template = []
         for name in thing.__members__:
             template.extend(
-                  [name] + [
-                      "    {0}".format(line)
-                      for line in list(self.fields_for(name, getattr(thing, name).value))
-                  ] + [""]
-                )
+                [name]
+                + [
+                    "    {0}".format(line)
+                    for line in list(self.fields_for(name, getattr(thing, name).value))
+                ]
+                + [""]
+            )
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
 
@@ -126,8 +148,9 @@ class ShowCapabilitiesDirective(Directive):
             yield "{0}{1} {2}".format(n, " " * (max_name - len(n)), v)
         yield border
 
+
 def setup(app):
-    app.add_directive('show_list', ShowListDirective)
-    app.add_directive('show_regexes', ShowRegexesDirective)
-    app.add_directive('show_dictionary', ShowDictionaryDirective)
-    app.add_directive('show_capabilities', ShowCapabilitiesDirective)
+    app.add_directive("show_list", ShowListDirective)
+    app.add_directive("show_regexes", ShowRegexesDirective)
+    app.add_directive("show_dictionary", ShowDictionaryDirective)
+    app.add_directive("show_capabilities", ShowCapabilitiesDirective)

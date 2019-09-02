@@ -17,12 +17,18 @@ describe TestCase, "Device":
         self.device = Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
     it "has property_fields":
-        self.assertEqual(self.device.property_fields, ["group_id", "group_name", "location_name", "location_id"])
+        self.assertEqual(
+            self.device.property_fields, ["group_id", "group_name", "location_name", "location_id"]
+        )
         for field in self.device.property_fields:
             self.assertEqual(getattr(self.device, field), sb.NotSpecified)
 
-        self.device.group = Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
-        self.device.location = Collection.FieldSpec().empty_normalise(typ="location", uuid="uuidl", name="meh")
+        self.device.group = Collection.FieldSpec().empty_normalise(
+            typ="group", uuid="uuidg", name="blah"
+        )
+        self.device.location = Collection.FieldSpec().empty_normalise(
+            typ="location", uuid="uuidl", name="meh"
+        )
 
         self.assertEqual(self.device.group_id, "uuidg")
         self.assertEqual(self.device.group_name, "blah")
@@ -33,8 +39,12 @@ describe TestCase, "Device":
     it "modifies as_dict to have the property_fields instead of group and location":
         self.device.label = "kitchen"
         self.device.power = "on"
-        self.device.group = Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
-        self.device.location = Collection.FieldSpec().empty_normalise(typ="location", uuid="uuidl", name="meh")
+        self.device.group = Collection.FieldSpec().empty_normalise(
+            typ="group", uuid="uuidg", name="blah"
+        )
+        self.device.location = Collection.FieldSpec().empty_normalise(
+            typ="location", uuid="uuidl", name="meh"
+        )
         self.device.hue = 20
         self.device.saturation = 0.5
         self.device.brightness = 0.6
@@ -44,24 +54,26 @@ describe TestCase, "Device":
         self.device.product_identifier = "color_a19"
         self.device.cap = ["multizone", "color"]
 
-        self.assertEqual(self.device.as_dict()
-            , { "serial": "d073d5000001"
-              , "label": "kitchen"
-              , "power": "on"
-              , "group_id": "uuidg"
-              , "group_name": "blah"
-              , "location_id": "uuidl"
-              , "location_name": "meh"
-              , "hue": 20
-              , "saturation": 0.5
-              , "brightness": 0.6
-              , "kelvin": 2500
-              , "firmware_version": "1.2"
-              , "product_id": 22
-              , "product_identifier": "color_a19"
-              , 'cap': ["multizone", "color"]
-              }
-            )
+        self.assertEqual(
+            self.device.as_dict(),
+            {
+                "serial": "d073d5000001",
+                "label": "kitchen",
+                "power": "on",
+                "group_id": "uuidg",
+                "group_name": "blah",
+                "location_id": "uuidl",
+                "location_name": "meh",
+                "hue": 20,
+                "saturation": 0.5,
+                "brightness": 0.6,
+                "kelvin": 2500,
+                "firmware_version": "1.2",
+                "product_id": 22,
+                "product_identifier": "color_a19",
+                "cap": ["multizone", "color"],
+            },
+        )
 
     describe "matches":
         it "says yes if the filter matches all":
@@ -91,39 +103,46 @@ describe TestCase, "Device":
 
             def has(field):
                 return field not in ("group", "location")
+
             filtr.has.side_effect = has
 
             self.device.label = "kitchen"
             self.device.power = "on"
             self.device.product_id = 22
-            self.device.group = Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
+            self.device.group = Collection.FieldSpec().empty_normalise(
+                typ="group", uuid="uuidg", name="blah"
+            )
 
             assert self.device.matches(filtr)
 
-            self.assertEqual(sorted(filtr.has.mock_calls)
-                , sorted([
-                      mock.call("label")
-                    , mock.call("power")
-                    , mock.call("product_id")
-                    , mock.call("group")
-                    , mock.call("group_id")
-                    , mock.call("group_name")
-                    , mock.call("serial")
+            self.assertEqual(
+                sorted(filtr.has.mock_calls),
+                sorted(
+                    [
+                        mock.call("label"),
+                        mock.call("power"),
+                        mock.call("product_id"),
+                        mock.call("group"),
+                        mock.call("group_id"),
+                        mock.call("group_name"),
+                        mock.call("serial"),
                     ]
-                  )
-                )
+                ),
+            )
 
-            self.assertEqual(sorted(filtr.matches.mock_calls)
-                , sorted([
-                      mock.call("label", "kitchen")
-                    , mock.call("power", "on")
-                    , mock.call("product_id", 22)
-                    , mock.call("group_id", "uuidg")
-                    , mock.call("group_name", "blah")
-                    , mock.call("serial", "d073d5000001")
+            self.assertEqual(
+                sorted(filtr.matches.mock_calls),
+                sorted(
+                    [
+                        mock.call("label", "kitchen"),
+                        mock.call("power", "on"),
+                        mock.call("product_id", 22),
+                        mock.call("group_id", "uuidg"),
+                        mock.call("group_name", "blah"),
+                        mock.call("serial", "d073d5000001"),
                     ]
-                  )
-                )
+                ),
+            )
 
     describe "set_from_pkt":
         before_each:
@@ -131,13 +150,8 @@ describe TestCase, "Device":
 
         it "can take in a LightState":
             pkt = LightMessages.LightState.empty_normalise(
-                  label = "kitchen"
-                , power = 0
-                , hue = 250
-                , saturation = 0.6
-                , brightness = 0.7
-                , kelvin = 4500
-                )
+                label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LIGHT_STATE)
 
@@ -150,23 +164,16 @@ describe TestCase, "Device":
 
             # And test when power is on
             pkt = LightMessages.LightState.empty_normalise(
-                  label = "kitchen"
-                , power = 65535
-                , hue = 250
-                , saturation = 0.6
-                , brightness = 0.7
-                , kelvin = 4500
-                )
+                label="kitchen", power=65535, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
+            )
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LIGHT_STATE)
             self.assertEqual(self.device.power, "on")
 
         it "can take in StateGroup":
             group_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.empty_normalise(
-                  group = group_uuid
-                , updated_at = 1
-                , label = "group1"
-                )
+                group=group_uuid, updated_at=1, label="group1"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
             self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid])
@@ -176,10 +183,8 @@ describe TestCase, "Device":
             group = self.device.group
 
             pkt = DeviceMessages.StateGroup.empty_normalise(
-                  group = group_uuid
-                , updated_at = 2
-                , label = "group1renamed"
-                )
+                group=group_uuid, updated_at=2, label="group1renamed"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
             self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid])
@@ -189,10 +194,8 @@ describe TestCase, "Device":
 
             group_uuid2 = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.empty_normalise(
-                  group = group_uuid2
-                , updated_at = 2
-                , label = "group2"
-                )
+                group=group_uuid2, updated_at=2, label="group2"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
             self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid2])
@@ -206,39 +209,39 @@ describe TestCase, "Device":
         it "can take in StateLocation":
             location_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateLocation.empty_normalise(
-                  location = location_uuid
-                , updated_at = 1
-                , label = "location1"
-                )
+                location=location_uuid, updated_at=1, label="location1"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(self.device.location, self.collections.collections["location"][location_uuid])
+            self.assertEqual(
+                self.device.location, self.collections.collections["location"][location_uuid]
+            )
             self.assertEqual(self.device.location_id, location_uuid)
             self.assertEqual(self.device.location_name, "location1")
 
             location = self.device.location
 
             pkt = DeviceMessages.StateLocation.empty_normalise(
-                  location = location_uuid
-                , updated_at = 2
-                , label = "location1renamed"
-                )
+                location=location_uuid, updated_at=2, label="location1renamed"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(self.device.location, self.collections.collections["location"][location_uuid])
+            self.assertEqual(
+                self.device.location, self.collections.collections["location"][location_uuid]
+            )
             self.assertIs(self.device.location, location)
             self.assertEqual(self.device.location_id, location_uuid)
             self.assertEqual(self.device.location_name, "location1renamed")
 
             location_uuid2 = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateLocation.empty_normalise(
-                  location = location_uuid2
-                , updated_at = 2
-                , label = "location2"
-                )
+                location=location_uuid2, updated_at=2, label="location2"
+            )
 
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(self.device.location, self.collections.collections["location"][location_uuid2])
+            self.assertEqual(
+                self.device.location, self.collections.collections["location"][location_uuid2]
+            )
             self.assertIsNot(self.device.location, location)
             self.assertEqual(self.device.location_id, location_uuid2)
             self.assertEqual(self.device.location_name, "location2")
@@ -247,13 +250,17 @@ describe TestCase, "Device":
             assert location_uuid2 in self.collections.collections["location"]
 
         it "takes in StateHostFirmware":
-            pkt = DeviceMessages.StateHostFirmware.empty_normalise(version_major=1, version_minor=20)
+            pkt = DeviceMessages.StateHostFirmware.empty_normalise(
+                version_major=1, version_minor=20
+            )
             self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.FIRMWARE)
             self.assertEqual(self.device.firmware_version, "1.20")
 
         it "takes in StateVersion":
             pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
-            capability = Capability.FieldSpec().empty_normalise(name="A19", company="lifx", identifier="lifx_product_a19")
+            capability = Capability.FieldSpec().empty_normalise(
+                name="A19", company="lifx", identifier="lifx_product_a19"
+            )
             capability_for_ids = mock.Mock(name="capability_for_ids", return_value=capability)
 
             with mock.patch("photons_device_finder.capability_for_ids", capability_for_ids):
@@ -261,18 +268,30 @@ describe TestCase, "Device":
 
             self.assertEqual(self.device.product_id, 22)
             self.assertEqual(self.device.product_identifier, "lifx_product_a19")
-            self.assertEqual(self.device.cap, ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"])
+            self.assertEqual(
+                self.device.cap,
+                ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
+            )
 
             capability_for_ids.assert_called_once_with(22, 1)
 
         it "knows about all the capabilities":
             pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
-            capability = Capability.FieldSpec().empty_normalise(name="A19", company="lifx", identifier="lifx_product_a19"
-                , has_color=True, has_ir=True, has_multizone=True, has_chain=True, has_variable_color_temp=True
-                )
+            capability = Capability.FieldSpec().empty_normalise(
+                name="A19",
+                company="lifx",
+                identifier="lifx_product_a19",
+                has_color=True,
+                has_ir=True,
+                has_multizone=True,
+                has_chain=True,
+                has_variable_color_temp=True,
+            )
             capability_for_ids = mock.Mock(name="capability_for_ids", return_value=capability)
 
             with mock.patch("photons_device_finder.capability_for_ids", capability_for_ids):
                 self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.VERSION)
 
-            self.assertEqual(self.device.cap, ["chain", "color", "ir", "multizone", "variable_color_temp"])
+            self.assertEqual(
+                self.device.cap, ["chain", "color", "ir", "multizone", "variable_color_temp"]
+            )

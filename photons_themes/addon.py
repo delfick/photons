@@ -17,24 +17,30 @@ from input_algorithms.meta import Meta
 from collections import defaultdict
 import logging
 
-@option_merge_addon_hook(extras=[
-      ("lifx.photons", "products_registry")
-    , ("lifx.photons", "messages")
-    , ("lifx.photons", "colour")
-    , ("lifx.photons", "control")
-    ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "products_registry"),
+        ("lifx.photons", "messages"),
+        ("lifx.photons", "colour"),
+        ("lifx.photons", "control"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 __shortdesc__ = "Determine how to apply themes to devices"
 
 log = logging.getLogger("photons_themes")
+
 
 class Color(dictobj.Spec):
     hue = dictobj.Field(sb.integer_spec(), wrapper=sb.required)
     saturation = dictobj.Field(sb.float_spec(), wrapper=sb.required)
     brightness = dictobj.Field(sb.float_spec(), wrapper=sb.required)
     kelvin = dictobj.Field(sb.integer_spec(), wrapper=sb.required)
+
 
 class Options(dictobj.Spec):
     colors = dictobj.Field(sb.listof(Color.FieldSpec()), wrapper=sb.required)
@@ -53,6 +59,7 @@ class Options(dictobj.Spec):
                 o[key] = self[key]
         return o
 
+
 @an_action(needs_target=True, special_reference=True)
 async def apply_theme(collector, target, reference, artifact, **kwargs):
     """
@@ -70,10 +77,13 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
 
     And you may also supply ``hue``, ``saturation``, ``brightness`` and ``kelvin`` to override the specified colors.
     """
-    options = Options.FieldSpec().normalise(Meta.empty(), collector.configuration["photons_app"].extra_as_json)
+    options = Options.FieldSpec().normalise(
+        Meta.empty(), collector.configuration["photons_app"].extra_as_json
+    )
 
     async with target.session() as afr:
         await do_apply_theme(target, reference, afr, options)
+
 
 async def do_apply_theme(target, reference, afr, options):
     aps = appliers[options.theme]
@@ -83,7 +93,9 @@ async def do_apply_theme(target, reference, afr, options):
         theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
     info = defaultdict(dict)
-    async for pkt, _, _ in target.script([DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()]).run_with(reference, afr):
+    async for pkt, _, _ in target.script(
+        [DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()]
+    ).run_with(reference, afr):
         if pkt | DeviceMessages.StateVersion:
             info[pkt.serial]["capability"] = capability_for_ids(pkt.product, pkt.vendor)
         elif pkt | DeviceMessages.StateHostFirmware:
@@ -100,15 +112,23 @@ async def do_apply_theme(target, reference, afr, options):
         if capability.has_multizone:
             log.info(hp.lc("Found a strip", serial=serial))
             if firmware and capability.has_extended_multizone(*firmware):
-                t = hp.async_as_background(apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides))
+                t = hp.async_as_background(
+                    apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides)
+                )
             else:
-                t = hp.async_as_background(apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides))
+                t = hp.async_as_background(
+                    apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides)
+                )
         elif capability.has_chain:
             log.info(hp.lc("Found a tile", serial=serial))
-            t = hp.async_as_background(apply_tile(aps["2d"], target, afr, serial, theme, options.overrides))
+            t = hp.async_as_background(
+                apply_tile(aps["2d"], target, afr, serial, theme, options.overrides)
+            )
         else:
             log.info(hp.lc("Found a light", serial=serial))
-            t = hp.async_as_background(apply_light(aps["0d"], target, afr, serial, theme, options.overrides))
+            t = hp.async_as_background(
+                apply_light(aps["0d"], target, afr, serial, theme, options.overrides)
+            )
 
         tasks.append((serial, t))
 
@@ -124,9 +144,12 @@ async def do_apply_theme(target, reference, afr, options):
 
     return results
 
+
 async def apply_zone_extended(applier, target, afr, serial, theme, overrides):
     length = None
-    async for pkt, _, _ in target.script(MultiZoneMessages.GetExtendedColorZones()).run_with(serial, afr):
+    async for pkt, _, _ in target.script(MultiZoneMessages.GetExtendedColorZones()).run_with(
+        serial, afr
+    ):
         if pkt | MultiZoneMessages.StateExtendedColorZones:
             length = pkt.zones_count
 
@@ -140,17 +163,18 @@ async def apply_zone_extended(applier, target, afr, serial, theme, overrides):
             colors.append(hsbk.as_dict())
 
     set_zones = MultiZoneMessages.SetExtendedColorZones(
-          zone_index = 0
-        , colors_count = len(colors)
-        , colors = colors
-        , duration = overrides.get("duration", 1)
-        , res_required = False
-        , ack_required = True
-        )
+        zone_index=0,
+        colors_count=len(colors),
+        colors=colors,
+        duration=overrides.get("duration", 1),
+        res_required=False,
+        ack_required=True,
+    )
 
     set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
 
     await target.script([set_power, set_zones]).run_with_all(serial, afr)
+
 
 async def apply_zone_old(applier, target, afr, serial, theme, overrides):
     length = None
@@ -165,27 +189,35 @@ async def apply_zone_old(applier, target, afr, serial, theme, overrides):
 
     messages = []
     for (start_index, end_index), hsbk in applier(length).apply_theme(theme):
-        messages.append(MultiZoneMessages.SetColorZones(
-              start_index=start_index
-            , end_index=end_index
-            , hue = hsbk.hue
-            , saturation = hsbk.saturation
-            , brightness = hsbk.brightness
-            , kelvin = hsbk.kelvin
-            , duration = overrides.get("duration", 1)
-            , res_required = False
-            , ack_required = True
-            ))
+        messages.append(
+            MultiZoneMessages.SetColorZones(
+                start_index=start_index,
+                end_index=end_index,
+                hue=hsbk.hue,
+                saturation=hsbk.saturation,
+                brightness=hsbk.brightness,
+                kelvin=hsbk.kelvin,
+                duration=overrides.get("duration", 1),
+                res_required=False,
+                ack_required=True,
+            )
+        )
 
     set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)
     await target.script([set_power, pipeline]).run_with_all(serial, afr)
 
+
 async def apply_light(applier, target, afr, serial, theme, overrides):
     color = applier().apply_theme(theme)
-    s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(color.kelvin, color.hue, color.saturation, color.brightness)
+    s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(
+        color.kelvin, color.hue, color.saturation, color.brightness
+    )
     set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-    await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(serial, afr)
+    await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(
+        serial, afr
+    )
+
 
 async def apply_tile(applier, target, afr, serial, theme, overrides):
     chain = []
@@ -203,22 +235,34 @@ async def apply_tile(applier, target, afr, serial, theme, overrides):
     coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in chain]
 
     messages = []
-    for i, (hsbks, coords_and_size) in enumerate(zip(applier.from_user_coords(coords_and_sizes).apply_theme(theme), coords_and_sizes)):
+    for i, (hsbks, coords_and_size) in enumerate(
+        zip(applier.from_user_coords(coords_and_sizes).apply_theme(theme), coords_and_sizes)
+    ):
         colors = [
-            { "hue": overrides.get("hue", hsbk.hue)
-            , "saturation": overrides.get("saturation", hsbk.saturation)
-            , "brightness": overrides.get("brightness", hsbk.brightness)
-            , "kelvin": overrides.get("kelvin", hsbk.kelvin)
-            } for hsbk in hsbks
+            {
+                "hue": overrides.get("hue", hsbk.hue),
+                "saturation": overrides.get("saturation", hsbk.saturation),
+                "brightness": overrides.get("brightness", hsbk.brightness),
+                "kelvin": overrides.get("kelvin", hsbk.kelvin),
+            }
+            for hsbk in hsbks
         ]
 
         colors = reorient(colors, orientations.get(i, O.RightSideUp))
 
-        messages.append(TileMessages.Set64(
-              tile_index=i, length=1, x=0, y=0, width=coords_and_size[1][0], duration=overrides.get("duration", 1), colors=colors
-            , res_required = False
-            , ack_required = True
-            ))
+        messages.append(
+            TileMessages.Set64(
+                tile_index=i,
+                length=1,
+                x=0,
+                y=0,
+                width=coords_and_size[1][0],
+                duration=overrides.get("duration", 1),
+                colors=colors,
+                res_required=False,
+                ack_required=True,
+            )
+        )
 
     set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
     pipeline = Pipeline(*messages, spread=0.005)

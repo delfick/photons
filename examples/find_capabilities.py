@@ -6,7 +6,8 @@ from photons_messages import DeviceMessages
 
 collector = library_setup()
 
-lan_target = collector.configuration['target_register'].resolve("lan")
+lan_target = collector.configuration["target_register"].resolve("lan")
+
 
 async def doit():
     async for pkt, _, _ in lan_target.script(DeviceMessages.GetVersion()).run_with(FoundSerials()):
@@ -17,6 +18,7 @@ async def doit():
                 pass
             else:
                 print("{}: {}".format(pkt.serial, cap))
+
 
 loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

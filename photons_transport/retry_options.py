@@ -1,6 +1,7 @@
 import asyncio
 import time
 
+
 class RetryIterator:
     """
     An async generator to help with retries.
@@ -38,6 +39,7 @@ class RetryIterator:
     we should end is less than this amount. We will also use get_next_time() again if the time between
     now and the next time is less than min_wait
     """
+
     def __init__(self, end_at, get_next_time, min_wait=0.1, get_now=time.time):
         self.next = None
         self.end_at = end_at
@@ -80,6 +82,7 @@ class RetryIterator:
         loop.call_later(timeout, f.cancel)
         await asyncio.wait([f])
 
+
 class RetryOptions:
     """
     Options for working out how long to wait for replies to our messages
@@ -120,6 +123,7 @@ class RetryOptions:
         So ``[(0.1, 0.1), (0.2, 0.5), (0.5, 3)]`` would go
         ``0.1, 0.3, 0.5, 1, 1.5, 2, 2.5, 3, 3, 3, ...``
     """
+
     finish_multi_gap = 0.4
     gap_between_results = 0.35
     gap_between_ack_and_res = 0.2

@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+
 class Character:
     colors = {}
 
@@ -15,7 +16,7 @@ class Character:
         return len(self.char.split("\n"))
 
     def get_color_func(self, fill_color):
-        pixels = self.char.split('\n')
+        pixels = self.char.split("\n")
 
         def get_color(x, y):
             pixel = pixels[y][x]
@@ -25,6 +26,7 @@ class Character:
                 return self.colors[pixel]
 
         return get_color
+
 
 def Space(width):
     rows = []

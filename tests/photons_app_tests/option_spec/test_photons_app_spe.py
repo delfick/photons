@@ -15,8 +15,10 @@ describe TestCase, "PhotonsAppSpec":
     before_each:
         self.spec = PhotonsAppSpec()
         self.collector = mock.Mock(name="collector")
-        self.final_future = mock.Mock(name='final_future')
-        self.meta = Meta({"collector": self.collector, "final_future": self.final_future}, []).at("options")
+        self.final_future = mock.Mock(name="final_future")
+        self.meta = Meta({"collector": self.collector, "final_future": self.final_future}, []).at(
+            "options"
+        )
 
     describe "target_name_spec":
         before_each:
@@ -50,7 +52,7 @@ describe TestCase, "PhotonsAppSpec":
 
     describe "target_register_spec":
         it "gets us a TargetRegister":
-            register = self.spec.target_register_spec.normalise(self.meta.at('target_register'), {})
+            register = self.spec.target_register_spec.normalise(self.meta.at("target_register"), {})
             assert isinstance(register, TargetRegister)
             self.assertIs(register.collector, self.collector)
 
@@ -58,9 +60,9 @@ describe TestCase, "PhotonsAppSpec":
         it "gets us a dictionary of targets":
             targets = {"one": {"type": "blah", "options": {"one": 2}}, "two": {"type": "meh"}}
             expected = {
-                  "one": Target(type="blah", options={"one": 2}, optional=False)
-                , "two": Target(type="meh", options={}, optional=False)
-                }
+                "one": Target(type="blah", options={"one": 2}, optional=False),
+                "two": Target(type="meh", options={}, optional=False),
+            }
 
             res = self.spec.targets_spec.normalise(self.meta, targets)
             self.assertEqual(res, expected)

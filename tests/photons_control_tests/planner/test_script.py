@@ -13,19 +13,14 @@ from photons_transport.fake import FakeDevice
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
-light1 = FakeDevice("d073d5000001"
-    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
-        , power = 0
-        , infrared = 100
-        )
-    )
+light1 = FakeDevice(
+    "d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, power=0, infrared=100)
+)
 
-light2 = FakeDevice("d073d5000002"
-    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
-        , power = 65535
-        , infrared = 0
-        )
-    )
+light2 = FakeDevice(
+    "d073d5000002",
+    chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, power=65535, infrared=0),
+)
 
 mlr = chp.ModuleLevelRunner([light1, light2])
 
@@ -51,7 +46,9 @@ describe AsyncTestCase, "WithSender":
         wsmsg4 = WithSender(msg2, key4, light2.serial)
 
         got = {}
-        async for k, pkt in runner.target.script([wsmsg1, wsmsg2, wsmsg3, wsmsg4]).run_with(runner.serials):
+        async for k, pkt in runner.target.script([wsmsg1, wsmsg2, wsmsg3, wsmsg4]).run_with(
+            runner.serials
+        ):
             assert k not in got
             got[k] = pkt
 

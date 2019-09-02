@@ -23,14 +23,7 @@ describe TestCase, "Effects":
             Effects.make("__dict__")
 
     it "has built in effects":
-        available = [
-              "pulse"
-            , "sine"
-            , "half_sine"
-            , "triangle"
-            , "saw"
-            , "breathe"
-            ]
+        available = ["pulse", "sine", "half_sine", "triangle", "saw", "breathe"]
 
         for effect in available:
             assert hasattr(Effects, effect)

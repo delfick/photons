@@ -14,7 +14,9 @@ import time
 
 describe AsyncTestCase, "Result":
     async before_each:
-        self.request = mock.NonCallableMock(name="request", spec=["Meta", "res_required", "ack_required"])
+        self.request = mock.NonCallableMock(
+            name="request", spec=["Meta", "res_required", "ack_required"]
+        )
         self.original = mock.Mock(name="original")
         self.Meta = mock.NonCallableMock(name="Meta", spec=["multi"])
         self.request.Meta = self.Meta
@@ -96,6 +98,7 @@ describe AsyncTestCase, "Result":
             self.assertEqual(len(add_ack.mock_calls), 0)
 
     describe "add_ack":
+
         def add_ack(self, res_required, did_broadcast, now, already_done=False):
             self.request.res_required = res_required
 
@@ -137,14 +140,18 @@ describe AsyncTestCase, "Result":
 
         async it "sets last_ack_received":
             now = time.time()
-            result, check_result, schedule_finisher = self.add_ack(res_required=True, did_broadcast=False, now=now, already_done=True)
+            result, check_result, schedule_finisher = self.add_ack(
+                res_required=True, did_broadcast=False, now=now, already_done=True
+            )
             await check_result()
             self.assertEqual(result.last_ack_received, now)
             self.assertIs(result.last_res_received, None)
 
         async it "does nothing if already done when res_required is False":
             now = time.time()
-            result, check_result, schedule_finisher = self.add_ack(res_required=False, did_broadcast=False, now=now, already_done=True)
+            result, check_result, schedule_finisher = self.add_ack(
+                res_required=False, did_broadcast=False, now=now, already_done=True
+            )
             self.assertEqual(result.last_ack_received, now)
             self.assertIs(result.last_res_received, None)
 
@@ -153,7 +160,9 @@ describe AsyncTestCase, "Result":
 
         async it "uses schedule_finisher if not res_required and we did_broadcast":
             now = time.time()
-            result, check_result, schedule_finisher = self.add_ack(res_required=False, did_broadcast=True, now=now, already_done=False)
+            result, check_result, schedule_finisher = self.add_ack(
+                res_required=False, did_broadcast=True, now=now, already_done=False
+            )
             self.assertEqual(result.last_ack_received, now)
             self.assertIs(result.last_res_received, None)
 
@@ -162,7 +171,9 @@ describe AsyncTestCase, "Result":
 
         async it "finishes the result if not did_broadcast and don't need res":
             now = time.time()
-            result, check_result, schedule_finisher = self.add_ack(res_required=False, did_broadcast=False, now=now, already_done=False)
+            result, check_result, schedule_finisher = self.add_ack(
+                res_required=False, did_broadcast=False, now=now, already_done=False
+            )
             self.assertEqual(result.last_ack_received, now)
             self.assertIs(result.last_res_received, None)
 
@@ -172,7 +183,9 @@ describe AsyncTestCase, "Result":
         async it "does nothing if not finished and need res":
             for did_broadcast in (True, False):
                 now = time.time()
-                result, check_result, schedule_finisher = self.add_ack(res_required=True, did_broadcast=did_broadcast, now=now, already_done=False)
+                result, check_result, schedule_finisher = self.add_ack(
+                    res_required=True, did_broadcast=did_broadcast, now=now, already_done=False
+                )
                 self.assertEqual(result.last_ack_received, now)
                 self.assertIs(result.last_res_received, None)
 
@@ -180,6 +193,7 @@ describe AsyncTestCase, "Result":
                 self.assertEqual(len(schedule_finisher.mock_calls), 0)
 
     describe "add_result":
+
         def add_result(self, expected_num, results, now, already_done=False):
             t = mock.Mock(name="t", return_value=now)
             existing_result = mock.Mock(name="existing_result")
@@ -224,8 +238,8 @@ describe AsyncTestCase, "Result":
         async it "sets last_res_received":
             now = time.time()
             result, check_result, added_res, schedule_finisher = self.add_result(
-                  expected_num=1, results=[], now=now, already_done=True
-                )
+                expected_num=1, results=[], now=now, already_done=True
+            )
 
             await check_result()
             self.assertEqual(result.last_res_received, now)
@@ -240,8 +254,8 @@ describe AsyncTestCase, "Result":
             for expected_num, results in ([-1, [one, two]], [1, [one]], [1, []]):
                 for done in (True, "exception", "cancelled"):
                     result, check_result, added_res, schedule_finisher = self.add_result(
-                          expected_num=expected_num, results=results, now=now, already_done=done
-                        )
+                        expected_num=expected_num, results=results, now=now, already_done=done
+                    )
 
                     await check_result()
                     self.assertEqual(len(schedule_finisher.mock_calls), 0)
@@ -253,8 +267,8 @@ describe AsyncTestCase, "Result":
             one = mock.Mock(name="one")
 
             result, check_result, added_res, schedule_finisher = self.add_result(
-                  expected_num=2, results=[one], now=now, already_done=False
-                )
+                expected_num=2, results=[one], now=now, already_done=False
+            )
             self.assertEqual(result.last_res_received, now)
             self.assertIs(result.last_ack_received, None)
 
@@ -267,8 +281,8 @@ describe AsyncTestCase, "Result":
             one = mock.Mock(name="one")
 
             result, check_result, added_res, schedule_finisher = self.add_result(
-                  expected_num=-1, results=[one], now=now, already_done=False
-                )
+                expected_num=-1, results=[one], now=now, already_done=False
+            )
             self.assertEqual(result.last_res_received, now)
             self.assertIs(result.last_ack_received, None)
 
@@ -281,8 +295,8 @@ describe AsyncTestCase, "Result":
             one = mock.Mock(name="one")
 
             result, check_result, added_res, schedule_finisher = self.add_result(
-                  expected_num=3, results=[one], now=now, already_done=False
-                )
+                expected_num=3, results=[one], now=now, already_done=False
+            )
             self.assertEqual(result.last_res_received, now)
             self.assertIs(result.last_ack_received, None)
 
@@ -291,6 +305,7 @@ describe AsyncTestCase, "Result":
 
     describe "schedule_finisher":
         async it "calls maybe_finish after finish_multi_gap with the current value for attr":
+
             class Options(RetryOptions):
                 finish_multi_gap = 0.1
 
@@ -304,6 +319,7 @@ describe AsyncTestCase, "Result":
                 self.assertIs(current, last_ack_received)
                 self.assertEqual(attr, "last_ack_received")
                 fut.set_result(True)
+
             maybe_finish = mock.Mock(name="maybe_finish", side_effect=maybe_finish)
 
             now = time.time()
@@ -378,6 +394,7 @@ describe AsyncTestCase, "Result":
             self.assertIs(result._determine_num_results(), num_results)
 
         async it "says -1 if we have multi but no matching packets":
+
             class Packet:
                 def __init__(self, num, count):
                     self.num = num
@@ -389,10 +406,7 @@ describe AsyncTestCase, "Result":
             PacketOne = Packet(1, 10)
             PacketTwo = Packet(2, 20)
 
-            multi = MultiOptions(
-                  lambda req: PacketTwo
-                , lambda req, res: res.count
-                )
+            multi = MultiOptions(lambda req: PacketTwo, lambda req, res: res.count)
 
             result = Result(self.request, False, RetryOptions())
             result.results = [(PacketOne, None, None), (PacketOne, None, None)]
@@ -401,6 +415,7 @@ describe AsyncTestCase, "Result":
             assert not hasattr(result, "_num_results")
 
         async it "uses multi options to get a number which is then cached":
+
             class Packet:
                 def __init__(self, num, count):
                     self.num = num
@@ -415,7 +430,9 @@ describe AsyncTestCase, "Result":
             PacketTwo = Packet(2, count)
 
             determine_res_packet = mock.Mock(name="determine_res_packet", return_value=PacketTwo)
-            adjust_expected_number = mock.Mock(name="adjust_expected_number", side_effect=lambda req, res: res.count)
+            adjust_expected_number = mock.Mock(
+                name="adjust_expected_number", side_effect=lambda req, res: res.count
+            )
             self.request.Meta.multi = MultiOptions(determine_res_packet, adjust_expected_number)
 
             result = Result(self.request, False, RetryOptions())
@@ -430,6 +447,7 @@ describe AsyncTestCase, "Result":
             self.assertIs(result._num_results, count)
 
         async it "uses first matching packet when adjusting the number":
+
             class Packet:
                 def __init__(self, num, count):
                     self.num = num
@@ -444,7 +462,9 @@ describe AsyncTestCase, "Result":
             PacketTwo = Packet(2, count)
 
             determine_res_packet = mock.Mock(name="determine_res_packet", return_value=PacketTwo)
-            adjust_expected_number = mock.Mock(name="adjust_expected_number", side_effect=lambda req, res: res.count)
+            adjust_expected_number = mock.Mock(
+                name="adjust_expected_number", side_effect=lambda req, res: res.count
+            )
             self.request.Meta.multi = MultiOptions(determine_res_packet, adjust_expected_number)
 
             result = Result(self.request, False, RetryOptions())
@@ -485,11 +505,24 @@ describe AsyncTestCase, "Result":
                     _determine_num_results.assert_called_once_with()
 
     describe "wait_for_result":
-        def wait_for_result(self, ack_required, res_required, retry_options, now, last_ack_received, last_res_received, results, num_results):
+
+        def wait_for_result(
+            self,
+            ack_required,
+            res_required,
+            retry_options,
+            now,
+            last_ack_received,
+            last_res_received,
+            results,
+            num_results,
+        ):
             self.request.ack_required = ack_required
             self.request.res_required = res_required
 
-            retry_options = mock.NonCallableMock(name="retry_options", spec=retry_options.keys(), **retry_options)
+            retry_options = mock.NonCallableMock(
+                name="retry_options", spec=retry_options.keys(), **retry_options
+            )
             with mock.patch.object(Result, "num_results", num_results):
                 result = Result(self.request, False, retry_options)
                 result.results = results
@@ -506,16 +539,31 @@ describe AsyncTestCase, "Result":
                     for results in ([], [1]):
                         for now in (time.time(), time.time() - 20, time.time() + 20):
                             for num_results in (-1, 0, 1):
-                                assert not self.wait_for_result(ack_required, False, {}, now, None, None, results, num_results)
+                                assert not self.wait_for_result(
+                                    ack_required, False, {}, now, None, None, results, num_results
+                                )
 
-                                assert not self.wait_for_result(ack_required, False, {}, now, None, 1, results, num_results)
+                                assert not self.wait_for_result(
+                                    ack_required, False, {}, now, None, 1, results, num_results
+                                )
 
-                                assert not self.wait_for_result(ack_required, False, {}, now, None, now + 5, results, num_results)
+                                assert not self.wait_for_result(
+                                    ack_required,
+                                    False,
+                                    {},
+                                    now,
+                                    None,
+                                    now + 5,
+                                    results,
+                                    num_results,
+                                )
 
         describe "with just res_required":
             async it "says no if we haven't had a result yet":
                 for num_results in (-1, 0, 1):
-                    assert not self.wait_for_result(False, True, {}, time.time(), None, None, [], num_results)
+                    assert not self.wait_for_result(
+                        False, True, {}, time.time(), None, None, [], num_results
+                    )
 
             async it "says yes if num_results is -1 and we have a result":
                 assert self.wait_for_result(False, True, {}, time.time(), None, 1, [], -1)
@@ -546,18 +594,24 @@ describe AsyncTestCase, "Result":
             async it "says yes if we have results":
                 results = mock.Mock(name="results")
                 for num_results in (-1, 0, 1):
-                    assert self.wait_for_result(True, True, {}, time.time(), 1, 1, results, num_results)
+                    assert self.wait_for_result(
+                        True, True, {}, time.time(), 1, 1, results, num_results
+                    )
 
             async it "says yes if it's been less than gap_between_ack_and_res since ack and no results":
                 now = time.time()
                 last = time.time() - 0.1
                 retry_options = {"gap_between_ack_and_res": 0.2}
                 for num_results in (-1, 0, 1):
-                    assert self.wait_for_result(True, True, retry_options, now, last, None, [], num_results)
+                    assert self.wait_for_result(
+                        True, True, retry_options, now, last, None, [], num_results
+                    )
 
             async it "says yes if it's been greater than gap_between_ack_and_res since ack and no results":
                 now = time.time()
                 last = time.time() - 0.3
                 retry_options = {"gap_between_ack_and_res": 0.2}
                 for num_results in (-1, 0, 1):
-                    assert not self.wait_for_result(True, True, retry_options, now, last, None, [], num_results)
+                    assert not self.wait_for_result(
+                        True, True, retry_options, now, last, None, [], num_results
+                    )

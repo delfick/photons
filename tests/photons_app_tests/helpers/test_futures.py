@@ -68,6 +68,7 @@ describe AsyncTestCase, "ResettableFuture":
             class Thing:
                 def done3(s, fut):
                     called.append(3)
+
             thing = Thing()
 
             fut = hp.ResettableFuture()
@@ -232,7 +233,7 @@ describe AsyncTestCase, "ResettableFuture":
             fut.add_done_callback(on_done2)
 
             self.assertEqual(called, [])
-            res = mock.Mock(name='res')
+            res = mock.Mock(name="res")
             frozen.set_result(res)
             await asyncio.sleep(0)
 
@@ -243,6 +244,7 @@ describe AsyncTestCase, "ResettableFuture":
 
     describe "__repr__":
         async it "reprs the fut it has":
+
             class Fut:
                 def __repr__(self):
                     return "REPRED_YO"
@@ -335,7 +337,9 @@ describe AsyncTestCase, "ChildOfFuture":
                 self.cof.result()
 
         async it "calls result on original_fut if neither are finished":
-            with self.fuzzyAssertRaisesError(asyncio.futures.InvalidStateError, "Result is not (ready|set)"):
+            with self.fuzzyAssertRaisesError(
+                asyncio.futures.InvalidStateError, "Result is not (ready|set)"
+            ):
                 self.cof.result()
 
     describe "done":
@@ -606,8 +610,8 @@ describe AsyncTestCase, "ChildOfFuture":
 
     describe "removing a done callback":
         async it "removes from cof.done_callbacks":
-            cb = mock.Mock(name='cb')
-            cb2 = mock.Mock(name='cb2')
+            cb = mock.Mock(name="cb")
+            cb2 = mock.Mock(name="cb2")
 
             self.assertEqual(self.cof.done_callbacks, [])
 
@@ -640,8 +644,8 @@ describe AsyncTestCase, "ChildOfFuture":
             assertFutCallbacks(self.orig_fut)
             assertFutCallbacks(self.cof.this_fut)
 
-            cb = mock.Mock(name='cb')
-            cb2 = mock.Mock(name='c2')
+            cb = mock.Mock(name="cb")
+            cb2 = mock.Mock(name="c2")
 
             self.assertEqual(self.cof.done_callbacks, [])
 
@@ -667,9 +671,11 @@ describe AsyncTestCase, "ChildOfFuture":
 
     describe "repr":
         async it "gives repr for both futures":
+
             class OFut:
                 def __repr__(self):
                     return "OFUT"
+
             class Fut:
                 def __repr__(self):
                     return "TFUT"
@@ -679,6 +685,7 @@ describe AsyncTestCase, "ChildOfFuture":
             self.assertEqual(repr(fut), "<ChildOfFuture: OFUT |:| TFUT>")
 
     describe "awaiting":
+
         def waiting_for(self, res):
             async def waiter():
                 return await self.cof
@@ -733,6 +740,7 @@ describe AsyncTestCase, "ChildOfFuture":
 
 describe AsyncTestCase, "fut_has_callback":
     async it "says no if fut has no callbacks":
+
         def func():
             pass
 
@@ -740,6 +748,7 @@ describe AsyncTestCase, "fut_has_callback":
         assert not hp.fut_has_callback(fut, func)
 
     async it "says no if it has other callbacks":
+
         def func1():
             pass
 
@@ -751,6 +760,7 @@ describe AsyncTestCase, "fut_has_callback":
         assert not hp.fut_has_callback(fut, func2)
 
     async it "says yes if we have the callback":
+
         def func1():
             pass
 
@@ -760,12 +770,14 @@ describe AsyncTestCase, "fut_has_callback":
 
         def func2():
             pass
+
         assert not hp.fut_has_callback(fut, func2)
         fut.add_done_callback(func2)
         assert hp.fut_has_callback(fut, func2)
 
 describe AsyncTestCase, "async_as_normal":
     async it "returns a function that spawns the coroutine as a task":
+
         async def func(one, two, three=None):
             return "{0}.{1}.{2}".format(one, two, three)
 
@@ -785,6 +797,7 @@ describe AsyncTestCase, "async_with_timeout":
         self.assertEqual(res, val)
 
     async it "cancels the coroutine if it doesn't respond":
+
         async def func():
             await asyncio.sleep(2)
             return val
@@ -811,6 +824,7 @@ describe AsyncTestCase, "async_with_timeout":
 
 describe AsyncTestCase, "async_as_background":
     async it "runs the coroutine in the background":
+
         async def func(one, two, three=None):
             return "{0}.{1}.{2}".format(one, two, three)
 
@@ -820,6 +834,7 @@ describe AsyncTestCase, "async_as_background":
         self.assertEqual(await t, "6.5.9")
 
     async it "uses silent_reporter if silent is True":
+
         async def func(one, two, three=None):
             return "{0}.{1}.{2}".format(one, two, three)
 
@@ -942,9 +957,8 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut4.set_result(result2)
 
         self.assertEqual(
-              hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4])
-            , (None, [result1, result2])
-            )
+            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (None, [result1, result2])
+        )
 
     async it "returns found errors as well":
         fut1 = asyncio.Future()
@@ -960,9 +974,8 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut4.set_result(result2)
 
         self.assertEqual(
-              hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4])
-            , (error1, [result2])
-            )
+            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (error1, [result2])
+        )
 
     async it "squashes the same error into one error":
         fut1 = asyncio.Future()
@@ -978,10 +991,7 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut3.cancel()
         fut4.set_exception(error2)
 
-        self.assertEqual(
-              hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4])
-            , (error1, [])
-            )
+        self.assertEqual(hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (error1, []))
 
     async it "can return error with multiple errors":
         fut1 = asyncio.Future()
@@ -1000,9 +1010,9 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut5.set_exception(error2)
 
         self.assertEqual(
-              hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4, fut5])
-            , (PhotonsAppError(_errors=[error1, error2]), [result2])
-            )
+            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4, fut5]),
+            (PhotonsAppError(_errors=[error1, error2]), [result2]),
+        )
 
 describe AsyncTestCase, "find_and_apply_result":
     async before_each:

@@ -3,6 +3,7 @@ from photons_app.errors import RunErrors, BadRunWithResults
 from input_algorithms import spec_base as sb
 import asyncio
 
+
 class AFRWrapper:
     def __init__(self, target, args_for_run, kwargs=None):
         self.kwargs = kwargs
@@ -27,6 +28,7 @@ class AFRWrapper:
         if self.owns_afr:
             await self.target.close_args_for_run(self.args_for_run)
 
+
 class ScriptRunner:
     """
     Create an runner for our script.
@@ -36,6 +38,7 @@ class ScriptRunner:
     This helper will create the ``afr`` if none is passed in and clean it up if
     we created it.
     """
+
     def __init__(self, script, target):
         self.script = script
         self.target = target

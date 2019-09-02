@@ -10,6 +10,7 @@ from photons_themes.canvas import Canvas, color_weighting
 from photons_themes.appliers.base import TileApplier
 from photons_themes.theme import ThemeColor
 
+
 class StripApplierSplotch:
     """
     Apply a theme to a multizone device::
@@ -20,6 +21,7 @@ class StripApplierSplotch:
 
     .. automethod:: apply_theme
     """
+
     def __init__(self, number_zones):
         self.number_zones = number_zones
 
@@ -36,6 +38,7 @@ class StripApplierSplotch:
         theme.ensure_color()
         colors.apply_theme(theme, self.number_zones)
         return colors.colors
+
 
 class TileApplierSplotch(TileApplier):
     """
@@ -69,6 +72,7 @@ class TileApplierSplotch(TileApplier):
 
     .. automethod:: apply_theme
     """
+
     def __init__(self, coords_and_sizes, just_points=False, post_blur=True):
         super(TileApplierSplotch, self).__init__(coords_and_sizes)
 
@@ -119,4 +123,3 @@ class TileApplierSplotch(TileApplier):
             return colors.tiles, canvas
 
         return colors.tiles
-

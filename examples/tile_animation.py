@@ -14,8 +14,10 @@ import random
 
 log = logging.getLogger("tile_animation")
 
+
 class Options(AnimationOptions):
     pass
+
 
 class State:
     def __init__(self, coords):
@@ -36,6 +38,7 @@ class State:
         for point in next_selection:
             self.filled[point] = True
             del self.remaining[point]
+
 
 class Animation(Animation):
     def setup(self):
@@ -84,9 +87,10 @@ class Animation(Animation):
 
         return canvas
 
+
 async def doit(collector):
     # Get the object that can talk to the devices over the lan
-    lan_target = collector.configuration['target_register'].resolve("lan")
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
     # reference can be a single d073d5000001 string representing one device
     # Or a list of strings specifying multiple devices
@@ -117,7 +121,8 @@ async def doit(collector):
     finally:
         final_future.cancel()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Setup the logging
     setup_logging()
 

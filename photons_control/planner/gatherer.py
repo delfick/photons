@@ -14,10 +14,12 @@ import asyncio
 import time
 import uuid
 
+
 class PlanInfo:
     """
     Represents an instance of a plan
     """
+
     def __init__(self, plan, plankey, instance, completed):
         self.plan = plan
         self.plankey = plankey
@@ -51,10 +53,12 @@ class PlanInfo:
             if messages and messages not in (Skip, NoMessages):
                 yield from messages
 
+
 class Planner:
     """
     A class for managing getting results from our plans for this serial
     """
+
     def __init__(self, session, plans, depinfo, serial, error_catcher):
         self.plans = plans
         self.serial = serial
@@ -217,11 +221,13 @@ class Planner:
 
             return instance.serial, label, result
 
+
 class Session:
     """
     The cache of results from the Gatherer. It caches the replies to individual
     messages and the final results from plans. It caches per plan/serial.
     """
+
     def __init__(self):
         self.received = defaultdict(lambda: defaultdict(list))
         self.filled = defaultdict(dict)
@@ -314,6 +320,7 @@ class Session:
         if not self.filled[plankey]:
             del self.filled[plankey]
 
+
 class Gatherer:
     """
     This class is used by users to gather information from your devices.
@@ -381,6 +388,7 @@ class Gatherer:
     Note that results from gathering will be cached and you may remove this cache
     by calling gatherer.clear_cache()
     """
+
     def __init__(self, target):
         self.target = target
 
@@ -393,7 +401,9 @@ class Gatherer:
         if hasattr(self, "_session"):
             del self.session
 
-    async def gather(self, plans, reference, args_for_run=sb.NotSpecified, error_catcher=None, **kwargs):
+    async def gather(
+        self, plans, reference, args_for_run=sb.NotSpecified, error_catcher=None, **kwargs
+    ):
         """
         Yield (serial, label, info) information as we get it
         """
@@ -431,7 +441,9 @@ class Gatherer:
             kwargs["error_catcher"] = error_catcher
 
             async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-                serials, missing = await find_serials(reference, afr, timeout=kwargs.get("find_timeout", 20))
+                serials, missing = await find_serials(
+                    reference, afr, timeout=kwargs.get("find_timeout", 20)
+                )
 
                 for serial in missing:
                     hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
@@ -444,7 +456,9 @@ class Gatherer:
         results = defaultdict(dict)
 
         try:
-            async for serial, completed, info in self.gather_per_serial(plans, reference, args_for_run, **kwargs):
+            async for serial, completed, info in self.gather_per_serial(
+                plans, reference, args_for_run, **kwargs
+            ):
                 results[serial] = (completed, info)
         except asyncio.CancelledError:
             raise

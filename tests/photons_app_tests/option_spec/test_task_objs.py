@@ -29,7 +29,7 @@ describe AsyncTestCase, "Task run":
             one = mock.Mock(name="one")
             final = mock.Mock(name="final")
 
-            task_func = asynctest.mock.CoroutineMock(name='task_func', return_value=final)
+            task_func = asynctest.mock.CoroutineMock(name="task_func", return_value=final)
             resolve_task_func = mock.Mock(name="resolve_task_func", return_value=task_func)
 
             target = mock.Mock(name="target")
@@ -41,24 +41,37 @@ describe AsyncTestCase, "Task run":
             reference = mock.Mock(name="reference")
             resolve_reference = mock.Mock(name="resolve_reference", return_value=reference)
 
-            with mock.patch.multiple(self.task
-                , resolve_task_func = resolve_task_func
-                , resolve_target = resolve_target
-                , resolve_artifact = resolve_artifact
-                , resolve_reference = resolve_reference
-                ):
+            with mock.patch.multiple(
+                self.task,
+                resolve_task_func=resolve_task_func,
+                resolve_target=resolve_target,
+                resolve_artifact=resolve_artifact,
+                resolve_reference=resolve_reference,
+            ):
                 self.assertIs(
-                      await self.wait_for(self.task.run(self.target, self.collector, self.reference, self.available_actions, self.tasks
-                          , one=one, two=3
-                          ))
-                    , final
-                    )
-
-            task_func.assert_called_once_with(self.collector
-                , target = target, reference = reference, artifact = artifact
-                , tasks = self.tasks
-                , one=one, two=3
+                    await self.wait_for(
+                        self.task.run(
+                            self.target,
+                            self.collector,
+                            self.reference,
+                            self.available_actions,
+                            self.tasks,
+                            one=one,
+                            two=3,
+                        )
+                    ),
+                    final,
                 )
+
+            task_func.assert_called_once_with(
+                self.collector,
+                target=target,
+                reference=reference,
+                artifact=artifact,
+                tasks=self.tasks,
+                one=one,
+                two=3,
+            )
 
         async it "finishes the reference if it's a SpecialReference":
             called = []
@@ -69,7 +82,8 @@ describe AsyncTestCase, "Task run":
             async def task_func(*args, **kwargs):
                 called.append("task")
                 return final
-            task_func = asynctest.mock.CoroutineMock(name='task_func', side_effect=task_func)
+
+            task_func = asynctest.mock.CoroutineMock(name="task_func", side_effect=task_func)
             resolve_task_func = mock.Mock(name="resolve_task_func", return_value=task_func)
 
             target = mock.Mock(name="target")
@@ -81,34 +95,48 @@ describe AsyncTestCase, "Task run":
             class Reference(SpecialReference):
                 async def finish(s):
                     called.append("finish")
+
             reference = Reference()
             resolve_reference = mock.Mock(name="resolve_reference", return_value=reference)
 
-            with mock.patch.multiple(self.task
-                , resolve_task_func = resolve_task_func
-                , resolve_target = resolve_target
-                , resolve_artifact = resolve_artifact
-                , resolve_reference = resolve_reference
-                ):
+            with mock.patch.multiple(
+                self.task,
+                resolve_task_func=resolve_task_func,
+                resolve_target=resolve_target,
+                resolve_artifact=resolve_artifact,
+                resolve_reference=resolve_reference,
+            ):
                 self.assertIs(
-                      await self.wait_for(self.task.run(self.target, self.collector, self.reference, self.available_actions, self.tasks
-                          , one=one, two=3
-                          ))
-                    , final
-                    )
-
-            task_func.assert_called_once_with(self.collector
-                , target = target, reference = reference, artifact = artifact
-                , tasks = self.tasks
-                , one=one, two=3
+                    await self.wait_for(
+                        self.task.run(
+                            self.target,
+                            self.collector,
+                            self.reference,
+                            self.available_actions,
+                            self.tasks,
+                            one=one,
+                            two=3,
+                        )
+                    ),
+                    final,
                 )
+
+            task_func.assert_called_once_with(
+                self.collector,
+                target=target,
+                reference=reference,
+                artifact=artifact,
+                tasks=self.tasks,
+                one=one,
+                two=3,
+            )
 
             self.assertEqual(called, ["task", "finish"])
 
 describe TestCase, "Task":
     it "takes in action and label":
-        action = mock.Mock(name='action')
-        label = mock.Mock(name='label')
+        action = mock.Mock(name="action")
+        label = mock.Mock(name="label")
         task = Task(action=action, label=label)
 
         self.assertIs(task.action, action)
@@ -134,20 +162,31 @@ describe TestCase, "Task":
             self.task_func.needs_target = False
 
             for target in ("", None, sb.NotSpecified):
-                self.assertIs(self.task.resolve_task_func(self.collector, target, available_actions), self.task_func)
+                self.assertIs(
+                    self.task.resolve_task_func(self.collector, target, available_actions),
+                    self.task_func,
+                )
 
         it "complains if no target is specified and task needs target":
             available_actions = {None: {self.action: self.task_func}}
             self.task_func.needs_target = True
 
             for target in ("", None, sb.NotSpecified):
-                with self.fuzzyAssertRaisesError(BadTarget, "This task requires you specify a target"):
-                    self.assertIs(self.task.resolve_task_func(self.collector, target, available_actions), self.task_func)
+                with self.fuzzyAssertRaisesError(
+                    BadTarget, "This task requires you specify a target"
+                ):
+                    self.assertIs(
+                        self.task.resolve_task_func(self.collector, target, available_actions),
+                        self.task_func,
+                    )
 
         it "complains if we've specified a target and this action requires a different target":
             action_task = mock.Mock(name="action_task")
             action_task2 = mock.Mock(name="action_task2")
-            available_actions = {"nt": {self.action: action_task}, "thing": {self.action: action_task2}}
+            available_actions = {
+                "nt": {self.action: action_task},
+                "thing": {self.action: action_task2},
+            }
 
             targets = {"nt1": {}, "thing1": {}, "thing2": {}, "ignored": {}}
             target_register = mock.Mock(name="target_register")
@@ -162,12 +201,18 @@ describe TestCase, "Task":
                         return "thing"
                     else:
                         return "meh"
+
             target_register.type_for.side_effect = type_for
 
             self.collector.configuration = {"targets": targets, "target_register": target_register}
 
             target_choice = ["nt1", "thing1", "thing2"]
-            with self.fuzzyAssertRaisesError(BadTarget, "Action only exists for other targets", action=self.action, target_choice=target_choice):
+            with self.fuzzyAssertRaisesError(
+                BadTarget,
+                "Action only exists for other targets",
+                action=self.action,
+                target_choice=target_choice,
+            ):
                 self.task.resolve_task_func(self.collector, self.target, available_actions)
 
         it "complains if there is no task":
@@ -178,9 +223,13 @@ describe TestCase, "Task":
             target_register.type_for.return_value = "meh"
 
             self.collector.configuration = {"target_register": target_register}
-            with self.fuzzyAssertRaisesError(BadTask, "Can't find what to execute"
-                , action=self.action, target=self.target, available=possible
-                ):
+            with self.fuzzyAssertRaisesError(
+                BadTask,
+                "Can't find what to execute",
+                action=self.action,
+                target=self.target,
+                available=possible,
+            ):
                 self.task.resolve_task_func(self.collector, self.target, available_actions)
 
             target_register.type_for.assert_called_once_with(self.target)
@@ -195,11 +244,17 @@ describe TestCase, "Task":
 
             self.collector.configuration = {"target_register": target_register}
 
-            self.assertIs(self.task.resolve_task_func(self.collector, self.target, available_actions), one_task)
+            self.assertIs(
+                self.task.resolve_task_func(self.collector, self.target, available_actions),
+                one_task,
+            )
             target_register.type_for.assert_called_once_with(self.target)
 
             for target in ("", None, sb.NotSpecified):
-                self.assertIs(self.task.resolve_task_func(self.collector, target, available_actions), one_task2)
+                self.assertIs(
+                    self.task.resolve_task_func(self.collector, target, available_actions),
+                    one_task2,
+                )
 
             # ensure it wasn't called again
             target_register.type_for.assert_called_once_with(self.target)
@@ -215,27 +270,42 @@ describe TestCase, "Task":
         it "complains if we need a reference and none is given":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
             for reference in ("", None, sb.NotSpecified):
-                with self.fuzzyAssertRaisesError(BadOption, "This task requires you specify a reference, please do so!", action=self.action):
+                with self.fuzzyAssertRaisesError(
+                    BadOption,
+                    "This task requires you specify a reference, please do so!",
+                    action=self.action,
+                ):
                     self.task.resolve_reference(self.collector, task_func, reference, self.target)
 
         it "complains if we need a reference and none is given even if special_reference is True":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
             for reference in ("", None, sb.NotSpecified):
-                with self.fuzzyAssertRaisesError(BadOption, "This task requires you specify a reference, please do so!", action=self.action):
+                with self.fuzzyAssertRaisesError(
+                    BadOption,
+                    "This task requires you specify a reference, please do so!",
+                    action=self.action,
+                ):
                     self.task.resolve_reference(self.collector, task_func, reference, self.target)
 
         it "returns reference as is":
             task_func = mock.Mock(name="task_func", needs_reference=False, special_reference=False)
             for reference in ("", None, sb.NotSpecified, "what"):
-                self.assertIs(self.task.resolve_reference(self.collector, task_func, reference, self.target), reference)
+                self.assertIs(
+                    self.task.resolve_reference(self.collector, task_func, reference, self.target),
+                    reference,
+                )
 
             task_func2 = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
-            self.assertEqual(self.task.resolve_reference(self.collector, task_func, "what", self.target), "what")
+            self.assertEqual(
+                self.task.resolve_reference(self.collector, task_func, "what", self.target), "what"
+            )
 
         it "returns the reference as a SpecialReference if special_reference is True":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
             reference = "d073d5000001,d073d5000002"
-            resolved = self.task.resolve_reference(self.collector, task_func, reference, self.target)
+            resolved = self.task.resolve_reference(
+                self.collector, task_func, reference, self.target
+            )
             wanted = [binascii.unhexlify(ref) for ref in reference.split(",")]
 
             self.assertEqual(resolved.targets, wanted)
@@ -258,7 +328,9 @@ describe TestCase, "Task":
             self.collector.configuration = {"reference_resolver_register": register}
 
             reference = "my_resolver:blah:and,stuff"
-            resolved = self.task.resolve_reference(self.collector, task_func, reference, self.target)
+            resolved = self.task.resolve_reference(
+                self.collector, task_func, reference, self.target
+            )
             self.assertIs(resolved, ret)
             resolver.assert_called_once_with("blah:and,stuff", self.target)
 
@@ -268,7 +340,7 @@ describe TestCase, "Task":
 
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
 
-            for reference in (ret, ret.split(',')):
+            for reference in (ret, ret.split(",")):
                 resolver = mock.Mock(name="resolver", return_value=reference)
 
                 register = ReferenceResolerRegister()
@@ -277,7 +349,9 @@ describe TestCase, "Task":
                 self.collector.configuration = {"reference_resolver_register": register}
 
                 reference = "my_resolver:blah:and,stuff"
-                resolved = self.task.resolve_reference(self.collector, task_func, reference, self.target)
+                resolved = self.task.resolve_reference(
+                    self.collector, task_func, reference, self.target
+                )
                 self.assertEqual(type(resolved), HardCodedSerials)
                 self.assertEqual(resolved.targets, wanted)
                 resolver.assert_called_once_with("blah:and,stuff", self.target)

@@ -17,7 +17,9 @@ describe TestCase, "PhotonsApp":
         self.meta = Meta({}, []).at("photons_app")
 
     def make_photons_app(self, **kwargs):
-        return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(self.meta, kwargs)
+        return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(
+            self.meta, kwargs
+        )
 
     describe "loop":
         it "gets a loop":
@@ -53,6 +55,7 @@ describe TestCase, "PhotonsApp":
             def call(num):
                 def wrapped(*args, **kwargs):
                     called.append(num)
+
                 return wrapped
 
             cleaner1 = asynctest.mock.CoroutineMock(name="cleaner1", side_effect=call(1))
@@ -60,10 +63,14 @@ describe TestCase, "PhotonsApp":
             cleaner3 = asynctest.mock.CoroutineMock(name="cleaner3", side_effect=call(3))
 
             target1 = mock.Mock(name="target1")
-            target1.finish = asynctest.mock.CoroutineMock(name="target1.finish", side_effect=call(4))
+            target1.finish = asynctest.mock.CoroutineMock(
+                name="target1.finish", side_effect=call(4)
+            )
 
             target2 = mock.Mock(name="target2")
-            target2.finish = asynctest.mock.CoroutineMock(name="target2.finish", side_effect=call(5))
+            target2.finish = asynctest.mock.CoroutineMock(
+                name="target2.finish", side_effect=call(5)
+            )
 
             # And a target with no finish attribute
             target3 = mock.Mock(name="target3", spec=[])

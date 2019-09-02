@@ -1,4 +1,10 @@
-from photons_tile_paint.options import AnimationOptions, split_by_comma, hue_range_spec, HueRange, normalise_speed_options
+from photons_tile_paint.options import (
+    AnimationOptions,
+    split_by_comma,
+    hue_range_spec,
+    HueRange,
+    normalise_speed_options,
+)
 from photons_tile_paint.animation import Animation, Finish
 from photons_themes.theme import ThemeColor as Color
 from photons_themes.canvas import Canvas
@@ -8,6 +14,7 @@ from input_algorithms import spec_base as sb
 from collections import defaultdict
 import random
 import math
+
 
 class TileBallsOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
@@ -24,6 +31,7 @@ class TileBallsOptions(AnimationOptions):
         if self.num_iterations == -1:
             return False
         return self.num_iterations <= iteration
+
 
 class Boundary:
     def __init__(self, coords):
@@ -79,6 +87,7 @@ class Boundary:
 
         return outside_x >= 2, outside_y >= 2
 
+
 class Ball:
     def __init__(self, boundary, hue, rate_x, rate_y):
         self.hue = hue
@@ -94,7 +103,9 @@ class Ball:
     def maybe_alter_course(self):
         points_now = [(math.floor(x), math.floor(y)) for x, y in self.points]
         points_next = [(math.floor(x), math.floor(y)) for x, y in self.next_points]
-        outside_x, outside_y = self.boundary.is_going_outside(points_now, points_next, self.dx, self.dy)
+        outside_x, outside_y = self.boundary.is_going_outside(
+            points_now, points_next, self.dx, self.dy
+        )
 
         if not outside_x and not outside_y:
             return
@@ -133,21 +144,16 @@ class Ball:
     @property
     def points(self):
         return [
-              (self.x, self.y)
-            , (self.x, self.y - 1)
-            , (self.x + 1, self.y)
-            , (self.x + 1, self.y - 1)
-            ]
+            (self.x, self.y),
+            (self.x, self.y - 1),
+            (self.x + 1, self.y),
+            (self.x + 1, self.y - 1),
+        ]
 
     @property
     def next_points(self):
         x, y = self.next_point()
-        return [
-              (x, y)
-            , (x, y - 1)
-            , (x + 1, y)
-            , (x + 1, y - 1)
-            ]
+        return [(x, y), (x, y - 1), (x + 1, y), (x + 1, y - 1)]
 
     def next_point(self):
         x = self.x + self.dx + self.extrax
@@ -161,6 +167,7 @@ class Ball:
     def pixels(self):
         for x, y in self.points:
             yield (math.floor(x), math.floor(y)), Color(self.hue, 1, 1, 3500)
+
 
 class TileBallsState:
     def __init__(self, coords, options):
@@ -221,6 +228,7 @@ class TileBallsState:
         self.balls = [b for b in self.balls if b not in collided_balls]
         self.ensure_enough_balls()
         return self.canvas
+
 
 class TileBallsAnimation(Animation):
     def setup(self):

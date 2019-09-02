@@ -11,14 +11,12 @@ from collections import defaultdict
 import asyncio
 
 describe AsyncTestCase, "Fake device":
+
     @with_timeout
     async it "works with sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=True)
 
-        options = {
-              "final_future": asyncio.Future()
-            , "protocol_register": protocol_register
-            }
+        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
         target = MemoryTarget.create(options, {"devices": device})
 
         await device.start()
@@ -32,10 +30,9 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(dict(got)
-                , { "d073d5000001": [{"service": Services.UDP, "port": device_port}]
-                  }
-                )
+            self.assertEqual(
+                dict(got), {"d073d5000001": [{"service": Services.UDP, "port": device_port}]}
+            )
 
         lantarget = LanTarget.create(options)
         async with lantarget.session() as afr:
@@ -47,19 +44,13 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(dict(got)
-                , { "d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]
-                  }
-                )
+            self.assertEqual(dict(got), {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]})
 
     @with_timeout
     async it "works without sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=False)
 
-        options = {
-              "final_future": asyncio.Future()
-            , "protocol_register": protocol_register
-            }
+        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
         target = MemoryTarget.create(options, {"devices": device})
 
         await device.start()
@@ -71,7 +62,4 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(dict(got)
-                , { "d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]
-                  }
-                )
+            self.assertEqual(dict(got), {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]})

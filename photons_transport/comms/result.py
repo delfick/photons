@@ -1,12 +1,14 @@
 import asyncio
 import time
 
+
 class Result(asyncio.Future):
     """
     Knows about acks and results from the device. It uses the request packet to
     determine when we are done based on ack_required, res_required and multi
     options
     """
+
     def __init__(self, request, did_broadcast, retry_options):
         self.request = request
         self.did_broadcast = did_broadcast
@@ -77,7 +79,9 @@ class Result(asyncio.Future):
         result
         """
         current = getattr(self, attr)
-        asyncio.get_event_loop().call_later(self.retry_options.finish_multi_gap, self.maybe_finish, current, attr)
+        asyncio.get_event_loop().call_later(
+            self.retry_options.finish_multi_gap, self.maybe_finish, current, attr
+        )
 
     def maybe_finish(self, last, attr):
         """
@@ -151,7 +155,9 @@ class Result(asyncio.Future):
             if self.results:
                 return True
 
-            return (time.time() - self.last_ack_received) < self.retry_options.gap_between_ack_and_res
+            return (
+                time.time() - self.last_ack_received
+            ) < self.retry_options.gap_between_ack_and_res
 
         elif self.request.ack_required and self.last_ack_received is not None:
             return True
@@ -161,7 +167,9 @@ class Result(asyncio.Future):
                 return False
 
             if self.num_results > 0:
-                return (time.time() - self.last_res_received) < self.retry_options.gap_between_results
+                return (
+                    time.time() - self.last_res_received
+                ) < self.retry_options.gap_between_results
 
             return True
 

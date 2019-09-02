@@ -40,48 +40,65 @@ describe AsyncTestCase, "TaskFinder":
 
             async it "complains if the task is not in self.tasks":
                 assert "three" not in self.task_finder.tasks
-                with self.fuzzyAssertRaisesError(BadTask, "Unknown task", task="three", available=["one", "two"]):
+                with self.fuzzyAssertRaisesError(
+                    BadTask, "Unknown task", task="three", available=["one", "two"]
+                ):
                     await self.task_finder.task_runner("three", self.reference)
 
-                with self.fuzzyAssertRaisesError(BadTask, "Unknown task", task="three", available=["one", "two"]):
+                with self.fuzzyAssertRaisesError(
+                    BadTask, "Unknown task", task="three", available=["one", "two"]
+                ):
                     await self.task_finder.task_runner("target:three", self.reference)
 
             async it "runs the chosen task":
                 res = mock.Mock(name="res")
                 self.one_task.run.return_value = res
 
-                available_actions = mock.Mock(name='available_actions')
+                available_actions = mock.Mock(name="available_actions")
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
                     self.assertIs(await self.task_finder.task_runner("one", self.reference), res)
 
-                self.one_task.run.assert_called_once_with(sb.NotSpecified, self.collector, self.reference
-                    , available_actions, self.tasks
-                    )
+                self.one_task.run.assert_called_once_with(
+                    sb.NotSpecified, self.collector, self.reference, available_actions, self.tasks
+                )
 
             async it "runs the chosen task with the specified target":
                 res = mock.Mock(name="res")
                 self.one_task.run.return_value = res
 
-                available_actions = mock.Mock(name='available_actions')
+                available_actions = mock.Mock(name="available_actions")
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(await self.task_finder.task_runner("target:one", self.reference), res)
-
-                self.one_task.run.assert_called_once_with("target", self.collector, self.reference
-                    , available_actions, self.tasks
+                    self.assertIs(
+                        await self.task_finder.task_runner("target:one", self.reference), res
                     )
+
+                self.one_task.run.assert_called_once_with(
+                    "target", self.collector, self.reference, available_actions, self.tasks
+                )
 
             async it "runs the chosen task with the other kwargs":
                 one = mock.Mock(name="one")
                 res = mock.Mock(name="res")
                 self.one_task.run.return_value = res
 
-                available_actions = mock.Mock(name='available_actions')
+                available_actions = mock.Mock(name="available_actions")
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(await self.task_finder.task_runner("target:one", self.reference, one=one, two=3), res)
-
-                self.one_task.run.assert_called_once_with("target", self.collector, self.reference
-                    , available_actions, self.tasks, one=one, two=3
+                    self.assertIs(
+                        await self.task_finder.task_runner(
+                            "target:one", self.reference, one=one, two=3
+                        ),
+                        res,
                     )
+
+                self.one_task.run.assert_called_once_with(
+                    "target",
+                    self.collector,
+                    self.reference,
+                    available_actions,
+                    self.tasks,
+                    one=one,
+                    two=3,
+                )

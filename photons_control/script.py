@@ -11,6 +11,7 @@ import time
 
 log = logging.getLogger("photons_control.script")
 
+
 async def find_serials(reference, args_for_run, timeout):
     """
     Return (serials, missing) for all the serials that can be found in the
@@ -35,6 +36,7 @@ async def find_serials(reference, args_for_run, timeout):
     found, serials = await reference.find(args_for_run, timeout=timeout)
     missing = reference.missing(found)
     return serials, missing
+
 
 def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=False):
     """
@@ -87,6 +89,7 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
         If this is set to True then we wait on the slowest bulb before going to
         the next message.
     """
+
     async def gen(reference, args_for_run, **kwargs):
         for i, child in enumerate(children):
             if i > 0:
@@ -107,6 +110,7 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
     m.pipeline_short_circuit_on_error = short_circuit_on_error
 
     return m
+
 
 def Repeater(msg, min_loop_time=30, on_done_loop=None):
     """
@@ -162,6 +166,7 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
         Note that if you raise ``Repeater.Stop()`` in this function then the
         Repeater will stop.
     """
+
     async def gen(reference, args_for_run, **kwargs):
         while True:
             start = time.time()
@@ -192,9 +197,13 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
     m.repeater_min_loop_time = min_loop_time
     return m
 
+
 class Stop(Exception):
     pass
+
+
 Repeater.Stop = Stop
+
 
 def FromGeneratorPerSerial(inner_gen):
     """
@@ -204,13 +213,18 @@ def FromGeneratorPerSerial(inner_gen):
     This handles resolving the reference into serials and complaining if a serial
     does not exist
     """
+
     async def gen(reference, args_for_run, **kwargs):
-        serials, missing = await find_serials(reference, args_for_run, timeout=kwargs.get("find_timeout", 20))
+        serials, missing = await find_serials(
+            reference, args_for_run, timeout=kwargs.get("find_timeout", 20)
+        )
         for serial in missing:
             yield FailedToFindDevice(serial=serial)
 
         yield [FromGenerator(inner_gen, reference_override=serial) for serial in serials]
+
     return FromGenerator(gen)
+
 
 class FromGenerator(object):
     """
@@ -244,6 +258,7 @@ class FromGenerator(object):
     The return value from yield will be a future that resolves to True if the
     message(s) were sent without error, and False if they were sent with error.
     """
+
     def __init__(self, generator, *, reference_override=None):
         self.generator = generator
         self.reference_override = reference_override
@@ -336,6 +351,7 @@ class FromGenerator(object):
 
             def on_finish(res):
                 hp.async_as_background(self.queue.put(self.Done))
+
             self.getter_t.add_done_callback(on_finish)
 
             return self
@@ -401,7 +417,9 @@ class FromGenerator(object):
             kwargs["error_catcher"] = pass_on_error
 
             try:
-                async for info in item.run_with(self.run_with_reference, self.args_for_run, **kwargs):
+                async for info in item.run_with(
+                    self.run_with_reference, self.args_for_run, **kwargs
+                ):
                     await self.queue.put(info)
             finally:
                 if not f.done():
@@ -432,5 +450,6 @@ class FromGenerator(object):
                         return
 
                 complete.set_result(True)
+
             waiter = hp.async_as_background(asyncio.wait(fs))
             waiter.add_done_callback(finish)

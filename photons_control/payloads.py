@@ -5,6 +5,7 @@ from photons_protocol.messages import Messages
 import binascii
 import base64
 
+
 @an_action()
 async def pack(collector, **kwargs):
     """
@@ -20,6 +21,7 @@ async def pack(collector, **kwargs):
 
     packd = Messages.pack(extra, protocol_register, unknown_ok=True)
     print(binascii.hexlify(packd.tobytes()).decode())
+
 
 @an_action()
 async def pack_payload(collector, reference, **kwargs):
@@ -38,6 +40,7 @@ async def pack_payload(collector, reference, **kwargs):
     packd = Messages.pack_payload(reference, extra, message_register)
     print(binascii.hexlify(packd.tobytes()).decode())
 
+
 @an_action()
 async def unpack(collector, **kwargs):
     """
@@ -48,6 +51,7 @@ async def unpack(collector, **kwargs):
     bts = binascii.unhexlify(collector.configuration["photons_app"].extra)
     pkt = Messages.unpack(bts, collector.configuration["protocol_register"], unknown_ok=True)
     print(repr(pkt))
+
 
 @an_action()
 async def unpack_base64(collector, **kwargs):

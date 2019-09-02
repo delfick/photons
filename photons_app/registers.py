@@ -11,6 +11,7 @@ from input_algorithms import spec_base as sb
 from input_algorithms.dictobj import dictobj
 from input_algorithms.meta import Meta
 
+
 class Target(dictobj.Spec):
     """
     Represent the info required for specifying how to get messages to a device
@@ -24,9 +25,11 @@ class Target(dictobj.Spec):
 
         t = collector.configuration["target_register"].resolve("prod_api")
     """
+
     type = dictobj.Field(sb.string_spec, wrapper=sb.required)
     optional = dictobj.Field(sb.boolean, default=False)
     options = dictobj.Field(sb.dictionary_spec)
+
 
 class TargetRegister(object):
     """
@@ -109,7 +112,12 @@ class TargetRegister(object):
         if target.type not in self.types:
             if target.optional:
                 return
-            raise TargetNotFound("Unknown type specified for target", name=name, specified=target.type, available=list(self.types.keys()))
+            raise TargetNotFound(
+                "Unknown type specified for target",
+                name=name,
+                specified=target.type,
+                available=list(self.types.keys()),
+            )
 
         cache = {"info": None}
 
@@ -117,12 +125,16 @@ class TargetRegister(object):
             if cache["info"] is None:
                 make.resolved = True
                 meta = Meta(self.collector.configuration, []).at("targets").at(name).at("options")
-                cache["info"] = (target.type, self.types[target.type].normalise(meta, target.options))
+                cache["info"] = (
+                    target.type,
+                    self.types[target.type].normalise(meta, target.options),
+                )
             return cache["info"]
 
         make.resolved = False
 
         self.targets[name] = make
+
 
 class MessagesRegister(object):
     """
@@ -142,6 +154,7 @@ class MessagesRegister(object):
             prot_register = collector.configuration["protocol_register"]
             prot_register.message_register(9001).add(MyAmazingMessages)
     """
+
     # Ensure option_merge gives back this instance without wrapping it
     _merged_options_formattable = True
 
@@ -153,6 +166,7 @@ class MessagesRegister(object):
 
     def __iter__(self):
         return iter(self.message_classes)
+
 
 class ProtocolRegister(object):
     """
@@ -172,6 +186,7 @@ class ProtocolRegister(object):
             prot_register = collector.configuration["protocol_register"]
             prot_register.add(9001, MyProtocolPacket)
     """
+
     _merged_options_formattable = True
 
     def __init__(self):
@@ -198,6 +213,7 @@ class ProtocolRegister(object):
     def __setstate__(self, d):
         pass
 
+
 class ReferenceResolerRegister(object):
     """
     A register for special reference resolvers
@@ -221,12 +237,11 @@ class ReferenceResolerRegister(object):
                 return ["d073d500001"]
             register.add("my_type", resolve_my_type)
     """
+
     _merged_options_formattable = True
 
     def __init__(self):
-        self.resolvers = {
-              "file": lambda filename, _: ResolveReferencesFromFile(filename)
-            }
+        self.resolvers = {"file": lambda filename, _: ResolveReferencesFromFile(filename)}
 
     def add(self, typ, resolver):
         self.resolvers[typ] = resolver

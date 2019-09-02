@@ -6,6 +6,7 @@ import logging
 
 log = logging.getLogger("photons_transport.transports.socket")
 
+
 def close_socket(socket):
     try:
         socket.close()
@@ -14,10 +15,12 @@ def close_socket(socket):
     except OSError:
         pass
 
+
 def close_existing(fut):
     if fut.done() and not fut.exception() and not fut.cancelled():
         close_socket(fut.result())
     fut.reset()
+
 
 def onerror(fut, exc):
     close_existing(fut)
@@ -25,6 +28,7 @@ def onerror(fut, exc):
         fut.set_exception(exc)
     else:
         fut.cancel()
+
 
 class Socket(Transport):
     def setup(self, host, port, serial=None):
@@ -35,20 +39,22 @@ class Socket(Transport):
         self.lc = hp.lc.using(serial=serial)
 
     def clone_for(self, session):
-        return self.__class__(session
-            , self.host
-            , self.port
-            , serial = self.serial
-            )
+        return self.__class__(session, self.host, self.port, serial=self.serial)
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) and other.host == self.host and other.port == self.port
+        return (
+            isinstance(other, self.__class__)
+            and other.host == self.host
+            and other.port == self.port
+        )
 
     async def close_transport(self, transport):
         close_socket(transport)
 
     async def is_transport_active(self, packet, transport):
-        return getattr(transport, "_sock", None) is not None and not getattr(transport._sock, "_closed", False)
+        return getattr(transport, "_sock", None) is not None and not getattr(
+            transport._sock, "_closed", False
+        )
 
     def make_socket_protocol(self):
         fut = hp.ResettableFuture()

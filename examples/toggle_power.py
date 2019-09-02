@@ -5,10 +5,12 @@ from photons_control.transform import PowerToggle
 
 collector = library_setup()
 
-lan_target = collector.configuration['target_register'].resolve("lan")
+lan_target = collector.configuration["target_register"].resolve("lan")
+
 
 async def doit():
     await lan_target.script(PowerToggle()).run_with_all(FoundSerials())
+
 
 loop = collector.configuration["photons_app"].loop
 loop.run_until_complete(doit())

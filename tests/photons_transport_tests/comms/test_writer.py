@@ -21,15 +21,15 @@ describe AsyncTestCase, "Writer":
         self.connect_timeout = mock.Mock(name="connect_timeout")
 
         self.writer = Writer(
-              self.session
-            , self.transport
-            , self.receiver
-            , self.original
-            , self.packet
-            , self.retry_options
-            , did_broadcast = self.did_broadcast
-            , connect_timeout = self.connect_timeout
-            )
+            self.session,
+            self.transport,
+            self.receiver,
+            self.original,
+            self.packet,
+            self.retry_options,
+            did_broadcast=self.did_broadcast,
+            connect_timeout=self.connect_timeout,
+        )
 
     async it "takes in a bunch of things":
         self.assertEqual(self.writer.sent, 0)
@@ -47,21 +47,19 @@ describe AsyncTestCase, "Writer":
         result = mock.Mock(name="result")
 
         called = []
+
         def caller(name, ret=None):
             def call(*args, **kwargs):
                 called.append(name)
                 return ret
+
             return call
 
         modify_sequence = mock.Mock(name="modify_sequence", side_effect=caller("modify_sequence"))
         register = mock.Mock(name="register", side_effect=caller("register", result))
         write = asynctest.mock.CoroutineMock(name="write", side_effect=caller("write", b"asdf"))
 
-        mods = {
-              "modify_sequence": modify_sequence
-            , "register": register
-            , "write": write
-            }
+        mods = {"modify_sequence": modify_sequence, "register": register, "write": write}
 
         with mock.patch.multiple(self.writer, **mods):
             self.assertIs(await self.writer(), result)
@@ -106,7 +104,9 @@ describe AsyncTestCase, "Writer":
                 self.assertIs(self.writer.register(), result)
 
             result.done.assert_called_once_with()
-            FakeResult.assert_called_once_with(self.original, self.did_broadcast, self.retry_options)
+            FakeResult.assert_called_once_with(
+                self.original, self.did_broadcast, self.retry_options
+            )
             self.assertEqual(len(self.receiver.register.mock_calls), 0)
 
         async it "registers if the Result is not already done":
@@ -118,7 +118,9 @@ describe AsyncTestCase, "Writer":
                 self.assertIs(self.writer.register(), result)
 
             result.done.assert_called_once_with()
-            FakeResult.assert_called_once_with(self.original, self.did_broadcast, self.retry_options)
+            FakeResult.assert_called_once_with(
+                self.original, self.did_broadcast, self.retry_options
+            )
             self.receiver.register.assert_called_once_with(self.writer.clone, result, self.original)
             result.add_done_callback.assert_called_once_with(hp.silent_reporter)
 
@@ -130,9 +132,11 @@ describe AsyncTestCase, "Writer":
             t = mock.Mock(name="t")
 
             self.transport.spawn = asynctest.mock.CoroutineMock(name="spawn", return_value=t)
-            self.transport.write = asynctest.mock.CoroutineMock(name='write')
+            self.transport.write = asynctest.mock.CoroutineMock(name="write")
 
             self.assertIs(await self.writer.write(), bts)
 
-            self.transport.spawn.assert_called_once_with(self.original, timeout=self.connect_timeout)
+            self.transport.spawn.assert_called_once_with(
+                self.original, timeout=self.connect_timeout
+            )
             self.transport.write.assert_called_once_with(t, bts, self.original)

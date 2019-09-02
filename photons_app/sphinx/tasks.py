@@ -6,6 +6,7 @@ from docutils import statemachine
 from textwrap import dedent
 import inspect
 
+
 class ShowModuleTasks(Directive):
     has_content = True
 
@@ -21,7 +22,7 @@ class ShowModuleTasks(Directive):
             wanted = self.content[0]
         else:
             source = self.state.document.current_source
-            tail = source[source.rfind(":", 1) + 1:]
+            tail = source[source.rfind(":", 1) + 1 :]
             if not tail.startswith("docstring of "):
                 raise Exception(f"Couldn't determine module\tsource={source}")
 
@@ -56,12 +57,15 @@ class ShowModuleTasks(Directive):
 
                 template.append("")
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
         lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
 
         return []
+
 
 def lines_for_task(task_name, target, action):
     def lines():
@@ -77,7 +81,10 @@ def lines_for_task(task_name, target, action):
             yield (1, f"* Can take in a special reference")
 
         if action.special_reference and not action.needs_reference:
-            yield (1, f"* not specifying a reference will result in finding all devices on the network")
+            yield (
+                1,
+                f"* not specifying a reference will result in finding all devices on the network",
+            )
 
         if action.needs_target:
             yield (1, f"* Needs a target to be specified")
@@ -105,5 +112,6 @@ def lines_for_task(task_name, target, action):
     yield f"+{'-' * (mx + 2)}+"
     yield ""
 
+
 def setup(app):
-    app.add_directive('photons_module_tasks', ShowModuleTasks(app))
+    app.add_directive("photons_module_tasks", ShowModuleTasks(app))

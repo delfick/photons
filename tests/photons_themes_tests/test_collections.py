@@ -16,11 +16,7 @@ describe TestCase, "ZoneColors":
         colors = ZoneColors()
         colors.add_hsbk(ThemeColor(0, 1, 1, 3500))
         colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
-        self.assertEqual(colors._colors
-            , [ ThemeColor(0, 1, 1, 3500)
-              , ThemeColor(100, 1, 1, 3500)
-              ]
-            )
+        self.assertEqual(colors._colors, [ThemeColor(0, 1, 1, 3500), ThemeColor(100, 1, 1, 3500)])
 
     describe "returning colors":
         it "returns with appropriate start_index, end_index":
@@ -29,12 +25,14 @@ describe TestCase, "ZoneColors":
             colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
             colors.add_hsbk(ThemeColor(200, 1, 1, 3500))
 
-            self.assertEqual(colors.colors
-                , [ ((0, 0), ThemeColor(0, 1, 1, 3500))
-                  , ((1, 1), ThemeColor(100, 1, 1, 3500))
-                  , ((2, 2), ThemeColor(200, 1, 1, 3500))
-                  ]
-                )
+            self.assertEqual(
+                colors.colors,
+                [
+                    ((0, 0), ThemeColor(0, 1, 1, 3500)),
+                    ((1, 1), ThemeColor(100, 1, 1, 3500)),
+                    ((2, 2), ThemeColor(200, 1, 1, 3500)),
+                ],
+            )
 
         it "groups the same colors together":
             colors = ZoneColors()
@@ -46,13 +44,15 @@ describe TestCase, "ZoneColors":
             colors.add_hsbk(ThemeColor(200, 1, 1, 3500))
             colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
 
-            self.assertEqual(colors.colors
-                , [ ((0, 2), ThemeColor(0, 1, 1, 3500))
-                  , ((3, 3), ThemeColor(100, 1, 1, 3500))
-                  , ((4, 5), ThemeColor(200, 1, 1, 3500))
-                  , ((6, 6), ThemeColor(100, 1, 1, 3500))
-                  ]
-                )
+            self.assertEqual(
+                colors.colors,
+                [
+                    ((0, 2), ThemeColor(0, 1, 1, 3500)),
+                    ((3, 3), ThemeColor(100, 1, 1, 3500)),
+                    ((4, 5), ThemeColor(200, 1, 1, 3500)),
+                    ((6, 6), ThemeColor(100, 1, 1, 3500)),
+                ],
+            )
 
     describe "applying a range":
         it "adds one color if length is 1":
@@ -91,11 +91,13 @@ describe TestCase, "ZoneColors":
             colors = ZoneColors()
             colors.apply_theme(theme, 32)
             hues = [float("{:.3f}".format(c.hue)) for c in colors._colors]
+            # fmt: off
             expected = [
-                    10.0, 21.25, 32.5, 43.75, 49.375, 55.0, 66.25, 77.5, 88.75, 94.375, 100.0
-                  , 92.5, 85.0, 77.5, 73.75, 70.0, 62.5, 55.0, 47.5, 43.75, 40.0
-                  , 27.5, 15.0, 2.5, 356.25, 350.0, 337.5, 325.0, 312.5, 306.25, 300.0, 300.0
-                  ]
+                10.0, 21.25, 32.5, 43.75, 49.375, 55.0, 66.25, 77.5, 88.75, 94.375, 100.0,
+                92.5, 85.0, 77.5, 73.75, 70.0, 62.5, 55.0, 47.5, 43.75, 40.0,
+                27.5, 15.0, 2.5, 356.25, 350.0, 337.5, 325.0, 312.5, 306.25, 300.0, 300.0
+            ]
+            # fmt: on
             self.assertEqual(hues, expected)
 
 describe TestCase, "TileColors":

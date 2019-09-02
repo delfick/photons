@@ -1,6 +1,7 @@
 from photons_tile_paint.animation import Animation, coords_for_horizontal_line, Finish
 from photons_tile_paint.gameoflife.state import State
 
+
 class TileGameOfLifeAnimation(Animation):
     every = 0.1
     acks = False

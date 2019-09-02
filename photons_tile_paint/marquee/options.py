@@ -5,12 +5,15 @@ from photons_protocol.types import enum_spec
 from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 
+
 class TileMarqueeOptions(AnimationOptions):
     text_color = dictobj.Field(ColorOption(200, 0.24, 0.5, 3500))
     text = dictobj.Field(sb.string_spec, default="LIFX is awesome!")
     user_coords = dictobj.Field(sb.boolean, default=False)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
-    direction = dictobj.Field(enum_spec(None, MarqueeDirection, unpacking=True), default=MarqueeDirection.LEFT)
+    direction = dictobj.Field(
+        enum_spec(None, MarqueeDirection, unpacking=True), default=MarqueeDirection.LEFT
+    )
 
     @property
     def text_width(self):

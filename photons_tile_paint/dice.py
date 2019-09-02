@@ -1,4 +1,9 @@
-from photons_tile_paint.animation import Animation, put_characters_on_canvas, coords_for_horizontal_line, Finish
+from photons_tile_paint.animation import (
+    Animation,
+    put_characters_on_canvas,
+    coords_for_horizontal_line,
+    Finish,
+)
 from photons_tile_paint.options import AnimationOptions, ColorOption
 from photons_tile_paint.font.base import Character
 from photons_tile_paint.font.dice import dice
@@ -10,7 +15,8 @@ from input_algorithms import spec_base as sb
 import random
 import time
 
-full_character = Character("""
+full_character = Character(
+    """
     ########
     ########
     ########
@@ -19,13 +25,16 @@ full_character = Character("""
     ########
     ########
     ########
-    """)
+    """
+)
+
 
 class TileDiceRollOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=1)
 
     roll_time = dictobj.Field(sb.float_spec, default=2)
     dice_color = dictobj.Field(ColorOption(200, 1, 1, 3500))
+
 
 class TileDiceRollAnimation(Animation):
     acks = True
@@ -58,10 +67,10 @@ class TileDiceRollAnimation(Animation):
                 chs.extend(random.sample(list(dice.values()), k=5))
 
             state = {
-                  "chars": random.sample(chs, k=len(coords))
-                , "last_state": time.time()
-                , "started": time.time() if prev_state is None else prev_state["started"]
-                }
+                "chars": random.sample(chs, k=len(coords)),
+                "last_state": time.time(),
+                "started": time.time() if prev_state is None else prev_state["started"],
+            }
 
         if time.time() - state["started"] > self.options.roll_time:
             return {"chars": -1}

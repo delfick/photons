@@ -25,41 +25,49 @@ This module knows about colour.
 """
 
 regexes = {
-      "whitespace": re.compile(r"\s+")
-    , "10_random_component": re.compile(r"random")
-    , "07_kelvin_component": re.compile(r"\Akelvin:([\d]+)\Z")
-    , "06_brightness_component": re.compile(r"\Abrightness:([\d.]+%?)\Z")
-    , "05_saturation_component": re.compile(r"\Asaturation:([\d.]+%?)\Z")
-    , "04_hue_component": re.compile(r"\Ahue:([\d.]+)\Z")
-    , "03_hex_component": re.compile(r"\A(?:hex:)?#?([0-9a-fA-F]{6})\Z")
-    , "02_rgb_component": re.compile(r"\Argb:(\d+,\d+,\d+)\Z")
-    , "01_hsb_component": re.compile(r"\Ahsb:([\d\.]+),([\d\.]+%?),([\d\.]+%?)\Z")
-    }
+    "whitespace": re.compile(r"\s+"),
+    "10_random_component": re.compile(r"random"),
+    "07_kelvin_component": re.compile(r"\Akelvin:([\d]+)\Z"),
+    "06_brightness_component": re.compile(r"\Abrightness:([\d.]+%?)\Z"),
+    "05_saturation_component": re.compile(r"\Asaturation:([\d.]+%?)\Z"),
+    "04_hue_component": re.compile(r"\Ahue:([\d.]+)\Z"),
+    "03_hex_component": re.compile(r"\A(?:hex:)?#?([0-9a-fA-F]{6})\Z"),
+    "02_rgb_component": re.compile(r"\Argb:(\d+,\d+,\d+)\Z"),
+    "01_hsb_component": re.compile(r"\Ahsb:([\d\.]+),([\d\.]+%?),([\d\.]+%?)\Z"),
+}
+
 
 @option_merge_addon_hook(extras=(("lifx.photons", "messages")))
 def __lifx__(collector, *args, **kwargs):
     pass
 
+
 class NoSuchEffect(PhotonsAppError):
     desc = "No such effect"
+
 
 class BadColor(PhotonsAppError):
     pass
 
+
 class ValueOutOfRange(PhotonsAppError):
     pass
+
 
 class InvalidValue(PhotonsAppError):
     pass
 
+
 class InvalidColor(PhotonsAppError):
     pass
+
 
 def split_color_string(color_string):
     """Split a ``color_string`` by whitespace into a list of it's ``components``. """
     if not color_string:
         return []
     return [thing for thing in regexes["whitespace"].split(color_string) if thing]
+
 
 class Parser(object):
     """
@@ -83,17 +91,18 @@ class Parser(object):
 
     .. automethod:: photons_colour.Parser.color_to_msg
     """
+
     named_colors = {
-          "white" : [None, 0, None, None]
-        , "red"   : [0, 1, None, None]
-        , "orange": [36, 1, None, None]
-        , "yellow": [60, 1, None, None]
-        , "cyan"  : [180, 1, None, None]
-        , "green" : [120, 1, None, None]
-        , "blue"  : [250, 1, None, None]
-        , "purple": [280, 1, None, None]
-        , "pink"  : [325, 1, None, None]
-        }
+        "white": [None, 0, None, None],
+        "red": [0, 1, None, None],
+        "orange": [36, 1, None, None],
+        "yellow": [60, 1, None, None],
+        "cyan": [180, 1, None, None],
+        "green": [120, 1, None, None],
+        "blue": [250, 1, None, None],
+        "purple": [280, 1, None, None],
+        "pink": [325, 1, None, None],
+    }
 
     @classmethod
     def hsbk(kls, components, overrides=None):
@@ -119,26 +128,23 @@ class Parser(object):
         h, s, b, k = kls.hsbk(components, overrides)
 
         colour = dict(
-              hue = 0 if h is None else h
-            , set_hue = h is not None
-
-            , saturation = 0 if s is None else s
-            , set_saturation = s is not None
-
-            , brightness = 0 if b is None else b
-            , set_brightness = b is not None
-
-            , kelvin = 0 if k is None else int(k)
-            , set_kelvin = k is not None
-            )
+            hue=0 if h is None else h,
+            set_hue=h is not None,
+            saturation=0 if s is None else s,
+            set_saturation=s is not None,
+            brightness=0 if b is None else b,
+            set_brightness=b is not None,
+            kelvin=0 if k is None else int(k),
+            set_kelvin=k is not None,
+        )
 
         other = dict(
-              transient = 0
-            , cycles = 1
-            , skew_ratio = 0
-            , waveform = Waveform.SAW
-            , period = 0 if not overrides else overrides.get("duration", 0)
-            )
+            transient=0,
+            cycles=1,
+            skew_ratio=0,
+            waveform=Waveform.SAW,
+            period=0 if not overrides else overrides.get("duration", 0),
+        )
 
         other_override = Effects.make(**(overrides or {}))
         options = MergedOptions.using(other, other_override, overrides or {}, colour)
@@ -175,7 +181,7 @@ class Parser(object):
                     m = regexes[regex].match(color_string)
                     if m:
                         func_name = "parse_{0}_component".format(regex.split("_")[1])
-                        return getattr(self, func_name)((color_string, ) + m.groups())
+                        return getattr(self, func_name)((color_string,) + m.groups())
         except PhotonsAppError as error:
             raise InvalidColor("Unable to parse color!", got=color_string, error=error.as_dict())
         except Exception as error:
@@ -190,17 +196,23 @@ class Parser(object):
             res = float(s)
 
         if minimum > res or res > maximum:
-            raise ValueOutOfRange("Value was not within bounds", minimum=minimum, maximum=maximum, value=res, component=label)
+            raise ValueOutOfRange(
+                "Value was not within bounds",
+                minimum=minimum,
+                maximum=maximum,
+                value=res,
+                component=label,
+            )
 
         return res
 
     def parse_hsb_component(self, groups):
         return [
-              self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360)
-            , self.parse_string(groups[2], label="saturation")
-            , self.parse_string(groups[3], label="brightness")
-            , None
-            ]
+            self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360),
+            self.parse_string(groups[2], label="saturation"),
+            self.parse_string(groups[3], label="brightness"),
+            None,
+        ]
 
     def parse_rgb_component(self, groups):
         r, g, b = groups[1].split(",", 3)
@@ -213,20 +225,40 @@ class Parser(object):
         first_group = groups[1]
         values = []
         for i in range(0, 6, 2):
-            values.append(int(first_group[i:i + 2], 16))
+            values.append(int(first_group[i : i + 2], 16))
         return [*self.hex_to_hsb(*values), None]
 
     def parse_hue_component(self, groups):
-        return [self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360), None, None, None]
+        return [
+            self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360),
+            None,
+            None,
+            None,
+        ]
 
     def parse_saturation_component(self, groups):
-        return [None, self.parse_string(groups[1], label="saturation", minimum=0, maximum=1), None, None]
+        return [
+            None,
+            self.parse_string(groups[1], label="saturation", minimum=0, maximum=1),
+            None,
+            None,
+        ]
 
     def parse_brightness_component(self, groups):
-        return [None, None, self.parse_string(groups[1], label="brightness", minimum=0, maximum=1), None]
+        return [
+            None,
+            None,
+            self.parse_string(groups[1], label="brightness", minimum=0, maximum=1),
+            None,
+        ]
 
     def parse_kelvin_component(self, groups):
-        return [None, 0, None, self.parse_decimal_string(groups[1], label="kelvin", minimum=1500, maximum=9000)]
+        return [
+            None,
+            0,
+            None,
+            self.parse_decimal_string(groups[1], label="kelvin", minimum=1500, maximum=9000),
+        ]
 
     def parse_random_component(self, groups):
         return [random.randrange(0, 360), 1, None, None]
@@ -237,7 +269,13 @@ class Parser(object):
 
         value = float(s)
         if value < minimum or value > maximum:
-            raise ValueOutOfRange("Value was not within bounds", component=label, minimum=minimum, maximum=maximum, value=value)
+            raise ValueOutOfRange(
+                "Value was not within bounds",
+                component=label,
+                minimum=minimum,
+                maximum=maximum,
+                value=value,
+            )
 
         return value
 
@@ -247,7 +285,13 @@ class Parser(object):
 
         value = float(s.rstrip("%")) / 100.0
         if value < minimum or value > maximum:
-            raise ValueOutOfRange("Value was not within bounds", component=label, minimum=minimum, maximum=maximum, value=value)
+            raise ValueOutOfRange(
+                "Value was not within bounds",
+                component=label,
+                minimum=minimum,
+                maximum=maximum,
+                value=value,
+            )
 
         return value
 
@@ -303,18 +347,21 @@ class Parser(object):
         return (r, g, b)
 
     def rgb_to_hsb(self, r, g, b):
-        h, s , b = colorsys.rgb_to_hsv(r, g, b)
+        h, s, b = colorsys.rgb_to_hsv(r, g, b)
         return h * 360, s, b
 
     def hsb_to_rgb(self, h, s, b):
         return colorsys.hsv_to_rgb(h / 360, s, b)
 
+
 def effect(func):
     func._is_effect = True
     return func
 
+
 class Effects(object):
     """Class for making options related to special waveform effects"""
+
     @classmethod
     def make(kls, effect=None, **kwargs):
         if effect is None:
@@ -323,23 +370,47 @@ class Effects(object):
             raise NoSuchEffect(effect=effect)
         func = getattr(kls, effect)
         if not getattr(func, "_is_effect", None):
-            log.warning("Trying to get an effect that's on Effect, but isn't an effect\teffect=%s", effect)
+            log.warning(
+                "Trying to get an effect that's on Effect, but isn't an effect\teffect=%s", effect
+            )
             raise NoSuchEffect(effect=effect)
         return getattr(kls(), effect)(**kwargs)
 
     @effect
-    def pulse(self, cycles=1, duty_cycle=0.5, transient=1, period=1.0, skew_ratio=sb.NotSpecified, **kwargs):
+    def pulse(
+        self,
+        cycles=1,
+        duty_cycle=0.5,
+        transient=1,
+        period=1.0,
+        skew_ratio=sb.NotSpecified,
+        **kwargs
+    ):
         """Options to make the light(s) pulse `color` and then back to its original color"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = 1 - duty_cycle
-        return dict(waveform=Waveform.PULSE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
+        return dict(
+            waveform=Waveform.PULSE,
+            cycles=cycles,
+            skew_ratio=skew_ratio,
+            transient=transient,
+            period=period,
+        )
 
     @effect
-    def sine(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
+    def sine(
+        self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
+    ):
         """Options to make the light(s) transition to `color` and back in a smooth sine wave"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
+        return dict(
+            waveform=Waveform.SINE,
+            cycles=cycles,
+            skew_ratio=skew_ratio,
+            transient=transient,
+            period=period,
+        )
 
     @effect
     def half_sine(self, cycles=1, period=1.0, transient=1, **kwargs):
@@ -347,11 +418,19 @@ class Effects(object):
         return dict(waveform=Waveform.HALF_SINE, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def triangle(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
+    def triangle(
+        self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
+    ):
         """Options to make the light(s) transition to `color` linearly and back"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.TRIANGLE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
+        return dict(
+            waveform=Waveform.TRIANGLE,
+            cycles=cycles,
+            skew_ratio=skew_ratio,
+            transient=transient,
+            period=period,
+        )
 
     @effect
     def saw(self, cycles=1, period=1.0, transient=1, **kwargs):
@@ -359,7 +438,15 @@ class Effects(object):
         return dict(waveform=Waveform.SAW, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def breathe(self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
+    def breathe(
+        self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
+    ):
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
-        return dict(waveform=Waveform.SINE, cycles=cycles, skew_ratio=skew_ratio, transient=transient, period=period)
+        return dict(
+            waveform=Waveform.SINE,
+            cycles=cycles,
+            skew_ratio=skew_ratio,
+            transient=transient,
+            period=period,
+        )

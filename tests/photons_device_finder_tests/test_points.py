@@ -29,5 +29,7 @@ describe TestCase, "InfoPoints":
             assert all(type(k) is str for k in e.value.keys), e.value.keys
 
             for k in e.value.keys:
-                assert k in Device.fields or k in device.property_fields, "Unknown Device field {}".format(k)
+                assert (
+                    k in Device.fields or k in device.property_fields
+                ), "Unknown Device field {}".format(k)
                 assert k in Filter.fields, "Unknown Filter field {}".format(k)

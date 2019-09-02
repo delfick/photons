@@ -16,13 +16,13 @@ describe TestCase, "split_color_string":
 
     it "splits by whitespace":
         cases = [
-              ("", [])
-            , ("one two", ["one", "two"])
-            , ("  one two ", ["one", "two"])
-            , ("one\ttwo", ["one", "two"])
-            , ("one\ttwo    three four", ["one", "two", "three", "four"])
-            , ("one\t\t two \tthree", ["one", "two", "three"])
-            ]
+            ("", []),
+            ("one two", ["one", "two"]),
+            ("  one two ", ["one", "two"]),
+            ("one\ttwo", ["one", "two"]),
+            ("one\ttwo    three four", ["one", "two", "three", "four"]),
+            ("one\t\t two \tthree", ["one", "two", "three"]),
+        ]
 
         for thing, expected in cases:
             self.assertEqual(split_color_string(thing), expected)
@@ -37,6 +37,7 @@ describe TestCase, "Parser":
             assert k is None or type(k) is int
 
     describe "getting hsbk":
+
         def assertCorrect(self, components, h, s, b, k):
             self.assertEqual(Parser.hsbk(components), (h, s, b, k))
 
@@ -73,7 +74,13 @@ describe TestCase, "Parser":
             with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("kelvin:-1")
 
-            error = ValueOutOfRange("Value was not within bounds", component="kelvin", minimum=1500, maximum=9000, value=9001)
+            error = ValueOutOfRange(
+                "Value was not within bounds",
+                component="kelvin",
+                minimum=1500,
+                maximum=9000,
+                value=9001,
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("kelvin:9001")
 
@@ -84,7 +91,9 @@ describe TestCase, "Parser":
             with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("brightness:-1")
 
-            error = ValueOutOfRange("Value was not within bounds", component="brightness", minimum=0, maximum=1, value=2)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=2
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("brightness:2")
 
@@ -95,7 +104,9 @@ describe TestCase, "Parser":
             with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("saturation:-1")
 
-            error = ValueOutOfRange("Value was not within bounds", component="saturation", minimum=0, maximum=1, value=2)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="saturation", minimum=0, maximum=1, value=2
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("saturation:2")
 
@@ -107,7 +118,9 @@ describe TestCase, "Parser":
             with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("hue:-1")
 
-            error = ValueOutOfRange("Value was not within bounds", component="hue", minimum=0, maximum=360, value=361)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hue:361")
 
@@ -121,15 +134,21 @@ describe TestCase, "Parser":
             self.assertCorrect("rgb:0,200,100", 150.0, 1.0, 0.7843137254901961, None)
             self.assertCorrect("rgb:10,1,255", 242.12598425196848, 0.996078431372549, 1.0, None)
 
-            error = ValueOutOfRange("Value was not within bounds", component="r", minimum=0, maximum=255, value=256)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="r", minimum=0, maximum=255, value=256
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:256,1,255")
 
-            error = ValueOutOfRange("Value was not within bounds", component="g", minimum=0, maximum=255, value=256)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="g", minimum=0, maximum=255, value=256
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:255,256,255")
 
-            error = ValueOutOfRange("Value was not within bounds", component="b", minimum=0, maximum=255, value=256)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="b", minimum=0, maximum=255, value=256
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:255,255,256")
 
@@ -137,23 +156,45 @@ describe TestCase, "Parser":
             self.assertCorrect("hsb:240,0.1,0.8", 240, 0.1, 0.8, None)
             self.assertCorrect("hsb:240,1%,80%", 240, 0.01, 0.8, None)
 
-            error = ValueOutOfRange("Value was not within bounds", component="hue", minimum=0, maximum=360, value=361)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:361,0,0.8")
 
-            error = ValueOutOfRange("Value was not within bounds", component="saturation", minimum=0, maximum=1, value=10)
+            error = ValueOutOfRange(
+                "Value was not within bounds",
+                component="saturation",
+                minimum=0,
+                maximum=1,
+                value=10,
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1000%,0.8")
 
-            error = ValueOutOfRange("Value was not within bounds", component="saturation", minimum=0, maximum=1, value=10)
+            error = ValueOutOfRange(
+                "Value was not within bounds",
+                component="saturation",
+                minimum=0,
+                maximum=1,
+                value=10,
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,10,0.8")
 
-            error = ValueOutOfRange("Value was not within bounds", component="brightness", minimum=0, maximum=1, value=1.2)
+            error = ValueOutOfRange(
+                "Value was not within bounds",
+                component="brightness",
+                minimum=0,
+                maximum=1,
+                value=1.2,
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1,120%")
 
-            error = ValueOutOfRange("Value was not within bounds", component="brightness", minimum=0, maximum=1, value=8)
+            error = ValueOutOfRange(
+                "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=8
+            )
             with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1,8")
 
@@ -175,23 +216,25 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(msg.payload.as_dict()
-                    , { 'reserved6': sb.NotSpecified
-                      , 'transient': 0
-                      , 'hue': 240.0
-                      , 'saturation': 0.09999237048905166
-                      , 'brightness': 0.0
-                      , 'kelvin': 2500
-                      , 'period': 0.0
-                      , 'cycles': 1.0
-                      , 'skew_ratio': 0.0
-                      , 'waveform': Waveform.SAW
-                      , 'set_hue': 1
-                      , 'set_saturation': 1
-                      , 'set_brightness': 0
-                      , 'set_kelvin': 1
-                      }
-                    )
+                self.assertEqual(
+                    msg.payload.as_dict(),
+                    {
+                        "reserved6": sb.NotSpecified,
+                        "transient": 0,
+                        "hue": 240.0,
+                        "saturation": 0.09999237048905166,
+                        "brightness": 0.0,
+                        "kelvin": 2500,
+                        "period": 0.0,
+                        "cycles": 1.0,
+                        "skew_ratio": 0.0,
+                        "waveform": Waveform.SAW,
+                        "set_hue": 1,
+                        "set_saturation": 1,
+                        "set_brightness": 0,
+                        "set_kelvin": 1,
+                    },
+                )
 
             hsbk.assert_called_once_with(components, None)
 
@@ -204,23 +247,25 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(msg.payload.as_dict()
-                    , { 'reserved6': sb.NotSpecified
-                      , 'transient': 1
-                      , 'hue': 240.0
-                      , 'saturation': 0.09999237048905166
-                      , 'brightness': 0.0
-                      , 'kelvin': 2500
-                      , 'period': 1
-                      , 'cycles': 1.0
-                      , 'skew_ratio': 0.0
-                      , 'waveform': Waveform.SAW
-                      , 'set_hue': 1
-                      , 'set_saturation': 1
-                      , 'set_brightness': 0
-                      , 'set_kelvin': 1
-                      }
-                    )
+                self.assertEqual(
+                    msg.payload.as_dict(),
+                    {
+                        "reserved6": sb.NotSpecified,
+                        "transient": 1,
+                        "hue": 240.0,
+                        "saturation": 0.09999237048905166,
+                        "brightness": 0.0,
+                        "kelvin": 2500,
+                        "period": 1,
+                        "cycles": 1.0,
+                        "skew_ratio": 0.0,
+                        "waveform": Waveform.SAW,
+                        "set_hue": 1,
+                        "set_saturation": 1,
+                        "set_brightness": 0,
+                        "set_kelvin": 1,
+                    },
+                )
 
             hsbk.assert_called_once_with(components, overrides)
 
@@ -233,23 +278,25 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(msg.payload.as_dict()
-                    , { 'reserved6': sb.NotSpecified
-                      , 'transient': 1
-                      , 'hue': 240.0
-                      , 'saturation': 0.09999237048905166
-                      , 'brightness': 0.0
-                      , 'kelvin': 2500
-                      , 'period': 1.0
-                      , 'cycles': 1.0
-                      , 'skew_ratio': 0.49999237048905165
-                      , 'waveform': Waveform.SINE
-                      , 'set_hue': 1
-                      , 'set_saturation': 1
-                      , 'set_brightness': 0
-                      , 'set_kelvin': 1
-                      }
-                    )
+                self.assertEqual(
+                    msg.payload.as_dict(),
+                    {
+                        "reserved6": sb.NotSpecified,
+                        "transient": 1,
+                        "hue": 240.0,
+                        "saturation": 0.09999237048905166,
+                        "brightness": 0.0,
+                        "kelvin": 2500,
+                        "period": 1.0,
+                        "cycles": 1.0,
+                        "skew_ratio": 0.49999237048905165,
+                        "waveform": Waveform.SINE,
+                        "set_hue": 1,
+                        "set_saturation": 1,
+                        "set_brightness": 0,
+                        "set_kelvin": 1,
+                    },
+                )
 
             hsbk.assert_called_once_with(components, overrides)
 
@@ -262,22 +309,24 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(msg.payload.as_dict()
-                    , { 'reserved6': sb.NotSpecified
-                      , 'transient': 1
-                      , 'hue': 240.0
-                      , 'saturation': 0.09999237048905166
-                      , 'brightness': 0.0
-                      , 'kelvin': 2500
-                      , 'period': 1.0
-                      , 'cycles': 1.0
-                      , 'skew_ratio': 0.2
-                      , 'waveform': Waveform.PULSE
-                      , 'set_hue': 1
-                      , 'set_saturation': 1
-                      , 'set_brightness': 0
-                      , 'set_kelvin': 1
-                      }
-                    )
+                self.assertEqual(
+                    msg.payload.as_dict(),
+                    {
+                        "reserved6": sb.NotSpecified,
+                        "transient": 1,
+                        "hue": 240.0,
+                        "saturation": 0.09999237048905166,
+                        "brightness": 0.0,
+                        "kelvin": 2500,
+                        "period": 1.0,
+                        "cycles": 1.0,
+                        "skew_ratio": 0.2,
+                        "waveform": Waveform.PULSE,
+                        "set_hue": 1,
+                        "set_saturation": 1,
+                        "set_brightness": 0,
+                        "set_kelvin": 1,
+                    },
+                )
 
             hsbk.assert_called_once_with(components, overrides)

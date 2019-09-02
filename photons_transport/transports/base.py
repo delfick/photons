@@ -2,6 +2,7 @@ from photons_app import helpers as hp
 
 import asyncio
 
+
 class Transport:
     def __init__(self, session, *args, **kwargs):
         self.session = session
@@ -37,7 +38,7 @@ class Transport:
     async def close(self):
         if self.transport:
             try:
-                (f, ), _ = await asyncio.wait([self.transport])
+                (f,), _ = await asyncio.wait([self.transport])
             except asyncio.CancelledError:
                 raise
             except:

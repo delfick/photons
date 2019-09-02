@@ -19,14 +19,17 @@ import binascii
 import operator
 import struct
 
+
 class Set64Maker:
     """
     One of these is made as the set_64_maker callable. It contains as much
     of the Set64 message packd as we can and then provides a fake Set64
     that photons can use to create the messages
     """
+
     class Target:
         """Used to cache the bits for our target"""
+
         def __init__(self, val):
             self.bytes = val
             self.serial = binascii.hexlify(val[:6]).decode()
@@ -50,6 +53,7 @@ class Set64Maker:
         We use a real TileMessages.Set64 to get the packed bits for the parts
         that do not change, which is stored on the maker (the instance of Set64Maker)
         """
+
         def __init__(self, maker, **kwargs):
             self.kwargs = kwargs
             self.maker = maker
@@ -160,20 +164,19 @@ class Set64Maker:
         self.cache = ProtocolColor.Meta.cache
 
         msg = TileMessages.Set64(
-              source = 0
-            , sequence = 0
-            , target = None
-            , res_required = False
-            , ack_required = True
-
-            , tile_index = 0
-            , length = 1
-            , x = 0
-            , y = 0
-            , width = 8
-            , duration = 0
-            , colors = [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 3500}]
-            )
+            source=0,
+            sequence=0,
+            target=None,
+            res_required=False,
+            ack_required=True,
+            tile_index=0,
+            length=1,
+            x=0,
+            y=0,
+            width=8,
+            duration=0,
+            colors=[{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 3500}],
+        )
 
         self.frame_header_start = msg.frame_header.pack()[:-32]
 
@@ -184,7 +187,7 @@ class Set64Maker:
         self.protocol_header_packd = msg.protocol_header.pack()
 
         # tile_index, width, duration and colors are variable
-        self.payload_middle = msg.payload.pack()[8:-8 -32 - (64 * 64)]
+        self.payload_middle = msg.payload.pack()[8 : -8 - 32 - (64 * 64)]
 
         self.uint8_bits = {val: self.bits(T.Uint8, val) for val in range(256)}
 
@@ -235,6 +238,7 @@ class Set64Maker:
 
     def __call__(self, **kwargs):
         return self.Set64(self, **kwargs)
+
 
 # Used to create a message that photons thinks is a valid Set64
 # It is a callable that requires keyword arguments for

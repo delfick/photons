@@ -64,9 +64,10 @@ describe AsyncTestCase, "Waiter":
                 request.Meta.multi = None
 
                 result = Result(request, False, self.retry_options)
-                
+
                 async def writer():
                     return result
+
                 self.writer.side_effect = writer
 
                 async def doit():
@@ -93,11 +94,13 @@ describe AsyncTestCase, "Waiter":
 
                 async def writer():
                     raise ValueError("Nope")
+
                 self.writer.side_effect = writer
 
                 async def doit():
                     with self.fuzzyAssertRaisesError(ValueError, "Nope"):
                         await self.waiter
+
                 await self.wait_for(doit())
 
             async it "propagates cancellation from cancelled writer":
@@ -110,11 +113,13 @@ describe AsyncTestCase, "Waiter":
                     fut = asyncio.Future()
                     fut.cancel()
                     await fut
+
                 self.writer.side_effect = writer
 
                 async def doit():
                     with self.fuzzyAssertRaisesError(asyncio.CancelledError):
                         await self.waiter
+
                 await self.wait_for(doit())
 
             async it "only one writings if no_retry is True":
@@ -127,6 +132,7 @@ describe AsyncTestCase, "Waiter":
 
                 async def writer():
                     return futs.pop(0)
+
                 self.writer.side_effect = writer
 
                 times = [0.05, 2]
@@ -168,6 +174,7 @@ describe AsyncTestCase, "Waiter":
 
                 async def writer():
                     return futs.pop(0)
+
                 self.writer.side_effect = writer
 
                 times = [0.05, 2]
@@ -206,6 +213,7 @@ describe AsyncTestCase, "Waiter":
 
                 async def writer():
                     return futs.pop(0)
+
                 self.writer.side_effect = writer
 
                 times = [0.05, 2]
@@ -248,6 +256,7 @@ describe AsyncTestCase, "Waiter":
 
                 async def writer():
                     return futs.pop(0)
+
                 self.writer.side_effect = writer
 
                 times = [0.05, 0.05]
@@ -320,8 +329,10 @@ describe AsyncTestCase, "Waiter":
         describe "await":
             async it "starts a writings":
                 called = []
+
                 def w():
                     called.append(1)
+
                 writings = asynctest.mock.CoroutineMock(name="writings", side_effect=w)
                 self.waiter.writings = writings
 
@@ -359,10 +370,13 @@ describe AsyncTestCase, "Waiter":
                 def faar(ff, fs):
                     assert fs is results
                     ff.set_result(res)
+
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
                 self.waiter.results = results
-                with mock.patch("photons_transport.comms.waiter.hp.find_and_apply_result", find_and_apply_result):
+                with mock.patch(
+                    "photons_transport.comms.waiter.hp.find_and_apply_result", find_and_apply_result
+                ):
                     await self.waiter.writings()
 
                 self.assertIs(self.waiter.result(), res)
@@ -378,10 +392,13 @@ describe AsyncTestCase, "Waiter":
                         assert not f.cancelled()
                     ff.cancel()
                     original_find_and_apply_result(ff, fs)
+
                 find_and_apply_result = mock.Mock(name="find_and_apply_result", side_effect=faar)
 
                 self.waiter.results = results
-                with mock.patch("photons_transport.comms.waiter.hp.find_and_apply_result", find_and_apply_result):
+                with mock.patch(
+                    "photons_transport.comms.waiter.hp.find_and_apply_result", find_and_apply_result
+                ):
                     await self.waiter.writings()
 
                 assert self.waiter.cancelled()
@@ -411,6 +428,7 @@ describe AsyncTestCase, "Waiter":
                 async def write():
                     fut.set_result(True)
                     return result
+
                 self.writer.side_effect = write
 
                 with mock.patch.object(RetryOptions, "next_time", 15):
@@ -426,6 +444,7 @@ describe AsyncTestCase, "Waiter":
                 original_call_later = self.loop.call_later
 
                 called = []
+
                 def cl(t, cb, *args):
                     if cb is writings_cb:
                         called.append((t, args))
@@ -438,7 +457,9 @@ describe AsyncTestCase, "Waiter":
                 self.waiter._writings_cb = writings_cb
                 self.waiter.results = [result]
 
-                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=Exception("Expect no write"))
+                do_write = asynctest.mock.CoroutineMock(
+                    name="do_write", side_effect=Exception("Expect no write")
+                )
 
                 self.waiter.retry_options.next_check_after_wait_for_result = 9001
 
@@ -456,6 +477,7 @@ describe AsyncTestCase, "Waiter":
                 original_call_later = self.loop.call_later
 
                 called = []
+
                 def cl(t, cb, *args):
                     if cb is writings_cb:
                         called.append((t, args))
@@ -482,7 +504,9 @@ describe AsyncTestCase, "Waiter":
             async it "passes on errors from do_write":
                 self.waiter.results = []
 
-                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=ValueError("Nope"))
+                do_write = asynctest.mock.CoroutineMock(
+                    name="do_write", side_effect=ValueError("Nope")
+                )
 
                 with mock.patch.object(self.waiter, "do_write", do_write):
                     await self.waiter.writings()
@@ -499,6 +523,7 @@ describe AsyncTestCase, "Waiter":
                     fut = asyncio.Future()
                     fut.cancel()
                     await fut
+
                 do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=do_write)
 
                 with mock.patch.object(self.waiter, "do_write", do_write):
@@ -528,6 +553,7 @@ describe AsyncTestCase, "Waiter":
                 async def writer():
                     called.append("writer")
                     return result
+
                 writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
 
                 self.waiter.writer = writer
@@ -543,9 +569,11 @@ describe AsyncTestCase, "Waiter":
                 called = []
 
                 fut = asyncio.Future()
+
                 def writings_cb(*args):
                     called.append("writings_cb")
                     fut.set_result(True)
+
                 writings_cb = mock.Mock(name="writings_cb", side_effect=writings_cb)
 
                 result = asyncio.Future()
@@ -553,6 +581,7 @@ describe AsyncTestCase, "Waiter":
                 async def writer():
                     called.append("writer")
                     return result
+
                 writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
 
                 self.waiter.writer = writer

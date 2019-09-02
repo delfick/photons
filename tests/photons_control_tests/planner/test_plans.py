@@ -34,29 +34,21 @@ describe TestCase, "a_plan":
 describe TestCase, "pktkey":
     it "returns a tuple of information representing the packet":
         get_service = DiscoveryMessages.StateService.empty_normalise(
-              source = 0
-            , sequence = 1
-            , target = "d073d5000001"
-            , service = Services.UDP
-            , port = 56700
-            )
+            source=0, sequence=1, target="d073d5000001", service=Services.UDP, port=56700
+        )
 
         key = pktkey(get_service)
         self.assertEqual(key, (1024, 3, '{"port": 56700, "service": "<Services.UDP: 1>"}'))
 
         get_service2 = DiscoveryMessages.StateService.empty_normalise(
-              source = 1
-            , sequence = 2
-            , target = "d073d5000002"
-            , service = Services.UDP
-            , port = 56700
-            )
+            source=1, sequence=2, target="d073d5000002", service=Services.UDP, port=56700
+        )
         key = pktkey(get_service)
         self.assertEqual(key, (1024, 3, '{"port": 56700, "service": "<Services.UDP: 1>"}'))
 
         get_power = DeviceMessages.GetPower()
         key = pktkey(get_power)
-        self.assertEqual(key, (1024, 20, '{}'))
+        self.assertEqual(key, (1024, 20, "{}"))
 
         state_power = DeviceMessages.StatePower(level=0)
         key = pktkey(state_power)
@@ -79,7 +71,9 @@ describe TestCase, "make_plans":
     it "complains if a key is provided by name but not in plan_by_key":
         with mock.patch("photons_control.planner.plans.plan_by_key", {"two": Plan, "three": Plan}):
             msg = "No default plan for key"
-            with self.fuzzyAssertRaisesError(PhotonsAppError, msg, wanted="one", available=["two", "three"]):
+            with self.fuzzyAssertRaisesError(
+                PhotonsAppError, msg, wanted="one", available=["two", "three"]
+            ):
                 make_plans("one")
 
     it "adds plans by label to plans dictionary":

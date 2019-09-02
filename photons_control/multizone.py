@@ -21,6 +21,7 @@ from photons_control.script import FromGenerator
 
 from input_algorithms import spec_base as sb
 
+
 async def find_multizone(target, reference, afr, gatherer=None, **kwargs):
     """
     Yield (serial, has_extended_multizone) for all multizone products found in this reference
@@ -33,6 +34,7 @@ async def find_multizone(target, reference, afr, gatherer=None, **kwargs):
         if info["cap"].has_multizone:
             yield serial, info["has_extended_multizone"]
 
+
 async def zones_from_reference(target, reference, afr, gatherer=None, **kwargs):
     """
     Yield (serial, [(zone, color), ...]) for each multizone device that is found
@@ -44,6 +46,7 @@ async def zones_from_reference(target, reference, afr, gatherer=None, **kwargs):
     async for serial, _, info in gatherer.gather(plans, reference, afr, **kwargs):
         if info is not Skip:
             yield serial, info
+
 
 class SetZonesPlan(Plan):
     """
@@ -86,6 +89,7 @@ class SetZonesPlan(Plan):
     change all strips at the same time, just use the SetZones msg in a normal
     run_with script.
     """
+
     dependant_info = {"c": CapabilityPlan()}
 
     def setup(self, colors, zone_index=0, duration=1, overrides=None, **kwargs):
@@ -108,40 +112,44 @@ class SetZonesPlan(Plan):
                 continue
 
             if current != color:
-                set_color_old.append(MultiZoneMessages.SetColorZones(
-                      start_index = start
-                    , end_index = end
-                    , duration = duration
-                    , ack_required = True
-                    , res_required = False
-                    , **current
-                    ))
+                set_color_old.append(
+                    MultiZoneMessages.SetColorZones(
+                        start_index=start,
+                        end_index=end,
+                        duration=duration,
+                        ack_required=True,
+                        res_required=False,
+                        **current
+                    )
+                )
                 start = i
 
             current = color
             end = i
 
         if not set_color_old or set_color_old[-1].end_index != i:
-            set_color_old.append(MultiZoneMessages.SetColorZones(
-                  start_index = start
-                , end_index = end
-                , duration = duration
-                , ack_required = True
-                , res_required = False
-                , **current
-                ))
+            set_color_old.append(
+                MultiZoneMessages.SetColorZones(
+                    start_index=start,
+                    end_index=end,
+                    duration=duration,
+                    ack_required=True,
+                    res_required=False,
+                    **current
+                )
+            )
 
         return set_color_old
 
     def make_color_new_messages(self, zone_index, colors, duration):
         return MultiZoneMessages.SetExtendedColorZones(
-              duration = duration
-            , colors_count = len(colors)
-            , colors = colors
-            , zone_index = zone_index
-            , ack_required = True
-            , res_required = False
-            )
+            duration=duration,
+            colors_count=len(colors),
+            colors=colors,
+            zone_index=zone_index,
+            ack_required=True,
+            res_required=False,
+        )
 
     def make_colors(self, colors, overrides):
         results = list(make_colors(colors, overrides))
@@ -174,6 +182,7 @@ class SetZonesPlan(Plan):
                     msgs.append(m)
                 return msgs
 
+
 def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     """
     Set colors on all found multizone devices. Uses SetZonesPlan to generate the
@@ -196,6 +205,7 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     If you want to target a particular device or devices, pass in reference as a
     run_with reference.
     """
+
     async def gen(ref, afr, **kwargs):
         plans = {"set_zones": SetZonesPlan(colors, **options)}
 
@@ -209,18 +219,21 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
             if messages is not Skip:
                 if power_on:
                     yield LightMessages.SetLightPower(
-                          level = 65535
-                        , target = serial
-                        , duration = options.get("duration", 1)
-                        , ack_required = True
-                        , res_required = False
-                        )
+                        level=65535,
+                        target=serial,
+                        duration=options.get("duration", 1),
+                        ack_required=True,
+                        res_required=False,
+                    )
 
                 yield messages
 
     return FromGenerator(gen)
 
-def SetZonesEffect(effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options):
+
+def SetZonesEffect(
+    effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options
+):
     """
     Set an effect on your strips
 
@@ -278,18 +291,19 @@ def SetZonesEffect(effect, gatherer=None, power_on=True, power_on_duration=1, re
             if info["cap"]["has_multizone"]:
                 if power_on:
                     yield LightMessages.SetLightPower(
-                          level = 65535
-                        , target = serial
-                        , duration = power_on_duration
-                        , ack_required = True
-                        , res_required = False
-                        )
+                        level=65535,
+                        target=serial,
+                        duration=power_on_duration,
+                        ack_required=True,
+                        res_required=False,
+                    )
 
                 msg = set_effect.clone()
                 msg.target = serial
                 yield msg
 
     return FromGenerator(gen)
+
 
 @an_action(needs_target=True, special_reference=True)
 async def get_zones(collector, target, reference, artifact, **kwargs):
@@ -301,6 +315,7 @@ async def get_zones(collector, target, reference, artifact, **kwargs):
             print(serial)
             for zone, color in zones:
                 print("\tZone {0}: {1}".format(zone, repr(color)))
+
 
 @an_action(needs_target=True, special_reference=True)
 async def set_zones(collector, target, reference, artifact, **kwargs):
@@ -317,9 +332,12 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
     options = collector.configuration["photons_app"].extra_as_json
 
     if "colors" not in options:
-        raise PhotonsAppError("""Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`""")
+        raise PhotonsAppError(
+            """Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`"""
+        )
 
     await target.script(SetZones(**options)).run_with_all(reference)
+
 
 @an_action(needs_target=True, special_reference=True)
 async def multizone_effect(collector, target, reference, artifact, **kwargs):

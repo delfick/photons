@@ -28,14 +28,18 @@ describe TestCase, "Collector":
 
         prepare = mock.Mock(name="prepare")
         with hp.a_temp_file() as fle:
-            fle.write(dedent("""
+            fle.write(
+                dedent(
+                    """
             ---
 
             photons_app:
                artifact: "blah"
                ignored: "an option"
 
-            """).encode())
+            """
+                ).encode()
+            )
             fle.close()
             collector.prepare(fle.name, {"one": 2})
 
@@ -48,29 +52,39 @@ describe TestCase, "Collector":
 
         call = prepare.mock_calls[0].call_list()[0][1]
         self.assertEqual(call[0], fle.name)
-        self.assertEqual(call[1].storage.data
-            , [ (Path(""), {"two": 3}, None)
-              , (Path(""), {"photons_app": collector.configuration["photons_app"].as_dict()}, None)
-              , (Path(""), {"one": 2}, None)
-              ]
-            )
+        self.assertEqual(
+            call[1].storage.data,
+            [
+                (Path(""), {"two": 3}, None),
+                (Path(""), {"photons_app": collector.configuration["photons_app"].as_dict()}, None),
+                (Path(""), {"one": 2}, None),
+            ],
+        )
 
         self.assertEqual(clone2.configuration["photons_app"].artifact, "blah")
-        self.assertIsNot(clone2.configuration["photons_app"], collector.configuration["photons_app"])
+        self.assertIsNot(
+            clone2.configuration["photons_app"], collector.configuration["photons_app"]
+        )
 
     describe "extra_prepare":
+
         @contextmanager
         def mocks(self, collector, configuration, args_dict, photons_app, register):
-            __main__ = mock.Mock(name='__main__')
-            find_photons_app_options = mock.Mock(name="find_photons_app_options", return_value=photons_app)
-            determine_mainline_module = mock.Mock(name="determine_mainline_module", return_value=__main__)
+            __main__ = mock.Mock(name="__main__")
+            find_photons_app_options = mock.Mock(
+                name="find_photons_app_options", return_value=photons_app
+            )
+            determine_mainline_module = mock.Mock(
+                name="determine_mainline_module", return_value=__main__
+            )
             setup_addon_register = mock.Mock(name="setup_addon_register", return_value=register)
 
-            with mock.patch.multiple(collector
-                , find_photons_app_options = find_photons_app_options
-                , determine_mainline_module = determine_mainline_module
-                , setup_addon_register = setup_addon_register
-                ):
+            with mock.patch.multiple(
+                collector,
+                find_photons_app_options=find_photons_app_options,
+                determine_mainline_module=determine_mainline_module,
+                setup_addon_register=setup_addon_register,
+            ):
                 yield __main__
 
             find_photons_app_options.assert_called_once_with(configuration, args_dict)
@@ -93,12 +107,10 @@ describe TestCase, "Collector":
                     return isinstance(other, asyncio.Future)
 
             self.assertIs(collector.register, register)
-            self.assertEqual(configuration.as_dict()
-                , { "$@": extra
-                  , "collector": collector
-                  , "photons_app": photons_app
-                  }
-                )
+            self.assertEqual(
+                configuration.as_dict(),
+                {"$@": extra, "collector": collector, "photons_app": photons_app},
+            )
 
     describe "find_photons_app_options":
         it "returns us a dictionary with options from configuration and args_dict":
@@ -173,25 +185,36 @@ describe TestCase, "Collector":
             def R(*args):
                 register = info["register"] = original(*args)
                 return register
+
             FakeRegister = mock.Mock(name="Register", side_effect=R)
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(sorted(register.addon_getter.namespaces.keys()), sorted(["option_merge.addons", "lifx.photons"]))
+                self.assertEqual(
+                    sorted(register.addon_getter.namespaces.keys()),
+                    sorted(["option_merge.addons", "lifx.photons"]),
+                )
                 self.assertEqual(register.known, [("lifx.photons", "one"), ("lifx.photons", "two")])
                 called.append("recursive_import_known")
+
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
 
             def rri():
                 called.append("recursive_resolve_imported")
-            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
+
+            recursive_resolve_imported = mock.Mock(
+                name="recursive_resolve_imported", side_effect=rri
+            )
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
-                with mock.patch.multiple(Register
-                    , recursive_import_known = recursive_import_known
-                    , recursive_resolve_imported = recursive_resolve_imported
-                    ):
-                    Collector().setup_addon_register({"addons": {"lifx.photons": ["one", "two"]}}, None)
+                with mock.patch.multiple(
+                    Register,
+                    recursive_import_known=recursive_import_known,
+                    recursive_resolve_imported=recursive_resolve_imported,
+                ):
+                    Collector().setup_addon_register(
+                        {"addons": {"lifx.photons": ["one", "two"]}}, None
+                    )
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
@@ -205,25 +228,43 @@ describe TestCase, "Collector":
             def R(*args):
                 register = info["register"] = original(*args)
                 return register
+
             FakeRegister = mock.Mock(name="Register", side_effect=R)
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(sorted(register.addon_getter.namespaces.keys()), sorted(["option_merge.addons", "lifx.photons"]))
-                self.assertEqual(register.known, [("lifx.photons", "one"), ("lifx.photons", "two"), ("lifx.photons", "__main__")])
+                self.assertEqual(
+                    sorted(register.addon_getter.namespaces.keys()),
+                    sorted(["option_merge.addons", "lifx.photons"]),
+                )
+                self.assertEqual(
+                    register.known,
+                    [
+                        ("lifx.photons", "one"),
+                        ("lifx.photons", "two"),
+                        ("lifx.photons", "__main__"),
+                    ],
+                )
                 called.append("recursive_import_known")
+
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
 
             def rri():
                 called.append("recursive_resolve_imported")
-            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
+
+            recursive_resolve_imported = mock.Mock(
+                name="recursive_resolve_imported", side_effect=rri
+            )
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
-                with mock.patch.multiple(Register
-                    , recursive_import_known = recursive_import_known
-                    , recursive_resolve_imported = recursive_resolve_imported
-                    ):
-                    Collector().setup_addon_register({"addons": {"lifx.photons": ["one", "two"]}}, True)
+                with mock.patch.multiple(
+                    Register,
+                    recursive_import_known=recursive_import_known,
+                    recursive_resolve_imported=recursive_resolve_imported,
+                ):
+                    Collector().setup_addon_register(
+                        {"addons": {"lifx.photons": ["one", "two"]}}, True
+                    )
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
@@ -237,24 +278,33 @@ describe TestCase, "Collector":
             def R(*args):
                 register = info["register"] = original(*args)
                 return register
+
             FakeRegister = mock.Mock(name="Register", side_effect=R)
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(sorted(register.addon_getter.namespaces.keys()), sorted(["option_merge.addons", "lifx.photons"]))
+                self.assertEqual(
+                    sorted(register.addon_getter.namespaces.keys()),
+                    sorted(["option_merge.addons", "lifx.photons"]),
+                )
                 self.assertEqual(register.known, [])
                 called.append("recursive_import_known")
+
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
 
             def rri():
                 called.append("recursive_resolve_imported")
-            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
+
+            recursive_resolve_imported = mock.Mock(
+                name="recursive_resolve_imported", side_effect=rri
+            )
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
-                with mock.patch.multiple(Register
-                    , recursive_import_known = recursive_import_known
-                    , recursive_resolve_imported = recursive_resolve_imported
-                    ):
+                with mock.patch.multiple(
+                    Register,
+                    recursive_import_known=recursive_import_known,
+                    recursive_resolve_imported=recursive_resolve_imported,
+                ):
                     Collector().setup_addon_register({}, None)
 
             recursive_import_known.assert_called_once_with()
@@ -283,10 +333,10 @@ describe TestCase, "Collector":
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
             configuration = {"photons_app": photons_app}
-            args_dict = mock.Mock(name='args_dict')
+            args_dict = mock.Mock(name="args_dict")
 
             collector = Collector()
-            collector.register = mock.Mock(name='register')
+            collector.register = mock.Mock(name="register")
 
             task_finder = mock.Mock(name="task_finder")
             FakeTaskFinder = mock.Mock(name="TaskFinder", return_value=task_finder)
@@ -303,7 +353,9 @@ describe TestCase, "Collector":
             current_home = os.environ.get("HOME")
             try:
                 os.environ["HOME"] = "/home/bob"
-                self.assertEqual(Collector().home_dir_configuration_location(), "/home/bob/.photons_apprc.yml")
+                self.assertEqual(
+                    Collector().home_dir_configuration_location(), "/home/bob/.photons_apprc.yml"
+                )
             finally:
                 if have_current_home:
                     os.environ["HOME"] = current_home
@@ -312,6 +364,7 @@ describe TestCase, "Collector":
 
     describe "start_configuration":
         it "returns MergedOptions that doesn't prefix dictobj objects":
+
             class D(dictobj):
                 fields = ["one"]
 
@@ -325,14 +378,18 @@ describe TestCase, "Collector":
     describe "read_file":
         it "reads it as yaml":
             with hp.a_temp_file() as fle:
-                fle.write(dedent("""
+                fle.write(
+                    dedent(
+                        """
                     ---
 
                     one: 2
 
                     two:
                       three: 3
-                """).encode())
+                """
+                    ).encode()
+                )
                 fle.close()
 
                 read = Collector().read_file(fle.name)
@@ -340,9 +397,13 @@ describe TestCase, "Collector":
 
         it "complains if it's not valid yaml":
             with hp.a_temp_file() as fle:
-                fle.write(dedent("""
+                fle.write(
+                    dedent(
+                        """
                     [1, 2
-                """).encode())
+                """
+                    ).encode()
+                )
                 fle.close()
 
                 with self.fuzzyAssertRaisesError(BadYaml, "Failed to read yaml", location=fle.name):
@@ -351,7 +412,7 @@ describe TestCase, "Collector":
     describe "add_configuration":
         it "removes config_root from result if we already have that in the configuration":
             config_root = str(uuid.uuid1())
-            configuration = MergedOptions.using({'config_root': config_root})
+            configuration = MergedOptions.using({"config_root": config_root})
             result = {"config_root": str(uuid.uuid1()), "one": 1}
             done = {}
             src = str(uuid.uuid1())
@@ -373,15 +434,24 @@ describe TestCase, "Collector":
             done = {}
             src = str(uuid.uuid1())
 
-            home_dir_configuration_location = mock.Mock(name="home_dir_configuration_location", return_value=home_location)
+            home_dir_configuration_location = mock.Mock(
+                name="home_dir_configuration_location", return_value=home_location
+            )
             collect_another_source = mock.NonCallableMock(name="collect_another_source")
             collector = Collector()
 
-            with mock.patch.object(collector, "home_dir_configuration_location", home_dir_configuration_location):
-                collector.add_configuration(configuration, collect_another_source, done, result, src)
+            with mock.patch.object(
+                collector, "home_dir_configuration_location", home_dir_configuration_location
+            ):
+                collector.add_configuration(
+                    configuration, collect_another_source, done, result, src
+                )
 
             home_dir_configuration_location.assert_called_once_with()
-            self.assertEqual(configuration.storage.data[0], (Path(""), {"config_root": new_config_root, "one": 1}, src))
+            self.assertEqual(
+                configuration.storage.data[0],
+                (Path(""), {"config_root": new_config_root, "one": 1}, src),
+            )
             self.assertEqual(configuration["config_root"], new_config_root)
 
         it "sets the source in terms of the config_root":
@@ -413,18 +483,19 @@ describe TestCase, "Collector":
             def cas(name):
                 self.assertEqual(configuration["one"], one)
                 self.assertEqual(expected.pop(0), name)
+
             collect_another_source = mock.Mock(name="collect_another_source", side_effect=cas)
 
             exists = mock.Mock(name="exists", return_value=True)
 
             with mock.patch("os.path.exists", exists):
-                Collector().add_configuration(configuration, collect_another_source, done, result, src)
-
-            self.assertEqual(collect_another_source.mock_calls
-                , [ mock.call("/one/two/three")
-                  , mock.call("/four")
-                  ]
+                Collector().add_configuration(
+                    configuration, collect_another_source, done, result, src
                 )
+
+            self.assertEqual(
+                collect_another_source.mock_calls, [mock.call("/one/two/three"), mock.call("/four")]
+            )
 
         it "complains if an extra source doesn't exist":
             src = str(uuid.uuid1())
@@ -440,8 +511,15 @@ describe TestCase, "Collector":
             exists = mock.Mock(name="exists", return_value=False)
 
             with mock.patch("os.path.exists", exists):
-                with self.fuzzyAssertRaisesError(BadConfiguration, "Specified extra file doesn't exist", extra="/one/two/three", source=src):
-                    Collector().add_configuration(configuration, collect_another_source, done, result, src)
+                with self.fuzzyAssertRaisesError(
+                    BadConfiguration,
+                    "Specified extra file doesn't exist",
+                    extra="/one/two/three",
+                    source=src,
+                ):
+                    Collector().add_configuration(
+                        configuration, collect_another_source, done, result, src
+                    )
 
             exists.assert_called_once_with("/one/two/three")
 
@@ -449,14 +527,8 @@ describe TestCase, "Collector":
         it "registers converters for serveral things":
             f = asyncio.Future()
             configuration = MergedOptions.using(
-                  { "targets":
-                    { "one":
-                      { "type": "special"
-                      , "options": {1: 2}
-                      }
-                    }
-                  }
-                )
+                {"targets": {"one": {"type": "special", "options": {1: 2}}}}
+            )
 
             collector = Collector()
             configuration["collector"] = collector
@@ -473,7 +545,9 @@ describe TestCase, "Collector":
 
             self.assertEqual(list(targets.keys()), ["one"])
             self.assertEqual(type(targets["one"]), Target)
-            self.assertEqual(targets["one"].as_dict(), {"type": "special", "optional": False, "options": {1: 2}})
+            self.assertEqual(
+                targets["one"].as_dict(), {"type": "special", "optional": False, "options": {1: 2}}
+            )
 
             self.assertEqual(type(target_register), TargetRegister)
             self.assertEqual(type(protocol_register), ProtocolRegister)

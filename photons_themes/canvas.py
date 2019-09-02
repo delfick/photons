@@ -11,6 +11,7 @@ from photons_themes.theme import ThemeColor
 import operator
 import random
 
+
 def color_weighting(distances):
     """
     Return an array of colors where there is more of a color the closest it is.
@@ -32,6 +33,7 @@ def color_weighting(distances):
             for _ in range(int(greatest_distance / dist)):
                 yield color
 
+
 def shuffle_point(i, j):
     """
     Return a new (i, j) value that is the current (i, j) value plus or minus
@@ -41,6 +43,7 @@ def shuffle_point(i, j):
     newY = random.randint(j - 3, j + 3)
     return newX, newY
 
+
 class Canvas:
     """
     This is just a collection of points with methods for interacting with those
@@ -49,6 +52,7 @@ class Canvas:
     The points are stored as (i, j) in a dictionary. Ideally the points values
     are ``photons_themes.theme.ThemeColor`` objects.
     """
+
     def __init__(self):
         self.points = {}
         self.color_func = None
@@ -196,15 +200,15 @@ class Canvas:
     def surrounding_points(self, i, j):
         """Return the co-ordinates that are neighbours of this point"""
         return [
-            (i - 1, j + 1)
-          , (i    , j + 1)
-          , (i + 1, j + 1)
-          , (i - 1, j    )
-          , (i + 1, j    )
-          , (i - 1, j - 1)
-          , (i    , j - 1)
-          , (i + 1, j - 1)
-          ]
+            (i - 1, j + 1),
+            (i, j + 1),
+            (i + 1, j + 1),
+            (i - 1, j),
+            (i + 1, j),
+            (i - 1, j - 1),
+            (i, j - 1),
+            (i + 1, j - 1),
+        ]
 
     def has_neighbour(self, i, j):
         """Return whether there are any points around this (i, j) position"""
@@ -287,6 +291,7 @@ class Canvas:
 
         def get_key(dc):
             return (dc[0], (dc[1].hue, dc[1].saturation, dc[1].brightness, dc[1].kelvin))
+
         distances = sorted(distances, key=get_key)
         return distances[:consider]
 

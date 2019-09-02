@@ -11,8 +11,10 @@ import logging
 
 log = logging.getLogger("photons_transport.targets.item")
 
+
 class Done:
     """Used to specify when we should close a queue"""
+
 
 def choose_source(pkt, source):
     """Used to decide what we use as source for the packet"""
@@ -20,6 +22,7 @@ def choose_source(pkt, source):
         return pkt.source
     else:
         return source
+
 
 class Item(object):
     def __init__(self, parts):
@@ -95,7 +98,9 @@ class Item(object):
             into a semaphore.
         """
         if "timeout" in kwargs:
-            log.warning(hp.lc("Please use message_timeout instead of timeout when calling run_with"))
+            log.warning(
+                hp.lc("Please use message_timeout instead of timeout when calling run_with")
+            )
 
         with catch_errors(kwargs.get("error_catcher")) as error_catcher:
             kwargs["error_catcher"] = error_catcher
@@ -103,7 +108,9 @@ class Item(object):
             broadcast = kwargs.get("broadcast", False)
             find_timeout = kwargs.get("find_timeout", 20)
 
-            found, serials, missing = await self._find(kwargs.get("found"), reference, afr, broadcast, find_timeout)
+            found, serials, missing = await self._find(
+                kwargs.get("found"), reference, afr, broadcast, find_timeout
+            )
 
             # Work out what and where to send
             # All the packets from here have targets on them
@@ -118,14 +125,8 @@ class Item(object):
                 accept_found = kwargs.get("accept_found") or broadcast
 
                 found, missing = await self.search(
-                      afr
-                    , found
-                    , accept_found
-                    , packets
-                    , broadcast
-                    , find_timeout
-                    , kwargs
-                    )
+                    afr, found, accept_found, packets, broadcast, find_timeout, kwargs
+                )
 
             # Complain if we care about having all wanted devices
             if not broadcast and kwargs.get("require_all_devices") and missing:
@@ -184,16 +185,18 @@ class Item(object):
                 for serial in serials:
                     clone = p.clone()
                     clone.update(
-                          dict(
-                            target = serial
-                          , source = choose_source(clone, afr.source)
-                          , sequence = afr.seq(serial)
-                          )
+                        dict(
+                            target=serial,
+                            source=choose_source(clone, afr.source),
+                            sequence=afr.seq(serial),
                         )
+                    )
                     packets.append((original, clone))
             else:
                 clone = p.clone()
-                clone.update(dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.target)))
+                clone.update(
+                    dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.target))
+                )
                 packets.append((original, clone))
 
         return packets
@@ -220,11 +223,7 @@ class Item(object):
 
         def on_done(packet, res):
             if res.cancelled():
-                hp.add_error(error_catcher
-                    , TimedOut("Message was cancelled"
-                      , serial = packet.serial
-                      )
-                    )
+                hp.add_error(error_catcher, TimedOut("Message was cancelled", serial=packet.serial))
             else:
                 exc = res.exception()
                 if exc:
@@ -252,12 +251,14 @@ class Item(object):
                 f.cancel()
 
     async def do_send(self, afr, original, packet, queue, kwargs):
-        res = await afr.send(original, packet
-            , timeout = kwargs.get("message_timeout", 10)
-            , limit = kwargs.get("limit")
-            , no_retry = kwargs.get("no_retry", False)
-            , is_broadcast = bool(kwargs.get("broadcast"))
-            , connect_timeout = kwargs.get("connect_timeout", 10)
-            )
+        res = await afr.send(
+            original,
+            packet,
+            timeout=kwargs.get("message_timeout", 10),
+            limit=kwargs.get("limit"),
+            no_retry=kwargs.get("no_retry", False),
+            is_broadcast=bool(kwargs.get("broadcast")),
+            connect_timeout=kwargs.get("connect_timeout", 10),
+        )
         for thing in res:
             await queue.put(thing)

@@ -20,17 +20,15 @@ import time
 
 log = logging.getLogger("photons_tile_paint.animation")
 
+
 class Finish(PhotonsAppError):
     pass
 
+
 coords_for_horizontal_line = user_coords_to_pixel_coords(
-      [ [(0, 0), (8, 8)]
-      , [(1, 0), (8, 8)]
-      , [(2, 0), (8, 8)]
-      , [(3, 0), (8, 8)]
-      , [(4, 0), (8, 8)]
-      ]
-    )
+    [[(0, 0), (8, 8)], [(1, 0), (8, 8)], [(2, 0), (8, 8)], [(3, 0), (8, 8)], [(4, 0), (8, 8)]]
+)
+
 
 async def tile_serials_from_reference(target, reference, afr):
     """
@@ -46,6 +44,7 @@ async def tile_serials_from_reference(target, reference, afr):
 
     return serials
 
+
 def canvas_to_msgs(canvas, coords, duration=1, acks=True, orientations=None):
     for i, coord in enumerate(coords):
         colors = canvas.points_for_tile(*coord[0], *coord[1])
@@ -53,12 +52,9 @@ def canvas_to_msgs(canvas, coords, duration=1, acks=True, orientations=None):
             colors = orientation.reorient(colors, orientations.get(i, O.RightSideUp))
 
         yield set_64_maker(
-              tile_index = i
-            , width = coord[1][0]
-            , duration = duration
-            , colors = colors
-            , ack_required = acks
-            )
+            tile_index=i, width=coord[1][0], duration=duration, colors=colors, ack_required=acks
+        )
+
 
 def put_characters_on_canvas(canvas, chars, coords, fill_color=None):
     msgs = []
@@ -69,6 +65,7 @@ def put_characters_on_canvas(canvas, chars, coords, fill_color=None):
         canvas.set_all_points_for_tile(*coord[0], *coord[1], ch.get_color_func(fill_color))
 
     return msgs
+
 
 class TileStateGetter:
     class Info:
@@ -81,14 +78,17 @@ class TileStateGetter:
         @hp.memoized_property
         def default_color_func(self):
             if not self.states:
+
                 def get_empty(x, y):
                     return self.default_color
+
                 return get_empty
 
             canvas = self.canvas
 
             def default_color_func(i, j):
                 return canvas.get((i, j), dflt=Color(0, 0, 0, 3500))
+
             return default_color_func
 
         @property
@@ -120,6 +120,7 @@ class TileStateGetter:
                 def get_color(x, y):
                     color = rows[y][x]
                     return Color(color.hue, color.saturation, color.brightness, color.kelvin)
+
                 canvas.set_all_points_for_tile(user_x, user_y, width, height, get_color)
             return canvas
 
@@ -130,7 +131,9 @@ class TileStateGetter:
         self.serials = serials
         self.background_option = background_option
 
-        self.info_by_serial = defaultdict(lambda: self.Info(self.coords, self.background_option.default_color))
+        self.info_by_serial = defaultdict(
+            lambda: self.Info(self.coords, self.background_option.default_color)
+        )
 
     @property
     def default_color_funcs(self):
@@ -142,7 +145,9 @@ class TileStateGetter:
     async def fill(self, random_orientations=False):
         msgs = []
         if self.background_option.type == "current":
-            msgs.append(TileMessages.Get64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8))
+            msgs.append(
+                TileMessages.Get64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8)
+            )
 
         msgs.append(TileMessages.GetDeviceChain())
 
@@ -161,9 +166,12 @@ class TileStateGetter:
 
                 orientations = orientations_from(pkt)
                 if random_orientations:
-                    self.info_by_serial[serial].orientations = {i: random.choice(list(O.__members__.values())) for i in orientations}
+                    self.info_by_serial[serial].orientations = {
+                        i: random.choice(list(O.__members__.values())) for i in orientations
+                    }
                 else:
                     self.info_by_serial[serial].orientations = orientations
+
 
 class Animation:
     acks = False
@@ -177,7 +185,9 @@ class Animation:
         self.target = target
         self.options = options
 
-        if getattr(self.options, "user_coords", False) or getattr(self.options, "combine_tiles", False):
+        if getattr(self.options, "user_coords", False) or getattr(
+            self.options, "combine_tiles", False
+        ):
             self.coords = None
 
         self.setup()
@@ -202,19 +212,23 @@ class Animation:
             log.error(e)
 
         serials = await tile_serials_from_reference(self.target, reference, self.afr)
-        state = TileStateGetter(self.target, self.afr, serials, self.options.background, coords=self.coords)
+        state = TileStateGetter(
+            self.target, self.afr, serials, self.options.background, coords=self.coords
+        )
         await state.fill(random_orientations=self.random_orientations)
 
         by_serial = {}
         for serial in serials:
             by_serial[serial] = {
-                  "state": None
-                , "coords": tuple(state.info_by_serial[serial].coords)
-                }
+                "state": None,
+                "coords": tuple(state.info_by_serial[serial].coords),
+            }
 
         log.info("Starting!")
 
-        await self.target.script(LightMessages.SetLightPower(level=65535, duration=1)).run_with_all(serials, self.afr)
+        await self.target.script(LightMessages.SetLightPower(level=65535, duration=1)).run_with_all(
+            serials, self.afr
+        )
 
         combined_coords = []
         for info in by_serial.values():
@@ -226,7 +240,9 @@ class Animation:
 
             combined_canvas = None
             if getattr(self.options, "combine_tiles", False):
-                combined_state = combined_info["state"] = self.next_state(combined_info["state"], combined_coords)
+                combined_state = combined_info["state"] = self.next_state(
+                    combined_info["state"], combined_coords
+                )
                 combined_canvas = self.make_canvas(combined_state, combined_coords)
 
             msgs = []
@@ -238,17 +254,27 @@ class Animation:
                     info["state"] = self.next_state(info["state"], coords)
                     canvas = self.make_canvas(info["state"], coords)
 
-                self.set_canvas_default_color_func(canvas, state.info_by_serial[serial].default_color_func)
+                self.set_canvas_default_color_func(
+                    canvas, state.info_by_serial[serial].default_color_func
+                )
 
                 orientations = state.info_by_serial[serial].orientations
-                for msg in canvas_to_msgs(canvas, coords, duration=self.duration, acks=self.acks, orientations=orientations):
+                for msg in canvas_to_msgs(
+                    canvas,
+                    coords,
+                    duration=self.duration,
+                    acks=self.acks,
+                    orientations=orientations,
+                ):
                     msg.target = serial
                     msgs.append(msg)
 
             async with pauser:
                 if final_future.done():
                     break
-                await self.target.script(msgs).run_with_all(None, self.afr, error_catcher=errors, limit=None)
+                await self.target.script(msgs).run_with_all(
+                    None, self.afr, error_catcher=errors, limit=None
+                )
 
             if final_future.done():
                 break

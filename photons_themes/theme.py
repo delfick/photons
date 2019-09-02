@@ -11,10 +11,12 @@ how those colors are displayed on the device.
 import random
 import math
 
+
 class ThemeColor:
     """
     An encapsulation of ``hue``, ``saturation``, ``brightness`` and ``kelvin``.
     """
+
     def __init__(self, hue, saturation, brightness, kelvin):
         self.hue = hue
         self.saturation = saturation
@@ -48,8 +50,8 @@ class ThemeColor:
             else:
                 kelvin_total += color.kelvin
 
-        hue = (math.atan2(hue_x_total, hue_y_total) / (2.0 * math.pi))
-        if (hue < 0.0):
+        hue = math.atan2(hue_x_total, hue_y_total) / (2.0 * math.pi)
+        if hue < 0.0:
             hue += 1.0
         hue *= 360
 
@@ -60,17 +62,32 @@ class ThemeColor:
         return ThemeColor(hue, saturation, brightness, kelvin)
 
     def __lt__(self, other):
-        return (self.hue, self.saturation, self.brightness, self.kelvin) < (other.hue, other.saturation, other.brightness, other.kelvin)
+        return (self.hue, self.saturation, self.brightness, self.kelvin) < (
+            other.hue,
+            other.saturation,
+            other.brightness,
+            other.kelvin,
+        )
 
     def __eq__(self, other):
         """A color is equal if it has the same hsbk value"""
-        return other.hue == self.hue and other.saturation == self.saturation and other.brightness == self.brightness and other.kelvin == self.kelvin
+        return (
+            other.hue == self.hue
+            and other.saturation == self.saturation
+            and other.brightness == self.brightness
+            and other.kelvin == self.kelvin
+        )
 
     def __hash__(self):
         return hash((self.hue, self.saturation, self.brightness, self.kelvin))
 
     def as_dict(self):
-        return {"hue": self.hue, "saturation": self.saturation, "brightness": self.brightness, "kelvin": self.kelvin}
+        return {
+            "hue": self.hue,
+            "saturation": self.saturation,
+            "brightness": self.brightness,
+            "kelvin": self.kelvin,
+        }
 
     @property
     def cache_key(self):
@@ -81,7 +98,12 @@ class ThemeColor:
 
         It is essentially the same as tuple(sorted(color.as_dict().items()))
         """
-        return (("brightness", self.brightness), ("hue", self.hue), ("kelvin", self.kelvin), ("saturation", self.saturation))
+        return (
+            ("brightness", self.brightness),
+            ("hue", self.hue),
+            ("kelvin", self.kelvin),
+            ("saturation", self.saturation),
+        )
 
     def clone(self):
         """Return another ThemeColor with the same hsbk values"""
@@ -109,8 +131,10 @@ class ThemeColor:
     def __repr__(self):
         return f"<Color ({self.hue}, {self.saturation}, {self.brightness}, {self.kelvin})>"
 
+
 class Theme:
     """A wrapper around a list of ThemeColor objects"""
+
     def __init__(self):
         self.colors = []
 

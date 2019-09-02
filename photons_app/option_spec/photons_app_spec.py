@@ -21,42 +21,45 @@ import sys
 
 log = logging.getLogger("photons_app.options_spec.photons_app-spec")
 
+
 class PhotonsApp(dictobj.Spec):
     """
     The main photons_app object.
 
     .. dictobj_params::
     """
-    config = dictobj.Field(sb.file_spec, wrapper=sb.optional_spec
-        , help="The root configuration file"
-        )
-    extra = dictobj.Field(sb.string_spec, default=""
-        , help="The arguments after the ``--`` in the commandline"
-        )
-    debug = dictobj.Field(sb.boolean, default=False
-        , help="Whether we are in debug mode or not"
-        )
-    target = dictobj.Field(wrapper=sb.optional_spec, format_into=sb.string_spec
-        , help="The target to use when executing the task"
-        )
-    artifact = dictobj.Field(default="", format_into=sb.string_spec
-        , help="The artifact string from the commandline"
-        )
-    reference = dictobj.Field(default="", format_into=sb.string_spec
-        , help="The device(s) to send commands to"
-        )
-    extra_files = dictobj.Field(sb.string_spec, wrapper=sb.listof
-        , help="Extra files to load"
-        )
-    chosen_task = dictobj.Field(default="list_tasks", format_into=sb.string_spec
-        , help="The task that is being executed"
-        )
-    cleaners = dictobj.Field(lambda: sb.overridden([])
-        , help="A list of functions to call when cleaning up at the end of the program"
-        )
-    default_activate_all_modules = dictobj.Field(sb.boolean, default=False
-        , help="The collector looks at this to determine if we should default to activating all photons modules"
-        )
+
+    config = dictobj.Field(
+        sb.file_spec, wrapper=sb.optional_spec, help="The root configuration file"
+    )
+    extra = dictobj.Field(
+        sb.string_spec, default="", help="The arguments after the ``--`` in the commandline"
+    )
+    debug = dictobj.Field(sb.boolean, default=False, help="Whether we are in debug mode or not")
+    target = dictobj.Field(
+        wrapper=sb.optional_spec,
+        format_into=sb.string_spec,
+        help="The target to use when executing the task",
+    )
+    artifact = dictobj.Field(
+        default="", format_into=sb.string_spec, help="The artifact string from the commandline"
+    )
+    reference = dictobj.Field(
+        default="", format_into=sb.string_spec, help="The device(s) to send commands to"
+    )
+    extra_files = dictobj.Field(sb.string_spec, wrapper=sb.listof, help="Extra files to load")
+    chosen_task = dictobj.Field(
+        default="list_tasks", format_into=sb.string_spec, help="The task that is being executed"
+    )
+    cleaners = dictobj.Field(
+        lambda: sb.overridden([]),
+        help="A list of functions to call when cleaning up at the end of the program",
+    )
+    default_activate_all_modules = dictobj.Field(
+        sb.boolean,
+        default=False,
+        help="The collector looks at this to determine if we should default to activating all photons modules",
+    )
 
     @hp.memoized_property
     def final_future(self):
@@ -83,6 +86,7 @@ class PhotonsApp(dictobj.Spec):
 
         def stop():
             other_future.cancel()
+
         self.loop.remove_signal_handler(signal.SIGTERM)
         self.loop.add_signal_handler(signal.SIGTERM, stop)
 
@@ -121,6 +125,7 @@ class PhotonsApp(dictobj.Spec):
                 exc_info = sys.exc_info()
                 log.error(exc_info[1], exc_info=exc_info)
 
+
 class PhotonsAppSpec(object):
     """Knows about photons_app specific configuration"""
 
@@ -128,9 +133,8 @@ class PhotonsAppSpec(object):
     def target_name_spec(self):
         """Just needs to be ascii"""
         return sb.valid_string_spec(
-              validators.no_whitespace()
-            , validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-            )
+            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
+        )
 
     @hp.memoized_property
     def photons_app_spec(self):
@@ -148,9 +152,12 @@ class PhotonsAppSpec(object):
 
         .. autoclass:: photons_app.option_spec.photons_app_spec.TargetRegister
         """
-        return sb.create_spec(TargetRegister
-            , collector=sb.formatted(sb.overridden("{collector}"), formatter=MergedOptionStringFormatter)
-            )
+        return sb.create_spec(
+            TargetRegister,
+            collector=sb.formatted(
+                sb.overridden("{collector}"), formatter=MergedOptionStringFormatter
+            ),
+        )
 
     @hp.memoized_property
     def reference_resolver_register_spec(self):
@@ -168,4 +175,6 @@ class PhotonsAppSpec(object):
 
         .. autoclass:: photons_app.option_spec.photons_app_spec.Target
         """
-        return sb.dictof(self.target_name_spec, Target.FieldSpec(formatter=MergedOptionStringFormatter))
+        return sb.dictof(
+            self.target_name_spec, Target.FieldSpec(formatter=MergedOptionStringFormatter)
+        )

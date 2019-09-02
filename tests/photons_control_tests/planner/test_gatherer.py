@@ -15,33 +15,39 @@ from contextlib import contextmanager
 from unittest import mock
 import uuid
 
-light1 = FakeDevice("d073d5000001"
-    , chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS
-        , power = 0
-        , label = "bob"
-        , infrared = 100
-        , color = chp.Color(100, 0.5, 0.5, 4500)
-        , firmware = chp.Firmware(2, 77, 1543215651000000000)
-        )
-    )
+light1 = FakeDevice(
+    "d073d5000001",
+    chp.default_responders(
+        LIFIProductRegistry.LCM2_A19_PLUS,
+        power=0,
+        label="bob",
+        infrared=100,
+        color=chp.Color(100, 0.5, 0.5, 4500),
+        firmware=chp.Firmware(2, 77, 1543215651000000000),
+    ),
+)
 
-light2 = FakeDevice("d073d5000002"
-    , chp.default_responders(LIFIProductRegistry.LMB_MESH_A21
-        , power = 65535
-        , label = "sam"
-        , color = chp.Color(200, 0.3, 1, 9000)
-        , firmware = chp.Firmware(2, 2, 1448861477000000000)
-        )
-    )
+light2 = FakeDevice(
+    "d073d5000002",
+    chp.default_responders(
+        LIFIProductRegistry.LMB_MESH_A21,
+        power=65535,
+        label="sam",
+        color=chp.Color(200, 0.3, 1, 9000),
+        firmware=chp.Firmware(2, 2, 1448861477000000000),
+    ),
+)
 
-light3 = FakeDevice("d073d5000003"
-    , chp.default_responders(LIFIProductRegistry.LCM1_Z
-        , power = 0
-        , label = "strip"
-        , firmware = chp.Firmware(1, 22, 1502237570000000000)
-        , zones = [chp.Color(0, 1, 1, 3500)]
-        )
-    )
+light3 = FakeDevice(
+    "d073d5000003",
+    chp.default_responders(
+        LIFIProductRegistry.LCM1_Z,
+        power=0,
+        label="strip",
+        firmware=chp.Firmware(1, 22, 1502237570000000000),
+        zones=[chp.Color(0, 1, 1, 3500)],
+    ),
+)
 
 lights = [light1, light2, light3]
 mlr = chp.ModuleLevelRunner(lights)
@@ -79,6 +85,7 @@ describe AsyncTestCase, "Gatherer":
             yield t
 
     describe "A plan saying NoMessages":
+
         @mlr.test
         async it "processes without needing messages", runner:
             called = []
@@ -102,17 +109,11 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": i1})
-                  , light2.serial: (True, {"p": i2})
-                  }
-                )
+            self.assertEqual(
+                got, {light1.serial: (True, {"p": i1}), light2.serial: (True, {"p": i2})}
+            )
 
-            self.assertEqual(called
-                , [ ("info", light1.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(called, [("info", light1.serial), ("info", light2.serial)])
 
         @mlr.test
         async it "does not process other messages", runner:
@@ -137,17 +138,15 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": i1, "power": {"level": 0, "on": False}})
-                  , light2.serial: (True, {"p": i2, "power": {"level": 65535, "on": True}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"p": i1, "power": {"level": 0, "on": False}}),
+                    light2.serial: (True, {"p": i2, "power": {"level": 65535, "on": True}}),
+                },
+            )
 
-            self.assertEqual(called
-                , [ ("info", light1.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(called, [("info", light1.serial), ("info", light2.serial)])
 
         @mlr.test
         async it "can be determined by logic", runner:
@@ -180,27 +179,19 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": i1})
-                  , light2.serial: (True, {"p": "sam"})
-                  }
-                )
+            self.assertEqual(
+                got, {light1.serial: (True, {"p": i1}), light2.serial: (True, {"p": "sam"})}
+            )
 
-            self.assertEqual(called
-                , [ ("info", light1.serial)
-                  , ("process", light2.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [("info", light1.serial), ("process", light2.serial), ("info", light2.serial)],
+            )
 
-            self.compare_received(
-                  { light1: []
-                  , light2: [DeviceMessages.GetLabel()]
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     describe "A plan saying Skip":
+
         @mlr.test
         async it "has no processing or info", runner:
             called = []
@@ -220,11 +211,9 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": Skip})
-                  , light2.serial: (True, {"p": Skip})
-                  }
-                )
+            self.assertEqual(
+                got, {light1.serial: (True, {"p": Skip}), light2.serial: (True, {"p": Skip})}
+            )
 
             self.assertEqual(called, [])
 
@@ -247,11 +236,13 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": Skip, "power": {"level": 0, "on": False}})
-                  , light2.serial: (True, {"p": Skip, "power": {"level": 65535, "on": True}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"p": Skip, "power": {"level": 0, "on": False}}),
+                    light2.serial: (True, {"p": Skip, "power": {"level": 65535, "on": True}}),
+                },
+            )
 
             self.assertEqual(called, [])
 
@@ -282,26 +273,16 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"p": Skip})
-                  , light2.serial: (True, {"p": "sam"})
-                  }
-                )
+            self.assertEqual(
+                got, {light1.serial: (True, {"p": Skip}), light2.serial: (True, {"p": "sam"})}
+            )
 
-            self.assertEqual(called
-                , [ ("process", light2.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(called, [("process", light2.serial), ("info", light2.serial)])
 
-            self.compare_received(
-                  { light1: []
-                  , light2: [DeviceMessages.GetLabel()]
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     describe "A plan with no messages":
+
         @mlr.test
         async it "it gets all other messages", runner:
             called = []
@@ -322,21 +303,31 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("label", "power", other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "power": {"level": 0, "on": False}, "other": True})
-                  , light2.serial: (True, {"label": "sam", "power": {"level": 65535, "on": True}, "other": True})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (
+                        True,
+                        {"label": "bob", "power": {"level": 0, "on": False}, "other": True},
+                    ),
+                    light2.serial: (
+                        True,
+                        {"label": "sam", "power": {"level": 65535, "on": True}, "other": True},
+                    ),
+                },
+            )
 
-            self.assertEqual(called
-                , [ (light1.serial, {"label": "bob"})
-                  , (light1.serial, {"level": 0})
-                  , (light2.serial, {"label": "sam"})
-                  , (light2.serial, {"level": 65535})
-                  , ("info", light1.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    (light1.serial, {"label": "bob"}),
+                    (light1.serial, {"level": 0}),
+                    (light2.serial, {"label": "sam"}),
+                    (light2.serial, {"level": 65535}),
+                    ("info", light1.serial),
+                    ("info", light2.serial),
+                ],
+            )
 
         @mlr.test
         async it "still finishes if no messages processed but finished_after_no_more_messages", runner:
@@ -358,19 +349,15 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"other": True})
-                  , light2.serial: (True, {"other": True})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {light1.serial: (True, {"other": True}), light2.serial: (True, {"other": True})},
+            )
 
-            self.assertEqual(called
-                , [ ("info", light1.serial)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(called, [("info", light1.serial), ("info", light2.serial)])
 
     describe "a plan that never finishes":
+
         @mlr.test
         async it "it doesn't get recorded", runner:
             called = []
@@ -387,21 +374,26 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("label", "power", other=NeverFinishedPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (False, {"label": "bob", "power": {"level": 0, "on": False}})
-                  , light2.serial: (False, {"label": "sam", "power": {"level": 65535, "on": True}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (False, {"label": "bob", "power": {"level": 0, "on": False}}),
+                    light2.serial: (False, {"label": "sam", "power": {"level": 65535, "on": True}}),
+                },
+            )
 
-            self.assertEqual(called
-                , [ ("process", light1.serial)
-                  , ("process", light1.serial)
-                  , ("process", light2.serial)
-                  , ("process", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("process", light1.serial),
+                    ("process", light1.serial),
+                    ("process", light2.serial),
+                    ("process", light2.serial),
+                ],
+            )
 
     describe "A plan with messages":
+
         @mlr.test
         async it "messages are processed until we say plan is done", runner:
             called = []
@@ -428,28 +420,29 @@ describe AsyncTestCase, "Gatherer":
             async for serial, label, info in gatherer.gather(plans, self.two_lights):
                 found.append((serial, label, info))
 
-            self.assertEqual(found
-                , [ (light1.serial, "simple", "bob")
-                  , (light2.serial, "simple", "sam")
-                  ]
-                )
+            self.assertEqual(
+                found, [(light1.serial, "simple", "bob"), (light2.serial, "simple", "sam")]
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            self.assertEqual(called
-                , [ (light1.serial, label_type)
-                  , ("info", light1.serial)
-                  , (light2.serial, label_type)
-                  , ("info", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    (light1.serial, label_type),
+                    ("info", light1.serial),
+                    (light2.serial, label_type),
+                    ("info", light2.serial),
+                ],
+            )
 
         @mlr.test
         async it "adds errors from info", runner:
@@ -477,23 +470,21 @@ describe AsyncTestCase, "Gatherer":
                 async for serial, label, info in gatherer.gather(plans, runner.serials):
                     found.append((serial, label, info))
 
-            self.assertEqual(found
-                , [ (light2.serial, "label", "sam")
-                  , (light3.serial, "label", "strip")
-                  ]
-                )
+            self.assertEqual(
+                found, [(light2.serial, "label", "sam"), (light3.serial, "label", "strip")]
+            )
 
             errors = []
             found.clear()
-            async for serial, label, info in gatherer.gather(plans, runner.serials, error_catcher=errors):
+            async for serial, label, info in gatherer.gather(
+                plans, runner.serials, error_catcher=errors
+            ):
                 found.append((serial, label, info))
             self.assertEqual(errors, [error])
 
-            self.assertEqual(found
-                , [ (light2.serial, "label", "sam")
-                  , (light3.serial, "label", "strip")
-                  ]
-                )
+            self.assertEqual(
+                found, [(light2.serial, "label", "sam"), (light3.serial, "label", "strip")]
+            )
 
         @mlr.test
         async it "raises errors after yielding everything", runner:
@@ -544,72 +535,78 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
 
             found = []
-            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
+            with self.fuzzyAssertRaisesError(
+                TimedOut, "Waiting for reply to a packet", serial=light1.serial
+            ):
                 with light1.no_replies_for(DeviceMessages.GetLabel):
-                    async for serial, label, info in gatherer.gather(plans, self.two_lights, message_timeout=0.1):
+                    async for serial, label, info in gatherer.gather(
+                        plans, self.two_lights, message_timeout=0.1
+                    ):
                         found.append((serial, label, info))
 
-            self.assertEqual(found
-                , [ (light1.serial, "power", 0)
-                  , (light2.serial, "label", "sam")
-                  , (light2.serial, "power", 65535)
-                  , (light2.serial, "looker", True)
-                  , (light1.serial, "looker", True)
-                  ]
-                )
+            self.assertEqual(
+                found,
+                [
+                    (light1.serial, "power", 0),
+                    (light2.serial, "label", "sam"),
+                    (light2.serial, "power", 65535),
+                    (light2.serial, "looker", True),
+                    (light1.serial, "looker", True),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  , ("looker", light1.serial, power_type)
-                  , ("power", light1.serial, power_type)
-                  , ("info.power", light1.serial)
-
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  , ("looker", light2.serial, label_type)
-                  , ("power", light2.serial, label_type)
-                  , ("looker", light2.serial, power_type)
-                  , ("power", light2.serial, power_type)
-                  , ("info.power", light2.serial)
-                  , ("info.looker", light2.serial)
-                  , ("info.looker", light1.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("looker", light2.serial, label_type),
+                    ("power", light2.serial, label_type),
+                    ("looker", light2.serial, power_type),
+                    ("power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("info.looker", light2.serial),
+                    ("info.looker", light1.serial),
+                ],
+            )
 
             found.clear()
             called.clear()
-            with self.fuzzyAssertRaisesError(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
+            with self.fuzzyAssertRaisesError(
+                TimedOut, "Waiting for reply to a packet", serial=light1.serial
+            ):
                 with light1.no_replies_for(DeviceMessages.GetLabel):
-                    async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, message_timeout=0.1):
+                    async for serial, completed, info in gatherer.gather_per_serial(
+                        plans, self.two_lights, message_timeout=0.1
+                    ):
                         found.append((serial, completed, info))
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  ]
-                )
+            self.assertEqual(called, [("label", light1.serial, power_type)])
 
-            self.assertEqual(found
-                , [ (light2.serial, True, {"looker": True,"label": "sam", "power": 65535})
-                  , (light1.serial, False, {"looker": True, "power": 0})
-                  ]
-                )
+            self.assertEqual(
+                found,
+                [
+                    (light2.serial, True, {"looker": True, "label": "sam", "power": 65535}),
+                    (light1.serial, False, {"looker": True, "power": 0}),
+                ],
+            )
 
             called.clear()
             try:
@@ -620,23 +617,17 @@ describe AsyncTestCase, "Gatherer":
                 self.assertEqual(e.errors, [error])
                 found = e.kwargs["results"]
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  ]
-                )
+            self.assertEqual(called, [("label", light1.serial, power_type)])
 
-            self.assertEqual(found
-                , { light2.serial: (True, {"looker": True, "label": "sam", "power": 65535})
-                  , light1.serial: (False, {"looker": True, "power": 0})
-                  }
-                )
+            self.assertEqual(
+                found,
+                {
+                    light2.serial: (True, {"looker": True, "label": "sam", "power": 65535}),
+                    light1.serial: (False, {"looker": True, "power": 0}),
+                },
+            )
 
         @mlr.test
         async it "doesn't raise errors if we have an error catcher", runner:
@@ -698,69 +689,69 @@ describe AsyncTestCase, "Gatherer":
             self.assertEqual(error_catcher, [error])
             error_catcher.clear()
 
-            self.assertEqual(found
-                , [ (light1.serial, "power", 0)
-                  , (light2.serial, "label", "sam")
-                  , (light2.serial, "power", 65535)
-                  , (light2.serial, "looker", True)
-                  , (light1.serial, "looker", True)
-                  ]
-                )
+            self.assertEqual(
+                found,
+                [
+                    (light1.serial, "power", 0),
+                    (light2.serial, "label", "sam"),
+                    (light2.serial, "power", 65535),
+                    (light2.serial, "looker", True),
+                    (light1.serial, "looker", True),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  , ("looker", light1.serial, power_type)
-                  , ("power", light1.serial, power_type)
-                  , ("info.power", light1.serial)
-
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  , ("looker", light2.serial, label_type)
-                  , ("power", light2.serial, label_type)
-                  , ("looker", light2.serial, power_type)
-                  , ("power", light2.serial, power_type)
-                  , ("info.power", light2.serial)
-                  , ("info.looker", light2.serial)
-                  , ("info.looker", light1.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("looker", light2.serial, label_type),
+                    ("power", light2.serial, label_type),
+                    ("looker", light2.serial, power_type),
+                    ("power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("info.looker", light2.serial),
+                    ("info.looker", light1.serial),
+                ],
+            )
 
             found.clear()
             called.clear()
             with light1.no_replies_for(DeviceMessages.GetLabel):
-                async for serial, completed, info in gatherer.gather_per_serial(plans, self.two_lights, **kwargs):
+                async for serial, completed, info in gatherer.gather_per_serial(
+                    plans, self.two_lights, **kwargs
+                ):
                     found.append((serial, completed, info))
 
             self.assertEqual(error_catcher, [error])
             error_catcher.clear()
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  ]
-                )
+            self.assertEqual(called, [("label", light1.serial, power_type)])
 
-            self.assertEqual(found
-                , [ (light2.serial, True, {"looker": True, "label": "sam", "power": 65535})
-                  , (light1.serial, False, {"looker": True, "power": 0})
-                  ]
-                )
+            self.assertEqual(
+                found,
+                [
+                    (light2.serial, True, {"looker": True, "label": "sam", "power": 65535}),
+                    (light1.serial, False, {"looker": True, "power": 0}),
+                ],
+            )
 
             called.clear()
             with light1.no_replies_for(DeviceMessages.GetLabel):
@@ -769,25 +760,20 @@ describe AsyncTestCase, "Gatherer":
             self.assertEqual(error_catcher, [error])
             error_catcher.clear()
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, power_type)
-                  ]
-                )
+            self.assertEqual(called, [("label", light1.serial, power_type)])
 
-            self.assertEqual(found
-                , { light2.serial: (True, {"looker": True, "label": "sam", "power": 65535})
-                  , light1.serial: (False, {"looker": True, "power": 0})
-                  }
-                )
+            self.assertEqual(
+                found,
+                {
+                    light2.serial: (True, {"looker": True, "label": "sam", "power": 65535}),
+                    light1.serial: (False, {"looker": True, "power": 0}),
+                },
+            )
 
     describe "refreshing":
+
         @mlr.test
         async it "it can refresh always", runner:
             called = []
@@ -815,18 +801,11 @@ describe AsyncTestCase, "Gatherer":
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  ]
-                )
+            self.assertEqual(
+                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            )
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             called.clear()
 
@@ -834,18 +813,11 @@ describe AsyncTestCase, "Gatherer":
             got = dict(await gatherer.gather_all(plans, light1.serial))
             self.assertEqual(got, {light1.serial: (True, {"label": "bob"})})
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  ]
-                )
+            self.assertEqual(
+                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            )
 
-            self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             called.clear()
 
@@ -855,98 +827,74 @@ describe AsyncTestCase, "Gatherer":
             self.assertEqual(got, {light1.serial: (True, {"label": "bob"})})
 
             self.assertEqual(called, [])
-            self.compare_received(
-                  { light1: []
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [], light2: [], light3: []})
 
         @mlr.test
         async it "it can refresh on time", runner:
             with self.modified_time() as t:
                 called = []
-    
+
                 class LabelPlan(Plan):
                     default_refresh = 1
                     messages = [DeviceMessages.GetLabel()]
-    
+
                     class Instance(Plan.Instance):
                         def process(s, pkt):
                             called.append(("label", pkt.serial, pkt.pkt_type))
-    
+
                             if pkt | DeviceMessages.StateLabel:
                                 s.label = pkt.label
                                 return True
-    
+
                         async def info(s):
                             called.append(("info.label", s.serial))
                             return s.label
-    
+
                 gatherer = Gatherer(runner.target)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 self.assertEqual(got, {light1.serial: (True, {"label": "bob"})})
-    
+
                 label_type = DeviceMessages.StateLabel.Payload.message_type
-    
-                self.assertEqual(called
-                    , [ ("label", light1.serial, label_type)
-                      , ("info.label", light1.serial)
-                      ]
-                    )
-    
-                self.compare_received(
-                      { light1: [DeviceMessages.GetLabel()]
-                      , light2: []
-                      , light3: []
-                      }
-                    )
-    
+
+                self.assertEqual(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+                )
+
+                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+
                 called.clear()
-    
+
                 # Get it again, our refresh means it will be cached
                 t.forward(0.6)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 self.assertEqual(got, {light1.serial: (True, {"label": "bob"})})
-    
+
                 self.assertEqual(called, [])
-                self.compare_received(
-                      { light1: []
-                      , light2: []
-                      , light3: []
-                      }
-                    )
-    
+                self.compare_received({light1: [], light2: [], light3: []})
+
                 # After a second, we get refreshed
                 t.forward(0.5)
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 self.assertEqual(got, {light1.serial: (True, {"label": "bob"})})
-    
-                self.assertEqual(called
-                    , [ ("label", light1.serial, label_type)
-                      , ("info.label", light1.serial)
-                      ]
-                    )
-    
-                self.compare_received(
-                      { light1: [DeviceMessages.GetLabel()]
-                      , light2: []
-                      , light3: []
-                      }
-                    )
-    
+
+                self.assertEqual(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+                )
+
+                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+
                 called.clear()
 
         @mlr.test
         async it "it can have different refresh based on logic in the instance", runner:
             with self.modified_time() as t:
                 called = []
-    
+
                 class LabelPlan(Plan):
                     messages = [DeviceMessages.GetLabel()]
-    
+
                     class Instance(Plan.Instance):
                         @property
                         def refresh(s):
@@ -959,109 +907,111 @@ describe AsyncTestCase, "Gatherer":
 
                         def process(s, pkt):
                             called.append(("label", pkt.serial, pkt.pkt_type))
-    
+
                             if pkt | DeviceMessages.StateLabel:
                                 s.label = pkt.label
                                 return True
-    
+
                         async def info(s):
                             called.append(("info.label", s.serial))
                             return s.label
-    
+
                 gatherer = Gatherer(runner.target)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, self.two_lights))
-                self.assertEqual(got
-                    , { light1.serial: (True, {"label": "bob"})
-                      , light2.serial: (True, {"label": "sam"})
-                      }
-                    )
-    
+                self.assertEqual(
+                    got,
+                    {
+                        light1.serial: (True, {"label": "bob"}),
+                        light2.serial: (True, {"label": "sam"}),
+                    },
+                )
+
                 label_type = DeviceMessages.StateLabel.Payload.message_type
-    
-                self.assertEqual(called
-                    , [ ("label", light1.serial, label_type)
-                      , ("info.label", light1.serial)
-                      , ("label", light2.serial, label_type)
-                      , ("info.label", light2.serial)
-                      ]
-                    )
-    
+
+                self.assertEqual(
+                    called,
+                    [
+                        ("label", light1.serial, label_type),
+                        ("info.label", light1.serial),
+                        ("label", light2.serial, label_type),
+                        ("info.label", light2.serial),
+                    ],
+                )
+
                 self.compare_received(
-                      { light1: [DeviceMessages.GetLabel()]
-                      , light2: [DeviceMessages.GetLabel()]
-                      , light3: []
-                      }
-                    )
-    
+                    {
+                        light1: [DeviceMessages.GetLabel()],
+                        light2: [DeviceMessages.GetLabel()],
+                        light3: [],
+                    }
+                )
+
                 called.clear()
-    
+
                 # Get it again, our refresh means it will be cached
                 t.forward(0.6)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, self.two_lights))
-                self.assertEqual(got
-                    , { light1.serial: (True, {"label": "bob"})
-                      , light2.serial: (True, {"label": "sam"})
-                      }
-                    )
-    
+                self.assertEqual(
+                    got,
+                    {
+                        light1.serial: (True, {"label": "bob"}),
+                        light2.serial: (True, {"label": "sam"}),
+                    },
+                )
+
                 self.assertEqual(called, [])
-                self.compare_received(
-                      { light1: []
-                      , light2: []
-                      , light3: []
-                      }
-                    )
-    
+                self.compare_received({light1: [], light2: [], light3: []})
+
                 # After a second, we get light1 refreshed
                 t.forward(0.5)
                 got = dict(await gatherer.gather_all(plans, self.two_lights))
-                self.assertEqual(got
-                    , { light1.serial: (True, {"label": "bob"})
-                      , light2.serial: (True, {"label": "sam"})
-                      }
-                    )
-    
-                self.assertEqual(called
-                    , [ ("label", light1.serial, label_type)
-                      , ("info.label", light1.serial)
-                      ]
-                    )
-    
-                self.compare_received(
-                      { light1: [DeviceMessages.GetLabel()]
-                      , light2: []
-                      , light3: []
-                      }
-                    )
-    
+                self.assertEqual(
+                    got,
+                    {
+                        light1.serial: (True, {"label": "bob"}),
+                        light2.serial: (True, {"label": "sam"}),
+                    },
+                )
+
+                self.assertEqual(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+                )
+
+                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+
                 called.clear()
 
                 # After two seconds, we get both refreshed
                 t.forward(1)
                 got = dict(await gatherer.gather_all(plans, self.two_lights))
-                self.assertEqual(got
-                    , { light1.serial: (True, {"label": "bob"})
-                      , light2.serial: (True, {"label": "sam"})
-                      }
-                    )
-    
-                self.assertEqual(called
-                    , [ ("label", light1.serial, label_type)
-                      , ("info.label", light1.serial)
-                      , ("label", light2.serial, label_type)
-                      , ("info.label", light2.serial)
-                      ]
-                    )
-    
+                self.assertEqual(
+                    got,
+                    {
+                        light1.serial: (True, {"label": "bob"}),
+                        light2.serial: (True, {"label": "sam"}),
+                    },
+                )
+
+                self.assertEqual(
+                    called,
+                    [
+                        ("label", light1.serial, label_type),
+                        ("info.label", light1.serial),
+                        ("label", light2.serial, label_type),
+                        ("info.label", light2.serial),
+                    ],
+                )
+
                 self.compare_received(
-                      { light1: [DeviceMessages.GetLabel()]
-                      , light2: [DeviceMessages.GetLabel()]
-                      , light3: []
-                      }
-                    )
-    
+                    {
+                        light1: [DeviceMessages.GetLabel()],
+                        light2: [DeviceMessages.GetLabel()],
+                        light3: [],
+                    }
+                )
+
                 called.clear()
 
         @mlr.test
@@ -1082,7 +1032,7 @@ describe AsyncTestCase, "Gatherer":
 
                     async def info(s):
                         called.append(("info.reverse", s.serial))
-                        return ''.join(reversed(s.label))
+                        return "".join(reversed(s.label))
 
             class LabelPlan(Plan):
                 messages = [DeviceMessages.GetLabel()]
@@ -1103,58 +1053,68 @@ describe AsyncTestCase, "Gatherer":
             gatherer = Gatherer(runner.target)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
-            self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "rev": "bob"})
-                  , light2.serial: (True, {"label": "sam", "rev": "mas"})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"label": "bob", "rev": "bob"}),
+                    light2.serial: (True, {"label": "sam", "rev": "mas"}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  , ("reverse", light1.serial, label_type)
-                  , ("info.reverse", light1.serial)
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  , ("reverse", light2.serial, label_type)
-                  , ("info.reverse", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("reverse", light1.serial, label_type),
+                    ("info.reverse", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("reverse", light2.serial, label_type),
+                    ("info.reverse", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel()],
+                    light3: [],
+                }
+            )
 
             called.clear()
 
             # Get it again, our refresh means we process LabelPlan again,
             # but using results from ReverseLabelPlan
             got = dict(await gatherer.gather_all(plans, self.two_lights))
-            self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "rev": "bob"})
-                  , light2.serial: (True, {"label": "sam", "rev": "mas"})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"label": "bob", "rev": "bob"}),
+                    light2.serial: (True, {"label": "sam", "rev": "mas"}),
+                },
+            )
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel()],
+                    light3: [],
+                }
+            )
 
         @mlr.test
         async it "has no cached completed data if instance has no key", runner:
@@ -1174,7 +1134,7 @@ describe AsyncTestCase, "Gatherer":
 
                     async def info(s):
                         called.append(("info.reverse", s.serial))
-                        return ''.join(reversed(s.label))
+                        return "".join(reversed(s.label))
 
             class LabelPlan(Plan):
                 messages = [DeviceMessages.GetLabel()]
@@ -1198,60 +1158,65 @@ describe AsyncTestCase, "Gatherer":
             gatherer = Gatherer(runner.target)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
-            self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "rev": "bob"})
-                  , light2.serial: (True, {"label": "sam", "rev": "mas"})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"label": "bob", "rev": "bob"}),
+                    light2.serial: (True, {"label": "sam", "rev": "mas"}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  , ("reverse", light1.serial, label_type)
-                  , ("info.reverse", light1.serial)
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  , ("reverse", light2.serial, label_type)
-                  , ("info.reverse", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("reverse", light1.serial, label_type),
+                    ("info.reverse", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("reverse", light2.serial, label_type),
+                    ("info.reverse", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel()],
+                    light3: [],
+                }
+            )
 
             called.clear()
 
             # Get it again, our refresh means we process LabelPlan again,
             # but using results from ReverseLabelPlan
             got = dict(await gatherer.gather_all(plans, self.two_lights))
-            self.assertEqual(got
-                , { light1.serial: (True, {"label": "bob", "rev": "bob"})
-                  , light2.serial: (True, {"label": "sam", "rev": "mas"})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"label": "bob", "rev": "bob"}),
+                    light2.serial: (True, {"label": "sam", "rev": "mas"}),
+                },
+            )
 
-            self.assertEqual(called
-                , [ ("label", light1.serial, label_type)
-                  , ("info.label", light1.serial)
-                  , ("label", light2.serial, label_type)
-                  , ("info.label", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                ],
+            )
 
-            self.compare_received(
-                  { light1: []
-                  , light2: []
-                  , light3: []
-                  }
-                )
+            self.compare_received({light1: [], light2: [], light3: []})
 
     describe "dependencies":
+
         @mlr.test
         async it "it can get dependencies", runner:
             called = []
@@ -1305,40 +1270,44 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(info=InfoPlan())
             got = dict(await gatherer.gather_all(plans, runner.serials))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"info": {"power": 0, "info": 100}})
-                  , light2.serial: (True, {"info": {"power": 65535, "info": "sam"}})
-                  , light3.serial: (True, {"info": {"power": Skip, "info": "strip"}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"info": {"power": 0, "info": 100}}),
+                    light2.serial: (True, {"info": {"power": 65535, "info": "sam"}}),
+                    light3.serial: (True, {"info": {"power": Skip, "info": "strip"}}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
             infrared_type = LightMessages.StateInfrared.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("power", light1.serial, power_type)
-                  , ("info.power", light1.serial)
-                  , ("power", light2.serial, power_type)
-                  , ("info.power", light2.serial)
-
-                  , ("label", light3.serial, label_type)
-                  , ("info.info", light3.serial)
-                  , ("label", light1.serial, power_type)
-                  , ("label", light2.serial, power_type)
-                  , ("label", light1.serial, infrared_type)
-                  , ("info.info", light1.serial)
-                  , ("label", light2.serial, label_type)
-                  , ("info.info", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("label", light3.serial, label_type),
+                    ("info.info", light3.serial),
+                    ("label", light1.serial, power_type),
+                    ("label", light2.serial, power_type),
+                    ("label", light1.serial, infrared_type),
+                    ("info.info", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.info", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetPower(), LightMessages.GetInfrared()]
-                  , light2: [DeviceMessages.GetPower(), DeviceMessages.GetLabel()]
-                  , light3: [DeviceMessages.GetLabel()]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetPower(), LightMessages.GetInfrared()],
+                    light2: [DeviceMessages.GetPower(), DeviceMessages.GetLabel()],
+                    light3: [DeviceMessages.GetLabel()],
+                }
+            )
 
         @mlr.test
         async it "it can get dependencies of dependencies and messages can be shared", runner:
@@ -1392,41 +1361,44 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(plan3=Plan3())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"plan3": (0, {"label": "bob", "rev": "bob"})})
-                  , light2.serial: (True, {"plan3": (65535, {"label": "sam", "rev": "mas"})})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"plan3": (0, {"label": "bob", "rev": "bob"})}),
+                    light2.serial: (True, {"plan3": (65535, {"label": "sam", "rev": "mas"})}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("plan1", light1.serial, label_type)
-                  , ("info.plan1", light1.serial)
-                  , ("plan1", light2.serial, label_type)
-                  , ("info.plan1", light2.serial)
-
-                  , ("plan2", light1.serial, label_type)
-                  , ("info.plan2", light1.serial)
-                  , ("plan2", light2.serial, label_type)
-                  , ("info.plan2", light2.serial)
-
-                  , ("plan3", light1.serial, label_type)
-                  , ("plan3", light2.serial, label_type)
-                  , ("plan3", light1.serial, power_type)
-                  , ("info.plan3", light1.serial)
-                  , ("plan3", light2.serial, power_type)
-                  , ("info.plan3", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light1.serial, label_type),
+                    ("info.plan2", light1.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("info.plan2", light2.serial),
+                    ("plan3", light1.serial, label_type),
+                    ("plan3", light2.serial, label_type),
+                    ("plan3", light1.serial, power_type),
+                    ("info.plan3", light1.serial),
+                    ("plan3", light2.serial, power_type),
+                    ("info.plan3", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
 
         @mlr.test
         async it "it can skip based on dependency", runner:
@@ -1471,34 +1443,38 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"plan2": Skip})
-                  , light2.serial: (True, {"plan2": {"label": "sam", "power": 65535}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"plan2": Skip}),
+                    light2.serial: (True, {"plan2": {"label": "sam", "power": 65535}}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("plan1", light1.serial, label_type)
-                  , ("info.plan1", light1.serial)
-                  , ("plan1", light2.serial, label_type)
-                  , ("info.plan1", light2.serial)
-
-                  , ("plan2", light2.serial, label_type)
-                  , ("plan2", light2.serial, power_type)
-                  , ("info.plan2", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
-            
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
+
         @mlr.test
         async it "can get results from deps as well", runner:
             called = []
@@ -1542,33 +1518,40 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans(plan1=Plan1(), plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, self.two_lights))
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"plan1": "bob", "plan2": Skip})
-                  , light2.serial: (True, {"plan1": "sam", "plan2": {"label": "sam", "power": 65535}})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"plan1": "bob", "plan2": Skip}),
+                    light2.serial: (
+                        True,
+                        {"plan1": "sam", "plan2": {"label": "sam", "power": 65535}},
+                    ),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("plan1", light1.serial, label_type)
-                  , ("info.plan1", light1.serial)
-                  , ("plan1", light2.serial, label_type)
-                  , ("info.plan1", light2.serial)
-
-                  , ("plan2", light2.serial, label_type)
-                  , ("plan2", light2.serial, power_type)
-                  , ("info.plan2", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: []
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [],
+                }
+            )
 
         @mlr.test
         async it "chain is broken when dep can't get results", runner:
@@ -1613,34 +1596,45 @@ describe AsyncTestCase, "Gatherer":
             plans = make_plans("presence", plan2=Plan2())
             errors = []
             with light3.no_replies_for(DeviceMessages.GetLabel):
-                got = dict(await gatherer.gather_all(plans, runner.serials, error_catcher=errors, message_timeout=0.1))
+                got = dict(
+                    await gatherer.gather_all(
+                        plans, runner.serials, error_catcher=errors, message_timeout=0.1
+                    )
+                )
             self.assertEqual(len(errors), 1)
 
-            self.assertEqual(got
-                , { light1.serial: (True, {"presence": True, "plan2": Skip})
-                  , light2.serial: (True, {"presence": True, "plan2": {"label": "sam", "power": 65535}})
-                  , light3.serial: (False, {"presence": True})
-                  }
-                )
+            self.assertEqual(
+                got,
+                {
+                    light1.serial: (True, {"presence": True, "plan2": Skip}),
+                    light2.serial: (
+                        True,
+                        {"presence": True, "plan2": {"label": "sam", "power": 65535}},
+                    ),
+                    light3.serial: (False, {"presence": True}),
+                },
+            )
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            self.assertEqual(called
-                , [ ("plan1", light1.serial, label_type)
-                  , ("info.plan1", light1.serial)
-                  , ("plan1", light2.serial, label_type)
-                  , ("info.plan1", light2.serial)
-
-                  , ("plan2", light2.serial, label_type)
-                  , ("plan2", light2.serial, power_type)
-                  , ("info.plan2", light2.serial)
-                  ]
-                )
+            self.assertEqual(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
-                  { light1: [DeviceMessages.GetLabel()]
-                  , light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()]
-                  , light3: [DeviceMessages.GetLabel()]
-                  }
-                )
+                {
+                    light1: [DeviceMessages.GetLabel()],
+                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light3: [DeviceMessages.GetLabel()],
+                }
+            )

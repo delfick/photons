@@ -21,9 +21,10 @@ from input_algorithms.meta import Meta
 from collections import defaultdict
 
 default_tile_palette = [
-      {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
-      for hue in [0, 40, 60, 122, 239, 271, 294]
-    ]
+    {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
+    for hue in [0, 40, 60, 122, 239, 271, 294]
+]
+
 
 def tiles_from(state_pkt):
     """
@@ -35,13 +36,19 @@ def tiles_from(state_pkt):
     amount = state_pkt.tile_devices_count - state_pkt.start_index
     return state_pkt.tile_devices[:amount]
 
+
 def orientations_from(pkt):
     orientations = {}
     for i, tile in enumerate(tiles_from(pkt)):
-        orientations[i] = nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
+        orientations[i] = nearest_orientation(
+            tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z
+        )
     return orientations
 
-def SetTileEffect(effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options):
+
+def SetTileEffect(
+    effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options
+):
     """
     Set an effect on your tiles
 
@@ -112,18 +119,19 @@ def SetTileEffect(effect, gatherer=None, power_on=True, power_on_duration=1, ref
             if info["cap"].has_chain:
                 if power_on:
                     yield LightMessages.SetLightPower(
-                          level = 65535
-                        , target = serial
-                        , duration = power_on_duration
-                        , ack_required = True
-                        , res_required = False
-                        )
+                        level=65535,
+                        target=serial,
+                        duration=power_on_duration,
+                        ack_required=True,
+                        res_required=False,
+                    )
 
                 msg = set_effect.clone()
                 msg.target = serial
                 yield msg
 
     return FromGenerator(gen)
+
 
 @an_action(needs_target=True, special_reference=True)
 async def get_device_chain(collector, target, reference, **kwargs):
@@ -136,16 +144,17 @@ async def get_device_chain(collector, target, reference, **kwargs):
             for tile in tiles_from(pkt):
                 print("   ", repr(tile))
 
+
 @an_action(needs_target=True, special_reference=True)
 async def get_chain_state(collector, target, reference, **kwargs):
     """
     Get the colors of the tiles in your chain
     """
-    options = collector.configuration['photons_app'].extra_as_json
+    options = collector.configuration["photons_app"].extra_as_json
 
     missing = []
     for field in TileMessages.Get64.Payload.Meta.all_names:
-        if field not in options and field not in ("reserved6", ):
+        if field not in options and field not in ("reserved6",):
             missing.append(field)
 
     if missing:
@@ -168,6 +177,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
             for index, color in enumerate(pkt.colors):
                 print("        color {0}".format(index), repr(color))
             print("")
+
 
 @an_action(needs_target=True, special_reference=True)
 async def tile_effect(collector, target, reference, artifact, **kwargs):
@@ -202,6 +212,7 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
 
     await target.script(SetTileEffect(artifact, **options)).run_with_all(reference)
 
+
 class list_spec(sb.Spec):
     def setup(self, *specs):
         self.specs = specs
@@ -211,13 +222,19 @@ class list_spec(sb.Spec):
             raise BadSpecValue("Expected a list", got=type(val), meta=meta)
 
         if len(val) != len(self.specs):
-            raise BadSpecValue("Expected a value with certain number of items", wanted=len(self.specs), got=len(val), meta=meta)
+            raise BadSpecValue(
+                "Expected a value with certain number of items",
+                wanted=len(self.specs),
+                got=len(val),
+                meta=meta,
+            )
 
         res = []
         for i, v in enumerate(val):
             res.append(self.specs[i].normalise(meta.indexed_at(i), v))
 
         return res
+
 
 @an_action(needs_target=True, special_reference=True)
 async def set_chain_state(collector, target, reference, artifact, **kwargs):
@@ -231,12 +248,18 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
     options = collector.configuration["photons_app"].extra_as_json
 
     if "colors" in options:
-        spec = sb.listof(sb.listof(list_spec(sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec())))
+        spec = sb.listof(
+            sb.listof(
+                list_spec(sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec())
+            )
+        )
         colors = spec.normalise(Meta.empty().at("colors"), options["colors"])
 
         row_lengths = [len(row) for row in colors]
         if len(set(row_lengths)) != 1:
-            raise PhotonsAppError("Please specify colors as a grid with the same length rows", got=row_lengths)
+            raise PhotonsAppError(
+                "Please specify colors as a grid with the same length rows", got=row_lengths
+            )
 
         num_cells = sum(len(row) for row in colors)
         if num_cells != 64:
@@ -245,7 +268,9 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         cells = []
         for row in colors:
             for col in row:
-                cells.append({"hue": col[0], "saturation": col[1], "brightness": col[2], "kelvin": col[3]})
+                cells.append(
+                    {"hue": col[0], "saturation": col[1], "brightness": col[2], "kelvin": col[3]}
+                )
 
         options["colors"] = cells
     else:
@@ -263,6 +288,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
     msg = TileMessages.Set64.empty_normalise(**options)
     await target.script(msg).run_with_all(reference)
 
+
 @an_action(needs_target=True, special_reference=True)
 async def set_tile_positions(collector, target, reference, **kwargs):
     """
@@ -273,12 +299,17 @@ async def set_tile_positions(collector, target, reference, **kwargs):
     extra = collector.configuration["photons_app"].extra_as_json
     positions = sb.listof(sb.listof(sb.float_spec())).normalise(Meta.empty(), extra)
     if any(len(position) != 2 for position in positions):
-        raise PhotonsAppError("Please enter positions as a list of two item lists of user_x, user_y")
+        raise PhotonsAppError(
+            "Please enter positions as a list of two item lists of user_x, user_y"
+        )
 
     async with target.session() as afr:
         for i, (user_x, user_y) in enumerate(positions):
-            msg = TileMessages.SetUserPosition(tile_index=i, user_x=user_x, user_y=user_y, res_required=False)
+            msg = TileMessages.SetUserPosition(
+                tile_index=i, user_x=user_x, user_y=user_y, res_required=False
+            )
             await target.script(msg).run_with_all(reference, afr)
+
 
 @an_action(needs_target=True, special_reference=True)
 async def get_tile_positions(collector, target, reference, **kwargs):

@@ -8,7 +8,9 @@ describe TestCase, "HSBKClose":
     it "is close if within 0.1 for saturation and brightness":
         target = chp.Color(0, 0.1, 0.5, 1500)
 
-        close = lambda hue, saturation, brightness, kelvin: chp.HSBKClose({"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin})
+        close = lambda hue, saturation, brightness, kelvin: chp.HSBKClose(
+            {"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin}
+        )
 
         assert close(0, 0.1, 0.5, 1500) == target
         assert close(0, 0.2, 0.6, 1500) == target
@@ -24,7 +26,9 @@ describe TestCase, "HSBKClose":
     it "is close if within 1 for hue and kelvin":
         target = chp.Color(100, 0.1, 0.5, 2500)
 
-        close = lambda hue, saturation, brightness, kelvin: chp.HSBKClose({"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin})
+        close = lambda hue, saturation, brightness, kelvin: chp.HSBKClose(
+            {"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin}
+        )
 
         assert close(100, 0.1, 0.5, 2500) == target
         assert close(101, 0.1, 0.5, 2501) == target
@@ -42,5 +46,9 @@ describe TestCase, "HSBKClose":
         assert not chp.HSBKClose({"brightness": 0}) == chp.Color(0, 0, 0, 0)
         assert not chp.HSBKClose({"kelvin": 0}) == chp.Color(0, 0, 0, 0)
 
-        assert chp.HSBKClose({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}) == chp.Color(0, 0, 0, 0)
-        assert not chp.HSBKClose({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0, "other": 0}) == chp.Color(0, 0, 0, 0)
+        assert chp.HSBKClose(
+            {"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}
+        ) == chp.Color(0, 0, 0, 0)
+        assert not chp.HSBKClose(
+            {"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0, "other": 0}
+        ) == chp.Color(0, 0, 0, 0)

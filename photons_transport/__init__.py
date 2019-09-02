@@ -42,6 +42,7 @@ import asyncio
 RetryOptions = RetryOptions
 RetryIterator = RetryIterator
 
+
 @contextmanager
 def catch_errors(error_catcher=None):
     do_raise = error_catcher is None
@@ -64,5 +65,6 @@ def catch_errors(error_catcher=None):
 
     if error_catcher:
         raise RunErrors(_errors=error_catcher)
+
 
 __all__ = ["RetryOptions", "RetryIterator", "catch_errors"]

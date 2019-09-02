@@ -11,23 +11,24 @@ from noseOfYeti.tokeniser.support import noy_sup_setUp
 describe TestCase, "make_colors":
     before_each:
         self.colors = [
-              ["red", 10]
-            , ["blue", 3]
-            , ["hue:78 brightness:0.5", 5]
-            , ["#234455", 2]
-            , [[100], 1]
-            , [[100, 0.5], 1]
-            , [[100, 0.5, 0.5], 1]
-            , [[100, 0.5, 0.5, 9000], 1]
-            , [[0, 0, 0, 0], 1]
-            , [{"hue": 100}, 1]
-            , [{"hue": 100, "saturation": 0.5}, 1]
-            , [{"hue": 100, "saturation": 0.5, "brightness": 0.5}, 1]
-            , [{"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000}, 1]
-            , [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1]
-            ]
+            ["red", 10],
+            ["blue", 3],
+            ["hue:78 brightness:0.5", 5],
+            ["#234455", 2],
+            [[100], 1],
+            [[100, 0.5], 1],
+            [[100, 0.5, 0.5], 1],
+            [[100, 0.5, 0.5, 9000], 1],
+            [[0, 0, 0, 0], 1],
+            [{"hue": 100}, 1],
+            [{"hue": 100, "saturation": 0.5}, 1],
+            [{"hue": 100, "saturation": 0.5, "brightness": 0.5}, 1],
+            [{"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000}, 1],
+            [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1],
+        ]
 
     it "can make colors":
+
         def hsbk(*args, **kwargs):
             h, s, b, k = Parser.hsbk(*args, **kwargs)
             return {"hue": h, "saturation": s, "brightness": b, "kelvin": k}

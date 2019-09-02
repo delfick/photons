@@ -6,6 +6,7 @@ from photons_themes.canvas import Canvas
 import random
 import time
 
+
 class State:
     def __init__(self, coords, make_new_color):
         self.coords = coords
@@ -35,7 +36,9 @@ class State:
             ch = random.choice(characters)
             left, top = self.random_coord()
             color = Color(random.randrange(0, 360), 1, 1, 3500)
-            self.canvas.set_all_points_for_tile(left, top, ch.width, ch.height, ch.get_color_func(color))
+            self.canvas.set_all_points_for_tile(
+                left, top, ch.width, ch.height, ch.get_color_func(color)
+            )
 
     def iterate(self, delay):
         if self.last_iteration is not None and time.time() - self.last_iteration < delay:

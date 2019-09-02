@@ -217,20 +217,26 @@ log = logging.getLogger("photons_device_finder")
 
 __shortdesc__ = "Device finder that gathers information about devices in the background"
 
-@option_merge_addon_hook(extras=[
-    ("lifx.photons", "control")
-  , ("lifx.photons", "messages")
-  , ("lifx.photons", "products_registry")
-  ])
+
+@option_merge_addon_hook(
+    extras=[
+        ("lifx.photons", "control"),
+        ("lifx.photons", "messages"),
+        ("lifx.photons", "products_registry"),
+    ]
+)
 def __lifx__(collector, *args, **kwargs):
     pass
+
 
 @option_merge_addon_hook(post_register=True)
 def __lifx_post__(collector, **kwargs):
     def resolve(s, target):
         filtr = Filter.from_url_str(s)
         return DeviceFinderWrap(filtr, target)
+
     collector.configuration["reference_resolver_register"].add("match", resolve)
+
 
 @an_action(needs_target=True)
 async def find_with_filter(collector, target, **kwargs):
@@ -249,15 +255,17 @@ async def find_with_filter(collector, target, **kwargs):
     finally:
         await device_finder.finish()
 
-regexes = {
-      "key_value": re.compile(r"^(?P<key>[\w_]+)=(?P<value>.+)")
-    }
+
+regexes = {"key_value": re.compile(r"^(?P<key>[\w_]+)=(?P<value>.+)")}
+
 
 class Done:
     """Used to signify a queue is done"""
 
+
 class InvalidJson(PhotonsAppError):
     desc = "String is invalid json"
+
 
 class Collection(dictobj.Spec):
     """
@@ -265,6 +273,7 @@ class Collection(dictobj.Spec):
     between label and updated_at such that the collections' name corresponds
     to the name with the newest updated_at property
     """
+
     typ = dictobj.Field(sb.string_spec, wrapper=sb.required)
     uuid = dictobj.Field(sb.string_spec, wrapper=sb.required)
     name = dictobj.Field(sb.string_spec, default="")
@@ -281,12 +290,14 @@ class Collection(dictobj.Spec):
     def __eq__(self, other):
         return isinstance(other, Collection) and self.typ == other.typ and self.uuid == other.uuid
 
+
 class Collections(object):
     """
     A collection of collections!
 
     This knows about groups and locations.
     """
+
     def __init__(self):
         self.collections = {"group": {}, "location": {}}
         self.collection_spec = Collection.FieldSpec()
@@ -305,14 +316,17 @@ class Collections(object):
         collection.add_name(updated_at, label)
         return collection
 
+
 class boolean(sb.Spec):
     """Take in int/string/bool and convert to a boolean"""
+
     def normalise_filled(self, meta, val):
         if type(val) is int:
             return False if val == 0 else True
         elif type(val) is str:
             return False if val.lower() in ("no", "false") else True
         return sb.boolean().normalise(meta, val)
+
 
 class str_ranges(sb.Spec):
     """
@@ -321,9 +335,10 @@ class str_ranges(sb.Spec):
     Will also work if the value is already of the form [(a, b), (c, d), (e, e)]
     or if the value is a list of ["a-b", "c-d", "e"]
     """
+
     def normalise_filled(self, meta, val):
         if type(val) is str:
-            val = val.split(',')
+            val = val.split(",")
 
         if type(val) is list:
             res = []
@@ -338,6 +353,7 @@ class str_ranges(sb.Spec):
             val = res
 
         return sb.listof(sb.tuple_spec(sb.float_spec(), sb.float_spec())).normalise(meta, val)
+
 
 class Filter(dictobj.Spec):
     """
@@ -382,6 +398,7 @@ class Filter(dictobj.Spec):
 
     Finally, we have ``has`` which takes in a ``field_name`` and says whether
     """
+
     force_refresh = dictobj.Field(boolean, default=False)
 
     serial = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
@@ -439,8 +456,14 @@ class Filter(dictobj.Spec):
             m = regexes["key_value"].match(part)
             if m:
                 groups = m.groupdict()
-                if groups["key"] not in ("hue", "saturation", "brightness", "kelvin", "force_refresh"):
-                    options[groups["key"]] = groups["value"].split(',')
+                if groups["key"] not in (
+                    "hue",
+                    "saturation",
+                    "brightness",
+                    "kelvin",
+                    "force_refresh",
+                ):
+                    options[groups["key"]] = groups["value"].split(",")
                 else:
                     options[groups["key"]] = groups["value"]
 
@@ -535,21 +558,28 @@ class Filter(dictobj.Spec):
     def label_fields(self):
         return ("product_identifier", "label", "location_name", "group_name")
 
+
 class Point(object):
     """Used as the value in the InfoPoints enum"""
+
     def __init__(self, msg, keys):
         self.msg = msg
         self.keys = keys
+
 
 class InfoPoints(enum.Enum):
     """
     Enum used to determine what information is required for what keys
     """
-    LIGHT_STATE = Point(LightMessages.GetColor(), ["label", "power", "hue", "saturation", "brightness", "kelvin"])
+
+    LIGHT_STATE = Point(
+        LightMessages.GetColor(), ["label", "power", "hue", "saturation", "brightness", "kelvin"]
+    )
     VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "product_identifier", "cap"])
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"])
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"])
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"])
+
 
 class Device(dictobj.Spec):
     """
@@ -557,6 +587,7 @@ class Device(dictobj.Spec):
 
     Users shouldn't have to interact with these directly
     """
+
     serial = dictobj.Field(sb.string_spec, wrapper=sb.required)
 
     label = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
@@ -670,7 +701,13 @@ class Device(dictobj.Spec):
             capability = capability_for_ids(pkt.product, pkt.vendor)
             self.product_identifier = capability.identifier
             cap = []
-            for prop in ("has_color", "has_ir", "has_multizone", "has_chain", "has_variable_color_temp"):
+            for prop in (
+                "has_color",
+                "has_ir",
+                "has_multizone",
+                "has_chain",
+                "has_variable_color_temp",
+            ):
                 if getattr(capability, prop):
                     cap.append(prop[4:])
                 else:
@@ -678,14 +715,18 @@ class Device(dictobj.Spec):
             self.cap = sorted(cap)
             return InfoPoints.VERSION
 
+
 class ByTarget(dict):
     def __init__(self, device_spec):
         self.device_spec = device_spec
 
     def __getitem__(self, target):
         if target not in self:
-            self[target] = self.device_spec.empty_normalise(serial = binascii.hexlify(target).decode())
+            self[target] = self.device_spec.empty_normalise(
+                serial=binascii.hexlify(target).decode()
+            )
         return super().__getitem__(target)
+
 
 class InfoStore(object):
     """
@@ -693,6 +734,7 @@ class InfoStore(object):
 
     Users need not work with this directly.
     """
+
     def __init__(self, device_finder_loops):
         self.found = hp.ResettableFuture()
         self.device_finder_loops = device_finder_loops
@@ -747,10 +789,11 @@ class InfoStore(object):
             target = target[:6]
 
             if target in self.by_target:
-                info = { k: v
-                      for k, v in self.by_target[target].as_dict().items()
-                      if v != sb.NotSpecified
-                    }
+                info = {
+                    k: v
+                    for k, v in self.by_target[target].as_dict().items()
+                    if v != sb.NotSpecified
+                }
                 if info:
                     res[binascii.hexlify(target).decode()] = info
         return res
@@ -837,6 +880,7 @@ class InfoStore(object):
         if self.tasks_by_target.get(target) is t:
             del self.tasks_by_target[target]
 
+
 class DeviceFinderLoops(object):
     """
     The engine of this module.
@@ -866,7 +910,10 @@ class DeviceFinderLoops(object):
         This queue is populated by the ``findings`` loop as well as when we have
         ``force_refresh`` and when new devices are found from ``service_search``
     """
-    def __init__(self, target, service_search_interval=20, information_search_interval=30, repeat_spread=1):
+
+    def __init__(
+        self, target, service_search_interval=20, information_search_interval=30, repeat_spread=1
+    ):
         self.target = target
         self.queue = asyncio.Queue()
         self.store = InfoStore(self)
@@ -890,6 +937,7 @@ class DeviceFinderLoops(object):
                     self.afr_fut.set_exception(exc)
 
                 self.afr_fut.set_result(res.result())
+
             t.add_done_callback(transfer)
 
         return await self.afr_fut
@@ -1062,6 +1110,7 @@ class DeviceFinderLoops(object):
             return
         self.store.add(item)
 
+
 class DeviceFinder(object):
     """
     Used by users to find devices based on filters.
@@ -1083,14 +1132,18 @@ class DeviceFinder(object):
 
     .. automethod:: photons_device_finder.DeviceFinder.args_for_run
     """
+
     _merged_options_formattable = True
 
-    def __init__(self, target, service_search_interval=20, information_search_interval=30, repeat_spread=1):
-        self.loops = DeviceFinderLoops(target
-            , service_search_interval = service_search_interval
-            , information_search_interval = information_search_interval
-            , repeat_spread = repeat_spread
-            )
+    def __init__(
+        self, target, service_search_interval=20, information_search_interval=30, repeat_spread=1
+    ):
+        self.loops = DeviceFinderLoops(
+            target,
+            service_search_interval=service_search_interval,
+            information_search_interval=information_search_interval,
+            repeat_spread=repeat_spread,
+        )
         self.daemon = False
 
     async def start(self, quickstart=False):
@@ -1169,12 +1222,17 @@ class DeviceFinder(object):
 
     def _reference(self, filtr, for_info=False):
         """Return a SpecialReference instance that uses the provided filtr"""
+
         class Reference(SpecialReference):
             async def find_serials(s, afr, *, timeout, broadcast=True):
                 if filtr.force_refresh or not self.daemon:
-                    found = await self.loops.refresh_from_filter(filtr, for_info=for_info, find_timeout=timeout)
+                    found = await self.loops.refresh_from_filter(
+                        filtr, for_info=for_info, find_timeout=timeout
+                    )
                 else:
-                    found = await self.loops.store.found_from_filter(filtr, for_info=for_info, find_timeout=timeout)
+                    found = await self.loops.store.found_from_filter(
+                        filtr, for_info=for_info, find_timeout=timeout
+                    )
 
                 if not found:
                     raise FoundNoDevices()
@@ -1193,12 +1251,14 @@ class DeviceFinder(object):
 
         return ref
 
+
 class DeviceFinderWrap(SpecialReference):
     """
     A wrap around DeviceFinder for providing to the reference resolver
 
     This makes sure our DeviceFinder is cleaned up at the end
     """
+
     def __init__(self, filtr, target):
         self.finder = DeviceFinder(target)
         self.reference = self.finder.find(filtr=filtr)

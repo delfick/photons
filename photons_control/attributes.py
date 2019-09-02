@@ -15,6 +15,7 @@ from input_algorithms.spec_base import NotSpecified
 from input_algorithms.meta import Meta
 import sys
 
+
 def make_color(specifier):
     """
     Return {"hue", "saturation", "brightness", "kelvin"} dictionary for this specifier.
@@ -34,10 +35,14 @@ def make_color(specifier):
 
     elif isinstance(specifier, list):
         h, s, b, k = 0, 0, 1, 3500
-        if len(specifier) > 0: h = specifier[0]
-        if len(specifier) > 1: s = specifier[1]
-        if len(specifier) > 2: b = specifier[2]
-        if len(specifier) > 3: k = specifier[3]
+        if len(specifier) > 0:
+            h = specifier[0]
+        if len(specifier) > 1:
+            s = specifier[1]
+        if len(specifier) > 2:
+            b = specifier[2]
+        if len(specifier) > 3:
+            k = specifier[3]
 
     elif isinstance(specifier, dict):
         h = specifier.get("hue", 0)
@@ -46,11 +51,12 @@ def make_color(specifier):
         k = specifier.get("kelvin", 3500)
 
     return {
-          "hue": h or 0
-        , "saturation": s or 0
-        , "brightness": b if b is not None else 1
-        , "kelvin": k if k is not None else 3500
-        }
+        "hue": h or 0,
+        "saturation": s or 0,
+        "brightness": b if b is not None else 1,
+        "kelvin": k if k is not None else 3500,
+    }
+
 
 def make_colors(colors, overrides=None):
     """
@@ -77,6 +83,7 @@ def make_colors(colors, overrides=None):
         for _ in range(length):
             yield result
 
+
 def find_packet(protocol_register, value, prefix):
     """
     Return either None or the class object for this value/prefix combination.
@@ -95,6 +102,7 @@ def find_packet(protocol_register, value, prefix):
             if kls.__name__ in (value, kls_name_plain, kls_name_transformed):
                 return kls
 
+
 @an_action(special_reference=True, needs_target=True)
 async def attr(collector, target, reference, artifact, **kwargs):
     """
@@ -107,7 +115,11 @@ async def attr(collector, target, reference, artifact, **kwargs):
     protocol_register = collector.configuration["protocol_register"]
 
     if artifact in (None, "", NotSpecified):
-        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
+        raise BadOption(
+            "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
+                sys.argv[0]
+            )
+        )
 
     kls = find_packet(protocol_register, artifact, "")
     if kls is None:
@@ -124,6 +136,7 @@ async def attr(collector, target, reference, artifact, **kwargs):
     async for pkt, _, _ in script.run_with(reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
+
 @an_action(special_reference=True, needs_target=True)
 async def attr_actual(collector, target, reference, artifact, **kwargs):
     """
@@ -132,7 +145,11 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
     protocol_register = collector.configuration["protocol_register"]
 
     if artifact in (None, "", NotSpecified):
-        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
+        raise BadOption(
+            "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
+                sys.argv[0]
+            )
+        )
 
     kls = find_packet(protocol_register, artifact, "")
     if kls is None:
@@ -167,6 +184,7 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
         for line in lines(pkt):
             print(line)
 
+
 @an_action(special_reference=True, needs_target=True)
 async def get_attr(collector, target, reference, artifact, **kwargs):
     """
@@ -187,7 +205,11 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     protocol_register = collector.configuration["protocol_register"]
 
     if artifact in (None, "", NotSpecified):
-        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(sys.argv[0]))
+        raise BadOption(
+            "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
+                sys.argv[0]
+            )
+        )
 
     getter = find_packet(protocol_register, artifact, "Get")
     if getter is None:
@@ -203,6 +225,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     script = target.script(getter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
+
 
 @an_action(special_reference=True, needs_target=True)
 async def set_attr(collector, target, reference, artifact, broadcast=False, **kwargs):
@@ -220,7 +243,11 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     protocol_register = collector.configuration["protocol_register"]
 
     if artifact in (None, "", NotSpecified):
-        raise BadOption("Please specify what you want to get\nUsage: {0} <target>:set_attr <reference> <attr_to_get> -- '{{<options>}}'".format(sys.argv[0]))
+        raise BadOption(
+            "Please specify what you want to get\nUsage: {0} <target>:set_attr <reference> <attr_to_get> -- '{{<options>}}'".format(
+                sys.argv[0]
+            )
+        )
 
     setter = find_packet(protocol_register, artifact, "Set")
     if setter is None:
@@ -236,6 +263,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     script = target.script(setter.normalise(Meta.empty(), extra))
     async for pkt, _, _ in script.run_with(reference, broadcast=broadcast):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
+
 
 @an_action(needs_target=True, special_reference=True)
 async def get_effects(collector, target, reference, **kwargs):

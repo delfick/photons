@@ -13,6 +13,6 @@ def user_coords_to_pixel_coords(coords_and_sizes):
     and user_x and user_y are the top left of the tile in terms of pixels
     """
     return [
-          ((int((x * w) - (w * 0.5)), int((y * h) + (h * 0.5))), (w, h))
-          for (x, y), (w, h) in coords_and_sizes
-        ]
+        ((int((x * w) - (w * 0.5)), int((y * h) + (h * 0.5))), (w, h))
+        for (x, y), (w, h) in coords_and_sizes
+    ]

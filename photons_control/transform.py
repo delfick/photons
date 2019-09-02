@@ -11,6 +11,7 @@ from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
 
+
 def PowerToggle(duration=1):
     """
     Returns a valid message that will toggle the power of devices used against it.
@@ -21,16 +22,24 @@ def PowerToggle(duration=1):
 
         await target.script(PowerToggle()).run_with_all(["d073d5000001", "d073d5000001"])
     """
+
     async def gen(reference, afr, **kwargs):
         get_power = DeviceMessages.GetPower()
-        async for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+        async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
+            reference, afr, **kwargs
+        ):
             if pkt | DeviceMessages.StatePower:
                 if pkt.level == 0:
-                    yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration, target=pkt.serial)
+                    yield LightMessages.SetLightPower(
+                        level=65535, res_required=False, duration=duration, target=pkt.serial
+                    )
                 else:
-                    yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration, target=pkt.serial)
+                    yield LightMessages.SetLightPower(
+                        level=0, res_required=False, duration=duration, target=pkt.serial
+                    )
 
     return FromGenerator(gen)
+
 
 class Transformer(object):
     """
@@ -58,6 +67,7 @@ class Transformer(object):
     If keep_brightness is True then we do not change the brightness of the device
     despite any brightness options in the color options.
     """
+
     @classmethod
     def using(kls, state, keep_brightness=False):
         transformer = kls()
@@ -132,7 +142,9 @@ class Transformer(object):
             set_color.target = serial
 
             if currently_off:
-                set_color.brightness = current_state.brightness if want_brightness is None else want_brightness
+                set_color.brightness = (
+                    current_state.brightness if want_brightness is None else want_brightness
+                )
                 set_color.set_brightness = True
             elif want_brightness is not None:
                 set_color.brightness = want_brightness
@@ -145,11 +157,14 @@ class Transformer(object):
         async def gen(reference, afr, **kwargs):
             get_color = LightMessages.GetColor(ack_required=False, res_required=True)
 
-            async for pkt, _, _ in afr.transport_target.script(get_color).run_with(reference, afr, **kwargs):
+            async for pkt, _, _ in afr.transport_target.script(get_color).run_with(
+                reference, afr, **kwargs
+            ):
                 if pkt | LightMessages.LightState:
                     yield receiver(pkt.serial, pkt.payload)
 
         return FromGenerator(gen)
+
 
 @an_action(needs_target=True, special_reference=True)
 async def transform(collector, target, reference, **kwargs):
@@ -163,5 +178,7 @@ async def transform(collector, target, reference, **kwargs):
     """
     msg = Transformer.using(collector.configuration["photons_app"].extra_as_json)
     if not msg:
-        raise PhotonsAppError('Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``')
+        raise PhotonsAppError(
+            'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
+        )
     await target.script(msg).run_with_all(reference)

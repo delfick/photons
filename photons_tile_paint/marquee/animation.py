@@ -1,13 +1,20 @@
-from photons_tile_paint.animation import Animation, coords_for_horizontal_line, put_characters_on_canvas, Finish
+from photons_tile_paint.animation import (
+    Animation,
+    coords_for_horizontal_line,
+    put_characters_on_canvas,
+    Finish,
+)
 from photons_tile_paint.font.alphabet import characters as alphabet
 
 from photons_themes.canvas import Canvas
 
 import enum
 
+
 class MarqueeDirection(enum.Enum):
     LEFT = "left"
     RIGHT = "right"
+
 
 class TileMarqueeAnimation(Animation):
     every = 0.075
@@ -92,5 +99,7 @@ class TileMarqueeAnimation(Animation):
     def make_canvas(self, state, coords):
         canvas = Canvas()
         characters = self.characters(state)
-        put_characters_on_canvas(canvas, characters, state.coords_for(coords, characters), self.options.text_color.color)
+        put_characters_on_canvas(
+            canvas, characters, state.coords_for(coords, characters), self.options.text_color.color
+        )
         return canvas

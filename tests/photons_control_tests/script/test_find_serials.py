@@ -31,18 +31,27 @@ describe AsyncTestCase, "Repeater":
     @mlr.test
     async it "can find a specific serial", runner:
         async with runner.target.session() as afr:
-            self.assertEqual(await find_serials(light1.serial, afr, timeout=1), ([light1.serial], []))
+            self.assertEqual(
+                await find_serials(light1.serial, afr, timeout=1), ([light1.serial], [])
+            )
 
         async with runner.target.session() as afr:
             with light1.offline():
-                self.assertEqual(await find_serials(light1.serial, afr, timeout=0.5), ([], [light1.serial]))
+                self.assertEqual(
+                    await find_serials(light1.serial, afr, timeout=0.5), ([], [light1.serial])
+                )
 
     @mlr.test
     async it "can find a number of serials", runner:
         for ref in (f"{light1.serial},{light2.serial}", [light1.serial, light2.serial]):
             async with runner.target.session() as afr:
-                self.assertEqual(await find_serials(ref, afr, timeout=1), ([light1.serial, light2.serial], []))
+                self.assertEqual(
+                    await find_serials(ref, afr, timeout=1), ([light1.serial, light2.serial], [])
+                )
 
             with light1.offline():
                 async with runner.target.session() as afr:
-                    self.assertEqual(await find_serials(ref, afr, timeout=0.5), ([light2.serial], [light1.serial]))
+                    self.assertEqual(
+                        await find_serials(ref, afr, timeout=0.5),
+                        ([light2.serial], [light1.serial]),
+                    )

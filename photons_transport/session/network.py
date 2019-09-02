@@ -1,6 +1,4 @@
-from photons_transport.errors import (
-      InvalidBroadcast, UnknownService, NoDesiredService
-    )
+from photons_transport.errors import InvalidBroadcast, UnknownService, NoDesiredService
 from photons_transport.retry_options import RetryOptions
 from photons_transport.comms.base import Communication
 from photons_transport.transports.udp import UDP
@@ -16,16 +14,20 @@ import time
 
 log = logging.getLogger("photons_transport.session.network")
 
+
 class UDPRetryOptions(RetryOptions):
     pass
 
+
 udp_retry_options = UDPRetryOptions()
+
 
 class NetworkSession(Communication):
     """
     Knows how to discover by broadcasting GetService. It then knows per packet
     which service to use for sending messages.
     """
+
     UDPTransport = UDP
 
     def setup(self):
@@ -51,10 +53,11 @@ class NetworkSession(Communication):
         need = await self.determine_needed_transport(packet, services)
 
         if not need:
-            raise NoDesiredService("Unable to determine what service to send packet to"
-                , protocol = packet.protocol
-                , pkt_type = packet.pkt_type
-                )
+            raise NoDesiredService(
+                "Unable to determine what service to send packet to",
+                protocol=packet.protocol,
+                pkt_type=packet.pkt_type,
+            )
 
         for n in need:
             if n in services:
@@ -66,12 +69,8 @@ class NetworkSession(Communication):
         found_now = set()
 
         get_service = DiscoveryMessages.GetService(
-              target = None
-            , tagged = True
-            , addressable = True
-            , res_required = True
-            , ack_required = False
-            )
+            target=None, tagged=True, addressable=True, res_required=True, ack_required=False
+        )
 
         script = self.transport_target.script(get_service)
 
@@ -118,7 +117,9 @@ class NetworkSession(Communication):
         if isinstance(broadcast, str):
             broadcast = (broadcast, 56700)
 
-        if type(broadcast) is not str and not (isinstance(broadcast, tuple) and len(broadcast) == 2):
+        if type(broadcast) is not str and not (
+            isinstance(broadcast, tuple) and len(broadcast) == 2
+        ):
             raise InvalidBroadcast("Expect a string or (host, port) tuple", got=broadcast)
 
         if broadcast in self.broadcast_transports:

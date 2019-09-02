@@ -19,9 +19,12 @@ log = logging.getLogger("photons_app.helpers")
 # Make vim be quiet
 lc = lc
 
+
 class Nope:
     """Used to say there was no value"""
+
     pass
+
 
 def add_error(catcher, error):
     """
@@ -37,6 +40,7 @@ def add_error(catcher, error):
         catcher.append(error)
     elif type(catcher) is set:
         catcher.add(error)
+
 
 @contextmanager
 def a_temp_file():
@@ -61,6 +65,7 @@ def a_temp_file():
             tmpfile.close()
         if filename and os.path.exists(filename):
             os.remove(filename)
+
 
 def nested_dict_retrieve(data, keys, dflt):
     """
@@ -99,6 +104,7 @@ def nested_dict_retrieve(data, keys, dflt):
 
     return data[last_key]
 
+
 def fut_has_callback(fut, callback):
     if not fut._callbacks:
         return False
@@ -111,6 +117,7 @@ def fut_has_callback(fut, callback):
             return True
 
     return False
+
 
 def async_as_normal(func):
     """
@@ -129,13 +136,16 @@ def async_as_normal(func):
         # start the async job
         func(1, b=6)
     """
+
     @wraps(func)
     def normal(*args, **kwargs):
         coroutine = func(*args, **kwargs)
         t = asyncio.get_event_loop().create_task(coroutine)
         t.add_done_callback(reporter)
         return t
+
     return normal
+
 
 def async_as_background(coroutine, silent=False):
     """
@@ -156,6 +166,7 @@ def async_as_background(coroutine, silent=False):
     else:
         t.add_done_callback(reporter)
     return t
+
 
 async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=False):
     """
@@ -194,6 +205,7 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
     asyncio.get_event_loop().call_later(timeout, set_timeout)
     return await f
 
+
 class memoized_property(object):
     """
     Decorator to make a descriptor that memoizes it's value
@@ -213,6 +225,7 @@ class memoized_property(object):
         # And we get the result again but minus the expensive operation
         print(obj.thing)
     """
+
     class Empty:
         pass
 
@@ -237,6 +250,7 @@ class memoized_property(object):
         if hasattr(instance, self.cache_name):
             delattr(instance, self.cache_name)
 
+
 def silent_reporter(res):
     """
     A generic reporter for asyncio tasks that doesn't log errors.
@@ -260,6 +274,7 @@ def silent_reporter(res):
         if not exc:
             res.result()
             return True
+
 
 def reporter(res):
     """
@@ -287,12 +302,14 @@ def reporter(res):
             res.result()
             return True
 
+
 def transfer_result(fut, errors_only=False):
     """
     Return a done_callback that transfers the result/errors/cancellation to fut
 
     If errors_only is True then it will not transfer a result to fut
     """
+
     def transfer(res):
         if res.cancelled():
             fut.cancel()
@@ -309,7 +326,9 @@ def transfer_result(fut, errors_only=False):
 
         if not errors_only:
             fut.set_result(res.result())
+
     return transfer
+
 
 def noncancelled_results_from_futs(futs):
     """
@@ -344,6 +363,7 @@ def noncancelled_results_from_futs(futs):
         errors = None
 
     return (errors, results)
+
 
 def find_and_apply_result(final_fut, available_futs):
     """
@@ -398,6 +418,7 @@ def find_and_apply_result(final_fut, available_futs):
 
     return False
 
+
 class ResettableFuture(object):
     """
     A future object with a ``reset()`` function that resets it
@@ -427,6 +448,7 @@ class ResettableFuture(object):
             print(val)
         fut.on_creation(do_something)
     """
+
     _asyncio_future_blocking = False
 
     def __init__(self, info=None):
@@ -511,7 +533,9 @@ class ResettableFuture(object):
             if self.done() or self.cancelled():
                 return (yield from self.info["fut"])
 
-            waiter = asyncio.wait([self.info["fut"], self.reset_fut], return_when=asyncio.FIRST_COMPLETED)
+            waiter = asyncio.wait(
+                [self.info["fut"], self.reset_fut], return_when=asyncio.FIRST_COMPLETED
+            )
             if hasattr(waiter, "__await__"):
                 yield from waiter.__await__()
             else:
@@ -519,7 +543,9 @@ class ResettableFuture(object):
 
             if self.reset_fut.done():
                 self.reset_fut = asyncio.Future()
+
     __iter__ = __await__
+
 
 class ChildOfFuture(object):
     """
@@ -531,6 +557,7 @@ class ChildOfFuture(object):
     The special case is if the parent receives a result, then this future is
     cancelled.
     """
+
     _asyncio_future_blocking = False
 
     def __init__(self, original_fut):
@@ -646,7 +673,11 @@ class ChildOfFuture(object):
 
     def __await__(self):
         while True:
-            if self.original_fut.done() and not self.original_fut.cancelled() and not self.original_fut.exception():
+            if (
+                self.original_fut.done()
+                and not self.original_fut.cancelled()
+                and not self.original_fut.exception()
+            ):
                 self.this_fut.cancel()
 
             if self.this_fut.done():
@@ -664,10 +695,16 @@ class ChildOfFuture(object):
                     self.waiter = None
 
             if not getattr(self, "waiter", None):
-                self.waiter = asyncio.ensure_future(asyncio.wait([self.original_fut, self.this_fut], return_when=asyncio.FIRST_COMPLETED))
+                self.waiter = asyncio.ensure_future(
+                    asyncio.wait(
+                        [self.original_fut, self.this_fut], return_when=asyncio.FIRST_COMPLETED
+                    )
+                )
 
             yield from self.waiter
+
     __iter__ = __await__
+
 
 class ThreadToAsyncQueue(object):
     """
@@ -699,6 +736,7 @@ class ThreadToAsyncQueue(object):
         await queue.request(action)
         await queue.finish()
     """
+
     def __init__(self, stop_fut, num_threads, onerror, *args, **kwargs):
         self.loop = asyncio.get_event_loop()
         self.queue = Queue()
@@ -789,7 +827,14 @@ class ThreadToAsyncQueue(object):
         try:
             self.loop.call_soon_threadsafe(self.result_queue.put_nowait, (key, result, exception))
         except RuntimeError:
-            log.error(PhotonsAppError("Failed to put result onto the loop because it was closed", key=key, result=result, exception=exception))
+            log.error(
+                PhotonsAppError(
+                    "Failed to put result onto the loop because it was closed",
+                    key=key,
+                    result=result,
+                    exception=exception,
+                )
+            )
 
     def listener(self, ready_fut, impl=None):
         """Start the thread!"""
@@ -825,8 +870,10 @@ class ThreadToAsyncQueue(object):
 
     def wrap_request(self, proc, args):
         """Return a function that will perform the work"""
+
         def wrapped():
             return proc(*args)
+
         return wrapped
 
     def listener_impl(self, nxt, *args):

@@ -20,7 +20,10 @@ from input_algorithms import spec_base as sb
 from delfick_app import App, DelayedFileType
 import sys
 
-def library_setup(config_filename=None, photons_modules=True, extra_files=None, photons_app_options=None):
+
+def library_setup(
+    config_filename=None, photons_modules=True, extra_files=None, photons_app_options=None
+):
     """
     Get us a setup photons Collector instance.
 
@@ -63,6 +66,7 @@ def library_setup(config_filename=None, photons_modules=True, extra_files=None, 
     collector.configuration["target_register"].add_targets(collector.configuration["targets"])
     return collector
 
+
 class App(App):
     """
     The app is based on `delfick-app <https://delfick-app.readthedocs.io>`_ and
@@ -81,11 +85,16 @@ class App(App):
 
     .. photons_app_environment_defaults::
     """
+
     VERSION = VERSION
-    cli_categories = ['photons_app']
+    cli_categories = ["photons_app"]
     cli_description = "Photons server!"
-    cli_environment_defaults = {"LIFX_CONFIG": ("--config", './lifx.yml')}
-    cli_positional_replacements = [('--task', 'list_tasks'), ('--reference', NotSpecified), ('--artifact', NotSpecified)]
+    cli_environment_defaults = {"LIFX_CONFIG": ("--config", "./lifx.yml")}
+    cli_positional_replacements = [
+        ("--task", "list_tasks"),
+        ("--reference", NotSpecified),
+        ("--artifact", NotSpecified),
+    ]
 
     def mainline(self, argv=None, print_errors_to=sys.stdout, **execute_args):
         original_argv = argv
@@ -103,7 +112,11 @@ class App(App):
             if task in ("list_tasks", "help"):
                 original_argv = []
                 for a in argv:
-                    if a == "--" and "--silent" not in original_argv and "--debug" not in original_argv:
+                    if (
+                        a == "--"
+                        and "--silent" not in original_argv
+                        and "--debug" not in original_argv
+                    ):
                         original_argv.append("--silent")
                     original_argv.append(a)
                 if "--silent" not in original_argv and "--debug" not in original_argv:
@@ -130,9 +143,19 @@ class App(App):
         collector.configuration["target_register"].add_targets(collector.configuration["targets"])
         return collector
 
-    def execute(self, args_obj, args_dict, extra_args, logging_handler, extra_files=None, default_activate_all_modules=False):
+    def execute(
+        self,
+        args_obj,
+        args_dict,
+        extra_args,
+        logging_handler,
+        extra_files=None,
+        default_activate_all_modules=False,
+    ):
         c = lambda i: i if callable(i) and i is not NotSpecified else lambda optional=False: None
-        args_dict["photons_app"]["config"] = c(args_dict["photons_app"]["config"])(optional=True) or NotSpecified
+        args_dict["photons_app"]["config"] = (
+            c(args_dict["photons_app"]["config"])(optional=True) or NotSpecified
+        )
         args_dict["photons_app"]["extra"] = extra_args
         args_dict["photons_app"]["debug"] = args_dict["debug"] or args_obj.debug
         args_dict["photons_app"]["default_activate_all_modules"] = default_activate_all_modules
@@ -141,40 +164,44 @@ class App(App):
         run(collector)
 
     def specify_other_args(self, parser, defaults):
-        parser.add_argument("--dry-run"
-            , help = "Should we take any real action or print out what is intends to do"
-            , dest = "photons_app_dry_run"
-            , action = "store_true"
-            )
+        parser.add_argument(
+            "--dry-run",
+            help="Should we take any real action or print out what is intends to do",
+            dest="photons_app_dry_run",
+            action="store_true",
+        )
 
-        parser.add_argument("--task"
-            , help = "The task to run"
-            , dest = "photons_app_chosen_task"
-            , **defaults["--task"]
-            )
+        parser.add_argument(
+            "--task", help="The task to run", dest="photons_app_chosen_task", **defaults["--task"]
+        )
 
-        parser.add_argument("--artifact"
-            , help = "Extra information"
-            , dest = "photons_app_artifact"
-            , **defaults["--artifact"]
-            )
+        parser.add_argument(
+            "--artifact",
+            help="Extra information",
+            dest="photons_app_artifact",
+            **defaults["--artifact"]
+        )
 
-        parser.add_argument("--reference"
-            , help = "A selector for the lights"
-            , dest = "photons_app_reference"
-            , **defaults["--reference"]
-            )
+        parser.add_argument(
+            "--reference",
+            help="A selector for the lights",
+            dest="photons_app_reference",
+            **defaults["--reference"]
+        )
 
-        parser.add_argument("--config"
-            , help = "Config file to read from"
-            , dest = "photons_app_config"
-            , type = DelayedFileType('r')
-            , **defaults["--config"]
-            )
+        parser.add_argument(
+            "--config",
+            help="Config file to read from",
+            dest="photons_app_config",
+            type=DelayedFileType("r"),
+            **defaults["--config"]
+        )
 
         return parser
 
+
 main = App.main
+
 
 def lifx_main(*args, **kwargs):
     """
@@ -186,5 +213,6 @@ def lifx_main(*args, **kwargs):
     kwargs["default_activate_all_modules"] = True
     return main(*args, **kwargs)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

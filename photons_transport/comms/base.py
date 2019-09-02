@@ -16,6 +16,7 @@ import json
 
 log = logging.getLogger("photons_transport.comms")
 
+
 class Found:
     def __init__(self):
         self.found = {}
@@ -85,11 +86,13 @@ class Found:
 
     def __repr__(self):
         services = json.dumps(
-              { binascii.hexlify(t).decode(): ",".join(repr(s) for s in services.keys())
+            {
+                binascii.hexlify(t).decode(): ",".join(repr(s) for s in services.keys())
                 for t, services in self.found.items()
-              }
-            )
+            }
+        )
         return f"<FOUND: {services}>"
+
 
 def timeout_task(task, errf, serial):
     """Used to cancel sending a messages and record a timed out exception"""
@@ -98,8 +101,10 @@ def timeout_task(task, errf, serial):
             errf.set_exception(TimedOut("Waiting for reply to a packet", serial=serial))
         task.cancel()
 
+
 class NoLimit:
     """Used when we don't have a limit semaphore to impose no limit on concurrent access"""
+
     async def __aenter__(self):
         pass
 
@@ -114,6 +119,7 @@ class NoLimit:
 
     def locked(self):
         return False
+
 
 class Communication:
     _merged_options_formattable = True
@@ -141,7 +147,7 @@ class Communication:
     @hp.memoized_property
     def source(self):
         """Return us a source to use for our packets"""
-        return random.randrange(1, 1<<32)
+        return random.randrange(1, 1 << 32)
 
     def seq(self, target):
         """Create the next sequence for this target"""
@@ -165,7 +171,9 @@ class Communication:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                log.error(hp.lc("Failed to close transport", service=service, error=error, serial=serial))
+                log.error(
+                    hp.lc("Failed to close transport", service=service, error=error, serial=serial)
+                )
 
     async def add_service(self, serial, service, **kwargs):
         new = await self.make_transport(serial, service, kwargs)
@@ -182,7 +190,14 @@ class Communication:
                 except asyncio.CancelledError:
                     raise
                 except Exception as error:
-                    log.error(hp.lc("Failed to close old transport", service=service, error=error, serial=serial))
+                    log.error(
+                        hp.lc(
+                            "Failed to close old transport",
+                            service=service,
+                            error=error,
+                            serial=serial,
+                        )
+                    )
 
             self.found[serial][service] = new
 
@@ -193,7 +208,9 @@ class Communication:
         found, _ = await self.find_specific_serials(None, **kwargs)
         return found
 
-    async def find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, **kwargs):
+    async def find_specific_serials(
+        self, serials, ignore_lost=False, raise_on_none=False, **kwargs
+    ):
         kwargs["ignore_lost"] = ignore_lost
         kwargs["raise_on_none"] = raise_on_none
         found = await self._find_specific_serials(serials, **kwargs)
@@ -204,7 +221,9 @@ class Communication:
 
         return found, missing
 
-    async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
+    async def _find_specific_serials(
+        self, serials, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs
+    ):
         found_now = await self._do_search(serials, timeout, **kwargs)
 
         if not ignore_lost:
@@ -238,24 +257,35 @@ class Communication:
         kwargs["is_broadcast"] = True
         return await self.send(packet, **kwargs)
 
-    async def send(self, original, packet, *, timeout
-            , limit = None
-            , no_retry = False
-            , transport = None
-            , is_broadcast = False
-            , connect_timeout = 10
-            ):
+    async def send(
+        self,
+        original,
+        packet,
+        *,
+        timeout,
+        limit=None,
+        no_retry=False,
+        transport=None,
+        is_broadcast=False,
+        connect_timeout=10,
+    ):
 
         transport, is_broadcast = await self._transport_for_send(
-              transport, packet, original, is_broadcast, connect_timeout
-            )
+            transport, packet, original, is_broadcast, connect_timeout
+        )
 
         retry_options = self.retry_options_for(original, transport)
 
-        writer = Writer(self, transport, self.receiver, original, packet, retry_options
-            , did_broadcast = is_broadcast
-            , connect_timeout = connect_timeout
-            )
+        writer = Writer(
+            self,
+            transport,
+            self.receiver,
+            original,
+            packet,
+            retry_options,
+            did_broadcast=is_broadcast,
+            connect_timeout=connect_timeout,
+        )
 
         waiter = Waiter(self.stop_fut, writer, retry_options, no_retry=no_retry)
 
@@ -301,7 +331,9 @@ class Communication:
                 else:
                     current_task = asyncio.Task.current_task()
 
-                asyncio.get_event_loop().call_later(timeout, timeout_task, current_task, errf, packet.serial)
+                asyncio.get_event_loop().call_later(
+                    timeout, timeout_task, current_task, errf, packet.serial
+                )
 
                 for info in await waiter:
                     response.append(info)
@@ -315,9 +347,7 @@ class Communication:
 
             elif res.cancelled():
                 errf.reset()
-                errf.set_exception(TimedOut("Message was cancelled"
-                    , serial = packet.serial
-                    ))
+                errf.set_exception(TimedOut("Message was cancelled", serial=packet.serial))
                 return
 
             if not res.cancelled():

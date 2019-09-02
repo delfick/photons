@@ -11,6 +11,7 @@ import json
 
 describe TestCase, "Filter":
     describe "construction":
+
         def assertFiltrMatches(self, filtr, expect):
             for field in Filter.fields:
                 if field == "force_refresh" and field not in expect:
@@ -50,8 +51,14 @@ describe TestCase, "Filter":
                         Filter.from_json_str(s)
 
             it "works":
-                want = json.dumps({"label": "kitchen", "location_name": ["one", "two"], "hue": "20-50"})
-                expect = {"label": ["kitchen"], "location_name": ["one", "two"], "hue": [(20.0, 50.0)]}
+                want = json.dumps(
+                    {"label": "kitchen", "location_name": ["one", "two"], "hue": "20-50"}
+                )
+                expect = {
+                    "label": ["kitchen"],
+                    "location_name": ["one", "two"],
+                    "hue": [(20.0, 50.0)],
+                }
 
                 filtr = Filter.from_json_str(want)
                 self.assertFiltrMatches(filtr, expect)
@@ -60,7 +67,11 @@ describe TestCase, "Filter":
             it "uses from_options":
                 filtr = mock.Mock(name="filtr")
                 s = "label=kitchen location_name=one,two hue=20-50,0.6-0.9"
-                want = {"label": ["kitchen"], "location_name": ["one", "two"], "hue": "20-50,0.6-0.9"}
+                want = {
+                    "label": ["kitchen"],
+                    "location_name": ["one", "two"],
+                    "hue": "20-50,0.6-0.9",
+                }
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
@@ -71,7 +82,13 @@ describe TestCase, "Filter":
             it "doesn't split up hsbk or force_refresh":
                 filtr = mock.Mock(name="filtr")
                 s = "hue=5,60 saturation=0.7,0.5 brightness=0.8,0.4 kelvin=3500,2500 force_refresh=true"
-                want = {"hue": "5,60", "saturation": "0.7,0.5", "brightness": "0.8,0.4", "kelvin": "3500,2500", "force_refresh": "true"}
+                want = {
+                    "hue": "5,60",
+                    "saturation": "0.7,0.5",
+                    "brightness": "0.8,0.4",
+                    "kelvin": "3500,2500",
+                    "force_refresh": "true",
+                }
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
@@ -81,7 +98,11 @@ describe TestCase, "Filter":
 
             it "works":
                 want = "label=bathroom,hallway location_id=identifier1 saturation=0.7,0.8-1"
-                expect = {"label": ["bathroom", "hallway"], "location_id": ["identifier1"], "saturation": [(0.7, 0.7), (0.8, 1.0)]}
+                expect = {
+                    "label": ["bathroom", "hallway"],
+                    "location_id": ["identifier1"],
+                    "saturation": [(0.7, 0.7), (0.8, 1.0)],
+                }
 
                 filtr = Filter.from_key_value_str(want)
                 self.assertFiltrMatches(filtr, expect)
@@ -97,7 +118,11 @@ describe TestCase, "Filter":
             it "uses from_options":
                 filtr = mock.Mock(name="filtr")
                 s = "label=kitchen&location_name=kitchen lights&location_name=two&hue=20-50&hue=0.6-0.9"
-                want = {"label": ["kitchen"], "location_name": ["kitchen lights", "two"], "hue": ["20-50", "0.6-0.9"]}
+                want = {
+                    "label": ["kitchen"],
+                    "location_name": ["kitchen lights", "two"],
+                    "hue": ["20-50", "0.6-0.9"],
+                }
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
@@ -123,7 +148,7 @@ describe TestCase, "Filter":
                 spec = mock.Mock(name="spec")
                 spec.normalise.return_value = normalised
 
-                FieldSpec = mock.Mock(name='FieldSpec', return_value=spec)
+                FieldSpec = mock.Mock(name="FieldSpec", return_value=spec)
 
                 options = mock.Mock(name="options")
 
@@ -134,7 +159,11 @@ describe TestCase, "Filter":
                 spec.normalise.assert_called_once_with(Meta.empty(), options)
 
             it "works":
-                want = {"label": ["bathroom", "hallway"], "location_id": ["identifier1"], "saturation": [(0.7, 0.7), (0.8, 1.0)]}
+                want = {
+                    "label": ["bathroom", "hallway"],
+                    "location_id": ["identifier1"],
+                    "saturation": [(0.7, 0.7), (0.8, 1.0)],
+                }
                 filtr = Filter.from_options(want)
                 self.assertFiltrMatches(filtr, want)
 
@@ -210,14 +239,23 @@ describe TestCase, "Filter":
                 assert not filtr.matches(field, 82)
 
         it "matches against anything in a list":
-            for field in ("label", "power", "group_id", "group_name", "location_id", "location_name", "product_identifier", "firmware_version"):
+            for field in (
+                "label",
+                "power",
+                "group_id",
+                "group_name",
+                "location_id",
+                "location_name",
+                "product_identifier",
+                "firmware_version",
+            ):
                 filtr = Filter.from_options({field: ["one", "two"]})
                 assert filtr.matches(field, "one")
                 assert filtr.matches(field, "two")
 
                 assert not filtr.matches(field, "three")
 
-            for field in ("product_id", ):
+            for field in ("product_id",):
                 filtr = Filter.from_options({field: [1, 2]})
                 assert filtr.matches(field, 1)
                 assert filtr.matches(field, 2)
@@ -247,9 +285,9 @@ describe TestCase, "Filter":
     describe "label_fields":
         it "has a pre-filled list":
             filtr = Filter.empty()
-            self.assertEqual(filtr.label_fields
-                , ("product_identifier", "label", "location_name", "group_name")
-                )
+            self.assertEqual(
+                filtr.label_fields, ("product_identifier", "label", "location_name", "group_name")
+            )
 
     describe "matches_all":
         it "says yes if all the fields aren't specified":

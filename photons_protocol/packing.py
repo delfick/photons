@@ -7,6 +7,7 @@ from bitarray import bitarray
 import binascii
 import struct
 
+
 def val_to_bitarray(val, doing):
     """Convert a value into a bitarray"""
     if type(val) is bitarray:
@@ -21,6 +22,7 @@ def val_to_bitarray(val, doing):
     b = bitarray(endian="little")
     b.frombytes(val)
     return b
+
 
 class BitarraySlice(dictobj):
     fields = ["name", "typ", "val", "size_bits", "group"]
@@ -39,10 +41,10 @@ class BitarraySlice(dictobj):
             return val.tobytes()
 
         if fmt is bool and self.size_bits is 1:
-            return False if val.to01() is '0' else True
+            return False if val.to01() is "0" else True
 
         if len(val) < typ.original_size:
-            padding = bitarray('0' * (typ.original_size  - len(val)), endian="little")
+            padding = bitarray("0" * (typ.original_size - len(val)), endian="little")
             if getattr(self.typ, "left_cut", False):
                 val = padding + val
             else:
@@ -51,7 +53,15 @@ class BitarraySlice(dictobj):
         try:
             return struct.unpack(typ.struct_format, val.tobytes())[0]
         except (struct.error, TypeError, ValueError) as error:
-            raise BadConversion("Failed to unpack field", group=self.group, field=self.name, typ=typ, val=val.to01(), error=error)
+            raise BadConversion(
+                "Failed to unpack field",
+                group=self.group,
+                field=self.name,
+                typ=typ,
+                val=val.to01(),
+                error=error,
+            )
+
 
 class FieldInfo(dictobj):
     fields = ["name", "typ", "val", "size_bits", "group"]
@@ -62,7 +72,7 @@ class FieldInfo(dictobj):
         # Reserved is the only case where sb.NotSpecified is allowed
         val = self.val
         if self.typ.__class__.__name__ == "Reserved" and val is sb.NotSpecified:
-            return bitarray('0' * self.size_bits, endian="little")
+            return bitarray("0" * self.size_bits, endian="little")
         else:
             return val
 
@@ -81,7 +91,13 @@ class FieldInfo(dictobj):
         val = self.value
 
         if val is sb.NotSpecified:
-            raise BadConversion("Cannot pack an unspecified value", got=val, field=self.name, group=self.group, typ=self.typ)
+            raise BadConversion(
+                "Cannot pack an unspecified value",
+                got=val,
+                field=self.name,
+                group=self.group,
+                typ=self.typ,
+            )
 
         if type(val) is bitarray:
             return val
@@ -91,8 +107,15 @@ class FieldInfo(dictobj):
 
         elif fmt is bool:
             if type(val) is not bool:
-                raise BadConversion("Trying to convert a non boolean into 1 bit", got=val, group=self.group, field=self.name)
-            return (bitarray("0", endian="little") if val is False else bitarray("1", endian="little"))
+                raise BadConversion(
+                    "Trying to convert a non boolean into 1 bit",
+                    got=val,
+                    group=self.group,
+                    field=self.name,
+                )
+            return (
+                bitarray("0", endian="little") if val is False else bitarray("1", endian="little")
+            )
 
         else:
             b = bitarray(endian="little")
@@ -106,14 +129,29 @@ class FieldInfo(dictobj):
                 val = 0
             b.frombytes(struct.pack(fmt, val))
         except struct.error as error:
-            raise BadConversion("Failed trying to convert a value", val=val, fmt=fmt, error=error, group=self.group, name=self.name)
+            raise BadConversion(
+                "Failed trying to convert a value",
+                val=val,
+                fmt=fmt,
+                error=error,
+                group=self.group,
+                name=self.name,
+            )
         return b
+
 
 class PacketPacking(object):
     @classmethod
     def fields_in(kls, pkt, parent, serial):
         for name, typ in pkt.Meta.all_field_types:
-            val = pkt.__getitem__(name, parent=parent, serial=serial, allow_bitarray=True, unpacking=False, do_transform=False)
+            val = pkt.__getitem__(
+                name,
+                parent=parent,
+                serial=serial,
+                allow_bitarray=True,
+                unpacking=False,
+                do_transform=False,
+            )
             size_bits = typ.size_bits
             if callable(size_bits):
                 size_bits = size_bits(pkt)
@@ -129,7 +167,7 @@ class PacketPacking(object):
             size_bits = typ.size_bits
             if callable(size_bits):
                 size_bits = size_bits(final)
-            val = value[i:i + size_bits]
+            val = value[i : i + size_bits]
             i += size_bits
             info = BitarraySlice(name, typ, val, size_bits, pkt_kls.__name__)
             dictobj.__setitem__(final, info.name, info.unpackd)
@@ -169,7 +207,9 @@ class PacketPacking(object):
         if getattr(pkt, "parent_packet", False) and pkt.Meta.field_types:
             name, typ = pkt.Meta.field_types[-1]
             if getattr(typ, "message_type", None) is 0:
-                final += val_to_bitarray(payload or pkt[name], doing="Adding payload when packing a packet")
+                final += val_to_bitarray(
+                    payload or pkt[name], doing="Adding payload when packing a packet"
+                )
 
         return final
 

@@ -15,43 +15,34 @@ import itertools
 import asyncio
 import random
 
-light1 = FakeDevice("d073d5000001"
-    , chp.default_responders(
-          color = chp.Color(0, 1, 0.3, 2500)
-        )
-    )
+light1 = FakeDevice("d073d5000001", chp.default_responders(color=chp.Color(0, 1, 0.3, 2500)))
 
-light2 = FakeDevice("d073d5000002"
-    , chp.default_responders(
-          power = 65535
-        , color = chp.Color(100, 1, 0.5, 2500)
-        )
-    )
+light2 = FakeDevice(
+    "d073d5000002", chp.default_responders(power=65535, color=chp.Color(100, 1, 0.5, 2500))
+)
 
-light3 = FakeDevice("d073d5000003"
-    , chp.default_responders(
-          power = 65535
-        , color = chp.Color(100, 0, 0.8, 2500)
-        )
-    )
+light3 = FakeDevice(
+    "d073d5000003", chp.default_responders(power=65535, color=chp.Color(100, 0, 0.8, 2500))
+)
+
 
 def generate_options(color, exclude=None):
     zero_to_one = [v / 10 for v in range(1, 10, 1)]
 
     options = {
-          "hue": list(range(0, 360, 1))
-        , "saturation": zero_to_one
-        , "brightness": zero_to_one
-        , "kelvin": list(range(3500, 9000, 50))
-        , "power": ["on", "off"]
-        }
+        "hue": list(range(0, 360, 1)),
+        "saturation": zero_to_one,
+        "brightness": zero_to_one,
+        "kelvin": list(range(3500, 9000, 50)),
+        "power": ["on", "off"],
+    }
 
     extra = {
-          "duration": list(range(0, 10, 1))
-        , "res_required": [True, False]
-        , "effect": ["sine", "triangle", "saw"]
-        , "cycles": list(range(0, 10, 1))
-        }
+        "duration": list(range(0, 10, 1)),
+        "res_required": [True, False],
+        "effect": ["sine", "triangle", "saw"],
+        "cycles": list(range(0, 10, 1)),
+    }
 
     def make_state(keys, extra_keys):
         state = {}
@@ -85,6 +76,7 @@ def generate_options(color, exclude=None):
 
                         yield make_state(comb, comb2)
 
+
 mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
 setUp = mlr.setUp
@@ -107,38 +99,29 @@ describe AsyncTestCase, "PowerToggle":
     @mlr.test
     async it "toggles the power", runner:
         expected = {
-              light1:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=65535, duration=1)
-              ]
-            , light2:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=0, duration=1)
-              ]
-            , light3:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=0, duration=1)
-              ]
-            }
+            light1: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=1),
+            ],
+            light2: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
+            light3: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
+        }
         await self.run_and_compare(runner, PowerToggle(), expected=expected)
 
         for device in runner.devices:
             device.received = []
 
         expected = {
-              light1:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=0, duration=2)
-              ]
-            , light2:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=65535, duration=2)
-              ]
-            , light3:
-              [ DeviceMessages.GetPower()
-              , LightMessages.SetLightPower(level=65535, duration=2)
-              ]
-            }
+            light1: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=2)],
+            light2: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=2),
+            ],
+            light3: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=2),
+            ],
+        }
         await self.run_and_compare(runner, PowerToggle(duration=2), expected=expected)
 
 describe AsyncTestCase, "Transformer":
@@ -198,7 +181,12 @@ describe AsyncTestCase, "Transformer":
         want.res_required = False
 
         expected = {device: [want] for device in runner.devices}
-        await self.transform(runner, {"color": "hue:200 saturation:1 brightness:0.3"}, expected=expected, keep_brightness=True)
+        await self.transform(
+            runner,
+            {"color": "hue:200 saturation:1 brightness:0.3"},
+            expected=expected,
+            keep_brightness=True,
+        )
 
     @mlr.test
     async it "sets color with duration", runner:
@@ -231,107 +219,110 @@ describe AsyncTestCase, "Transformer":
             await self.transform(runner, state, expected=expected)
 
     describe "When power on and need color":
+
         @mlr.test
         async it "sets power on if it needs to", runner:
             state = {"color": "blue", "power": "on"}
             expected = {
-                  light1:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
-                  , DeviceMessages.SetPower(level=65535)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness})
-                  ]
-                , light2:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue")
-                  ]
-                , light3:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue")
-                  ]
-                }
+                light1: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    DeviceMessages.SetPower(level=65535),
+                    Parser.color_to_msg(
+                        "blue", overrides={"brightness": light1.attrs.color.brightness}
+                    ),
+                ],
+                light2: [LightMessages.GetColor(), Parser.color_to_msg("blue")],
+                light3: [LightMessages.GetColor(), Parser.color_to_msg("blue")],
+            }
             await self.transform(runner, state, expected=expected)
 
         @mlr.test
         async it "sets power on if it needs to with duration", runner:
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
             expected = {
-                  light1:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
-                  , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10})
-                  ]
-                , light2:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
-                  ]
-                , light3:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
-                  ]
-                }
+                light1: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    LightMessages.SetLightPower(level=65535, duration=10),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                ],
+                light2: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                ],
+                light3: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                ],
+            }
             await self.transform(runner, state, expected=expected)
 
         @mlr.test
         async it "can see brightness in state", runner:
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
             expected = {
-                  light1:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
-                  , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10})
-                  ]
-                , light2:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
-                  ]
-                , light3:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10})
-                  ]
-                }
+                light1: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    LightMessages.SetLightPower(level=65535, duration=10),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                ],
+                light2: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                ],
+                light3: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                ],
+            }
             await self.transform(runner, state, expected=expected)
 
         @mlr.test
         async it "can ignore brightness in color", runner:
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
             expected = {
-                  light1:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
-                  , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness, "duration": 10})
-                  ]
-                , light2:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"duration": 10})
-                  ]
-                , light3:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"duration": 10})
-                  ]
-                }
+                light1: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    LightMessages.SetLightPower(level=65535, duration=10),
+                    Parser.color_to_msg(
+                        "blue",
+                        overrides={"brightness": light1.attrs.color.brightness, "duration": 10},
+                    ),
+                ],
+                light2: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                ],
+                light3: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                ],
+            }
             await self.transform(runner, state, expected=expected, keep_brightness=True)
 
         @mlr.test
         async it "can ignore brightness in state", runner:
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
             expected = {
-                  light1:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"brightness": 0})
-                  , LightMessages.SetLightPower(level=65535, duration=10)
-                  , Parser.color_to_msg("blue", overrides={"brightness": light1.attrs.color.brightness, "duration": 10})
-                  ]
-                , light2:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"duration": 10})
-                  ]
-                , light3:
-                  [ LightMessages.GetColor()
-                  , Parser.color_to_msg("blue", overrides={"duration": 10})
-                  ]
-                }
+                light1: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    LightMessages.SetLightPower(level=65535, duration=10),
+                    Parser.color_to_msg(
+                        "blue",
+                        overrides={"brightness": light1.attrs.color.brightness, "duration": 10},
+                    ),
+                ],
+                light2: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                ],
+                light3: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                ],
+            }
             await self.transform(runner, state, expected=expected, keep_brightness=True)

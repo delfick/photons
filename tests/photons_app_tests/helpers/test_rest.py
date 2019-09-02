@@ -44,7 +44,12 @@ describe TestCase, "nested_dict_retrieve":
     it "returns us the dflt if we can't find the key":
         data = {"one": {"two": {"three": 3}}}
         dflt = mock.Mock(name="dflt")
-        for keys in (["one", "four"], ["four", "five"], ["one", "two", "five"], ["one", "two", "three", "four"]):
+        for keys in (
+            ["one", "four"],
+            ["four", "five"],
+            ["one", "two", "five"],
+            ["one", "two", "three", "four"],
+        ):
             self.assertIs(hp.nested_dict_retrieve(data, keys, dflt), dflt)
 
     it "returns us what it finds":

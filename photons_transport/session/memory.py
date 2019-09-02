@@ -1,17 +1,23 @@
 from photons_transport.retry_options import RetryOptions
 from photons_transport.transports.memory import Memory
 
+
 class MemoryServiceMeta(type):
     def __repr__(self):
         return "<Service.MEMORY>"
 
+
 class MemoryService(metaclass=MemoryServiceMeta):
     pass
+
 
 class MemoryRetryOptions(RetryOptions):
     timeouts = [(0.2, 0.2)]
     finish_multi_gap = 0.1
+
+
 memory_retry_options = MemoryRetryOptions()
+
 
 def makeMemorySession(basedon):
     class MemorySession(basedon):
@@ -41,6 +47,7 @@ def makeMemorySession(basedon):
                 broadcast = self.transport_target.default_broadcast
 
             if broadcast not in self.broadcast_transports:
+
                 async def writer(received_data, bts):
                     for device in self.transport_target.devices:
                         if await device.is_reachable(broadcast):

@@ -5,6 +5,7 @@ from input_algorithms.dictobj import dictobj
 from input_algorithms import spec_base as sb
 import random
 
+
 class BackgroundOption(dictobj.Spec):
     type = dictobj.Field(sb.string_choice_spec(["specified", "current"]), default="specified")
 
@@ -17,6 +18,7 @@ class BackgroundOption(dictobj.Spec):
     def default_color(self):
         return Color(self.hue, self.saturation, self.brightness, self.kelvin)
 
+
 def ColorOption(h, s, b, k):
     class C(dictobj.Spec):
         hue = dictobj.Field(sb.float_spec, default=h)
@@ -27,11 +29,14 @@ def ColorOption(h, s, b, k):
         @property
         def color(self):
             return Color(self.hue, self.saturation, self.brightness, self.kelvin)
+
     return C.FieldSpec()
+
 
 class AnimationOptions(dictobj.Spec):
     background = dictobj.Field(BackgroundOption.FieldSpec())
     combine_tiles = dictobj.Field(sb.boolean, default=False)
+
 
 class HueRange:
     def __init__(self, minimum, maximum):
@@ -49,6 +54,7 @@ class HueRange:
             return hue
 
         return random.randrange(self.minimum, self.maximum)
+
 
 class split_by_comma(sb.Spec):
     def setup(self, spec):
@@ -71,6 +77,7 @@ class split_by_comma(sb.Spec):
 
         return final
 
+
 class hue_range_spec(sb.Spec):
     def normalise_filled(self, meta, val):
         if val == "rainbow":
@@ -80,10 +87,7 @@ class hue_range_spec(sb.Spec):
         if type(val) is list:
             was_list = True
             if len(val) not in (1, 2):
-                raise BadSpecValue("A hue range must be 2 or 1 items"
-                    , got = val
-                    , meta = meta
-                    )
+                raise BadSpecValue("A hue range must be 2 or 1 items", got=val, meta=meta)
             if len(val) == 1:
                 val = [val[0], val[0]]
 
@@ -108,12 +112,12 @@ class hue_range_spec(sb.Spec):
         rnge = [int(p) for p in val]
         for i, number in enumerate(rnge):
             if number < 0 or number > 360:
-                raise BadSpecValue("A hue number must be between 0 and 360"
-                    , got=number
-                    , meta=meta.indexed_at(i)
-                    )
+                raise BadSpecValue(
+                    "A hue number must be between 0 and 360", got=number, meta=meta.indexed_at(i)
+                )
 
         return HueRange(*rnge)
+
 
 def normalise_speed_options(options):
     if options.min_speed < 0:

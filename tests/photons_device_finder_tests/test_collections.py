@@ -14,11 +14,7 @@ describe TestCase, "Collection":
         cuuid = str(uuid.uuid1())
         name = str(uuid.uuid1())
 
-        collection = Collection.FieldSpec().empty_normalise(
-              typ = typ
-            , uuid = cuuid
-            , name = name
-            )
+        collection = Collection.FieldSpec().empty_normalise(typ=typ, uuid=cuuid, name=name)
 
         self.assertEqual(collection.typ, typ)
         self.assertEqual(collection.uuid, cuuid)
@@ -32,10 +28,7 @@ describe TestCase, "Collection":
             name = str(uuid.uuid1())
             timestamp = 123
 
-            collection = Collection.FieldSpec().empty_normalise(
-                  typ = typ
-                , uuid = cuuid
-                )
+            collection = Collection.FieldSpec().empty_normalise(typ=typ, uuid=cuuid)
 
             self.assertEqual(collection.name, "")
             self.assertEqual(collection.newest_timestamp, None)
@@ -52,10 +45,7 @@ describe TestCase, "Collection":
             name = str(uuid.uuid1())
             name2 = str(uuid.uuid1())
 
-            collection = Collection.FieldSpec().empty_normalise(
-                  typ = typ
-                , uuid = cuuid
-                )
+            collection = Collection.FieldSpec().empty_normalise(typ=typ, uuid=cuuid)
 
             self.assertEqual(collection.name, "")
             self.assertEqual(collection.newest_timestamp, None)
@@ -77,6 +67,7 @@ describe TestCase, "Collection":
 
     describe "equality":
         it "says no if not a collection":
+
             class Other:
                 pass
 
@@ -84,6 +75,7 @@ describe TestCase, "Collection":
             self.assertNotEqual(collection, Other())
 
         it "says no if not the same typ":
+
             class Other:
                 pass
 
@@ -92,6 +84,7 @@ describe TestCase, "Collection":
             self.assertNotEqual(collection1, collection2)
 
         it "says no if not the same uuid":
+
             class Other:
                 pass
 
@@ -100,6 +93,7 @@ describe TestCase, "Collection":
             self.assertNotEqual(collection1, collection2)
 
         it "says yes if the same uuid and typ":
+
             class Other:
                 pass
 
@@ -108,11 +102,16 @@ describe TestCase, "Collection":
             self.assertEqual(collection1, collection2)
 
         it "says yes if the same uuid and typ even if names are different":
+
             class Other:
                 pass
 
-            collection1 = Collection.FieldSpec().empty_normalise(uuid="stuff", typ="group", name="one")
-            collection2 = Collection.FieldSpec().empty_normalise(uuid="stuff", typ="group", name="two")
+            collection1 = Collection.FieldSpec().empty_normalise(
+                uuid="stuff", typ="group", name="one"
+            )
+            collection2 = Collection.FieldSpec().empty_normalise(
+                uuid="stuff", typ="group", name="two"
+            )
             self.assertEqual(collection1, collection2)
 
 describe TestCase, "Collections":
@@ -141,7 +140,9 @@ describe TestCase, "Collections":
                 with mock.patch.object(self.collections, "add_collection", add_collection):
                     self.collections.add_group(self.uuid, self.updated_at, self.label)
 
-                add_collection.assert_called_once_with("group", self.uuid, self.updated_at, self.label)
+                add_collection.assert_called_once_with(
+                    "group", self.uuid, self.updated_at, self.label
+                )
 
         describe "add_location":
             it "uses add_collection":
@@ -149,7 +150,9 @@ describe TestCase, "Collections":
                 with mock.patch.object(self.collections, "add_collection", add_collection):
                     self.collections.add_location(self.uuid, self.updated_at, self.label)
 
-                add_collection.assert_called_once_with("location", self.uuid, self.updated_at, self.label)
+                add_collection.assert_called_once_with(
+                    "location", self.uuid, self.updated_at, self.label
+                )
 
         describe "add_collection":
             it "creates the collection if it doesn't exist":
@@ -160,7 +163,10 @@ describe TestCase, "Collections":
                 self.assertEqual(self.collections.collections, {"group": {}, "location": {}})
 
                 with mock.patch.object(self.collections, "collection_spec", collection_spec):
-                    self.assertIs(self.collections.add_collection("group", self.uuid, 1, self.label), collection)
+                    self.assertIs(
+                        self.collections.add_collection("group", self.uuid, 1, self.label),
+                        collection,
+                    )
 
                 collection_spec.empty_normalise.assert_called_once_with(typ="group", uuid=self.uuid)
                 collection.add_name.assert_called_with(1, self.label)
@@ -168,12 +174,17 @@ describe TestCase, "Collections":
             it "doesn't recreate collection if it exists":
                 collection = mock.Mock(name="collection")
                 collection_spec = mock.Mock(name="collection_spec")
-                collection_spec.empty_normalise.side_effect = Exception("Expect empty_normalise to not be called")
+                collection_spec.empty_normalise.side_effect = Exception(
+                    "Expect empty_normalise to not be called"
+                )
 
                 self.collections.collections["location"][self.uuid] = collection
 
                 with mock.patch.object(self.collections, "collection_spec", collection_spec):
-                    self.assertIs(self.collections.add_collection("location", self.uuid, 1, self.label), collection)
+                    self.assertIs(
+                        self.collections.add_collection("location", self.uuid, 1, self.label),
+                        collection,
+                    )
 
                 self.assertEqual(len(collection_spec.empty_normalise.mock_calls), 0)
                 collection.add_name.assert_called_with(1, self.label)

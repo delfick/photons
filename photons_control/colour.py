@@ -5,6 +5,7 @@ from photons_colour import Parser
 
 from input_algorithms import spec_base as sb
 
+
 @an_action(needs_target=True, special_reference=True)
 async def set_color(collector, target, reference, artifact, **kwargs):
     """

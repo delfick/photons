@@ -8,11 +8,13 @@ from collections import defaultdict
 
 plan_by_key = {}
 
+
 class Skip:
     """
     Plans that return this instead of messages are saying to the planner
     to not invoke this plan for this device
     """
+
 
 class NoMessages:
     """
@@ -21,17 +23,20 @@ class NoMessages:
     any messages that are sent from the device
     """
 
+
 class a_plan:
     """
     A decorator for registering a name for a plan. This registry is used by
     make_plans to convert names into plans.
     """
+
     def __init__(self, key):
         self.key = key
 
     def __call__(self, item):
         plan_by_key[self.key] = item
         return item
+
 
 def pktkey(pkt):
     """
@@ -42,6 +47,7 @@ def pktkey(pkt):
     It consists of the ``(protocol, pkt_type, <string representing the payload>)``
     """
     return (pkt.protocol, pkt.pkt_type, repr(pkt.payload))
+
 
 def make_plans(*by_key, **plans):
     """
@@ -60,16 +66,23 @@ def make_plans(*by_key, **plans):
     for key in by_key:
         count[key] += 1
         if key in plans:
-            raise PhotonsAppError("Cannot specify plan by label and by Plan class", specified_twice=key)
+            raise PhotonsAppError(
+                "Cannot specify plan by label and by Plan class", specified_twice=key
+            )
         if count[key] > 1:
-            raise PhotonsAppError("Cannot specify plan by label more than once", specified_multiple_times=key)
+            raise PhotonsAppError(
+                "Cannot specify plan by label more than once", specified_multiple_times=key
+            )
 
     for key in by_key:
         if key not in plan_by_key:
-            raise PhotonsAppError("No default plan for key", wanted=key, available=list(plan_by_key))
+            raise PhotonsAppError(
+                "No default plan for key", wanted=key, available=list(plan_by_key)
+            )
         plans[key] = plan_by_key[key]()
 
     return plans
+
 
 class Plan:
     """
@@ -154,6 +167,7 @@ class Plan:
     * info - Async method - Must be overridden - This is called when the plan is
       considered done for this device and returns whatever information you want.
     """
+
     messages = None
     dependant_info = None
     default_refresh = 10
@@ -194,21 +208,25 @@ class Plan:
         async def info(self):
             raise NotImplementedError()
 
+
 @a_plan("presence")
 class PresencePlan(Plan):
     """
     Just return True. To be used with other plans to make sure that this
     serial is returned by gather if no other plans return results
     """
+
     messages = NoMessages
 
     class Instance(Plan.Instance):
         async def info(self):
             return True
 
+
 @a_plan("address")
 class AddressPlan(Plan):
     """Return the (ip, port) for this device"""
+
     messages = []
 
     class Instance(Plan.Instance):
@@ -219,9 +237,11 @@ class AddressPlan(Plan):
         async def info(self):
             return self.address
 
+
 @a_plan("label")
 class LabelPlan(Plan):
     """Return the label of this device"""
+
     messages = [DeviceMessages.GetLabel()]
     default_refresh = 5
 
@@ -234,9 +254,11 @@ class LabelPlan(Plan):
         async def info(self):
             return self.label
 
+
 @a_plan("state")
 class StatePlan(Plan):
     """Return LightState.as_dict() for this device"""
+
     messages = [LightMessages.GetColor()]
     default_refresh = 1
 
@@ -249,9 +271,11 @@ class StatePlan(Plan):
         async def info(self):
             return self.dct
 
+
 @a_plan("power")
 class PowerPlan(Plan):
     """Return ``{"level": 0 - 65535, "on": True | False}`` for this device."""
+
     messages = [DeviceMessages.GetPower()]
     default_refresh = 1
 
@@ -265,6 +289,7 @@ class PowerPlan(Plan):
         async def info(self):
             return {"level": self.level, "on": self.on}
 
+
 @a_plan("zones")
 class ZonesPlan(Plan):
     """
@@ -272,6 +297,7 @@ class ZonesPlan(Plan):
 
     Will take into account if the device supports extended multizone or not
     """
+
     default_refresh = 1
 
     @property
@@ -307,13 +333,14 @@ class ZonesPlan(Plan):
                 return len(self.staging) == pkt.zones_count
 
             elif pkt | MultiZoneMessages.StateExtendedColorZones:
-                for i, color in enumerate(pkt.colors[:pkt.colors_count]):
+                for i, color in enumerate(pkt.colors[: pkt.colors_count]):
                     if len(self.staging) < pkt.zones_count:
                         self.staging.append((pkt.zone_index + i, color.as_dict()))
                 return len(self.staging) == pkt.zones_count
 
         async def info(self):
             return sorted(self.staging)
+
 
 @a_plan("capability")
 class CapabilityPlan(Plan):
@@ -324,6 +351,7 @@ class CapabilityPlan(Plan):
 
     And product is from photons_products_registry.enum_for_ids
     """
+
     messages = [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
 
     class Instance(Plan.Instance):
@@ -337,12 +365,16 @@ class CapabilityPlan(Plan):
         async def info(self):
             product = enum_for_ids(self.version.product, self.version.vendor)
             cap = capability_for_ids(self.version.product, self.version.vendor)
-            has_extended = cap.has_extended_multizone(self.firmware.version_major, self.firmware.version_minor)
+            has_extended = cap.has_extended_multizone(
+                self.firmware.version_major, self.firmware.version_minor
+            )
             return {"cap": cap, "has_extended_multizone": has_extended, "product": product}
+
 
 @a_plan("firmware")
 class FirmwarePlan(Plan):
     """Return StateHostFirmware.as_dict() for this device"""
+
     messages = [DeviceMessages.GetHostFirmware()]
 
     class Instance(Plan.Instance):
@@ -354,9 +386,11 @@ class FirmwarePlan(Plan):
         async def info(self):
             return self.dct
 
+
 @a_plan("version")
 class VersionPlan(Plan):
     """Return StateVersion.as_dict() for this device"""
+
     messages = [DeviceMessages.GetVersion()]
 
     class Instance(Plan.Instance):
@@ -368,6 +402,7 @@ class VersionPlan(Plan):
         async def info(self):
             return self.dct
 
+
 @a_plan("firmware_effects")
 class FirmwareEffectsPlan(Plan):
     """
@@ -376,6 +411,7 @@ class FirmwareEffectsPlan(Plan):
 
     Returns Skip for devices that don't have firmware effects
     """
+
     default_refresh = 1
 
     @property
@@ -418,7 +454,7 @@ class FirmwareEffectsPlan(Plan):
                             if not k2.startswith("parameter"):
                                 info["options"][k2] = v[k2]
                     elif k == "palette":
-                        info["options"]["palette"] = v[:self.pkt.palette_count]
+                        info["options"]["palette"] = v[: self.pkt.palette_count]
                     else:
                         info["options"][k] = v
 

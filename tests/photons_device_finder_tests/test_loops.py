@@ -19,17 +19,18 @@ import asyncio
 describe AsyncTestCase, "DeviceFinderLoops":
     async it "sets itself up":
         target = mock.Mock(name="target")
-        service_search_interval = mock.Mock(name='service_search_interval')
+        service_search_interval = mock.Mock(name="service_search_interval")
         information_search_interval = mock.Mock(name="information_search_interval")
 
-        store = mock.Mock(name='store')
+        store = mock.Mock(name="store")
         FakeInfoStore = mock.Mock(name="InfoStore", return_value=store)
 
         with mock.patch("photons_device_finder.InfoStore", FakeInfoStore):
-            loops = DeviceFinderLoops(target
-                , service_search_interval = service_search_interval
-                , information_search_interval = information_search_interval
-                )
+            loops = DeviceFinderLoops(
+                target,
+                service_search_interval=service_search_interval,
+                information_search_interval=information_search_interval,
+            )
 
         self.assertIs(loops.target, target)
         self.assertIs(type(loops.queue), asyncio.Queue)
@@ -41,9 +42,11 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
     describe "functionality":
         async before_each:
-            self.afr = mock.Mock(name='afr')
+            self.afr = mock.Mock(name="afr")
             self.target = mock.Mock(name="target")
-            self.target.args_for_run = asynctest.mock.CoroutineMock(name='args_for_run', return_value=self.afr)
+            self.target.args_for_run = asynctest.mock.CoroutineMock(
+                name="args_for_run", return_value=self.afr
+            )
             self.target.close_args_for_run = asynctest.mock.CoroutineMock(name="close_args_for_run")
             self.loops = DeviceFinderLoops(self.target)
 
@@ -59,6 +62,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
                     called.append(1)
                     await asyncio.sleep(0.3)
                     return self.afr
+
                 self.target.args_for_run.side_effect = args_for_run
 
                 fut1 = hp.async_as_background(self.loops.args_for_run())
@@ -85,15 +89,20 @@ describe AsyncTestCase, "DeviceFinderLoops":
                     self.assertIs(q, quickstart)
                     called.append(2)
 
-                finding_loop = asynctest.mock.CoroutineMock(name="finding_loop", side_effect=findings)
-                ensure_interpreting = mock.Mock(name='ensure_interpreting')
-                raw_search_loop = asynctest.mock.CoroutineMock(name="raw_search_loop", side_effect=raw_search_loop)
+                finding_loop = asynctest.mock.CoroutineMock(
+                    name="finding_loop", side_effect=findings
+                )
+                ensure_interpreting = mock.Mock(name="ensure_interpreting")
+                raw_search_loop = asynctest.mock.CoroutineMock(
+                    name="raw_search_loop", side_effect=raw_search_loop
+                )
 
-                with mock.patch.multiple(self.loops
-                    , finding_loop = finding_loop
-                    , ensure_interpreting = ensure_interpreting
-                    , raw_search_loop = raw_search_loop
-                    ):
+                with mock.patch.multiple(
+                    self.loops,
+                    finding_loop=finding_loop,
+                    ensure_interpreting=ensure_interpreting,
+                    raw_search_loop=raw_search_loop,
+                ):
                     await self.loops.start(quickstart=quickstart)
                     self.assertEqual(called, [])
 
@@ -112,7 +121,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 self.assertIs(await self.wait_for(self.loops.queue.get()), Done)
 
             async it "cancels findings, interpreting and service_search; and finishes the store":
-                store = mock.Mock(name='store')
+                store = mock.Mock(name="store")
                 findings = asyncio.Future()
                 interpreting = asyncio.Future()
                 service_search = asyncio.Future()
@@ -152,7 +161,9 @@ describe AsyncTestCase, "DeviceFinderLoops":
                     await asyncio.sleep(0.1)
                     called.append(1)
 
-                interpret_loop = asynctest.mock.CoroutineMock(name="interpret_loop", side_effect=interpreting)
+                interpret_loop = asynctest.mock.CoroutineMock(
+                    name="interpret_loop", side_effect=interpreting
+                )
 
                 with mock.patch.object(self.loops, "interpret_loop", interpret_loop):
                     self.loops.ensure_interpreting()
@@ -170,13 +181,14 @@ describe AsyncTestCase, "DeviceFinderLoops":
                     self.assertEqual(s, serial)
                     self.assertIs(type(m), FromGenerator)
                     self.assertEqual(
-                          [c.as_dict() for c in m.pipeline_children]
-                        , [e.value.msg.as_dict() for e in InfoPoints]
-                        )
-                    self.assertEqual(m.pipeline_spread, 0.2)
-                send_to_device = asynctest.mock.CoroutineMock(name="send_to_device"
-                    , side_effect = send_to_device
+                        [c.as_dict() for c in m.pipeline_children],
+                        [e.value.msg.as_dict() for e in InfoPoints],
                     )
+                    self.assertEqual(m.pipeline_spread, 0.2)
+
+                send_to_device = asynctest.mock.CoroutineMock(
+                    name="send_to_device", side_effect=send_to_device
+                )
 
                 with mock.patch.object(self.loops, "send_to_device", send_to_device):
                     await self.loops.add_new_device(target)
@@ -186,9 +198,9 @@ describe AsyncTestCase, "DeviceFinderLoops":
         describe "refresh_from_filter":
             async it "resets appropriate points and gets information before using found_from_filter":
                 res = mock.Mock(name="res")
-                filtr = mock.Mock(name='filtr')
-                for_info = mock.Mock(name='for_info')
-                find_timeout = mock.Mock(name='find_timeout')
+                filtr = mock.Mock(name="filtr")
+                for_info = mock.Mock(name="for_info")
+                find_timeout = mock.Mock(name="find_timeout")
 
                 msg1 = mock.Mock(name="msg1")
                 msg2 = mock.Mock(name="msg2")
@@ -196,15 +208,22 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 _msgs_from_filter = mock.Mock(name="_msgs_from_filter", return_value=[msg1, msg2])
                 send_to_device = asynctest.mock.CoroutineMock(name="send_to_device")
                 _update_found = asynctest.mock.CoroutineMock(name="_update_found")
-                found_from_filter = asynctest.mock.CoroutineMock(name="found_from_filter", return_value=res)
+                found_from_filter = asynctest.mock.CoroutineMock(
+                    name="found_from_filter", return_value=res
+                )
 
-                with mock.patch.multiple(self.loops
-                    , _msgs_from_filter = _msgs_from_filter
-                    , send_to_device = send_to_device
-                    , _update_found = _update_found
+                with mock.patch.multiple(
+                    self.loops,
+                    _msgs_from_filter=_msgs_from_filter,
+                    send_to_device=send_to_device,
+                    _update_found=_update_found,
+                ):
+                    with mock.patch.object(
+                        self.loops.store, "found_from_filter", found_from_filter
                     ):
-                    with mock.patch.object(self.loops.store, "found_from_filter", found_from_filter):
-                        coro = self.loops.refresh_from_filter(filtr, for_info=for_info, find_timeout=find_timeout)
+                        coro = self.loops.refresh_from_filter(
+                            filtr, for_info=for_info, find_timeout=find_timeout
+                        )
                         self.assertIs(await self.wait_for(coro), res)
 
                 _msgs_from_filter.assert_called_once_with(filtr, do_reset=True, for_info=for_info)
@@ -212,7 +231,10 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 class IsFoundSerials:
                     def __eq__(self, other):
                         return isinstance(other, FoundSerials)
-                send_to_device.assert_called_once_with(IsFoundSerials(), [msg1, msg2], find_timeout=find_timeout)
+
+                send_to_device.assert_called_once_with(
+                    IsFoundSerials(), [msg1, msg2], find_timeout=find_timeout
+                )
                 _update_found.assert_called_once_with(IsFoundSerials(), find_timeout)
                 found_from_filter.assert_called_once_with(filtr, for_info=for_info)
 
@@ -223,25 +245,29 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
                 async def send_to_device(ref, msgs, find_timeout=5):
                     self.assertEqual(
-                          [m.as_dict() for m in msgs]
-                        , [InfoPoints.LIGHT_STATE.value.msg.as_dict()]
-                        )
+                        [m.as_dict() for m in msgs], [InfoPoints.LIGHT_STATE.value.msg.as_dict()]
+                    )
                     refs.append((1, ref))
 
                 async def _update_found(ref, find_timeout):
                     refs.append((2, ref))
 
-                send_to_device = asynctest.mock.CoroutineMock(name='send_to_device', side_effect=send_to_device)
-                _update_found = asynctest.mock.CoroutineMock(name="_update_found", side_effect=_update_found)
+                send_to_device = asynctest.mock.CoroutineMock(
+                    name="send_to_device", side_effect=send_to_device
+                )
+                _update_found = asynctest.mock.CoroutineMock(
+                    name="_update_found", side_effect=_update_found
+                )
 
-                res = mock.Mock(name='res')
-                found_from_filter = asynctest.mock.CoroutineMock(name="found_from_filter", return_value=res)
+                res = mock.Mock(name="res")
+                found_from_filter = asynctest.mock.CoroutineMock(
+                    name="found_from_filter", return_value=res
+                )
 
                 with mock.patch.object(self.loops.store, "found_from_filter", found_from_filter):
-                    with mock.patch.multiple(self.loops
-                        , send_to_device = send_to_device
-                        , _update_found = _update_found
-                        ):
+                    with mock.patch.multiple(
+                        self.loops, send_to_device=send_to_device, _update_found=_update_found
+                    ):
                         coro = self.loops.refresh_from_filter(filtr)
                         self.assertIs(await self.wait_for(coro), res)
 
@@ -268,7 +294,9 @@ describe AsyncTestCase, "DeviceFinderLoops":
             async it "yields appropriate msgs for what's on the filtr":
                 filtr = Filter.from_kwargs(label="kitchen", group_name="one")
                 assert not filtr.matches_all
-                expected = [e.value.msg.as_dict() for e in [InfoPoints.LIGHT_STATE, InfoPoints.GROUP]]
+                expected = [
+                    e.value.msg.as_dict() for e in [InfoPoints.LIGHT_STATE, InfoPoints.GROUP]
+                ]
                 got = [m.as_dict() for m in self.loops._msgs_from_filter(filtr)]
                 self.assertEqual(got, expected)
 
@@ -290,7 +318,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
         describe "_update_found":
             async it "uses the reference to find devices and update store":
-                found = mock.Mock(name='found')
+                found = mock.Mock(name="found")
                 find_timeout = mock.Mock(name="find_timeout")
 
                 reference = mock.Mock(name="reference")
@@ -325,26 +353,33 @@ describe AsyncTestCase, "DeviceFinderLoops":
                         raise res
                     else:
                         return res
-                self.afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", side_effect=find_devices)
+
+                self.afr.find_devices = asynctest.mock.CoroutineMock(
+                    name="find_devices", side_effect=find_devices
+                )
 
                 update_found = mock.Mock(name="update_found")
                 with mock.patch.object(self.loops.store, "update_found", update_found):
                     await self.wait_for(self.loops.raw_search_loop())
 
                 self.assertEqual(len(self.afr.find_devices.mock_calls), 5)
-                self.assertEqual(update_found.mock_calls
-                    , [ mock.call(found1, query_new_devices=False)
-                      , mock.call(found2, query_new_devices=True)
-                      , mock.call(found3, query_new_devices=True)
-                      ]
-                    )
+                self.assertEqual(
+                    update_found.mock_calls,
+                    [
+                        mock.call(found1, query_new_devices=False),
+                        mock.call(found2, query_new_devices=True),
+                        mock.call(found3, query_new_devices=True),
+                    ],
+                )
 
         describe "finding_loop":
             async it "uses a Repeater":
                 called = []
 
                 self.afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices")
-                self.afr.find_devices.return_value = {binascii.unhexlify("d073d5000001"): (set(), None)}
+                self.afr.find_devices.return_value = {
+                    binascii.unhexlify("d073d5000001"): (set(), None)
+                }
 
                 async def send_to_device(ref, msg):
                     assert isinstance(ref, FoundSerials)
@@ -359,7 +394,9 @@ describe AsyncTestCase, "DeviceFinderLoops":
                     self.assertEqual(pipeline.pipeline_short_circuit_on_error, True)
                     called.append(1)
 
-                send_to_device = asynctest.mock.CoroutineMock(name="send_to_device", side_effect=send_to_device)
+                send_to_device = asynctest.mock.CoroutineMock(
+                    name="send_to_device", side_effect=send_to_device
+                )
 
                 with mock.patch.object(self.loops, "send_to_device", send_to_device):
                     await self.wait_for(self.loops.finding_loop())
@@ -377,6 +414,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 def interpret(nxt):
                     if nxt is msg2:
                         raise Exception("WAT")
+
                 interpret = mock.Mock(name="interpret", side_effect=interpret)
 
                 with mock.patch.object(self.loops, "interpret", interpret):
@@ -391,9 +429,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
                     await self.wait_for(t)
 
-                self.assertEqual(interpret.mock_calls
-                    , [ mock.call(m) for m in [msg1, msg2, msg3] ]
-                    )
+                self.assertEqual(interpret.mock_calls, [mock.call(m) for m in [msg1, msg2, msg3]])
 
                 self.assertIs(await self.wait_for(self.loops.queue.get()), msg4)
 
@@ -406,6 +442,7 @@ describe AsyncTestCase, "DeviceFinderLoops":
                 def interpret(nxt):
                     if nxt is msg3:
                         self.loops.finished.set()
+
                 interpret = mock.Mock(name="interpret", side_effect=interpret)
 
                 with mock.patch.object(self.loops, "interpret", interpret):
@@ -418,14 +455,13 @@ describe AsyncTestCase, "DeviceFinderLoops":
 
                     await self.wait_for(t)
 
-                self.assertEqual(interpret.mock_calls
-                    , [ mock.call(m) for m in [msg1, msg2, msg3] ]
-                    )
+                self.assertEqual(interpret.mock_calls, [mock.call(m) for m in [msg1, msg2, msg3]])
 
                 self.assertIs(await self.wait_for(self.loops.queue.get()), msg4)
 
         describe "intepret":
             async it "does nothing if item isn't a LIFXPacket":
+
                 class Thing:
                     pass
 

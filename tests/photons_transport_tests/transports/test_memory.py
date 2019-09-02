@@ -57,8 +57,8 @@ describe AsyncTestCase, "Memory":
         reply2 = mock.Mock(name="reply2")
         reply3 = mock.Mock(name="reply3")
 
-        request1 = mock.Mock(name='request1')
-        request2 = mock.Mock(name='request2')
+        request1 = mock.Mock(name="request1")
+        request2 = mock.Mock(name="request2")
 
         first_receive = asyncio.Future()
         second_receive = asyncio.Future()
@@ -80,6 +80,7 @@ describe AsyncTestCase, "Memory":
                 first_receive.set_result(True)
             elif message is reply3:
                 second_receive.set_result(True)
+
         self.session.received_data.side_effect = receive
 
         transport = Memory(self.session, writer)

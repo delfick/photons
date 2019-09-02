@@ -1,7 +1,9 @@
 from photons_tile_paint.pacman import font
 
+
 def start(coords):
     return L2RState(0, 0, 0).swap_state(coords)
+
 
 class State:
     def coords_for(self, original):
@@ -20,6 +22,7 @@ class State:
     def length(self):
         return sum(char.width for char in self.characters)
 
+
 class R2LState(State):
     def __init__(self, start_x, end_x, x):
         self.x = x
@@ -29,16 +32,16 @@ class R2LState(State):
     @property
     def characters(self):
         return [
-              self.pacman
-            , font.Space(2)
-            , font.Blinky
-            , font.Space(2)
-            , font.Pinky
-            , font.Space(2)
-            , font.Inky
-            , font.Space(2)
-            , font.Clyde
-            ]
+            self.pacman,
+            font.Space(2),
+            font.Blinky,
+            font.Space(2),
+            font.Pinky,
+            font.Space(2),
+            font.Inky,
+            font.Space(2),
+            font.Clyde,
+        ]
 
     @property
     def pacman(self):
@@ -62,6 +65,7 @@ class R2LState(State):
         right_x += width
         return L2RState(left_x, right_x, left_x)
 
+
 class L2RState(State):
     def __init__(self, start_x, end_x, x):
         self.x = x
@@ -71,16 +75,16 @@ class L2RState(State):
     @property
     def characters(self):
         return [
-              self.pacman
-            , font.Space(2)
-            , font.Ghost
-            , font.Space(2)
-            , font.Ghost
-            , font.Space(2)
-            , font.Ghost
-            , font.Space(2)
-            , font.Ghost
-            ]
+            self.pacman,
+            font.Space(2),
+            font.Ghost,
+            font.Space(2),
+            font.Ghost,
+            font.Space(2),
+            font.Ghost,
+            font.Space(2),
+            font.Ghost,
+        ]
 
     @property
     def pacman(self):

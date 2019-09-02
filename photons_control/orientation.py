@@ -1,15 +1,18 @@
 from enum import Enum
 
+
 class Orientation(Enum):
     """
     The different available orientations
     """
+
     RightSideUp = 1
     UpsideDown = 2
     RotatedLeft = 3
     RotatedRight = 4
     FaceUp = 5
     FaceDown = 6
+
 
 def reorient(colors, orientation):
     """
@@ -22,6 +25,7 @@ def reorient(colors, orientation):
     for i, v in enumerate(colors):
         final.append((rotated_index(i, orientation), v))
     return [v for _, v in sorted(final)]
+
 
 def rotated_index(i, orientation):
     """
@@ -38,6 +42,7 @@ def rotated_index(i, orientation):
         x, y = y, 7 - x
 
     return x + (y * 8)
+
 
 def nearest_orientation(x, y, z):
     """
@@ -68,6 +73,7 @@ def nearest_orientation(x, y, z):
             return Orientation.UpsideDown
         else:
             return Orientation.RightSideUp
+
 
 def reverse_orientation(o):
     """
