@@ -3,6 +3,34 @@ from photons_app.actions import an_action
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms.meta import Meta
 
+from photons_tile_paint.time.animation import TileTimeAnimation
+from photons_tile_paint.time.options import TileTimeOptions
+
+from photons_tile_paint.marquee.animation import TileMarqueeAnimation
+from photons_tile_paint.marquee.options import TileMarqueeOptions
+
+from photons_tile_paint.pacman.animation import TilePacmanAnimation
+from photons_tile_paint.pacman.options import TilePacmanOptions
+
+from photons_tile_paint.nyan import TileNyanAnimation
+from photons_tile_paint.nyan import TileNyanOptions
+
+from photons_tile_paint.gameoflife.animation import TileGameOfLifeAnimation
+from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
+
+from photons_tile_paint.twinkles import TileTwinklesAnimation
+from photons_tile_paint.twinkles import TileTwinklesOptions
+
+from photons_tile_paint.falling import TileFallingAnimation
+from photons_tile_paint.falling import TileFallingOptions
+
+from photons_tile_paint.dice import TileDiceRollAnimation
+from photons_tile_paint.dice import TileDiceRollOptions
+
+from photons_tile_paint.balls import TileBallsAnimation
+from photons_tile_paint.balls import TileBallsOptions
+
+
 __shortdesc__ = "Utilities for painting on the tiles"
 
 
@@ -44,34 +72,6 @@ class Animator:
         action.__doc__ = self.__doc__
 
         return an_action(needs_target=True, special_reference=True)(action)
-
-
-from photons_tile_paint.time.animation import TileTimeAnimation
-from photons_tile_paint.time.options import TileTimeOptions
-
-from photons_tile_paint.marquee.animation import TileMarqueeAnimation
-from photons_tile_paint.marquee.options import TileMarqueeOptions
-
-from photons_tile_paint.pacman.animation import TilePacmanAnimation
-from photons_tile_paint.pacman.options import TilePacmanOptions
-
-from photons_tile_paint.nyan import TileNyanAnimation
-from photons_tile_paint.nyan import TileNyanOptions
-
-from photons_tile_paint.gameoflife.animation import TileGameOfLifeAnimation
-from photons_tile_paint.gameoflife.options import TileGameOfLifeOptions
-
-from photons_tile_paint.twinkles import TileTwinklesAnimation
-from photons_tile_paint.twinkles import TileTwinklesOptions
-
-from photons_tile_paint.falling import TileFallingAnimation
-from photons_tile_paint.falling import TileFallingOptions
-
-from photons_tile_paint.dice import TileDiceRollAnimation
-from photons_tile_paint.dice import TileDiceRollOptions
-
-from photons_tile_paint.balls import TileBallsAnimation
-from photons_tile_paint.balls import TileBallsOptions
 
 
 class Animations:

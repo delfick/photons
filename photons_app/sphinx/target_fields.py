@@ -11,7 +11,7 @@ class ShowPhotonsTargetDirective(Directive):
         parts = want.split(".")
         template = []
 
-        if len(parts) is 1:
+        if len(parts) == 1:
             thing = __import__(want)
         else:
             thing = getattr(

@@ -1,17 +1,15 @@
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.actions import an_action
 
 from option_merge_addons import option_merge_addon_hook
 from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
 
 # Get us our actions
-import photons_control.attributes
-import photons_control.multizone
-import photons_control.transform
-import photons_control.payloads
-import photons_control.colour
-import photons_control.tile
+import photons_control.attributes  # noqa
+import photons_control.multizone  # noqa
+import photons_control.transform  # noqa
+import photons_control.payloads  # noqa
+import photons_control.colour  # noqa
+import photons_control.tile  # noqa
 
 __shortdesc__ = "Tasks and code for control of the devices"
 

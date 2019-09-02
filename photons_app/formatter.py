@@ -57,7 +57,7 @@ class MergedOptionStringFormatter(StringFormatter):
         """Get a string from all_options"""
         if key.startswith("targets."):
             result = key[8:].split(".", 1)
-            if len(result) is 1:
+            if len(result) == 1:
                 name, rest = result[0], []
             else:
                 name, rest = result

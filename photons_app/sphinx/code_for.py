@@ -9,7 +9,7 @@ class ShowCodeForDirective(Directive):
     def run(self):
         buf = []
         want = self.content[0].split(".")
-        if len(want) is 1:
+        if len(want) == 1:
             thing = __import__(".".join(want))
         else:
             buf = []

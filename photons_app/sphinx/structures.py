@@ -9,7 +9,7 @@ class ShowListDirective(Directive):
         want = self.content[0]
         parts = want.split(".")
 
-        if len(parts) is 1:
+        if len(parts) == 1:
             thing = __import__(want)
         else:
             thing = getattr(
@@ -39,7 +39,7 @@ class ShowDictionaryDirective(Directive):
         want = self.content[0]
         parts = want.split(".")
 
-        if len(parts) is 1:
+        if len(parts) == 1:
             thing = __import__(want)
         else:
             thing = getattr(
@@ -69,7 +69,7 @@ class ShowRegexesDirective(Directive):
         want = self.content[0]
         parts = want.split(".")
 
-        if len(parts) is 1:
+        if len(parts) == 1:
             thing = __import__(want)
         else:
             thing = getattr(
@@ -99,7 +99,7 @@ class ShowCapabilitiesDirective(Directive):
         want = self.content[0]
         parts = want.split(".")
 
-        if len(parts) is 1:
+        if len(parts) == 1:
             thing = __import__(want)
         else:
             thing = getattr(

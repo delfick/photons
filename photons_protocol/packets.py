@@ -289,7 +289,7 @@ class PacketSpecMixin:
           so we can then set the values for the fields in the group
         """
         typ = self.Meta.field_types_dict.get(key)
-        if getattr(typ, "message_type", None) is 0:
+        if getattr(typ, "message_type", None) == 0:
             # Message_type of 0 indicates an empty Payload
             # So we store the whole thing as is on the packet
             # We also make sure this is a str (hexlified bytes), bytes or bitarray
@@ -416,7 +416,7 @@ class PacketSpecMixin:
 
         if self.Meta.groups and getattr(self, "parent_packet", False):
             name, typ = self.Meta.field_types[-1]
-            if getattr(typ, "message_type", None) is 0:
+            if getattr(typ, "message_type", None) == 0:
                 final[name] = self.__getitem__(name, do_transform=transformed)
 
         return final

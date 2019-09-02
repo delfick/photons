@@ -355,7 +355,7 @@ def noncancelled_results_from_futs(futs):
 
     if errors:
         errors = list(errors)
-        if len(errors) is 1:
+        if len(errors) == 1:
             errors = errors[0]
         else:
             errors = PhotonsAppError(_errors=errors)
@@ -786,7 +786,7 @@ class ThreadToAsyncQueue(object):
             if not res:
                 continue
 
-            if type(res) is tuple and len(res) is 3:
+            if type(res) is tuple and len(res) == 3:
                 key, result, exception = res
             else:
                 error = PhotonsAppError("Unknown item on queue", got=res)
@@ -878,7 +878,7 @@ class ThreadToAsyncQueue(object):
 
     def listener_impl(self, nxt, *args):
         """Just call out to process"""
-        if type(nxt) is tuple and len(nxt) is 2:
+        if type(nxt) is tuple and len(nxt) == 2:
             key, proc = nxt
             self.process(key, wraps(proc)(self.wrap_request(proc, args)))
         else:

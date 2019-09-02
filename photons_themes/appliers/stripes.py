@@ -13,8 +13,6 @@ These appliers generate colors for each point using a function
 """
 from photons_themes.appliers.base import TileApplierPattern
 
-import math
-
 
 class TileApplierVerticalStripe(TileApplierPattern):
     """

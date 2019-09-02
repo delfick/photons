@@ -8,7 +8,6 @@ extract each tile from the canvas
 """
 from photons_themes.theme import ThemeColor
 
-import operator
 import random
 
 

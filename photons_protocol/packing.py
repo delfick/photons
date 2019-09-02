@@ -40,8 +40,8 @@ class BitarraySlice(dictobj):
         if fmt is None:
             return val.tobytes()
 
-        if fmt is bool and self.size_bits is 1:
-            return False if val.to01() is "0" else True
+        if fmt is bool and self.size_bits == 1:
+            return False if val.to01() == "0" else True
 
         if len(val) < typ.original_size:
             padding = bitarray("0" * (typ.original_size - len(val)), endian="little")
@@ -206,7 +206,7 @@ class PacketPacking(object):
         # As opposed to individual fields in the payload one at a time
         if getattr(pkt, "parent_packet", False) and pkt.Meta.field_types:
             name, typ = pkt.Meta.field_types[-1]
-            if getattr(typ, "message_type", None) is 0:
+            if getattr(typ, "message_type", None) == 0:
                 final += val_to_bitarray(
                     payload or pkt[name], doing="Adding payload when packing a packet"
                 )
@@ -232,7 +232,7 @@ class PacketPacking(object):
 
         if getattr(pkt_kls, "parent_packet", False) and index < len(value):
             for name, typ in pkt_kls.Meta.field_types:
-                if getattr(typ, "message_type", None) is 0:
+                if getattr(typ, "message_type", None) == 0:
                     final[name] = value[index:]
 
         return final

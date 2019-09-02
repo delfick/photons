@@ -6,9 +6,8 @@ The appliers here are for randomly distributing the theme to the device.
 .. autoclass:: photons_themes.appliers.splotch.TileApplierSplotch
 """
 from photons_themes.collections import ZoneColors, TileColors
-from photons_themes.canvas import Canvas, color_weighting
 from photons_themes.appliers.base import TileApplier
-from photons_themes.theme import ThemeColor
+from photons_themes.canvas import Canvas
 
 
 class StripApplierSplotch:

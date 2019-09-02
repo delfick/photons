@@ -1,7 +1,5 @@
 from photons_transport.transports.socket import Socket
 
-from photons_app import helpers as hp
-
 import platform
 import logging
 import asyncio

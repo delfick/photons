@@ -244,7 +244,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
     ``lan:set_chain_state d073d5f09124 -- '{"colors": [[[0, 0, 0, 3500], [0, 0, 0, 3500], ...], [[0, 0, 1, 3500], ...], ...], "tile_index": 1, "length": 1, "x": 0, "y": 0, "width": 8}'``
 
     Where the colors is a grid of 8 rows of 8 ``[h, s, b, k]`` values.
-    """
+    """  # noqa
     options = collector.configuration["photons_app"].extra_as_json
 
     if "colors" in options:

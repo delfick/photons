@@ -179,7 +179,7 @@ async def list_tasks(
     def get_tasks(tasks, targets, typ):
         result = []
         if typ not in available_actions:
-            start = "This has" if len(targets) is 1 else "These have"
+            start = "This has" if len(targets) == 1 else "These have"
             result.append(("", ("\n    : {0} no target specific tasks".format(start))))
         else:
             available = available_actions[typ]

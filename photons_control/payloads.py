@@ -12,7 +12,7 @@ async def pack(collector, **kwargs):
     Pack json found after the ``--`` into hexlified string
 
     ``pack -- '{"frame_address": {"ack_required": true, "res_required": true, "reserved2": "000000000000", "reserved3": "00", "sequence": 1, "target": "0000000000000000"}, "frame_header": {"addressable": true, "protocol": 1024, "reserved1": "00", "size": 68, "source": 591976603, "tagged": false}, "payload": {}, "protocol_header": {"pkt_type": 45, "reserved4": "0000000000000000", "reserved5": "0000"}}'``
-    """
+    """  # noqa
     extra = collector.configuration["photons_app"].extra_as_json
     protocol_register = collector.configuration["protocol_register"]
 

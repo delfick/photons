@@ -133,7 +133,7 @@ class PhotonsAppSpec(object):
     def target_name_spec(self):
         """Just needs to be ascii"""
         return sb.valid_string_spec(
-            validators.no_whitespace(), validators.regexed("^[a-zA-Z][a-zA-Z0-9-_\.]*$")
+            validators.no_whitespace(), validators.regexed(r"^[a-zA-Z][a-zA-Z0-9-_\.]*$")
         )
 
     @hp.memoized_property

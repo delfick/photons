@@ -8,7 +8,6 @@ from photons_control.planner import Gatherer, Skip, make_plans
 from photons_app.errors import BadOption, PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_messages import DeviceMessages
 from photons_colour import Parser
 
 from input_algorithms.spec_base import NotSpecified
