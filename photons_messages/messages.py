@@ -7,8 +7,11 @@ from photons_protocol.types import Optional
 from input_algorithms import spec_base as sb
 import math
 
+
 def empty(pkt, attr):
     return pkt.actual(attr) in (Optional, sb.NotSpecified)
+
+# fmt: off
 
 ########################
 ###   CORE
@@ -318,5 +321,7 @@ class TileMessages(Messages):
         , ("reserved8", T.Reserved(8))
         , *fields.tile_effect_settings
         )
+
+# fmt: on
 
 __all__ = ["CoreMessages", "DiscoveryMessages", "DeviceMessages", "LightMessages", "MultiZoneMessages", "TileMessages"]

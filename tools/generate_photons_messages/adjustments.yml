@@ -20,6 +20,7 @@ output:
     static: |
       from enum import Enum
 
+
       class Direction(Enum):
           RIGHT = 0
           LEFT = 1
@@ -38,9 +39,11 @@ output:
       from lru import LRU
       import random
 
+
       def tile_effect_parameters_for(typ):
           for i in range(8):
               yield ("parameter{0}".format(i), T.Reserved(32))
+
 
       def multizone_effect_parameters_for(typ):
           if typ is enums.MultiZoneEffectType.MOVE:
@@ -51,6 +54,7 @@ output:
           else:
               for i in range(8):
                   yield ("parameter{0}".format(i), T.Reserved(32))
+
 
   - create: packets
     dest: "messages.py"
@@ -66,8 +70,10 @@ output:
       from input_algorithms import spec_base as sb
       import math
 
+
       def empty(pkt, attr):
           return pkt.actual(attr) in (Optional, sb.NotSpecified)
+
 
 types:
   duration_type:

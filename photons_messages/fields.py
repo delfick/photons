@@ -7,9 +7,11 @@ from input_algorithms import spec_base as sb
 from lru import LRU
 import random
 
+
 def tile_effect_parameters_for(typ):
     for i in range(8):
         yield ("parameter{0}".format(i), T.Reserved(32))
+
 
 def multizone_effect_parameters_for(typ):
     if typ is enums.MultiZoneEffectType.MOVE:
@@ -20,6 +22,8 @@ def multizone_effect_parameters_for(typ):
     else:
         for i in range(8):
             yield ("parameter{0}".format(i), T.Reserved(32))
+
+# fmt: off
 
 duration_type = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
@@ -56,25 +60,25 @@ waveform_skew_ratio = T.Int16.default(0).transform(
     , lambda _, v: float(v + 32768) / 65535
     ).allow_float()
 
-hsbk_with_optional = (
+hsbk_with_optional = [
       ("hue", scaled_hue.optional())
     , ("saturation", scaled_to_65535.optional())
     , ("brightness", scaled_to_65535.optional())
     , ("kelvin", T.Uint16.optional())
-    )
+    ]
 
-hsbk = (
+hsbk = [
       ("hue", scaled_hue)
     , ("saturation", scaled_to_65535)
     , ("brightness", scaled_to_65535)
     , ("kelvin", T.Uint16.default(3500))
-    )
+    ]
 
 class Color(dictobj.PacketSpec):
     fields = hsbk
 Color.Meta.cache = LRU(8000)
 
-multi_zone_effect_settings = (
+multi_zone_effect_settings = [
       ("instanceid", T.Uint32.default(lambda pkt: random.randrange(1, 1<<32)))
     , ("type", T.Uint8.enum(enums.MultiZoneEffectType, allow_unknown=True).default(enums.MultiZoneEffectType.MOVE))
     , ("reserved6", T.Reserved(16))
@@ -83,9 +87,9 @@ multi_zone_effect_settings = (
     , ("reserved7", T.Reserved(32))
     , ("reserved8", T.Reserved(32))
     , ("parameters", T.Bytes(32 * 8).dynamic(lambda pkt: multizone_effect_parameters_for(pkt.type)))
-    )
+    ]
 
-tile_state_device = (
+tile_state_device = [
       ("accel_meas_x", T.Int16)
     , ("accel_meas_y", T.Int16)
     , ("accel_meas_z", T.Int16)
@@ -103,19 +107,19 @@ tile_state_device = (
     , ("firmware_version_minor", T.Uint16)
     , ("firmware_version_major", T.Uint16)
     , ("reserved9", T.Reserved(32))
-    )
+    ]
 
 class Tile(dictobj.PacketSpec):
     fields = tile_state_device
 
-tile_buffer_rect = (
+tile_buffer_rect = [
       ("reserved6", T.Reserved(8))
     , ("x", T.Uint8)
     , ("y", T.Uint8)
     , ("width", T.Uint8)
-    )
+    ]
 
-tile_effect_settings = (
+tile_effect_settings = [
       ("instanceid", T.Uint32.default(lambda pkt: random.randrange(1, 1<<32)))
     , ("type", T.Uint8.enum(enums.TileEffectType, allow_unknown=True).default(enums.TileEffectType.OFF))
     , ("speed", duration_type.default(5))
@@ -125,4 +129,6 @@ tile_effect_settings = (
     , ("parameters", T.Bytes(32 * 8).dynamic(lambda pkt: tile_effect_parameters_for(pkt.type)))
     , ("palette_count", T.Uint8)
     , ("palette", T.Bytes(64 * 16).many(lambda pkt: Color))
-    )
+    ]
+
+# fmt: on
