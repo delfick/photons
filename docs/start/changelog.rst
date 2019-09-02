@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.20.4 - 2 September 2019
+   * Photons code is now formatted by the black project
+
 0.20.3 - 1 September 2019
    * Mainly just minor changes
    * Also, changed the transform functionality on packet definitions. This method
