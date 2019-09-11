@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.20.5 - 11 September 2019
+   * Fix tile animations
+
 0.20.4 - 2 September 2019
    * Photons code is now formatted by the black project
 
