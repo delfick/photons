@@ -156,6 +156,11 @@ class Set64Maker:
         def colors(self):
             return self.kwargs.get("colors", [])
 
+        def actual(self, key):
+            if key == "source":
+                return self.extra.get("source", sb.NotSpecified)
+            return getattr(self, key)
+
     def __init__(self):
         self.targets_cache = LRU(1000)
         self.source_bits_cache = LRU(10)
