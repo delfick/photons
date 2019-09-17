@@ -140,6 +140,10 @@ class Set64Maker:
         def sequence(self):
             return self.extra["sequence"]
 
+        @sequence.setter
+        def sequence(self, val):
+            self.extra["sequence"] = val
+
         @property
         def pkt_type(self):
             return TileMessages.Set64.Payload.message_type
