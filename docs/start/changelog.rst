@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.21.0 - TBD
+0.21.0 - 18 September 2019
    * Migrated to `delfick_project <https://delfick-project.readthedocs.io/>`_
    * this essentially means the following imports change from:
 
