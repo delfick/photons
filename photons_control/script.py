@@ -4,7 +4,7 @@ from photons_app import helpers as hp
 
 from photons_transport.errors import FailedToFindDevice
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 import asyncio
 import logging
 import time

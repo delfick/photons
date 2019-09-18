@@ -4,8 +4,7 @@ from photons_device_finder import boolean, str_ranges
 
 from photons_app.test_helpers import TestCase
 
-from input_algorithms.errors import BadSpecValue
-from input_algorithms.meta import Meta
+from delfick_project.norms import Meta, BadSpecValue
 
 describe TestCase, "boolean":
     it "transforms int into a boolean":

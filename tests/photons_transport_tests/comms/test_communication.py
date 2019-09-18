@@ -15,9 +15,7 @@ from photons_messages import DeviceMessages, protocol_register, LIFXPacket
 from photons_protocol.messages import Messages
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
 import asynctest

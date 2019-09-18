@@ -5,9 +5,8 @@ from photons_app.errors import BadOptionFormat
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import sb, Meta
 from unittest import mock
 import asyncio
 import uuid

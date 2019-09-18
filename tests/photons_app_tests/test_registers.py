@@ -12,10 +12,8 @@ from photons_app.errors import TargetNotFound, ResolverNotFound
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
-from option_merge import MergedOptions
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import dictobj, sb, Meta
 from unittest import mock
 import pickle
 

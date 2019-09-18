@@ -2,8 +2,7 @@ from photons_tile_paint.options import AnimationOptions
 
 from photons_themes.theme import ThemeColor as Color
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.norms import dictobj, sb
 import random
 
 

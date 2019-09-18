@@ -6,8 +6,7 @@ from photons_transport.session.memory import makeMemorySession
 from photons_transport.session.network import NetworkSession
 from photons_transport.targets.base import Target
 
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import dictobj, sb
 
 
 class LanTarget(Target):

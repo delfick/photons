@@ -16,9 +16,7 @@ for defining ``by_type`` on the class.
 from photons_protocol.types import Type, MultiOptions
 from photons_protocol.errors import BadConversion
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, dictobj, Meta
 from bitarray import bitarray
 from textwrap import dedent
 import binascii
@@ -83,7 +81,10 @@ class MessagesMixin:
         k = None
         for k in messages_register or [kls]:
             if message_type in k.by_type:
-                if pkt.payload is NotSpecified and k.by_type[message_type].Payload.Meta.field_types:
+                if (
+                    pkt.payload is sb.NotSpecified
+                    and k.by_type[message_type].Payload.Meta.field_types
+                ):
                     raise BadConversion("packet had no payload", got=repr(pkt))
                 break
 
@@ -104,7 +105,7 @@ class MessagesMixin:
                 dictobj.__setattr__(result, key, val)
 
         existing_payload = pkt.payload
-        if existing_payload is not NotSpecified:
+        if existing_payload is not sb.NotSpecified:
             result["payload"] = PacketKls.Payload.unpack(existing_payload)
 
         return result

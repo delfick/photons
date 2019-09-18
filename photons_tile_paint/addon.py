@@ -1,7 +1,7 @@
 from photons_app.actions import an_action
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms.meta import Meta
+from delfick_project.addons import addon_hook
+from delfick_project.norms import Meta
 
 from photons_tile_paint.time.animation import TileTimeAnimation
 from photons_tile_paint.time.options import TileTimeOptions
@@ -34,7 +34,7 @@ from photons_tile_paint.balls import TileBallsOptions
 __shortdesc__ = "Utilities for painting on the tiles"
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "messages"),
         ("lifx.photons", "themes"),

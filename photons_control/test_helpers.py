@@ -20,8 +20,7 @@ from photons_transport.targets import MemoryTarget
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.norms import dictobj, Meta
 import logging
 import asyncio
 

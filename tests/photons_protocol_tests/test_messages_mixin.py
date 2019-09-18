@@ -10,7 +10,7 @@ from photons_app.registers import ProtocolRegister
 from photons_messages import LIFXPacket
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from bitarray import bitarray
 from unittest import mock
 import binascii

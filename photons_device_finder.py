@@ -197,10 +197,8 @@ from photons_messages import LIFXPacket, DeviceMessages, LightMessages
 from photons_products_registry import capability_for_ids
 from photons_control.script import Pipeline, Repeater
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import dictobj, sb, Meta
+from delfick_project.addons import addon_hook
 from collections.abc import Iterable
 from urllib.parse import parse_qs
 from functools import partial
@@ -218,7 +216,7 @@ log = logging.getLogger("photons_device_finder")
 __shortdesc__ = "Device finder that gathers information about devices in the background"
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "control"),
         ("lifx.photons", "messages"),
@@ -229,7 +227,7 @@ def __lifx__(collector, *args, **kwargs):
     pass
 
 
-@option_merge_addon_hook(post_register=True)
+@addon_hook(post_register=True)
 def __lifx_post__(collector, **kwargs):
     def resolve(s, target):
         filtr = Filter.from_url_str(s)

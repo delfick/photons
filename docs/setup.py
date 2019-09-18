@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+# fmt: off
+
 setup(
       name = "lifx-photons-docs"
     , version = "0.1"
@@ -18,3 +20,5 @@ setup(
       , "lifx.photons": ["docs = photons_docs.addon"]
       }
     )
+
+# fmt: on

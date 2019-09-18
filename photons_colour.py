@@ -2,10 +2,9 @@ from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, Waveform
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms import spec_base as sb
-from option_merge import MergedOptions
-from input_algorithms.meta import Meta
+from delfick_project.option_merge import MergedOptions
+from delfick_project.addons import addon_hook
+from delfick_project.norms import sb, Meta
 import colorsys
 import logging
 import random
@@ -37,7 +36,7 @@ regexes = {
 }
 
 
-@option_merge_addon_hook(extras=(("lifx.photons", "messages")))
+@addon_hook(extras=(("lifx.photons", "messages")))
 def __lifx__(collector, *args, **kwargs):
     pass
 

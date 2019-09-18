@@ -15,9 +15,8 @@ from photons_app.collector import Collector
 from photons_app.runner import run
 from photons_app import VERSION
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms import spec_base as sb
-from delfick_app import App, DelayedFileType
+from delfick_project.app import App, OptionalFileType
+from delfick_project.norms import sb
 import sys
 
 
@@ -69,8 +68,8 @@ def library_setup(
 
 class App(App):
     """
-    The app is based on `delfick-app <https://delfick-app.readthedocs.io>`_ and
-    is responsible for several things:
+    The app is based on `delfick-project App <https://delfick-project.readthedocs.io/en/latest/api/app.html>`_
+    and is responsible for several things:
 
     * Reading in environment variables
     * Reading in positional and keyword commandline arguments
@@ -92,8 +91,8 @@ class App(App):
     cli_environment_defaults = {"LIFX_CONFIG": ("--config", "./lifx.yml")}
     cli_positional_replacements = [
         ("--task", "list_tasks"),
-        ("--reference", NotSpecified),
-        ("--artifact", NotSpecified),
+        ("--reference", sb.NotSpecified),
+        ("--artifact", sb.NotSpecified),
     ]
 
     def mainline(self, argv=None, print_errors_to=sys.stdout, **execute_args):
@@ -127,7 +126,7 @@ class App(App):
     def setup_collector(self, args_dict, logging_handler, extra_files):
         """Create and initialize a collector"""
         config_name = None
-        if args_dict["photons_app"]["config"] is not NotSpecified:
+        if args_dict["photons_app"]["config"] is not sb.NotSpecified:
             config_name = args_dict["photons_app"]["config"].name
 
         collector = Collector()
@@ -152,10 +151,7 @@ class App(App):
         extra_files=None,
         default_activate_all_modules=False,
     ):
-        c = lambda i: i if callable(i) and i is not NotSpecified else lambda optional=False: None
-        args_dict["photons_app"]["config"] = (
-            c(args_dict["photons_app"]["config"])(optional=True) or NotSpecified
-        )
+        args_dict["photons_app"]["config"] = args_dict["photons_app"]["config"] or sb.NotSpecified
         args_dict["photons_app"]["extra"] = extra_args
         args_dict["photons_app"]["debug"] = args_dict["debug"] or args_obj.debug
         args_dict["photons_app"]["default_activate_all_modules"] = default_activate_all_modules
@@ -193,7 +189,7 @@ class App(App):
             "--config",
             help="Config file to read from",
             dest="photons_app_config",
-            type=DelayedFileType("r"),
+            type=OptionalFileType("r"),
             **defaults["--config"]
         )
 

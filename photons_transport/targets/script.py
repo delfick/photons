@@ -1,6 +1,6 @@
 from photons_app.errors import RunErrors, BadRunWithResults
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 import asyncio
 
 

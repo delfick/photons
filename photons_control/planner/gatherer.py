@@ -8,7 +8,7 @@ from photons_transport.errors import FailedToFindDevice
 from photons_control.script import find_serials
 from photons_transport import catch_errors
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from collections import defaultdict
 import asyncio
 import time

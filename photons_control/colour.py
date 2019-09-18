@@ -3,7 +3,7 @@ from photons_app.actions import an_action
 
 from photons_colour import Parser
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 
 
 @an_action(needs_target=True, special_reference=True)

@@ -8,7 +8,7 @@ from photons_app.special import FoundSerials
 
 from photons_transport.fake import FakeDevice
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 
 light1 = FakeDevice("d073d5000001", chp.default_responders())
 light2 = FakeDevice("d073d5000002", chp.default_responders())

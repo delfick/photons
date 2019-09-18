@@ -1,8 +1,7 @@
 from photons_protocol.errors import BadConversion
 from photons_protocol.types import Optional
 
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import sb, dictobj
 from bitarray import bitarray
 import binascii
 import struct

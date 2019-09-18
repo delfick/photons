@@ -10,7 +10,7 @@ from photons_transport.fake import FakeDevice
 from photons_control.script import Pipeline
 from photons_colour import Parser
 
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import dictobj
 import itertools
 import asyncio
 import random

@@ -8,7 +8,7 @@ from photons_messages import DeviceMessages, LightMessages
 from photons_products_registry import Capability
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import uuid
 

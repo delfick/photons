@@ -7,7 +7,7 @@ from photons_app.errors import ProgrammerError
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import uuid
 

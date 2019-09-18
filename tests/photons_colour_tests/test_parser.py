@@ -6,7 +6,7 @@ from photons_app.test_helpers import TestCase
 
 from photons_messages import LightMessages, Waveform
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 
 describe TestCase, "split_color_string":

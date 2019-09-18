@@ -19,7 +19,7 @@ from photons_control.planner import Gatherer, make_plans, Skip, Plan, NoMessages
 from photons_control.planner.plans import CapabilityPlan
 from photons_control.script import FromGenerator
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 
 
 async def find_multizone(target, reference, afr, gatherer=None, **kwargs):

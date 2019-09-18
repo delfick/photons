@@ -2,8 +2,7 @@ from photons_tile_paint.options import AnimationOptions, ColorOption
 from photons_tile_paint.marquee.animation import MarqueeDirection
 from photons_protocol.types import enum_spec
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.norms import dictobj, sb
 
 
 class TileMarqueeOptions(AnimationOptions):

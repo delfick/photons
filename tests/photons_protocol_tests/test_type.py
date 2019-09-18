@@ -8,9 +8,7 @@ from photons_app.errors import ProgrammerError
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.errors import BadSpecValue
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta, BadSpecValue
 from contextlib import contextmanager
 from bitarray import bitarray
 from unittest import mock

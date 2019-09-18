@@ -33,14 +33,9 @@ setup(
     , include_package_data = True
 
     , install_requires =
-      [
-      # photons_app
-        "delfick_error==1.7.8"
-      , "input_algorithms==0.6.0"
-      , "delfick_app==0.9.7"
-      , "option_merge==1.6"
-      , "option_merge_addons==0.3"
+      [ "delfick_project==0.5"
       , "ruamel.yaml==0.15.87"
+      , "rainbow_logging_handler==2.2.2"
 
       # photons-tile-messages
       , "lru-dict==1.1.6"

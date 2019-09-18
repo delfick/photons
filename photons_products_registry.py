@@ -1,6 +1,5 @@
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.addons import addon_hook
+from delfick_project.norms import dictobj, sb
 
 from photons_app.errors import PhotonsAppError
 
@@ -41,7 +40,7 @@ class UnknownProduct(PhotonsAppError):
     desc = "Unknown product"
 
 
-@option_merge_addon_hook()
+@addon_hook()
 def __lifx__(collector, *args, **kwargs):
     pass
 

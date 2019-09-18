@@ -2,8 +2,8 @@
 
 from photons_app.errors import PhotonsAppError
 
+from delfick_project.logging import lc
 from contextlib import contextmanager
-from delfick_logging import lc
 from queue import Queue, Empty
 from functools import wraps
 import threading

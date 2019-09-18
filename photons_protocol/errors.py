@@ -1,5 +1,5 @@
-from input_algorithms.errors import BadSpec, BadSpecValue
-from delfick_error import DelfickError, ProgrammerError
+from delfick_project.errors import DelfickError, ProgrammerError
+from delfick_project.norms import BadSpec, BadSpecValue
 
 
 class PhotonsProtocolError(DelfickError):

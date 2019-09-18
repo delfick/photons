@@ -4,13 +4,13 @@ from photons_app.actions import an_action
 
 from photons_control.planner import Gatherer, Skip, make_plans
 
-from option_merge_addons import option_merge_addon_hook
+from delfick_project.addons import addon_hook
 import logging
 
 log = logging.getLogger("info")
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "control"),

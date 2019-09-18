@@ -7,8 +7,7 @@ Tasks contain a reference to the functionality it provides (in ``photons_app.act
 from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
 from photons_app.errors import BadOption, BadTarget, BadTask
 
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import sb, dictobj
 
 
 class Task(dictobj):

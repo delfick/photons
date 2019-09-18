@@ -9,7 +9,7 @@ from photons_app.actions import an_action
 from photons_messages import LightMessages, DeviceMessages
 from photons_colour import Parser
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 
 
 def PowerToggle(duration=1):

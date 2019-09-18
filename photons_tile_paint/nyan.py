@@ -4,8 +4,7 @@ from photons_tile_paint.font.base import Character
 
 from photons_themes.theme import ThemeColor as Color
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.norms import dictobj, sb
 
 
 class TileNyanOptions(AnimationOptions):

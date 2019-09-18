@@ -6,7 +6,7 @@ from photons_protocol.types import Type as T
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.meta import Meta
+from delfick_project.norms import Meta
 from contextlib import contextmanager
 from bitarray import bitarray
 from unittest import mock

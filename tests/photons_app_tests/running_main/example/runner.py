@@ -1,10 +1,8 @@
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.actions import an_action
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.addons import addon_hook
+from delfick_project.norms import sb, dictobj
 
 
 class Wat(dictobj.Spec):
@@ -16,14 +14,9 @@ class Wat(dictobj.Spec):
         return "{0}.{1}".format(self.one, self.two)
 
 
-@option_merge_addon_hook()
+@addon_hook()
 def __lifx__(collector, *args, **kwargs):
-    collector.register_converters(
-        {(0, ("wat",)): Wat.FieldSpec(formatter=MergedOptionStringFormatter)},
-        Meta,
-        collector.configuration,
-        sb.NotSpecified,
-    )
+    collector.register_converters({"wat": Wat.FieldSpec(formatter=MergedOptionStringFormatter)})
 
 
 @an_action()

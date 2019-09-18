@@ -7,7 +7,7 @@ from photons_themes.canvas import Canvas
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
-from delfick_logging import setup_logging
+from delfick_project.logging import setup_logging
 import asyncio
 import logging
 import random

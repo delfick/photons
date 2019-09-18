@@ -8,8 +8,8 @@ from photons_protocol.packets import dictobj
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
 from contextlib import contextmanager
+from delfick_project.norms import sb
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock

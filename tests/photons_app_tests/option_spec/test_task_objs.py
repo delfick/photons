@@ -8,7 +8,7 @@ from photons_app.option_spec.task_objs import Task
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import asynctest
 import binascii

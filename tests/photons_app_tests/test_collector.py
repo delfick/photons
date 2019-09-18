@@ -8,13 +8,11 @@ from photons_app.test_helpers import TestCase
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
-from option_merge_addons import Register
-from option_merge import MergedOptions
-from input_algorithms.meta import Meta
+from delfick_project.option_merge import MergedOptions
+from delfick_project.norms import dictobj, sb, Meta
+from delfick_project.option_merge.path import Path
+from delfick_project.addons import Register
 from contextlib import contextmanager
-from option_merge.path import Path
 from textwrap import dedent
 from unittest import mock
 import pkg_resources
@@ -192,7 +190,7 @@ describe TestCase, "Collector":
                 register = info["register"]
                 self.assertEqual(
                     sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["option_merge.addons", "lifx.photons"]),
+                    sorted(["delfick_project.addons", "lifx.photons"]),
                 )
                 self.assertEqual(register.known, [("lifx.photons", "one"), ("lifx.photons", "two")])
                 called.append("recursive_import_known")
@@ -235,7 +233,7 @@ describe TestCase, "Collector":
                 register = info["register"]
                 self.assertEqual(
                     sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["option_merge.addons", "lifx.photons"]),
+                    sorted(["delfick_project.addons", "lifx.photons"]),
                 )
                 self.assertEqual(
                     register.known,
@@ -285,7 +283,7 @@ describe TestCase, "Collector":
                 register = info["register"]
                 self.assertEqual(
                     sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["option_merge.addons", "lifx.photons"]),
+                    sorted(["delfick_project.addons", "lifx.photons"]),
                 )
                 self.assertEqual(register.known, [])
                 called.append("recursive_import_known")

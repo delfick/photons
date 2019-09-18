@@ -5,7 +5,7 @@ Responsible for finding tasks and executing them
 from photons_app.actions import available_actions, all_tasks
 from photons_app.errors import BadTask
 
-from input_algorithms.spec_base import NotSpecified
+from delfick_project.norms import sb
 
 
 class TaskFinder(object):
@@ -14,7 +14,7 @@ class TaskFinder(object):
         self.collector = collector
 
     async def task_runner(self, task, reference, **kwargs):
-        target = NotSpecified
+        target = sb.NotSpecified
         if ":" in task:
             target, task = task.split(":", 1)
 

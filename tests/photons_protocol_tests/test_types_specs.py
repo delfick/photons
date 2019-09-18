@@ -1,5 +1,6 @@
 # coding: spec
 
+from photons_protocol.errors import BadSpecValue, BadConversion
 from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
 from photons_protocol import types
@@ -7,10 +8,8 @@ from photons_protocol import types
 from photons_app.errors import ProgrammerError
 from photons_app.test_helpers import TestCase
 
-from photons_protocol.errors import BadSpecValue, BadConversion
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock

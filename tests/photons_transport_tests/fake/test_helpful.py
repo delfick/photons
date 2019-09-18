@@ -6,7 +6,7 @@ from photons_app.test_helpers import TestCase, AsyncTestCase
 
 from photons_messages import DeviceMessages, MultiZoneMessages, Direction
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import asynctest
 import json
@@ -121,5 +121,5 @@ describe TestCase, "pktkeys":
         self.assertEqual(msg.actual("one"), sb.NotSpecified)
         self.assertEqual(
             repr(msg.payload),
-            """{"one": "<class 'input_algorithms.spec_base.NotSpecified'>", "two": "stuff"}""",
+            """{"one": "<class 'delfick_project.norms.spec_base.NotSpecified'>", "two": "stuff"}""",
         )

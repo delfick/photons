@@ -4,7 +4,7 @@ from photons_app.errors import TimedOut, DevicesNotFound
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from functools import partial
 import asyncio
 import logging

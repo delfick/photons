@@ -11,7 +11,7 @@ from photons_transport.fake import FakeDevice, Responder
 from photons_transport.targets import MemoryTarget
 from photons_control import test_helpers as chp
 
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import dictobj
 import asyncio
 import uuid
 

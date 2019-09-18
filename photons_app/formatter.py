@@ -14,44 +14,37 @@ To do this we define the MergedOptionStringFormatter below that uses the magic
 of MergedOptions to do the lookup for us.
 """
 
-from photons_app.errors import BadOptionFormat
 from photons_app import helpers as hp
 
-from option_merge.formatter import MergedOptionStringFormatter as StringFormatter
-from input_algorithms.meta import Meta
+from delfick_project.option_merge import MergedOptionStringFormatter
 import pkg_resources
 import asyncio
 
 
-class MergedOptionStringFormatter(StringFormatter):
+class MergedOptionStringFormatter(MergedOptionStringFormatter):
     """
     Resolve format options into a MergedOptions dictionary
 
     Usage is like:
 
         configuration = MergedOptions.using({"numbers": "1 two {three}", "three": 3})
-        formatter = MergedOptionStringFormatter(configuration, ["numbers"])
+        formatter = MergedOptionStringFormatter(configuration, "{numbers}")
         val = formatter.format()
         # val == "1 two 3"
-
-    Or we can provide a value outside the configuration::
-
-        configuration = MergedOptions.using({"one": 1, "two": 2, "three": 3})
-        formatter = MergedOptionStringFormatter(configuration, ['numbers'], value="{one} {two} {three}")
-        val = formatter.format()
-        # val == "1 2 3"
 
     The formatter also has a special feature where it returns the object it finds
     if the string to be formatted is that one object::
 
         class dictsubclass(dict): pass
         configuration = MergedOptions.using({"some_object": dictsubclass({1:2, 3:4})}, dont_prefix=[dictsubclass])
-        formatter = MergedOptionStringFormatter(configuration, [], value="{some_object}")
+        formatter = MergedOptionStringFormatter(configuration, "{some_object}")
         val = formatter.format()
         # val == {1:2, 3:4}
 
     For this to work, the object must be a subclass of dict and in the dont_prefix option of the configuration.
     """
+
+    passthrough_format_specs = ["resource"]
 
     def get_string(self, key):
         """Get a string from all_options"""
@@ -67,21 +60,7 @@ class MergedOptionStringFormatter(StringFormatter):
                     target = getattr(target, part)
             return target
 
-        if key not in self.all_options:
-            kwargs = {}
-            if len(self.chain) > 1:
-                kwargs["source"] = Meta(self.all_options, self.chain[-2]).source
-            raise BadOptionFormat("Can't find key in options", key=key, chain=self.chain, **kwargs)
-
-        return super(MergedOptionStringFormatter, self).get_string(key)
-
-    def special_get_field(self, value, args, kwargs, format_spec=None):
-        """Also take the spec into account"""
-        if format_spec in ("resource",):
-            return value, ()
-
-        if value in self.chain:
-            raise BadOptionFormat("Recursive option", chain=self.chain + [value])
+        return super().get_string(key)
 
     def special_format_field(self, obj, format_spec):
         """Know about any special formats"""

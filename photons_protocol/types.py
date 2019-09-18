@@ -16,7 +16,7 @@ from photons_protocol.errors import BadSpecValue, BadConversion
 from photons_app.errors import ProgrammerError
 from photons_app import helpers as hp
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from bitarray import bitarray
 import functools
 import operator
@@ -61,7 +61,7 @@ class Type(object):
         ``None`` represents treating the field as just bytes
 
     conversion
-        A input_algorithms spec or a type representing what form the value should take in Python land
+        A delfick_project.norms spec or a type representing what form the value should take in Python land
 
     .. note:: Calling an instance allows us to set ``size_bits`` which is an integer
       representing the number of ``bits`` this field should use.
@@ -231,7 +231,7 @@ class Type(object):
 
     def spec(self, pkt, unpacking=False, transform=True):
         """
-        Return an input_algorithms spec object for normalising values before and
+        Return a delfick_project.norms spec object for normalising values before and
         after packing/unpacking
 
         This spec has the default and override on the class applied to it
@@ -297,7 +297,7 @@ class Type(object):
 
     def _spec(self, pkt, unpacking=False):
         """
-        Return an input_algorithms spec object for normalising values before and
+        Return a delfick_project.norms spec object for normalising values before and
         after packing/unpacking
         """
         spec = self.spec_from_conversion(pkt, unpacking)
@@ -1067,11 +1067,11 @@ class bytes_spec(sb.Spec):
         b = bitarray(endian="little")
         if type(val) is str:
             # We care about when the single quotes aren't here for when we copy output from `lifx unpack` into a `lifx pack`
-            # This is because we say something like `lifx pack -- '{"thing": "<class 'input_algorithms.spec_base.NotSpecified'>"}'
+            # This is because we say something like `lifx pack -- '{"thing": "<class 'delfick_project.norms.spec_base.NotSpecified'>"}'
             # And the quotes cancel each other out
             if val in (
-                "<class input_algorithms.spec_base.NotSpecified>",
-                "<class 'input_algorithms.spec_base.NotSpecified'>",
+                "<class delfick_project.norms.spec_base.NotSpecified>",
+                "<class 'delfick_project.norms.spec_base.NotSpecified'>",
             ):
                 val = ""
 

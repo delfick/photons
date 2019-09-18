@@ -7,8 +7,7 @@ from photons_app.test_helpers import TestCase
 from photons_app.registers import Target
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms.errors import BadSpecValue
-from input_algorithms.meta import Meta
+from delfick_project.norms import Meta, BadSpecValue
 from unittest import mock
 
 describe TestCase, "PhotonsAppSpec":

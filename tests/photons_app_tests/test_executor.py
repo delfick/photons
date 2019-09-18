@@ -6,8 +6,8 @@ from photons_app.collector import Collector
 from photons_app import helpers as hp
 from photons_app.executor import App
 
-from input_algorithms import spec_base as sb
-from delfick_app import App as DelfickApp
+from delfick_project.app import App as DelfickApp
+from delfick_project.norms import sb
 from textwrap import dedent
 from unittest import mock
 import uuid

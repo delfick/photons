@@ -6,7 +6,7 @@ from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import asynctest
 import asyncio

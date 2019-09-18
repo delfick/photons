@@ -3,7 +3,7 @@ from photons_app.errors import PhotonsAppError
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products_registry import capability_for_ids, enum_for_ids
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from collections import defaultdict
 
 plan_by_key = {}

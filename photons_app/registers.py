@@ -6,10 +6,7 @@ These allow addons to be able to register more functionality.
 from photons_app.errors import TargetNotFound, ResolverNotFound
 from photons_app.special import ResolveReferencesFromFile
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, dictobj, Meta
 
 
 class Target(dictobj.Spec):
@@ -35,13 +32,13 @@ class TargetRegister(object):
     """
     A register of target types and concrete instances of those targets.
 
-    Usage is typically in an addon's option_merge hook:
+    Usage is typically in an addon's hook:
 
     .. code-block:: python
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
 
-        @option_merge_addon_hook(post_register=True)
+        @addon_hook(post_register=True)
         def __lifx_post__(collector, **kwargs):
             collector.configuration["target_register"].register_type(
                   "my_amazing_target"
@@ -52,7 +49,7 @@ class TargetRegister(object):
     instantiated target_register.
     """
 
-    # Tell option_merge not to wrap this in a MergedOptions when we get
+    # Tell delfick_project.option_merge not to wrap this in a MergedOptions when we get
     # it from a MergedOptions instance
     _merged_options_formattable = True
 
@@ -71,7 +68,7 @@ class TargetRegister(object):
 
     def type_for(self, name):
         """Given the name of a target, return it's type as a string"""
-        if name is NotSpecified:
+        if name is sb.NotSpecified:
             return None
         if name not in self.targets:
             return None
@@ -79,7 +76,7 @@ class TargetRegister(object):
 
     def desc_for(self, name):
         """Get us the description of a target, given it's name"""
-        if name is NotSpecified:
+        if name is sb.NotSpecified:
             return None
         return getattr(self.targets[name]()[1], "description", "")
 
@@ -142,20 +139,20 @@ class MessagesRegister(object):
 
     These classes hold different message types for a particular protocol.
 
-    Usage is typically in an addon's option_merge hook, via the protocol register:
+    Usage is typically in an addon's hook, via the protocol register:
 
     .. code-block:: python
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
 
-        @option_merge_addon_hook(post_register=True)
+        @addon_hook(post_register=True)
         def __lifx_post__(collector, **kwargs):
             [..]
             prot_register = collector.configuration["protocol_register"]
             prot_register.message_register(9001).add(MyAmazingMessages)
     """
 
-    # Ensure option_merge gives back this instance without wrapping it
+    # Ensure delfick_project.option_merge gives back this instance without wrapping it
     _merged_options_formattable = True
 
     def __init__(self):
@@ -174,13 +171,13 @@ class ProtocolRegister(object):
 
     These classes hold different message types for a particular protocol.
 
-    Usage is typically in an addon's option_merge hook.
+    Usage is typically in an addon's hook.
 
     .. code-block:: python
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
 
-        @option_merge_addon_hook(post_register=True)
+        @addon_hook(post_register=True)
         def __lifx_post__(collector, **kwargs):
             [..]
             prot_register = collector.configuration["protocol_register"]
@@ -218,13 +215,13 @@ class ReferenceResolerRegister(object):
     """
     A register for special reference resolvers
 
-    Usage is typically in an addon's option_merge hook.
+    Usage is typically in an addon's hook.
 
     .. code-block:: python
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
 
-        @option_merge_addon_hook(post_register=True)
+        @addon_hook(post_register=True)
         def __lifx_post__(collector, **kwargs):
             [..]
             register = collector.configuration["reference_resolver_register"]

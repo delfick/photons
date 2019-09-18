@@ -11,8 +11,7 @@ from photons_app.test_helpers import TestCase
 from photons_messages import frame
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock

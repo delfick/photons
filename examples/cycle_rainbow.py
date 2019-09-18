@@ -1,11 +1,11 @@
 from photons_app.special import HardCodedSerials, FoundSerials
 from photons_app.executor import library_setup
 
-from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline, Repeater
+from photons_messages import DeviceMessages
 from photons_colour import Parser
 
-from delfick_logging import setup_logging
+from delfick_project.logging import setup_logging
 import argparse
 import logging
 

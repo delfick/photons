@@ -10,15 +10,13 @@ from photons_control.script import Pipeline
 from photons_themes.theme import Theme
 from photons_colour import Parser
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, dictobj, Meta
+from delfick_project.addons import addon_hook
 from collections import defaultdict
 import logging
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "products_registry"),
         ("lifx.photons", "messages"),

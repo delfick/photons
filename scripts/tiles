@@ -6,14 +6,14 @@ from photons_app.actions import an_action
 from photons_messages import DeviceMessages, TileMessages
 from photons_products_registry import capability_for_ids
 
-from option_merge_addons import option_merge_addon_hook
+from delfick_project.addons import addon_hook
 import logging
 import random
 
 log = logging.getLogger("info")
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "messages"),

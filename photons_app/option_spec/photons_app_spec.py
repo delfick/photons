@@ -9,10 +9,7 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption
 from photons_app import helpers as hp
 
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms import validators
-
+from delfick_project.norms import sb, dictobj, va
 import asyncio
 import logging
 import signal
@@ -132,9 +129,7 @@ class PhotonsAppSpec(object):
     @hp.memoized_property
     def target_name_spec(self):
         """Just needs to be ascii"""
-        return sb.valid_string_spec(
-            validators.no_whitespace(), validators.regexed(r"^[a-zA-Z][a-zA-Z0-9-_\.]*$")
-        )
+        return sb.valid_string_spec(va.no_whitespace(), va.regexed(r"^[a-zA-Z][a-zA-Z0-9-_\.]*$"))
 
     @hp.memoized_property
     def photons_app_spec(self):

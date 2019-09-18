@@ -1,9 +1,9 @@
 from photons_app.errors import PhotonsAppError
 
-from delfick_error import DelfickErrorTestMixin
+from delfick_project.errors import DelfickErrorTestMixin
 from asynctest import TestCase as AsyncTestCase
-from input_algorithms import spec_base as sb
 from contextlib import contextmanager
+from delfick_project.norms import sb
 from collections import defaultdict
 from unittest import TestCase
 from unittest import mock

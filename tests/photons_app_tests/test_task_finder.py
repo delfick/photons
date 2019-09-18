@@ -7,7 +7,7 @@ from photons_app.task_finder import TaskFinder
 from photons_app.actions import all_tasks
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from unittest import mock
 import asynctest
 

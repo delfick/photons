@@ -10,8 +10,7 @@ from photons_app.actions import an_action
 
 from photons_colour import Parser
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 import sys
 
 
@@ -113,7 +112,7 @@ async def attr(collector, target, reference, artifact, **kwargs):
     """
     protocol_register = collector.configuration["protocol_register"]
 
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption(
             "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
                 sys.argv[0]
@@ -143,7 +142,7 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
     """
     protocol_register = collector.configuration["protocol_register"]
 
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption(
             "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
                 sys.argv[0]
@@ -203,7 +202,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     """
     protocol_register = collector.configuration["protocol_register"]
 
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption(
             "Please specify what you want to get\nUsage: {0} <target>:get_attr <reference> <attr_to_get>".format(
                 sys.argv[0]
@@ -241,7 +240,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     """
     protocol_register = collector.configuration["protocol_register"]
 
-    if artifact in (None, "", NotSpecified):
+    if artifact in (None, "", sb.NotSpecified):
         raise BadOption(
             "Please specify what you want to get\nUsage: {0} <target>:set_attr <reference> <attr_to_get> -- '{{<options>}}'".format(
                 sys.argv[0]

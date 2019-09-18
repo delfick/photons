@@ -3,7 +3,7 @@ from photons_app.executor import library_setup
 from photons_control.transform import Transformer
 from photons_control.script import FromGenerator
 
-from delfick_logging import setup_logging
+from delfick_project.logging import setup_logging
 import logging
 import asyncio
 import time

@@ -1,7 +1,7 @@
 from photons_protocol.packets import dictobj
 from photons_protocol.messages import T
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 import binascii
 
 

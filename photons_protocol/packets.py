@@ -11,7 +11,7 @@ Usage looks like:
 
 .. code-block:: python
 
-    from input_algorithms.dictobj import dictobj
+    from delfick_project.norms import dictobj
 
     class MyPacket(dictobj.PacketSpec):
         fields = [
@@ -32,9 +32,7 @@ from photons_protocol.types import Optional, Type as T
 
 from photons_app.errors import ProgrammerError
 
-from input_algorithms.dictobj import dictobj, FieldSpecMetakls
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import dictobj, sb, Meta
 from bitarray import bitarray
 from functools import partial
 import binascii
@@ -113,7 +111,7 @@ class PacketSpecMixin:
     @classmethod
     def spec(kls):
         """
-        Return an ``input_algorithms`` specification that creates an instance
+        Return an ``delfick_project.norms`` specification that creates an instance
         of this class from a dictionary of values
 
         If this is a parent_packet with a group having message_type of 0 then that field
@@ -163,7 +161,7 @@ class PacketSpecMixin:
         This works for groups as well where the values in the fields for that
         group are returned as a dictionary.
 
-        This process will use ``input_algorithms`` to ensure the value you get
+        This process will use ``delfick_project.norms`` to ensure the value you get
         back is normalised. Unless ``do_spec`` is ``False``.
 
         We will also use the type transform unless ``do_transform`` is ``False``.
@@ -329,9 +327,9 @@ class PacketSpecMixin:
     def clone(self, overrides=None):
         """
         Efficiently create a shallow copy of this packet without going
-        through input_algorithms
+        through delfick_project.norms
 
-        The exception is anything in overrides will go through input_algorithms
+        The exception is anything in overrides will go through delfick_project.norms
         """
         clone = self.__class__()
 
@@ -444,7 +442,7 @@ class PacketSpecMixin:
         return kls.spec().normalise(meta, val)
 
 
-class PacketSpecMetaKls(FieldSpecMetakls):
+class PacketSpecMetaKls(dictobj.Field.metaclass):
     """
     Modify the creation of a class to act as a photons packet.
 

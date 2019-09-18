@@ -1,7 +1,7 @@
 from photons_app.actions import an_action
 
-from option_merge_addons import option_merge_addon_hook
-from input_algorithms import spec_base as sb
+from delfick_project.addons import addon_hook
+from delfick_project.norms import sb
 
 # Get us our actions
 import photons_control.attributes  # noqa
@@ -14,7 +14,7 @@ import photons_control.tile  # noqa
 __shortdesc__ = "Tasks and code for control of the devices"
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "messages"),
         ("lifx.photons", "colour"),

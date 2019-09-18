@@ -12,14 +12,9 @@ from photons_app.task_finder import TaskFinder
 
 from photons_messages import protocol_register
 
-from input_algorithms.spec_base import NotSpecified
-from input_algorithms import spec_base as sb
-from input_algorithms.dictobj import dictobj
-from input_algorithms.meta import Meta
-
-from option_merge_addons import Result, Addon, Register, AddonGetter
-from option_merge.collector import Collector
-from option_merge import MergedOptions
+from delfick_project.addons import Result, Addon, Register, AddonGetter
+from delfick_project.option_merge import Collector, MergedOptions
+from delfick_project.norms import sb, dictobj, Meta
 
 from ruamel.yaml import YAML
 import pkg_resources
@@ -32,8 +27,8 @@ log = logging.getLogger("photons_app.collector")
 
 class Collector(Collector):
     """
-    This is based off
-    http://option-merge.readthedocs.io/en/latest/docs/api/collector.html
+    This is based off the delfick project
+    `Collector <https://delfick-project.readthedocs.io/en/latest/api/option_merge/api/collector.html>`_
 
     It overrides the following:
 
@@ -66,7 +61,7 @@ class Collector(Collector):
         the configuration.
 
         We also load in ``__main__`` as if it were a photons_module. This means
-        scripts can use ``option_merge_addon_hook`` and that will be used.
+        scripts can use ``addon_hook`` and that will be used.
 
         We then load all the photons_app modules as specified by the
         ``photons_app.addons`` setting.
@@ -97,7 +92,7 @@ class Collector(Collector):
 
     def find_photons_app_options(self, configuration, args_dict):
         """Return us all the photons_app options"""
-        d = lambda r: {} if r in (None, "", NotSpecified) else r
+        d = lambda r: {} if r in (None, "", sb.NotSpecified) else r
         return MergedOptions.using(
             dict(d(configuration.get("photons_app")).items()),
             dict(d(args_dict.get("photons_app")).items()),
@@ -113,7 +108,7 @@ class Collector(Collector):
             pass
         else:
             if any(
-                hasattr(getattr(__main__, attr, None), "_option_merge_addon_entry")
+                hasattr(getattr(__main__, attr, None), "_delfick_project_addon_entry")
                 for attr in dir(__main__)
             ):
                 working_set = pkg_resources.working_set
@@ -274,16 +269,11 @@ class Collector(Collector):
 
         self.register_converters(
             {
-                (0, ("targets",)): photons_app_spec.targets_spec,
-                (0, ("photons_app",)): photons_app_spec.photons_app_spec,
-                (0, ("target_register",)): photons_app_spec.target_register_spec,
-                (0, ("protocol_register",)): sb.overridden(protocol_register),
-                (
-                    0,
-                    ("reference_resolver_register",),
-                ): photons_app_spec.reference_resolver_register_spec,
+                "targets": photons_app_spec.targets_spec,
+                "photons_app": photons_app_spec.photons_app_spec,
+                "target_register": photons_app_spec.target_register_spec,
+                "protocol_register": sb.overridden(protocol_register),
+                "reference_resolver_register": photons_app_spec.reference_resolver_register_spec,
             },
-            Meta,
-            configuration,
-            sb.NotSpecified,
+            configuration=configuration,
         )

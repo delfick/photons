@@ -12,9 +12,9 @@ Defining actions
     Please see :ref:`photons_app_defining_actions` for more information.
 
 The collector
-    Photons uses the `option_merge <https://option_merge.readthedocs.io>`_
-    library for configuration. This library comes with the collector class,
-    which photons extends.
+    Photons uses
+    `delfick_project.option_merge <https://delfick-project.readthedocs.io/en/latest/api/option_merge/index.html>`_
+    for configuration. This comes with the collector class, which photons extends.
 
     This class is responsible for collecting configuration from multiple sources
     and merging them into ``collector.configuration``.
@@ -33,8 +33,8 @@ Core Error classes
     See :ref:`photons_app_errors`.
 
 The executor
-    We use `Delfick App <https://delfick-app.readthedocs.io>`_ to create the
-    mainline functionality.
+    We use `Delfick Project App <https://delfick-project.readthedocs.io/en/latest/api/app.html>`_
+    to create the mainline functionality.
 
     If you are creating a Photons App, you extend this class to hook into the
     initialization of the program and to modify the interaction with the

@@ -34,20 +34,20 @@ our ``my_script`` file.
 
     from photons_app.actions import an_action
 
-    from option_merge_addons import option_merge_addon_hook
+    from delfick_project.addons import addon_hook
 
     import logging
 
     log = logging.getLogger("my_script")
 
-    @option_merge_addon_hook(extras=[
+    @addon_hook(extras=[
           ("lifx.photons", "transport")
         , ("lifx.photons", "messages")
         ])
     def __lifx__(collector, *args, **kwargs):
         pass
 
-    @option_merge_addon_hook(post_register=True)
+    @addon_hook(post_register=True)
     def __post__(collector, *args, **kwargs):
         # Optionally do something with the collector once all our
         # dependencies are resolved
@@ -71,7 +71,7 @@ they do.
     ``./.lifx/bin/python ./my_script`` so that you are running the script
     with the python in the virtualenv you created when you ran ``./setup_venv``
 
-``option_merge_addon_hook``
+``addon_hook``
     This function registers this module and is used to specify what other
     modules should be loaded.
 
@@ -114,17 +114,17 @@ they do.
 So now, running our app should spit out something like::
 
     $ ./my_script
-    15:11:04 INFO    option_merge.collector Adding configuration from /Users/stephenmoore/.photons_apprc.yml
-    15:11:04 INFO    option_merge.addons Found lifx.photons.__main__ addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.transport addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.protocol addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.transport addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.messages addon
-    15:11:04 INFO    option_merge.addons Found lifx.photons.script addon
-    15:11:04 INFO    option_merge.collector Converting protocol_register
-    15:11:04 INFO    option_merge.collector Converting target_register
-    15:11:04 INFO    option_merge.collector Converting photons_app
-    15:11:04 INFO    option_merge.collector Converting targets
+    15:11:04 INFO    delfick_project.option_merge.collector Adding configuration from /Users/stephenmoore/.photons_apprc.yml
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.__main__ addon
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.transport addon
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.protocol addon
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.transport addon
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.messages addon
+    15:11:04 INFO    delfick_project.addons Found lifx.photons.script addon
+    15:11:04 INFO    delfick_project.option_merge.collector Converting protocol_register
+    15:11:04 INFO    delfick_project.option_merge.collector Converting target_register
+    15:11:04 INFO    delfick_project.option_merge.collector Converting photons_app
+    15:11:04 INFO    delfick_project.option_merge.collector Converting targets
     Do the turn off here
 
 To summarize, we have

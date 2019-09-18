@@ -28,7 +28,7 @@ We define actions by using the ``an_action`` decorator.
 from photons_app.option_spec.task_objs import Task
 from photons_app.errors import PhotonsAppError
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from collections import defaultdict
 from textwrap import dedent
 import itertools

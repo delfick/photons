@@ -123,7 +123,7 @@ functionality on the class:
 
     # Or
 
-    from input_algorithms.meta import Meta
+    from delfick_project.norms import Meta
     pkt = LightMessages.SetLightPower.normalise(Meta.empty(), kwargs)
 
 Doing this will mean that the values are checked at the instantiation of the

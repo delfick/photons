@@ -10,8 +10,7 @@ from photons_tile_paint.font.dice import dice
 
 from photons_themes.canvas import Canvas
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.norms import dictobj, sb
 import random
 import time
 

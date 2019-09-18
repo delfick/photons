@@ -15,9 +15,7 @@ from photons_app.actions import an_action
 
 from photons_messages import TileMessages, TileEffectType, LightMessages
 
-from input_algorithms.errors import BadSpecValue
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import BadSpecValue, sb, Meta
 from collections import defaultdict
 
 default_tile_palette = [

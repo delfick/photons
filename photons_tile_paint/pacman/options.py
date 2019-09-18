@@ -1,7 +1,6 @@
 from photons_tile_paint.options import AnimationOptions
 
-from input_algorithms.dictobj import dictobj
-from input_algorithms import spec_base as sb
+from delfick_project.norms import dictobj, sb
 
 
 class TilePacmanOptions(AnimationOptions):

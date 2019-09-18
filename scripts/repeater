@@ -6,13 +6,13 @@ from photons_app import helpers as hp
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline, Repeater
 
-from option_merge_addons import option_merge_addon_hook
+from delfick_project.addons import addon_hook
 import logging
 
 log = logging.getLogger("repeater")
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "control"),
         ("lifx.photons", "transport"),

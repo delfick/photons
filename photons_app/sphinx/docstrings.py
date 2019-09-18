@@ -1,4 +1,4 @@
-from input_algorithms.dictobj import dictobj
+from delfick_project.norms import dictobj
 
 
 def process_dictobj_signature(app, what, name, obj, options, signature, return_annotation):

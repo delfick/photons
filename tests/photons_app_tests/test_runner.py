@@ -71,12 +71,12 @@ describe TestCase, "run":
             """
         from photons_app.actions import an_action
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
         import asyncio
         import socket
         import sys
 
-        @option_merge_addon_hook()
+        @addon_hook()
         def __lifx__(*args, **kwargs):
             pass
 
@@ -109,11 +109,11 @@ describe TestCase, "run":
 
         expected_stderr = dedent(
             """
-        [^I]+INFO\s+option_merge.collector Adding configuration from .+
-        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
-        [^I]+INFO\s+option_merge.collector Converting photons_app
-        [^I]+INFO\s+option_merge.collector Converting target_register
-        [^I]+INFO\s+option_merge.collector Converting targets
+        [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting target_register
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting targets
         """
         )
 
@@ -125,11 +125,11 @@ describe TestCase, "run":
         from photons_app.errors import PhotonsAppError
         from photons_app.actions import an_action
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
         import socket
         import sys
 
-        @option_merge_addon_hook()
+        @addon_hook()
         def __lifx__(*args, **kwargs):
             pass
 
@@ -161,11 +161,11 @@ describe TestCase, "run":
 
         expected_stderr = dedent(
             """
-        [^I]+INFO\s+option_merge.collector Adding configuration from .+
-        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
-        [^I]+INFO\s+option_merge.collector Converting photons_app
-        [^I]+INFO\s+option_merge.collector Converting target_register
-        [^I]+INFO\s+option_merge.collector Converting targets
+        [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting target_register
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting targets
         """
         )
 
@@ -176,12 +176,12 @@ describe TestCase, "run":
             """
         from photons_app.actions import an_action
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
         import asyncio
         import socket
         import sys
 
-        @option_merge_addon_hook()
+        @addon_hook()
         def __lifx__(*args, **kwargs):
             pass
 
@@ -223,11 +223,11 @@ describe TestCase, "run":
 
         expected_stderr = dedent(
             """
-        [^I]+INFO\s+option_merge.collector Adding configuration from .+
-        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
-        [^I]+INFO\s+option_merge.collector Converting photons_app
-        [^I]+INFO\s+option_merge.collector Converting target_register
-        [^I]+INFO\s+option_merge.collector Converting targets
+        [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting target_register
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting targets
         """
         )
 
@@ -246,12 +246,12 @@ describe TestCase, "run":
             """
         from photons_app.actions import an_action
 
-        from option_merge_addons import option_merge_addon_hook
+        from delfick_project.addons import addon_hook
         import asyncio
         import socket
         import sys
 
-        @option_merge_addon_hook()
+        @addon_hook()
         def __lifx__(*args, **kwargs):
             pass
 
@@ -293,11 +293,11 @@ describe TestCase, "run":
 
         expected_stderr = dedent(
             """
-        [^I]+INFO\s+option_merge.collector Adding configuration from .+
-        [^I]+INFO\s+option_merge.addons Found lifx.photons.__main__ addon
-        [^I]+INFO\s+option_merge.collector Converting photons_app
-        [^I]+INFO\s+option_merge.collector Converting target_register
-        [^I]+INFO\s+option_merge.collector Converting targets
+        [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting target_register
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting targets
         """
         )
 

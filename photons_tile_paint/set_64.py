@@ -11,7 +11,7 @@ from photons_messages.fields import hsbk, Color as ProtocolColor
 from photons_messages import TileMessages
 from photons_protocol.messages import T
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 from bitarray import bitarray
 from lru import LRU
 import functools

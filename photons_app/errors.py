@@ -1,5 +1,6 @@
 """
-Photons makes heavy use of `delfick errors <https://delfick-error.readthedocs.io>`_
+Photons makes heavy use of
+`delfick errors <https://delfick-project.readthedocs.io/en/latest/api/errors.html>`_
 and so should you!
 
 Just base your error classes on ``PhotonsAppError``:
@@ -13,11 +14,12 @@ Just base your error classes on ``PhotonsAppError``:
 
     raise MyAmazingError("The world exploded", info_one=1, info_two=2)
 
-The `delfick_app <https://delfick-app.readthedocs.io>`_ integration will catch
-these errors and display them relatively nicely.
+The `app <https://delfick-project.readthedocs.io/en/latest/api/app.html>`_
+integration will catch these errors and display them relatively nicely.
 """
-from delfick_error import DelfickError, ProgrammerError, UserQuit
-from input_algorithms.errors import BadSpec, BadSpecValue
+from delfick_project.errors import DelfickError, ProgrammerError, UserQuit
+from delfick_project.option_merge import BadOptionFormat
+from delfick_project.norms import BadSpec, BadSpecValue
 
 
 class PhotonsAppError(DelfickError):
@@ -28,6 +30,7 @@ class PhotonsAppError(DelfickError):
 BadSpec = BadSpec
 UserQuit = UserQuit
 BadSpecValue = BadSpecValue
+BadOptionFormat = BadOptionFormat
 ProgrammerError = ProgrammerError
 
 
@@ -37,10 +40,6 @@ class ApplicationCancelled(PhotonsAppError):
 
 class BadConfiguration(PhotonsAppError):
     desc = "Bad configuration"
-
-
-class BadOptionFormat(PhotonsAppError):
-    desc = "Bad option format"
 
 
 class BadTask(PhotonsAppError):

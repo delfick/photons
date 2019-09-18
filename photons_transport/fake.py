@@ -7,8 +7,8 @@ from photons_products_registry import capability_for_ids
 from photons_protocol.messages import Messages
 from photons_protocol.types import Type as T
 
-from input_algorithms import spec_base as sb
 from contextlib import contextmanager
+from delfick_project.norms import sb
 from collections import defaultdict
 from functools import partial
 import binascii

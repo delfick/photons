@@ -6,8 +6,7 @@ from photons_protocol.types import Type as T
 from photons_app.test_helpers import TestCase
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from input_algorithms import spec_base as sb
-from input_algorithms.meta import Meta
+from delfick_project.norms import sb, Meta
 from bitarray import bitarray
 from unittest import mock
 import binascii
@@ -550,7 +549,7 @@ describe TestCase, "Packet attributes":
             assert not hasattr(p, "one")
 
             val = mock.Mock(name="val")
-            with mock.patch("input_algorithms.dictobj.dictobj.__setattr__", dictobj__setattr__):
+            with mock.patch("delfick_project.norms.dictobj.__setattr__", dictobj__setattr__):
                 with mock.patch.object(PacketSpecMixin, "__setitem__", __setitem__):
                     p.one = val
 

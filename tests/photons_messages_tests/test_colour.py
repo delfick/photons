@@ -7,7 +7,7 @@ from photons_messages import LightMessages, Waveform, protocol_register
 from photons_protocol.messages import Messages
 from photons_protocol.types import Optional
 
-from input_algorithms import spec_base as sb
+from delfick_project.norms import sb
 
 describe TestCase, "LightMessages":
 

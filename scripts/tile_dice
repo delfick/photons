@@ -15,10 +15,10 @@ from photons_control.tile import orientations_from
 from photons_tile_paint.font.dice import dice
 from photons_themes.canvas import Canvas
 
-from option_merge_addons import option_merge_addon_hook
+from delfick_project.addons import addon_hook
 
 
-@option_merge_addon_hook(
+@addon_hook(
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "themes"),
