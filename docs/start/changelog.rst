@@ -16,15 +16,15 @@ ChangeLog
          from input_algorithms.meta import Meta
          from option_merge import MergedOptions
 
-      into:
+     into:
 
-      .. code-block:: python
+     .. code-block:: python
 
-         from delfick_project.option_merge import MergedOptions
-         from delfick_project.norms import dictobj, sb, Meta
-         from delfick_project.addons import addon_hook
+        from delfick_project.option_merge import MergedOptions
+        from delfick_project.norms import dictobj, sb, Meta
+        from delfick_project.addons import addon_hook
 
-         NotSpecified = sb.NotSpecified
+        NotSpecified = sb.NotSpecified
 
 0.20.5 - 11 September 2019
    * Fix tile animations
