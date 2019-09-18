@@ -12,7 +12,7 @@ collector = library_setup()
 
 lan_target = collector.configuration["target_register"].resolve("lan")
 
-log = logging.getLogger("cycle_rainbow")
+log = logging.getLogger("scenes")
 
 scenes = [
     {
