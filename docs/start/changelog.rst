@@ -3,6 +3,29 @@
 ChangeLog
 =========
 
+0.21.0 - TBD
+   * Migrated to `delfick_project <https://delfick-project.readthedocs.io/>`_
+   * this essentially means the following imports change from:
+
+     .. code-block:: python
+
+         from option_merge_addons import option_merge_addon_hook
+         from input_algorithms.spec_base import NotSpecified
+         from input_algorithms import spec_base as sb
+         from input_algorithms.dictobj import dictobj
+         from input_algorithms.meta import Meta
+         from option_merge import MergedOptions
+
+      into:
+
+      .. code-block:: python
+
+         from delfick_project.option_merge import MergedOptions
+         from delfick_project.norms import dictobj, sb, Meta
+         from delfick_project.addons import addon_hook
+
+         NotSpecified = sb.NotSpecified
+
 0.20.5 - 11 September 2019
    * Fix tile animations
 
