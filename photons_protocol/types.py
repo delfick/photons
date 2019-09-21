@@ -73,12 +73,9 @@ class Type(object):
     _dynamic = sb.NotSpecified
     _default = sb.NotSpecified
     _override = sb.NotSpecified
-    _many_kls = sb.NotSpecified
-    _many_size = sb.NotSpecified
     _transform = sb.NotSpecified
     _unpack_transform = sb.NotSpecified
 
-    _many = False
     _optional = False
     _allow_float = False
     _version_number = False
@@ -102,13 +99,10 @@ class Type(object):
         result = self.__class__(self.struct_format, self.conversion)
         result.size_bits = size_bits
         result._enum = self._enum
-        result._many = self._many
         result._bitmask = self._bitmask
         result._default = self._default
         result._dynamic = self._dynamic
         result._override = self._override
-        result._many_kls = self._many_kls
-        result._many_size = self._many_size
         result._transform = self._transform
         result._unpack_transform = self._unpack_transform
         result._optional = self._optional
@@ -152,26 +146,6 @@ class Type(object):
         """Set a function that returns what fields make up this one chunk of bytes"""
         res = self.S(self.size_bits)
         res._dynamic = dynamiser
-        return res
-
-    def many(self, manyiser, sizer=sb.NotSpecified):
-        """
-        Set options to convert this field into a list of items
-
-        manyiser is a function that takes in the packet and returns the class to use for the list.
-
-        sizer is either a number, which is the number of bits used by each item in the list
-        or a function that takes in ``(pkt, item)`` and returns the size of bits for that item in the list
-
-        If sizer is not specified, then the length of each item will be the size_bits of the kls returned
-        by manyiser
-
-        We convert the field into a list of instances of that kls.
-        """
-        res = self.S(self.size_bits)
-        res._many = True
-        res._many_kls = manyiser
-        res._many_size = sizer
         return res
 
     def bitmask(self, bitmask):
@@ -303,8 +277,6 @@ class Type(object):
         spec = self.spec_from_conversion(pkt, unpacking)
 
         if spec is not None:
-            if self._many:
-                return self.many_wrapper(spec, pkt, unpacking=unpacking)
             if self._dynamic is sb.NotSpecified:
                 return spec
             else:
@@ -341,10 +313,6 @@ class Type(object):
 
         kls = type("parameters", (dictobj.PacketSpec,), {"fields": list(self._dynamic(pkt))})
         return expand_spec(kls, spec, unpacking)
-
-    def many_wrapper(self, spec, pkt, unpacking=False):
-        """A wrapper to convert to and from list fields"""
-        return many_spec(self._many_kls(pkt), self._many_size, pkt, spec, unpacking)
 
     def make_integer_spec(self, pkt, unpacking):
         """Make an integer spec that respects enum, bitmask and allow_float/version_number"""
@@ -411,95 +379,6 @@ class transform_spec(sb.Spec):
         if val not in (sb.NotSpecified, Optional):
             val = self.do_transform(self.pkt, val)
         return self.spec.normalise(meta, val)
-
-
-class many_spec(sb.Spec):
-    """
-    Expand our list of objects
-
-    We assume the fields are represented as bytes and so return it as such
-    when not unpacking.
-
-    Otherwise we return a list of instances of ``kls``.
-
-    Either by unpacking using ``kls`` if val is bytes, or by instantiating ``kls``
-    with each val if it is a list.
-    """
-
-    def __init__(self, kls, sizer, pkt, spec, unpacking):
-        self.kls = kls
-        self.pkt = pkt
-        self.spec = spec
-        self.sizer = sizer
-        self.unpacking = unpacking
-
-    def normalise(self, meta, val):
-        if self.unpacking:
-            return self.unpack(meta, val)
-        else:
-            return self.pack(meta, val)
-
-    def unpack(self, meta, val):
-        if type(val) in (bitarray, bytes):
-            res = []
-            bts = self.spec.normalise(meta, val)
-
-            i = -1
-            while True:
-                i += 1
-                nxt = self.kls.unpack(bts)
-                res.append(nxt)
-
-                size = len(self.bytes_spec_for(nxt).normalise(meta.indexed_at(i), bts))
-                bts = bts[size:]
-                if not bts:
-                    break
-
-            return res
-        elif isinstance(val, list):
-            return val
-        else:
-            raise BadSpecValue(
-                "Expected to unpack bytes", found=val, transforming_into_list_of=self.kls
-            )
-
-    def pack(self, meta, val):
-        if type(val) not in (bytes, bitarray):
-            try:
-                if type(val) is not list:
-                    raise BadSpecValue("Not a list")
-
-                items = sb.listof(sb.dictionary_spec()).normalise(meta, val)
-            except BadSpecValue as error:
-                raise BadSpecValue(
-                    "Sorry, many fields only supports a list of dictionary of values", error=error
-                )
-            else:
-                res = []
-                for i, v in enumerate(items):
-                    nxt = self.kls(**v)
-                    spec = self.bytes_spec_for(nxt)
-                    if hasattr(self.kls.Meta, "cache"):
-                        items = tuple(sorted(nxt.items()))
-                        if items not in self.kls.Meta.cache:
-                            self.kls.Meta.cache[items] = nxt.pack()
-                        packd = self.kls.Meta.cache[items]
-                    else:
-                        packd = nxt.pack()
-                    res.append(spec.normalise(meta.indexed_at(i), packd))
-                val = functools.reduce(operator.add, res)
-
-        # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
-        return self.spec.normalise(meta, val)
-
-    def bytes_spec_for(self, item):
-        if self.sizer is sb.NotSpecified:
-            size = self.kls.size_bits(item)
-        elif callable(self.sizer):
-            size = self.sizer(self.pkt, item)
-        else:
-            size = self.sizer
-        return bytes_spec(self.pkt, size)
 
 
 class expand_spec(sb.Spec):

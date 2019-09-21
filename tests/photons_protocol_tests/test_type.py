@@ -80,13 +80,10 @@ describe TestCase, "Type":
             it "creates a new object and passes on 'private' attributes":
                 field_names = (
                     "_enum",
-                    "_many",
                     "_bitmask",
                     "_dynamic",
                     "_default",
                     "_override",
-                    "_many_kls",
-                    "_many_size",
                     "_transform",
                     "_unpack_transform",
                     "_allow_callable",
@@ -195,14 +192,6 @@ describe TestCase, "Type":
                 with self.clone() as (res, setd):
                     self.assertIs(self.t.enum(em, allow_unknown=allow_unknown), res)
                 self.assertEqual(setd, {"_enum": em, "_unknown_enum_values": allow_unknown})
-
-        describe "many":
-            it "sets _many_kls and _many_size to the values passed in":
-                mn = mock.Mock(name="manyiser")
-                ms = mock.Mock(name="sizer")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.many(mn, ms), res)
-                self.assertEqual(setd, {"_many_kls": mn, "_many_size": ms, "_many": True})
 
         describe "dynamic":
             it "sets _dynamic to the value passed in":
@@ -480,7 +469,7 @@ describe TestCase, "Type":
             self.pkt = mock.Mock(name="pkt")
             self.unpacking = mock.Mock(name="unpacking")
 
-        it "returns spec as is if found one and no _dynamic and no _many":
+        it "returns spec as is if found one and no _dynamic":
             self.assertIs(self.t._dynamic, sb.NotSpecified)
 
             spec = mock.Mock(name="spec")
@@ -491,7 +480,7 @@ describe TestCase, "Type":
 
             spec_from_conversion.assert_called_once_with(self.pkt, self.unpacking)
 
-        it "returns dynamic_wraper if found one and _dynamic and no _many":
+        it "returns dynamic_wraper if found one and _dynamic":
             dynamiser = mock.Mock(name="dynamiser")
             t = self.t.dynamic(dynamiser)
 
@@ -507,24 +496,6 @@ describe TestCase, "Type":
 
             spec_from_conversion.assert_called_once_with(self.pkt, self.unpacking)
             dynamic_wrapper.assert_called_once_with(spec, self.pkt, unpacking=self.unpacking)
-
-        it "returns many_wraper if found one and _many":
-            manyiser = mock.Mock(name="manyiser")
-            sizer = mock.Mock(name="sizer")
-            t = self.t.many(manyiser, sizer)
-
-            res = mock.Mock(name="res")
-            many_wrapper = mock.Mock(name="many_wrapper", return_value=res)
-
-            spec = mock.Mock(name="spec")
-            spec_from_conversion = mock.Mock(name="spec_from_conversion", return_value=spec)
-
-            with mock.patch.object(t, "spec_from_conversion", spec_from_conversion):
-                with mock.patch.object(t, "many_wrapper", many_wrapper):
-                    self.assertIs(t._spec(self.pkt, unpacking=self.unpacking), res)
-
-            spec_from_conversion.assert_called_once_with(self.pkt, self.unpacking)
-            many_wrapper.assert_called_once_with(spec, self.pkt, unpacking=self.unpacking)
 
         it "complains if it can't find a spec for the conversion":
             spec_from_conversion = mock.Mock(name="spec_from_conversion", return_value=None)
