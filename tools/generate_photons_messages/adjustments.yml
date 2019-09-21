@@ -255,7 +255,7 @@ changes:
 
   LightHsbk:
     rename: hsbk
-    many_options:
+    multi_options:
       name: Color
       cache_amount: 8000
     fields:
@@ -386,7 +386,7 @@ changes:
         rename: zone_index
 
   TileStateDevice:
-    many_options:
+    multi_options:
       name: Tile
 
   TileGet64:

@@ -234,7 +234,7 @@ class MultiZoneMessages(Messages):
     StateMultiZone = msg(506
         , ("zones_count", T.Uint8)
         , ("zone_index", T.Uint8)
-        , ("colors", T.Bytes(64 * 8).many(lambda pkt: fields.Color))
+        , ("colors", T.Bytes(64).multiple(8, kls=fields.Color))
         )
 
     GetMultiZoneEffect = msg(507)
@@ -250,7 +250,7 @@ class MultiZoneMessages(Messages):
         , ("apply", T.Uint8.enum(enums.MultiZoneExtendedApplicationRequest).default(enums.MultiZoneExtendedApplicationRequest.APPLY))
         , ("zone_index", T.Uint16)
         , ("colors_count", T.Uint8)
-        , ("colors", T.Bytes(64 * 82).many(lambda pkt: fields.Color))
+        , ("colors", T.Bytes(64).multiple(82, kls=fields.Color))
         )
 
     GetExtendedColorZones = msg(511)
@@ -259,7 +259,7 @@ class MultiZoneMessages(Messages):
         , ("zones_count", T.Uint16)
         , ("zone_index", T.Uint16)
         , ("colors_count", T.Uint8)
-        , ("colors", T.Bytes(64 * 82).many(lambda pkt: fields.Color))
+        , ("colors", T.Bytes(64).multiple(82, kls=fields.Color))
         )
 
 ########################
@@ -271,7 +271,7 @@ class TileMessages(Messages):
 
     StateDeviceChain = msg(702
         , ("start_index", T.Uint8)
-        , ("tile_devices", T.Bytes(440 * 16).many(lambda pkt: fields.Tile))
+        , ("tile_devices", T.Bytes(440).multiple(16, kls=fields.Tile))
         , ("tile_devices_count", T.Uint8)
         )
 
@@ -296,7 +296,7 @@ class TileMessages(Messages):
     State64 = msg(711
         , ("tile_index", T.Uint8)
         , *fields.tile_buffer_rect
-        , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
+        , ("colors", T.Bytes(64).multiple(64, kls=fields.Color))
         )
 
     Set64 = msg(715
@@ -304,7 +304,7 @@ class TileMessages(Messages):
         , ("length", T.Uint8)
         , *fields.tile_buffer_rect
         , ("duration", fields.duration_type)
-        , ("colors", T.Bytes(64 * 64).many(lambda pkt: fields.Color))
+        , ("colors", T.Bytes(64).multiple(64, kls=fields.Color))
         )
 
     GetTileEffect = msg(718

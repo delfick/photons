@@ -14,7 +14,7 @@ env = {
 
 from venvstarter import ignite
 ignite(__file__, "generate_photons_messages"
-    , deps = ["lifx-photons-messages-generator==0.5.4"]
+    , deps = ["lifx-photons-messages-generator==0.6.1"]
     , min_python_version = 3.6
     , env = env
     )

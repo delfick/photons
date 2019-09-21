@@ -129,7 +129,7 @@ tile_effect_settings = [
     , ("reserved7", T.Reserved(32))
     , ("parameters", T.Bytes(32 * 8).dynamic(lambda pkt: tile_effect_parameters_for(pkt.type)))
     , ("palette_count", T.Uint8)
-    , ("palette", T.Bytes(64 * 16).many(lambda pkt: Color))
+    , ("palette", T.Bytes(64).multiple(16, kls=Color))
     ]
 
 # fmt: on
