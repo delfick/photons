@@ -329,13 +329,13 @@ class ZonesPlan(Plan):
             if pkt | MultiZoneMessages.StateMultiZone:
                 for i, color in enumerate(pkt.colors):
                     if len(self.staging) < pkt.zones_count:
-                        self.staging.append((pkt.zone_index + i, color.as_dict()))
+                        self.staging.append((pkt.zone_index + i, color))
                 return len(self.staging) == pkt.zones_count
 
             elif pkt | MultiZoneMessages.StateExtendedColorZones:
                 for i, color in enumerate(pkt.colors[: pkt.colors_count]):
                     if len(self.staging) < pkt.zones_count:
-                        self.staging.append((pkt.zone_index + i, color.as_dict()))
+                        self.staging.append((pkt.zone_index + i, color))
                 return len(self.staging) == pkt.zones_count
 
         async def info(self):

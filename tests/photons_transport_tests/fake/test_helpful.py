@@ -92,7 +92,7 @@ describe TestCase, "pktkeys":
                 "parameter5": "00000000",
                 "parameter6": "00000000",
                 "parameter7": "00000000",
-                "speed_direction": 0,
+                "speed_direction": "<Direction.RIGHT: 0>",
             },
             "reserved6": "6865",
             "reserved7": "00000000",

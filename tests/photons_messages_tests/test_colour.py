@@ -172,6 +172,6 @@ describe TestCase, "LightMessages":
         self.assertEqual(msg.payload.actual("kelvin"), 2500)
         self.assertEqual(msg.payload.actual("power"), 65535)
         self.assertEqual(
-            msg.payload.actual("label"),
+            msg.payload.actual("label").tobytes(),
             b"den\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
         )

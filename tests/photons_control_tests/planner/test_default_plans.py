@@ -379,18 +379,12 @@ describe AsyncTestCase, "Default Plans":
             expected = {
                 light1.serial: (True, {"zones": Skip}),
                 light2.serial: (True, {"zones": Skip}),
-                striplcm1.serial: (
-                    True,
-                    {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)]},
-                ),
+                striplcm1.serial: (True, {"zones": [(i, c) for i, c in enumerate(zones1)]}),
                 striplcm2noextended.serial: (
                     True,
-                    {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)]},
+                    {"zones": [(i, c) for i, c in enumerate(zones2)]},
                 ),
-                striplcm2extended.serial: (
-                    True,
-                    {"zones": [(i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)]},
-                ),
+                striplcm2extended.serial: (True, {"zones": [(i, c) for i, c in enumerate(zones3)]}),
             }
             self.assertEqual(got, expected)
 
@@ -452,10 +446,7 @@ describe AsyncTestCase, "Default Plans":
                 "type": TileEffectType.FLAME,
                 "options": {
                     "duration": 1,
-                    "palette": [
-                        {"brightness": 1.0, "hue": 120.0, "kelvin": 3500, "saturation": 1.0},
-                        {"brightness": 1.0, "hue": 360.0, "kelvin": 3500, "saturation": 1.0},
-                    ],
+                    "palette": [chp.Color(120, 1, 1, 3500), chp.Color(360, 1, 1, 3500)],
                     "speed": 10.0,
                     "instanceid": mock.ANY,
                 },

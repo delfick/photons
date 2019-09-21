@@ -173,7 +173,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
         for i, state in sorted(states):
             print("    Tile {0}".format(i))
             for index, color in enumerate(pkt.colors):
-                print("        color {0}".format(index), repr(color))
+                print("        color {0:<2d}".format(index), repr(color))
             print("")
 
 

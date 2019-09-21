@@ -21,6 +21,7 @@ from photons_transport.fake import FakeDevice
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
+
 zeroColor = chp.Color(0, 0, 0, 3500)
 zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [chp.Color(90 - i, 1, 1, 3500) for i in range(6)]
@@ -114,29 +115,19 @@ describe AsyncTestCase, "SetZonesPlan":
         assert all(msg | MultiZoneMessages.SetColorZones for msg in plan.set_color_old)
         assert plan.set_color_new | MultiZoneMessages.SetExtendedColorZones
 
-        colorRed = {"hue": 0.0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-        colorBlue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-        colorHSBK = {
-            "hue": 77.99862668802929,
-            "saturation": 0.0,
-            "brightness": 0.49999237048905165,
-            "kelvin": 3500,
-        }
-        colorHEX = {
-            "hue": 200.39917601281758,
-            "saturation": 0.5882200350957504,
-            "brightness": 0.3333333333333333,
-            "kelvin": 3500,
-        }
+        colorRed = chp.Color(0, 1, 1, 3500)
+        colorBlue = chp.Color(250, 1, 1, 3500)
+        colorHSBK = chp.Color(78, 0, 0.5, 3500)
+        colorHEX = chp.Color(200.39917601281758, 0.5882200350957504, 0.3333333333333333, 3500)
 
-        hue100 = 99.9990844586862
-        half = 0.49999237048905165
+        hue100 = chp.Color(100, 0, 0, 3500).hue
+        half = chp.Color(0, 0.5, 0, 3500).saturation
 
         expected_old = [
-            {"start_index": 0, "end_index": 9, **colorRed},
-            {"start_index": 10, "end_index": 12, **colorBlue},
-            {"start_index": 13, "end_index": 17, **colorHSBK},
-            {"start_index": 18, "end_index": 19, **colorHEX},
+            {"start_index": 0, "end_index": 9, **colorRed.as_dict()},
+            {"start_index": 10, "end_index": 12, **colorBlue.as_dict()},
+            {"start_index": 13, "end_index": 17, **colorHSBK.as_dict()},
+            {"start_index": 18, "end_index": 19, **colorHEX.as_dict()},
             {
                 "start_index": 20,
                 "end_index": 20,
@@ -222,11 +213,11 @@ describe AsyncTestCase, "SetZonesPlan":
         self.assertEqual(len(plan.set_color_old), len(expected_old))
         for e, o in zip(expected_old, plan.set_color_old):
             for k, v in e.items():
-                self.assertEqual(v, o[k])
+                self.assertAlmostEqual(v, o[k])
 
         def hsbk(*args, **kwargs):
             h, s, b, k = Parser.hsbk(*args, **kwargs)
-            return {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
+            return chp.Color(h, s, b, k)
 
         colorRed = hsbk("red", overrides={"brightness": 1.0, "kelvin": 3500})
         colorBlue = hsbk("blue", overrides={"brightness": 1.0, "kelvin": 3500})
@@ -236,68 +227,78 @@ describe AsyncTestCase, "SetZonesPlan":
         self.maxDiff = None
         expected_new = [colorRed] * 10 + [colorBlue] * 3 + [colorHSBK] * 5 + [colorHEX] * 2
         for _ in range(2):
-            expected_new.append({"hue": 100, "saturation": 0, "brightness": 1, "kelvin": 3500})
-            expected_new.append({"hue": 100, "saturation": 0.5, "brightness": 1, "kelvin": 3500})
-            expected_new.append({"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 3500})
-            expected_new.append({"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000})
-            expected_new.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0})
+            expected_new.append(chp.Color(100, 0, 1, 3500))
+            expected_new.append(chp.Color(100, 0.5, 1, 3500))
+            expected_new.append(chp.Color(100, 0.5, 0.5, 3500))
+            expected_new.append(chp.Color(100, 0.5, 0.5, 9000))
+            expected_new.append(chp.Color(0, 0, 0, 0))
 
-        self.assertEqual(plan.set_color_new.colors, expected_new)
-        self.assertEqual(plan.set_color_new.zone_index, 0)
-        self.assertEqual(plan.set_color_new.colors_count, len(expected_new))
+        nw = plan.set_color_new
+        self.assertEqual(nw.colors_count, len(expected_new), nw)
+
+        for i, (c, n) in enumerate(zip(nw.colors, expected_new)):
+            for k in n:
+                self.assertAlmostEqual(c[k], n[k], 6, f"{i}.{n}")
+        self.assertEqual(nw.zone_index, 0)
 
     async it "can overrides hue":
         plan = SetZonesPlan(self.specifier, overrides={"hue": 1})
 
+        expected = chp.Color(1, 0, 0, 3500).hue
+
         for o in plan.set_color_old:
-            self.assertEqual(o["hue"], 0.9997711146715496)
+            self.assertEqual(o.hue, expected)
 
         self.assertEqual(plan.set_color_new.colors_count, 30)
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i]["hue"], 1)
+            self.assertEqual(plan.set_color_new.colors[i].hue, expected)
 
     async it "can overrides saturation":
         plan = SetZonesPlan(self.specifier, overrides={"saturation": 0.3})
 
+        expected = chp.Color(0, 0.3, 0, 3500).saturation
+
         for o in plan.set_color_old:
-            self.assertEqual(o["saturation"], 0.29999237048905164)
+            self.assertEqual(o.saturation, expected)
 
         self.assertEqual(plan.set_color_new.colors_count, 30)
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i]["saturation"], 0.3)
+            self.assertEqual(plan.set_color_new.colors[i].saturation, expected)
 
     async it "can overrides brightness":
         plan = SetZonesPlan(self.specifier, overrides={"brightness": 0.6})
 
+        expected = chp.Color(0, 0, 0.6, 3500).brightness
+
         for o in plan.set_color_old:
-            self.assertEqual(o["brightness"], 0.6)
+            self.assertEqual(o.brightness, expected)
 
         self.assertEqual(plan.set_color_new.colors_count, 30)
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i]["brightness"], 0.6)
+            self.assertEqual(plan.set_color_new.colors[i].brightness, expected)
 
     async it "can overrides kelvin":
         plan = SetZonesPlan(self.specifier, overrides={"kelvin": 8000})
 
         for o in plan.set_color_old:
-            self.assertEqual(o["kelvin"], 8000)
+            self.assertEqual(o.kelvin, 8000)
 
         self.assertEqual(plan.set_color_new.colors_count, 30)
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i]["kelvin"], 8000)
+            self.assertEqual(plan.set_color_new.colors[i].kelvin, 8000)
 
     async it "can override duration":
         plan = SetZonesPlan(self.specifier)
 
         for o in plan.set_color_old:
-            self.assertEqual(o["duration"], 1)
+            self.assertEqual(o.duration, 1)
 
         self.assertEqual(plan.set_color_new.duration, 1)
 
         plan = SetZonesPlan(self.specifier, duration=20)
 
         for o in plan.set_color_old:
-            self.assertEqual(o["duration"], 20)
+            self.assertEqual(o.duration, 20)
 
         self.assertEqual(plan.set_color_new.duration, 20)
 
@@ -483,15 +484,9 @@ describe AsyncTestCase, "Multizone helpers":
             self.assertEqual(
                 got,
                 {
-                    striplcm1.serial: [
-                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones1)
-                    ],
-                    striplcm2noextended.serial: [
-                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones2)
-                    ],
-                    striplcm2extended.serial: [
-                        (i, chp.HSBKClose(z.as_dict())) for i, z in enumerate(zones3)
-                    ],
+                    striplcm1.serial: [(i, c) for i, c in enumerate(zones1)],
+                    striplcm2noextended.serial: [(i, c) for i, c in enumerate(zones2)],
+                    striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
                 },
             )
 
@@ -557,8 +552,8 @@ describe AsyncTestCase, "Multizone helpers":
             got = await runner.target.script(msg).run_with_all(runner.serials)
             self.assertEqual(got, [])
 
-            red = {"hue": 0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            blue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
+            red = chp.Color(0, 1, 1, 3500)
+            blue = chp.Color(250, 1, 1, 3500)
             self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
             self.assertEqual(
                 striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4
@@ -639,17 +634,12 @@ describe AsyncTestCase, "Multizone helpers":
             got = await runner.target.script([msg, msg2]).run_with_all(None)
             self.assertEqual(got, [])
 
-            red = {"hue": 0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            blue = {"hue": 249.9977111467155, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
+            red = chp.Color(0, 1, 1, 3500)
+            blue = chp.Color(250, 1, 1, 3500)
             self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
 
-            green = {"hue": 120.0, "saturation": 1.0, "brightness": 1.0, "kelvin": 3500}
-            yellow = {
-                "hue": 59.997253376058595,
-                "saturation": 1.0,
-                "brightness": 1.0,
-                "kelvin": 3500,
-            }
+            green = chp.Color(120, 1, 1, 3500)
+            yellow = chp.Color(60, 1, 1, 3500)
             self.assertEqual(
                 striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4
             )

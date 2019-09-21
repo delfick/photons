@@ -9,6 +9,7 @@ from photons_messages import (
     MultiZoneEffectType,
     TileEffectType,
     protocol_register,
+    fields,
 )
 from photons_products_registry import (
     capability_for_ids,
@@ -27,41 +28,8 @@ import asyncio
 log = logging.getLogger("photons_control.test_helpers")
 
 
-class HSBKClose:
-    """
-    Used to compare hsbk dictionaries without caring too much about complete accuracy
-    """
-
-    def __init__(self, data):
-        self.data = data
-
-    def __repr__(self):
-        return repr(self.data)
-
-    def __eq__(self, other):
-        if any(k not in other for k in self.data):
-            return False
-        if any(k not in self.data for k in other):
-            return False
-
-        for k in other:
-            diff = abs(other[k] - self.data[k])
-            precision = 1 if k in ("hue", "kelvin") else 0.1
-            if diff > precision:
-                return False
-
-        return True
-
-
-class Color(dictobj):
-    fields = ["hue", "saturation", "brightness", "kelvin"]
-
-
-def TColor(hue, saturation, brightness, kelvin):
-    hue = int(hue / 360 * 65535) / 65535 * 360
-    saturation = int(saturation * 65535) / 65535
-    brightness = int(brightness * 65535) / 65535
-    return Color(hue, saturation, brightness, kelvin)
+def Color(hue, saturation, brightness, kelvin):
+    return fields.Color(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
 
 
 class LightStateResponder(Responder):
