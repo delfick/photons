@@ -9,6 +9,9 @@ import struct
 
 def val_to_bitarray(val, doing):
     """Convert a value into a bitarray"""
+    if val is sb.NotSpecified:
+        val = b""
+
     if type(val) is bitarray:
         return val
 
@@ -37,7 +40,7 @@ class BitarraySlice(dictobj):
         fmt = typ.struct_format
 
         if fmt is None:
-            return val.tobytes()
+            return val
 
         if fmt is bool and self.size_bits == 1:
             return False if val.to01() == "0" else True
@@ -155,7 +158,24 @@ class PacketPacking(object):
             if callable(size_bits):
                 size_bits = size_bits(pkt)
             group = pkt.Meta.name_to_group.get(name, pkt.__class__.__name__)
-            yield FieldInfo(name, typ, val, size_bits, group)
+
+            if not typ._multiple:
+                yield FieldInfo(name, typ, val, size_bits, group)
+            else:
+                if not isinstance(val, list):
+                    raise BadConversion("Expected field to be a list", name=name, val=type(val))
+
+                number = typ._multiple
+                if callable(number):
+                    number = number(pkt)
+
+                if len(val) != number:
+                    raise BadConversion(
+                        f"Expected correct number of items", name=name, found=len(val), want=number
+                    )
+
+                for v in val:
+                    yield FieldInfo(name, typ, v, size_bits, group)
 
     @classmethod
     def pkt_from_bitarray(kls, pkt_kls, value):
@@ -163,14 +183,35 @@ class PacketPacking(object):
         final = pkt_kls()
 
         for name, typ in pkt_kls.Meta.all_field_types:
-            size_bits = typ.size_bits
-            if callable(size_bits):
-                size_bits = size_bits(final)
+            single_size_bits = typ.size_bits
+            if callable(single_size_bits):
+                single_size_bits = single_size_bits(final)
+
+            multiple = typ._multiple
+
+            size_bits = single_size_bits
+            if multiple:
+                if callable(multiple):
+                    multiple = multiple(final)
+                size_bits *= multiple
+
             val = value[i : i + size_bits]
             i += size_bits
-            info = BitarraySlice(name, typ, val, size_bits, pkt_kls.__name__)
-            dictobj.__setitem__(final, info.name, info.unpackd)
 
+            if multiple:
+                if typ.struct_format:
+                    res = []
+                    j = 0
+                    for _ in range(multiple):
+                        v = val[j : j + single_size_bits]
+                        j += single_size_bits
+                        info = BitarraySlice(name, typ, v, single_size_bits, pkt_kls.__name__)
+                        res.append(info.unpackd)
+                    val = res
+                final[name] = val
+            else:
+                info = BitarraySlice(name, typ, val, size_bits, pkt_kls.__name__)
+                dictobj.__setitem__(final, info.name, info.unpackd)
         return final, i
 
     @classmethod

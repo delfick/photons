@@ -100,7 +100,13 @@ class MessagesMixin:
         Then unpack the payload on pkt and set on the new instance of PacketKls
         """
         result = PacketKls()
-        for key, val in pkt.items():
+
+        if hasattr(pkt, "actual_items"):
+            items = pkt.actual_items()
+        else:
+            items = pkt.items()
+
+        for key, val in items:
             if key != "payload":
                 dictobj.__setattr__(result, key, val)
 

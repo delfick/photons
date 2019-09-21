@@ -145,7 +145,9 @@ describe TestCase, "Packet attributes":
                 fields = [("g", G)]
 
             g = P(two=3).g
-            self.assertEqual(sorted(g.items()), sorted([("one", True), ("two", 3), ("three", 4)]))
+            self.assertEqual(
+                sorted(g.actual_items()), sorted([("one", True), ("two", 3), ("three", 4)])
+            )
             self.assertEqual(type(g), G)
 
         it "does not use getitem_spec if do_spec is False":
@@ -587,9 +589,9 @@ describe TestCase, "Packet attributes":
 
             p = P()
 
-            self.assertEqual(list(p.items()), [("one", sb.NotSpecified)])
+            self.assertEqual(list(p.actual_items()), [("one", sb.NotSpecified)])
             p["g"] = Initial
-            self.assertEqual(list(p.items()), [("one", sb.NotSpecified)])
+            self.assertEqual(list(p.actual_items()), [("one", sb.NotSpecified)])
 
         it "uses _set_group_item if key is a group and value is not Initial":
             val = mock.Mock(name="val")
@@ -604,12 +606,12 @@ describe TestCase, "Packet attributes":
 
             _set_group_item = mock.Mock(name="_set_group_item")
 
-            self.assertEqual(list(p.items()), [("one", sb.NotSpecified)])
+            self.assertEqual(list(p.actual_items()), [("one", sb.NotSpecified)])
             with mock.patch.object(dictobj.PacketSpec, "_set_group_item", _set_group_item):
                 p["g"] = val
 
             _set_group_item.assert_called_once_with("g", val)
-            self.assertEqual(list(p.items()), [("one", sb.NotSpecified)])
+            self.assertEqual(list(p.actual_items()), [("one", sb.NotSpecified)])
 
         describe "transformation":
             before_each:
@@ -637,14 +639,14 @@ describe TestCase, "Packet attributes":
                 p = self.P()
                 p["two"] = val
 
-                self.assertEqual(list(p.items()), [("one", sb.NotSpecified), ("two", val)])
+                self.assertEqual(list(p.actual_items()), [("one", sb.NotSpecified), ("two", val)])
 
             it "does no transformation if the val is sb.NotSpecified":
                 p = self.P()
                 p["one"] = sb.NotSpecified
 
                 self.assertEqual(
-                    list(p.items()), [("one", sb.NotSpecified), ("two", sb.NotSpecified)]
+                    list(p.actual_items()), [("one", sb.NotSpecified), ("two", sb.NotSpecified)]
                 )
                 self.assertEqual(len(self.pack_t.mock_calls), 0)
                 self.assertEqual(len(self.unpack_t.mock_calls), 0)
@@ -653,7 +655,9 @@ describe TestCase, "Packet attributes":
                 p = self.P()
                 p["one"] = Optional
 
-                self.assertEqual(list(p.items()), [("one", Optional), ("two", sb.NotSpecified)])
+                self.assertEqual(
+                    list(p.actual_items()), [("one", Optional), ("two", sb.NotSpecified)]
+                )
                 self.assertEqual(len(self.pack_t.mock_calls), 0)
                 self.assertEqual(len(self.unpack_t.mock_calls), 0)
 
@@ -662,7 +666,7 @@ describe TestCase, "Packet attributes":
                 p["one"] = self.for_user
 
                 self.assertEqual(
-                    list(p.items()), [("one", self.for_packing), ("two", sb.NotSpecified)]
+                    list(p.actual_items()), [("one", self.for_packing), ("two", sb.NotSpecified)]
                 )
                 self.pack_t.assert_called_once_with(p, self.for_user)
                 self.assertEqual(len(self.unpack_t.mock_calls), 0)
@@ -723,11 +727,12 @@ describe TestCase, "Packet attributes":
 
             it "sets all the fields in that group as NotSpecified":
                 p = self.P(one="wat", two=8)
-                self.assertEqual(sorted(p.items()), sorted([("one", "wat"), ("two", 8)]))
+                self.assertEqual(sorted(p.actual_items()), sorted([("one", "wat"), ("two", 8)]))
 
                 p["g"] = sb.NotSpecified
                 self.assertEqual(
-                    sorted(p.items()), sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)])
+                    sorted(p.actual_items()),
+                    sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)]),
                 )
 
         describe "setting a group from an instance of that group":
@@ -764,7 +769,7 @@ describe TestCase, "Packet attributes":
                 self.assertEqual(len(unpack_t.mock_calls), 0)
 
                 self.assertEqual(
-                    sorted(p.items()),
+                    sorted(p.actual_items()),
                     sorted(
                         [
                             ("one", sb.NotSpecified),
@@ -781,7 +786,7 @@ describe TestCase, "Packet attributes":
                 self.assertEqual(len(unpack_t.mock_calls), 0)
 
                 self.assertEqual(
-                    sorted(p.items()),
+                    sorted(p.actual_items()),
                     sorted(
                         [
                             ("one", for_packing),
@@ -830,12 +835,13 @@ describe TestCase, "Packet attributes":
 
                 p = self.P()
                 self.assertEqual(
-                    sorted(p.items()), sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)])
+                    sorted(p.actual_items()),
+                    sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)]),
                 )
 
                 p["g"] = val
                 self.assertEqual(
-                    sorted(p.items()), sorted([("one", self.for_packing), ("two", "d073d5")])
+                    sorted(p.actual_items()), sorted([("one", self.for_packing), ("two", "d073d5")])
                 )
 
                 self.assertEqual(p.one, self.for_user)

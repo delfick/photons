@@ -18,8 +18,6 @@ from photons_app import helpers as hp
 
 from delfick_project.norms import sb
 from bitarray import bitarray
-import functools
-import operator
 import binascii
 import logging
 import json
@@ -76,8 +74,10 @@ class Type(object):
     _transform = sb.NotSpecified
     _unpack_transform = sb.NotSpecified
 
+    _multiple = False
     _optional = False
     _allow_float = False
+    _multiple_kls = False
     _version_number = False
     _allow_callable = False
     _unknown_enum_values = False
@@ -102,13 +102,15 @@ class Type(object):
         result._bitmask = self._bitmask
         result._default = self._default
         result._dynamic = self._dynamic
+        result._multiple = self._multiple
         result._override = self._override
-        result._transform = self._transform
-        result._unpack_transform = self._unpack_transform
         result._optional = self._optional
+        result._transform = self._transform
         result._allow_float = self._allow_float
+        result._multiple_kls = self._multiple_kls
         result._version_number = self._version_number
         result._allow_callable = self._allow_callable
+        result._unpack_transform = self._unpack_transform
         result._unknown_enum_values = self._unknown_enum_values
 
         result.original_size = getattr(self, "original_size", size_bits)
@@ -146,6 +148,12 @@ class Type(object):
         """Set a function that returns what fields make up this one chunk of bytes"""
         res = self.S(self.size_bits)
         res._dynamic = dynamiser
+        return res
+
+    def multiple(self, multiple, kls=None):
+        res = self.S(self.size_bits)
+        res._multiple = multiple
+        res._multiple_kls = kls
         return res
 
     def bitmask(self, bitmask):
@@ -203,7 +211,7 @@ class Type(object):
             else:
                 setattr(kls, name, kls.t(name, fmt, conversion))
 
-    def spec(self, pkt, unpacking=False, transform=True):
+    def spec(self, pkt, unpacking=False, transform=True, multiple=True):
         """
         Return a delfick_project.norms spec object for normalising values before and
         after packing/unpacking
@@ -247,16 +255,19 @@ class Type(object):
         if self._allow_callable:
             spec = callable_spec(spec)
 
-        if self._override is not sb.NotSpecified:
-            return overridden(self._override, pkt)
+        elif self._override is not sb.NotSpecified:
+            spec = overridden(self._override, pkt)
 
-        if self._default is not sb.NotSpecified:
-            return defaulted(spec, self._default, pkt)
+        elif self._default is not sb.NotSpecified:
+            spec = defaulted(spec, self._default, pkt)
 
-        if self._optional:
-            return optional(spec)
+        elif self._optional:
+            spec = optional(spec)
 
-        return spec
+        if self._multiple and multiple:
+            return multiple_spec(self, pkt, spec, unpacking)
+        else:
+            return spec
 
     def _maybe_transform_spec(self, pkt, spec, unpacking, transform=True):
         """
@@ -379,6 +390,167 @@ class transform_spec(sb.Spec):
         if val not in (sb.NotSpecified, Optional):
             val = self.do_transform(self.pkt, val)
         return self.spec.normalise(meta, val)
+
+
+class MultipleWrapper(list):
+    def __init__(self, val, kls, number, meta, val_to_kls):
+        self._kls = kls
+        self._meta = meta
+        self._number = number
+        self._val_to_kls = val_to_kls
+        super().__init__(list(val))
+
+    def __setitem__(self, i, val):
+        if i > self._number:
+            raise IndexError("tried to set an item out of bounds", want=i, max_amount=self._number)
+        super().__setitem__(i, self._val_to_kls(self._kls, self._meta.indexed_at(i), val))
+
+    def clone(self, kls, number, meta, val_to_kls):
+        if self._number == number and self._kls is kls:
+            return self
+        vals = [val_to_kls(kls, meta.indexed_at(i), val) for i, val in enumerate(self)]
+        return MultipleWrapper(vals, kls, number, meta, val_to_kls)
+
+
+class multiple_spec(sb.Spec):
+    """Understands going to and from bytes and lists of base types"""
+
+    def __init__(self, typ, pkt, spec, unpacking):
+        self.typ = typ
+        self.pkt = pkt
+        self.kls = typ._multiple_kls
+        self.spec = spec
+        self.sizer = typ._multiple
+        self.per_size = typ.size_bits
+        self.unpacking = unpacking
+
+    @property
+    def number(self):
+        if callable(self.sizer):
+            return self.sizer(self.pkt)
+        return self.sizer
+
+    @property
+    def bytes_spec(self):
+        total_size = self.per_size * self.number
+        return bytes_spec(self.pkt, total_size)
+
+    def normalise(self, meta, val):
+        if self.unpacking:
+            return self.unpack(meta, val)
+        else:
+            return self.pack(meta, val)
+
+    def unpack_bytes(self, meta, val, kls, number):
+        from photons_protocol.packing import BitarraySlice
+
+        res = []
+        bts = self.bytes_spec.normalise(meta, val)
+
+        i = -1
+        while True:
+            i += 1
+            v = bts[: self.per_size]
+            info = BitarraySlice("", self.typ, v, self.per_size, type(self.pkt).__name__)
+            nxt = self.spec.normalise(meta.indexed_at(i), info.unpackd)
+            if kls:
+                nxt = kls.unpack(nxt)
+
+            res.append(nxt)
+            bts = bts[self.per_size :]
+            if not bts:
+                break
+
+        return MultipleWrapper(res, kls, number, meta, self.val_to_kls)
+
+    def unpack_list(self, meta, val, kls, number):
+        if len(val) > number:
+            raise BadSpecValue(
+                "Expected correct number of items", meta=meta, got=len(val), want=number
+            )
+
+        kls = self.kls
+        if kls and not isinstance(kls, type):
+            kls = kls(self.pkt)
+
+        res = []
+        i = -1
+        for v in val:
+            i += 1
+            res.append(self.val_to_kls(kls, meta.indexed_at(i), v))
+
+        while len(res) < number:
+            i += 1
+            res.append(self.val_to_kls(kls, meta.indexed_at(i), sb.NotSpecified))
+
+        return MultipleWrapper(res, kls, number, meta, self.val_to_kls)
+
+    def val_to_kls(self, kls, meta, val):
+        if kls is None:
+            return self.spec.normalise(meta, val)
+
+        if isinstance(val, kls):
+            return val
+        elif val is sb.NotSpecified or isinstance(val, (bytes, bitarray)):
+            return kls.unpack(self.spec.normalise(meta, val))
+        else:
+            val = sb.dictionary_spec().normalise(meta, val)
+            return kls.normalise(meta, val)
+
+    def unpack(self, meta, val):
+        kls = self.kls
+        if kls and not isinstance(kls, type):
+            kls = kls(self.pkt)
+
+        if val is sb.NotSpecified:
+            val = []
+
+        if val is sb.NotSpecified or type(val) in (bytes, bitarray):
+            return self.unpack_bytes(meta, val, kls, self.number)
+        elif isinstance(val, MultipleWrapper):
+            return val.clone(kls, self.number, meta, self.val_to_kls)
+        elif isinstance(val, list):
+            return self.unpack_list(meta, val, kls, self.number)
+        else:
+            raise BadSpecValue("Expected to unpack bytes or list", found=type(val))
+
+    def pack(self, meta, val):
+        if val is sb.NotSpecified:
+            val = []
+
+        if not isinstance(val, list):
+            raise BadSpecValue("Expected a list", meta=meta, got=type(val))
+
+        number = self.number
+        if len(val) > number:
+            raise BadSpecValue(
+                "Expected correct number of items", meta=meta, got=len(val), want=number
+            )
+
+        kls = self.kls
+        if kls and not isinstance(kls, type):
+            kls = kls(self.pkt)
+
+        res = []
+        i = -1
+        for item in val:
+            i += 1
+            if kls:
+                item = self.val_to_kls(kls, meta.indexed_at(i), item)
+                if hasattr(kls.Meta, "cache"):
+                    items = tuple(sorted(item.items()))
+                    if items not in kls.Meta.cache:
+                        kls.Meta.cache[items] = item.pack()
+                    item = kls.Meta.cache[items]
+                else:
+                    item = item.pack()
+            res.append(self.spec.normalise(meta.indexed_at(i), item))
+
+        while len(res) < number:
+            i += 1
+            res.append(self.spec.normalise(meta.indexed_at(i), sb.NotSpecified))
+
+        return res
 
 
 class expand_spec(sb.Spec):

@@ -83,13 +83,15 @@ describe TestCase, "Type":
                     "_bitmask",
                     "_dynamic",
                     "_default",
+                    "_optional",
+                    "_multiple",
                     "_override",
                     "_transform",
-                    "_unpack_transform",
-                    "_allow_callable",
-                    "_optional",
                     "_allow_float",
+                    "_multiple_kls",
+                    "_allow_callable",
                     "_version_number",
+                    "_unpack_transform",
                     "_unknown_enum_values",
                 )
 

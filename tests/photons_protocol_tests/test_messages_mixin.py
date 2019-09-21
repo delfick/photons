@@ -16,6 +16,13 @@ from unittest import mock
 import binascii
 import struct
 
+
+def ba(thing):
+    b = bitarray(endian="little")
+    b.frombytes(thing)
+    return b
+
+
 describe TestCase, "MessagesMixin":
     before_each:
         self.protocol_register = ProtocolRegister()
@@ -105,12 +112,12 @@ describe TestCase, "MessagesMixin":
             self.assertEqual(unpackd.payload.as_dict(), {"one": "yu"})
 
             self.assertEqual(
-                sorted(unpackd.items()),
+                sorted(unpackd.actual_items()),
                 sorted(
                     [
                         ("ack_required", sb.NotSpecified),
                         ("addressable", sb.NotSpecified),
-                        ("one", b"yu"),
+                        ("one", ba(b"yu")),
                         ("pkt_type", sb.NotSpecified),
                         ("protocol", sb.NotSpecified),
                         ("res_required", sb.NotSpecified),
@@ -165,12 +172,12 @@ describe TestCase, "MessagesMixin":
             self.assertEqual(unpackd.payload.as_dict(), {"one": "yu"})
 
             self.assertEqual(
-                sorted(unpackd.items()),
+                sorted(unpackd.actual_items()),
                 sorted(
                     [
                         ("ack_required", True),
                         ("addressable", True),
-                        ("one", b"yu"),
+                        ("one", ba(b"yu")),
                         ("pkt_type", 78),
                         ("protocol", 1024),
                         ("res_required", True),

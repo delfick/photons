@@ -145,6 +145,22 @@ class PacketSpecMixin:
         """Return whether this object has this key in it's fields or groups"""
         return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
 
+    def actual_items(self):
+        for key in self:
+            yield key, super().__getitem__(key)
+
+    def actual_values(self):
+        for key in self:
+            yield super().__getitem__(key)
+
+    def items(self):
+        for key in self:
+            yield key, self[key]
+
+    def values(self):
+        for key in self:
+            yield self[key]
+
     def __getitem__(
         self,
         key,
@@ -204,9 +220,16 @@ class PacketSpecMixin:
 
         if do_spec and key in M.all_names:
             typ = M.all_field_types_dict[key]
-            return object.__getattribute__(self, "getitem_spec")(
+            res = object.__getattribute__(self, "getitem_spec")(
                 typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
             )
+
+            # Make it so if there isn't a list specified, but you access it, we store the list we return
+            # So that if you modify that list, it modifies on the packet
+            if typ and hasattr(typ, "_multiple") and typ._multiple and actual is sb.NotSpecified:
+                dictobj.__setitem__(self, key, res)
+
+            return res
 
         return actual
 
@@ -272,6 +295,11 @@ class PacketSpecMixin:
         if typ and typ._transform is not sb.NotSpecified and val not in (sb.NotSpecified, Optional):
             val = typ.do_transform(self, val)
 
+        # If we have multiple, then we want to make sure we create actual objects
+        # So that if we modify an object in place, it's updated on the packet
+        if typ and hasattr(typ, "_multiple") and typ._multiple and val is not sb.NotSpecified:
+            val = typ.spec(self, unpacking=True).normalise(Meta.empty().at(key), val)
+
         # Otherwise we set directly on the packet
         dictobj.__setitem__(self, key, val)
 
@@ -309,7 +337,7 @@ class PacketSpecMixin:
         # then just steal the raw values without the transform dance
         if hasattr(typ, "Meta") and issubclass(type(val), typ):
             field_types = typ.Meta.field_types_dict
-            for field, v in val.items():
+            for field, v in val.actual_items():
                 if field in field_types:
                     dictobj.__setitem__(self, field, v)
             return
@@ -333,7 +361,7 @@ class PacketSpecMixin:
         """
         clone = self.__class__()
 
-        for key, value in self.items():
+        for key, value in self.actual_items():
             if overrides and key in overrides:
                 clone[key] = overrides[key]
             else:

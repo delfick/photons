@@ -385,13 +385,13 @@ describe TestCase, "PacketSpecMixin":
                 fields = [("g", G)]
 
             p = P(one=True, two=b"wat")
-            self.assertEqual(sorted(p.items()), sorted([("one", True), ("two", b"wat")]))
+            self.assertEqual(sorted(p.actual_items()), sorted([("one", True), ("two", b"wat")]))
             self.assertEqual(p.two, "wat")
 
             clone = p.clone()
             assert clone is not p
 
-            self.assertEqual(sorted(clone.items()), sorted([("one", True), ("two", b"wat")]))
+            self.assertEqual(sorted(clone.actual_items()), sorted([("one", True), ("two", b"wat")]))
             self.assertEqual(clone.two, "wat")
 
             clone.two = "hello"
@@ -427,7 +427,7 @@ describe TestCase, "PacketSpecMixin":
                 fields = [("g", G)]
 
             p = P(one=True, two=b"wat")
-            self.assertEqual(sorted(p.items()), sorted([("one", True), ("two", b"wat")]))
+            self.assertEqual(sorted(p.actual_items()), sorted([("one", True), ("two", b"wat")]))
             self.assertEqual(p.two, "wat")
 
             self.assertEqual(called, [])
@@ -436,7 +436,9 @@ describe TestCase, "PacketSpecMixin":
             self.assertEqual(called, ["pack"])
             assert clone is not p
 
-            self.assertEqual(sorted(clone.items()), sorted([("one", True), ("two", for_packing)]))
+            self.assertEqual(
+                sorted(clone.actual_items()), sorted([("one", True), ("two", for_packing)])
+            )
 
             self.assertEqual(called, ["pack"])
             self.assertEqual(clone.two, for_user)
@@ -481,7 +483,7 @@ describe TestCase, "PacketSpecMixin":
 
             self.assertIs(type(smpl), P)
             self.assertEqual(
-                sorted(smpl.items()),
+                sorted(smpl.actual_items()),
                 sorted(
                     [
                         ("one", True),
@@ -628,13 +630,13 @@ describe TestCase, "PacketSpecMixin":
                 ]
 
             class Q(dictobj.PacketSpec):
-                fields = [("things", T.Bytes(16 * 3).many(lambda pkt: P))]
+                fields = [("things", T.Bytes(16).multiple(3, kls=lambda pkt: P))]
 
             q = Q.empty_normalise(things=[{"one": 1000}, {"one": 2000}, {"one": 0}])
             self.assertEqual(q.things[0].actual("one"), 1)
             self.assertEqual(q.things[1].actual("one"), 2)
             self.assertEqual(q.things[2].actual("one"), 0)
-            self.assertEqual(q.as_dict(), {"things": [{"one": 1000}, {"one": 2000}, {"one": 0}]})
+            self.assertEqual(q.as_dict(), {"things": [P(one=1000), P(one=2000), P(one=0)]})
 
     describe "__repr__":
         it "converts bytes and bitarray to hexlified":

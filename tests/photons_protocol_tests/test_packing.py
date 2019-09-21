@@ -17,6 +17,13 @@ import binascii
 import struct
 import uuid
 
+
+def ba(thing):
+    b = bitarray(endian="little")
+    b.frombytes(thing)
+    return b
+
+
 describe TestCase, "val_to_bitarray":
     it "returns value as is if already bitarray":
         b = bitarray(endian="little")
@@ -34,9 +41,13 @@ describe TestCase, "val_to_bitarray":
         expected.frombytes(bts)
         self.assertEqual(val_to_bitarray(bts, "test"), expected)
 
+    it "creates bitarray from sb.NotSpecified":
+        expected = bitarray(endian="little")
+        self.assertEqual(val_to_bitarray(sb.NotSpecified, "test"), expected)
+
     it "complains otherwise":
         doing = mock.Mock(name="doing")
-        for val in (0, 1, None, True, False, [], [1], {1: 2}, lambda: 1, sb.NotSpecified):
+        for val in (0, 1, None, True, False, [], [1], {1: 2}, lambda: 1):
             with self.fuzzyAssertRaisesError(
                 BadConversion, "Couldn't get bitarray from a value", doing=doing
             ):
@@ -66,7 +77,7 @@ describe TestCase, "BitarraySlice":
         self.assertIs(self.slce.fmt, fmt)
 
     describe "unpackd":
-        it "returns as bytes if fmt is None":
+        it "returns as is if fmt is None":
             bts = b"wat"
             val = bitarray(endian="little")
             val.frombytes(bts)
@@ -74,7 +85,7 @@ describe TestCase, "BitarraySlice":
             self.slce.val = val
             self.slce.typ.struct_format = None
 
-            self.assertEqual(self.slce.unpackd, bts)
+            self.assertEqual(self.slce.unpackd, val)
 
         it "returns as boolean value if fmt is bool and size_bits is 1":
             self.slce.typ.struct_format = bool
@@ -387,13 +398,13 @@ describe TestCase, "PacketPacking":
                     final, i = PacketPacking.pkt_from_bitarray(self.P, packd)
 
             self.assertEqual(
-                sorted(final.items()),
+                sorted(final.actual_items()),
                 sorted(
                     [
                         ("one", True),
-                        ("two", b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
+                        ("two", ba(b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")),
                         ("other", 6),
-                        ("thing", b"\x00"),
+                        ("thing", ba(b"\x00")),
                     ]
                 ),
             )
@@ -406,9 +417,9 @@ describe TestCase, "PacketPacking":
                     ("other", sb.NotSpecified),
                     ("thing", sb.NotSpecified),
                     ("one", True),
-                    ("two", b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
+                    ("two", ba(b"d073d5.cb2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")),
                     ("other", 6),
-                    ("thing", b"\x00"),
+                    ("thing", ba(b"\x00")),
                 ],
             )
 
