@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+0.22.0 - TBD
+   * Changed the many option on packet definitions to multiple
+
+     * this also means that array fields are now actually arrays and can be
+       modified in place
+
 0.21.0 - 18 September 2019
    * Migrated to `delfick_project <https://delfick-project.readthedocs.io/>`_
    * this essentially means the following imports change from:
