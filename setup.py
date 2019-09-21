@@ -41,7 +41,7 @@ setup(
       , "lru-dict==1.1.6"
 
       # photons-protocol
-      , "bitarray == 0.8.1"
+      , "bitarray == 1.0.1"
       ]
 
     , extras_require =

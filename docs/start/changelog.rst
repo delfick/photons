@@ -8,6 +8,7 @@ ChangeLog
 
      * this also means that array fields are now actually arrays and can be
        modified in place
+   * Upgraded bitarray dependency
 
 0.21.0 - 18 September 2019
    * Migrated to `delfick_project <https://delfick-project.readthedocs.io/>`_
