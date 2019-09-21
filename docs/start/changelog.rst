@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.22.0 - TBD
+0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple
 
      * this also means that array fields are now actually arrays and can be
