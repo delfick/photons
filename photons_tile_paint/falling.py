@@ -18,6 +18,14 @@ class Empty:
     pass
 
 
+def clamp(val, mn=0, mx=1):
+    if val < mn:
+        return mn
+    elif val > mx:
+        return mx
+    return val
+
+
 class TileFallingOptions(AnimationOptions):
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)
@@ -75,12 +83,12 @@ class Line:
 
             if len(hues) == 1:
                 hue = hues[0]
-                brightness = 1.0 - (position - math.floor(position))
+                brightness = clamp(1.0 - (position - math.floor(position)))
                 color = Color(hue, 1, brightness, 3500)
                 yield (self.column, math.floor(position)), color
 
             else:
-                closeness = 1.0 - (position - math.floor(position))
+                closeness = clamp(1.0 - (position - math.floor(position)))
                 head_color = Color(hues[0], 1, closeness, 3500)
                 middle_hue = hues[0] + min([10, (hues[2] - hues[0]) * closeness])
                 if middle_hue > 360:
@@ -179,9 +187,11 @@ class TileFallingState:
 
     def make_canvas(self):
         for point, pixel in list(self.canvas):
-            pixel.brightness -= self.options.fade_amount
-            if pixel.brightness < 0:
+            changed = pixel.brightness - self.options.fade_amount
+            if changed < 0:
                 del self.canvas[point]
+            else:
+                pixel.brightness = changed
 
         drawn = set()
         for (left, top), (width, height) in self.coords:

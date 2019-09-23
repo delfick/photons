@@ -6,6 +6,7 @@ ChangeLog
 0.22.1 - TBD
    * Removed unnecessary errors from being written to the output when you
      ctrl-c a script (especially tile animations)
+   * Slight fix to the tile_falling animation
 
 0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple
