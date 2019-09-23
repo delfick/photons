@@ -297,7 +297,8 @@ def reporter(res):
     if not res.cancelled():
         exc = res.exception()
         if exc:
-            log.exception(exc, exc_info=(type(exc), exc, exc.__traceback__))
+            if not isinstance(exc, KeyboardInterrupt):
+                log.exception(exc, exc_info=(type(exc), exc, exc.__traceback__))
         else:
             res.result()
             return True

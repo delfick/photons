@@ -10,20 +10,21 @@ log = logging.getLogger("photons_app.runner")
 
 
 def on_done_task(final_future, res):
-    if final_future.done():
-        return
-
     if res.cancelled():
-        final_future.cancel()
+        if not final_future.done():
+            final_future.cancel()
         return
 
     exc = res.exception()
     if exc:
-        final_future.set_exception(exc)
+        if not final_future.done():
+            final_future.set_exception(exc)
         return
 
     res.result()
-    final_future.set_result(None)
+
+    if not final_future.done():
+        final_future.set_result(None)
 
 
 def run(collector):

@@ -25,6 +25,7 @@ class Waiter(object):
 
     def __init__(self, stop_fut, writer, retry_options, no_retry=False):
         self.writer = writer
+        self.write_tasks = []
 
         self.results = []
         self.no_retry = no_retry
@@ -71,8 +72,15 @@ class Waiter(object):
         # Protect against starting multiple writings tasks
         if not hasattr(self, "_writings"):
             self._writings = hp.async_as_background(self.writings())
+            self.write_tasks.append(self._writings)
 
         return (yield from self.final_future)
+
+    async def finish(self):
+        if self.write_tasks:
+            for t in self.write_tasks:
+                t.cancel()
+            await asyncio.wait(self.write_tasks)
 
     @hp.memoized_property
     def _writings_cb(self):
@@ -111,6 +119,8 @@ class Waiter(object):
             self.written_once = True
             t = loop.create_task(self.do_write())
             t.add_done_callback(hp.transfer_result(self.final_future, errors_only=True))
+            self.write_tasks.append(t)
+            self.write_tasks = [t for t in self.write_tasks if not t.done()]
 
         loop.call_later(self.retry_options.next_time, self._writings_cb)
 

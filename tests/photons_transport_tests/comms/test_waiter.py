@@ -30,6 +30,7 @@ describe AsyncTestCase, "Waiter":
         self.assertIs(waiter.final_future.cancelled(), True)
 
         self.assertEqual(waiter.results, [])
+        await waiter.finish()
 
     describe "Usage":
         async before_each:
@@ -40,6 +41,7 @@ describe AsyncTestCase, "Waiter":
 
         async after_each:
             self.stop_fut.cancel()
+            await self.waiter.finish()
 
         async it "can delete _writings_cb even if it hasn't been created yet":
             del self.waiter._writings_cb

@@ -322,6 +322,8 @@ class Communication:
 
     async def _get_response(self, packet, timeout, waiter, limit=None):
         errf = hp.ResettableFuture()
+        errf.add_done_callback(hp.silent_reporter)
+
         response = []
 
         async def wait_for_responses():
@@ -335,8 +337,12 @@ class Communication:
                     timeout, timeout_task, current_task, errf, packet.serial
                 )
 
-                for info in await waiter:
-                    response.append(info)
+                try:
+                    for info in await waiter:
+                        response.append(info)
+                finally:
+                    if hasattr(waiter, "finish"):
+                        await waiter.finish()
 
         f = hp.async_as_background(wait_for_responses(), silent=True)
 
