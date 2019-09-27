@@ -8,6 +8,11 @@ ChangeLog
      ctrl-c a script (especially tile animations)
    * Slight fix to the tile_falling animation
    * Made receiving packets a little more efficient
+   * Made tile animations consume considerably less CPU
+   * Also made switches for making tile animations work better on noisy networks,
+     see :ref:`tile_animation_noisy`.
+   * When defining a tile animation, the ``acks`` option has been replaced by
+     the ``replies`` option. When replies is True, messages will be retried.
 
 0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple

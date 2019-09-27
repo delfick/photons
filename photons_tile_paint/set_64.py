@@ -127,6 +127,10 @@ class Set64Maker:
         def ack_required(self):
             return self.kwargs["ack_required"]
 
+        @ack_required.setter
+        def ack_required(self, value):
+            self.kwargs["ack_required"] = value
+
         @property
         def source(self):
             return self.extra["source"]

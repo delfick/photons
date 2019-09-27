@@ -260,6 +260,26 @@ tile_balls
   max_speed - float -- default 0.8
     The maximum amount of pixels to fall every tick of the animation
 
+.. _tile_animation_noisy:
+
+Running a tile animation on a noisy network
+-------------------------------------------
+
+By default tile animations will not throttle the sending of messages to the tiles
+which means in a noisy enough environment, there can be a delay of messages
+reaching the tile, which results in a very bad animation.
+
+In such an environment, you can specify two environment variables to throttle
+the messages so the network can keep up.
+
+The first one to specify is ``NOISY_NETWORK=1``. Alongside this option you may
+also specify ``ANIMATION_INFLIGHT_MESSAGE_LIMIT=2`` where the number is the
+max number of unacknowledged frames.
+
+So with those settings, when it comes to sending the next frame, if we have two
+frames that haven't been acknowledged yet, then we won't send anything for this
+frame.
+
 Starting an animation programmatically
 --------------------------------------
 

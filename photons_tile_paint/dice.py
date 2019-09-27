@@ -36,7 +36,6 @@ class TileDiceRollOptions(AnimationOptions):
 
 
 class TileDiceRollAnimation(Animation):
-    acks = True
     coords = coords_for_horizontal_line
 
     def setup(self):
@@ -78,14 +77,17 @@ class TileDiceRollAnimation(Animation):
 
     def make_canvas(self, state, coords):
         chars = state["chars"]
+        self.retries = False
 
         if state["chars"] == -1:
             self.every = 0.5
+            self.retries = True
             chars = [full_character] * len(coords)
 
         if state["chars"] == -2:
             self.duration = 0.5
             self.every = 1.5
+            self.retries = True
             chars = [random.choice(list(dice.values()))] * len(coords)
 
         canvas = Canvas()

@@ -11,9 +11,9 @@ import time
 
 
 class TileTimeAnimation(Animation):
-    acks = True
     every = 1.5
     duration = 1
+    retries = True
     coords = coords_for_horizontal_line
 
     class State:
