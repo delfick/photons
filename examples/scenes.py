@@ -8,9 +8,6 @@ import logging
 import asyncio
 import time
 
-collector = library_setup()
-
-lan_target = collector.configuration["target_register"].resolve("lan")
 
 log = logging.getLogger("scenes")
 
@@ -30,8 +27,8 @@ scenes = [
 ]
 
 
-async def doit():
-    setup_logging()
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
     def apply_scene(scene):
         transformer = Transformer()
@@ -69,9 +66,11 @@ async def doit():
         def e(error):
             log.error(error)
 
-        kwargs = {"message_timeout": 1, "error_catcher": e}
+        kwargs = {"message_timeout": 1, "error_catcher": e, "find_timeout": 10}
         await lan_target.script(apply_scenes()).run_with_all(None, afr, **kwargs)
 
 
-loop = collector.configuration["photons_app"].loop
-loop.run_until_complete(doit())
+if __name__ == "__main__":
+    setup_logging()
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

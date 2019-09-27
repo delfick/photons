@@ -5,6 +5,7 @@ import platform
 import asyncio
 import logging
 import signal
+import sys
 
 log = logging.getLogger("photons_app.runner")
 
@@ -27,17 +28,11 @@ def on_done_task(final_future, res):
         final_future.set_result(None)
 
 
-def run(collector):
+def run(coro, photons_app, target_register):
     """
     Get the loop, then use runner with cleanup in a finally block
     """
-    photons_app = collector.configuration["photons_app"]
-    task_runner = collector.configuration["task_runner"]
-    target_register = collector.configuration["target_register"]
-
     loop = photons_app.loop
-    task = photons_app.chosen_task
-    reference = photons_app.reference
     final_future = photons_app.final_future
 
     if platform.system() != "Windows":
@@ -47,7 +42,7 @@ def run(collector):
 
         loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
-    task = loop.create_task(task_runner(task, reference))
+    task = loop.create_task(coro)
     task.add_done_callback(partial(on_done_task, final_future))
 
     async def wait():
@@ -65,6 +60,7 @@ def run(collector):
         final_future.cancel()
 
         try:
+            loop.run_until_complete(shutdown_asyncgens(loop))
             targets = target_register.used_targets
             loop.run_until_complete(photons_app.cleanup(targets))
             cancel_all_tasks(loop, task, waiter)
@@ -72,6 +68,32 @@ def run(collector):
             loop.close()
             del photons_app.loop
             del photons_app.final_future
+
+
+async def shutdown_asyncgens(loop):
+    """Shutdown all active asynchronous generators."""
+    if not len(loop._asyncgens):
+        return
+
+    closing_agens = list(loop._asyncgens)
+    loop._asyncgens.clear()
+
+    # I would do an asyncio.tasks.gather but it would appear that just causes
+    # the asyncio loop to think it's shutdown, so I have to do them one at a time
+    for ag in closing_agens:
+        try:
+            await ag.athrow(asyncio.CancelledError, asyncio.CancelledError(), None)
+        except asyncio.CancelledError:
+            pass
+        except:
+            exc = sys.exc_info()[1]
+            loop.call_exception_handler(
+                {
+                    "message": "an error occurred during closing of asynchronous generator",
+                    "exception": exc,
+                    "asyncgen": ag,
+                }
+            )
 
 
 def cancel_all_tasks(loop, *ignore_errors):

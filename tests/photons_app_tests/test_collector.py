@@ -21,6 +21,20 @@ import uuid
 import os
 
 describe TestCase, "Collector":
+    it "has a shortcut to the run helper":
+        coro = mock.Mock(name="coro")
+        run = mock.Mock(name="run")
+        collector = Collector()
+        collector.prepare(None, {})
+
+        photons_app = collector.configuration["photons_app"]
+        target_register = collector.configuration["target_register"]
+
+        with mock.patch("photons_app.collector.run", run):
+            collector.run_coro_as_main(coro)
+
+        run.assert_called_once_with(coro, photons_app, target_register)
+
     it "can be cloned":
         collector = Collector()
 

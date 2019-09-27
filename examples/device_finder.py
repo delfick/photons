@@ -3,16 +3,16 @@ from photons_app.executor import library_setup
 from photons_device_finder import DeviceFinder, Filter
 from photons_colour import Parser
 
+from delfick_project.logging import setup_logging
 from textwrap import dedent
-import traceback
 import readline
 import asyncio
+import logging
 import json
 import sys
 
-collector = library_setup()
 
-lan_target = collector.configuration["target_register"].resolve("lan")
+log = logging.getLogger("device_finder")
 
 
 def write_prompt():
@@ -20,7 +20,7 @@ def write_prompt():
     sys.stdout.flush()
 
 
-async def process_command(device_finder, command):
+async def process_command(lan_target, device_finder, command):
     if " " not in command:
         options = ""
     else:
@@ -58,7 +58,9 @@ async def process_command(device_finder, command):
     print(json.dumps(info, indent=4, sort_keys=True))
 
 
-async def doit():
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
+
     readline.parse_and_bind("")
 
     final = asyncio.Future()
@@ -82,23 +84,26 @@ async def doit():
             done = asyncio.Future()
             write_prompt()
             await loop.run_in_executor(None, get_command, done)
+
             nxt = await done
             if nxt:
                 try:
-                    await process_command(device_finder, nxt)
-                except KeyboardInterrupt:
-                    break
-                except Exception as error:
-                    traceback.print_exc()
+                    await process_command(lan_target, device_finder, nxt)
+                except asyncio.CancelledError:
+                    raise
+                except:
+                    log.exception("Unepected error")
 
             if final.done():
-                await final
+                try:
+                    await final
+                except EOFError:
+                    break
     finally:
         await device_finder.finish()
 
 
-loop = collector.configuration["photons_app"].loop
-try:
-    loop.run_until_complete(doit())
-except (EOFError, KeyboardInterrupt):
-    pass
+if __name__ == "__main__":
+    setup_logging(level=logging.ERROR)
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

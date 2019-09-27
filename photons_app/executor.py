@@ -12,7 +12,6 @@ Delfick App and Photons Executor provide the following commandline arguments:
 """
 
 from photons_app.collector import Collector
-from photons_app.runner import run
 from photons_app import VERSION
 
 from delfick_project.app import App, OptionalFileType
@@ -157,7 +156,12 @@ class App(App):
         args_dict["photons_app"]["default_activate_all_modules"] = default_activate_all_modules
 
         collector = self.setup_collector(args_dict, logging_handler, extra_files)
-        run(collector)
+
+        photons_app = collector.configuration["photons_app"]
+        task = photons_app.chosen_task
+        task_runner = collector.configuration["task_runner"]
+
+        collector.run_coro_as_main(task_runner(task), catch_delfick_error=False)
 
     def specify_other_args(self, parser, defaults):
         parser.add_argument(

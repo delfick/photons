@@ -30,13 +30,13 @@ class Task(dictobj):
         ("label", "Project"): "The namespace when listing tasks",
     }
 
-    async def run(self, target, collector, reference, available_actions, tasks, **extras):
+    async def run(self, target, collector, available_actions, tasks, **extras):
         """Run this task"""
         task_func = self.resolve_task_func(collector, target, available_actions)
 
         target = self.resolve_target(collector, target)
         artifact = self.resolve_artifact(collector)
-        reference = self.resolve_reference(collector, task_func, reference, target)
+        reference = self.resolve_reference(collector, task_func, target)
 
         try:
             return await task_func(
@@ -113,7 +113,7 @@ class Task(dictobj):
 
         return task_func
 
-    def resolve_reference(self, collector, task_func, reference, target):
+    def resolve_reference(self, collector, task_func, target):
         """
         If the task func needs a reference and none is specified then complain
 
@@ -126,6 +126,7 @@ class Task(dictobj):
         """
         empty = lambda r: r in ("", None, sb.NotSpecified)
 
+        reference = collector.configuration["photons_app"].reference
         if task_func.needs_reference and empty(reference):
             raise BadOption(
                 "This task requires you specify a reference, please do so!", action=self.action

@@ -3,14 +3,14 @@ from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, LightMessages
 
+from delfick_project.logging import setup_logging
 from collections import defaultdict
-
-collector = library_setup()
-
-lan_target = collector.configuration["target_register"].resolve("lan")
+import logging
 
 
-async def doit():
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
+
     getter = [DeviceMessages.GetLabel(), LightMessages.GetColor()]
 
     info = defaultdict(dict)
@@ -28,5 +28,7 @@ async def doit():
         print(f"{serial}: {details['label']}: {details['hsbk']}")
 
 
-loop = collector.configuration["photons_app"].loop
-loop.run_until_complete(doit())
+if __name__ == "__main__":
+    setup_logging(level=logging.ERROR)
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

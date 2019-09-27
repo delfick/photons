@@ -6,20 +6,23 @@ modules.
 """
 
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
+from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import BadYaml, BadConfiguration
 from photons_app.task_finder import TaskFinder
+from photons_app.runner import run
 
 from photons_messages import protocol_register
 
 from delfick_project.addons import Result, Addon, Register, AddonGetter
 from delfick_project.option_merge import Collector, MergedOptions
 from delfick_project.norms import sb, dictobj, Meta
+from delfick_project.errors import DelfickError
 
 from ruamel.yaml import YAML
 import pkg_resources
 import ruamel.yaml
 import logging
+import sys
 import os
 
 log = logging.getLogger("photons_app.collector")
@@ -31,6 +34,8 @@ class Collector(Collector):
     `Collector <https://delfick-project.readthedocs.io/en/latest/api/option_merge/api/collector.html>`_
 
     It overrides the following:
+
+    .. automethod:: photons_app.collector.Collector.run_coro_as_main
 
     .. automethod:: photons_app.collector.Collector.extra_prepare
 
@@ -52,6 +57,35 @@ class Collector(Collector):
             {"photons_app": self.configuration["photons_app"].as_dict()},
             options or {},
         )
+
+    def run_coro_as_main(self, coro, catch_delfick_error=True):
+        """
+        Run this coroutine as the mainline of your program.
+
+        It is assumed that when this coroutine ends that the entire program will
+        end.
+
+        If you want to wait "forever", then wait on
+        ``self.configuration["photons_app"].final_future`` as this future will
+        be cancelled on SIGTERM, SIGINT and the end of the coroutine.
+        """
+        conf = self.configuration
+        try:
+            try:
+                return run(coro, conf["photons_app"], conf["target_register"])
+            except KeyboardInterrupt:
+                raise UserQuit()
+        except DelfickError as error:
+            if not catch_delfick_error:
+                raise
+
+            print("")
+            print("!" * 80)
+            print("Something went wrong! -- {0}".format(error.__class__.__name__))
+            print("\t{0}".format(error))
+            if conf["photons_app"].debug:
+                raise
+            sys.exit(1)
 
     def extra_prepare(self, configuration, args_dict):
         """

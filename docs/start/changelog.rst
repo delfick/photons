@@ -13,6 +13,10 @@ ChangeLog
      see :ref:`tile_animation_noisy`.
    * When defining a tile animation, the ``acks`` option has been replaced by
      the ``replies`` option. When replies is True, messages will be retried.
+   * Introduced ``collector.run_coro_as_main(coro)`` for running a coroutine as
+     the mainline of a program. I also changed the scripts in the examples folder
+     to use this method, and cleaned the code in that folder a little.
+   * Another adjustment to shutdown logic to handle async generators better
 
 0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple

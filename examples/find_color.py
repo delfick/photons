@@ -3,12 +3,13 @@ from photons_app.special import FoundSerials
 
 from photons_messages import LightMessages
 
-collector = library_setup()
+from delfick_project.logging import setup_logging
+import logging
 
-lan_target = collector.configuration["target_register"].resolve("lan")
 
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
-async def doit():
     msg = LightMessages.GetColor()
     async for pkt, _, _ in lan_target.script(msg).run_with(FoundSerials()):
         hsbk = " ".join(
@@ -18,5 +19,7 @@ async def doit():
         print("{0}: {1}".format(pkt.serial, hsbk))
 
 
-loop = collector.configuration["photons_app"].loop
-loop.run_until_complete(doit())
+if __name__ == "__main__":
+    setup_logging(level=logging.ERROR)
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

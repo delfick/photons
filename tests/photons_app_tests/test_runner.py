@@ -322,11 +322,9 @@ describe TestCase, "run":
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
-        async def task_runner(*args):
+        async def doit():
             await asyncio.sleep(0.01)
             info["ran"] = True
-
-        task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
 
         photons_app = mock.Mock(
             name="photons_app",
@@ -337,14 +335,7 @@ describe TestCase, "run":
         )
         photons_app.cleanup.side_effect = cleanup
 
-        configuration = {
-            "photons_app": photons_app,
-            "target_register": target_register,
-            "task_runner": task_runner,
-        }
-        collector = mock.Mock(name="collector", configuration=configuration)
-
-        run(collector)
+        run(doit(), photons_app, target_register)
         self.assertEqual(info, {"cleaned": True, "ran": True})
 
     it "cleans up even if runner raise an exception":
@@ -360,12 +351,10 @@ describe TestCase, "run":
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
-        async def task_runner(*args):
+        async def doit():
             await asyncio.sleep(0.01)
             info["ran"] = True
             raise ValueError("Nope")
-
-        task_runner = mock.Mock(name="task_runner", side_effect=task_runner)
 
         photons_app = mock.Mock(
             name="photons_app",
@@ -376,15 +365,8 @@ describe TestCase, "run":
         )
         photons_app.cleanup.side_effect = cleanup
 
-        configuration = {
-            "photons_app": photons_app,
-            "target_register": target_register,
-            "task_runner": task_runner,
-        }
-        collector = mock.Mock(name="collector", configuration=configuration)
-
         with self.fuzzyAssertRaisesError(ValueError, "Nope"):
-            run(collector)
+            run(doit(), photons_app, target_register)
 
         self.assertEqual(info, {"cleaned": True, "ran": True})
 

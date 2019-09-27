@@ -116,10 +116,6 @@ async def doit(collector):
             await animation.animate(lan_target, afr, final_future, reference, options)
     except Finish:
         pass
-    except Exception as error:
-        log.exception(error)
-    finally:
-        final_future.cancel()
 
 
 if __name__ == "__main__":
@@ -129,8 +125,5 @@ if __name__ == "__main__":
     # setup photons and get back the configuration
     collector = library_setup()
 
-    # Get our asyncio loop
-    loop = collector.configuration["photons_app"].loop
-
     # Run the animation!
-    loop.run_until_complete(doit(collector))
+    collector.run_coro_as_main(doit(collector))

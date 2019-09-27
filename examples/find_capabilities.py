@@ -4,12 +4,13 @@ from photons_app.special import FoundSerials
 from photons_products_registry import capability_for_ids
 from photons_messages import DeviceMessages
 
-collector = library_setup()
+from delfick_project.logging import setup_logging
+import logging
 
-lan_target = collector.configuration["target_register"].resolve("lan")
 
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
-async def doit():
     async for pkt, _, _ in lan_target.script(DeviceMessages.GetVersion()).run_with(FoundSerials()):
         if pkt | DeviceMessages.StateVersion:
             try:
@@ -20,5 +21,7 @@ async def doit():
                 print("{}: {}".format(pkt.serial, cap))
 
 
-loop = collector.configuration["photons_app"].loop
-loop.run_until_complete(doit())
+if __name__ == "__main__":
+    setup_logging(level=logging.ERROR)
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

@@ -25,7 +25,6 @@ describe AsyncTestCase, "TaskFinder":
     describe "task_runner":
         async before_each:
             self.task = mock.Mock(name="task")
-            self.reference = mock.Mock(name="reference")
 
         describe "after finding tasks":
             async before_each:
@@ -43,12 +42,12 @@ describe AsyncTestCase, "TaskFinder":
                 with self.fuzzyAssertRaisesError(
                     BadTask, "Unknown task", task="three", available=["one", "two"]
                 ):
-                    await self.task_finder.task_runner("three", self.reference)
+                    await self.task_finder.task_runner("three")
 
                 with self.fuzzyAssertRaisesError(
                     BadTask, "Unknown task", task="three", available=["one", "two"]
                 ):
-                    await self.task_finder.task_runner("target:three", self.reference)
+                    await self.task_finder.task_runner("target:three")
 
             async it "runs the chosen task":
                 res = mock.Mock(name="res")
@@ -57,10 +56,10 @@ describe AsyncTestCase, "TaskFinder":
                 available_actions = mock.Mock(name="available_actions")
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(await self.task_finder.task_runner("one", self.reference), res)
+                    self.assertIs(await self.task_finder.task_runner("one"), res)
 
                 self.one_task.run.assert_called_once_with(
-                    sb.NotSpecified, self.collector, self.reference, available_actions, self.tasks
+                    sb.NotSpecified, self.collector, available_actions, self.tasks
                 )
 
             async it "runs the chosen task with the specified target":
@@ -70,12 +69,10 @@ describe AsyncTestCase, "TaskFinder":
                 available_actions = mock.Mock(name="available_actions")
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(
-                        await self.task_finder.task_runner("target:one", self.reference), res
-                    )
+                    self.assertIs(await self.task_finder.task_runner("target:one"), res)
 
                 self.one_task.run.assert_called_once_with(
-                    "target", self.collector, self.reference, available_actions, self.tasks
+                    "target", self.collector, available_actions, self.tasks
                 )
 
             async it "runs the chosen task with the other kwargs":
@@ -87,18 +84,9 @@ describe AsyncTestCase, "TaskFinder":
 
                 with mock.patch("photons_app.task_finder.available_actions", available_actions):
                     self.assertIs(
-                        await self.task_finder.task_runner(
-                            "target:one", self.reference, one=one, two=3
-                        ),
-                        res,
+                        await self.task_finder.task_runner("target:one", one=one, two=3), res
                     )
 
                 self.one_task.run.assert_called_once_with(
-                    "target",
-                    self.collector,
-                    self.reference,
-                    available_actions,
-                    self.tasks,
-                    one=one,
-                    two=3,
+                    "target", self.collector, available_actions, self.tasks, one=one, two=3
                 )

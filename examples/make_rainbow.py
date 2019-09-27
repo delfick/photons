@@ -5,25 +5,24 @@ from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline
 from photons_colour import Parser
 
+from delfick_project.logging import setup_logging
 import asyncio
 
-collector = library_setup()
 
-lan_target = collector.configuration["target_register"].resolve("lan")
+async def doit(collector):
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
-color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purple", "pink"]
+    color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purple", "pink"]
 
-spread = 2
+    spread = 2
 
-power_on = DeviceMessages.SetPower(level=65535)
-get_color = LightMessages.GetColor()
-color_msgs = [
-    Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread})
-    for name in color_names
-]
+    power_on = DeviceMessages.SetPower(level=65535)
+    get_color = LightMessages.GetColor()
+    color_msgs = [
+        Parser.color_to_msg(name, overrides={"res_required": False, "duration": spread})
+        for name in color_names
+    ]
 
-
-async def doit():
     async with lan_target.session() as afr:
         # By using a pipeline we can introduce a wait time between successful sending of colors
         colors = Pipeline(*color_msgs, spread=spread, synchronized=True)
@@ -60,5 +59,7 @@ async def doit():
         await lan_target.script(msgs).run_with_all(None, afr)
 
 
-loop = collector.configuration["photons_app"].loop
-loop.run_until_complete(doit())
+if __name__ == "__main__":
+    setup_logging()
+    collector = library_setup()
+    collector.run_coro_as_main(doit(collector))

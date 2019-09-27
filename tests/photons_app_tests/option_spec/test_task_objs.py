@@ -53,7 +53,6 @@ describe AsyncTestCase, "Task run":
                         self.task.run(
                             self.target,
                             self.collector,
-                            self.reference,
                             self.available_actions,
                             self.tasks,
                             one=one,
@@ -111,7 +110,6 @@ describe AsyncTestCase, "Task run":
                         self.task.run(
                             self.target,
                             self.collector,
-                            self.reference,
                             self.available_actions,
                             self.tasks,
                             one=one,
@@ -265,7 +263,11 @@ describe TestCase, "Task":
             self.task = Task(action=self.action)
             self.target = mock.Mock(name="target")
 
-            self.collector = mock.Mock(name="collector")
+            self.collector = mock.Mock(name="collector", configuration={})
+
+        def set_reference(self, reference):
+            photons_app = mock.Mock(name="photons_app", reference=reference)
+            self.collector.configuration["photons_app"] = photons_app
 
         it "complains if we need a reference and none is given":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
@@ -275,7 +277,8 @@ describe TestCase, "Task":
                     "This task requires you specify a reference, please do so!",
                     action=self.action,
                 ):
-                    self.task.resolve_reference(self.collector, task_func, reference, self.target)
+                    self.set_reference(reference)
+                    self.task.resolve_reference(self.collector, task_func, self.target)
 
         it "complains if we need a reference and none is given even if special_reference is True":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
@@ -285,27 +288,28 @@ describe TestCase, "Task":
                     "This task requires you specify a reference, please do so!",
                     action=self.action,
                 ):
-                    self.task.resolve_reference(self.collector, task_func, reference, self.target)
+                    self.set_reference(reference)
+                    self.task.resolve_reference(self.collector, task_func, self.target)
 
         it "returns reference as is":
             task_func = mock.Mock(name="task_func", needs_reference=False, special_reference=False)
             for reference in ("", None, sb.NotSpecified, "what"):
+                self.set_reference(reference)
                 self.assertIs(
-                    self.task.resolve_reference(self.collector, task_func, reference, self.target),
-                    reference,
+                    self.task.resolve_reference(self.collector, task_func, self.target), reference
                 )
 
             task_func2 = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
+            self.set_reference("what")
             self.assertEqual(
-                self.task.resolve_reference(self.collector, task_func, "what", self.target), "what"
+                self.task.resolve_reference(self.collector, task_func, self.target), "what"
             )
 
         it "returns the reference as a SpecialReference if special_reference is True":
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
             reference = "d073d5000001,d073d5000002"
-            resolved = self.task.resolve_reference(
-                self.collector, task_func, reference, self.target
-            )
+            self.set_reference(reference)
+            resolved = self.task.resolve_reference(self.collector, task_func, self.target)
             wanted = [binascii.unhexlify(ref) for ref in reference.split(",")]
 
             self.assertEqual(resolved.targets, wanted)
@@ -314,7 +318,8 @@ describe TestCase, "Task":
         it "returns a FoundSerials instruction if no reference is specified and special_reference is True":
             task_func = mock.Mock(name="task_func", needs_reference=False, special_reference=True)
             for r in ("", "_", None, sb.NotSpecified):
-                references = self.task.resolve_reference(self.collector, task_func, r, self.target)
+                self.set_reference(r)
+                references = self.task.resolve_reference(self.collector, task_func, self.target)
                 assert isinstance(references, FoundSerials), references
 
         it "returns the resolved reference if of type typ:options":
@@ -328,9 +333,8 @@ describe TestCase, "Task":
             self.collector.configuration = {"reference_resolver_register": register}
 
             reference = "my_resolver:blah:and,stuff"
-            resolved = self.task.resolve_reference(
-                self.collector, task_func, reference, self.target
-            )
+            self.set_reference(reference)
+            resolved = self.task.resolve_reference(self.collector, task_func, self.target)
             self.assertIs(resolved, ret)
             resolver.assert_called_once_with("blah:and,stuff", self.target)
 
@@ -349,9 +353,8 @@ describe TestCase, "Task":
                 self.collector.configuration = {"reference_resolver_register": register}
 
                 reference = "my_resolver:blah:and,stuff"
-                resolved = self.task.resolve_reference(
-                    self.collector, task_func, reference, self.target
-                )
+                self.set_reference(reference)
+                resolved = self.task.resolve_reference(self.collector, task_func, self.target)
                 self.assertEqual(type(resolved), HardCodedSerials)
                 self.assertEqual(resolved.targets, wanted)
                 resolver.assert_called_once_with("blah:and,stuff", self.target)
