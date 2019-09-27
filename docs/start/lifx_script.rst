@@ -11,6 +11,9 @@ For example:
 finding devices on the lan
     ``lifx lan:find_devices``
 
+finding ips of devices on the lan
+    ``lifx lan:find_ips``
+
 finding devices with a filter
     ``lifx lan:find_with_filter -- '{"label": "kitchen"}'``
 

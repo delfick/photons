@@ -17,6 +17,7 @@ ChangeLog
      the mainline of a program. I also changed the scripts in the examples folder
      to use this method, and cleaned the code in that folder a little.
    * Another adjustment to shutdown logic to handle async generators better
+   * Added ``lifx lan:find_ips`` command
 
 0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple
