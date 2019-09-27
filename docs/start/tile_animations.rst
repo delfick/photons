@@ -269,16 +269,35 @@ By default tile animations will not throttle the sending of messages to the tile
 which means in a noisy enough environment, there can be a delay of messages
 reaching the tile, which results in a very bad animation.
 
-In such an environment, you can specify two environment variables to throttle
-the messages so the network can keep up.
+In such an environment, you can tell photons to throttle the messages that are
+sent to the tiles.
 
-The first one to specify is ``NOISY_NETWORK=1``. Alongside this option you may
-also specify ``ANIMATION_INFLIGHT_MESSAGE_LIMIT=2`` where the number is the
-max number of unacknowledged frames.
+You can do this via configuration or via environment variables.
 
-So with those settings, when it comes to sending the next frame, if we have two
-frames that haven't been acknowledged yet, then we won't send anything for this
-frame.
+If you choose configuration, in your ``lifx.yml`` (or configuration specified by
+the ``LIFX_CONFIG`` environment variable) have something like:
+
+.. code-block:: yaml
+
+   ---
+
+   animation_options:
+      noisy_network: true
+      inflight_limit: 2
+
+You can override configuration with the following two environment variables:
+
+NOISY_NETWORK
+   If this environment variable is defined, then the noisy network code will be
+   used
+
+ANIMATION_INFLIGHT_MESSAGE_LIMIT
+   This needs to be the max number of unacknowledged frames that can be inflight
+   at any point
+
+So if I set NOISY_NETWORK on and set the inflight limit to 2, then  when it comes
+to sending the next frame, if we have two frames that haven't been acknowledged
+yet, then we won't send anything for this frame.
 
 Starting an animation programmatically
 --------------------------------------
@@ -288,7 +307,7 @@ assuming you already have a lan target object:
 
 .. code-block:: python
 
-    from photons_tile_paint.addon import Animations
+    from photons_tile_paint.addon import Animations, GlobalOptions
 
     import asyncio
 
@@ -298,13 +317,16 @@ assuming you already have a lan target object:
     async with target.session() as afr:
         options = {"text": "hello there"}
         reference = "d073d5000001"
-        await Animations.tile_marquee.animate(target, afr, final_future, reference, options)
+        global_options = GlobalOptions.create()
+        await Animations.tile_marquee.animate(target, afr, final_future, reference, options
+            , global_options = global_options
+            )
 
 You can also pause if it if you pass in an asyncio.Condition and acquire it:
 
 .. code-block:: python
 
-    from photons_tile_paint.addon import Animations
+    from photons_tile_paint.addon import Animations, GlobalOptions
 
     from photons_app import helpers as hp
 
@@ -330,8 +352,10 @@ You can also pause if it if you pass in an asyncio.Condition and acquire it:
     async with target.session() as afr:
         options = {"text": "hello there"}
         reference = "d073d5000001"
+        global_options = GlobalOptions.create()
         await Animations.tile_marquee.animate(target, afr, final_future, reference, options
             , pauser = pauser
+            , global_options = global_options
             )
 
 For more information about valid objects for the reference, see :ref:`photons_app_special`

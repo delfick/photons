@@ -2,6 +2,7 @@ from photons_themes.theme import ThemeColor as Color
 
 from delfick_project.norms import dictobj, sb, BadSpecValue
 import random
+import os
 
 
 class BackgroundOption(dictobj.Spec):
@@ -129,3 +130,30 @@ def normalise_speed_options(options):
 
     if options.min_speed == 0 and options.max_speed == 0:
         options.max_speed = 0.1
+
+
+class noisy_network_option_spec(sb.Spec):
+    def normalise(self, meta, val):
+        if "NOISY_NETWORK" in os.environ:
+            return True
+        if val is sb.NotSpecified:
+            val = False
+        return sb.boolean().normalise(meta, val)
+
+
+class inflight_limit_option_spec(sb.Spec):
+    def normalise(self, meta, val):
+        if "ANIMATION_INFLIGHT_MESSAGE_LIMIT" in os.environ:
+            val = os.environ["ANIMATION_INFLIGHT_MESSAGE_LIMIT"]
+        if val is sb.NotSpecified:
+            val = 2
+        return sb.integer_spec().normalise(meta, val)
+
+
+class GlobalOptions(dictobj.Spec):
+    noisy_network = dictobj.Field(noisy_network_option_spec)
+    inflight_limit = dictobj.Field(inflight_limit_option_spec)
+
+    @classmethod
+    def create(kls, **options):
+        return kls.FieldSpec().empty_normalise(**options)

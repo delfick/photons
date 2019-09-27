@@ -1,7 +1,9 @@
 from photons_app.actions import an_action
 
+from delfick_project.norms import dictobj, sb, Meta
 from delfick_project.addons import addon_hook
-from delfick_project.norms import Meta
+
+from photons_tile_paint.options import GlobalOptions
 
 from photons_tile_paint.time.animation import TileTimeAnimation
 from photons_tile_paint.time.options import TileTimeOptions
@@ -42,8 +44,8 @@ __shortdesc__ = "Utilities for painting on the tiles"
         ("lifx.photons", "products_registry"),
     ]
 )
-def __lifx__(*args, **kwargs):
-    pass
+def __lifx__(collector, *args, **kwargs):
+    collector.register_converters({"animation_options": GlobalOptions.FieldSpec()})
 
 
 class Animator:
@@ -52,9 +54,11 @@ class Animator:
         self.optionskls = optionskls
         self.animationkls = animationkls
 
-    async def animate(self, target, afr, final_future, reference, options, **kwargs):
+    async def animate(
+        self, target, afr, final_future, reference, options, global_options=None, **kwargs
+    ):
         options = self.optionskls.FieldSpec().normalise(Meta.empty(), options)
-        return await self.animationkls(target, afr, options).animate(
+        return await self.animationkls(target, afr, options, global_options).animate(
             reference, final_future, **kwargs
         )
 
@@ -65,8 +69,9 @@ class Animator:
         async def action(collector, target, reference, **kwargs):
             extra = collector.configuration["photons_app"].extra_as_json
             final_future = collector.configuration["photons_app"].final_future
+            global_options = collector.configuration["animation_options"]
             async with target.session() as afr:
-                await self.animate(target, afr, final_future, reference, extra)
+                await self.animate(target, afr, final_future, reference, extra, global_options)
 
         action.__name__ = self.name
         action.__doc__ = self.__doc__

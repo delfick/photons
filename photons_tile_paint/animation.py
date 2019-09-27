@@ -1,3 +1,4 @@
+from photons_tile_paint.options import GlobalOptions
 from photons_tile_paint.set_64 import set_64_maker
 
 from photons_app.errors import PhotonsAppError, TimedOut
@@ -18,7 +19,6 @@ import logging
 import asyncio
 import random
 import time
-import os
 
 log = logging.getLogger("photons_tile_paint.animation")
 
@@ -306,10 +306,14 @@ class Animation:
     message_timeout = 0.3
     random_orientations = False
 
-    def __init__(self, target, afr, options):
+    def __init__(self, target, afr, options, global_options=None):
         self.afr = afr
         self.target = target
         self.options = options
+
+        if global_options is None:
+            global_options = GlobalOptions.create()
+        self.global_options = global_options
 
         if getattr(self.options, "user_coords", False) or getattr(
             self.options, "combine_tiles", False
@@ -338,15 +342,11 @@ class Animation:
             if not isinstance(e, TimedOut):
                 log.error(e)
 
-        if "NOISY_NETWORK" in os.environ:
+        if self.global_options.noisy_network:
+            inflight_limit = self.global_options.inflight_limit
+            log.info(hp.lc("Using noisy_network code", inflight_limit=inflight_limit))
             task = NoisyNetworkAnimateTask(
-                self.afr,
-                inflight_limit=int(
-                    os.environ.get(
-                        "ANIMATION_INFLIGHT_MESSAGE_LIMIT", self.message_timeout / self.every + 1
-                    )
-                ),
-                wait_timeout=self.message_timeout,
+                self.afr, wait_timeout=self.message_timeout, inflight_limit=inflight_limit
             )
         else:
             task = FastNetworkAnimateTask(self.afr)
