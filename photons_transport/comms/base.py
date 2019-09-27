@@ -11,10 +11,29 @@ from photons_protocol.messages import Messages
 import binascii
 import logging
 import asyncio
+import struct
 import random
 import json
 
 log = logging.getLogger("photons_transport.comms")
+
+
+class FakeAck:
+    represents_ack = True
+
+    __slots__ = ["source", "sequence", "target", "serial"]
+
+    def __init__(self, source, sequence, target, serial):
+        self.serial = serial
+        self.target = target
+        self.source = source
+        self.sequence = sequence
+
+    def __or__(self, kls):
+        return kls.Payload.Meta.protocol == 1024 and kls.Payload.Meta.message_type == 45
+
+    def __repr__(self):
+        return f"<ACK source: {self.source}, sequence: {self.sequence}, serial: {self.serial}>"
 
 
 class Found:
@@ -314,7 +333,22 @@ class Communication:
             log.debug(hp.lc("Received bytes", bts=binascii.hexlify(data).decode()))
 
         try:
-            pkt = Messages.unpack(data, self.transport_target.protocol_register, unknown_ok=True)
+            protocol_register = self.transport_target.protocol_register
+            protocol, pkt_type, Packet, PacketKls, data = Messages.get_packet_type(
+                data, protocol_register
+            )
+
+            if protocol == 1024 and pkt_type == 45:
+                source = struct.unpack("<I", data[4:8])[0]
+                target = data[8:16]
+                sequence = data[23]
+
+                serial = binascii.hexlify(target[:6]).decode()
+                pkt = FakeAck(source, sequence, target, serial)
+            else:
+                if PacketKls is None:
+                    PacketKls = Packet
+                pkt = PacketKls.unpack(data)
         except Exception as error:
             log.exception(error)
         else:

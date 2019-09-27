@@ -1,7 +1,6 @@
 from photons_app import helpers as hp
 
 from bitarray import bitarray
-import binascii
 import logging
 import asyncio
 
@@ -55,10 +54,7 @@ class Receiver(object):
             )
 
         key = (pkt.source, pkt.sequence, pkt.target)
-
         broadcast_key = (pkt.source, pkt.sequence, self.blank_target)
-        target = pkt.target[:6]
-        serial = binascii.hexlify(target).decode()
 
         if pkt.source == 0 and pkt.sequence == 0:
             if not allow_zero:
@@ -70,7 +66,7 @@ class Receiver(object):
                 self.message_catcher(pkt)
             else:
                 log.warning(
-                    hp.lc("Received message but was no future to set", key=key, serial=serial)
+                    hp.lc("Received message but was no future to set", key=key, serial=pkt.serial)
                 )
             return
 

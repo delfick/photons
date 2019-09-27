@@ -1,20 +1,36 @@
 # coding: spec
 
-from photons_protocol.messages import MessagesMixin, Messages
+from photons_protocol.messages import Messages, PacketTypeExtractor, sources_for
 from photons_protocol.errors import BadConversion
 from photons_protocol.types import Type as T
 
-from photons_app.test_helpers import TestCase
 from photons_app.registers import ProtocolRegister
+from photons_app.test_helpers import TestCase
 
 from photons_messages import LIFXPacket
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from delfick_project.norms import sb
+from delfick_project.norms import Meta
 from bitarray import bitarray
+from textwrap import dedent
 from unittest import mock
 import binascii
-import struct
+
+msg = LIFXPacket.message
+
+
+class M(Messages):
+    # fmt:off
+    One = msg(78
+        , ("one", T.String(16))
+        )
+
+    Two = msg(99)
+
+    Three = msg(98
+        , ("three", T.Int8.transform(lambda _, v: v + 5, lambda _, v: v - 5))
+        )
+    # fmt:on
 
 
 def ba(thing):
@@ -23,397 +39,381 @@ def ba(thing):
     return b
 
 
+describe TestCase, "PacketTypeExtractor":
+    describe "packet_type":
+        it "delegates for dicts":
+            res = mock.Mock(name="res")
+            packet_type_from_dict = mock.Mock(name="packet_type_from_dict", return_value=res)
+
+            data = {}
+            with mock.patch.object(
+                PacketTypeExtractor, "packet_type_from_dict", packet_type_from_dict
+            ):
+                self.assertIs(PacketTypeExtractor.packet_type(data), res)
+
+            packet_type_from_dict.assert_called_once_with(data)
+
+        it "delegates for bytes":
+            res = mock.Mock(name="res")
+            packet_type_from_bytes = mock.Mock(name="packet_type_from_bytes", return_value=res)
+
+            data = b"AA"
+            with mock.patch.object(
+                PacketTypeExtractor, "packet_type_from_bytes", packet_type_from_bytes
+            ):
+                self.assertIs(PacketTypeExtractor.packet_type(data), res)
+
+            packet_type_from_bytes.assert_called_once_with(data)
+
+        it "delegates for bitarray":
+            res = mock.Mock(name="res")
+            packet_type_from_bitarray = mock.Mock(
+                name="packet_type_from_bitarray", return_value=res
+            )
+
+            data = ba(b"AA")
+            with mock.patch.object(
+                PacketTypeExtractor, "packet_type_from_bitarray", packet_type_from_bitarray
+            ):
+                self.assertIs(PacketTypeExtractor.packet_type(data), res)
+
+            packet_type_from_bitarray.assert_called_once_with(data)
+
+        it "otherwise complains":
+            for data in (0, 1, True, False, None, [], [1], lambda: True):
+                msg = "Can't determine packet type from data"
+                with self.fuzzyAssertRaisesError(BadConversion, msg, got=data):
+                    PacketTypeExtractor.packet_type(data)
+
+    describe "packet_type_from_dict":
+        it "can get pkt_type and protocol directory from data":
+            data = {"pkt_type": 45, "protocol": 1024}
+            self.assertEqual(PacketTypeExtractor.packet_type_from_dict(data), (1024, 45))
+
+        it "can get pkt_type and protocol from groups":
+            data = {"protocol_header": {"pkt_type": 45}, "frame_header": {"protocol": 1024}}
+            self.assertEqual(PacketTypeExtractor.packet_type_from_dict(data), (1024, 45))
+
+        it "complains if it can't get protocol":
+            msg = "Couldn't work out protocol from dictionary"
+
+            data = {}
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=data):
+                PacketTypeExtractor.packet_type_from_dict(data)
+
+            data = {"frame_header": {}}
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=data):
+                PacketTypeExtractor.packet_type_from_dict(data)
+
+        it "complains if it can't get pkt_type":
+            msg = "Couldn't work out pkt_type from dictionary"
+
+            data = {"protocol": 1024}
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=data):
+                PacketTypeExtractor.packet_type_from_dict(data)
+
+            data = {"protocol": 1024, "protocol_header": {}}
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=data):
+                PacketTypeExtractor.packet_type_from_dict(data)
+
+    describe "packet_type_from_bitarray and bytes":
+        it "complains if the length isn't correct":
+            msg = "Data is too small to be a LIFX packet"
+
+            bts = b""
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=0):
+                PacketTypeExtractor.packet_type_from_bytes(bts)
+            with self.fuzzyAssertRaisesError(BadConversion, msg, got=0):
+                PacketTypeExtractor.packet_type_from_bitarray(ba(bts))
+
+            bts = LIFXPacket.empty_normalise(source=1, sequence=1, target=None).pack().tobytes()
+            PacketTypeExtractor.packet_type_from_bytes(bts)
+            PacketTypeExtractor.packet_type_from_bitarray(ba(bts))
+
+            with self.fuzzyAssertRaisesError(BadConversion, msg, need_atleast=36, got=20):
+                PacketTypeExtractor.packet_type_from_bytes(bts[:20])
+            with self.fuzzyAssertRaisesError(BadConversion, msg, need_atleast=36, got=20):
+                PacketTypeExtractor.packet_type_from_bitarray(ba(bts[:20]))
+
+        it "returns None pkt_type if protocol is unknown":
+            pkt = LIFXPacket.empty_normalise(
+                protocol=234,
+                pkt_type=15,
+                addressable=True,
+                tagged=True,
+                source=1,
+                sequence=1,
+                target=None,
+            )
+
+            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
+            self.assertEqual(protocol, 234)
+            self.assertEqual(pkt_type, None)
+
+            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
+            self.assertEqual(protocol, 234)
+            self.assertEqual(pkt_type, None)
+
+        it "successfully gets protocol and pkt_type for 1024":
+            pkt = LIFXPacket.empty_normalise(
+                protocol=1024,
+                pkt_type=78,
+                addressable=True,
+                tagged=True,
+                source=1,
+                sequence=1,
+                target=None,
+            )
+
+            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
+            self.assertEqual(protocol, 1024)
+            self.assertEqual(pkt_type, 78)
+
+            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
+            self.assertEqual(protocol, 1024)
+            self.assertEqual(pkt_type, 78)
+
+describe TestCase, "sources_for":
+    it "can get the source for packets":
+        result = list(sources_for(M))
+
+        self.assertEqual(len(result), 3)
+
+        self.assertEqual(result[0][0], "One")
+        self.assertEqual(result[1][0], "Two")
+        self.assertEqual(result[2][0], "Three")
+
+        one = """
+        One = msg(78
+            , ("one", T.String(16))
+            )
+        """
+
+        self.assertEqual(result[0][1], dedent(one).lstrip())
+
+        two = "Two = msg(99)\n"
+
+        self.assertEqual(result[1][1], two)
+
+        three = """
+        Three = msg(98
+            , ("three", T.Int8.transform(lambda _, v: v + 5, lambda _, v: v - 5))
+            )
+        """
+
+        self.assertEqual(result[2][1], dedent(three).lstrip())
+
 describe TestCase, "MessagesMixin":
     before_each:
         self.protocol_register = ProtocolRegister()
         self.protocol_register.add(1024, LIFXPacket)
-        self.protocol_register.message_register(1024).add(Messages)
+        self.protocol_register.message_register(1024).add(M)
 
-        msg = LIFXPacket.message
+    describe "get_packet_type":
 
-        class M(Messages):
-            One = msg(78, ("one", T.String(16)))
+        it "can get us information about our data":
+            data = mock.Mock(name="data")
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
 
-            Two = msg(99)
+            with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
+                info = Messages.get_packet_type(data, self.protocol_register)
+                self.assertEqual(info, (1024, 78, LIFXPacket, M.One, data))
 
-            Three = msg(98, ("three", T.Int8.transform(lambda _, v: v + 5, lambda _, v: v - 5)))
+            packet_type.assert_called_once_with(data)
 
-        self.M = M
+            data = mock.Mock(name="data")
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 99))
 
-    describe "get_message_type":
-        it "returns from a str, bytes or bitarray":
-            msg = self.M.One(one="wa", source=1, sequence=1, target=None)
-            payload = msg.payload.pack().tobytes()
+            with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
+                info = Messages.get_packet_type(data, self.protocol_register)
+                self.assertEqual(info, (1024, 99, LIFXPacket, M.Two, data))
 
-            for val in (
-                msg.pack(),
-                msg.pack().tobytes(),
-                binascii.hexlify(msg.pack().tobytes()).decode(),
-            ):
-                res = Messages.get_message_type(val, self.protocol_register)
-                self.assertEqual(res, (78, LIFXPacket, None, mock.ANY))
+            packet_type.assert_called_once_with(data)
 
-                pkt = res[-1]
-                self.assertEqual(pkt.payload, payload)
-                self.assertIs(type(pkt), LIFXPacket)
-                self.assertEqual(pkt.pack(), msg.pack())
+        it "can get us information about unknown pkt types (known protocol)":
+            data = mock.Mock(name="data")
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 88))
 
-        it "returns kls for found message_type ":
-            self.protocol_register.message_register(1024).add(self.M)
+            with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
+                info = Messages.get_packet_type(data, self.protocol_register)
+                self.assertEqual(info, (1024, 88, LIFXPacket, None, data))
 
-            msg = self.M.One(one="wa", source=1, sequence=1, target=None)
-            for val in (
-                msg.pack(),
-                msg.pack().tobytes(),
-                binascii.hexlify(msg.pack().tobytes()).decode(),
-            ):
-                res = Messages.get_message_type(val, self.protocol_register)
-                self.assertEqual(res, (78, LIFXPacket, self.M.One, mock.ANY))
+            packet_type.assert_called_once_with(data)
 
-                pkt = res[-1]
-                self.assertIs(type(pkt), LIFXPacket)
-                self.assertEqual(pkt.pack(), msg.pack())
+        it "complains about unknown protocols":
+            data = mock.Mock(name="data")
+            packet_type = mock.Mock(name="packet_type", return_value=(1, 88))
 
-        it "complains if we should have a payload and the data has none":
-            self.protocol_register.message_register(1024).add(self.M)
+            msg = "Unknown packet protocol"
+            kwargs = {"wanted": 1, "available": [1024]}
+            with self.fuzzyAssertRaisesError(BadConversion, msg, **kwargs):
+                with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
+                    Messages.get_packet_type(data, self.protocol_register)
 
-            msg = self.M.One(one="wa", source=1, sequence=1, target=None)
-            packd = msg.pack()[:-16]
+            packet_type.assert_called_once_with(data)
 
-            for val in (packd, packd.tobytes(), binascii.hexlify(packd.tobytes()).decode()):
-                with self.fuzzyAssertRaisesError(BadConversion, "packet had no payload"):
-                    Messages.get_message_type(val, self.protocol_register)
+        it "converts str to bytes":
+            data = "AA"
+            asbytes = binascii.unhexlify(data)
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
 
-        it "does not complain if there are no fields on the payload":
-            self.protocol_register.message_register(1024).add(self.M)
+            with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
+                info = Messages.get_packet_type(data, self.protocol_register)
+                self.assertEqual(info, (1024, 78, LIFXPacket, M.One, asbytes))
 
-            msg = self.M.Two(source=1, sequence=1, target=None)
-            packd = msg.pack()
-
-            for val in (packd, packd.tobytes(), binascii.hexlify(packd.tobytes()).decode()):
-                res = Messages.get_message_type(val, self.protocol_register)
-                self.assertIs(res[-2], self.M.Two)
-
-        it "complains if the protocol is unknown":
-            msg = self.M.Two(protocol=65, source=1, sequence=1, target=None)
-            packd = msg.pack()
-            for val in (packd, packd.tobytes(), binascii.hexlify(packd.tobytes()).decode()):
-                with self.fuzzyAssertRaisesError(
-                    BadConversion, "Unknown packet protocol", wanted=65, available=[1024]
-                ):
-                    Messages.get_message_type(val, self.protocol_register)
-
-    describe "unpack_pkt":
-        it "creates an instance of the PacketKls from our instance of pkt":
-            payload = self.M.One.Payload(one="yu").pack()
-            pkt = LIFXPacket(payload=payload, source=1, sequence=1, target=None)
-
-            unpackd = Messages.unpack_pkt(self.M.One, pkt)
-            self.assertEqual(unpackd.payload.as_dict(), {"one": "yu"})
-
-            self.assertEqual(
-                sorted(unpackd.actual_items()),
-                sorted(
-                    [
-                        ("ack_required", sb.NotSpecified),
-                        ("addressable", sb.NotSpecified),
-                        ("one", ba(b"yu")),
-                        ("pkt_type", sb.NotSpecified),
-                        ("protocol", sb.NotSpecified),
-                        ("res_required", sb.NotSpecified),
-                        ("reserved1", sb.NotSpecified),
-                        ("reserved2", sb.NotSpecified),
-                        ("reserved3", sb.NotSpecified),
-                        ("reserved4", sb.NotSpecified),
-                        ("reserved5", sb.NotSpecified),
-                        ("sequence", 1),
-                        ("size", sb.NotSpecified),
-                        ("source", 1),
-                        ("tagged", sb.NotSpecified),
-                        ("target", None),
-                    ]
-                ),
-            )
-
-            self.assertEqual(
-                unpackd.as_dict(),
-                {
-                    "frame_header": {
-                        "size": 38,
-                        "protocol": 1024,
-                        "addressable": True,
-                        "tagged": False,
-                        "reserved1": sb.NotSpecified,
-                        "source": 1,
-                    },
-                    "frame_address": {
-                        "target": b"\x00\x00\x00\x00\x00\x00\x00\x00",
-                        "reserved2": sb.NotSpecified,
-                        "res_required": True,
-                        "ack_required": True,
-                        "reserved3": sb.NotSpecified,
-                        "sequence": 1,
-                    },
-                    "protocol_header": {
-                        "reserved4": sb.NotSpecified,
-                        "pkt_type": 78,
-                        "reserved5": sb.NotSpecified,
-                    },
-                    "payload": {"one": "yu"},
-                },
-            )
-
-        it "creates an instance that's already filled out if original pkt is all filled out":
-            pkt = self.M.One(one="yu", source=1, sequence=1, target=None)
-            simplified = pkt.simplify()
-            self.assertIs(type(simplified), LIFXPacket)
-
-            unpackd = Messages.unpack_pkt(self.M.One, simplified)
-            self.assertEqual(unpackd.payload.as_dict(), {"one": "yu"})
-
-            self.assertEqual(
-                sorted(unpackd.actual_items()),
-                sorted(
-                    [
-                        ("ack_required", True),
-                        ("addressable", True),
-                        ("one", ba(b"yu")),
-                        ("pkt_type", 78),
-                        ("protocol", 1024),
-                        ("res_required", True),
-                        ("reserved1", sb.NotSpecified),
-                        ("reserved2", sb.NotSpecified),
-                        ("reserved3", sb.NotSpecified),
-                        ("reserved4", sb.NotSpecified),
-                        ("reserved5", sb.NotSpecified),
-                        ("sequence", 1),
-                        ("size", 38),
-                        ("source", 1),
-                        ("tagged", False),
-                        ("target", bitarray("0" * 64).tobytes()),
-                    ]
-                ),
-            )
-
-            self.assertEqual(
-                unpackd.as_dict(),
-                {
-                    "frame_header": {
-                        "size": 38,
-                        "protocol": 1024,
-                        "addressable": True,
-                        "tagged": False,
-                        "reserved1": sb.NotSpecified,
-                        "source": 1,
-                    },
-                    "frame_address": {
-                        "target": b"\x00\x00\x00\x00\x00\x00\x00\x00",
-                        "reserved2": sb.NotSpecified,
-                        "res_required": True,
-                        "ack_required": True,
-                        "reserved3": sb.NotSpecified,
-                        "sequence": 1,
-                    },
-                    "protocol_header": {
-                        "reserved4": sb.NotSpecified,
-                        "pkt_type": 78,
-                        "reserved5": sb.NotSpecified,
-                    },
-                    "payload": {"one": "yu"},
-                },
-            )
+            packet_type.assert_called_once_with(asbytes)
 
     describe "unpack":
-        before_each:
-            self.message_type = mock.Mock(name="message_type")
-            self.Packet = mock.Mock(name="Packet")
-            self.PacketKls = mock.Mock(name="PacketKls")
-            self.pkt = mock.Mock(name="pkt")
-
-            self.get_message_type = mock.Mock(name="get_message_type")
-            self.unpack_pkt = mock.Mock(name="unpack_pkt")
-
-            self.data = mock.Mock(name="data")
-
-        it "uses get_message_type and unpack_pkt":
-            self.get_message_type.return_value = (
-                self.message_type,
-                self.Packet,
-                self.PacketKls,
-                self.pkt,
-            )
-
-            val = mock.Mock(name="val")
-            self.unpack_pkt.return_value = val
-
-            with mock.patch.object(Messages, "get_message_type", self.get_message_type):
-                with mock.patch.object(Messages, "unpack_pkt", self.unpack_pkt):
-                    self.assertIs(Messages.unpack(self.data, self.protocol_register), val)
-
-            self.get_message_type.assert_called_once_with(self.data, self.protocol_register)
-            self.unpack_pkt.assert_called_once_with(self.PacketKls, self.pkt)
-
-        it "returns pkt if unknown_ok and no PacketKls":
-            self.get_message_type.return_value = (self.message_type, self.Packet, None, self.pkt)
-
-            with mock.patch.object(Messages, "get_message_type", self.get_message_type):
-                with mock.patch.object(Messages, "unpack_pkt", self.unpack_pkt):
-                    self.assertIs(
-                        Messages.unpack(self.data, self.protocol_register, unknown_ok=True),
-                        self.pkt,
-                    )
-
-            self.get_message_type.assert_called_once_with(self.data, self.protocol_register)
-            self.assertEqual(len(self.unpack_pkt.mock_calls), 0)
-
-        it "complains if not unknown_ok and no PacketKls":
-            self.get_message_type.return_value = (self.message_type, self.Packet, None, self.pkt)
-
-            with mock.patch.object(Messages, "get_message_type", self.get_message_type):
-                with mock.patch.object(Messages, "unpack_pkt", self.unpack_pkt):
-                    with self.fuzzyAssertRaisesError(
-                        BadConversion, "Unknown message type!", pkt_type=self.message_type
-                    ):
-                        Messages.unpack(self.data, self.protocol_register, unknown_ok=False)
-
-            self.get_message_type.assert_called_once_with(self.data, self.protocol_register)
-            self.assertEqual(len(self.unpack_pkt.mock_calls), 0)
-
         it "works":
-            self.protocol_register.message_register(1024).add(self.M)
-            packd = self.M.One(one="iu", source=1, sequence=1, target=None).pack()
-            res = Messages.unpack(packd, self.protocol_register)
-            self.assertEqual(res.pack(), packd)
-            self.assertEqual(res.payload.as_dict(), {"one": "iu"})
+            bts = M.One(source=1, sequence=2, target="d073d5000001", one="bl").pack()
+            pkt = Messages.unpack(bts, self.protocol_register)
+
+            assert pkt | M.One, pkt.__class__
+            self.assertEqual(pkt.one, "bl")
+            self.assertEqual(pkt.pack(), bts)
+
+        it "works with unknown packet":
+            bts = LIFXPacket(
+                pkt_type=100, source=1, sequence=2, target="d073d5000001", payload="AA"
+            ).pack()
+            pkt = Messages.unpack(bts, self.protocol_register, unknown_ok=True)
+
+            self.assertIsInstance(pkt, LIFXPacket)
+            self.assertEqual(pkt.payload, binascii.unhexlify("AA"))
+            self.assertEqual(pkt.pack(), bts)
+
+        it "unpacks PacketKls if we have one":
+            res = mock.Mock(name="res")
+            kls = mock.Mock(name="kls")
+            kls.unpack.return_value = res
+
+            data = mock.Mock(name="data")
+
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, LIFXPacket, kls, data)
+
+            with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                self.assertIs(Messages.unpack(data, self.protocol_register), res)
+
+            kls.unpack.assert_called_once_with(data)
+            get_packet_type.assert_called_once_with(data, self.protocol_register)
+
+        it "unpacks Packet if we no PacketKls":
+            res = mock.Mock(name="res")
+            kls = mock.Mock(name="kls")
+            kls.unpack.return_value = res
+
+            data = mock.Mock(name="data")
+
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, kls, None, data)
+
+            with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                self.assertIs(Messages.unpack(data, self.protocol_register, unknown_ok=True), res)
+
+            kls.unpack.assert_called_once_with(data)
+            get_packet_type.assert_called_once_with(data, self.protocol_register)
+
+        it "complains if unknown and unknown_ok is False":
+            data = mock.Mock(name="data")
+
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, LIFXPacket, None, data)
+
+            msg = "Unknown message type!"
+            with self.fuzzyAssertRaisesError(BadConversion, msg, protocol=1024, pkt_type=78):
+                with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                    Messages.unpack(data, self.protocol_register, unknown_ok=False)
+
+            get_packet_type.assert_called_once_with(data, self.protocol_register)
 
     describe "pack_payload":
-        it "complains if it can't find the message_type":
-            data = {"one": "po"}
-            message_type = 90
+        it "works":
+            bts = M.One(one="sh").payload.pack()
 
-            with self.fuzzyAssertRaisesError(BadConversion, "Unknown message type!", pkt_type=90):
-                Messages.pack_payload(message_type, data)
+            data = {"one": "sh"}
+            mr = self.protocol_register.message_register(1024)
+            self.assertEqual(Messages.pack_payload(78, data, mr), bts)
 
-            with self.fuzzyAssertRaisesError(BadConversion, "Unknown message type!", pkt_type=90):
-                Messages.pack_payload(
-                    message_type,
-                    data,
-                    messages_register=self.protocol_register.message_register(1024),
-                )
+            self.assertEqual(M.pack_payload(78, data), bts)
 
-        it "fills out the Payload and packs it for us when on kls":
-            packd = self.M.One.Payload(one="po").pack()
-            res = self.M.pack_payload(78, {"one": "po"})
-            self.assertEqual(packd, res)
-
-        it "fills out the Payload and packs it for us when on a kls in provided messages_register":
-            self.protocol_register.message_register(1024).add(self.M)
-            packd = self.M.One.Payload(one="po").pack()
-            res = Messages.pack_payload(
-                78, {"one": "po"}, messages_register=self.protocol_register.message_register(1024)
-            )
-            self.assertEqual(packd, res)
-
-        it "fills out the Payload and packs it for us":
-            packd = mock.Mock(name="packd")
-            normalised = mock.Mock(name="normalised")
-
-            a = mock.Mock(name="a")
-            b = mock.Mock(name="b")
-
-            class P:
-                Payload = mock.Mock(name="Payload")
-
-            P.Payload.normalise.return_value = normalised
-            normalised.pack.return_value = packd
-
-            class M2:
-                by_type = {78: P}
-
-            messages_register = [M2]
-
-            res = Messages.pack_payload(78, {"a": a, "b": b}, messages_register=messages_register)
-            self.assertEqual(packd, packd)
-
-            P.Payload.normalise.assert_called_once_with(mock.ANY, {"a": a, "b": b})
-            normalised.pack.assert_called_once_with()
-
-        it "works with transformed values":
-            self.protocol_register.message_register(1024).add(self.M)
-            packd = self.M.Three.Payload(three=10).pack()
-
-            bts = packd.tobytes()
-            self.assertEqual(struct.unpack("<b", bts)[0], 15)
-
-            res = self.M.pack_payload(98, {"three": 10})
-            self.assertEqual(res, packd)
-
-            res2 = self.M.Three.Payload.unpack(res)
-            self.assertEqual(res2.three, 10)
-            self.assertEqual(res2.actual("three"), 15)
+        it "complains if the message_type is unknown":
+            data = mock.Mock(name="data")
+            with self.fuzzyAssertRaisesError(BadConversion, "Unknown message type!", pkt_type=87):
+                Messages.pack_payload(87, data, self.protocol_register.message_register(1024))
 
     describe "pack":
-        it "works when the fields are not grouped":
-            self.protocol_register.message_register(1024).add(self.M)
-            pkt = self.M.Three(three=10, source=1, sequence=1, target=None)
-            packd = pkt.pack()
+        it "works":
+            data = {
+                "protocol": 1024,
+                "pkt_type": 78,
+                "one": "ii",
+                "source": 4,
+                "sequence": 1,
+                "target": "d073d5000001",
+            }
+            bts = M.One.empty_normalise(**data).pack()
+            self.assertEqual(Messages.pack(data, self.protocol_register), bts)
 
-            dct = {}
-            for name in pkt.Meta.all_names:
-                dct[name] = pkt[name]
+        it "works with unknown packet":
+            data = {
+                "protocol": 1024,
+                "pkt_type": 87,
+                "payload": "AA",
+                "source": 4,
+                "sequence": 1,
+                "target": "d073d5000001",
+            }
+            bts = LIFXPacket.empty_normalise(**data).pack()
+            self.assertEqual(Messages.pack(data, self.protocol_register, unknown_ok=True), bts)
 
-            res = Messages.pack(dct, self.protocol_register)
-            self.assertEqual(res, packd)
+        it "works out packet type and packs when you have a PacketKls":
+            res = mock.Mock(name="res")
+            kls = mock.Mock(name="kls")
+            pkt = mock.Mock(name="pkt")
+            pkt.pack.return_value = res
+            kls.normalise.return_value = pkt
 
-        it "works when the fields are grouped":
-            self.protocol_register.message_register(1024).add(self.M)
-            pkt = self.M.Three(three=10, source=1, sequence=1, target=None)
-            packd = pkt.pack()
+            data = mock.Mock(name="data")
 
-            dct = pkt.as_dict()
-            self.assertEqual(list(dct.keys()), list(pkt.Meta.groups.keys()))
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, LIFXPacket, kls, data)
 
-            res = Messages.pack(dct, self.protocol_register)
-            self.assertEqual(res, packd)
+            with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                self.assertIs(Messages.pack(data, self.protocol_register), res)
 
-        it "complains if it can't find the message_type":
-            for val in ({}, {"protocol_header": {}}):
-                with self.fuzzyAssertRaisesError(
-                    BadConversion,
-                    "Don't know how to pack this dictionary, it doesn't specify a pkt_type!",
-                ):
-                    Messages.pack(val, self.protocol_register)
+            kls.normalise.assert_called_once_with(Meta.empty(), data)
+            pkt.pack.assert_called_once_with()
+            get_packet_type.assert_called_once_with(data, self.protocol_register)
 
-        it "complains if it can't find the protocol in the data":
-            for val in ({"pkt_type": 7}, {"protocol_header": {"pkt_type": 7}}):
-                with self.fuzzyAssertRaisesError(
-                    BadConversion,
-                    "Don't know how to pack this dictionary, it doesn't specify a protocol!",
-                ):
-                    Messages.pack(val, self.protocol_register)
+        it "works out packet type and packs when you have don't have PacketKls but unknown is ok":
+            res = mock.Mock(name="res")
+            kls = mock.Mock(name="kls")
+            pkt = mock.Mock(name="pkt")
+            pkt.pack.return_value = res
+            kls.normalise.return_value = pkt
 
-        it "complains if it can't find the protocol in the protocol_register":
-            for val in (
-                {"pkt_type": 7, "protocol": 76},
-                {"protocol_header": {"pkt_type": 7}, "frame_header": {"protocol": 76}},
-            ):
-                with self.fuzzyAssertRaisesError(
-                    BadConversion, "Unknown packet protocol", wanted=76, available=[1024]
-                ):
-                    Messages.pack(val, self.protocol_register)
+            data = mock.Mock(name="data")
 
-        it "complains if unknown packet":
-            data = {"pkt_type": 8, "protocol": 1024}
-            with self.fuzzyAssertRaisesError(BadConversion, "Unknown message type!", pkt_type=8):
-                Messages.pack(data, self.protocol_register)
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, kls, None, data)
 
-        it "uses parent_packet to pack if unknown_ok and message_type isn't found":
-            pkt = self.M.Three(three=10, source=1, sequence=1, target=None)
-            payload = pkt.payload.pack()
+            with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                self.assertIs(Messages.pack(data, self.protocol_register, unknown_ok=True), res)
 
-            # For LIFXPacket to work, the payload must already be bitarray like
-            val = pkt.as_dict()
-            val["payload"] = payload
+            kls.normalise.assert_called_once_with(Meta.empty(), data)
+            pkt.pack.assert_called_once_with()
+            get_packet_type.assert_called_once_with(data, self.protocol_register)
 
-            res = Messages.pack(val, self.protocol_register, unknown_ok=True)
-            self.assertEqual(res, pkt.pack())
+        it "complains if not unknown_ok and no PacketKls":
+            data = mock.Mock(name="data")
+
+            get_packet_type = mock.Mock(name="get_packet_type")
+            get_packet_type.return_value = (1024, 78, LIFXPacket, None, data)
+
+            msg = "Unknown message type!"
+            with self.fuzzyAssertRaisesError(BadConversion, msg, protocol=1024, pkt_type=78):
+                with mock.patch.object(Messages, "get_packet_type", get_packet_type):
+                    Messages.pack(data, self.protocol_register, unknown_ok=False)
+
+            get_packet_type.assert_called_once_with(data, self.protocol_register)

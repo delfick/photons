@@ -16,18 +16,121 @@ for defining ``by_type`` on the class.
 from photons_protocol.types import Type, MultiOptions
 from photons_protocol.errors import BadConversion
 
-from delfick_project.norms import sb, dictobj, Meta
+from delfick_project.norms import Meta
 from bitarray import bitarray
 from textwrap import dedent
 import binascii
 import inspect
 import logging
-import struct
 
 log = logging.getLogger("photons_protocol.messages")
 
 T = Type
 MultiOptions = MultiOptions
+
+
+class PacketTypeExtractor:
+    @classmethod
+    def packet_type(kls, data):
+        if isinstance(data, dict):
+            return kls.packet_type_from_dict(data)
+        elif isinstance(data, bytes):
+            return kls.packet_type_from_bytes(data)
+        elif isinstance(data, bitarray):
+            return kls.packet_type_from_bitarray(data)
+        else:
+            raise BadConversion("Can't determine packet type from data", got=data)
+
+    @classmethod
+    def packet_type_from_dict(kls, data):
+        if "protocol" in data:
+            protocol = data["protocol"]
+        elif "frame_header" in data and "protocol" in data["frame_header"]:
+            protocol = data["frame_header"]["protocol"]
+        else:
+            raise BadConversion("Couldn't work out protocol from dictionary", got=data)
+
+        if "pkt_type" in data:
+            pkt_type = data["pkt_type"]
+        elif "pkt_type" in data.get("protocol_header", {}):
+            pkt_type = data["protocol_header"]["pkt_type"]
+        else:
+            raise BadConversion("Couldn't work out pkt_type from dictionary", got=data)
+
+        return protocol, pkt_type
+
+    @classmethod
+    def packet_type_from_bitarray(kls, data):
+        if len(data) < 28:
+            raise BadConversion("Data is too small to be a LIFX packet", got=len(data) // 8)
+
+        b = bitarray(endian="little")
+        b.extend(data[16 : 16 + 12])
+        protbts = b.tobytes()
+        protocol = protbts[0] + (protbts[1] << 8)
+
+        pkt_type = None
+
+        if protocol == 1024:
+            if len(data) < 288:
+                raise BadConversion(
+                    "Data is too small to be a LIFX packet", need_atleast=36, got=len(data) // 8
+                )
+
+            ptbts = data[256 : 256 + 16].tobytes()
+            pkt_type = ptbts[0] + (ptbts[1] << 8)
+
+        return protocol, pkt_type
+
+    @classmethod
+    def packet_type_from_bytes(kls, data):
+        if len(data) < 4:
+            raise BadConversion("Data is too small to be a LIFX packet", got=len(data))
+
+        b = bitarray(endian="little")
+        b.frombytes(data[2:4])
+        protbts = b[:12].tobytes()
+        protocol = protbts[0] + (protbts[1] << 8)
+
+        pkt_type = None
+
+        if protocol == 1024:
+            if len(data) < 36:
+                raise BadConversion(
+                    "Data is too small to be a LIFX packet", need_atleast=36, got=len(data)
+                )
+            pkt_type = data[32] + (data[33] << 8)
+
+        return protocol, pkt_type
+
+
+def sources_for(kls):
+    buf = []
+    in_kls = None
+
+    try:
+        src = inspect.getsource(kls)
+    except OSError as error:
+        if error.args and error.args[0] == "could not find class definition":
+            log.warning("Couldn't find source code for kls\tkls={0}".format(kls))
+        else:
+            raise
+    else:
+        for line in src.split("\n"):
+            attr = line[: line.find("=")].replace(" ", "")
+            if attr and attr[0].isupper():
+                if buf and in_kls:
+                    yield in_kls, dedent("\n".join(buf))
+
+                buf = []
+                in_kls = attr
+
+            if not line.strip().startswith("#"):
+
+                buf.append(line)
+
+        if buf and in_kls:
+            yield in_kls, dedent("\n".join(buf))
 
 
 class MessagesMixin:
@@ -36,10 +139,14 @@ class MessagesMixin:
     """
 
     @classmethod
-    def get_message_type(kls, data, protocol_register):
+    def get_packet_type(kls, data, protocol_register):
         """
         Given a ProtocolRegister and some data (bytes or dictionary)
-        return ``(pkt_type, Packet, kls, pkt)``
+        return ``(protocol, pkt_type, Packet, kls, data)``
+
+        protocol
+            The number specifying the "protocol" of this message. This is
+            likely to always be 1024.
 
         pkt_type
             The number assigned to this payload type. This code assumes the
@@ -55,18 +162,16 @@ class MessagesMixin:
         kls
             The payload class representing this protocol and pkt_type.
 
-        pkt
-            An instance of the ``parent_packet`` from the data.
+            This is None if the protocol/pkt_type pair is unknown
+
+        data
+            If the data was a dictionary, bytes or bitarray then returned as is
+            if the data was a str, then we return it as unhexlified bytes
         """
-        if type(data) is str:
+        if isinstance(data, str):
             data = binascii.unhexlify(data)
 
-        if type(data) is bytes:
-            b = bitarray(endian="little")
-            b.frombytes(data)
-            data = b
-
-        protocol = struct.unpack("<H", data[16 : 16 + 12].tobytes())[0]
+        protocol, pkt_type = PacketTypeExtractor.packet_type(data)
 
         prot = protocol_register.get(protocol)
         if prot is None:
@@ -75,46 +180,44 @@ class MessagesMixin:
             )
         Packet, messages_register = prot
 
-        pkt = Packet.unpack(data)
-        message_type = dictobj.__getitem__(pkt, "pkt_type")
-
-        k = None
-        for k in messages_register or [kls]:
-            if message_type in k.by_type:
-                if (
-                    pkt.payload is sb.NotSpecified
-                    and k.by_type[message_type].Payload.Meta.field_types
-                ):
-                    raise BadConversion("packet had no payload", got=repr(pkt))
+        mkls = None
+        for k in messages_register:
+            if pkt_type in k.by_type:
+                mkls = k.by_type[pkt_type]
                 break
 
-        if k is None:
-            return message_type, Packet, None, pkt
-        return message_type, Packet, k.by_type.get(message_type), pkt
+        return protocol, pkt_type, Packet, mkls, data
 
     @classmethod
-    def unpack_pkt(kls, PacketKls, pkt):
-        """
-        Create a new instance of PacketKls and transfer values from pkt onto it
+    def unpack_bytes(kls, data, protocol, pkt_type, protocol_register, unknown_ok=False):
+        if isinstance(data, str):
+            data = binascii.unhexlify(data)
 
-        Then unpack the payload on pkt and set on the new instance of PacketKls
-        """
-        result = PacketKls()
+        if isinstance(data, bytes):
+            b = bitarray(endian="little")
+            b.frombytes(data)
+            data = b
 
-        if hasattr(pkt, "actual_items"):
-            items = pkt.actual_items()
-        else:
-            items = pkt.items()
+        prot = protocol_register.get(protocol)
+        if prot is None:
+            raise BadConversion(
+                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
+            )
+        Packet, messages_register = prot
 
-        for key, val in items:
-            if key != "payload":
-                dictobj.__setattr__(result, key, val)
+        mkls = None
+        for k in messages_register:
+            if pkt_type in k.by_type:
+                mkls = k.by_type[pkt_type]
+                break
 
-        existing_payload = pkt.payload
-        if existing_payload is not sb.NotSpecified:
-            result["payload"] = PacketKls.Payload.unpack(existing_payload)
+        if mkls is None:
+            if unknown_ok:
+                mkls = Packet
+            else:
+                raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
-        return result
+        return mkls.unpack(data)
 
     @classmethod
     def unpack(kls, data, protocol_register, unknown_ok=False):
@@ -125,23 +228,26 @@ class MessagesMixin:
             Whether we return an instance of the parent_packet with unresolved
             payload if we don't have a payload class, or if we raise an error
         """
-        message_type, Packet, PacketKls, pkt = kls.get_message_type(data, protocol_register)
+        protocol, pkt_type, Packet, PacketKls, data = kls.get_packet_type(data, protocol_register)
+
         if PacketKls:
-            return kls.unpack_pkt(PacketKls, pkt)
-        elif unknown_ok:
-            return pkt
-        raise BadConversion("Unknown message type!", pkt_type=message_type)
+            return PacketKls.unpack(data)
+
+        if unknown_ok:
+            return Packet.unpack(data)
+
+        raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
     @classmethod
-    def pack_payload(kls, message_type, data, messages_register=None):
+    def pack_payload(kls, pkt_type, data, messages_register=None):
         """
         Given some payload data as a dictionary and it's ``pkt_type``, return a
         hexlified string of the payload.
         """
         for k in messages_register or [kls]:
-            if int(message_type) in k.by_type:
-                return k.by_type[int(message_type)].Payload.normalise(Meta.empty(), data).pack()
-        raise BadConversion("Unknown message type!", pkt_type=message_type)
+            if int(pkt_type) in k.by_type:
+                return k.by_type[int(pkt_type)].Payload.normalise(Meta.empty(), data).pack()
+        raise BadConversion("Unknown message type!", pkt_type=pkt_type)
 
     @classmethod
     def pack(kls, data, protocol_register, unknown_ok=False):
@@ -152,37 +258,14 @@ class MessagesMixin:
         protocol_register to find the appropriate class to use to perform the
         packing.
         """
-        if "pkt_type" in data:
-            message_type = data["pkt_type"]
-        elif "pkt_type" in data.get("protocol_header", {}):
-            message_type = data["protocol_header"]["pkt_type"]
-        else:
-            raise BadConversion(
-                "Don't know how to pack this dictionary, it doesn't specify a pkt_type!"
-            )
+        protocol, pkt_type, Packet, PacketKls, data = kls.get_packet_type(data, protocol_register)
 
-        if "protocol" in data:
-            protocol = data["protocol"]
-        elif "frame_header" in data and "protocol" in data["frame_header"]:
-            protocol = data["frame_header"]["protocol"]
-        else:
-            raise BadConversion(
-                "Don't know how to pack this dictionary, it doesn't specify a protocol!"
-            )
+        if PacketKls is None:
+            if not unknown_ok:
+                raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
+            PacketKls = Packet
 
-        prot = protocol_register.get(protocol)
-        if prot is None:
-            raise BadConversion(
-                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
-            )
-        Packet, messages_register = prot
-
-        for k in messages_register or [kls]:
-            if message_type in k.by_type:
-                return k.by_type[message_type].normalise(Meta.empty(), data).pack()
-        if unknown_ok:
-            return Packet.normalise(Meta.empty(), data).pack()
-        raise BadConversion("Unknown message type!", pkt_type=message_type)
+        return PacketKls.normalise(Meta.empty(), data).pack()
 
 
 class MessagesMeta(type):
@@ -212,32 +295,9 @@ class MessagesMeta(type):
         attrs["by_type"] = by_type
         kls = type.__new__(metaname, classname, baseclasses, attrs)
 
-        buf = []
-        in_kls = None
-
-        try:
-            src = inspect.getsource(kls)
-        except OSError as error:
-            if error.args and error.args[0] == "could not find class definition":
-                log.warning("Couldn't find source code for kls\tkls={0}".format(kls))
-            else:
-                raise
-        else:
-            for line in src.split("\n"):
-                attr = line[: line.find("=")].replace(" ", "")
-                if attr and attr[0].isupper() and attr in attrs:
-                    if buf and in_kls:
-                        if not hasattr(attrs[in_kls].Meta, "caller_source"):
-                            attrs[in_kls].Meta.caller_source = dedent("\n".join(buf))
-                    buf = []
-                    in_kls = attr
-
-                if not line.strip().startswith("#"):
-                    buf.append(line)
-
-            if buf and in_kls:
-                if not hasattr(attrs[in_kls].Meta, "caller_source"):
-                    attrs[in_kls].Meta.caller_source = dedent("\n".join(buf))
+        for attr, source in sources_for(kls):
+            if not hasattr(attrs[attr].Meta, "caller_source"):
+                attrs[attr].Meta.caller_source = source
 
         return kls
 
