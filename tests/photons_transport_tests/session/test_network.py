@@ -1,5 +1,6 @@
 # coding: spec
 
+from photons_transport.session.discovery_options import NoDiscoveryOptions, NoEnvDiscoveryOptions
 from photons_transport.errors import NoDesiredService, UnknownService, InvalidBroadcast
 from photons_transport.session.network import NetworkSession, udp_retry_options
 from photons_transport.transports.udp import UDP
@@ -27,10 +28,11 @@ describe AsyncTestCase, "NetworkSession":
         self.default_broadcast = "1.2.3.255"
 
         self.transport_target = mock.Mock(
-            name="target", spec=["script", "final_future", "default_broadcast"]
+            name="target", spec=["script", "final_future", "default_broadcast", "discovery_options"]
         )
         self.transport_target.final_future = self.final_future
         self.transport_target.default_broadcast = self.default_broadcast
+        self.transport_target.discovery_options = NoDiscoveryOptions.FieldSpec().empty_normalise()
 
         self.session = NetworkSession(self.transport_target)
 
@@ -147,6 +149,39 @@ describe AsyncTestCase, "NetworkSession":
 
             _search_retry_iterator.assert_called_once_with(timeout)
 
+        async it "can use hard coded discovery":
+            self.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+                hardcoded_discovery={"d073d5000001": "192.168.0.1", "d073d5000002": "192.168.0.2"}
+            )
+
+            self.assertEqual(self.session.found, Found())
+            fn = await self.session._do_search(None, 20)
+
+            self.assertEqual(
+                sorted(fn),
+                sorted([binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")]),
+            )
+
+            self.assertEqual(self.session.found.serials, ["d073d5000001", "d073d5000002"])
+            self.assertEqual(
+                self.session.found["d073d5000001"],
+                {
+                    Services.UDP: await self.session.make_transport(
+                        "d073d5000001", Services.UDP, {"host": "192.168.0.1", "port": 56700}
+                    )
+                },
+            )
+            self.assertEqual(
+                self.session.found["d073d5000002"],
+                {
+                    Services.UDP: await self.session.make_transport(
+                        "d073d5000002", Services.UDP, {"host": "192.168.0.2", "port": 56700}
+                    )
+                },
+            )
+
+            self.assertEqual(len(self.transport_target.script.mock_calls), 0)
+
         async it "finds":
 
             async def run_with(*args, **kwargs):
@@ -205,6 +240,60 @@ describe AsyncTestCase, "NetworkSession":
                 {
                     Services.UDP: await self.session.make_transport(
                         "d073d5000002", Services.UDP, {"host": "192.168.0.4", "port": 58}
+                    )
+                },
+            )
+
+        async it "can filter serials":
+
+            async def run_with(*args, **kwargs):
+                s1 = DiscoveryMessages.StateService(
+                    service=Services.UDP, port=56, target="d073d5000001"
+                )
+                yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+
+                s3 = DiscoveryMessages.StateService(
+                    service=Services.UDP, port=58, target="d073d5000002"
+                )
+                yield (s3, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
+
+            self.assertEqual(self.session.found, Found())
+            self.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+                serial_filter=["d073d5000001"]
+            )
+
+            a = mock.Mock(name="a")
+            with self.mocks(20, run_with) as script:
+                fn = await self.session._do_search(None, 20, a=a)
+
+            kwargs = {
+                "a": a,
+                "no_retry": True,
+                "broadcast": True,
+                "accept_found": True,
+                "error_catcher": [],
+                "message_timeout": 1,
+            }
+            script.run_with.assert_called_once_with(None, self.session, **kwargs)
+
+            self.transport_target.script.assert_called_once_with(
+                DiscoveryMessages.GetService(
+                    target=None,
+                    tagged=True,
+                    addressable=True,
+                    res_required=True,
+                    ack_required=False,
+                )
+            )
+
+            self.assertEqual(sorted(fn), sorted([binascii.unhexlify(s) for s in ("d073d5000001",)]))
+
+            self.assertEqual(self.session.found.serials, ["d073d5000001"])
+            self.assertEqual(
+                self.session.found["d073d5000001"],
+                {
+                    Services.UDP: await self.session.make_transport(
+                        "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
                     )
                 },
             )

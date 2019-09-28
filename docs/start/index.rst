@@ -8,6 +8,8 @@
   venvstarter
   script_mechanism
   planner
+  config_file
+  discovery
   finding_serials
   tile_animations
   packets

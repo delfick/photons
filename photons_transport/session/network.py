@@ -1,4 +1,5 @@
 from photons_transport.errors import InvalidBroadcast, UnknownService, NoDesiredService
+from photons_transport.session.discovery_options import DiscoveryOptions
 from photons_transport.retry_options import RetryOptions
 from photons_transport.comms.base import Communication
 from photons_transport.transports.udp import UDP
@@ -67,6 +68,11 @@ class NetworkSession(Communication):
 
     async def _do_search(self, serials, timeout, **kwargs):
         found_now = set()
+        discovery_options = self.transport_target.discovery_options
+
+        if discovery_options.has_hardcoded_discovery:
+            log.info("Using hard coded discovery information")
+            return await discovery_options.discover(self.add_service)
 
         get_service = DiscoveryMessages.GetService(
             target=None, tagged=True, addressable=True, res_required=True, ack_required=False
@@ -83,8 +89,9 @@ class NetworkSession(Communication):
             kwargs["message_timeout"] = time_till_next
 
             async for pkt, addr, _ in script.run_with(None, self, **kwargs):
-                found_now.add(pkt.target[:6])
-                await self.add_service(pkt.serial, pkt.service, host=addr[0], port=pkt.port)
+                if discovery_options.want(pkt.serial):
+                    found_now.add(pkt.target[:6])
+                    await self.add_service(pkt.serial, pkt.service, host=addr[0], port=pkt.port)
 
             if serials is None:
                 if found_now:

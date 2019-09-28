@@ -272,10 +272,7 @@ reaching the tile, which results in a very bad animation.
 In such an environment, you can tell photons to throttle the messages that are
 sent to the tiles.
 
-You can do this via configuration or via environment variables.
-
-If you choose configuration, in your ``lifx.yml`` (or configuration specified by
-the ``LIFX_CONFIG`` environment variable) have something like:
+You can do this via :ref:`configuration <config_file>` or via environment variables.
 
 .. code-block:: yaml
 

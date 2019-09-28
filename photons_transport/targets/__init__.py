@@ -2,6 +2,7 @@
 A target encapsulates the logic for finding devices over a particular medium and
 then talking to them over that medium.
 """
+from photons_transport.session.discovery_options import discovery_options_spec
 from photons_transport.session.memory import makeMemorySession
 from photons_transport.session.network import NetworkSession
 from photons_transport.targets.base import Target
@@ -17,6 +18,7 @@ class LanTarget(Target):
     """
 
     default_broadcast = dictobj.Field(sb.defaulted(sb.string_spec(), "255.255.255.255"))
+    discovery_options = dictobj.Field(discovery_options_spec)
 
     session_kls = NetworkSession
 
