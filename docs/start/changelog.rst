@@ -18,6 +18,7 @@ ChangeLog
      to use this method, and cleaned the code in that folder a little.
    * Another adjustment to shutdown logic to handle async generators better
    * Added ``lifx lan:find_ips`` command
+   * Fixed the broadcast option to run_with to allow ip addresses
 
 0.22.0 - 21 September 2019
    * Changed the many option on packet definitions to multiple

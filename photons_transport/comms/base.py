@@ -285,12 +285,12 @@ class Communication:
         limit=None,
         no_retry=False,
         transport=None,
-        is_broadcast=False,
+        broadcast=False,
         connect_timeout=10,
     ):
 
         transport, is_broadcast = await self._transport_for_send(
-            transport, packet, original, is_broadcast, connect_timeout
+            transport, packet, original, broadcast, connect_timeout
         )
 
         retry_options = self.retry_options_for(original, transport)
@@ -313,10 +313,12 @@ class Communication:
         finally:
             waiter.cancel()
 
-    async def _transport_for_send(self, transport, packet, original, is_broadcast, connect_timeout):
+    async def _transport_for_send(self, transport, packet, original, broadcast, connect_timeout):
+        is_broadcast = bool(broadcast)
+
         if transport is None and (is_broadcast or packet.target is None):
             is_broadcast = True
-            transport = await self.make_broadcast_transport(True)
+            transport = await self.make_broadcast_transport(broadcast or True)
 
         if transport is None:
             if packet.serial not in self.found:

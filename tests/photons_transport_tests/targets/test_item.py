@@ -391,7 +391,7 @@ describe AsyncTestCase, "Item":
                             timeout=10,
                             limit=None,
                             no_retry=False,
-                            is_broadcast=False,
+                            broadcast=None,
                             connect_timeout=10,
                         ),
                         mock.call(
@@ -400,7 +400,7 @@ describe AsyncTestCase, "Item":
                             timeout=10,
                             limit=None,
                             no_retry=False,
-                            is_broadcast=False,
+                            broadcast=None,
                             connect_timeout=10,
                         ),
                         mock.call(
@@ -409,7 +409,7 @@ describe AsyncTestCase, "Item":
                             timeout=10,
                             limit=None,
                             no_retry=False,
-                            is_broadcast=False,
+                            broadcast=None,
                             connect_timeout=10,
                         ),
                         mock.call(
@@ -418,7 +418,7 @@ describe AsyncTestCase, "Item":
                             timeout=10,
                             limit=None,
                             no_retry=False,
-                            is_broadcast=False,
+                            broadcast=None,
                             connect_timeout=10,
                         ),
                     ],
@@ -473,7 +473,7 @@ describe AsyncTestCase, "Item":
                             timeout=mt,
                             limit=limit,
                             no_retry=nr,
-                            is_broadcast=True,
+                            broadcast=broadcast,
                             connect_timeout=ct,
                         ),
                         mock.call(
@@ -482,7 +482,7 @@ describe AsyncTestCase, "Item":
                             timeout=mt,
                             limit=limit,
                             no_retry=nr,
-                            is_broadcast=True,
+                            broadcast=broadcast,
                             connect_timeout=ct,
                         ),
                         mock.call(
@@ -491,7 +491,7 @@ describe AsyncTestCase, "Item":
                             timeout=mt,
                             limit=limit,
                             no_retry=nr,
-                            is_broadcast=True,
+                            broadcast=broadcast,
                             connect_timeout=ct,
                         ),
                         mock.call(
@@ -500,7 +500,7 @@ describe AsyncTestCase, "Item":
                             timeout=mt,
                             limit=limit,
                             no_retry=nr,
-                            is_broadcast=True,
+                            broadcast=broadcast,
                             connect_timeout=ct,
                         ),
                     ],

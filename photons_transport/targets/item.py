@@ -257,7 +257,7 @@ class Item(object):
             timeout=kwargs.get("message_timeout", 10),
             limit=kwargs.get("limit"),
             no_retry=kwargs.get("no_retry", False),
-            is_broadcast=bool(kwargs.get("broadcast")),
+            broadcast=kwargs.get("broadcast"),
             connect_timeout=kwargs.get("connect_timeout", 10),
         )
         for thing in res:

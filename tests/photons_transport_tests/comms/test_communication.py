@@ -648,8 +648,8 @@ describe AsyncTestCase, "Communication":
             transport_in = mock.Mock(name="transport_in")
             transport_out = mock.Mock(name="transport_out")
 
-            is_broadcast_in = mock.Mock(name="is_broadcast_in")
-            is_broadcast_out = mock.Mock(name="is_broadcast_out")
+            broadcast = mock.Mock(name="broadcast")
+            is_broadcast = mock.Mock(name="broadcast")
 
             limit = mock.Mock(name="limit")
             packet = mock.Mock(name="packet")
@@ -659,7 +659,7 @@ describe AsyncTestCase, "Communication":
             connect_timeout = mock.Mock(name="connect_timeout")
 
             _transport_for_send = asynctest.mock.CoroutineMock(name="_transport_for_send")
-            _transport_for_send.return_value = (transport_out, is_broadcast_out)
+            _transport_for_send.return_value = (transport_out, is_broadcast)
 
             retry_options = mock.Mock(name="retry_options")
             retry_options_for = mock.Mock(name="retry_options_for", return_value=retry_options)
@@ -710,13 +710,13 @@ describe AsyncTestCase, "Communication":
                     "limit": limit,
                     "no_retry": no_retry,
                     "transport": transport_in,
-                    "is_broadcast": is_broadcast_in,
+                    "broadcast": broadcast,
                     "connect_timeout": connect_timeout,
                 }
                 self.assertIs(await self.communication.send(original, packet, **kwargs), res)
 
                 _transport_for_send.assert_called_once_with(
-                    transport_in, packet, original, is_broadcast_in, connect_timeout
+                    transport_in, packet, original, broadcast, connect_timeout
                 )
                 retry_options_for.assert_called_once_with(original, transport_out)
                 FakeWriter.assert_called_once_with(
@@ -726,7 +726,7 @@ describe AsyncTestCase, "Communication":
                     original,
                     packet,
                     retry_options,
-                    did_broadcast=is_broadcast_out,
+                    did_broadcast=is_broadcast,
                     connect_timeout=connect_timeout,
                 )
                 FakeWaiter.assert_called_once_with(
@@ -866,7 +866,7 @@ describe AsyncTestCase, "Communication":
                 yield (make_broadcast_transport, choose_transport)
 
         @with_timeout
-        async it "uses make_broadcast_transport if is_broadcast":
+        async it "uses make_broadcast_transport if broadcast":
             with self.maker_mocks() as (make_broadcast_transport, choose_transport):
                 res = await self.communication._transport_for_send(
                     None, self.packet, self.original, True, self.connect_timeout
@@ -874,6 +874,22 @@ describe AsyncTestCase, "Communication":
                 self.assertEqual(res, (self.transport, True))
 
             make_broadcast_transport.assert_called_once_with(True)
+            self.assertEqual(len(choose_transport.mock_calls), 0)
+            self.transport.spawn.assert_called_once_with(
+                self.original, timeout=self.connect_timeout
+            )
+
+        @with_timeout
+        async it "uses make_broadcast_transport if broadcast is an address":
+            broadcast = "192.168.0.255"
+
+            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await self.communication._transport_for_send(
+                    None, self.packet, self.original, broadcast, self.connect_timeout
+                )
+                self.assertEqual(res, (self.transport, True))
+
+            make_broadcast_transport.assert_called_once_with(broadcast)
             self.assertEqual(len(choose_transport.mock_calls), 0)
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
