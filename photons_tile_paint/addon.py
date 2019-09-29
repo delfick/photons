@@ -1,7 +1,7 @@
 from photons_app.actions import an_action
 
-from delfick_project.norms import dictobj, sb, Meta
 from delfick_project.addons import addon_hook
+from delfick_project.norms import Meta
 
 from photons_tile_paint.options import GlobalOptions
 

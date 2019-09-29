@@ -1,5 +1,4 @@
 from photons_transport.errors import InvalidBroadcast, UnknownService, NoDesiredService
-from photons_transport.session.discovery_options import DiscoveryOptions
 from photons_transport.retry_options import RetryOptions
 from photons_transport.comms.base import Communication
 from photons_transport.transports.udp import UDP
