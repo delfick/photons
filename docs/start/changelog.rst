@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.22.1 - TBD
+0.22.1 - 29 September 2019
    * Removed unnecessary errors from being written to the output when you
      ctrl-c a script (especially tile animations)
    * Slight fix to the tile_falling animation
