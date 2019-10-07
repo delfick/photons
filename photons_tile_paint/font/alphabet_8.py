@@ -1,8 +1,3 @@
-#
-# Borrowed from https://fontstruct.com/fontstructions/show/25590/amstrad_cpc_extended
-# Converted with this script: https://gist.github.com/delfick/e8ec0b187774f7a69f33d950c306c4e7
-#
-
 from photons_tile_paint.font.base import Character, Space
 
 characters = {
@@ -919,6 +914,30 @@ characters = {
       ________
       """
     ),
+    "{": Character(
+        """
+      _###____
+      ___##___
+      ___##___
+      ____###_
+      ___##___
+      ___##___
+      _###____
+      ________
+      """
+    ),
+    "}": Character(
+        """
+      ____###_
+      ___##___
+      ___##___
+      _###____
+      ___##___
+      ___##___
+      ____###_
+      ________
+      """
+    ),
     "[": Character(
         """
       __####__
@@ -965,6 +984,30 @@ characters = {
       ________
       ________
       ########
+      """
+    ),
+    "'": Character(
+        """
+      ___##___
+      ___##___
+      ___##___
+      ________
+      ________
+      ________
+      ________
+      ________
+      """
+    ),
+    '"': Character(
+        """
+      _##_##__
+      _##_##__
+      _##_##__
+      ________
+      ________
+      ________
+      ________
+      ________
       """
     ),
 }

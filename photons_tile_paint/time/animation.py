@@ -3,7 +3,7 @@ from photons_tile_paint.animation import (
     coords_for_horizontal_line,
     put_characters_on_canvas,
 )
-from photons_tile_paint.font.alphabet import characters as alphabet
+from photons_tile_paint.font.alphabet_8 import characters as alphabet_8
 
 from photons_themes.canvas import Canvas
 
@@ -48,6 +48,6 @@ class TileTimeAnimation(Animation):
 
         canvas.set_all_points_for_tile(user_x, user_y, width * 5, height, get_color)
 
-        time_characters = [alphabet[ch] for ch in list(state.time_string)]
+        time_characters = [alphabet_8[ch] for ch in list(state.time_string)]
         put_characters_on_canvas(canvas, time_characters, coords, self.options.number_color.color)
         return canvas

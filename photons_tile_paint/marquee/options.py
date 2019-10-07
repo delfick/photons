@@ -10,13 +10,18 @@ class TileMarqueeOptions(AnimationOptions):
     text = dictobj.Field(sb.string_spec, default="LIFX is awesome!")
     user_coords = dictobj.Field(sb.boolean, default=False)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
+    large_font = dictobj.Field(sb.boolean, default=False)
+    speed = dictobj.Field(sb.integer_spec, default=1)
     direction = dictobj.Field(
         enum_spec(None, MarqueeDirection, unpacking=True), default=MarqueeDirection.LEFT
     )
 
     @property
     def text_width(self):
-        return len(self.text) * 8
+        if self.large_font:
+            return len(self.text) * 16
+        else:
+            return len(self.text) * 8
 
     def final_iteration(self, iteration):
         if self.num_iterations == -1:

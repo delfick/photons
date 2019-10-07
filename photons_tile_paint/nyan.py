@@ -11,6 +11,7 @@ class TileNyanOptions(AnimationOptions):
     user_coords = dictobj.Field(sb.boolean, default=False)
     num_iterations = dictobj.Field(sb.integer_spec, default=-1)
     random_orientations = dictobj.Field(sb.boolean, default=False)
+    speed = dictobj.Field(sb.integer_spec, default=1)
 
     @property
     def direction(self):

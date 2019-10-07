@@ -80,6 +80,15 @@ tile_marquee
   direction -- left or right -- default left
     The direction the text goes in
 
+  speed - int - default 1
+    The number of pixels to progress each iteration of the loop
+
+  large_font - bool - default false
+    This uses a 16x16 font instead of an 8x8 font. Note that it only makes sense
+    if you have two tiles and use ``combine_tiles: true`` in your options. Also
+    the tiles need to have user_x and user_y properties such that they are both
+    in horizontal lines on top of each other.
+
 tile_nyan
   This also has the following options
 
@@ -93,6 +102,9 @@ tile_nyan
 
   random_orientations -- bool -- default false
     If true then we will choose a random orientation for each tile
+
+  speed - int - default 1
+    The number of pixels to progress each iteration of the loop
 
 tile_pacman
   This also has the following options

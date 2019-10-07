@@ -4,7 +4,8 @@ from photons_tile_paint.animation import (
     put_characters_on_canvas,
     Finish,
 )
-from photons_tile_paint.font.alphabet import characters as alphabet
+from photons_tile_paint.font.alphabet_16 import characters as alphabet_16
+from photons_tile_paint.font.alphabet_8 import characters as alphabet_8
 
 from photons_themes.canvas import Canvas
 
@@ -35,10 +36,13 @@ class TileMarqueeAnimation(Animation):
         def move_right(self, amount):
             return self.__class__(self.x + amount)
 
-        def coords_for(self, original, characters):
+        def coords_for(self, original, characters, large):
             coords = []
 
-            (_, top_y), (_, height) = sorted(original)[0]
+            (_, top_y), (_, height) = sorted(original)[1]
+            if large:
+                height *= 2
+
             left_x = self.x
 
             for char in characters:
@@ -63,7 +67,7 @@ class TileMarqueeAnimation(Animation):
         if prev_state is None:
             return self.State(right_x)
 
-        nxt = prev_state.move_left(1)
+        nxt = prev_state.move_left(getattr(self.options, "speed", 1))
         if nxt.x < left_x:
             self.iteration += 1
             if self.options.final_iteration(self.iteration):
@@ -88,18 +92,20 @@ class TileMarqueeAnimation(Animation):
                 raise Finish("Reached max iterations")
             return self.State(left_x)
 
-        return prev_state.move_right(1)
+        return prev_state.move_right(getattr(self.options, "speed", 1))
 
     def characters(self, state):
         characters = []
         for ch in self.options.text:
-            characters.append(alphabet[ch])
+            if getattr(self.options, "large_font", False):
+                characters.append(alphabet_16[ch])
+            else:
+                characters.append(alphabet_8[ch])
         return characters
 
     def make_canvas(self, state, coords):
         canvas = Canvas()
         characters = self.characters(state)
-        put_characters_on_canvas(
-            canvas, characters, state.coords_for(coords, characters), self.options.text_color.color
-        )
+        coords = state.coords_for(coords, characters, getattr(self.options, "large_font", False))
+        put_characters_on_canvas(canvas, characters, coords, self.options.text_color.color)
         return canvas

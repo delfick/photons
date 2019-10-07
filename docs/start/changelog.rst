@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.22.2 - TBD
+   * Added large_font and speed options to the tile_marquee animation which
+     allows a 16x16 font across two tile sets.
+
 0.22.1 - 29 September 2019
    * Removed unnecessary errors from being written to the output when you
      ctrl-c a script (especially tile animations)
