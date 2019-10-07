@@ -39,7 +39,9 @@ class TileMarqueeAnimation(Animation):
         def coords_for(self, original, characters, large):
             coords = []
 
-            (_, top_y), (_, height) = sorted(original)[1]
+            top_y = sorted(top_y for (_, top_y), _ in sorted(original))[-1]
+            height = original[0][1][1]
+
             if large:
                 height *= 2
 

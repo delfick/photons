@@ -1,7 +1,7 @@
 from photons_tile_paint.font.base import Character, Space
 
 characters = {
-    " ": Space(8),
+    " ": Space(8, 16),
     "A": Character(
         """
       ______####______

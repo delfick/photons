@@ -28,8 +28,8 @@ class Character:
         return get_color
 
 
-def Space(width):
+def Space(width, height=8):
     rows = []
-    for _ in range(8):
+    for _ in range(height):
         rows.append("_" * width)
     return Character("\n".join(rows))

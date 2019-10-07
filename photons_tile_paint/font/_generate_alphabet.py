@@ -38,7 +38,7 @@ for w in (8, 16):
                 nxt.append("".join(row))
 
             if ch == " ":
-                print(f'    " ": Space({w // 2}),', file=fle)
+                print(f'    " ": Space({w // 2}, {w}),', file=fle)
                 continue
 
             if ch == "z":
