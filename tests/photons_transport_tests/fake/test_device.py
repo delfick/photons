@@ -23,6 +23,7 @@ from photons_messages import (
     DeviceMessages,
     CoreMessages,
 )
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
@@ -37,6 +38,7 @@ describe AsyncTestCase, "FakeDevice":
 
         device.attrs.vendor_id = 1
         device.attrs.product_id = 55
+        device.attrs.product = Products[1, 55]
         self.assertEqual(repr(device), "<FakeDevice d073d5001337: LIFX Tile>")
 
     describe "init":

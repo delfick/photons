@@ -160,17 +160,17 @@ firmware_version
 
 product_id
     The product id of the device as an integer. You can see the hex product id
-    of each device type in the ``photons_products_registry`` module.
+    of each device type in the ``photons_products`` module.
 
 product_identifier
     A string identifying the product type of the device. You can find these in
-    the ``photons_products_registry`` module.
+    the ``photons_products`` module.
 
 cap
     A list of strings of capabilities this device has.
 
-    Capabilities include ``ir``, ``color``, ``chain``, ``multizone``, ``variable_color_temp``
-    and ``not_ir``, ``not_color``, ``not_chain``, ``not_multizone``, ``not_variable_color_temp``
+    Capabilities include ``ir``, ``color``, ``chain``, ``matrix``, ``multizone``, ``variable_color_temp``
+    and ``not_ir``, ``not_color``, ``not_chain``, ``not_matrix``, ``not_multizone``, ``not_variable_color_temp``
 
 When a property in the filter is an array, it will match any device that matches
 against any of the items in the array.
@@ -194,8 +194,8 @@ from photons_app.actions import an_action
 from photons_app import helpers as hp
 
 from photons_messages import LIFXPacket, DeviceMessages, LightMessages
-from photons_products_registry import capability_for_ids
 from photons_control.script import Pipeline, Repeater
+from photons_products import Products
 
 from delfick_project.norms import dictobj, sb, Meta
 from delfick_project.addons import addon_hook
@@ -217,11 +217,7 @@ __shortdesc__ = "Device finder that gathers information about devices in the bac
 
 
 @addon_hook(
-    extras=[
-        ("lifx.photons", "control"),
-        ("lifx.photons", "messages"),
-        ("lifx.photons", "products_registry"),
-    ]
+    extras=[("lifx.photons", "control"), ("lifx.photons", "messages"), ("lifx.photons", "products")]
 )
 def __lifx__(collector, *args, **kwargs):
     pass
@@ -696,17 +692,18 @@ class Device(dictobj.Spec):
 
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
-            capability = capability_for_ids(pkt.product, pkt.vendor)
-            self.product_identifier = capability.identifier
+            product = Products[pkt.vendor, pkt.product]
+            self.product_identifier = product.identifier
             cap = []
             for prop in (
-                "has_color",
                 "has_ir",
-                "has_multizone",
+                "has_color",
                 "has_chain",
+                "has_matrix",
+                "has_multizone",
                 "has_variable_color_temp",
             ):
-                if getattr(capability, prop):
+                if getattr(product.cap, prop):
                     cap.append(prop[4:])
                 else:
                     cap.append("not_{}".format(prop[4:]))

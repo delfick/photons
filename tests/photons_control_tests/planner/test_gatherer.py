@@ -7,8 +7,8 @@ from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages
-from photons_products_registry import LIFIProductRegistry
 from photons_transport.fake import FakeDevice
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from contextlib import contextmanager
@@ -18,7 +18,7 @@ import uuid
 light1 = FakeDevice(
     "d073d5000001",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_A19_PLUS,
+        Products.LCM2_A19_PLUS,
         power=0,
         label="bob",
         infrared=100,
@@ -30,7 +30,7 @@ light1 = FakeDevice(
 light2 = FakeDevice(
     "d073d5000002",
     chp.default_responders(
-        LIFIProductRegistry.LMB_MESH_A21,
+        Products.LMB_MESH_A21,
         power=65535,
         label="sam",
         color=chp.Color(200, 0.3, 1, 9000),
@@ -41,7 +41,7 @@ light2 = FakeDevice(
 light3 = FakeDevice(
     "d073d5000003",
     chp.default_responders(
-        LIFIProductRegistry.LCM1_Z,
+        Products.LCM1_Z,
         power=0,
         label="strip",
         firmware=chp.Firmware(1, 22, 1502237570000000000),

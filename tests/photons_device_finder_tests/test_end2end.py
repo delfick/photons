@@ -6,10 +6,10 @@ from photons_app.registers import ProtocolRegister
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages, protocol_register
-from photons_products_registry import LIFIProductRegistry
 from photons_transport.fake import FakeDevice, Responder
 from photons_transport.targets import MemoryTarget
 from photons_control import test_helpers as chp
+from photons_products import Products
 
 from delfick_project.norms import dictobj
 import asyncio
@@ -42,7 +42,7 @@ class CollectionResponder(Responder):
 device1 = FakeDevice(
     "d073d5000001",
     chp.default_responders(
-        LIFIProductRegistry.LCMV4_BR30_COLOR,
+        Products.LCMV4_BR30_COLOR,
         color=chp.Color(120, 0.4, 0.3, 3500),
         firmware=chp.Firmware(1, 22, 0),
         label="kitchen",
@@ -58,7 +58,7 @@ device1 = FakeDevice(
 device2 = FakeDevice(
     "d073d5000002",
     chp.default_responders(
-        LIFIProductRegistry.LCMV4_A19_COLOR,
+        Products.LCMV4_A19_COLOR,
         color=chp.Color(120, 0.4, 0.3, 3500),
         label="bathroom",
         firmware=chp.Firmware(1, 22, 0),
@@ -74,7 +74,7 @@ device2 = FakeDevice(
 device3 = FakeDevice(
     "d073d5000003",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_A19_PLUS,
+        Products.LCM2_A19_PLUS,
         color=chp.Color(120, 0.4, 0.3, 3500),
         label="hallway",
         firmware=chp.Firmware(1, 22, 0),
@@ -182,7 +182,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "two",
                     "location_name": "four",
                     "location_id": "78900000000000000000000000000000",
-                    "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "not_chain",
+                        "not_ir",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
                 "d073d5000002": {
                     "serial": "d073d5000002",
@@ -199,7 +206,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "two",
                     "location_name": "two",
                     "location_id": "12340000000000000000000000000000",
-                    "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "not_chain",
+                        "not_ir",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
                 "d073d5000003": {
                     "serial": "d073d5000003",
@@ -216,7 +230,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "three",
                     "location_name": "four",
                     "location_id": "78900000000000000000000000000000",
-                    "cap": ["color", "ir", "not_chain", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "ir",
+                        "not_chain",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
             }
 
@@ -274,7 +295,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "two",
                     "location_name": "four",
                     "location_id": "78900000000000000000000000000000",
-                    "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "not_chain",
+                        "not_ir",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
                 "d073d5000002": {
                     "serial": "d073d5000002",
@@ -291,7 +319,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "two",
                     "location_name": "two",
                     "location_id": "12340000000000000000000000000000",
-                    "cap": ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "not_chain",
+                        "not_ir",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
                 "d073d5000003": {
                     "serial": "d073d5000003",
@@ -308,7 +343,14 @@ describe AsyncTestCase, "Device finder":
                     "group_name": "oneoneone",
                     "location_name": "four",
                     "location_id": "78900000000000000000000000000000",
-                    "cap": ["color", "ir", "not_chain", "not_multizone", "variable_color_temp"],
+                    "cap": [
+                        "color",
+                        "ir",
+                        "not_chain",
+                        "not_matrix",
+                        "not_multizone",
+                        "variable_color_temp",
+                    ],
                 },
             }
 

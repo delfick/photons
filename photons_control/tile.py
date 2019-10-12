@@ -114,7 +114,7 @@ def SetTileEffect(
         r = ref if reference is None else reference
 
         async for serial, _, info in g.gather(plans, r, afr, **kwargs):
-            if info["cap"].has_chain:
+            if info["cap"].has_matrix:
                 if power_on:
                     yield LightMessages.SetLightPower(
                         level=65535,

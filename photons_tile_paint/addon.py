@@ -41,7 +41,7 @@ __shortdesc__ = "Utilities for painting on the tiles"
         ("lifx.photons", "messages"),
         ("lifx.photons", "themes"),
         ("lifx.photons", "control"),
-        ("lifx.photons", "products_registry"),
+        ("lifx.photons", "products"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):

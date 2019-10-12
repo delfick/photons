@@ -12,8 +12,8 @@ from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.errors import TimedOut
 
 from photons_messages import Services, DeviceMessages, DiscoveryMessages, protocol_register
-from photons_products_registry import LIFIProductRegistry, capability_for_ids
 from photons_control import test_helpers as chp
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from contextlib import contextmanager

@@ -13,7 +13,7 @@ wanted = [
     "colour",
     "themes",
     "device_finder",
-    "products_registry",
+    "products",
 ]
 
 

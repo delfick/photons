@@ -11,15 +11,10 @@ from photons_messages import (
     protocol_register,
     fields,
 )
-from photons_products_registry import (
-    capability_for_ids,
-    ProductRegistries,
-    VendorRegistry,
-    LIFIProductRegistry,
-)
 from photons_transport.targets import MemoryTarget
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
+from photons_products import Products
 
 from delfick_project.norms import dictobj, Meta
 import logging
@@ -82,7 +77,7 @@ class InfraredResponder(Responder):
     _fields = [("infrared", lambda: 0)]
 
     def has_infrared(self, device):
-        return ProductResponder.capability(device)[0].has_ir
+        return ProductResponder.capability(device).has_ir
 
     async def reset(self, device, *, zero=False):
         if self.has_infrared(device):
@@ -103,40 +98,39 @@ class InfraredResponder(Responder):
         return LightMessages.StateInfrared(brightness=device.attrs.infrared)
 
 
-class TilesResponder(Responder):
-    _fields = [("tiles_effect", lambda: TileEffectType.OFF)]
+class MatrixResponder(Responder):
+    _fields = [("matrix_effect", lambda: TileEffectType.OFF)]
 
-    def has_chain(self, device):
-        return ProductResponder.capability(device)[0].has_chain
+    def has_matrix(self, device):
+        return ProductResponder.capability(device).has_matrix
 
     async def reset(self, device, *, zero=False):
-        if self.has_chain(device):
+        if self.has_matrix(device):
             await super().reset(device, zero=zero)
 
     async def respond(self, device, pkt, source):
-        if not self.has_chain(device):
+        if not self.has_matrix(device):
             return
 
         if pkt | TileMessages.GetTileEffect:
             yield self.make_state_tile_effect(device)
         elif pkt | TileMessages.SetTileEffect:
             res = self.make_state_tile_effect(device)
-            device.attrs.tiles_effect = pkt.type
+            device.attrs.matrix_effect = pkt.type
             yield res
 
     def make_state_tile_effect(self, device):
-        return TileMessages.StateTileEffect(type=device.attrs.tiles_effect)
+        return TileMessages.StateTileEffect(type=device.attrs.matrix_effect)
 
 
 class ZonesResponder(Responder):
     _fields = ["zones", ("zones_effect", lambda: MultiZoneEffectType.OFF)]
 
     def has_multizone(self, device):
-        return ProductResponder.capability(device)[0].has_multizone
+        return ProductResponder.capability(device).has_multizone
 
     def has_extended_multizone(self, device):
-        cap, major, minor = ProductResponder.capability(device)
-        return cap.has_extended_multizone(major, minor)
+        return ProductResponder.capability(device).has_extended_multizone
 
     def validate_attr(self, device, field, val):
         if field == "zones" and len(val) > 82:
@@ -234,35 +228,22 @@ class ZonesResponder(Responder):
 
 
 class Firmware(dictobj):
-    fields = ["major", "minor", "build"]
+    fields = ["major", "minor", "build", ("install", 0)]
 
 
 class ProductResponder(Responder):
-    _fields = ["vendor_id", "product_id", "firmware"]
+    _fields = ["product", "vendor_id", "product_id", "firmware"]
 
     @classmethod
-    def from_enum(self, enum, firmware=Firmware(0, 0, 0)):
-        vendor_id = None
-        product_id = None
-        for e in ProductRegistries.__members__.values():
-            if enum.__class__ == e.value:
-                vendor_id = VendorRegistry[e.name].value
-                product_id = enum.value
-                break
-
-        if vendor_id is None or product_id is None:
-            assert False, f"Couldn't determine vid and pid from product: {enum}"
-
-        return ProductResponder(product_id=product_id, vendor_id=vendor_id, firmware=firmware)
+    def from_product(self, product, firmware=Firmware(0, 0, 0)):
+        return ProductResponder(
+            product=product, product_id=product.pid, vendor_id=product.vendor.vid, firmware=firmware
+        )
 
     @classmethod
     def capability(kls, device):
         assert any(isinstance(r, kls) for r in device.responders)
-        return (
-            capability_for_ids(device.attrs.product_id, device.attrs.vendor_id),
-            device.attrs.firmware.major,
-            device.attrs.firmware.minor,
-        )
+        return device.attrs.product.cap(device.attrs.firmware.major, device.attrs.firmware.minor)
 
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.GetVersion:
@@ -282,7 +263,7 @@ class ProductResponder(Responder):
 
 
 def default_responders(
-    product=LIFIProductRegistry.LCM2_A19,
+    product=Products.LCM2_A19,
     *,
     power=0,
     label="",
@@ -291,16 +272,14 @@ def default_responders(
     zones=None,
     firmware=Firmware(0, 0, 0),
     zones_effect=MultiZoneEffectType.OFF,
-    tiles_effect=TileEffectType.OFF,
+    matrix_effect=TileEffectType.OFF,
     **kwargs,
 ):
-    product_responder = ProductResponder.from_enum(product, firmware)
+    product_responder = ProductResponder.from_product(product, firmware)
 
     responders = [product_responder, LightStateResponder(power=power, color=color, label=label)]
 
-    cap = capability_for_ids(
-        product_responder._attr_default_product_id, product_responder._attr_default_vendor_id
-    )
+    cap = product.cap(firmware_major=firmware.major, firmware_minor=firmware.minor)
 
     if cap.has_ir:
         responders.append(InfraredResponder(infrared=infrared))
@@ -315,9 +294,11 @@ def default_responders(
         )
         responders.append(ZonesResponder(zones=zones, zones_effect=zones_effect))
 
-    if cap.has_chain:
-        tiles_effect = enum_spec(None, TileEffectType, unpacking=True).normalise(meta, tiles_effect)
-        responders.append(TilesResponder(tiles_effect=tiles_effect))
+    if cap.has_matrix:
+        matrix_effect = enum_spec(None, TileEffectType, unpacking=True).normalise(
+            meta, matrix_effect
+        )
+        responders.append(MatrixResponder(matrix_effect=matrix_effect))
 
     return responders
 

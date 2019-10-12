@@ -10,7 +10,7 @@ from photons_transport.fake import FakeDevice
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, TileMessages, TileEffectType
-from photons_products_registry import LIFIProductRegistry
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
@@ -30,27 +30,21 @@ default_tile_palette = [convert(c) for c in default_tile_palette]
 tile1 = FakeDevice(
     "d073d5000001",
     chp.default_responders(
-        LIFIProductRegistry.LCM3_TILE,
-        firmware_build=1548977726000000000,
-        firmware_major=3,
-        firmware_minor=50,
+        Products.LCM3_TILE, firmware_build=1548977726000000000, firmware_major=3, firmware_minor=50
     ),
 )
 
 tile2 = FakeDevice(
     "d073d5000002",
     chp.default_responders(
-        LIFIProductRegistry.LCM3_TILE,
-        firmware_build=1548977726000000000,
-        firmware_major=3,
-        firmware_minor=50,
+        Products.LCM3_TILE, firmware_build=1548977726000000000, firmware_major=3, firmware_minor=50
     ),
 )
 
 nottile = FakeDevice(
     "d073d5000003",
     chp.default_responders(
-        LIFIProductRegistry.LMB_MESH_A21,
+        Products.LMB_MESH_A21,
         firmware_build=1448861477000000000,
         firmware_major=2,
         firmware_minor=2,
@@ -92,7 +86,7 @@ describe AsyncTestCase, "Tile helpers":
             self.assertEqual(got, [])
 
             for tile in self.tiles:
-                self.assertIs(tile.attrs.tiles_effect, TileEffectType.FLAME)
+                self.assertIs(tile.attrs.matrix_effect, TileEffectType.FLAME)
 
             self.compare_received(
                 {
@@ -129,7 +123,7 @@ describe AsyncTestCase, "Tile helpers":
             self.assertEqual(got, [])
 
             for tile in self.tiles:
-                self.assertIs(tile.attrs.tiles_effect, TileEffectType.FLAME)
+                self.assertIs(tile.attrs.matrix_effect, TileEffectType.FLAME)
 
             palette = [
                 {"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 3500},
@@ -173,7 +167,7 @@ describe AsyncTestCase, "Tile helpers":
             self.assertEqual(got, [])
 
             for tile in self.tiles:
-                self.assertIs(tile.attrs.tiles_effect, TileEffectType.MORPH)
+                self.assertIs(tile.attrs.matrix_effect, TileEffectType.MORPH)
 
             self.compare_received(
                 {
@@ -206,8 +200,8 @@ describe AsyncTestCase, "Tile helpers":
             got = await runner.target.script([msg, msg2]).run_with_all(None)
             self.assertEqual(got, [])
 
-            self.assertIs(tile1.attrs.tiles_effect, TileEffectType.MORPH)
-            self.assertIs(tile2.attrs.tiles_effect, TileEffectType.FLAME)
+            self.assertIs(tile1.attrs.matrix_effect, TileEffectType.MORPH)
+            self.assertIs(tile2.attrs.matrix_effect, TileEffectType.FLAME)
 
             self.compare_received(
                 {

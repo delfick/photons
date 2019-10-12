@@ -4,10 +4,10 @@ from photons_app import helpers as hp
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
 from photons_control.orientation import Orientation as O, reorient
 from photons_control.tile import tiles_from, orientations_from
-from photons_products_registry import capability_for_ids
 from photons_themes.appliers import types as appliers
 from photons_control.script import Pipeline
 from photons_themes.theme import Theme
+from photons_products import Products
 from photons_colour import Parser
 
 from delfick_project.norms import sb, dictobj, Meta
@@ -18,7 +18,7 @@ import logging
 
 @addon_hook(
     extras=[
-        ("lifx.photons", "products_registry"),
+        ("lifx.photons", "products"),
         ("lifx.photons", "messages"),
         ("lifx.photons", "colour"),
         ("lifx.photons", "control"),
@@ -95,35 +95,35 @@ async def do_apply_theme(target, reference, afr, options):
         [DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()]
     ).run_with(reference, afr):
         if pkt | DeviceMessages.StateVersion:
-            info[pkt.serial]["capability"] = capability_for_ids(pkt.product, pkt.vendor)
+            info[pkt.serial]["product"] = Products[pkt.vendor, pkt.product]
         elif pkt | DeviceMessages.StateHostFirmware:
             info[pkt.serial]["firmware"] = (pkt.version_major, pkt.version_minor)
 
     tasks = []
     for serial, details in info.items():
-        if "capability" not in details:
+        if "product" not in details:
             continue
 
-        firmware = details.get("firmware") or (None, None)
-        capability = details["capability"]
+        firmware = details.get("firmware") or (0, 0)
+        cap = details["product"].cap(firmware[0], firmware[1])
 
-        if capability.has_multizone:
-            log.info(hp.lc("Found a strip", serial=serial))
-            if firmware and capability.has_extended_multizone(*firmware):
-                t = hp.async_as_background(
-                    apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides)
-                )
-            else:
-                t = hp.async_as_background(
-                    apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides)
-                )
-        elif capability.has_chain:
-            log.info(hp.lc("Found a tile", serial=serial))
+        if cap.has_extended_multizone:
+            log.info(hp.lc("Found a strip with extended multizone", serial=serial))
+            t = hp.async_as_background(
+                apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides)
+            )
+        elif cap.has_multizone:
+            log.info(hp.lc("Found a strip without extended multizone", serial=serial))
+            t = hp.async_as_background(
+                apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides)
+            )
+        elif cap.has_matrix:
+            log.info(hp.lc("Found a device with matrix zones", serial=serial))
             t = hp.async_as_background(
                 apply_tile(aps["2d"], target, afr, serial, theme, options.overrides)
             )
         else:
-            log.info(hp.lc("Found a light", serial=serial))
+            log.info(hp.lc("Found a light with a single zone", serial=serial))
             t = hp.async_as_background(
                 apply_light(aps["0d"], target, afr, serial, theme, options.overrides)
             )

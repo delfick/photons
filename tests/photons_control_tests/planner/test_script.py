@@ -7,19 +7,18 @@ from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages
-from photons_products_registry import LIFIProductRegistry
+from photons_products import Products
 from photons_transport.fake import FakeDevice
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
 
 light1 = FakeDevice(
-    "d073d5000001", chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, power=0, infrared=100)
+    "d073d5000001", chp.default_responders(Products.LCM2_A19_PLUS, power=0, infrared=100)
 )
 
 light2 = FakeDevice(
-    "d073d5000002",
-    chp.default_responders(LIFIProductRegistry.LCM2_A19_PLUS, power=65535, infrared=0),
+    "d073d5000002", chp.default_responders(Products.LCM2_A19_PLUS, power=65535, infrared=0)
 )
 
 mlr = chp.ModuleLevelRunner([light1, light2])

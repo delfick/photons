@@ -15,13 +15,8 @@ from photons_messages import (
     MultiZoneEffectType,
     Direction,
 )
-from photons_products_registry import (
-    capability_for_ids,
-    enum_for_ids,
-    UnknownProduct,
-    LIFIProductRegistry,
-)
 from photons_transport.fake import FakeDevice
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
@@ -34,7 +29,7 @@ zones3 = [chp.Color(90 - i, 1, 1, 9000) for i in range(40)]
 light1 = FakeDevice(
     "d073d5000001",
     chp.default_responders(
-        LIFIProductRegistry.LCM3_TILE,
+        Products.LCM3_TILE,
         power=0,
         label="bob",
         infrared=100,
@@ -46,7 +41,7 @@ light1 = FakeDevice(
 light2 = FakeDevice(
     "d073d5000002",
     chp.default_responders(
-        LIFIProductRegistry.LMB_MESH_A21,
+        Products.LMB_MESH_A21,
         power=65535,
         label="sam",
         infrared=0,
@@ -58,7 +53,7 @@ light2 = FakeDevice(
 striplcm1 = FakeDevice(
     "d073d5000003",
     chp.default_responders(
-        LIFIProductRegistry.LCM1_Z,
+        Products.LCM1_Z,
         power=0,
         label="lcm1-no-extended",
         firmware=chp.Firmware(1, 22, 1502237570000000000),
@@ -69,7 +64,7 @@ striplcm1 = FakeDevice(
 striplcm2noextended = FakeDevice(
     "d073d5000004",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_Z,
+        Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
         firmware=chp.Firmware(2, 70, 1508122125000000000),
@@ -80,7 +75,7 @@ striplcm2noextended = FakeDevice(
 striplcm2extended = FakeDevice(
     "d073d5000005",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_Z,
+        Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
         firmware=chp.Firmware(2, 77, 1543215651000000000),
@@ -243,31 +238,11 @@ describe AsyncTestCase, "Default Plans":
 
         @mlr.test
         async it "gets the power", runner:
-            l1c = {
-                "cap": capability_for_ids(55, 1),
-                "has_extended_multizone": False,
-                "product": enum_for_ids(55, 1),
-            }
-            l2c = {
-                "cap": capability_for_ids(1, 1),
-                "has_extended_multizone": False,
-                "product": enum_for_ids(1, 1),
-            }
-            slcm1c = {
-                "cap": capability_for_ids(31, 1),
-                "has_extended_multizone": False,
-                "product": enum_for_ids(31, 1),
-            }
-            slcm2nec = {
-                "cap": capability_for_ids(32, 1),
-                "has_extended_multizone": False,
-                "product": enum_for_ids(32, 1),
-            }
-            slcm2ec = {
-                "cap": capability_for_ids(32, 1),
-                "has_extended_multizone": True,
-                "product": enum_for_ids(32, 1),
-            }
+            l1c = {"cap": Products.LCM3_TILE.cap(3, 50), "product": Products.LCM3_TILE}
+            l2c = {"cap": Products.LMB_MESH_A21.cap(2, 2), "product": Products.LMB_MESH_A21}
+            slcm1c = {"cap": Products.LCM1_Z.cap(1, 22), "product": Products.LCM1_Z}
+            slcm2nec = {"cap": Products.LCM2_Z.cap(2, 70), "product": Products.LCM2_Z}
+            slcm2ec = {"cap": Products.LCM2_Z.cap(2, 77), "product": Products.LCM2_Z}
 
             got = await self.gather(runner, runner.serials, "capability")
             self.assertEqual(
@@ -281,22 +256,11 @@ describe AsyncTestCase, "Default Plans":
                 },
             )
 
-        @mlr.test
-        async it "adds unknown products to error catcher", runner:
-            errors = []
-
-            def efi(pid, vid):
-                if pid == 55:
-                    raise UnknownProduct(product_id=pid, vendor_id=vid)
-                return enum_for_ids(pid, vid)
-
-            with mock.patch("photons_control.planner.plans.enum_for_ids", efi):
-                got = await self.gather(runner, runner.serials, "capability", error_catcher=errors)
-
-            assert sorted(list(got)), sorted(
-                [light2, striplcm1, striplcm2noextended, striplcm2extended]
-            )
-            self.assertEqual(errors, [UnknownProduct(product_id=55, vendor_id=1)])
+            for serial, (_, info) in got.items():
+                if serial == striplcm2extended.serial:
+                    assert info["capability"]["cap"].has_extended_multizone
+                else:
+                    assert not info["capability"]["cap"].has_extended_multizone
 
     describe "FirmwarePlan":
 
@@ -425,10 +389,7 @@ describe AsyncTestCase, "Default Plans":
                     speed=10,
                     duration=1,
                     palette_count=2,
-                    palette=[
-                        chp.Color(120, 1, 1, 3500).as_dict(),
-                        chp.Color(360, 1, 1, 3500).as_dict(),
-                    ],
+                    palette=[chp.Color(120, 1, 1, 3500), chp.Color(360, 1, 1, 3500)],
                 ),
             )
 

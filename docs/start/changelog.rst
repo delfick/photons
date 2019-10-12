@@ -3,9 +3,65 @@
 ChangeLog
 =========
 
-0.22.2 - TBD
+0.23.0 - TBD
    * Added large_font and speed options to the tile_marquee animation which
      allows a 16x16 font across two tile sets.
+   * Changed photons_control.multizone.find_multizone to yield
+     ``(serial, capability)`` instead of ``(serial, has_extended_multizone)``.
+     You can get ``has_extended_multizone`` by saying ``capability.has_extended_multizone``
+   * Changed the Capability plan to yield ``{"product": <Product>, "cap": <capability>}``
+     instead of also yielding a ``has_extended_multizone`` field. You may get this
+     by saying ``info["cap"].has_extended_multizone``
+   * You should identify whether a product supports Tile messages by looking at
+     the ``has_matrix`` capability instead of ``has_chain``. We may rename the
+     Tile messages to be Matrix messages in the future, but that change has yet
+     to be properly thought out. The ``has_matrix`` capability says there is a
+     2d array of LEDs on the device. The ``has_chain`` capability now means that
+     there are multiple devices that appear as a single device on the network.
+   * Replaced the photons_products_registry module with the photons_products
+     module. Essentially, you change code from first block to second block:
+
+     .. code-block:: python
+
+         from photons_products_registry import capability_for_ids, LIFIProductRegistry
+
+         pid = LIFIProductRegistry.LCM3_TILE.pid
+         vid = 1
+
+         cap = capability_for_ids(pid, vid)
+         assert cap.has_chain
+
+         pid = LIFIProductRegistry.LCM2_Z.pid
+         vid = 1
+
+         cap = capability_for_ids(pid, vid)
+         assert cap.has_multizone
+         assert cap.has_extended_multizone(firmware_major=2, firmware_minor=77)
+
+     .. code-block:: python
+
+         from photons_products import Products
+
+         product = Products.LCM3_TILE
+         # or
+         product = Products[1, 55]
+
+         assert product.cap.has_matrix
+         assert product.cap.has_chain
+
+         # Accessing a name on Products that doesn't exist will raise an error
+         # But if you do say Prodcuts[1, 9001] it'll just return a product that
+         # defaults to essentially no capabilities. As this means old versions of
+         # photons won't break when it sees new devices it doesn't know about
+
+         product = Products.LCM2_Z
+         assert cap.has_multizone
+
+         # By default it'll assume firmware_major/firmware_minor of 0/0
+         assert not cap.has_extended_multizone
+
+         # But you can create a new capability object with different firmware
+         assert cap(firmware_major=2, firmware_minor=77).has_extended_multizone
 
 0.22.1 - 29 September 2019
    * Removed unnecessary errors from being written to the output when you

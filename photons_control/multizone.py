@@ -24,7 +24,7 @@ from delfick_project.norms import sb
 
 async def find_multizone(target, reference, afr, gatherer=None, **kwargs):
     """
-    Yield (serial, has_extended_multizone) for all multizone products found in this reference
+    Yield (serial, capability) for all multizone products found in this reference
     """
     if gatherer is None:
         gatherer = Gatherer(target)
@@ -32,7 +32,7 @@ async def find_multizone(target, reference, afr, gatherer=None, **kwargs):
     plans = make_plans("capability")
     async for serial, _, info in gatherer.gather(plans, reference, afr, **kwargs):
         if info["cap"].has_multizone:
-            yield serial, info["has_extended_multizone"]
+            yield serial, info["cap"]
 
 
 async def zones_from_reference(target, reference, afr, gatherer=None, **kwargs):
@@ -165,12 +165,12 @@ class SetZonesPlan(Plan):
     class Instance(Plan.Instance):
         @property
         def messages(self):
-            if self.deps["c"]["cap"]["has_multizone"]:
+            if self.deps["c"]["cap"].has_multizone:
                 return NoMessages
             return Skip
 
         async def info(self):
-            if self.deps["c"]["has_extended_multizone"]:
+            if self.deps["c"]["cap"].has_extended_multizone:
                 msg = self.parent.set_color_new.clone()
                 msg.target = self.serial
                 return msg
@@ -288,7 +288,7 @@ def SetZonesEffect(
         r = ref if reference is None else reference
 
         async for serial, _, info in g.gather(plans, r, afr, **kwargs):
-            if info["cap"]["has_multizone"]:
+            if info["cap"].has_multizone:
                 if power_on:
                     yield LightMessages.SetLightPower(
                         level=65535,

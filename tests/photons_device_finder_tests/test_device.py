@@ -5,7 +5,7 @@ from photons_device_finder import Device, Collection, Collections, Filter, InfoP
 from photons_app.test_helpers import TestCase
 
 from photons_messages import DeviceMessages, LightMessages
-from photons_products_registry import Capability
+from photons_products import Products
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import sb
@@ -258,40 +258,19 @@ describe TestCase, "Device":
 
         it "takes in StateVersion":
             pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
-            capability = Capability.FieldSpec().empty_normalise(
-                name="A19", company="lifx", identifier="lifx_product_a19"
-            )
-            capability_for_ids = mock.Mock(name="capability_for_ids", return_value=capability)
 
-            with mock.patch("photons_device_finder.capability_for_ids", capability_for_ids):
-                self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.VERSION)
+            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.VERSION)
 
             self.assertEqual(self.device.product_id, 22)
-            self.assertEqual(self.device.product_identifier, "lifx_product_a19")
+            self.assertEqual(self.device.product_identifier, Products[1, 22].identifier)
             self.assertEqual(
                 self.device.cap,
-                ["color", "not_chain", "not_ir", "not_multizone", "variable_color_temp"],
-            )
-
-            capability_for_ids.assert_called_once_with(22, 1)
-
-        it "knows about all the capabilities":
-            pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
-            capability = Capability.FieldSpec().empty_normalise(
-                name="A19",
-                company="lifx",
-                identifier="lifx_product_a19",
-                has_color=True,
-                has_ir=True,
-                has_multizone=True,
-                has_chain=True,
-                has_variable_color_temp=True,
-            )
-            capability_for_ids = mock.Mock(name="capability_for_ids", return_value=capability)
-
-            with mock.patch("photons_device_finder.capability_for_ids", capability_for_ids):
-                self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.VERSION)
-
-            self.assertEqual(
-                self.device.cap, ["chain", "color", "ir", "multizone", "variable_color_temp"]
+                [
+                    "color",
+                    "not_chain",
+                    "not_ir",
+                    "not_matrix",
+                    "not_multizone",
+                    "variable_color_temp",
+                ],
             )

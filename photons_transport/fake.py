@@ -3,7 +3,6 @@ from photons_transport.session.memory import MemoryService
 from photons_app import helpers as hp
 
 from photons_messages import Services, CoreMessages, DiscoveryMessages, DeviceMessages
-from photons_products_registry import capability_for_ids
 from photons_protocol.messages import Messages
 from photons_protocol.types import Type as T
 
@@ -204,9 +203,8 @@ class FakeDevice:
 
     def __repr__(self):
         product = ""
-        if "product_id" in self.attrs and "vendor_id" in self.attrs:
-            cap = capability_for_ids(self.attrs.product_id, self.attrs.vendor_id)
-            product = f": {cap.name}"
+        if "product" in self.attrs:
+            product = f": {self.attrs.product.friendly}"
         return f"<FakeDevice {self.serial}{product}>"
 
     def setup(self):

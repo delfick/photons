@@ -10,3 +10,4 @@ scripts/secrets.yml
 examples/.lifx/
 dist/
 pip-wheel-metadata/
+build/

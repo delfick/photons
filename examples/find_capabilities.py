@@ -1,8 +1,8 @@
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
-from photons_products_registry import capability_for_ids
 from photons_messages import DeviceMessages
+from photons_products import Products
 
 from delfick_project.logging import setup_logging
 import logging
@@ -13,12 +13,8 @@ async def doit(collector):
 
     async for pkt, _, _ in lan_target.script(DeviceMessages.GetVersion()).run_with(FoundSerials()):
         if pkt | DeviceMessages.StateVersion:
-            try:
-                cap = capability_for_ids(pkt.product, pkt.vendor)
-            except:
-                pass
-            else:
-                print("{}: {}".format(pkt.serial, cap))
+            product = Products[pkt.vendor, pkt.product]
+            print(f"{pkt.serial}: {product.as_dict()}")
 
 
 if __name__ == "__main__":

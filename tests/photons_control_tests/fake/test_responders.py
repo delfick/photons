@@ -5,7 +5,7 @@ from photons_control import test_helpers as chp
 from photons_app.test_helpers import AsyncTestCase, print_packet_difference
 from photons_app.errors import PhotonsAppError
 
-from photons_products_registry import LIFIProductRegistry, capability_for_ids
+from photons_products import Products
 from photons_messages import (
     DeviceMessages,
     LightMessages,
@@ -161,7 +161,7 @@ describe AsyncTestCase, "Responders":
             self.device = FakeDevice(
                 "d073d5000001",
                 [
-                    chp.ProductResponder.from_enum(LIFIProductRegistry.LCM2_A19_PLUS),
+                    chp.ProductResponder.from_product(Products.LCM2_A19_PLUS),
                     chp.InfraredResponder(),
                 ],
             )
@@ -186,10 +186,7 @@ describe AsyncTestCase, "Responders":
         async it "doesn't respond to infrared if the product doesn't have infrared":
             self.device = FakeDevice(
                 "d073d5000001",
-                [
-                    chp.ProductResponder.from_enum(LIFIProductRegistry.LCM3_TILE),
-                    chp.InfraredResponder(),
-                ],
+                [chp.ProductResponder.from_product(Products.LCM3_TILE), chp.InfraredResponder()],
             )
             await self.device.start()
             assert "infrared" not in self.device.attrs
@@ -197,17 +194,14 @@ describe AsyncTestCase, "Responders":
             await self.assertResponse(LightMessages.GetInfrared(), [])
             await self.assertResponse(LightMessages.SetInfrared(brightness=100), [])
 
-    describe "TilesResponder":
+    describe "MatrixResponder":
         async before_each:
             self.device = FakeDevice(
                 "d073d5000001",
-                [
-                    chp.ProductResponder.from_enum(LIFIProductRegistry.LCM3_TILE),
-                    chp.TilesResponder(),
-                ],
+                [chp.ProductResponder.from_product(Products.LCM3_TILE), chp.MatrixResponder()],
             )
             await self.device.start()
-            self.assertAttrs(tiles_effect=TileEffectType.OFF)
+            self.assertAttrs(matrix_effect=TileEffectType.OFF)
 
         async it "responds to tile effect messages":
             await self.assertResponse(
@@ -217,24 +211,24 @@ describe AsyncTestCase, "Responders":
             await self.assertResponse(
                 TileMessages.SetTileEffect(type=TileEffectType.FLAME, parameters={}),
                 [TileMessages.StateTileEffect(type=TileEffectType.OFF)],
-                tiles_effect=TileEffectType.FLAME,
+                matrix_effect=TileEffectType.FLAME,
             )
             await self.assertResponse(
                 TileMessages.GetTileEffect(),
                 [TileMessages.StateTileEffect(type=TileEffectType.FLAME)],
-                tiles_effect=TileEffectType.FLAME,
+                matrix_effect=TileEffectType.FLAME,
             )
 
         async it "doesn't respond to tile messages if the product doesn't have chain":
             self.device = FakeDevice(
                 "d073d5000001",
                 [
-                    chp.ProductResponder.from_enum(LIFIProductRegistry.LCMV4_A19_COLOR),
-                    chp.TilesResponder(),
+                    chp.ProductResponder.from_product(Products.LCMV4_A19_COLOR),
+                    chp.MatrixResponder(),
                 ],
             )
             await self.device.start()
-            assert "tiles_effect" not in self.device.attrs
+            assert "matrix_effect" not in self.device.attrs
 
             await self.assertResponse(TileMessages.GetTileEffect(), [])
             await self.assertResponse(
@@ -249,7 +243,10 @@ describe AsyncTestCase, "Responders":
         async def make_device(self, enum, firmware, zones=None):
             self.device = FakeDevice(
                 "d073d5000001",
-                [chp.ProductResponder.from_enum(enum, firmware), chp.ZonesResponder(zones=zones)],
+                [
+                    chp.ProductResponder.from_product(enum, firmware),
+                    chp.ZonesResponder(zones=zones),
+                ],
             )
             await self.device.start()
             if zones is not None:
@@ -261,10 +258,10 @@ describe AsyncTestCase, "Responders":
         async it "complains if you try to set too many zones":
             zones = [chp.Color(0, 0, 0, 0)] * 83
             with self.fuzzyAssertRaisesError(PhotonsAppError, "Can only have up to 82 zones!"):
-                await self.make_device(LIFIProductRegistry.LCM1_Z, chp.Firmware(0, 0, 0), zones)
+                await self.make_device(Products.LCM1_Z, chp.Firmware(0, 0, 0), zones)
 
         async it "doesn't respond if we aren't a multizone device":
-            await self.make_device(LIFIProductRegistry.LCMV4_A19_COLOR, chp.Firmware(0, 0, 0))
+            await self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(0, 0, 0))
 
             await self.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), [])
             await self.assertResponse(
@@ -291,8 +288,8 @@ describe AsyncTestCase, "Responders":
 
         async it "doesn't respond to extended multizone if we aren't extended multizone":
             cases = [
-                (LIFIProductRegistry.LCM1_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
-                (LIFIProductRegistry.LCM2_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
+                (Products.LCM1_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
+                (Products.LCM2_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
             ]
 
             for case in cases:
@@ -323,9 +320,7 @@ describe AsyncTestCase, "Responders":
 
         async it "responds to all messages if we have extended multizone":
             await self.make_device(
-                LIFIProductRegistry.LCM2_Z,
-                chp.Firmware(2, 77, 1543215651000000000),
-                [chp.Color(0, 0, 0, 0)],
+                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), [chp.Color(0, 0, 0, 0)]
             )
 
             await self.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
@@ -356,9 +351,7 @@ describe AsyncTestCase, "Responders":
 
         async it "responds to effect messages":
             await self.make_device(
-                LIFIProductRegistry.LCM2_Z,
-                chp.Firmware(2, 77, 1543215651000000000),
-                [chp.Color(0, 0, 0, 0)],
+                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), [chp.Color(0, 0, 0, 0)]
             )
 
             await self.assertResponse(
@@ -391,9 +384,7 @@ describe AsyncTestCase, "Responders":
                 chp.Color(9, 0.8, 0.9, 3500),
                 chp.Color(10, 1.0, 0.9, 3500),
             ]
-            await self.make_device(
-                LIFIProductRegistry.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), zones
-            )
+            await self.make_device(Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), zones)
 
             await self.assertResponse(
                 MultiZoneMessages.GetColorZones(start_index=0, end_index=255),
@@ -449,7 +440,7 @@ describe AsyncTestCase, "Responders":
                 chp.Color(10, 1.0, 0.9, 3500),
             ]
             await self.make_device(
-                LIFIProductRegistry.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), list(zones)
+                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), list(zones)
             )
 
             await self.assertResponse(
@@ -491,65 +482,65 @@ describe AsyncTestCase, "Responders":
 
     describe "ProductResponder":
 
-        async def make_device(self, enum, firmware):
+        async def make_device(self, product, firmware):
             self.device = FakeDevice(
-                "d073d5000001", [chp.ProductResponder.from_enum(enum, firmware)]
+                "d073d5000001", [chp.ProductResponder.from_product(product, firmware)]
             )
             await self.device.start()
-            self.assertAttrs(vendor_id=1, product_id=enum.value, firmware=firmware)
+            self.assertAttrs(
+                product=product,
+                vendor_id=product.vendor.vid,
+                product_id=product.pid,
+                firmware=firmware,
+            )
 
         async it "can determine the devices capability":
-            await self.make_device(LIFIProductRegistry.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0))
-            self.assertEqual(
-                chp.ProductResponder.capability(self.device), (capability_for_ids(22, 1), 1, 23)
-            )
+            await self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0))
+            cap = chp.ProductResponder.capability(self.device)
+            self.assertIsInstance(cap, Products.LCMV4_A19_COLOR.cap_kls)
+            self.assertEqual(cap.firmware_major, 1)
+            self.assertEqual(cap.firmware_minor, 23)
 
-            await self.make_device(LIFIProductRegistry.LCM3_TILE, chp.Firmware(3, 50, 0))
-            self.assertEqual(
-                chp.ProductResponder.capability(self.device), (capability_for_ids(55, 1), 3, 50)
-            )
-
-        async it "complains if we try to capability when device doesn't have ProductResponder":
-            self.device = FakeDevice("d073d5000001", [])
-            await self.device.start()
-
-            with self.fuzzyAssertRaisesError(AssertionError):
-                chp.ProductResponder.capability(self.device)
+            await self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 0))
+            cap = chp.ProductResponder.capability(self.device)
+            self.assertIsInstance(cap, Products.LCM3_TILE.cap_kls)
+            self.assertEqual(cap.firmware_major, 3)
+            self.assertEqual(cap.firmware_minor, 50)
 
         async it "responds to GetVersion":
-            await self.make_device(LIFIProductRegistry.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0))
+            await self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0))
             await self.assertResponse(
                 DeviceMessages.GetVersion(),
                 [DeviceMessages.StateVersion(vendor=1, product=22, version=0)],
             )
 
-            await self.make_device(LIFIProductRegistry.LCM3_TILE, chp.Firmware(3, 50, 0))
+            await self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 0))
             await self.assertResponse(
                 DeviceMessages.GetVersion(),
                 [DeviceMessages.StateVersion(vendor=1, product=55, version=0)],
             )
 
         async it "responds to GetHostFirmware":
-            await self.make_device(LIFIProductRegistry.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2))
+            await self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2, 100))
             await self.assertResponse(
                 DeviceMessages.GetHostFirmware(),
                 [DeviceMessages.StateHostFirmware(build=2, version_major=1, version_minor=23)],
             )
 
-            await self.make_device(LIFIProductRegistry.LCM3_TILE, chp.Firmware(3, 50, 4))
+            await self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 4, 400))
             await self.assertResponse(
                 DeviceMessages.GetHostFirmware(),
                 [DeviceMessages.StateHostFirmware(build=4, version_major=3, version_minor=50)],
             )
 
         async it "responds to GetWifiFirmware":
-            await self.make_device(LIFIProductRegistry.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2))
+            await self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2, 100))
             await self.assertResponse(
                 DeviceMessages.GetWifiFirmware(),
                 [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
             )
 
-            await self.make_device(LIFIProductRegistry.LCM3_TILE, chp.Firmware(3, 50, 4))
+            await self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 4, 400))
             await self.assertResponse(
                 DeviceMessages.GetWifiFirmware(),
                 [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],

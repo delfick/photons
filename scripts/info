@@ -3,9 +3,11 @@
 from photons_app.actions import an_action
 
 from photons_control.planner import Gatherer, Skip, make_plans
+from photons_products import Zones
 
 from delfick_project.addons import addon_hook
 import logging
+import json
 
 log = logging.getLogger("info")
 
@@ -19,6 +21,17 @@ log = logging.getLogger("info")
 )
 def __lifx__(collector, *args, **kwargs):
     pass
+
+
+def make_list(infos):
+    val = ""
+    for thing in infos:
+        if isinstance(thing, str):
+            val = f"{val}\n      * {thing}"
+        else:
+            if not thing[0].startswith("reserved"):
+                val = f"{val}\n      * {thing[0]}: {thing[1]}"
+    return val
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -38,33 +51,39 @@ async def info(collector, target, reference, **kwargs):
                 continue
 
             if key == "capability":
-                vl = {"name": val["cap"].name, "identifier": val["cap"].identifier, "specs": []}
+                specs = [
+                    ("name", val["product"].name),
+                    ("identifier", val["product"].identifier),
+                    ("family", val["product"].family.value),
+                ]
                 for k, v in val["cap"].items():
                     if k.startswith("has") and v:
-                        vl["specs"].append(k[4:])
-                if val["has_extended_multizone"]:
-                    vl["specs"].append("extended_multizone")
-                val = vl
+                        specs.append(k[4:])
+                    else:
+                        if isinstance(v, Zones):
+                            v = v.name
+                        if v:
+                            specs.append((k, v))
+                val = make_list(specs)
+
             elif key == "zones":
                 vl = []
                 for zi, color in val:
-                    vl.append(f"\t\tZone {zi}: {repr(color)}")
+                    vl.append(f"      Zone {zi}: {repr(color)}")
                 val = "\n{}".format("\n".join(vl))
 
-            elif key == "power":
-                val = val["level"]
+            elif key == "address":
+                val = make_list(zip(("ip", "port"), val))
 
-            elif key == "state":
-                infos.append(f"power: {val['power']}")
-                infos.append(f"label: {val['label']}")
-                infos.append(
-                    f"color: hue: {val['hue']}, saturation: {val['saturation']}, brightness: {val['brightness']}, kelvin: {val['kelvin']}"
-                )
-                continue
+            else:
+                val = make_list(sorted(val.items()))
+
+            if key == "capability":
+                key = "product"
 
             infos.append(f"{key}: {val}")
 
-        info_string = "\n\t{0}".format("\n\t".join(infos))
+        info_string = "\n    {0}".format("\n    ".join(infos))
         print(f"{serial}: {info_string}\n")
 
 

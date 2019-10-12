@@ -8,11 +8,11 @@ from photons_messages import LightMessages, DeviceMessages, TileMessages, Servic
 from photons_control.tile import tiles_from, orientations_from
 from photons_themes.coords import user_coords_to_pixel_coords
 from photons_control.orientation import Orientation as O
-from photons_products_registry import capability_for_ids
 from photons_themes.theme import ThemeColor as Color
 from photons_transport.comms.result import Result
 from photons_themes.canvas import Canvas
 from photons_control import orientation
+from photons_products import Products
 
 from collections import defaultdict
 import logging
@@ -34,14 +34,13 @@ coords_for_horizontal_line = user_coords_to_pixel_coords(
 
 async def tile_serials_from_reference(target, reference, afr):
     """
-    Given a reference, return all the serials that has a ``has_chain`` capability
+    Given a reference, return all the serials that has a ``has_matrix`` capability
     """
     serials = []
 
     async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
         if pkt | DeviceMessages.StateVersion:
-            cap = capability_for_ids(pkt.product, pkt.vendor)
-            if cap.has_chain:
+            if Products[pkt.vendor, pkt.product].cap.has_matrix:
                 serials.append(pkt.serial)
 
     return serials

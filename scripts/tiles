@@ -4,7 +4,7 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import DeviceMessages, TileMessages
-from photons_products_registry import capability_for_ids
+from photons_products import Products
 
 from delfick_project.addons import addon_hook
 import logging
@@ -17,7 +17,7 @@ log = logging.getLogger("info")
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "messages"),
-        ("lifx.photons", "products_registry"),
+        ("lifx.photons", "products"),
         ("lifx.photons", "device_finder"),
     ]
 )
@@ -42,7 +42,7 @@ async def tiles(collector, target, reference, **kwargs):
     async with target.session() as afr:
         async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
             if pkt | DeviceMessages.StateVersion:
-                if capability_for_ids(pkt.product, pkt.vendor).has_chain:
+                if Products[pkt.vendor, pkt.product].cap.has_matrix:
                     tiles.append(pkt.serial)
 
         if not tiles:

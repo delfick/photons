@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
-from photons_products_registry import capability_for_ids, enum_for_ids
+from photons_products import Products
 
 from delfick_project.norms import sb
 from collections import defaultdict
@@ -314,7 +314,7 @@ class ZonesPlan(Plan):
 
         @property
         def has_extended_multizone(self):
-            return self.deps["c"]["has_extended_multizone"]
+            return self.deps["c"]["cap"].has_extended_multizone
 
         @property
         def messages(self):
@@ -345,11 +345,12 @@ class ZonesPlan(Plan):
 @a_plan("capability")
 class CapabilityPlan(Plan):
     """
-    Return ``{"cap": <capability>, "has_extended_multizone": <bool>, "product": <product>}`` for this device
+    Return ``{"cap": <capability>, "product": <product>}`` for this device
 
-    Where capability is from photons_products_registry.capability_for_ids
+    Where capability is from the product and has the firmware of the device set
+    on it
 
-    And product is from photons_products_registry.enum_for_ids
+    And product is from photons_products.Products for the vid/pid pair of the device
     """
 
     messages = [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -363,12 +364,9 @@ class CapabilityPlan(Plan):
             return hasattr(self, "firmware") and hasattr(self, "version")
 
         async def info(self):
-            product = enum_for_ids(self.version.product, self.version.vendor)
-            cap = capability_for_ids(self.version.product, self.version.vendor)
-            has_extended = cap.has_extended_multizone(
-                self.firmware.version_major, self.firmware.version_minor
-            )
-            return {"cap": cap, "has_extended_multizone": has_extended, "product": product}
+            product = Products[self.version.vendor, self.version.product]
+            cap = product.cap(self.firmware.version_major, self.firmware.version_minor)
+            return {"cap": cap, "product": product}
 
 
 @a_plan("firmware")
@@ -424,14 +422,14 @@ class FirmwareEffectsPlan(Plan):
             return self.deps["c"]["cap"].has_multizone
 
         @property
-        def is_tile(self):
-            return self.deps["c"]["cap"].has_chain
+        def is_matrix(self):
+            return self.deps["c"]["cap"].has_matrix
 
         @property
         def messages(self):
             if self.is_multizone:
                 return [MultiZoneMessages.GetMultiZoneEffect()]
-            elif self.is_tile:
+            elif self.is_matrix:
                 return [TileMessages.GetTileEffect()]
             return Skip
 

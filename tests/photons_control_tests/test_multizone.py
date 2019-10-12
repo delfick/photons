@@ -15,8 +15,9 @@ from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
-from photons_products_registry import LIFIProductRegistry
+from photons_products.registry import Capability
 from photons_transport.fake import FakeDevice
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
@@ -30,7 +31,7 @@ zones3 = [chp.Color(300 - i, 1, 1, 3500) for i in range(16)]
 light1 = FakeDevice(
     "d073d5000001",
     chp.default_responders(
-        LIFIProductRegistry.LCM3_TILE,
+        Products.LCM3_TILE,
         power=0,
         label="bob",
         infrared=100,
@@ -42,7 +43,7 @@ light1 = FakeDevice(
 light2 = FakeDevice(
     "d073d5000002",
     chp.default_responders(
-        LIFIProductRegistry.LMB_MESH_A21,
+        Products.LMB_MESH_A21,
         power=65535,
         label="sam",
         infrared=0,
@@ -54,7 +55,7 @@ light2 = FakeDevice(
 striplcm1 = FakeDevice(
     "d073d5000003",
     chp.default_responders(
-        LIFIProductRegistry.LCM1_Z,
+        Products.LCM1_Z,
         power=0,
         label="lcm1-no-extended",
         firmware=chp.Firmware(1, 22, 1502237570000000000),
@@ -65,7 +66,7 @@ striplcm1 = FakeDevice(
 striplcm2noextended = FakeDevice(
     "d073d5000004",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_Z,
+        Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
         firmware=chp.Firmware(2, 70, 1508122125000000000),
@@ -76,7 +77,7 @@ striplcm2noextended = FakeDevice(
 striplcm2extended = FakeDevice(
     "d073d5000005",
     chp.default_responders(
-        LIFIProductRegistry.LCM2_Z,
+        Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
         firmware=chp.Firmware(2, 77, 1543215651000000000),
@@ -341,25 +342,28 @@ describe AsyncTestCase, "SetZonesPlan":
     async it "can create messages to send back":
         plan = SetZonesPlan(self.specifier)
 
+        def make(options):
+            return type("Capability", (Capability,), options)
+
         instance1 = plan.Instance(
             light1.serial,
             plan,
-            {"c": {"cap": {"has_multizone": False}, "has_extended_multizone": False}},
+            {"c": {"cap": make({"has_multizone": False, "has_extended_multizone": False})}},
         )
         instance2 = plan.Instance(
             striplcm1.serial,
             plan,
-            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}},
+            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": False})}},
         )
         instance3 = plan.Instance(
             striplcm2noextended.serial,
             plan,
-            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": False}},
+            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": False})}},
         )
         instance4 = plan.Instance(
             striplcm2extended.serial,
             plan,
-            {"c": {"cap": {"has_multizone": True}, "has_extended_multizone": True}},
+            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": True})}},
         )
 
         self.assertIs(instance1.messages, Skip)
@@ -404,14 +408,12 @@ describe AsyncTestCase, "Multizone helpers":
     describe "find_multizone":
 
         @mlr.test
-        async it "yields serials and whether we have extended multizone", runner:
+        async it "yields serials and capability", runner:
             got = {}
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(
-                    runner.target, runner.serials, afr
-                ):
+                async for serial, cap in find_multizone(runner.target, runner.serials, afr):
                     assert serial not in got
-                    got[serial] = has_extended_multizone
+                    got[serial] = cap.has_extended_multizone
 
             self.assertEqual(
                 got,
@@ -425,9 +427,7 @@ describe AsyncTestCase, "Multizone helpers":
         @mlr.test
         async it "resends messages each time if we don't give a gatherer", runner:
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(
-                    runner.target, runner.serials, afr
-                ):
+                async for serial, cap in find_multizone(runner.target, runner.serials, afr):
                     pass
 
                 want = {
@@ -436,9 +436,7 @@ describe AsyncTestCase, "Multizone helpers":
                 }
                 self.compare_received(want)
 
-                async for serial, has_extended_multizone in find_multizone(
-                    runner.target, runner.serials, afr
-                ):
+                async for serial, cap in find_multizone(runner.target, runner.serials, afr):
                     pass
 
                 want = {
@@ -452,7 +450,7 @@ describe AsyncTestCase, "Multizone helpers":
             gatherer = Gatherer(runner.target)
 
             async with runner.target.session() as afr:
-                async for serial, has_extended_multizone in find_multizone(
+                async for serial, cap in find_multizone(
                     runner.target, runner.serials, afr, gatherer=gatherer
                 ):
                     pass
@@ -463,7 +461,7 @@ describe AsyncTestCase, "Multizone helpers":
                 }
                 self.compare_received(want)
 
-                async for serial, has_extended_multizone in find_multizone(
+                async for serial, cap in find_multizone(
                     runner.target, runner.serials, afr, gatherer=gatherer
                 ):
                     pass
