@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.23.0 - TBD
+0.23.0 - 12 October 2019
    * Added large_font and speed options to the tile_marquee animation which
      allows a 16x16 font across two tile sets.
    * Changed photons_control.multizone.find_multizone to yield
