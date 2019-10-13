@@ -179,7 +179,7 @@ class Set64Maker:
         msg = TileMessages.Set64(
             source=0,
             sequence=0,
-            target=None,
+            target="d073d5000000",
             res_required=False,
             ack_required=True,
             tile_index=0,

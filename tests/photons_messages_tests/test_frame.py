@@ -17,86 +17,75 @@ from textwrap import dedent
 from unittest import mock
 import binascii
 
-describe TestCase, "FrameHeader":
+describe TestCase, "LIFXPacket":
     before_each:
-        self.frame_header = frame.FrameHeader()
+        self.packet = frame.LIFXPacket.empty_normalise()
 
     it "defaults size to size_bits on the pkt divided by 8":
-        pkt = mock.Mock(name="pkt")
-        pkt.size_bits.return_value = 16
+        msg = frame.LIFXPacket.message
 
-        spec = self.frame_header.Meta.field_types_dict["size"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, 2)
+        class M(Messages):
+            P = msg(1)
+
+            P2 = msg(2, ("thing", T.String(32 * 8)))
+
+        p = M.P()
+        self.assertEqual(p.size, 36)
+
+        p = M.P2()
+        self.assertEqual(p.size, 68)
 
     it "defaults protocol to 1024":
-        pkt = mock.Mock(name="pkt")
-        spec = self.frame_header.Meta.field_types_dict["protocol"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, 1024)
-
-    it "defaults addressable to False if we have no target":
-        pkt = mock.Mock(name="pkt", target=None)
-        spec = self.frame_header.Meta.field_types_dict["addressable"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, False)
-
-    it "defaults addressable to True if we do have a target":
-        pkt = mock.Mock(name="pkt", target="d073d5")
-        spec = self.frame_header.Meta.field_types_dict["addressable"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, True)
-
-    it "defaults tagged to True if we have no target":
-        pkt = mock.Mock(name="pkt", target=None)
-        spec = self.frame_header.Meta.field_types_dict["tagged"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, True)
-
-    it "defaults tagged to False if we do have a target":
-        pkt = mock.Mock(name="pkt", target="d073d5")
-        spec = self.frame_header.Meta.field_types_dict["tagged"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, False)
-
-describe TestCase, "FrameAddress":
-    before_each:
-        self.frame_address = frame.FrameAddress()
+        self.assertEqual(self.packet.protocol, 1024)
 
     it "defaults res_required to True":
-        pkt = mock.Mock(name="pkt")
-        spec = self.frame_address.Meta.field_types_dict["res_required"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, True)
+        self.assertEqual(self.packet.res_required, True)
 
     it "defaults ack_required to True":
-        pkt = mock.Mock(name="pkt")
-        spec = self.frame_address.Meta.field_types_dict["ack_required"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, True)
+        self.assertEqual(self.packet.ack_required, True)
 
-describe TestCase, "ProtocolHeader":
-    before_each:
-        self.protocol_header = frame.ProtocolHeader()
+    it "defaults addressable to True":
+        self.assertEqual(self.packet.addressable, True)
+
+    it "ensures addressable is True if target is set to empty":
+        for target in (None, b"\x00" * 8):
+            self.packet.addressable = False
+            self.packet.target = target
+            self.assertEqual(self.packet.addressable, True)
+
+    it "defaults tagged to False":
+        self.assertEqual(self.packet.tagged, False)
+
+    it "ensures tagged is True if target is set to empty":
+        for target in (None, b"\x00" * 8):
+            self.packet.tagged = False
+            self.packet.target = target
+            self.assertEqual(self.packet.tagged, True)
+
+    it "ensures tagged is False if target is set to not empty":
+        self.packet.target = None
+        self.assertEqual(self.packet.tagged, True)
+
+        self.packet.target = "d073d5000001"
+        self.assertEqual(self.packet.tagged, False)
 
     it "defaults pkt_type to Payload.message_type":
+        msg = frame.LIFXPacket.message
 
-        class Payload:
-            message_type = 62
+        class M(Messages):
+            P = msg(10)
+            P2 = msg(200)
 
-        pkt = mock.Mock(name="pkt", Payload=Payload)
-        spec = self.protocol_header.Meta.field_types_dict["pkt_type"].spec(pkt)
-        val = spec.normalise(Meta.empty(), sb.NotSpecified)
-        self.assertEqual(val, 62)
+        self.assertEqual(M.P().pkt_type, 10)
+        self.assertEqual(M.P2().pkt_type, 200)
 
-describe TestCase, "LIFXPacket":
     it "packs without target":
         p = frame.LIFXPacket(source=1, sequence=1, target=None, payload=b"")
         self.assertEqual(p.size, 36)
         expected = bitarray(
             dedent(
                 """
-              001001000000000000000000001010001000000000000000000000000000000000
+              001001000000000000000000001011001000000000000000000000000000000000
               000000000000000000000000000000000000000000000000000000000000000000
               000000000000000000000000000000000000000000001100000010000000000000
               000000000000000000000000000000000000000000000000000000000000000000
@@ -105,6 +94,7 @@ describe TestCase, "LIFXPacket":
             .replace("\n", "")
             .strip()
         )
+
         self.assertEqual(p.pack(), expected)
 
     it "is an ack if the Payload is an ack":
@@ -148,7 +138,7 @@ describe TestCase, "LIFXPacket":
                 ("size", 38, bitarray("0110010000000000")),
                 ("protocol", 1024, bitarray("000000000010")),
                 ("addressable", True, bitarray("1")),
-                ("tagged", False, bitarray("0")),
+                ("tagged", True, bitarray("1")),
                 ("reserved1", sb.NotSpecified, bitarray("00")),
                 ("source", 1, bitarray("10000000000000000000000000000000")),
                 (

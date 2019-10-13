@@ -5,18 +5,22 @@ from delfick_project.norms import sb
 import binascii
 
 
+def look_at_target(pkt, value):
+    if value in (None, b"\x00" * 8):
+        pkt.addressable = True
+        pkt.tagged = True
+    else:
+        pkt.tagged = False
+
+    return value
+
+
 class FrameHeader(dictobj.PacketSpec):
     fields = [
         ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8))),
         ("protocol", T.Uint16.S(12).default(1024)),
-        (
-            "addressable",
-            T.Bool.default(lambda pkt: False if getattr(pkt, "target", None) is None else True),
-        ),
-        (
-            "tagged",
-            T.Bool.default(lambda pkt: True if getattr(pkt, "target", None) is None else False),
-        ),
+        ("addressable", T.Bool.default(lambda pkt: True)),
+        ("tagged", T.Bool.default(lambda pkt: pkt.actual("target") in (None, b"\x00" * 8))),
         ("reserved1", T.Reserved(2, left=True)),
         ("source", T.Uint32),
     ]
@@ -24,7 +28,7 @@ class FrameHeader(dictobj.PacketSpec):
 
 class FrameAddress(dictobj.PacketSpec):
     fields = [
-        ("target", T.Bytes(64)),
+        ("target", T.Bytes(64).transform(look_at_target, look_at_target)),
         ("reserved2", T.Reserved(48)),
         ("res_required", T.Bool.default(True)),
         ("ack_required", T.Bool.default(True)),

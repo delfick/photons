@@ -296,8 +296,9 @@ class MessagesMeta(type):
         kls = type.__new__(metaname, classname, baseclasses, attrs)
 
         for attr, source in sources_for(kls):
-            if not hasattr(attrs[attr].Meta, "caller_source"):
-                attrs[attr].Meta.caller_source = source
+            if attr in attrs:
+                if not hasattr(attrs[attr].Meta, "caller_source"):
+                    attrs[attr].Meta.caller_source = source
 
         return kls
 
