@@ -49,6 +49,8 @@ class ScriptRunner:
         try:
             async for info in self.run_with(*args, **kwargs):
                 results.append(info)
+        except asyncio.CancelledError:
+            raise
         except RunErrors as error:
             raise BadRunWithResults(results=results, _errors=error.errors)
         except Exception as error:
