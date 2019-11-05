@@ -4,10 +4,11 @@ ChangeLog
 =========
 
 0.24.0 - TBD
-    * Fixed how tagged and addressable are determined so that they are the
-      correct values based on target when that is set after the packet has been
-      created.
-    * Changed how async generators are shutdown so it works with python3.8
+   * Fixed how tagged and addressable are determined so that they are the
+     correct values based on target when that is set after the packet has been
+     created.
+   * Changed how async generators are shutdown so it works with python3.8
+   * Made photons compatible with python3.8
 
 0.23.0 - 12 October 2019
    * Added large_font and speed options to the tile_marquee animation which

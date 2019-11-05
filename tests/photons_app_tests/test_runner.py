@@ -15,6 +15,11 @@ import time
 import sys
 import os
 
+if hasattr(asyncio, "exceptions"):
+    cancelled_error_name = "asyncio.exceptions.CancelledError"
+else:
+    cancelled_error_name = "concurrent.futures._base.CancelledError"
+
 describe TestCase, "run":
 
     def assertRunnerBehaviour(
@@ -232,10 +237,7 @@ describe TestCase, "run":
         )
 
         self.assertRunnerBehaviour(
-            script,
-            "CANCELLED<class 'concurrent.futures._base.CancelledError'>",
-            expected_stdout,
-            expected_stderr,
+            script, f"CANCELLED<class '{cancelled_error_name}'>", expected_stdout, expected_stderr,
         )
 
     it "stops the program on SIGTERM":
@@ -303,7 +305,7 @@ describe TestCase, "run":
 
         self.assertRunnerBehaviour(
             script,
-            "CANCELLED<class 'concurrent.futures._base.CancelledError'>",
+            f"CANCELLED<class '{cancelled_error_name}'>",
             expected_stdout,
             expected_stderr,
             sig=signal.SIGTERM,

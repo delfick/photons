@@ -20,6 +20,11 @@ log = logging.getLogger("photons_app.helpers")
 # Make vim be quiet
 lc = lc
 
+if hasattr(asyncio, "exceptions"):
+    InvalidStateError = asyncio.exceptions.InvalidStateError
+else:
+    InvalidStateError = asyncio.futures.InvalidStateError
+
 
 class Nope:
     """Used to say there was no value"""
@@ -577,7 +582,7 @@ class ChildOfFuture(object):
 
     def set_result(self, data):
         if self.original_fut.cancelled():
-            raise asyncio.futures.InvalidStateError("CANCELLED: {!r}".format(self.original_fut))
+            raise InvalidStateError("CANCELLED: {!r}".format(self.original_fut))
         self.this_fut.set_result(data)
 
     def result(self):

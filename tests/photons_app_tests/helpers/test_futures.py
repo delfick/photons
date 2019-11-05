@@ -301,7 +301,7 @@ describe AsyncTestCase, "ChildOfFuture":
     describe "set_result":
         async it "complains if the original fut is already cancelled":
             self.orig_fut.cancel()
-            with self.fuzzyAssertRaisesError(asyncio.futures.InvalidStateError, "CANCELLED: .+"):
+            with self.fuzzyAssertRaisesError(hp.InvalidStateError, "CANCELLED: .+"):
                 self.cof.set_result(True)
 
         async it "Otherwise sets a result on the fut":
@@ -337,9 +337,7 @@ describe AsyncTestCase, "ChildOfFuture":
                 self.cof.result()
 
         async it "calls result on original_fut if neither are finished":
-            with self.fuzzyAssertRaisesError(
-                asyncio.futures.InvalidStateError, "Result is not (ready|set)"
-            ):
+            with self.fuzzyAssertRaisesError(hp.InvalidStateError, "Result is not (ready|set)"):
                 self.cof.result()
 
     describe "done":
@@ -399,7 +397,7 @@ describe AsyncTestCase, "ChildOfFuture":
         async it "it complains no exception is set if neither fut cancelled or have exception":
             o = asyncio.Future()
             cof = hp.ChildOfFuture(o)
-            with self.fuzzyAssertRaisesError(asyncio.futures.InvalidStateError):
+            with self.fuzzyAssertRaisesError(hp.InvalidStateError):
                 cof.exception()
 
         async it "complains future is cancelled when either fut is cancelled":
