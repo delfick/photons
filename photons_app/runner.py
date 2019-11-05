@@ -60,10 +60,10 @@ def run(coro, photons_app, target_register):
         final_future.cancel()
 
         try:
-            loop.run_until_complete(shutdown_asyncgens(loop))
             targets = target_register.used_targets
             loop.run_until_complete(photons_app.cleanup(targets))
             cancel_all_tasks(loop, task, waiter)
+            loop.run_until_complete(shutdown_asyncgens(loop))
         finally:
             loop.close()
             del photons_app.loop
@@ -82,7 +82,7 @@ async def shutdown_asyncgens(loop):
     # the asyncio loop to think it's shutdown, so I have to do them one at a time
     for ag in closing_agens:
         try:
-            await ag.athrow(asyncio.CancelledError, asyncio.CancelledError(), None)
+            await ag.aclose()
         except asyncio.CancelledError:
             pass
         except:
