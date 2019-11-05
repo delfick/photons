@@ -32,6 +32,8 @@ setup(
     , py_modules = py_modules
     , include_package_data = True
 
+    , python_requires = ">= 3.6"
+
     , install_requires =
       [ "delfick_project==0.5.1"
       , "ruamel.yaml==0.15.87"
