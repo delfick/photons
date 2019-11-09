@@ -10,8 +10,6 @@ log = logging.getLogger("photons_transport.transports.socket")
 def close_socket(socket):
     try:
         socket.close()
-        if hasattr(socket, "_sock"):
-            socket._sock.close()
     except OSError:
         pass
 
@@ -52,9 +50,7 @@ class Socket(Transport):
         close_socket(transport)
 
     async def is_transport_active(self, packet, transport):
-        return getattr(transport, "_sock", None) is not None and not getattr(
-            transport._sock, "_closed", False
-        )
+        return getattr(transport, "_sock", None) is not None and not transport.is_closing()
 
     def make_socket_protocol(self):
         fut = hp.ResettableFuture()
