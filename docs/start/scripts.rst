@@ -17,7 +17,7 @@ First we create ``setup_venv`` with the following:
 
     from venvstarter import ignite
     ignite(__file__, "lifx"
-        , deps = ["lifx-photons-core==0.23.0"]
+        , deps = ["lifx-photons-core==0.24.0"]
         , min_python_version = 3.6
         )
 

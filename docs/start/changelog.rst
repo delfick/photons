@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.0 - TBD
+0.24.0 - 9 November 2019
    * Fixed how tagged and addressable are determined so that they are the
      correct values based on target when that is set after the packet has been
      created.
