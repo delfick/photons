@@ -30,7 +30,7 @@ class FakeAck:
         self.sequence = sequence
 
     def __or__(self, kls):
-        return kls.Payload.Meta.protocol == 1024 and kls.Payload.Meta.message_type == 45
+        return kls.Payload.Meta.protocol == 1024 and kls.Payload.represents_ack
 
     def __repr__(self):
         return f"<ACK source: {self.source}, sequence: {self.sequence}, serial: {self.serial}>"
