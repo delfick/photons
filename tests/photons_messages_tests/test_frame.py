@@ -20,6 +20,9 @@ import binascii
 describe TestCase, "LIFXPacket":
     before_each:
         self.packet = frame.LIFXPacket.empty_normalise()
+        self.emptybt = bitarray("0000000000000000000000000000000000000000000000000000000000000000")
+
+        self.assertEqual(self.emptybt.tobytes(), b"\x00" * 8)
 
     it "defaults size to size_bits on the pkt divided by 8":
         msg = frame.LIFXPacket.message
@@ -48,7 +51,7 @@ describe TestCase, "LIFXPacket":
         self.assertEqual(self.packet.addressable, True)
 
     it "ensures addressable is True if target is set to empty":
-        for target in (None, b"\x00" * 8):
+        for target in (None, b"\x00" * 8, self.emptybt):
             self.packet.addressable = False
             self.packet.target = target
             self.assertEqual(self.packet.addressable, True)
@@ -57,7 +60,7 @@ describe TestCase, "LIFXPacket":
         self.assertEqual(self.packet.tagged, False)
 
     it "ensures tagged is True if target is set to empty":
-        for target in (None, b"\x00" * 8):
+        for target in (None, b"\x00" * 8, self.emptybt):
             self.packet.tagged = False
             self.packet.target = target
             self.assertEqual(self.packet.tagged, True)
@@ -131,7 +134,6 @@ describe TestCase, "LIFXPacket":
         for info in PacketPacking.fields_in(p, p, None):
             found.append((info.name, info.val, info.to_sized_bitarray()))
 
-        self.maxDiff = None
         self.assertEqual(
             found,
             [

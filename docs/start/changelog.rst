@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.24.1 - TBD
+   * Fixed discovery of originals
+
 0.24.0 - 9 November 2019
    * Fixed how tagged and addressable are determined so that they are the
      correct values based on target when that is set after the packet has been

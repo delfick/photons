@@ -2,11 +2,14 @@ from photons_protocol.packets import dictobj
 from photons_protocol.messages import T
 
 from delfick_project.norms import sb
+from bitarray import bitarray
 import binascii
+
+emptybt = bitarray("0000000000000000000000000000000000000000000000000000000000000000")
 
 
 def look_at_target(pkt, value):
-    if value in (None, b"\x00" * 8):
+    if value in (None, b"\x00" * 8, emptybt):
         pkt.addressable = True
         pkt.tagged = True
     else:
@@ -20,7 +23,10 @@ class FrameHeader(dictobj.PacketSpec):
         ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8))),
         ("protocol", T.Uint16.S(12).default(1024)),
         ("addressable", T.Bool.default(lambda pkt: True)),
-        ("tagged", T.Bool.default(lambda pkt: pkt.actual("target") in (None, b"\x00" * 8))),
+        (
+            "tagged",
+            T.Bool.default(lambda pkt: pkt.actual("target") in (None, b"\x00" * 8, emptybt)),
+        ),
         ("reserved1", T.Reserved(2, left=True)),
         ("source", T.Uint32),
     ]
