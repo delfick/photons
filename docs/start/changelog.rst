@@ -5,6 +5,7 @@ ChangeLog
 
 0.24.1 - TBD
    * Fixed discovery of originals
+   * Allow ``--logging-program`` at the same time as ``--silent`` and ``--debug``
 
 0.24.0 - 9 November 2019
    * Fixed how tagged and addressable are determined so that they are the
