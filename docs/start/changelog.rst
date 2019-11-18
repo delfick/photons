@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.1 - TBD
+0.24.1 - 18 November 2019
    * Fixed discovery of originals
    * Allow ``--logging-program`` at the same time as ``--silent`` and ``--debug``
 
