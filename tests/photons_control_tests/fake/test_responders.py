@@ -37,9 +37,17 @@ describe AsyncTestCase, "Responders":
 
                 different = False
                 for g, e in zip(got, expected):
+                    if e | TileMessages.StateTileEffect and g | TileMessages.StateTileEffect:
+                        e.instanceid = g.instanceid
                     if g != e:
                         print_packet_difference(g, e)
                         different = True
+
+                    # Make sure message can be packed
+                    g.source = 1
+                    g.sequence = 1
+                    g.target = None
+                    g.pack()
 
                 assert not different, got
 
@@ -206,16 +214,33 @@ describe AsyncTestCase, "Responders":
         async it "responds to tile effect messages":
             await self.assertResponse(
                 TileMessages.GetTileEffect(),
-                [TileMessages.StateTileEffect(type=TileEffectType.OFF)],
+                [
+                    TileMessages.StateTileEffect.empty_normalise(
+                        type=TileEffectType.OFF, palette_count=0, parameters={}
+                    )
+                ],
             )
             await self.assertResponse(
-                TileMessages.SetTileEffect(type=TileEffectType.FLAME, parameters={}),
-                [TileMessages.StateTileEffect(type=TileEffectType.OFF)],
+                TileMessages.SetTileEffect(
+                    type=TileEffectType.FLAME, palette_count=1, palette=[chp.Color(1, 0, 1, 3500)]
+                ),
+                [
+                    TileMessages.StateTileEffect.empty_normalise(
+                        type=TileEffectType.OFF, palette_count=0, parameters={}, palette=[]
+                    )
+                ],
                 matrix_effect=TileEffectType.FLAME,
             )
             await self.assertResponse(
                 TileMessages.GetTileEffect(),
-                [TileMessages.StateTileEffect(type=TileEffectType.FLAME)],
+                [
+                    TileMessages.StateTileEffect.empty_normalise(
+                        type=TileEffectType.FLAME,
+                        palette_count=1,
+                        parameters={},
+                        palette=[chp.Color(1, 0, 1, 3500)] + [chp.Color(0, 0, 0, 0)] * 15,
+                    )
+                ],
                 matrix_effect=TileEffectType.FLAME,
             )
 

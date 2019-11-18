@@ -16,7 +16,7 @@ from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
 from photons_products import Products
 
-from delfick_project.norms import dictobj, Meta
+from delfick_project.norms import dictobj, sb, Meta
 import logging
 import asyncio
 
@@ -99,7 +99,11 @@ class InfraredResponder(Responder):
 
 
 class MatrixResponder(Responder):
-    _fields = [("matrix_effect", lambda: TileEffectType.OFF)]
+    _fields = [
+        ("matrix_effect", lambda: TileEffectType.OFF),
+        ("palette_count", lambda: 0),
+        ("palette", lambda: []),
+    ]
 
     def has_matrix(self, device):
         return ProductResponder.capability(device).has_matrix
@@ -115,12 +119,20 @@ class MatrixResponder(Responder):
         if pkt | TileMessages.GetTileEffect:
             yield self.make_state_tile_effect(device)
         elif pkt | TileMessages.SetTileEffect:
-            res = self.make_state_tile_effect(device)
+            res = self.make_state_tile_effect(device, instanceid=pkt.instanceid)
+            device.attrs.palette = pkt.palette
+            device.attrs.palette_count = pkt.palette_count
             device.attrs.matrix_effect = pkt.type
             yield res
 
-    def make_state_tile_effect(self, device):
-        return TileMessages.StateTileEffect(type=device.attrs.matrix_effect)
+    def make_state_tile_effect(self, device, instanceid=sb.NotSpecified):
+        return TileMessages.StateTileEffect.empty_normalise(
+            instanceid=instanceid,
+            type=device.attrs.matrix_effect,
+            palette_count=device.attrs.palette_count,
+            palette=device.attrs.palette,
+            parameters={},
+        )
 
 
 class ZonesResponder(Responder):

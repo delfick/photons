@@ -1,5 +1,6 @@
 from photons_transport.session.memory import MemoryService
 
+from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from photons_messages import Services, CoreMessages, DiscoveryMessages, DeviceMessages
@@ -22,6 +23,10 @@ log = logging.getLogger("photons_transport.fake")
 
 class IgnoreMessage(Exception):
     pass
+
+
+class NoSuchResponder(PhotonsAppError):
+    desc = "Device didn't have desired responder on it"
 
 
 class Attrs:
@@ -146,7 +151,7 @@ class Responder:
 
 
 class ServicesResponder(Responder):
-    _fields = [("limited_services", lambda: None)]
+    _fields = [("limited_services", lambda: None), ("delay_discovery", lambda: False)]
 
     @classmethod
     @contextmanager
@@ -168,6 +173,8 @@ class ServicesResponder(Responder):
 
     async def respond(self, device, pkt, source):
         if pkt | DiscoveryMessages.GetService:
+            if device.attrs.delay_discovery:
+                await asyncio.sleep(0.2)
             for service in self.filtered_services(device):
                 yield service.state_service
 
@@ -179,7 +186,15 @@ class EchoResponder(Responder):
 
 
 class FakeDevice:
-    def __init__(self, serial, responders, protocol_register=None, port=None, use_sockets=False):
+    def __init__(
+        self,
+        serial,
+        responders,
+        protocol_register=None,
+        port=None,
+        use_sockets=False,
+        delay_discovery=False,
+    ):
         self.port = port
         self.serial = serial
         self.use_sockets = use_sockets
@@ -189,7 +204,7 @@ class FakeDevice:
 
         self.responders = responders
         self.echo_responder = EchoResponder()
-        self.service_responder = ServicesResponder()
+        self.service_responder = ServicesResponder(delay_discovery=delay_discovery)
 
         self.attrs = Attrs(self)
         self.attrs.online = False
@@ -206,6 +221,12 @@ class FakeDevice:
         if "product" in self.attrs:
             product = f": {self.attrs.product.friendly}"
         return f"<FakeDevice {self.serial}{product}>"
+
+    def get_responder(self, kls):
+        for responder in self.responders:
+            if isinstance(responder, kls):
+                return responder
+        raise NoSuchResponder(wanted=kls)
 
     def setup(self):
         pass
@@ -591,6 +612,18 @@ class FakeDevice:
                 serial=self.serial,
             )
         )
+
+        res = []
+        async for r in self.unhandled_response(pkt, source):
+            res.append(r)
+
+        if res:
+            return res
+
+    async def unhandled_response(self, pkt, source):
+        """Hook async generator for making messages to send back when we can't handle a message"""
+        if False:
+            yield None
 
     def compare_received(self, expected, keep_duplicates=False):
         expect_keys = pktkeys(expected, keep_duplicates)
