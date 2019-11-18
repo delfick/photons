@@ -7,8 +7,8 @@ from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages
-from photons_products import Products
 from photons_transport.fake import FakeDevice
+from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 import uuid
