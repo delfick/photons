@@ -719,15 +719,30 @@ class ThreadToAsyncQueue(object):
     .. code-block:: python
 
         class MyQueue(ThreadToAsyncQueue):
-            def start_thread(self):
-                '''This is called for each thread that is started'''
+            def create_args(self, thread_number, existing):
+                '''
+                This is called once when the queue is started
+
+                and then subsequently before every request.
+                '''
+                if existing:
+                    # Assuming you have a way of seeing if you should refresh the args
+                    # Then this gives you an opportunity to do any shutdown logic for
+                    # existing args and create new, or just return what exists already
+                    if not should_refresh():
+                        return existing
+
+                    cleanup(existing)
+
                 my_thread_thing = THING()
                 return (my_thread_thing, )
 
         def onerror(exc):
-            # Some unexpected error, do something with it here
-            # Like talk to bugsnag or sentry
-            # The return value is discarded
+            '''
+            This function is passed into __init__ when you create the queue
+            it is called on unexpected errors.
+            the return of this function is ignored
+            '''
             pass
 
         # If stop_fut is cancelled or has a result, then the queue will stop
@@ -748,7 +763,6 @@ class ThreadToAsyncQueue(object):
         self.queue = Queue()
         self.futures = {}
         self.onerror = onerror
-        self.subiters = []
         self.stop_fut = ChildOfFuture(stop_fut)
         self.num_threads = num_threads
 
@@ -766,10 +780,10 @@ class ThreadToAsyncQueue(object):
     def start(self, impl=None):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
-        for index, _ in enumerate(range(self.num_threads)):
+        for thread_number, _ in enumerate(range(self.num_threads)):
             fut = asyncio.Future()
             ready.append(fut)
-            thread = threading.Thread(target=self.listener, args=(fut, impl))
+            thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
             thread.start()
         async_as_background(self.set_futures())
         return asyncio.gather(*ready)
@@ -792,7 +806,7 @@ class ThreadToAsyncQueue(object):
             if not res:
                 continue
 
-            if type(res) is tuple and len(res) == 3:
+            if isinstance(res, tuple) and len(res) == 3:
                 key, result, exception = res
             else:
                 error = PhotonsAppError("Unknown item on queue", got=res)
@@ -842,16 +856,24 @@ class ThreadToAsyncQueue(object):
                 )
             )
 
-    def listener(self, ready_fut, impl=None):
+    def listener(self, thread_number, ready_fut, impl=None):
         """Start the thread!"""
-        args = self.start_thread()
+        args = self.create_args(thread_number, existing=None)
         self.loop.call_soon_threadsafe(ready_fut.set_result, True)
-        self._listener(impl, args or ())
+        self._listener(thread_number, impl, args)
 
-    def start_thread(self):
-        """Hook to return extra args to give to functions when the are requested"""
+    def create_args(self, thread_number, existing):
+        """
+        Hook to return extra args to give to functions when the are requested
 
-    def _listener(self, impl, args):
+        This is called once when the queue is started
+
+        and then subsequently before every request.
+
+        It must return None or a tuple of arguments to pass into request functions
+        """
+
+    def _listener(self, thread_number, impl, args):
         """Forever, with error catching, get nxt request of the queue and process"""
         while True:
             if self.stop_fut.finished():
@@ -866,6 +888,10 @@ class ThreadToAsyncQueue(object):
                     break
 
                 try:
+                    args = self.create_args(thread_number, existing=args)
+                    if args is None:
+                        args = ()
+
                     (impl or self.listener_impl)(nxt, *args)
                 except KeyboardInterrupt:
                     raise
@@ -884,7 +910,7 @@ class ThreadToAsyncQueue(object):
 
     def listener_impl(self, nxt, *args):
         """Just call out to process"""
-        if type(nxt) is tuple and len(nxt) == 2:
+        if isinstance(nxt, tuple) and len(nxt) == 2:
             key, proc = nxt
             self.process(key, wraps(proc)(self.wrap_request(proc, args)))
         else:

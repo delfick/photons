@@ -1,10 +1,10 @@
 # coding: spec
 
-from photons_app.test_helpers import AsyncTestCase
+from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from unittest import mock
 import threading
 import asyncio
@@ -14,6 +14,9 @@ import uuid
 describe AsyncTestCase, "ThreadToAsyncQueue":
     async before_each:
         self.stop_fut = asyncio.Future()
+
+    async after_each:
+        self.stop_fut.cancel()
 
     def ttaq(self, num_threads):
         ttaq = hp.ThreadToAsyncQueue(self.stop_fut, num_threads, mock.Mock(name="onerror"))
@@ -152,3 +155,71 @@ describe AsyncTestCase, "ThreadToAsyncQueue":
                 )
                 self.assertEqual(called, ["action"])
                 onerror.assert_called_once_with((PhotonsAppError, error, mock.ANY))
+
+describe AsyncTestCase, "ThreadToAsyncQueuewith custom args":
+
+    def ttaq(self, num_threads, create_args):
+        stop_fut = asyncio.Future()
+
+        class Queue(hp.ThreadToAsyncQueue):
+            def create_args(s, thread_number, existing):
+                return create_args(thread_number, existing=existing)
+
+        ttaq = Queue(stop_fut, num_threads, mock.Mock(name="onerror"))
+
+        class ACM(object):
+            async def __aenter__(s):
+                await self.wait_for(ttaq.start(), timeout=1)
+                return ttaq, create_args
+
+            async def __aexit__(s, exc_type, exc, tb):
+                await ttaq.finish()
+                stop_fut.cancel()
+
+                if exc:
+                    exc.__traceback__ = tb
+                    # Make sure the error gets risen
+                    return False
+
+        return ACM()
+
+    @with_timeout
+    async it "calls create_args when we start and before every request":
+        things = {}
+        create_args = mock.Mock(name="create_args")
+
+        for k in range(2):
+            things[k] = [mock.Mock(name=f"thing{k}_{i}") for i in range(20)]
+
+        info = {0: 0, 1: 0}
+        calls = {0: [], 1: []}
+        requests = []
+
+        def ca(thread_number, existing):
+            thing = things[thread_number][info[thread_number]]
+            info[thread_number] += 1
+            calls[thread_number].append(existing)
+            requests.append(mock.call(thing))
+            return (thing,)
+
+        create_args.side_effect = ca
+
+        async with self.ttaq(2, create_args) as (ttaq, create_args):
+            self.assertEqual(
+                create_args.mock_calls, [mock.call(0, existing=None), mock.call(1, existing=None)]
+            )
+            create_args.reset_mock()
+
+            request = mock.Mock(name="request")
+            for i in range(10):
+                await ttaq.request(request)
+
+            # The first two aren't used because they are made when we start the queue
+            # In a real implementation they probably wouldn't be discarded straight away!
+            self.assertEqual(request.mock_calls, requests[2:])
+
+            # We can't guarantee the order between two threads, so we just make sure they're in the correct order
+            self.assertGreater(len(calls[0]), 2)
+            self.assertGreater(len(calls[1]), 2)
+            self.assertEqual(calls[0], [None, *[(t,) for t in things[0][: len(calls[0]) - 1]]])
+            self.assertEqual(calls[1], [None, *[(t,) for t in things[1][: len(calls[1]) - 1]]])
