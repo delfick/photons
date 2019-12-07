@@ -10,7 +10,6 @@ import threading
 import tempfile
 import asyncio
 import logging
-import time
 import uuid
 import sys
 import os
@@ -711,42 +710,6 @@ class ChildOfFuture(object):
             yield from self.waiter
 
     __iter__ = __await__
-
-
-class TimedCache:
-    """
-    An object that caches a value from a function for a particular amount of time.
-
-    Usage looks like:
-
-    .. code-block:: python
-
-        cache = TimedCache(lambda: expensive_operation(), ttl=3600 * 24)
-
-        value = cache()
-        value = cache()
-        ....
-        value = cache()
-
-    In this example, if it's been a day since the first creation, it will call the lambda
-    we passed in again to create a new value. Otherwise it will return the last created value.
-
-    ttl is measured in seconds and the default is 3600 (one hour)
-    """
-
-    def __init__(self, creator, ttl=3600):
-        self.ttl = ttl
-        self.creator = creator
-
-        self._value = None
-        self.last_made = None
-
-    def __call__(self):
-        if self.last_made is None or time.time() - self.last_made > self.ttl:
-            self._value = self.creator()
-            self.last_made = time.time()
-
-        return self._value
 
 
 class ThreadToAsyncQueue(object):
