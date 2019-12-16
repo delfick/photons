@@ -2,7 +2,7 @@
 
 from photons_transport.session.discovery_options import NoDiscoveryOptions, NoEnvDiscoveryOptions
 from photons_transport.errors import NoDesiredService, UnknownService, InvalidBroadcast
-from photons_transport.session.network import NetworkSession, udp_retry_options
+from photons_transport.session.network import NetworkSession, UDPRetryOptions
 from photons_transport.transports.udp import UDP
 from photons_transport.targets import LanTarget
 from photons_transport.comms.base import Found
@@ -65,13 +65,20 @@ describe AsyncTestCase, "NetworkSession":
             b3.close.assert_called_once_with()
 
     describe "retry_options_for":
-        async it "returns udp_retry_options if it's a UDP transport":
+        async it "returns a UDPRetryOptions if it's a UDP transport":
             kwargs = {"host": "192.168.0.3", "port": 56700}
             transport = await self.session.make_transport("d073d5", Services.UDP, kwargs)
             self.assertIsInstance(transport, UDP)
 
             packet = mock.NonCallableMock(name="packet", spec=[])
-            self.assertIs(self.session.retry_options_for(packet, transport), udp_retry_options)
+
+            uro1 = self.session.retry_options_for(packet, transport)
+            self.assertIsInstance(uro1, UDPRetryOptions)
+
+            uro2 = self.session.retry_options_for(packet, transport)
+            self.assertIsInstance(uro2, UDPRetryOptions)
+
+            self.assertIsNot(uro1, uro2)
 
     describe "determine_needed_transport":
         async it "says udp":

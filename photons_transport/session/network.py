@@ -19,9 +19,6 @@ class UDPRetryOptions(RetryOptions):
     pass
 
 
-udp_retry_options = UDPRetryOptions()
-
-
 class NetworkSession(Communication):
     """
     Knows how to discover by broadcasting GetService. It then knows per packet
@@ -44,7 +41,7 @@ class NetworkSession(Communication):
                 log.error(hp.lc("Failed to close broadcast transport", error=error))
 
     def retry_options_for(self, packet, transport):
-        return udp_retry_options
+        return UDPRetryOptions()
 
     async def determine_needed_transport(self, packet, services):
         return [Services.UDP]
