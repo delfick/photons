@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.2 - TBD
+0.24.2 - 16 December 2019
    * Fixed how retry options are created for sending messages
 
 0.24.1 - 18 November 2019
