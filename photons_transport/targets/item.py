@@ -195,7 +195,7 @@ class Item(object):
             else:
                 clone = p.clone()
                 clone.update(
-                    dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.target))
+                    dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.serial))
                 )
                 packets.append((original, clone))
 

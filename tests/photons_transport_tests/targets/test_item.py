@@ -109,15 +109,15 @@ describe AsyncTestCase, "Item":
                 c5source = mock.Mock(name="c5source")
                 c5 = mock.Mock(name="clone5", source=c5source)
                 c5.actual.return_value = 123
-                target = mock.Mock(name="target")
-                part3 = mock.Mock(name="part3", target=target)
+                serial = mock.Mock(name="target")
+                part3 = mock.Mock(name="part3", serial=serial)
                 part3.clone.return_value = c5
 
                 afr = mock.Mock(name="afr")
                 source = mock.Mock(name="source")
                 afr.source = source
 
-                seqs = {s1: 0, s2: 0, target: 0}
+                seqs = {s1: 0, s2: 0, serial: 0}
 
                 def seq_maker(t):
                     seqs[t] += 1
