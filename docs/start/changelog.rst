@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.3 - TBD
+0.24.3 - 18 December 2019
     * Fixed a bug where response packets were matched to the wrong requests
 
 0.24.2 - 16 December 2019

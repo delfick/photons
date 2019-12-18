@@ -1,4 +1,4 @@
-VERSION = "0.24.2"
+VERSION = "0.24.3"
 
 __shortdesc__ = """Base module for all photons applications"""
 
@@ -34,4 +34,15 @@ As a library
   `virtualenv <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_ as
   your python environment. See :ref:`lifx_photons_venvstarter` for example use
   of a tool I built for managing virtualenvs.
+
+Installation
+------------
+
+You can install photons by ensuring you have python3.6 or above installed and doing::
+
+    $ python3 -m venv photons-venv
+    $ source photons-venv/bin/activate
+    $ pip install lifx-photons-core
+
+You can also find the code at https://github.com/delfick/photons-core
 """
