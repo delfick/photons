@@ -249,7 +249,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
 
     setter = find_packet(protocol_register, artifact, "Set")
     if setter is None:
-        raise BadOption("Sorry, couldn't a class for this message", prefix="get", want=artifact)
+        raise BadOption("Sorry, couldn't a class for this message", prefix="set", want=artifact)
 
     photons_app = collector.configuration["photons_app"]
 
