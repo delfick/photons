@@ -199,8 +199,6 @@ describe AsyncTestCase, "Default Plans":
                 "kelvin": 4500,
                 "label": "bob",
                 "power": 0,
-                "reserved6": b"\x00\x00",
-                "reserved7": b"\x00\x00\x00\x00\x00\x00\x00\x00",
             }
 
             state2 = {
@@ -210,8 +208,6 @@ describe AsyncTestCase, "Default Plans":
                 "kelvin": 9000,
                 "label": "sam",
                 "power": 65535,
-                "reserved6": b"\x00\x00",
-                "reserved7": b"\x00\x00\x00\x00\x00\x00\x00\x00",
             }
 
             got = await self.gather(runner, self.two_lights, "state")
@@ -268,34 +264,28 @@ describe AsyncTestCase, "Default Plans":
 
         @mlr.test
         async it "gets the firmware", runner:
-            empty = b"\x00\x00\x00\x00\x00\x00\x00\x00"
             l1c = {
                 "build": 1548977726000000000,
-                "reserved6": empty,
                 "version_major": 3,
                 "version_minor": 50,
             }
             l2c = {
                 "build": 1448861477000000000,
-                "reserved6": empty,
                 "version_major": 2,
                 "version_minor": 2,
             }
             slcm1c = {
                 "build": 1502237570000000000,
-                "reserved6": empty,
                 "version_major": 1,
                 "version_minor": 22,
             }
             slcm2nec = {
                 "build": 1508122125000000000,
-                "reserved6": empty,
                 "version_major": 2,
                 "version_minor": 70,
             }
             slcm2ec = {
                 "build": 1543215651000000000,
-                "reserved6": empty,
                 "version_major": 2,
                 "version_minor": 77,
             }

@@ -265,7 +265,13 @@ class StatePlan(Plan):
     class Instance(Plan.Instance):
         def process(self, pkt):
             if pkt | LightMessages.LightState:
-                self.dct = pkt.payload.as_dict()
+                dct = pkt.payload.as_dict()
+
+                result = {}
+                for k in ("hue", "saturation", "brightness", "kelvin", "label", "power"):
+                    result[k] = dct[k]
+                self.dct = result
+
                 return True
 
         async def info(self):
@@ -420,7 +426,13 @@ class FirmwarePlan(Plan):
     class Instance(Plan.Instance):
         def process(self, pkt):
             if pkt | DeviceMessages.StateHostFirmware:
-                self.dct = pkt.payload.as_dict()
+                dct = pkt.payload.as_dict()
+
+                result = {}
+                for k in ("build", "version_major", "version_minor"):
+                    result[k] = dct[k]
+                self.dct = result
+
                 return True
 
         async def info(self):
