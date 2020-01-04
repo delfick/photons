@@ -31,6 +31,7 @@ describe AsyncTestCase, "Communication":
             name="transport_target",
             final_future=self.final_future,
             protocol_register=self.protocol_register,
+            spec=["final_future", "protocol_register"],
         )
 
         self.communication = Communication(self.transport_target)
