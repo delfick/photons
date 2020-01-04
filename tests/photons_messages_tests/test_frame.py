@@ -130,43 +130,33 @@ describe TestCase, "LIFXPacket":
 
         p = P(target=None, sequence=1, source=1, one=b"\x00")
 
-        found = []
+        found = {}
         for info in PacketPacking.fields_in(p, p, None):
-            found.append((info.name, info.val, info.to_sized_bitarray()))
+            assert info.name not in found
+            found[info.name] = (info.val, info.to_sized_bitarray())
 
-        self.assertEqual(
-            found,
-            [
-                ("size", 38, bitarray("0110010000000000")),
-                ("protocol", 1024, bitarray("000000000010")),
-                ("addressable", True, bitarray("1")),
-                ("tagged", True, bitarray("1")),
-                ("reserved1", sb.NotSpecified, bitarray("00")),
-                ("source", 1, bitarray("10000000000000000000000000000000")),
-                (
-                    "target",
-                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
-                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
-                ),
-                (
-                    "reserved2",
-                    sb.NotSpecified,
-                    bitarray("000000000000000000000000000000000000000000000000"),
-                ),
-                ("res_required", True, bitarray("1")),
-                ("ack_required", True, bitarray("1")),
-                ("reserved3", sb.NotSpecified, bitarray("000000")),
-                ("sequence", 1, bitarray("10000000")),
-                (
-                    "reserved4",
-                    sb.NotSpecified,
-                    bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
-                ),
-                ("pkt_type", 52, bitarray("0010110000000000")),
-                ("reserved5", sb.NotSpecified, bitarray("0000000000000000")),
-                ("one", bitarray("0000000000000000"), bitarray("0000000000000000")),
-            ],
-        )
+        expected = {
+            "size": (38, bitarray("0110010000000000")),
+            "protocol": (1024, bitarray("000000000010")),
+            "addressable": (True, bitarray("1")),
+            "tagged": (True, bitarray("1")),
+            "source": (1, bitarray("10000000000000000000000000000000")),
+            "target": (
+                bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+                bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+            ),
+            "res_required": (True, bitarray("1")),
+            "ack_required": (True, bitarray("1")),
+            "sequence": (1, bitarray("10000000")),
+            "pkt_type": (52, bitarray("0010110000000000")),
+            "one": (bitarray("0000000000000000"), bitarray("0000000000000000")),
+        }
+
+        for k in list(found):
+            if k not in expected:
+                del found[k]
+
+        self.assertEqual(found, expected)
 
     it "is a parent_packet":
         self.assertEqual(frame.LIFXPacket.parent_packet, True)

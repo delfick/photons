@@ -2,14 +2,14 @@
 
 from photons_messages import Services, DiscoveryMessages, protocol_register
 
+from photons_app.test_helpers import TestCase, print_packet_difference
 from photons_app.registers import ProtocolRegister
-from photons_app.test_helpers import TestCase
 
 import binascii
 
 describe TestCase, "DiscoveryMessages":
     it "can unpack":
-        hexd = "29000014f7f15496d073d51261e200004c49465856320101e41ac32cece1d31403000000017cdd0000"
+        hexd = "29000014f7f15496d073d51261e200004c49465856320101000000000000000003000000017cdd0000"
 
         unpackd = DiscoveryMessages.unpack(hexd, protocol_register=protocol_register)
 
@@ -32,13 +32,11 @@ describe TestCase, "DiscoveryMessages":
                     "tagged": False,
                 },
                 "payload": {"port": 56700, "service": Services.UDP},
-                "protocol_header": {
-                    "reserved4": "e41ac32cece1d314",
-                    "pkt_type": 3,
-                    "reserved5": "0000",
-                },
+                "protocol_header": {"pkt_type": 3},
             }
         )
 
-        self.assertEqual(repr(unpackd), repr(expected))
+        different = print_packet_difference(unpackd, expected)
+        assert not different
+
         self.assertEqual(binascii.hexlify(expected.pack().tobytes()).decode(), hexd)

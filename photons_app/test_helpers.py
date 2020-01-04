@@ -46,6 +46,8 @@ def print_packet_difference(one, two, ignore_unspecified_expected=True):
                 elif dictw[k] is sb.NotSpecified and v is not sb.NotSpecified:
                     print(f"\t\tkey {k} | Ignored because expected is NotSpecified | was {v}")
                 elif repr(v) != repr(dictw[k]):
+                    if isinstance(v, bool) and dictw[k] in (1, 0) and int(v) == dictw[k]:
+                        continue
                     print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
                     different = True
 

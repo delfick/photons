@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.test_helpers import TestCase
+from photons_app.test_helpers import TestCase, assert_payloads_equals
 
 from photons_messages import LightMessages, Waveform, protocol_register
 
@@ -19,10 +19,9 @@ describe TestCase, "LightMessages":
             "3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000"
         )
         assert msg | LightMessages.SetColor
-        self.assertEqual(
-            msg.payload.as_dict(),
+        assert_payloads_equals(
+            msg.payload,
             {
-                "reserved6": b"\x00",
                 "hue": 9.997711146715496,
                 "saturation": 0.09999237048905166,
                 "brightness": 0.49999237048905165,
@@ -42,10 +41,9 @@ describe TestCase, "LightMessages":
             "39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01"
         )
         assert msg | LightMessages.SetWaveform
-        self.assertEqual(
-            msg.payload.as_dict(),
+        assert_payloads_equals(
+            msg.payload,
             {
-                "reserved6": b"\x00",
                 "transient": 0,
                 "hue": 99.9990844586862,
                 "saturation": 0.09999237048905166,
@@ -73,10 +71,9 @@ describe TestCase, "LightMessages":
             "3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040ff7f0101000101"
         )
         assert msg | LightMessages.SetWaveformOptional
-        self.assertEqual(
-            msg.payload.as_dict(),
+        assert_payloads_equals(
+            msg.payload,
             {
-                "reserved6": b"\x00",
                 "transient": 0,
                 "hue": 99.9990844586862,
                 "saturation": 0.0,
@@ -152,8 +149,8 @@ describe TestCase, "LightMessages":
             "580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b00000000079919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000"
         )
         assert msg | LightMessages.LightState
-        self.assertEqual(
-            msg.payload.as_dict(),
+        assert_payloads_equals(
+            msg.payload,
             {
                 "hue": 9.843900205996796,
                 "saturation": 0.09999237048905166,
@@ -161,8 +158,6 @@ describe TestCase, "LightMessages":
                 "kelvin": 2500,
                 "power": 65535,
                 "label": "den",
-                "reserved6": b"\x00\x00",
-                "reserved7": b"\x00\x00\x00\x00\x00\x00\x00\x00",
             },
         )
 
