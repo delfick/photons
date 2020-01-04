@@ -31,7 +31,7 @@ def make_color(specifier):
         if b is None:
             b = 1
 
-    elif isinstance(specifier, list):
+    elif isinstance(specifier, (list, tuple)):
         h, s, b, k = 0, 0, 1, 3500
         if len(specifier) > 0:
             h = specifier[0]

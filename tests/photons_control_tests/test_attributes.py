@@ -20,11 +20,13 @@ describe TestCase, "make_colors":
             [[100, 0.5, 0.5], 1],
             [[100, 0.5, 0.5, 9000], 1],
             [[0, 0, 0, 0], 1],
+            [(120, 1, 1, 9000), 1],
             [{"hue": 100}, 1],
             [{"hue": 100, "saturation": 0.5}, 1],
             [{"hue": 100, "saturation": 0.5, "brightness": 0.5}, 1],
             [{"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000}, 1],
             [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1],
+            [(120, 1, 1, 9000), 1],
         ]
 
     it "can make colors":
@@ -46,6 +48,7 @@ describe TestCase, "make_colors":
             expected.append({"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 3500})
             expected.append({"hue": 100, "saturation": 0.5, "brightness": 0.5, "kelvin": 9000})
             expected.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0})
+            expected.append({"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 9000})
 
         self.assertEqual(list(make_colors(self.colors)), expected)
 
