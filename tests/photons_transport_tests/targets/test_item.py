@@ -109,7 +109,7 @@ describe AsyncTestCase, "Item":
                 c5source = mock.Mock(name="c5source")
                 c5 = mock.Mock(name="clone5", source=c5source)
                 c5.actual.return_value = 123
-                serial = mock.Mock(name="target")
+                serial = mock.Mock(name="serial")
                 part3 = mock.Mock(name="part3", serial=serial)
                 part3.clone.return_value = c5
 
