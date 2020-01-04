@@ -133,12 +133,8 @@ class App(App):
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
 
-        photons_app = collector.configuration["photons_app"]
-        task = photons_app.chosen_task
-        if ":" in task and photons_app.target is sb.NotSpecified:
-            photons_app.target = task.split(":")[0]
-
         collector.configuration["target_register"].add_targets(collector.configuration["targets"])
+
         return collector
 
     def execute(
@@ -158,10 +154,10 @@ class App(App):
         collector = self.setup_collector(args_dict, logging_handler, extra_files)
 
         photons_app = collector.configuration["photons_app"]
-        task = photons_app.chosen_task
         task_runner = collector.configuration["task_runner"]
 
-        collector.run_coro_as_main(task_runner(task), catch_delfick_error=False)
+        target, task = photons_app.task_specifier()
+        collector.run_coro_as_main(task_runner(target, task), catch_delfick_error=False)
 
     def specify_other_args(self, parser, defaults):
         parser.add_argument(
@@ -172,7 +168,10 @@ class App(App):
         )
 
         parser.add_argument(
-            "--task", help="The task to run", dest="photons_app_chosen_task", **defaults["--task"]
+            "--task",
+            help="The task to run",
+            dest="photons_app_task_specifier",
+            **defaults["--task"]
         )
 
         parser.add_argument(

@@ -45,42 +45,31 @@ describe TestCase, "App":
 
             prepare.assert_called_once_with(location, args_dict, extra_files=None)
 
-        it "gets us the target from chosen_task if we haven't already got a target":
+        it "gets us the task_specifier":
             location, args_dict, logging_handler, collector = self.from_config(
                 """
                 ---
 
                 photons_app:
-                  chosen_task: "blah:yeap"
+                  task_specifier: "blah:yeap"
             """
             )
 
-            self.assertEqual(collector.configuration["photons_app"].target, "blah")
+            result = collector.configuration["photons_app"].task_specifier()
+            self.assertEqual(result, ("blah", "yeap"))
 
-        it "doesn't set target if chosen_task doesn't specify target":
+        it "doesn't set target if task_specifier doesn't specify target":
             location, args_dict, logging_handler, collector = self.from_config(
                 """
                 ---
 
                 photons_app:
-                  chosen_task: "blah"
+                  task_specifier: "blah"
             """
             )
 
-            self.assertEqual(collector.configuration["photons_app"].target, sb.NotSpecified)
-
-        it "doesn't set target if it's already specified":
-            location, args_dict, logging_handler, collector = self.from_config(
-                """
-                ---
-
-                photons_app:
-                  target: other
-                  chosen_task: "blah:yeap"
-            """
-            )
-
-            self.assertEqual(collector.configuration["photons_app"].target, "other")
+            result = collector.configuration["photons_app"].task_specifier()
+            self.assertEqual(result, (sb.NotSpecified, "blah"))
 
         it "sets up logging theme if term_colors is specified":
             setup_logging_theme = mock.Mock(name="setup_logging_theme")

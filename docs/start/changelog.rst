@@ -3,6 +3,13 @@
 ChangeLog
 =========
 
+0.24.4 - TBD
+    * Made it possible to override target options from the command line.
+
+      For example::
+
+        $ lifx 'lan(default_broadcast="10.1.1.255"):get_attr' _ color
+
 0.24.3 - 18 December 2019
     * Fixed a bug where response packets were matched to the wrong requests
 

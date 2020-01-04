@@ -25,68 +25,49 @@ describe AsyncTestCase, "TaskFinder":
     describe "task_runner":
         async before_each:
             self.task = mock.Mock(name="task")
+            self.target = mock.Mock(name="target")
 
-        describe "after finding tasks":
-            async before_each:
-                self.one_task = mock.Mock(name="one")
-                self.one_task.run = asynctest.mock.CoroutineMock(name="run")
+            self.one_task = mock.Mock(name="one")
+            self.one_task.run = asynctest.mock.CoroutineMock(name="run")
 
-                self.two_task = mock.Mock(name="two")
-                self.two_task.run = asynctest.mock.CoroutineMock(name="two_task")
+            self.two_task = mock.Mock(name="two")
+            self.two_task.run = asynctest.mock.CoroutineMock(name="two_task")
 
-                self.tasks = {"one": self.one_task, "two": self.two_task}
-                self.task_finder.tasks = self.tasks
+            self.tasks = {"one": self.one_task, "two": self.two_task}
+            self.task_finder.tasks = self.tasks
 
-            async it "complains if the task is not in self.tasks":
-                assert "three" not in self.task_finder.tasks
-                with self.fuzzyAssertRaisesError(
-                    BadTask, "Unknown task", task="three", available=["one", "two"]
-                ):
-                    await self.task_finder.task_runner("three")
+        async it "complains if the task is not in self.tasks":
+            assert "three" not in self.task_finder.tasks
+            with self.fuzzyAssertRaisesError(
+                BadTask, "Unknown task", task="three", available=["one", "two"]
+            ):
+                await self.task_finder.task_runner(self.target, "three")
 
-                with self.fuzzyAssertRaisesError(
-                    BadTask, "Unknown task", task="three", available=["one", "two"]
-                ):
-                    await self.task_finder.task_runner("target:three")
+        async it "runs the chosen task":
+            res = mock.Mock(name="res")
+            self.one_task.run.return_value = res
 
-            async it "runs the chosen task":
-                res = mock.Mock(name="res")
-                self.one_task.run.return_value = res
+            available_actions = mock.Mock(name="available_actions")
 
-                available_actions = mock.Mock(name="available_actions")
+            with mock.patch("photons_app.task_finder.available_actions", available_actions):
+                self.assertIs(await self.task_finder.task_runner(self.target, "one"), res)
 
-                with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(await self.task_finder.task_runner("one"), res)
+            self.one_task.run.assert_called_once_with(
+                self.target, self.collector, available_actions, self.tasks
+            )
 
-                self.one_task.run.assert_called_once_with(
-                    sb.NotSpecified, self.collector, available_actions, self.tasks
+        async it "runs the chosen task with the other kwargs":
+            one = mock.Mock(name="one")
+            res = mock.Mock(name="res")
+            self.one_task.run.return_value = res
+
+            available_actions = mock.Mock(name="available_actions")
+
+            with mock.patch("photons_app.task_finder.available_actions", available_actions):
+                self.assertIs(
+                    await self.task_finder.task_runner(self.target, "one", one=one, two=3), res
                 )
 
-            async it "runs the chosen task with the specified target":
-                res = mock.Mock(name="res")
-                self.one_task.run.return_value = res
-
-                available_actions = mock.Mock(name="available_actions")
-
-                with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(await self.task_finder.task_runner("target:one"), res)
-
-                self.one_task.run.assert_called_once_with(
-                    "target", self.collector, available_actions, self.tasks
-                )
-
-            async it "runs the chosen task with the other kwargs":
-                one = mock.Mock(name="one")
-                res = mock.Mock(name="res")
-                self.one_task.run.return_value = res
-
-                available_actions = mock.Mock(name="available_actions")
-
-                with mock.patch("photons_app.task_finder.available_actions", available_actions):
-                    self.assertIs(
-                        await self.task_finder.task_runner("target:one", one=one, two=3), res
-                    )
-
-                self.one_task.run.assert_called_once_with(
-                    "target", self.collector, available_actions, self.tasks, one=one, two=3
-                )
+            self.one_task.run.assert_called_once_with(
+                self.target, self.collector, available_actions, self.tasks, one=one, two=3
+            )

@@ -125,18 +125,12 @@ async def help(collector, tasks, reference, target, **kwargs):
     You can also be tricky and do something like ``<target>:help`` instead
     of ``help <target>``
     """
-    task_name = sb.NotSpecified
-    target_name = sb.NotSpecified
-    if target is not sb.NotSpecified:
-        target_name = collector.configuration["photons_app"].target
-
-    if reference not in (None, "", sb.NotSpecified):
-        if ":" in reference:
-            target_name, task_name = reference.split(":", 1)
-        else:
-            task_name = reference
-
+    target_name, task_name = collector.configuration["photons_app"].task_specifier()
     target_register = collector.configuration["target_register"]
+
+    if task_name == "help":
+        task_name = sb.NotSpecified
+
     if task_name in target_register.targets or task_name in target_register.types:
         target_name = task_name
         task_name = sb.NotSpecified

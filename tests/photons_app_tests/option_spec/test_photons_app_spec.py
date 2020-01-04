@@ -44,9 +44,11 @@ describe TestCase, "PhotonsAppSpec":
 
     describe "photons_app_spec":
         it "gets us back a PhotonsApp":
-            res = self.spec.photons_app_spec.normalise(self.meta, {"target": "blah", "debug": True})
+            res = self.spec.photons_app_spec.normalise(
+                self.meta, {"task_specifier": "blah:things", "debug": True}
+            )
             assert isinstance(res, PhotonsApp)
-            self.assertEqual(res.target, "blah")
+            self.assertEqual(res.task_specifier(), ("blah", "things"))
             self.assertEqual(res.debug, True)
 
     describe "target_register_spec":

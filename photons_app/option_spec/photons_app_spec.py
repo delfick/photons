@@ -5,6 +5,7 @@ The specifications are responsible for sanitation, validation and normalisation.
 """
 
 from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
+from photons_app.option_spec.task_specifier import task_specifier_spec
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption
 from photons_app import helpers as hp
@@ -33,19 +34,11 @@ class PhotonsApp(dictobj.Spec):
         sb.string_spec, default="", help="The arguments after the ``--`` in the commandline"
     )
     debug = dictobj.Field(sb.boolean, default=False, help="Whether we are in debug mode or not")
-    target = dictobj.Field(
-        wrapper=sb.optional_spec,
-        format_into=sb.string_spec,
-        help="The target to use when executing the task",
-    )
     artifact = dictobj.Field(
         default="", format_into=sb.string_spec, help="The artifact string from the commandline"
     )
     reference = dictobj.Field(
         default="", format_into=sb.string_spec, help="The device(s) to send commands to"
-    )
-    chosen_task = dictobj.Field(
-        default="list_tasks", format_into=sb.string_spec, help="The task that is being executed"
     )
     cleaners = dictobj.Field(
         lambda: sb.overridden([]),
@@ -55,6 +48,9 @@ class PhotonsApp(dictobj.Spec):
         sb.boolean,
         default=False,
         help="The collector looks at this to determine if we should default to activating all photons modules",
+    )
+    task_specifier = dictobj.Field(
+        sb.delayed(task_specifier_spec()), help="Used to determine chosen task and target"
     )
 
     @hp.memoized_property
