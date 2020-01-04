@@ -1196,8 +1196,8 @@ describe AsyncTestCase, "FakeDevice":
                     extra_make_response.reset_mock()
 
                     extra_make_response.side_effect = yld(fail=True)
-                    res = await self.device.make_response(pkt, "memory")
-                    self.assertEqual(res, None)
+                    with self.fuzzyAssertRaisesError(IgnoreMessage):
+                        await self.device.make_response(pkt, "memory")
                     extra_make_response.assert_called_once_with(pkt, "memory")
 
             async it "uses the first responder that works":
@@ -1234,7 +1234,8 @@ describe AsyncTestCase, "FakeDevice":
                 self.assertEqual(len(r3.respond.mock_calls), 0)
 
                 r1.respond.side_effect = yld(fail=True)
-                self.assertEqual(await self.device.make_response(pkt, "memory"), None)
+                with self.fuzzyAssertRaisesError(IgnoreMessage):
+                    await self.device.make_response(pkt, "memory")
 
         describe "compare_received":
             async it "is fine if no messages either way":

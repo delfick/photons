@@ -309,10 +309,18 @@ class FakeDevice:
         else:
             await self.ensure_memory_service()
 
+        for responder in self.all_responders:
+            if hasattr(responder, "start"):
+                await responder.start(self)
+
     async def finish(self):
         for service in self.services:
             await service.closer()
         self.services = []
+
+        for responder in self.all_responders:
+            if hasattr(responder, "shutdown"):
+                await responder.shutdown(self)
 
     def set_intercept_got_message(self, interceptor):
         self.intercept_got_message = interceptor
@@ -442,12 +450,15 @@ class FakeDevice:
             yield ack
             await self.process_reply(ack, source, pkt)
 
-        async for res in self.response_for(pkt, source):
-            res.sequence = pkt.sequence
-            res.source = pkt.source
-            res.target = self.serial
-            yield res
-            await self.process_reply(res, source, pkt)
+        try:
+            async for res in self.response_for(pkt, source):
+                res.sequence = pkt.sequence
+                res.source = pkt.source
+                res.target = self.serial
+                yield res
+                await self.process_reply(res, source, pkt)
+        except IgnoreMessage:
+            pass
 
     async def process_reply(self, pkt, source, request):
         for responder in self.all_responders:
@@ -584,31 +595,30 @@ class FakeDevice:
 
         for responder in self.all_responders:
             res = []
-            try:
-                async for r in responder.respond(self, pkt, source):
-                    res.append(r)
-            except IgnoreMessage:
-                return
+            async for r in responder.respond(self, pkt, source):
+                res.append(r)
 
             if res:
                 return res
 
         extra = []
-        try:
-            async for r in self.extra_make_response(pkt, source):
-                extra.append(r)
-        except IgnoreMessage:
-            return
+        async for r in self.extra_make_response(pkt, source):
+            extra.append(r)
 
         if extra:
             return extra
+
+        try:
+            payload_repr = repr(pkt.payload)
+        except Exception:
+            payload_repr = pkt.__class__.__name__
 
         log.info(
             hp.lc(
                 "Message wasn't handled",
                 source=source,
                 pkt=pkt.__class__.__name__,
-                payload=repr(pkt.payload),
+                payload=payload_repr,
                 serial=self.serial,
             )
         )

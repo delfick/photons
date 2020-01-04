@@ -12,9 +12,9 @@ from photons_messages import (
     fields,
 )
 from photons_transport.targets import MemoryTarget
+from photons_products import Products, Family
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
-from photons_products import Products
 
 from delfick_project.norms import dictobj, sb, Meta
 import logging
@@ -25,6 +25,22 @@ log = logging.getLogger("photons_control.test_helpers")
 
 def Color(hue, saturation, brightness, kelvin):
     return fields.Color(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
+
+
+class TileChild(dictobj.Spec):
+    accel_meas_x = dictobj.Field(sb.integer_spec, default=0)
+    accel_meas_y = dictobj.Field(sb.integer_spec, default=0)
+    accel_meas_z = dictobj.Field(sb.integer_spec, default=0)
+    user_x = dictobj.Field(sb.integer_spec, default=0)
+    user_y = dictobj.Field(sb.integer_spec, default=0)
+    width = dictobj.Field(sb.integer_spec, default=8)
+    height = dictobj.Field(sb.integer_spec, default=8)
+    device_version_vendor = dictobj.Field(sb.integer_spec, default=1)
+    device_version_product = dictobj.Field(sb.integer_spec, default=55)
+    device_version_version = dictobj.Field(sb.integer_spec, default=0)
+    firmware_version_minor = dictobj.Field(sb.integer_spec, default=50)
+    firmware_version_major = dictobj.Field(sb.integer_spec, default=3)
+    firmware_build = dictobj.Field(sb.integer_spec, default=0)
 
 
 class LightStateResponder(Responder):
@@ -39,8 +55,12 @@ class LightStateResponder(Responder):
 
         elif pkt | DeviceMessages.GetPower:
             yield self.make_power_response(device)
-        elif pkt | DeviceMessages.SetPower or pkt | LightMessages.SetLightPower:
+        elif pkt | DeviceMessages.SetPower:
             res = self.make_power_response(device)
+            device.attrs.power = pkt.level
+            yield res
+        elif pkt | LightMessages.SetLightPower:
+            res = self.make_light_power_response(device)
             device.attrs.power = pkt.level
             yield res
 
@@ -67,6 +87,9 @@ class LightStateResponder(Responder):
     def make_power_response(self, device):
         return DeviceMessages.StatePower(level=device.attrs.power)
 
+    def make_light_power_response(self, device):
+        return LightMessages.StateLightPower(level=device.attrs.power)
+
     def make_light_response(self, device):
         return LightMessages.LightState.empty_normalise(
             label=device.attrs.label, power=device.attrs.power, **device.attrs.color.as_dict()
@@ -77,7 +100,8 @@ class InfraredResponder(Responder):
     _fields = [("infrared", lambda: 0)]
 
     def has_infrared(self, device):
-        return ProductResponder.capability(device).has_ir
+        cap = ProductResponder.capability(device)
+        return cap.has_ir or cap.product.family is Family.LCM3
 
     async def reset(self, device, *, zero=False):
         if self.has_infrared(device):
@@ -103,7 +127,23 @@ class MatrixResponder(Responder):
         ("matrix_effect", lambda: TileEffectType.OFF),
         ("palette_count", lambda: 0),
         ("palette", lambda: []),
+        ("chain", lambda: [TileChild.FieldSpec().empty_normalise() for _ in range(5)]),
+        ("matrix_width", lambda: 8),
+        ("matrix_height", lambda: 8),
     ]
+
+    async def start(self, device):
+        if "chain" not in device.attrs:
+            return
+
+        cap = ProductResponder.capability(device)
+        for child in device.attrs.chain:
+            child.firmware_version_major = cap.firmware_major
+            child.firmware_version_minor = cap.firmware_minor
+            child.device_version_vendor = cap.product.vendor.vid
+            child.device_version_product = cap.product.pid
+            child.width = device.attrs.matrix_width
+            child.height = device.attrs.matrix_height
 
     def has_matrix(self, device):
         return ProductResponder.capability(device).has_matrix
@@ -124,6 +164,8 @@ class MatrixResponder(Responder):
             device.attrs.palette_count = pkt.palette_count
             device.attrs.matrix_effect = pkt.type
             yield res
+        elif pkt | TileMessages.GetDeviceChain:
+            yield self.make_device_chain(device)
 
     def make_state_tile_effect(self, device, instanceid=sb.NotSpecified):
         return TileMessages.StateTileEffect.empty_normalise(
@@ -132,6 +174,13 @@ class MatrixResponder(Responder):
             palette_count=device.attrs.palette_count,
             palette=device.attrs.palette,
             parameters={},
+        )
+
+    def make_device_chain(self, device):
+        return TileMessages.StateDeviceChain(
+            start_index=0,
+            tile_devices_count=len(device.attrs.chain),
+            tile_devices=[c.as_dict() for c in device.attrs.chain],
         )
 
 
@@ -285,6 +334,9 @@ def default_responders(
     firmware=Firmware(0, 0, 0),
     zones_effect=MultiZoneEffectType.OFF,
     matrix_effect=TileEffectType.OFF,
+    chain=None,
+    matrix_width=8,
+    matrix_height=8,
     **kwargs,
 ):
     product_responder = ProductResponder.from_product(product, firmware)
@@ -293,7 +345,7 @@ def default_responders(
 
     cap = product.cap(firmware_major=firmware.major, firmware_minor=firmware.minor)
 
-    if cap.has_ir:
+    if cap.has_ir or cap.product.family is Family.LCM3:
         responders.append(InfraredResponder(infrared=infrared))
 
     meta = Meta.empty()
@@ -307,10 +359,13 @@ def default_responders(
         responders.append(ZonesResponder(zones=zones, zones_effect=zones_effect))
 
     if cap.has_matrix:
-        matrix_effect = enum_spec(None, TileEffectType, unpacking=True).normalise(
+        kw = {"matrix_width": matrix_width, "matrix_height": matrix_height}
+        kw["matrix_effect"] = enum_spec(None, TileEffectType, unpacking=True).normalise(
             meta, matrix_effect
         )
-        responders.append(MatrixResponder(matrix_effect=matrix_effect))
+        if chain:
+            kw["chain"] = chain
+        responders.append(MatrixResponder(**kw))
 
     return responders
 

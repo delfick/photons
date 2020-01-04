@@ -84,6 +84,19 @@ describe AsyncTestCase, "Responders":
                 DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
             )
 
+        async it "responds to light power messages":
+            await self.assertResponse(
+                DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=0)]
+            )
+            await self.assertResponse(
+                LightMessages.SetLightPower(level=200),
+                [LightMessages.StateLightPower(level=0)],
+                power=200,
+            )
+            await self.assertResponse(
+                DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
+            )
+
         async it "responds to Color messages":
 
             def light_state(label, power, hue, saturation, brightness, kelvin):
@@ -194,13 +207,35 @@ describe AsyncTestCase, "Responders":
         async it "doesn't respond to infrared if the product doesn't have infrared":
             self.device = FakeDevice(
                 "d073d5000001",
-                [chp.ProductResponder.from_product(Products.LCM3_TILE), chp.InfraredResponder()],
+                [chp.ProductResponder.from_product(Products.LCM2_A19), chp.InfraredResponder()],
             )
             await self.device.start()
             assert "infrared" not in self.device.attrs
 
             await self.assertResponse(LightMessages.GetInfrared(), [])
             await self.assertResponse(LightMessages.SetInfrared(brightness=100), [])
+
+        async it "does respond to infrared if the product doesn't have infrared but is LCM3":
+            self.device = FakeDevice(
+                "d073d5000001",
+                [chp.ProductResponder.from_product(Products.LCM3_TILE), chp.InfraredResponder()],
+            )
+            await self.device.start()
+            assert "infrared" in self.device.attrs
+
+            await self.assertResponse(
+                LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)]
+            )
+            await self.assertResponse(
+                LightMessages.SetInfrared(brightness=100),
+                [LightMessages.StateInfrared(brightness=0)],
+                infrared=100,
+            )
+            await self.assertResponse(
+                LightMessages.GetInfrared(),
+                [LightMessages.StateInfrared(brightness=100)],
+                infrared=100,
+            )
 
     describe "MatrixResponder":
         async before_each:
