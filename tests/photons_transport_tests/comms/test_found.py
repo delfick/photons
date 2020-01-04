@@ -157,6 +157,12 @@ describe TestCase, "Found":
         for t in ts:
             assert t in self.found
 
+        # And it's not "in" found if the services are empty
+        self.found["d073d5000001"] = {}
+
+        for t in ts:
+            assert t not in self.found
+
     it "has repr":
         self.found["d073d5000001"] = {"UDP": 1, "THI": 2}
         self.found["d073d5000002"] = {"MEMORY": 1}
