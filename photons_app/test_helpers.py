@@ -41,7 +41,7 @@ def print_packet_difference(one, two):
             for k, v in dictc.items():
                 if k not in dictw:
                     print("\t\tGot key not in wanted: {0}".format(k))
-                elif v != dictw[k]:
+                elif repr(v) != repr(dictw[k]):
                     print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
 
             for k in dictw:
