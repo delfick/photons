@@ -44,7 +44,6 @@ class PhotonsApp(dictobj.Spec):
     reference = dictobj.Field(
         default="", format_into=sb.string_spec, help="The device(s) to send commands to"
     )
-    extra_files = dictobj.Field(sb.string_spec, wrapper=sb.listof, help="Extra files to load")
     chosen_task = dictobj.Field(
         default="list_tasks", format_into=sb.string_spec, help="The task that is being executed"
     )

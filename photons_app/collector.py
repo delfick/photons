@@ -9,6 +9,7 @@ from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.task_finder import TaskFinder
+from photons_app import helpers as hp
 from photons_app.runner import run
 
 from photons_messages import protocol_register
@@ -26,6 +27,59 @@ import sys
 import os
 
 log = logging.getLogger("photons_app.collector")
+
+
+class Extras(dictobj.Spec):
+    before = dictobj.Field(sb.listof(sb.filename_spec()))
+    after = dictobj.Field(sb.listof(sb.filename_spec()))
+
+
+class extra_files_spec(sb.Spec):
+    def setup(self, source):
+        self.source = source
+        self.extras_spec = Extras.FieldSpec()
+
+    def normalise_filled(self, meta, val):
+        options_spec = sb.set_options(
+            filename=sb.required(sb.string_spec()), optional=sb.defaulted(sb.boolean(), False)
+        )
+        lst_spec = sb.listof(sb.or_spec(sb.string_spec(), options_spec))
+
+        if isinstance(val, list):
+            val = {"after": lst_spec.normalise(meta, val)}
+
+        val = sb.set_options(after=lst_spec, before=lst_spec).normalise(meta, val)
+
+        formatted = sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
+
+        for key in ("after", "before"):
+            result = []
+
+            for i, thing in enumerate(val[key]):
+                filename = thing
+                optional = False
+                if isinstance(thing, dict):
+                    filename = thing["filename"]
+                    optional = thing["optional"]
+
+                filename = formatted.normalise(meta.at(key).indexed_at(i), filename)
+                if optional and not os.path.exists(filename):
+                    log.warning(hp.lc("Ignoring optional configuration", filename=filename))
+                    continue
+
+                if not os.path.exists(filename):
+                    raise BadConfiguration(
+                        "Specified extra file doesn't exist",
+                        source=self.source,
+                        filename=filename,
+                        meta=meta,
+                    )
+
+                result.append(filename)
+
+            val[key] = result
+
+        return self.extras_spec.normalise(meta, val)
 
 
 class Collector(Collector):
@@ -256,30 +310,31 @@ class Collector(Collector):
 
         config_root = configuration.get("config_root")
         if config_root and src.startswith(config_root):
-            src = "{{config_root}}/{0}".format(src[len(config_root) + 1 :])
+            rel = os.path.relpath(src, config_root)
+            src = os.path.join("{config_root}", rel)
+
+        extras = self.get_extra_files(result, src, configuration, ["photons_app", "extra_files"])
+
+        for filename in extras.before:
+            collect_another_source(filename)
 
         configuration.update(result, source=src)
 
-        if "photons_app" in result:
-            if "extra_files" in result["photons_app"]:
-                spec = sb.listof(
-                    sb.formatted(sb.string_spec(), formatter=MergedOptionStringFormatter)
-                )
-                config_root = {
-                    "config_root": result.get("config_root", configuration.get("config_root"))
-                }
-                meta = (
-                    Meta(MergedOptions.using(result, config_root), [])
-                    .at("photons_app")
-                    .at("extra_files")
-                )
-                for extra in spec.normalise(meta, result["photons_app"]["extra_files"]):
-                    if os.path.abspath(extra) not in done:
-                        if not os.path.exists(extra):
-                            raise BadConfiguration(
-                                "Specified extra file doesn't exist", extra=extra, source=src
-                            )
-                        collect_another_source(extra)
+        for filename in extras.after:
+            collect_another_source(filename)
+
+    def get_extra_files(self, result, source, configuration, path):
+        extra = hp.nested_dict_retrieve(result, path, [])
+
+        config_root = {"config_root": result.get("config_root", configuration.get("config_root"))}
+
+        config = configuration.wrapped()
+        config.update(result, source=source)
+        config.update(config_root)
+
+        meta = Meta(config, []).at("photons_app").at("extra_files")
+
+        return extra_files_spec(source).normalise(meta, extra)
 
     def extra_configuration_collection(self, configuration):
         """

@@ -8,17 +8,41 @@ from photons_app.test_helpers import TestCase
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 
+from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
 from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import dictobj, sb, Meta
 from delfick_project.option_merge.path import Path
 from delfick_project.addons import Register
 from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
 import pkg_resources
+import tempfile
 import asyncio
+import shutil
 import uuid
 import os
+
+
+class a_temp_dir:
+    def __enter__(self):
+        self.d = tempfile.mkdtemp()
+        return self.d, self.make_file
+
+    def __exit__(self, exc_type, exc, tb):
+        if hasattr(self, "d") and os.path.exists(self.d):
+            shutil.rmtree(self.d)
+
+    def make_file(self, name, contents):
+        location = os.path.join(self.d, name)
+        parent = os.path.dirname(location)
+        if not os.path.exists(parent):
+            os.makedirs(parent)
+
+        with open(location, "w") as fle:
+            fle.write(dedent(contents))
+
+        return location
+
 
 describe TestCase, "Collector":
     it "has a shortcut to the run helper":
@@ -498,10 +522,11 @@ describe TestCase, "Collector":
 
             collect_another_source = mock.Mock(name="collect_another_source", side_effect=cas)
 
-            exists = mock.Mock(name="exists", return_value=True)
+            alwaystrue = mock.Mock(name="alwaystrue", return_value=True)
 
-            with mock.patch("os.path.exists", exists):
-                Collector().add_configuration(
+            collector = Collector()
+            with mock.patch("os.path.exists", alwaystrue), mock.patch("os.path.isfile", alwaystrue):
+                collector.add_configuration(
                     configuration, collect_another_source, done, result, src
                 )
 
@@ -526,7 +551,7 @@ describe TestCase, "Collector":
                 with self.fuzzyAssertRaisesError(
                     BadConfiguration,
                     "Specified extra file doesn't exist",
-                    extra="/one/two/three",
+                    filename="/one/two/three",
                     source=src,
                 ):
                     Collector().add_configuration(
@@ -534,6 +559,152 @@ describe TestCase, "Collector":
                     )
 
             exists.assert_called_once_with("/one/two/three")
+
+        it "can do extra files before and after current configuration":
+            with a_temp_dir() as (d, make_file):
+
+                make_file(
+                    "before1.yml",
+                    """
+                ---
+
+                one: 1
+                two:
+                  three: 3
+                  first: true
+                """,
+                )
+
+                make_file(
+                    "before2.yml",
+                    """
+                ---
+
+                one: 4
+                two:
+                  four: 4
+                  second: true
+
+                five:
+                  six: 9
+                """,
+                )
+
+                rootyml = make_file(
+                    "root.yml",
+                    """
+                ---
+
+                photons_app:
+                  extra_files:
+                    before:
+                      - "{config_root}/before1.yml"
+                      - filename: "{config_root}/before2.yml"
+                    after:
+                      - filename: "{config_root}/after1.yml"
+                      - filename: "{config_root}/nonexistant.yml"
+                        optional: true
+                      - filename: "{config_root}/after2.yml"
+
+                one: 9
+                two:
+                  tree: "tree"
+                """,
+                )
+
+                make_file(
+                    "after1.yml",
+                    """
+                ---
+
+                two:
+                  four: plane
+                five:
+                  eight: cloud
+                """,
+                )
+
+                make_file(
+                    "after2.yml",
+                    """
+                ---
+
+                two:
+                  four: plane
+                  last: true
+                five:
+                  eight: evenmorecloud
+                """,
+                )
+
+                collector = Collector()
+                collector.prepare(rootyml, {})
+
+                expected = {
+                    "one": 9,
+                    "two": {
+                        "three": 3,
+                        "four": "plane",
+                        "tree": "tree",
+                        "first": True,
+                        "second": True,
+                        "last": True,
+                    },
+                    "config_root": d,
+                    "five": {"six": 9, "eight": "evenmorecloud"},
+                }
+
+                dct = collector.configuration.as_dict()
+                for key, val in expected.items():
+                    self.assertEqual(dct[key], val)
+
+        it "complains if a filename is not a file":
+            with a_temp_dir() as (d, make_file):
+                d1 = os.path.join(d, "one")
+                os.makedirs(d1)
+
+                d2 = os.path.join(d, "two")
+                os.makedirs(d2)
+
+                d3 = os.path.join(d, "three")
+                os.makedirs(d3)
+
+                rootyml = make_file(
+                    "root.yml",
+                    """
+                ---
+
+                photons_app:
+                  extra_files:
+                    before:
+                     - "{config_root}/one"
+                    after:
+                     - filename: "{config_root}/two"
+                     - "{config_root}/three"
+                """,
+                )
+
+                collector = Collector()
+
+                errs = []
+                try:
+                    collector.prepare(rootyml, {})
+                    assert False, "Expect an error"
+                except BadSpecValue as error:
+                    for err in error.errors:
+                        errs.extend(err.errors)
+
+                paths = []
+
+                self.assertEqual(len(errs), 3, errs)
+                for err in errs:
+                    self.assertIsInstance(err, BadSpecValue)
+                    self.assertEqual(
+                        err.message, "Got something that exists but isn't a file",
+                    )
+                    paths.append(err.kwargs["filename"])
+
+                self.assertEqual(sorted(paths), sorted([d1, d2, d3]))
 
     describe "extra_configuration_collection":
         it "registers converters for serveral things":
