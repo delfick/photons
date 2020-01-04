@@ -31,7 +31,8 @@ class FakeScript(object):
         return msgs
 
 
-def print_packet_difference(one, two):
+def print_packet_difference(one, two, ignore_unspecified_expected=True):
+    different = False
     if one != two:
         print("\tGOT : {0}".format(one.payload.__class__))
         print("\tWANT: {0}".format(two.payload.__class__))
@@ -41,12 +42,18 @@ def print_packet_difference(one, two):
             for k, v in dictc.items():
                 if k not in dictw:
                     print("\t\tGot key not in wanted: {0}".format(k))
+                    different = True
+                elif dictw[k] is sb.NotSpecified and v is not sb.NotSpecified:
+                    print(f"\t\tkey {k} | Ignored because expected is NotSpecified | was {v}")
                 elif repr(v) != repr(dictw[k]):
                     print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
+                    different = True
 
             for k in dictw:
                 if k not in dictc:
                     print("\t\tGot key in wanted but not in what we got: {0}".format(k))
+                    different = True
+    return different
 
 
 def assert_payloads_equals(payload, expected):

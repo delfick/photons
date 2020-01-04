@@ -40,8 +40,7 @@ describe AsyncTestCase, "Responders":
                     if e | TileMessages.StateTileEffect and g | TileMessages.StateTileEffect:
                         e.instanceid = g.instanceid
                     if g != e:
-                        print_packet_difference(g, e)
-                        different = True
+                        dfferent = print_packet_difference(g, e, ignore_unspecified_expected=True)
 
                     # Make sure message can be packed
                     g.source = 1
