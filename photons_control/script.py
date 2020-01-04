@@ -205,7 +205,7 @@ class Stop(Exception):
 Repeater.Stop = Stop
 
 
-def FromGeneratorPerSerial(inner_gen):
+def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     """
     Same as a FromGenerator except it will call your inner_gen per serial in
     the reference given to run_with.
@@ -221,7 +221,10 @@ def FromGeneratorPerSerial(inner_gen):
         for serial in missing:
             yield FailedToFindDevice(serial=serial)
 
-        yield [FromGenerator(inner_gen, reference_override=serial) for serial in serials]
+        yield [
+            FromGenerator(inner_gen, reference_override=serial, **generator_kwargs)
+            for serial in serials
+        ]
 
     return FromGenerator(gen)
 
@@ -259,26 +262,42 @@ class FromGenerator(object):
     message(s) were sent without error, and False if they were sent with error.
     """
 
-    def __init__(self, generator, *, reference_override=None):
+    def __init__(self, generator, *, reference_override=None, error_catcher_override=None):
         self.generator = generator
         self.reference_override = reference_override
+        self.error_catcher_override = error_catcher_override
 
     def simplified(self, simplifier, chain=None):
-        return self.Item(simplifier, self.generator, self.Runner, self.reference_override)
+        return self.Item(
+            simplifier,
+            self.generator,
+            self.Runner,
+            self.reference_override,
+            self.error_catcher_override,
+        )
 
     class Item:
-        def __init__(self, simplifier, generator, runner_kls, reference_override):
+        def __init__(self, simplifier, generator, runner_kls, reference_override, catcher_override):
             self.generator = generator
             self.runner_kls = runner_kls
             self.simplifier = simplifier
             self.reference_override = reference_override
+            self.error_catcher_override = catcher_override
 
         async def run_with(self, reference, args_for_run, **kwargs):
-            do_raise = kwargs.get("error_catcher") is None
-            error_catcher = [] if do_raise else kwargs["error_catcher"]
-            kwargs["error_catcher"] = error_catcher
-
             runner = self.runner_kls(self, reference, args_for_run, kwargs)
+
+            error_catcher = kwargs.get("error_catcher")
+            if self.error_catcher_override:
+                error_catcher = self.error_catcher_override(
+                    runner.run_with_reference, error_catcher
+                )
+
+            do_raise = error_catcher is None
+            if do_raise:
+                error_catcher = []
+
+            kwargs["error_catcher"] = error_catcher
 
             try:
                 async for result in runner:
@@ -302,10 +321,13 @@ class FromGenerator(object):
             self.stop_fut = asyncio.Future()
             self.reference = reference
             self.args_for_run = args_for_run
-            self.error_catcher = kwargs["error_catcher"]
 
             self.ts = []
             self.queue = asyncio.Queue()
+
+        @property
+        def error_catcher(self):
+            return self.kwargs.get("error_catcher")
 
         @property
         def generator_reference(self):

@@ -5,6 +5,7 @@ from photons_control import test_helpers as chp
 
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
 from photons_app.test_helpers import TestCase, AsyncTestCase
+from photons_app import helpers as hp
 
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.fake import FakeDevice
@@ -87,6 +88,67 @@ describe AsyncTestCase, "FromGenerator":
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
         self.assertEqual(errors, [FailedToFindDevice(serial=light3.serial)])
+
+    @mlr.test
+    async it "is able to do a FromGenerator per serial with per serial error_catchers", runner:
+
+        per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
+
+        def error_catcher_override(serial, original_error_catcher):
+            if not serial:
+                return original_error_catcher
+
+            def error(e):
+                per_light_errors[serial].append(e)
+                hp.add_error(original_error_catcher, e)
+
+            return error
+
+        async def gen(serial, afr, **kwargs):
+            yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
+
+        msg = FromGeneratorPerSerial(gen, error_catcher_override=error_catcher_override)
+
+        expected = {
+            light1: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
+            light2: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
+            light3: [],
+        }
+
+        errors = []
+
+        got = defaultdict(list)
+        with light3.offline():
+            with light1.no_replies_for(DeviceMessages.SetLabel):
+                with light2.no_replies_for(DeviceMessages.GetPower):
+                    async for pkt, _, _ in runner.target.script(msg).run_with(
+                        runner.serials, error_catcher=errors, message_timeout=0.05
+                    ):
+                        got[pkt.serial].append(pkt)
+
+        assert len(runner.devices) > 0
+
+        for device in runner.devices:
+            if device not in expected:
+                assert False, f"No expectation for {device.serial}"
+
+            device.compare_received(expected[device])
+
+        self.assertEqual(
+            errors,
+            [
+                FailedToFindDevice(serial=light3.serial),
+                TimedOut("Waiting for reply to a packet", serial=light1.serial),
+                TimedOut("Waiting for reply to a packet", serial=light2.serial),
+            ],
+        )
+
+        # The FailedToFindDevice happens before the script is run and so doesn't get taken into
+        # account by the error_catcher_override
+        self.assertEqual(
+            per_light_errors,
+            {light1.serial: [errors[1]], light3.serial: [], light2.serial: [errors[2]]},
+        )
 
     @mlr.test
     async it "Can get results", runner:
