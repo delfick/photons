@@ -49,6 +49,20 @@ def print_packet_difference(one, two):
                     print("\t\tGot key in wanted but not in what we got: {0}".format(k))
 
 
+def assert_payloads_equals(payload, expected):
+    dct = payload.as_dict()
+
+    different = []
+    for k, v in expected.items():
+        if v != dct[k]:
+            different.append(k, dct[k], v)
+
+    for k, got, want in different:
+        print(f"KEY: {k} |:| GOT: {got} |:| WANT: {want}")
+
+    assert len(different) == 0
+
+
 class FakeTarget(object):
     def __init__(self, afr_maker=None):
         self.call = -1

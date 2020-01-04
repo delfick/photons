@@ -2,11 +2,10 @@
 
 from photons_colour import split_color_string, Parser, InvalidColor, ValueOutOfRange
 
-from photons_app.test_helpers import TestCase
+from photons_app.test_helpers import TestCase, assert_payloads_equals
 
 from photons_messages import LightMessages, Waveform
 
-from delfick_project.norms import sb
 from unittest import mock
 
 describe TestCase, "split_color_string":
@@ -216,10 +215,9 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(
-                    msg.payload.as_dict(),
+                assert_payloads_equals(
+                    msg.payload,
                     {
-                        "reserved6": sb.NotSpecified,
                         "transient": 0,
                         "hue": 240.0,
                         "saturation": 0.09999237048905166,
@@ -247,10 +245,9 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(
-                    msg.payload.as_dict(),
+                assert_payloads_equals(
+                    msg.payload,
                     {
-                        "reserved6": sb.NotSpecified,
                         "transient": 1,
                         "hue": 240.0,
                         "saturation": 0.09999237048905166,
@@ -278,10 +275,9 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(
-                    msg.payload.as_dict(),
+                assert_payloads_equals(
+                    msg.payload,
                     {
-                        "reserved6": sb.NotSpecified,
                         "transient": 1,
                         "hue": 240.0,
                         "saturation": 0.09999237048905166,
@@ -309,10 +305,9 @@ describe TestCase, "Parser":
             with mock.patch.object(Parser, "hsbk", hsbk):
                 msg = Parser.color_to_msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                self.assertEqual(
-                    msg.payload.as_dict(),
+                assert_payloads_equals(
+                    msg.payload,
                     {
-                        "reserved6": sb.NotSpecified,
                         "transient": 1,
                         "hue": 240.0,
                         "saturation": 0.09999237048905166,
