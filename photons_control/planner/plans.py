@@ -342,6 +342,48 @@ class ZonesPlan(Plan):
             return sorted(self.staging)
 
 
+@a_plan("chain")
+class ChainPlan(Plan):
+    """
+    Return ``{"chain": <tiles>, "orientations": <orientations>}``
+
+    Will take into account if the device has a chain or not
+    """
+
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan()}
+
+    class Instance(Plan.Instance):
+        def setup(self):
+            self.chain = []
+            self.orientations = {}
+
+        @property
+        def has_chain(self):
+            return self.deps["c"]["cap"].has_chain
+
+        @property
+        def messages(self):
+            if self.has_chain:
+                return [TileMessages.GetDeviceChain()]
+            return Skip
+
+        def process(self, pkt):
+            if pkt | TileMessages.StateDeviceChain:
+                from photons_control.tile import tiles_from, orientations_from
+
+                for tile in tiles_from(pkt):
+                    self.chain.append(tile)
+                self.orientations = orientations_from(pkt)
+                return True
+
+        async def info(self):
+            return {"chain": self.chain, "orientations": self.orientations}
+
+
 @a_plan("capability")
 class CapabilityPlan(Plan):
     """

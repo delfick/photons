@@ -15,12 +15,14 @@ from photons_messages import (
     MultiZoneEffectType,
     Direction,
 )
+from photons_control.orientation import Orientation
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
 import uuid
+import json
 
 zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [chp.Color(60 - i, 1, 1, 6500) for i in range(20)]
@@ -370,6 +372,153 @@ describe AsyncTestCase, "Default Plans":
                     DeviceMessages.GetVersion(),
                     MultiZoneMessages.GetExtendedColorZones(),
                 ],
+            }
+
+            for device in runner.devices:
+                if device not in expected:
+                    assert False, f"No expectation for {device.serial}"
+
+                device.compare_received(expected[device])
+
+    describe "ChainPlan":
+
+        @mlr.test
+        async it "gets tile information", runner:
+            got = await self.gather(runner, runner.serials, "chain")
+
+            class Partial:
+                def __init__(s, item):
+                    s.item = item
+
+                def __eq__(s, other):
+                    other = {k: other[k] for k in s.item}
+
+                    if s.item != other:
+                        print("Want", json.dumps(s.item))
+                        print("=====")
+                        print("Got", json.dumps(other))
+                        self.assertEqual(other, s.item)
+
+                    return s.item == other
+
+            chain = [
+                Partial(
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 55,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 0,
+                        "firmware_version_major": 3,
+                        "firmware_version_minor": 50,
+                        "height": 8,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 8,
+                    }
+                ),
+                Partial(
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 55,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 0,
+                        "firmware_version_major": 3,
+                        "firmware_version_minor": 50,
+                        "height": 8,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 8,
+                    }
+                ),
+                Partial(
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 55,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 0,
+                        "firmware_version_major": 3,
+                        "firmware_version_minor": 50,
+                        "height": 8,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 8,
+                    }
+                ),
+                Partial(
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 55,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 0,
+                        "firmware_version_major": 3,
+                        "firmware_version_minor": 50,
+                        "height": 8,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 8,
+                    }
+                ),
+                Partial(
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 55,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 0,
+                        "firmware_version_major": 3,
+                        "firmware_version_minor": 50,
+                        "height": 8,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 8,
+                    }
+                ),
+            ]
+
+            orientations = {
+                0: Orientation.RightSideUp,
+                1: Orientation.RightSideUp,
+                2: Orientation.RightSideUp,
+                3: Orientation.RightSideUp,
+                4: Orientation.RightSideUp,
+            }
+
+            expected = {
+                light1.serial: (True, {"chain": {"chain": chain, "orientations": orientations}}),
+                light2.serial: (True, {"chain": Skip}),
+                striplcm1.serial: (True, {"chain": Skip}),
+                striplcm2noextended.serial: (True, {"chain": Skip}),
+                striplcm2extended.serial: (True, {"chain": Skip}),
+            }
+            self.assertEqual(got, expected)
+
+            expected = {
+                light1: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                    TileMessages.GetDeviceChain(),
+                ],
+                light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                striplcm1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion(),],
+                striplcm2noextended: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                ],
+                striplcm2extended: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion(),],
             }
 
             for device in runner.devices:
