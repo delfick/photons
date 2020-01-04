@@ -74,34 +74,16 @@ describe TestCase, "pktkeys":
 
     it "knows to zero instanceid":
         msg = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-            source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={}
+            source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={},
         )
 
         self.assertGreater(msg.instanceid, 0)
 
         keys = pktkeys([msg])
+        self.assertEqual(keys, [(1024, 508, mock.ANY)])
 
-        reprd = {
-            "duration": 0.0,
-            "instanceid": 0,
-            "parameters": {
-                "parameter1": "00000000",
-                "parameter2": "00000000",
-                "parameter3": "00000000",
-                "parameter4": "00000000",
-                "parameter5": "00000000",
-                "parameter6": "00000000",
-                "parameter7": "00000000",
-                "speed_direction": "<Direction.RIGHT: 0>",
-            },
-            "reserved6": "6865",
-            "reserved7": "00000000",
-            "reserved8": "00000000",
-            "speed": 5.0,
-            "type": "<MultiZoneEffectType.MOVE: 1>",
-        }
-
-        self.assertEqual(keys, [(1024, 508, json.dumps(reprd))])
+        dct = json.loads(keys[0][-1])
+        self.assertEqual(dct["instanceid"], 0)
         self.assertGreater(msg.instanceid, 0)
 
     it "knows to zero reserved fields":

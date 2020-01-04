@@ -27,7 +27,11 @@ describe TestCase, "service_type_spec":
 
     it "complains if we don't have a match":
         msg = "Unknown service type"
-        kwargs = dict(want="WAT", available=["UDP"])
+
+        services = sorted([s.name for s in Services if not s.name.startswith("RESERVED")])
+        self.assertGreater(len(services), 0)
+
+        kwargs = dict(want="WAT", available=services)
         with self.fuzzyAssertRaisesError(BadSpecValue, msg, **kwargs):
             self.spec.normalise(self.meta, "WAT")
 
