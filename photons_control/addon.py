@@ -1,4 +1,3 @@
-from photons_app.special import FoundSerials
 from photons_app.actions import an_action
 
 from photons_messages import Services
