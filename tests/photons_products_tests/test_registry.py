@@ -176,21 +176,24 @@ describe TestCase, "Capability":
 
         c = cap(product, firmware_major=3, firmware_minor=77)
 
-        self.assertEqual(
-            dict(c.items()),
-            {
-                "zones": Zones.SINGLE,
-                "has_color": False,
-                "has_chain": False,
-                "has_matrix": False,
-                "has_multizone": False,
-                "has_extended_multizone": False,
-                "has_variable_color_temp": True,
-                "min_kelvin": 2500,
-                "max_kelvin": 9000,
-                "min_extended_fw": None,
-            },
-        )
+        dct = dict(c.items())
+        expected = {
+            "zones": Zones.SINGLE,
+            "has_color": False,
+            "has_chain": False,
+            "has_matrix": False,
+            "has_multizone": False,
+            "has_extended_multizone": False,
+            "has_variable_color_temp": True,
+            "min_kelvin": 2500,
+            "max_kelvin": 9000,
+            "min_extended_fw": None,
+        }
+
+        for k in list(dct):
+            if k not in expected:
+                del dct[k]
+        self.assertEqual(dct, expected)
 
         class cap(registry.Capability):
             min_extended_fw = (3, 60)
@@ -199,18 +202,22 @@ describe TestCase, "Capability":
 
         c = cap(product, firmware_major=3, firmware_minor=77)
 
-        self.assertEqual(
-            dict(c.items()),
-            {
-                "zones": Zones.LINEAR,
-                "has_color": True,
-                "has_chain": False,
-                "has_matrix": False,
-                "has_multizone": True,
-                "has_extended_multizone": True,
-                "has_variable_color_temp": True,
-                "min_kelvin": 2500,
-                "max_kelvin": 9000,
-                "min_extended_fw": (3, 60),
-            },
-        )
+        dct = dict(c.items())
+
+        expected = {
+            "zones": Zones.LINEAR,
+            "has_color": True,
+            "has_chain": False,
+            "has_matrix": False,
+            "has_multizone": True,
+            "has_extended_multizone": True,
+            "has_variable_color_temp": True,
+            "min_kelvin": 2500,
+            "max_kelvin": 9000,
+            "min_extended_fw": (3, 60),
+        }
+
+        for k in list(dct):
+            if k not in expected:
+                del dct[k]
+        self.assertEqual(dct, expected)
