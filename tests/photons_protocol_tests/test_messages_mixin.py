@@ -245,7 +245,12 @@ describe TestCase, "MessagesMixin":
             packet_type = mock.Mock(name="packet_type", return_value=(1, 88))
 
             msg = "Unknown packet protocol"
-            kwargs = {"wanted": 1, "available": [1024]}
+
+            class Contains1024:
+                def __eq__(s, other):
+                    return isinstance(other, list) and 1024 in other
+
+            kwargs = {"wanted": 1, "available": Contains1024()}
             with self.fuzzyAssertRaisesError(BadConversion, msg, **kwargs):
                 with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                     Messages.get_packet_type(data, self.protocol_register)
