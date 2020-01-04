@@ -1,18 +1,19 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_messages import LightMessages, TileMessages
 from photons_control.orientation import Orientation as O, reorient
-from photons_control.tile import tiles_from, orientations_from
+from photons_control.script import FromGeneratorPerSerial
+from photons_control.planner import Gatherer, make_plans
 from photons_themes.appliers import types as appliers
-from photons_control.script import Pipeline
+from photons_control.multizone import SetZonesPlan
+from photons_control.attributes import make_colors
+from photons_messages.fields import Color
 from photons_themes.theme import Theme
-from photons_products import Products
 from photons_colour import Parser
 
 from delfick_project.norms import sb, dictobj, Meta
 from delfick_project.addons import addon_hook
-from collections import defaultdict
 import logging
 
 
@@ -32,30 +33,30 @@ __shortdesc__ = "Determine how to apply themes to devices"
 
 log = logging.getLogger("photons_themes")
 
+default_colors = [
+    (0, 1, 0.3, 3500),
+    (40, 1, 0.3, 3500),
+    (60, 1, 0.3, 3500),
+    (127, 1, 0.3, 3500),
+    (239, 1, 0.3, 3500),
+    (271, 1, 0.3, 3500),
+    (294, 1, 0.3, 3500),
+]
 
-class Color(dictobj.Spec):
-    hue = dictobj.Field(sb.integer_spec(), wrapper=sb.required)
-    saturation = dictobj.Field(sb.float_spec(), wrapper=sb.required)
-    brightness = dictobj.Field(sb.float_spec(), wrapper=sb.required)
-    kelvin = dictobj.Field(sb.integer_spec(), wrapper=sb.required)
+
+class colors_spec(sb.Spec):
+    def normalise_filled(self, meta, val):
+        overrides = meta.everything.get("overrides", {})
+        return [
+            Color(**color) for i, color in enumerate(make_colors([[c, 1] for c in val], overrides))
+        ]
 
 
 class Options(dictobj.Spec):
-    colors = dictobj.Field(sb.listof(Color.FieldSpec()), wrapper=sb.required)
+    colors = dictobj.Field(colors_spec, wrapper=sb.required)
     theme = dictobj.Field(sb.string_choice_spec(appliers.keys()), default="SPLOTCH")
     duration = dictobj.Field(sb.float_spec(), default=1)
-    hue = dictobj.NullableField(sb.float_spec())
-    saturation = dictobj.NullableField(sb.float_spec())
-    brightness = dictobj.NullableField(sb.float_spec())
-    kelvin = dictobj.NullableField(sb.float_spec())
-
-    @property
-    def overrides(self):
-        o = {}
-        for key in ("duration", "hue", "saturation", "brightness", "kelvin"):
-            if self[key] is not None:
-                o[key] = self[key]
-        return o
+    overrides = dictobj.Field(sb.dictionary_spec)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -63,205 +64,159 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     """
     Apply a theme to specified device
 
-    ``lan:apply_theme d073d5000001 -- `{"colors": <colors>, "theme": "SPLOTCH"}'``
+    ``lan:apply_theme d073d5000001 -- `{"colors": [<color>, <color>, ...], "theme": "SPLOTCH", "overrides": {<hsbk dictionary>}}'``
 
-    If you don't specify serials, then the theme will apply to all devices found on the network.
+    If you don't specify serials, then the theme will apply to all devices found
+    on the network.
 
-    colors must be an array of ``{"hue": <hue>, "saturation": <saturation>, "brightness": <brightness>, "kelvin": <kelvin>}``
+    Colors may be words like "red", "blue", etc. Or may be [h, s, b, k] arrays
+    where each part is optional.
 
     theme must be a valid theme type and defaults to SPLOTCH
 
-    You may also specify ``duration`` which is how long to take to apply in seconds.
+    You may also specify ``duration`` which is how long to take to apply in
+    seconds.
 
-    And you may also supply ``hue``, ``saturation``, ``brightness`` and ``kelvin`` to override the specified colors.
+    And you may also supply ``overrides`` with ``hue``, ``saturation``,
+    ``brightness`` and ``kelvin`` to override the specified colors.
     """
-    options = Options.FieldSpec().normalise(
-        Meta.empty(), collector.configuration["photons_app"].extra_as_json
+    extra = collector.configuration["photons_app"].extra_as_json
+    everything = {}
+    if "overrides" in extra:
+        everything["overrides"] = extra["overrides"]
+
+    if "colors" not in extra:
+        extra["colors"] = default_colors
+
+    options = Options.FieldSpec().normalise(Meta(everything, []), extra)
+
+    gatherer = Gatherer(target)
+
+    def errors(e):
+        log.error(e)
+
+    await target.script(ApplyTheme.script(options, gatherer=gatherer)).run_with_all(
+        reference, error_catcher=errors
     )
 
-    async with target.session() as afr:
-        await do_apply_theme(target, reference, afr, options)
 
+class ApplyTheme:
+    @classmethod
+    def script(kls, options, gatherer=None):
+        aps = appliers[options.theme]
 
-async def do_apply_theme(target, reference, afr, options):
-    aps = appliers[options.theme]
+        theme = Theme()
+        for color in options.colors:
+            theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
-    theme = Theme()
-    for color in options.colors:
-        theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
+        async def gen(reference, afr, **kwargs):
+            g = gatherer
+            if g is None:
+                g = Gatherer(afr.transport_target)
 
-    info = defaultdict(dict)
-    async for pkt, _, _ in target.script(
-        [DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()]
-    ).run_with(reference, afr):
-        if pkt | DeviceMessages.StateVersion:
-            info[pkt.serial]["product"] = Products[pkt.vendor, pkt.product]
-        elif pkt | DeviceMessages.StateHostFirmware:
-            info[pkt.serial]["firmware"] = (pkt.version_major, pkt.version_minor)
+            instance = kls(g, reference, afr, kwargs, aps, theme, options)
 
-    tasks = []
-    for serial, details in info.items():
-        if "product" not in details:
-            continue
+            # Turn on the device
+            yield LightMessages.SetLightPower(level=65535, duration=options.duration)
 
-        firmware = details.get("firmware") or (0, 0)
-        cap = details["product"].cap(firmware[0], firmware[1])
+            # Yield messages to turn on the theme for this device
+            async for serial, _, info in instance.gather(make_plans("capability")):
+                async for m in instance.apply(info["cap"]):
+                    yield m
 
-        if cap.has_extended_multizone:
-            log.info(hp.lc("Found a strip with extended multizone", serial=serial))
-            t = hp.async_as_background(
-                apply_zone_extended(aps["1d"], target, afr, serial, theme, options.overrides)
-            )
-        elif cap.has_multizone:
-            log.info(hp.lc("Found a strip without extended multizone", serial=serial))
-            t = hp.async_as_background(
-                apply_zone_old(aps["1d"], target, afr, serial, theme, options.overrides)
-            )
+        # Use gen per device to apply the theme
+        return FromGeneratorPerSerial(gen)
+
+    def __init__(self, gatherer, serial, afr, kwargs, aps, theme, options):
+        self.afr = afr
+        self.aps = aps
+        self.theme = theme
+        self.kwargs = kwargs
+        self.serial = serial
+        self.options = options
+        self.gatherer = gatherer
+
+    async def gather(self, plans):
+        async for info in self.gatherer.gather(plans, self.serial, self.afr, **self.kwargs):
+            yield info
+
+    async def apply(self, cap):
+        if cap.has_multizone:
+            if cap.has_extended_multizone:
+                log.info(hp.lc("found a strip with extended multizone", serial=self.serial))
+            else:
+                log.info(hp.lc("found a strip without extended multizone", serial=self.serial))
+            async for m in self.zone_msgs():
+                yield m
+
         elif cap.has_matrix:
-            log.info(hp.lc("Found a device with matrix zones", serial=serial))
-            t = hp.async_as_background(
-                apply_tile(aps["2d"], target, afr, serial, theme, options.overrides)
-            )
+            log.info(hp.lc("found a device with matrix zones", serial=self.serial))
+            async for m in self.tile_msgs():
+                yield m
+
         else:
-            log.info(hp.lc("Found a light with a single zone", serial=serial))
-            t = hp.async_as_background(
-                apply_light(aps["0d"], target, afr, serial, theme, options.overrides)
-            )
+            log.info(hp.lc("found a light with a single zone", serial=self.serial))
+            async for m in self.light_msgs():
+                yield m
 
-        tasks.append((serial, t))
+    async def zone_msgs(self):
+        colors = []
 
-    results = {}
+        length = 82
+        async for _, _, zones in self.gather(make_plans("zones")):
+            length = len(zones)
 
-    for serial, t in tasks:
-        try:
-            await t
-        except Exception as error:
-            results[serial] = error
-        else:
-            results[serial] = "ok"
+        for (start_index, end_index), hsbk in self.aps["1d"](length).apply_theme(self.theme):
+            for _ in range(0, end_index - start_index + 1):
+                colors.append(hsbk.as_dict())
 
-    return results
+        # SetZonesPlan knows when to use extended multizone vs old multizone messages
+        plans = {"set_zones": SetZonesPlan([c, 1] for c in colors)}
 
+        async for _, _, messages in self.gather(plans):
+            yield messages
 
-async def apply_zone_extended(applier, target, afr, serial, theme, overrides):
-    length = None
-    async for pkt, _, _ in target.script(MultiZoneMessages.GetExtendedColorZones()).run_with(
-        serial, afr
-    ):
-        if pkt | MultiZoneMessages.StateExtendedColorZones:
-            length = pkt.zones_count
+    async def tile_msgs(self):
+        chain = None
+        orientations = None
+        async for _, _, info in self.gather(make_plans("chain")):
+            chain = info["chain"]
+            orientations = info["orientations"]
 
-    if length is None:
-        log.warning(hp.lc("Couldn't work out how many zones the light had", serial=serial))
-        return
+        if not chain or not orientations:
+            log.warning(hp.lc("Couldn't work out how many zones the light had", serial=self.serial))
+            return
 
-    colors = []
-    for (start_index, end_index), hsbk in applier(length).apply_theme(theme):
-        for _ in range(0, end_index - start_index + 1):
-            colors.append(hsbk.as_dict())
+        coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in chain]
 
-    set_zones = MultiZoneMessages.SetExtendedColorZones(
-        zone_index=0,
-        colors_count=len(colors),
-        colors=colors,
-        duration=overrides.get("duration", 1),
-        res_required=False,
-        ack_required=True,
-    )
+        applied = self.aps["2d"].from_user_coords(coords_and_sizes).apply_theme(self.theme)
+        for i, (hsbks, coords_and_size) in enumerate(zip(applied, coords_and_sizes)):
+            colors = [
+                {
+                    "hue": self.options.overrides.get("hue", hsbk.hue),
+                    "saturation": self.options.overrides.get("saturation", hsbk.saturation),
+                    "brightness": self.options.overrides.get("brightness", hsbk.brightness),
+                    "kelvin": self.options.overrides.get("kelvin", hsbk.kelvin),
+                }
+                for hsbk in hsbks
+            ]
+            colors = reorient(colors, orientations.get(i, O.RightSideUp))
 
-    set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-
-    await target.script([set_power, set_zones]).run_with_all(serial, afr)
-
-
-async def apply_zone_old(applier, target, afr, serial, theme, overrides):
-    length = None
-    msg = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
-    async for pkt, _, _ in target.script(msg).run_with(serial, afr):
-        if pkt | MultiZoneMessages.StateMultiZone:
-            length = pkt.zones_count
-
-    if length is None:
-        log.warning(hp.lc("Couldn't work out how many zones the light had", serial=serial))
-        return
-
-    messages = []
-    for (start_index, end_index), hsbk in applier(length).apply_theme(theme):
-        messages.append(
-            MultiZoneMessages.SetColorZones(
-                start_index=start_index,
-                end_index=end_index,
-                hue=hsbk.hue,
-                saturation=hsbk.saturation,
-                brightness=hsbk.brightness,
-                kelvin=hsbk.kelvin,
-                duration=overrides.get("duration", 1),
-                res_required=False,
-                ack_required=True,
-            )
-        )
-
-    set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-    pipeline = Pipeline(*messages, spread=0.005)
-    await target.script([set_power, pipeline]).run_with_all(serial, afr)
-
-
-async def apply_light(applier, target, afr, serial, theme, overrides):
-    color = applier().apply_theme(theme)
-    s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(
-        color.kelvin, color.hue, color.saturation, color.brightness
-    )
-    set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-    await target.script([set_power, Parser.color_to_msg(s, overrides=overrides)]).run_with_all(
-        serial, afr
-    )
-
-
-async def apply_tile(applier, target, afr, serial, theme, overrides):
-    chain = []
-    orientations = {}
-    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(serial, afr):
-        if pkt | TileMessages.StateDeviceChain:
-            for tile in tiles_from(pkt):
-                chain.append(tile)
-            orientations = orientations_from(pkt)
-
-    if chain is None:
-        log.warning(hp.lc("Couldn't work out how many tiles the light had", serial=serial))
-        return
-
-    coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in chain]
-
-    messages = []
-    for i, (hsbks, coords_and_size) in enumerate(
-        zip(applier.from_user_coords(coords_and_sizes).apply_theme(theme), coords_and_sizes)
-    ):
-        colors = [
-            {
-                "hue": overrides.get("hue", hsbk.hue),
-                "saturation": overrides.get("saturation", hsbk.saturation),
-                "brightness": overrides.get("brightness", hsbk.brightness),
-                "kelvin": overrides.get("kelvin", hsbk.kelvin),
-            }
-            for hsbk in hsbks
-        ]
-
-        colors = reorient(colors, orientations.get(i, O.RightSideUp))
-
-        messages.append(
-            TileMessages.Set64(
+            yield TileMessages.Set64(
                 tile_index=i,
                 length=1,
                 x=0,
                 y=0,
                 width=coords_and_size[1][0],
-                duration=overrides.get("duration", 1),
+                duration=self.options.duration,
                 colors=colors,
                 res_required=False,
                 ack_required=True,
             )
-        )
 
-    set_power = LightMessages.SetLightPower(level=65535, duration=overrides.get("duration", 1))
-    pipeline = Pipeline(*messages, spread=0.005)
-    await target.script([set_power, pipeline]).run_with_all(serial, afr)
+    async def light_msgs(self):
+        color = self.aps["0d"]().apply_theme(self.theme)
+        s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(
+            color.kelvin, color.hue, color.saturation, color.brightness
+        )
+        yield Parser.color_to_msg(s, overrides={"duration": self.options.duration})

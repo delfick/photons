@@ -16,6 +16,8 @@ ChangeLog
      original ``error_catcher``. It must return an ``error_catcher``. This can
      be used with say ``FromGeneratorPerSerial`` to generate an ``error_catcher``
      specifically for each serial.
+   * Rewrote a few tasks to use Gatherer and FromGenerator objects to make
+     them better
 
 0.24.3 - 18 December 2019
     * Fixed a bug where response packets were matched to the wrong requests

@@ -17,6 +17,9 @@ from photons_messages import TileMessages, TileEffectType, LightMessages
 
 from delfick_project.norms import BadSpecValue, sb, Meta
 from collections import defaultdict
+import logging
+
+log = logging.getLogger(name="photons_control.tiles")
 
 default_tile_palette = [
     {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
@@ -136,11 +139,19 @@ async def get_device_chain(collector, target, reference, **kwargs):
     """
     Get the devices in your chain
     """
-    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(reference):
-        if pkt | TileMessages.StateDeviceChain:
-            print(pkt.serial)
-            for tile in tiles_from(pkt):
-                print("   ", repr(tile))
+
+    async def gen(reference, afr, **kwargs):
+        plans = make_plans("capability")
+        g = Gatherer(afr.transport_target)
+
+        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+            if info["cap"].has_matrix:
+                yield TileMessages.GetDeviceChain(target=serial)
+
+    async for pkt, _, _ in target.script(FromGenerator(gen)).run_with(reference):
+        print(pkt.serial)
+        for tile in tiles_from(pkt):
+            print("    ", repr(tile))
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -301,12 +312,22 @@ async def set_tile_positions(collector, target, reference, **kwargs):
             "Please enter positions as a list of two item lists of user_x, user_y"
         )
 
-    async with target.session() as afr:
-        for i, (user_x, user_y) in enumerate(positions):
-            msg = TileMessages.SetUserPosition(
-                tile_index=i, user_x=user_x, user_y=user_y, res_required=False
-            )
-            await target.script(msg).run_with_all(reference, afr)
+    async def gen(reference, afr, **kwargs):
+        plans = make_plans("capability")
+        g = Gatherer(afr.transport_target)
+
+        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+            if info["cap"].has_matrix:
+                for i, (user_x, user_y) in enumerate(positions):
+                    yield TileMessages.SetUserPosition(
+                        tile_index=i,
+                        user_x=user_x,
+                        user_y=user_y,
+                        res_required=False,
+                        target=serial,
+                    )
+
+    await target.script(FromGenerator(gen)).run_with_all(reference)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -316,7 +337,16 @@ async def get_tile_positions(collector, target, reference, **kwargs):
 
     ``lan:get_tile_positions d073d5f09124``
     """
-    async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(reference):
+
+    async def gen(reference, afr, **kwargs):
+        plans = make_plans("capability")
+        g = Gatherer(afr.transport_target)
+
+        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+            if info["cap"].has_matrix:
+                yield TileMessages.GetDeviceChain(target=serial)
+
+    async for pkt, _, _ in target.script(FromGenerator(gen)).run_with(reference):
         print(pkt.serial)
         for tile in tiles_from(pkt):
             print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")

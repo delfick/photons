@@ -53,8 +53,8 @@ async def find_devices(collector, target, reference, artifact, **kwargs):
             print(serial)
 
 
-@an_action(needs_target=True)
-async def find_ips(collector, target, reference, **kwargs):
+@an_action(needs_target=True, special_reference=True)
+async def find_ips(collector, target, reference, artifact, **kwargs):
     """
     List the ips of the devices that can be found on the network
 
@@ -65,11 +65,12 @@ async def find_ips(collector, target, reference, **kwargs):
         lifx lan:find_ips 192.168.0.255
     """
     broadcast = True
-    if reference not in (None, "", sb.NotSpecified):
-        broadcast = reference
+    if artifact not in (None, "", sb.NotSpecified):
+        broadcast = artifact
 
     async with target.session() as afr:
-        found, _ = await FoundSerials().find(afr, timeout=20, broadcast=broadcast)
-        for target, services in found.found.items():
+        found, serials = await reference.find(afr, timeout=20, broadcast=broadcast)
+        for serial in serials:
+            services = found[binascii.unhexlify(serial)]
             if Services.UDP in services:
-                print(f"{binascii.hexlify(target).decode()}: {services[Services.UDP].host}")
+                print(f"{serial}: {services[Services.UDP].host}")
