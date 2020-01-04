@@ -71,7 +71,7 @@ class Found:
 
     def __contains__(self, serial):
         serial = self.cleanse_serial(serial)
-        return serial in self.found
+        return serial in self.found and self.found[serial]
 
     def __eq__(self, other):
         return self.found == other.found
