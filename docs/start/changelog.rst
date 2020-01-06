@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.4 - TBD
+0.24.4 - 6 January 2020
     * Made it possible to override target options from the command line.
 
       For example::
