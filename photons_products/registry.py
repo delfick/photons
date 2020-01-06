@@ -332,7 +332,7 @@ class ProductRegistry:
         class cap(Capability):
             has_color = True
 
-    class LCM3_MINI_DAY_DUSK(LIFXProduct):
+    class LCM3_MINI_WARM_TO_WHITE(LIFXProduct):
         pid = 50
         family = Family.LCM3
 
@@ -368,6 +368,15 @@ class ProductRegistry:
             has_color = True
             has_chain = True
 
+    class LCM3_CANDLE(LIFXProduct):
+        pid = 57
+        family = Family.LCM3
+
+        class cap(Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
     class LCM3_MINI2_COLOR(LIFXProduct):
         pid = 59
         family = Family.LCM3
@@ -375,7 +384,7 @@ class ProductRegistry:
         class cap(Capability):
             has_color = True
 
-    class LCM3_MINI2_DAY_DUSK(LIFXProduct):
+    class LCM3_MINI2_WARM_WHITE(LIFXProduct):
         pid = 60
         family = Family.LCM3
 
@@ -394,6 +403,70 @@ class ProductRegistry:
             has_variable_color_temp = False
             min_kelvin = 2700
             max_kelvin = 2700
+
+    class LCM3_A19(LIFXProduct):
+        pid = 62
+        family = Family.LCM3
+
+        class cap(Capability):
+            has_color = True
+
+    class LCM3_BR30(LIFXProduct):
+        pid = 63
+        family = Family.LCM3
+
+        class cap(Capability):
+            has_color = True
+
+    class LCM3_A19_PLUS(LIFXProduct):
+        pid = 64
+        family = Family.LCM3
+
+        class cap(Capability):
+            has_ir = True
+            has_color = True
+
+    class LCM3_BR30_PLUS(LIFXProduct):
+        pid = 65
+        family = Family.LCM3
+
+        class cap(Capability):
+            has_ir = True
+            has_color = True
+
+    class LCM3_CANDLE_CA(LIFXProduct):
+        pid = 68
+        family = Family.LCM3
+
+        class cap(Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = False
+            has_variable_color_temp = True
+            min_kelvin = 2500
+            max_kelvin = 6500
+
+    class LCM3_CANDLE_WARM_TO_WHITE(LIFXProduct):
+        pid = 81
+        family = Family.LCM3
+
+        class cap(Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = False
+            has_variable_color_temp = True
+            min_kelvin = 2500
+            max_kelvin = 6500
+
+    class LCM3_FILAMENT(LIFXProduct):
+        pid = 82
+        family = Family.LCM3
+
+        class cap(Capability):
+            has_color = False
+            has_variable_color_temp = False
+            min_kelvin = 2000
+            max_kelvin = 2000
 
 
 Products = ProductsHolder(ProductRegistry, Capability)

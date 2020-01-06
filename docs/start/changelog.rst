@@ -18,6 +18,7 @@ ChangeLog
      specifically for each serial.
    * Rewrote a few tasks to use Gatherer and FromGenerator objects to make
      them better
+   * Added more products to the product registry
 
 0.24.3 - 18 December 2019
     * Fixed a bug where response packets were matched to the wrong requests
