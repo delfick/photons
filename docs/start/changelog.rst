@@ -9,6 +9,7 @@ ChangeLog
       For example::
 
         $ lifx 'lan(default_broadcast="10.1.1.255"):get_attr' _ color
+
    * Added a default ``chain`` plan for the Gatherer to use for getting tile
      chain information
    * FromGenerator can now be given a ``error_catcher_override`` option which
