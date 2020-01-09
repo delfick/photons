@@ -12,6 +12,12 @@ def empty(pkt, attr):
     return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
 
+def color_zones_response_count(req, res):
+    req_count = max([1, ((req.end_index - req.start_index) // 8) + 1])
+    res_count = math.ceil(res.zones_count / 8)
+    return min([req_count, res_count])
+
+
 # fmt: off
 
 ########################
@@ -213,6 +219,11 @@ class MultiZoneMessages(Messages):
         , *fields.hsbk
         , ("duration", fields.duration_type)
         , ("apply", T.Uint8.enum(enums.MultiZoneApplicationRequest).default(enums.MultiZoneApplicationRequest.APPLY))
+
+        , multi = MultiOptions(
+              lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
+            , lambda req, res: color_zones_response_count(req, res)
+            )
         )
 
     GetColorZones = msg(502
@@ -221,7 +232,7 @@ class MultiZoneMessages(Messages):
 
         , multi = MultiOptions(
               lambda req: [MultiZoneMessages.StateZone, MultiZoneMessages.StateMultiZone]
-            , lambda req, res: min((req.end_index // 8) + 1, math.ceil(res.zones_count / 8))
+            , lambda req, res: color_zones_response_count(req, res)
             )
         )
 
