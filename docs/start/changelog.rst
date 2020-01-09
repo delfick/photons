@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.24.5 - TBD
+    * Fixed a mistake in the product registry
+      (``LCM3_MINI2_WARM_WHITE`` should be ``WARM_TO_WHITE``)
+
 0.24.4 - 6 January 2020
     * Made it possible to override target options from the command line.
 

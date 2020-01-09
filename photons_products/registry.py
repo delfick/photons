@@ -384,7 +384,7 @@ class ProductRegistry:
         class cap(Capability):
             has_color = True
 
-    class LCM3_MINI2_WARM_WHITE(LIFXProduct):
+    class LCM3_MINI2_WARM_TO_WHITE(LIFXProduct):
         pid = 60
         family = Family.LCM3
 
