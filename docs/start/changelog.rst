@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.5 - TBD
+0.24.5 - 9 January 2020
     * Fixed a mistake in the product registry
       (``LCM3_MINI2_WARM_WHITE`` should be ``WARM_TO_WHITE``)
     * Fixed multi options for the setting of strip Color Zones using legacy

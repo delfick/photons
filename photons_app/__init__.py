@@ -1,4 +1,4 @@
-VERSION = "0.24.4"
+VERSION = "0.24.5"
 
 __shortdesc__ = """Base module for all photons applications"""
 
