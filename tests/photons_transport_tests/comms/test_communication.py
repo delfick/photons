@@ -794,7 +794,7 @@ describe AsyncTestCase, "Communication":
                     loop = asyncio.get_event_loop()
                     bts = res.pack().tobytes()
                     addr = ("fake://device", 56700)
-                    loop.call_soon(s.session.received_data, bts, addr)
+                    loop.call_soon(s.session.sync_received_data, bts, addr)
 
             class C(Communication):
                 def retry_options_for(s, original, transport_out):
@@ -970,12 +970,12 @@ describe AsyncTestCase, "Communication":
                 assert pkt | DeviceMessages.StatePower
                 self.assertEqual(pkt.level, 100)
 
-            recv = mock.Mock(name="recv", side_effect=recv)
+            recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
             with mock.patch.object(self.communication.receiver, "recv", recv):
                 pkt = DeviceMessages.StatePower(level=100, source=1, sequence=1, target=None)
                 data = pkt.pack().tobytes()
-                self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await self.communication.received_data(data, addr, allow_zero=allow_zero)
 
             recv.assert_called_once_with(mock.ANY, addr, allow_zero=allow_zero)
 
@@ -988,14 +988,14 @@ describe AsyncTestCase, "Communication":
                 self.assertEqual(pkt.pkt_type, 9001)
                 self.assertEqual(pkt.payload, b"things")
 
-            recv = mock.Mock(name="recv", side_effect=recv)
+            recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
             with mock.patch.object(self.communication.receiver, "recv", recv):
                 pkt = LIFXPacket(
                     payload=b"things", pkt_type=9001, source=1, sequence=1, target=None
                 )
                 data = pkt.pack().tobytes()
-                self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await self.communication.received_data(data, addr, allow_zero=allow_zero)
 
             recv.assert_called_once_with(mock.ANY, addr, allow_zero=allow_zero)
 
@@ -1003,11 +1003,11 @@ describe AsyncTestCase, "Communication":
             allow_zero = mock.Mock(name="allow_zero")
             addr = mock.Mock(name="addr")
 
-            recv = mock.Mock(name="recv")
+            recv = asynctest.mock.CoroutineMock(name="recv")
 
             with mock.patch.object(self.communication.receiver, "recv", recv):
                 data = "NOPE"
-                self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await self.communication.received_data(data, addr, allow_zero=allow_zero)
 
             self.assertEqual(len(recv.mock_calls), 0)
 

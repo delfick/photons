@@ -31,7 +31,7 @@ class UDP(Socket):
 
         class Protocol(Protocol):
             def datagram_received(sp, data, addr):
-                self.session.received_data(data, addr)
+                self.session.sync_received_data(data, addr)
 
         return fut, Protocol
 

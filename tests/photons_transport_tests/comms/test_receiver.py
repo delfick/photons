@@ -8,6 +8,7 @@ from photons_messages import LIFXPacket
 
 from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
+import asynctest
 import binascii
 import asyncio
 import random
@@ -76,35 +77,35 @@ describe AsyncTestCase, "Receiver":
         describe "recv":
             async it "finds result based on source, sequence, target":
                 self.register(self.source, self.sequence, self.target)
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original
                 )
 
             async it "finds result based on broadcast key if that was used":
                 self.register(self.source, self.sequence, self.receiver.blank_target)
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original
                 )
 
             async it "does nothing if it can't find the key":
                 self.register(1, 2, binascii.unhexlify("d073d5000001"))
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
                 self.assertEqual(len(self.result.add_packet.mock_calls), 0)
 
             async it "uses message_catcher if can't find the key and that's defined":
-                message_catcher = mock.Mock(name="message_catcher")
+                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
                 self.receiver.message_catcher = message_catcher
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
                 message_catcher.assert_called_once_with(self.packet)
 
             async it "does not use message_catcher if can find the key and that's defined":
                 self.register(self.source, self.sequence, self.target)
 
-                message_catcher = mock.Mock(name="message_catcher")
+                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
                 self.receiver.message_catcher = message_catcher
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
 
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original
@@ -114,9 +115,9 @@ describe AsyncTestCase, "Receiver":
                 self.result.add_packet.reset_mock()
                 self.register(self.source, self.sequence, self.receiver.blank_target)
 
-                message_catcher = mock.Mock(name="message_catcher")
+                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
                 self.receiver.message_catcher = message_catcher
-                self.receiver.recv(self.packet, self.addr)
+                await self.receiver.recv(self.packet, self.addr)
 
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original

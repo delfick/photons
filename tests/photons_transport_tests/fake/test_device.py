@@ -753,7 +753,7 @@ describe AsyncTestCase, "FakeDevice":
                     yield m2
 
                 got_message = asynctest.MagicMock(name="got_message", side_effect=got_message)
-                received_data = mock.Mock(name="received_data")
+                received_data = asynctest.mock.CoroutineMock(name="received_data")
 
                 with mock.patch.object(self.device, "got_message", got_message):
                     await self.device.write(
@@ -784,7 +784,7 @@ describe AsyncTestCase, "FakeDevice":
                     yield m1
 
                 got_message = asynctest.MagicMock(name="got_message", side_effect=got_message)
-                received_data = mock.Mock(name="received_data")
+                received_data = asynctest.mock.CoroutineMock(name="received_data")
 
                 with mock.patch.object(self.device, "got_message", got_message):
                     await self.device.write("udp", received_data, pkt.tobytes(serial=None))

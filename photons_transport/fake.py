@@ -209,9 +209,13 @@ class FakeDevice:
         self.attrs = Attrs(self)
         self.attrs.online = False
 
+        self.wait_for_reboot_fut = hp.ResettableFuture()
+        self.wait_for_reboot_fut.set_result(True)
+
         self.reboots = []
         self.services = []
         self.pre_reboot = None
+        self.write_tasks = []
         self.time_rebooting = 1
 
         self.setup()
@@ -283,6 +287,8 @@ class FakeDevice:
         self.attrs.online = False
         self.reboots.append(time.time())
 
+        self.wait_for_reboot_fut.reset()
+
         for responder in self.all_responders:
             if hasattr(responder, "shutdown"):
                 await responder.shutdown(self)
@@ -290,9 +296,13 @@ class FakeDevice:
         async def back_online(time_rebooting, power_on):
             await asyncio.sleep(time_rebooting)
             await power_on()
+            if not self.wait_for_reboot_fut.done():
+                self.wait_for_reboot_fut.set_result(True)
 
         if self.time_rebooting >= 0:
             hp.async_as_background(back_online(self.time_rebooting, self.power_on))
+        else:
+            self.wait_for_reboot_fut.set_result(True)
 
     async def power_on(self):
         self.attrs.online = True
@@ -322,6 +332,11 @@ class FakeDevice:
             if hasattr(responder, "shutdown"):
                 await responder.shutdown(self)
 
+        if self.write_tasks:
+            for t in self.write_tasks:
+                t.cancel()
+            await asyncio.wait(self.write_tasks)
+
     def set_intercept_got_message(self, interceptor):
         self.intercept_got_message = interceptor
 
@@ -334,6 +349,11 @@ class FakeDevice:
     async def add_services(self, adder):
         for service in ServicesResponder.filtered_services(self):
             await service.add_service(adder)
+
+    def sync_write(self, *args, **kwargs):
+        task = hp.async_as_background(self.write(*args, **kwargs))
+        self.write_tasks.append(task)
+        return task
 
     async def write(self, source, received_data, bts):
         if not self.attrs.online:
@@ -365,7 +385,7 @@ class FakeDevice:
             return
 
         async for msg in self.got_message(pkt, source):
-            received_data(msg.tobytes(serial=self.serial), addr)
+            await received_data(msg.tobytes(serial=self.serial), addr)
 
     async def is_reachable(self, broadcast_address):
         return self.attrs.online
@@ -506,10 +526,10 @@ class FakeDevice:
                 if not self.attrs.online:
                     return
 
-                def received_data(bts, a):
+                async def received_data(bts, a):
                     sp.udp_transport.sendto(bts, addr)
 
-                hp.async_as_background(self.write("udp", received_data, data))
+                self.sync_write("udp", received_data, data)
 
             def error_received(sp, exc):
                 log.error(hp.lc("Error on udp transport", error=exc))

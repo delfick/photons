@@ -38,7 +38,7 @@ class Receiver(object):
 
         result.add_done_callback(cleanup)
 
-    def recv(self, pkt, addr, allow_zero=False):
+    async def recv(self, pkt, addr, allow_zero=False):
         """Find the result for this packet and add the packet"""
         if getattr(pkt, "represents_ack", False):
             log.debug(hp.lc("Got ACK", source=pkt.source, sequence=pkt.sequence, serial=pkt.serial))
@@ -63,7 +63,7 @@ class Receiver(object):
 
         if key not in self.results and broadcast_key not in self.results:
             if self.message_catcher is not NotImplemented and callable(self.message_catcher):
-                self.message_catcher(pkt)
+                await self.message_catcher(pkt)
             else:
                 log.warning(
                     hp.lc("Received message but was no future to set", key=key, serial=pkt.serial)

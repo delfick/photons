@@ -112,7 +112,7 @@ describe AsyncTestCase, "UDP":
             elif message == reply3:
                 second_receive.set_result(True)
 
-        self.session.received_data.side_effect = receive
+        self.session.sync_received_data.side_effect = receive
 
         def translate(bts, addr):
             if bts == request1:

@@ -149,6 +149,7 @@ class Communication:
         self.found = Found()
         self.stop_fut = hp.ChildOfFuture(self.transport_target.final_future)
         self.receiver = Receiver()
+        self.received_data_tasks = []
 
         self.setup()
 
@@ -162,6 +163,11 @@ class Communication:
                 await self.forget(serial)
             except Exception as error:
                 log.error(hp.lc("Failed to close transport", error=error, serial=serial))
+
+        if self.received_data_tasks:
+            for t in self.received_data_tasks:
+                t.cancel()
+            await asyncio.wait(self.received_data_tasks)
 
     @hp.memoized_property
     def source(self):
@@ -329,7 +335,12 @@ class Communication:
         await transport.spawn(original, timeout=connect_timeout)
         return transport, is_broadcast
 
-    def received_data(self, data, addr, allow_zero=False):
+    def sync_received_data(self, *args, **kwargs):
+        task = hp.async_as_background(self.received_data(*args, **kwargs))
+        self.received_data_tasks.append(task)
+        return task
+
+    async def received_data(self, data, addr, allow_zero=False):
         """What to do when we get some data"""
         if type(data) is bytes:
             log.debug(hp.lc("Received bytes", bts=binascii.hexlify(data).decode()))
@@ -354,7 +365,7 @@ class Communication:
         except Exception as error:
             log.exception(error)
         else:
-            self.receiver.recv(pkt, addr, allow_zero=allow_zero)
+            await self.receiver.recv(pkt, addr, allow_zero=allow_zero)
 
     async def _get_response(self, packet, timeout, waiter, limit=None):
         errf = hp.ResettableFuture()
