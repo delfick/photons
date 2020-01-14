@@ -79,8 +79,8 @@ def generate_options(color, exclude=None):
 
 mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "PowerToggle":
     use_default_loop = True

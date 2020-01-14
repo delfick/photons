@@ -19,8 +19,8 @@ light3 = FakeDevice("d073d5000003", chp.default_responders())
 
 mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 
 def loop_time():

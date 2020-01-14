@@ -50,13 +50,15 @@ setup(
       { "tests":
         [ "noseOfYeti==1.9.1"
         , "asynctest==0.12.2"
-        , "nose"
+        , "pytest==5.3.1"
+        , "alt-pytest-asyncio==0.5.1"
         ]
       }
 
     , entry_points =
       { 'console_scripts' :
         [ 'lifx = photons_app.executor:lifx_main'
+        , 'run_photons_core_tests = photons_app.test_helpers:run_pytest'
         ]
       , "lifx.photons": photons_entry_points
       }

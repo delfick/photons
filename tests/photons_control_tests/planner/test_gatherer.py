@@ -52,8 +52,8 @@ light3 = FakeDevice(
 lights = [light1, light2, light3]
 mlr = chp.ModuleLevelRunner(lights)
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "Gatherer":
     use_default_loop = True

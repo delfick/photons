@@ -15,14 +15,14 @@ describe TestCase, "PacketSpecMetaKls":
     it "complains if we have fields that are already attributes":
         with self.fuzzyAssertRaisesError(
             ProgrammerError,
-            "Can't override attributes with fields\talready_attributes=\['items', 'values'\]",
+            r"Can't override attributes with fields\talready_attributes=\['items', 'values'\]",
         ):
 
             class Together(dictobj.PacketSpec):
                 fields = [("items", T.Bool), ("values", T.Bool), ("one", T.Bool)]
 
         with self.fuzzyAssertRaisesError(
-            ProgrammerError, "Can't override attributes with fields\talready_attributes=\['one'\]"
+            ProgrammerError, r"Can't override attributes with fields\talready_attributes=\['one'\]"
         ):
 
             class Together(dictobj.PacketSpec):
@@ -39,19 +39,19 @@ describe TestCase, "PacketSpecMetaKls":
         class Group2(metaclass=PacketSpecMetaKls):
             fields = [("two", T.Bool), ("three", T.Bool)]
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, "Duplicated names!\t\['two', 'two'\]"):
+        with self.fuzzyAssertRaisesError(ProgrammerError, r"Duplicated names!\t\['two', 'two'\]"):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("g2", Group2)]
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, "Duplicated names!\t\['one', 'one'\]"):
+        with self.fuzzyAssertRaisesError(ProgrammerError, r"Duplicated names!\t\['one', 'one'\]"):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("one", T.Bool)]
 
     it "complains if we have fields as a dictionary":
         msg = "PacketSpecMixin expect fields to be a list of tuples, not a dictionary"
-        with self.fuzzyAssertRaisesError(ProgrammerError, "{0}\tcreating=Child".format(msg)):
+        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(metaclass=PacketSpecMetaKls):
                 fields = {}
@@ -62,12 +62,12 @@ describe TestCase, "PacketSpecMetaKls":
             fields = {}
 
         msg = "PacketSpecMixin expects a fields attribute on the class or a PacketSpec parent"
-        with self.fuzzyAssertRaisesError(ProgrammerError, "{0}\tcreating=Child".format(msg)):
+        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(Parent, metaclass=PacketSpecMetaKls):
                 pass
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, "{0}\tcreating=Child".format(msg)):
+        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(metaclass=PacketSpecMetaKls):
                 pass

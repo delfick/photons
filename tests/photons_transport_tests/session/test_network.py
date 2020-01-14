@@ -585,6 +585,6 @@ describe AsyncTestCase, "NetworkSession":
 
         async it "complains if broadcast isn't a good type":
             for bad in (None, 0, False, 1, {}, [], (), (1,), (1, 1, 1), [1], {1: 1}, lambda: 1):
-                msg = "Expect a string or \(host, port\) tuple"
+                msg = r"Expect a string or \(host, port\) tuple"
                 with self.fuzzyAssertRaisesError(InvalidBroadcast, msg, got=bad):
                     await self.session.make_broadcast_transport(bad)

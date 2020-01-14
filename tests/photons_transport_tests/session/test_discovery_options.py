@@ -148,7 +148,7 @@ describe TestCase, "service_info_spec":
         self.assertEqual(res, {Services.UDP: {"host": "192.168.0.1", "port": 67}})
 
     it "complains about other length lists":
-        msg = "A list must be \[host\] or \[host, port\]"
+        msg = r"A list must be \[host\] or \[host, port\]"
         with self.fuzzyAssertRaisesError(BadSpecValue, msg, got=[]):
             self.spec.normalise(self.meta, [])
 

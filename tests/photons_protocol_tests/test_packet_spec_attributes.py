@@ -821,7 +821,7 @@ describe TestCase, "Packet attributes":
                 p = self.P()
                 with self.fuzzyAssertRaisesError(
                     ValueError,
-                    "Setting a group on a packet must be done with a value that has an items\(\) method.+",
+                    r"Setting a group on a packet must be done with a value that has an items\(\) method.+",
                 ):
                     p["g"] = val
 

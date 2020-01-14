@@ -38,7 +38,7 @@ describe AsyncTestCase, "Responder":
                 _fields = [invalid]
 
             with self.fuzzyAssertRaisesError(
-                TypeError, "tuple field should be \(name, default\), got .+"
+                TypeError, r"tuple field should be \(name, default\), got .+"
             ):
                 R()
 

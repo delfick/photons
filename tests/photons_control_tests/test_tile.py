@@ -54,8 +54,8 @@ nottile = FakeDevice(
 lights = [tile1, tile2, nottile]
 mlr = chp.ModuleLevelRunner(lights)
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "Tile helpers":
     use_default_loop = True

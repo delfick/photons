@@ -88,8 +88,8 @@ striplcm2extended = FakeDevice(
 lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
 mlr = chp.ModuleLevelRunner(lights)
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "SetZonesPlan":
     async before_each:

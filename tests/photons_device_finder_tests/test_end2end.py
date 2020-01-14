@@ -90,8 +90,8 @@ device3 = FakeDevice(
 
 mlr = chp.ModuleLevelRunner([device1, device2, device3])
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "Device finder":
     use_default_loop = True

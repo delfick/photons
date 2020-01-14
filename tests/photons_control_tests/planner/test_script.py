@@ -23,8 +23,8 @@ light2 = FakeDevice(
 
 mlr = chp.ModuleLevelRunner([light1, light2])
 
-setUp = mlr.setUp
-tearDown = mlr.tearDown
+setup_module = mlr.setUp
+teardown_module = mlr.tearDown
 
 describe AsyncTestCase, "WithSender":
     use_default_loop = True

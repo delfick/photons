@@ -113,7 +113,7 @@ describe TestCase, "run":
         )
 
         expected_stderr = dedent(
-            """
+            r"""
         [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
         [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
@@ -157,7 +157,7 @@ describe TestCase, "run":
         )
 
         expected_stdout = dedent(
-            """
+            r"""
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- PhotonsAppError
         \t"WAT"
@@ -165,7 +165,7 @@ describe TestCase, "run":
         )
 
         expected_stderr = dedent(
-            """
+            r"""
         [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
         [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
@@ -219,7 +219,7 @@ describe TestCase, "run":
         )
 
         expected_stdout = dedent(
-            """
+            r"""
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- UserQuit
         \t"User Quit"
@@ -227,7 +227,7 @@ describe TestCase, "run":
         )
 
         expected_stderr = dedent(
-            """
+            r"""
         [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
         [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
@@ -286,7 +286,7 @@ describe TestCase, "run":
         )
 
         expected_stdout = dedent(
-            """
+            r"""
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- ApplicationCancelled
         \t"The application itself was shutdown"
@@ -294,7 +294,7 @@ describe TestCase, "run":
         )
 
         expected_stderr = dedent(
-            """
+            r"""
         [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
         [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
         [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
