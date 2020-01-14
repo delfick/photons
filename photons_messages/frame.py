@@ -9,7 +9,7 @@ emptybt = bitarray("000000000000000000000000000000000000000000000000000000000000
 
 
 def look_at_target(pkt, value):
-    if value in (None, b"\x00" * 8, emptybt):
+    if value in (None, "0000000000000000", b"\x00" * 8, emptybt):
         pkt.addressable = True
         pkt.tagged = True
     else:

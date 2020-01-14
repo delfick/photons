@@ -60,7 +60,7 @@ describe TestCase, "LIFXPacket":
         self.assertEqual(self.packet.tagged, False)
 
     it "ensures tagged is True if target is set to empty":
-        for target in (None, b"\x00" * 8, self.emptybt):
+        for target in (None, "0000000000000000", b"\x00" * 8, self.emptybt):
             self.packet.tagged = False
             self.packet.target = target
             self.assertEqual(self.packet.tagged, True)
