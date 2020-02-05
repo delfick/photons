@@ -3,72 +3,85 @@
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec, PhotonsApp
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.registers import TargetRegister
-from photons_app.test_helpers import TestCase
 from photons_app.registers import Target
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta, BadSpecValue
 from unittest import mock
+import pytest
 
-describe TestCase, "PhotonsAppSpec":
-    before_each:
-        self.spec = PhotonsAppSpec()
-        self.collector = mock.Mock(name="collector")
-        self.final_future = mock.Mock(name="final_future")
-        self.meta = Meta({"collector": self.collector, "final_future": self.final_future}, []).at(
-            "options"
-        )
+
+@pytest.fixture()
+def V():
+    class V:
+        spec = PhotonsAppSpec()
+        collector = mock.Mock(name="collector")
+        final_future = mock.Mock(name="final_future")
+
+        @hp.memoized_property
+        def meta(s):
+            return Meta({"collector": s.collector, "final_future": s.final_future}, []).at(
+                "options"
+            )
+
+    return V()
+
+
+describe "PhotonsAppSpec":
 
     describe "target_name_spec":
-        before_each:
-            self.tns = self.spec.target_name_spec
 
-        it "complains if we have whitespace":
+        @pytest.fixture()
+        def tns(self, V):
+            return V.spec.target_name_spec
+
+        it "complains if we have whitespace", tns, V:
             try:
-                self.tns.normalise(self.meta, "adf ")
+                tns.normalise(V.meta, "adf ")
                 assert False, "expected an exception"
             except BadSpecValue as error:
                 assert "Expected no whitespace" in str(error)
 
-        it "complains if we don't match our regex":
+        it "complains if we don't match our regex", tns, V:
             for val in ("9asdf", "asdf^", "*asdf"):
                 try:
-                    self.tns.normalise(self.meta, val)
+                    tns.normalise(V.meta, val)
                     assert False, "expected an exception"
                 except BadSpecValue as error:
                     assert "Expected value to match regex" in str(error)
 
-        it "returns as is otherwise":
+        it "returns as is otherwise", tns, V:
             for val in ("asdf", "asdfdfDf", "asdf-asdfa-asdf", "asdf_asdfD_DDF.asdf", "a", "A"):
-                self.assertEqual(self.tns.normalise(self.meta, val), val)
+                assert tns.normalise(V.meta, val) == val
 
     describe "photons_app_spec":
-        it "gets us back a PhotonsApp":
-            res = self.spec.photons_app_spec.normalise(
-                self.meta, {"task_specifier": "blah:things", "debug": True}
+        it "gets us back a PhotonsApp", V:
+            res = V.spec.photons_app_spec.normalise(
+                V.meta, {"task_specifier": "blah:things", "debug": True}
             )
             assert isinstance(res, PhotonsApp)
-            self.assertEqual(res.task_specifier(), ("blah", "things"))
-            self.assertEqual(res.debug, True)
+            assert res.task_specifier() == ("blah", "things")
+            assert res.debug == True
 
     describe "target_register_spec":
-        it "gets us a TargetRegister":
-            register = self.spec.target_register_spec.normalise(self.meta.at("target_register"), {})
+        it "gets us a TargetRegister", V:
+            register = V.spec.target_register_spec.normalise(V.meta.at("target_register"), {})
             assert isinstance(register, TargetRegister)
-            self.assertIs(register.collector, self.collector)
+            assert register.collector is V.collector
 
     describe "targets spec":
-        it "gets us a dictionary of targets":
+        it "gets us a dictionary of targets", V:
             targets = {"one": {"type": "blah", "options": {"one": 2}}, "two": {"type": "meh"}}
             expected = {
                 "one": Target(type="blah", options={"one": 2}, optional=False),
                 "two": Target(type="meh", options={}, optional=False),
             }
 
-            res = self.spec.targets_spec.normalise(self.meta, targets)
-            self.assertEqual(res, expected)
+            res = V.spec.targets_spec.normalise(V.meta, targets)
+            assert res == expected
 
-        it "complains if a target has an invalid name":
+        it "complains if a target has an invalid name", V:
             targets = {"9one": {"type": "blah", "options": {"one": 2}}, "t^wo": {"type": "meh"}}
-            with self.fuzzyAssertRaisesError(BadSpecValue):
-                self.spec.targets_spec.normalise(self.meta, targets)
+            with assertRaises(BadSpecValue):
+                V.spec.targets_spec.normalise(V.meta, targets)

@@ -1,14 +1,14 @@
 # coding: spec
 
 from photons_app.option_spec.task_objs import Task
-from photons_app.test_helpers import TestCase
 from photons_app.actions import an_action
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from unittest import mock
+import pytest
 import uuid
 
-describe TestCase, "an_action":
+describe "an_action":
     it "takes in some options":
         target = mock.Mock(name="target")
         needs_reference = mock.Mock(name="needs_reference")
@@ -22,62 +22,69 @@ describe TestCase, "an_action":
             needs_target=needs_target,
         )
 
-        self.assertIs(wrapper.target, target)
-        self.assertIs(wrapper.needs_reference, needs_reference)
-        self.assertIs(wrapper.special_reference, special_reference)
-        self.assertIs(wrapper.needs_target, needs_target)
+        assert wrapper.target is target
+        assert wrapper.needs_reference is needs_reference
+        assert wrapper.special_reference is special_reference
+        assert wrapper.needs_target is needs_target
 
     describe "wrapping a function":
-        before_each:
-            self.target = mock.Mock(name="target")
-            self.needs_reference = mock.Mock(name="needs_reference")
-            self.special_reference = mock.Mock(name="special_reference")
-            self.needs_target = mock.Mock(name="needs_target")
 
-            self.wrapper = an_action(
-                target=self.target,
-                needs_reference=self.needs_reference,
-                special_reference=self.special_reference,
-                needs_target=self.needs_target,
-            )
+        @pytest.fixture()
+        def V(self):
+            class V:
+                target = mock.Mock(name="target")
+                needs_reference = mock.Mock(name="needs_reference")
+                special_reference = mock.Mock(name="special_reference")
+                needs_target = mock.Mock(name="needs_target")
+                func_name = str(uuid.uuid1())
 
-            self.func_name = str(uuid.uuid1())
-            self.func = mock.Mock(name="func", __name__=self.func_name)
+                @hp.memoized_property
+                def wrapper(s):
+                    return an_action(
+                        target=s.target,
+                        needs_reference=s.needs_reference,
+                        special_reference=s.special_reference,
+                        needs_target=s.needs_target,
+                    )
 
-        it "namespaces by target in available_actions":
+                @hp.memoized_property
+                def func(s):
+                    return mock.Mock(name="func", __name__=s.func_name)
+
+            return V()
+
+        it "namespaces by target in available_actions", V:
             actions = {}
             with mock.patch("photons_app.actions.available_actions", actions):
-                self.assertIs(self.wrapper(self.func), self.func)
+                assert V.wrapper(V.func) is V.func
 
-            self.assertEqual(actions, {self.target: {self.func_name: self.func}})
+            assert actions == {V.target: {V.func_name: V.func}}
 
-        it "adds information to the func":
+        it "adds information to the func", V:
             actions = {}
             with mock.patch("photons_app.actions.available_actions", actions):
-                self.assertIs(self.wrapper(self.func), self.func)
+                assert V.wrapper(V.func) is V.func
 
-            self.assertIs(self.func.target, self.target)
-            self.assertIs(self.func.needs_reference, self.needs_reference)
-            self.assertIs(self.func.special_reference, self.special_reference)
-            self.assertIs(self.func.needs_target, self.needs_target)
+            assert V.func.target is V.target
+            assert V.func.needs_reference is V.needs_reference
+            assert V.func.special_reference is V.special_reference
+            assert V.func.needs_target is V.needs_target
 
-        it "adds to all_tasks":
+        it "adds to all_tasks", V:
             actions = {}
             all_tasks = {}
             with mock.patch("photons_app.actions.available_actions", actions):
                 with mock.patch("photons_app.actions.all_tasks", all_tasks):
-                    self.assertIs(self.wrapper(self.func), self.func)
+                    assert V.wrapper(V.func) is V.func
 
-            self.assertEqual(
-                all_tasks, {self.func_name: Task(action=self.func_name, label="Project")}
-            )
+            assert all_tasks == {V.func_name: Task(action=V.func_name, label="Project")}
 
-        it "adds to all_tasks with specified label":
+        it "adds to all_tasks with specified label", V:
             label = str(uuid.uuid1())
             actions = {}
             all_tasks = {}
             with mock.patch("photons_app.actions.available_actions", actions):
                 with mock.patch("photons_app.actions.all_tasks", all_tasks):
-                    self.assertIs(an_action(label=label)(self.func), self.func)
+                    assert an_action(label=label)(V.func) is V.func
 
-            self.assertEqual(all_tasks, {self.func_name: Task(action=self.func_name, label=label)})
+            assert all_tasks == {V.func_name: Task(action=V.func_name, label=label)}

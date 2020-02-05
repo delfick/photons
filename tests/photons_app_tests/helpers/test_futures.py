@@ -1,19 +1,26 @@
 # coding: spec
 
-from photons_app.test_helpers import AsyncTestCase, assertFutCallbacks
+from photons_app.test_helpers import assertFutCallbacks
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asyncio
+import pytest
 import uuid
 import time
 
-describe AsyncTestCase, "ResettableFuture":
+
+@pytest.fixture()
+def loop():
+    return asyncio.get_event_loop()
+
+
+describe "ResettableFuture":
     async it "ensure_future returns the ResettableFuture as is":
         fut = hp.ResettableFuture()
-        self.assertIs(asyncio.ensure_future(fut), fut)
+        assert asyncio.ensure_future(fut) is fut
 
     describe "Reset":
         async it "can be reset":
@@ -22,14 +29,14 @@ describe AsyncTestCase, "ResettableFuture":
             fut = hp.ResettableFuture()
 
             fut.set_result(res)
-            self.assertIs(await fut, res)
+            assert await fut is res
 
             assert fut.done()
             fut.reset()
 
             assert not fut.done()
             fut.set_result(res2)
-            self.assertIs(await fut, res2)
+            assert await fut is res2
 
         async it "passes on the done callbacks to the new future":
             called = []
@@ -44,17 +51,17 @@ describe AsyncTestCase, "ResettableFuture":
             fut.add_done_callback(done1)
             fut.add_done_callback(done2)
 
-            self.assertEqual(called, [])
+            assert called == []
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [1, 2])
+            assert called == [1, 2]
 
             fut.reset()
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [1, 2, 1, 2])
+            assert called == [1, 2, 1, 2]
 
         async it "doesn't pass on removed callbacks to new fut":
             called = []
@@ -76,11 +83,11 @@ describe AsyncTestCase, "ResettableFuture":
             fut.add_done_callback(done2)
             fut.add_done_callback(thing.done3)
 
-            self.assertEqual(called, [])
+            assert called == []
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [1, 2, 3])
+            assert called == [1, 2, 3]
 
             fut.remove_done_callback(done1)
             fut.remove_done_callback(thing.done3)
@@ -89,7 +96,7 @@ describe AsyncTestCase, "ResettableFuture":
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [1, 2, 3, 2])
+            assert called == [1, 2, 3, 2]
 
         async it "respects remove_done_callback":
             called = []
@@ -107,17 +114,17 @@ describe AsyncTestCase, "ResettableFuture":
             # Remove the first done_callback
             fut.remove_done_callback(done1)
 
-            self.assertEqual(called, [])
+            assert called == []
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [2])
+            assert called == [2]
 
             fut.reset()
             fut.set_result(True)
             # Allow the callbacks to be called
             await asyncio.sleep(0)
-            self.assertEqual(called, [2, 2])
+            assert called == [2, 2]
 
     describe "set_result":
         async it "sets result on the current fut and calls all the on_creation functions":
@@ -134,13 +141,13 @@ describe AsyncTestCase, "ResettableFuture":
             fut.on_creation(cb1)
             fut.on_creation(cb2)
 
-            self.assertEqual(called, [])
+            assert called == []
             fut.set_result(res)
 
             await asyncio.sleep(0)
-            self.assertEqual(called, [(1, res), (2, res)])
+            assert called == [(1, res), (2, res)]
 
-            self.assertEqual(fut.info["fut"].result(), res)
+            assert fut.info["fut"].result() == res
 
     describe "future interface":
         async it "fulfills the future interface":
@@ -148,19 +155,19 @@ describe AsyncTestCase, "ResettableFuture":
             assert not fut.done()
             fut.set_result(True)
             assert fut.done()
-            self.assertEqual(fut.result(), True)
+            assert fut.result() == True
             assert not fut.cancelled()
-            self.assertEqual(fut.exception(), None)
-            self.assertEqual(await fut, True)
+            assert fut.exception() == None
+            assert await fut == True
 
             fut2 = hp.ResettableFuture()
             error = PhotonsAppError("lol")
             assert not fut2.done()
             fut2.set_exception(error)
             assert fut2.done()
-            self.assertEqual(fut2.exception(), error)
+            assert fut2.exception() == error
             assert not fut2.cancelled()
-            with self.fuzzyAssertRaisesError(PhotonsAppError, "lol"):
+            with assertRaises(PhotonsAppError, "lol"):
                 await fut2
 
             fut3 = hp.ResettableFuture()
@@ -169,7 +176,7 @@ describe AsyncTestCase, "ResettableFuture":
             fut3.cancel()
             assert fut3.cancelled()
 
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+            with assertRaises(asyncio.CancelledError):
                 await fut3
 
     describe "extra future interface":
@@ -232,13 +239,13 @@ describe AsyncTestCase, "ResettableFuture":
             fut.on_creation(on_creation2)
             fut.add_done_callback(on_done2)
 
-            self.assertEqual(called, [])
+            assert called == []
             res = mock.Mock(name="res")
             frozen.set_result(res)
             await asyncio.sleep(0)
 
-            self.assertEqual(called, [("on_creation", res), "on_done"])
-            self.assertEqual(await frozen, res)
+            assert called == [("on_creation", res), "on_done"]
+            assert await frozen == res
 
             assert not fut.done()
 
@@ -246,22 +253,22 @@ describe AsyncTestCase, "ResettableFuture":
         async it "reprs the fut it has":
 
             class Fut:
-                def __repr__(self):
+                def __repr__(s):
                     return "REPRED_YO"
 
             fut = hp.ResettableFuture()
             fut.info["fut"] = Fut()
 
-            self.assertEqual(repr(fut), "<ResettableFuture: REPRED_YO>")
+            assert repr(fut) == "<ResettableFuture: REPRED_YO>"
 
     describe "await":
         async it "yield from the fut if it's done":
             res = mock.Mock(name="res")
             fut = hp.ResettableFuture()
             fut.set_result(res)
-            self.assertIs(await fut, res)
+            assert await fut is res
 
-        async it "works across resets":
+        async it "works across resets", loop:
             called = []
             fut = hp.ResettableFuture()
 
@@ -269,7 +276,7 @@ describe AsyncTestCase, "ResettableFuture":
                 called.append(await fut)
 
             try:
-                task = asyncio.ensure_future(self.loop.create_task(waiter()))
+                task = asyncio.ensure_future(loop.create_task(waiter()))
 
                 res = mock.Mock(name="res")
                 fut.reset()
@@ -286,59 +293,67 @@ describe AsyncTestCase, "ResettableFuture":
             finally:
                 task.cancel()
 
-            self.assertEqual(called, [res])
+            assert called == [res]
 
-describe AsyncTestCase, "ChildOfFuture":
-    async before_each:
-        self.orig_fut = asyncio.Future()
-        self.cof = hp.ChildOfFuture(self.orig_fut)
+describe "ChildOfFuture":
+
+    @pytest.fixture()
+    def V(self):
+        class V:
+            orig_fut = asyncio.Future()
+
+            @hp.memoized_property
+            def cof(s):
+                return hp.ChildOfFuture(s.orig_fut)
+
+        return V()
 
     async it "ensure_future returns the ChildOfFuture as is":
         fut = asyncio.Future()
         fut = hp.ChildOfFuture(fut)
-        self.assertIs(asyncio.ensure_future(fut), fut)
+        assert asyncio.ensure_future(fut) is fut
 
     describe "set_result":
-        async it "complains if the original fut is already cancelled":
-            self.orig_fut.cancel()
-            with self.fuzzyAssertRaisesError(hp.InvalidStateError, "CANCELLED: .+"):
-                self.cof.set_result(True)
+        async it "complains if the original fut is already cancelled", V:
+            V.orig_fut.cancel()
+            with assertRaises(hp.InvalidStateError, "CANCELLED: .+"):
+                V.cof.set_result(True)
 
-        async it "Otherwise sets a result on the fut":
-            assert not self.cof.done()
-            self.cof.set_result(True)
-            assert self.cof.done()
-            assert not self.orig_fut.done()
-            self.assertEqual(await self.cof, True)
+        async it "Otherwise sets a result on the fut", V:
+            assert not V.cof.done()
+            V.cof.set_result(True)
+            assert V.cof.done()
+            assert not V.orig_fut.done()
+            assert await V.cof == True
 
     describe "Getting  result":
-        async it "cancels the future if original is done":
+        async it "cancels the future if original is done", V:
             res = mock.Mock(name="res")
-            self.orig_fut.set_result(res)
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                self.cof.result()
+            V.orig_fut.set_result(res)
+            with assertRaises(asyncio.CancelledError):
+                V.cof.result()
 
-        async it "gets result from original if that is cancelled":
-            self.orig_fut.cancel()
-            self.cof.this_fut.set_result(True)
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                self.cof.result()
+        async it "gets result from original if that is cancelled", V:
+            V.orig_fut.cancel()
+            V.cof.this_fut.set_result(True)
+            with assertRaises(asyncio.CancelledError):
+                V.cof.result()
 
-        async it "gets result from this fut if it has a result":
+        async it "gets result from this fut if it has a result", V:
             res = mock.Mock(name="res")
-            assert not self.orig_fut.done() and not self.orig_fut.cancelled()
-            self.cof.this_fut.set_result(res)
-            self.assertIs(self.cof.result(), res)
+            assert not V.orig_fut.done() and not V.orig_fut.cancelled()
+            V.cof.this_fut.set_result(res)
+            assert V.cof.result() is res
 
-        async it "gets result from this fut if it is cancelled":
-            assert not self.orig_fut.done() and not self.orig_fut.cancelled()
-            self.cof.this_fut.cancel()
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                self.cof.result()
+        async it "gets result from this fut if it is cancelled", V:
+            assert not V.orig_fut.done() and not V.orig_fut.cancelled()
+            V.cof.this_fut.cancel()
+            with assertRaises(asyncio.CancelledError):
+                V.cof.result()
 
-        async it "calls result on original_fut if neither are finished":
-            with self.fuzzyAssertRaisesError(hp.InvalidStateError, "Result is not (ready|set)"):
-                self.cof.result()
+        async it "calls result on original_fut if neither are finished", V:
+            with assertRaises(hp.InvalidStateError, "Result is not (ready|set)"):
+                V.cof.result()
 
     describe "done":
         async it "is done if either this or original fut are done":
@@ -397,21 +412,21 @@ describe AsyncTestCase, "ChildOfFuture":
         async it "it complains no exception is set if neither fut cancelled or have exception":
             o = asyncio.Future()
             cof = hp.ChildOfFuture(o)
-            with self.fuzzyAssertRaisesError(hp.InvalidStateError):
+            with assertRaises(hp.InvalidStateError):
                 cof.exception()
 
         async it "complains future is cancelled when either fut is cancelled":
             o = asyncio.Future()
             cof = hp.ChildOfFuture(o)
             o.cancel()
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+            with assertRaises(asyncio.CancelledError):
                 cof.exception()
 
             o2 = asyncio.Future()
             cof2 = hp.ChildOfFuture(o2)
             cof2.cancel()
             assert not o2.cancelled()
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+            with assertRaises(asyncio.CancelledError):
                 cof.exception()
 
         async it "returns the exception if original fut has an exception":
@@ -419,7 +434,7 @@ describe AsyncTestCase, "ChildOfFuture":
             o = asyncio.Future()
             cof = hp.ChildOfFuture(o)
             o.set_exception(error)
-            self.assertIs(cof.exception(), error)
+            assert cof.exception() is error
 
         async it "returns the exception if this_fut has an exception":
             error = PhotonsAppError("lol")
@@ -427,7 +442,7 @@ describe AsyncTestCase, "ChildOfFuture":
             cof = hp.ChildOfFuture(o)
             cof.set_exception(error)
             assert not o.done()
-            self.assertIs(cof.exception(), error)
+            assert cof.exception() is error
 
     describe "cancelling the parent":
         async it "cancels original_fut parent if that has cancel_parent":
@@ -449,131 +464,131 @@ describe AsyncTestCase, "ChildOfFuture":
             assert cof.cancelled()
 
     describe "cancel":
-        async it "only cancels this_fut":
-            self.cof.cancel()
-            assert not self.orig_fut.cancelled()
-            assert self.cof.cancelled()
+        async it "only cancels this_fut", V:
+            V.cof.cancel()
+            assert not V.orig_fut.cancelled()
+            assert V.cof.cancelled()
 
     describe "extra future interface":
-        async it "is ready if done and not cancelled":
+        async it "is ready if done and not cancelled", V:
             yes = lambda: True
             no = lambda: False
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert self.cof.ready()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert V.cof.ready()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert not self.cof.ready()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert not V.cof.ready()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert not self.cof.ready()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert not V.cof.ready()
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert not self.cof.ready()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert not V.cof.ready()
 
-        async it "is settable if not done and not cancelled":
+        async it "is settable if not done and not cancelled", V:
             yes = lambda: True
             no = lambda: False
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert not self.cof.settable()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert not V.cof.settable()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert self.cof.settable()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert V.cof.settable()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert not self.cof.settable()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert not V.cof.settable()
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert not self.cof.settable()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert not V.cof.settable()
 
-        async it "is finished if done or cancelled":
+        async it "is finished if done or cancelled", V:
             yes = lambda: True
             no = lambda: False
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert self.cof.finished()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert V.cof.finished()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", no):
-                    assert not self.cof.finished()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", no):
+                    assert not V.cof.finished()
 
-            with mock.patch.object(self.cof, "done", no):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert self.cof.finished()
+            with mock.patch.object(V.cof, "done", no):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert V.cof.finished()
 
-            with mock.patch.object(self.cof, "done", yes):
-                with mock.patch.object(self.cof, "cancelled", yes):
-                    assert self.cof.finished()
+            with mock.patch.object(V.cof, "done", yes):
+                with mock.patch.object(V.cof, "cancelled", yes):
+                    assert V.cof.finished()
 
     describe "set_exception":
-        async it "sets exception on this_fut":
+        async it "sets exception on this_fut", V:
             error = PhotonsAppError("error")
-            self.cof.set_exception(error)
-            assert not self.orig_fut.done()
-            self.assertIs(self.cof.exception(), error)
+            V.cof.set_exception(error)
+            assert not V.orig_fut.done()
+            assert V.cof.exception() is error
 
     describe "done_callbacks":
-        async it "callbacks are called if original future is done first":
+        async it "callbacks are called if original future is done first", V:
             called = []
 
             def done(res):
                 called.append(res)
 
-            self.cof.add_done_callback(done)
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(done)
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.orig_fut.set_result(True)
+            V.orig_fut.set_result(True)
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.orig_fut])
+            assert called == [V.orig_fut]
 
-        async it "calls callbacks only once if both this_fut and orig_fut are called":
+        async it "calls callbacks only once if both this_fut and orig_fut are called", V:
             called = []
 
             def done(res):
                 called.append(res)
 
-            self.cof.add_done_callback(done)
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(done)
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.set_result(True)
+            V.cof.set_result(True)
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.cof.this_fut])
+            assert called == [V.cof.this_fut]
 
-            self.orig_fut.set_result(True)
+            V.orig_fut.set_result(True)
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.cof.this_fut])
+            assert called == [V.cof.this_fut]
 
-        async it "does only calls callback once if this_fut is cancelled first":
+        async it "does only calls callback once if this_fut is cancelled first", V:
             called = []
 
             def done(res):
                 called.append(res)
 
-            self.cof.add_done_callback(done)
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(done)
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.cancel()
+            V.cof.cancel()
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.cof.this_fut])
+            assert called == [V.cof.this_fut]
 
-            self.orig_fut.cancel()
+            V.orig_fut.cancel()
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.cof.this_fut])
+            assert called == [V.cof.this_fut]
 
-        async it "works with multiple callbacks":
+        async it "works with multiple callbacks", V:
             called = []
 
             def done(res):
@@ -582,161 +597,165 @@ describe AsyncTestCase, "ChildOfFuture":
             def done2(res):
                 called.append((2, res))
 
-            self.cof.add_done_callback(done)
-            self.cof.add_done_callback(done2)
+            V.cof.add_done_callback(done)
+            V.cof.add_done_callback(done2)
 
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.set_result(True)
+            V.cof.set_result(True)
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.cof.this_fut, (2, self.cof.this_fut)])
+            assert called == [V.cof.this_fut, (2, V.cof.this_fut)]
 
-        async it "calls callback if parent is killed first":
+        async it "calls callback if parent is killed first", V:
             called = []
 
             def done(res):
                 called.append(res)
 
-            self.cof.add_done_callback(done)
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(done)
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.orig_fut.cancel()
+            V.orig_fut.cancel()
             await asyncio.sleep(0)
-            self.assertEqual(called, [self.orig_fut])
+            assert called == [V.orig_fut]
 
     describe "removing a done callback":
-        async it "removes from cof.done_callbacks":
+        async it "removes from cof.done_callbacks", V:
             cb = mock.Mock(name="cb")
             cb2 = mock.Mock(name="cb2")
 
-            self.assertEqual(self.cof.done_callbacks, [])
+            assert V.cof.done_callbacks == []
 
-            self.cof.add_done_callback(cb)
-            self.assertEqual(self.cof.done_callbacks, [cb])
+            V.cof.add_done_callback(cb)
+            assert V.cof.done_callbacks == [cb]
 
-            self.cof.add_done_callback(cb2)
-            self.assertEqual(self.cof.done_callbacks, [cb, cb2])
+            V.cof.add_done_callback(cb2)
+            assert V.cof.done_callbacks == [cb, cb2]
 
-            self.cof.remove_done_callback(cb)
-            self.assertEqual(self.cof.done_callbacks, [cb2])
+            V.cof.remove_done_callback(cb)
+            assert V.cof.done_callbacks == [cb2]
 
-            self.cof.remove_done_callback(cb2)
-            self.assertEqual(self.cof.done_callbacks, [])
+            V.cof.remove_done_callback(cb2)
+            assert V.cof.done_callbacks == []
 
-            self.cof.add_done_callback(self.cof._parent_done_cb)
-            self.assertEqual(self.cof.done_callbacks, [self.cof._parent_done_cb])
+            V.cof.add_done_callback(V.cof._parent_done_cb)
+            assert V.cof.done_callbacks == [V.cof._parent_done_cb]
 
             other = lambda: 1
-            self.cof.add_done_callback(other)
-            self.assertEqual(self.cof.done_callbacks, [self.cof._parent_done_cb, other])
+            V.cof.add_done_callback(other)
+            assert V.cof.done_callbacks == [V.cof._parent_done_cb, other]
 
-            self.cof.remove_done_callback(self.cof._parent_done_cb)
-            self.assertEqual(self.cof.done_callbacks, [other])
+            V.cof.remove_done_callback(V.cof._parent_done_cb)
+            assert V.cof.done_callbacks == [other]
 
-            self.cof.remove_done_callback(other)
-            self.assertEqual(self.cof.done_callbacks, [])
+            V.cof.remove_done_callback(other)
+            assert V.cof.done_callbacks == []
 
-        async it "removes callback from the futures if no more callbacks":
-            assertFutCallbacks(self.orig_fut)
-            assertFutCallbacks(self.cof.this_fut)
+        async it "removes callback from the futures if no more callbacks", V:
+            assertFutCallbacks(V.orig_fut)
+            assertFutCallbacks(V.cof.this_fut)
 
             cb = mock.Mock(name="cb")
             cb2 = mock.Mock(name="c2")
 
-            self.assertEqual(self.cof.done_callbacks, [])
+            assert V.cof.done_callbacks == []
 
-            self.cof.add_done_callback(cb)
-            self.assertEqual(self.cof.done_callbacks, [cb])
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(cb)
+            assert V.cof.done_callbacks == [cb]
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.add_done_callback(cb2)
-            self.assertEqual(self.cof.done_callbacks, [cb, cb2])
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.add_done_callback(cb2)
+            assert V.cof.done_callbacks == [cb, cb2]
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.remove_done_callback(cb)
-            self.assertEqual(self.cof.done_callbacks, [cb2])
-            assertFutCallbacks(self.orig_fut, self.cof._parent_done_cb)
-            assertFutCallbacks(self.cof.this_fut, self.cof._done_cb)
+            V.cof.remove_done_callback(cb)
+            assert V.cof.done_callbacks == [cb2]
+            assertFutCallbacks(V.orig_fut, V.cof._parent_done_cb)
+            assertFutCallbacks(V.cof.this_fut, V.cof._done_cb)
 
-            self.cof.remove_done_callback(cb2)
-            self.assertEqual(self.cof.done_callbacks, [])
-            assertFutCallbacks(self.orig_fut)
-            assertFutCallbacks(self.cof.this_fut)
+            V.cof.remove_done_callback(cb2)
+            assert V.cof.done_callbacks == []
+            assertFutCallbacks(V.orig_fut)
+            assertFutCallbacks(V.cof.this_fut)
 
     describe "repr":
         async it "gives repr for both futures":
 
             class OFut:
-                def __repr__(self):
+                def __repr__(s):
                     return "OFUT"
 
             class Fut:
-                def __repr__(self):
+                def __repr__(s):
                     return "TFUT"
 
             fut = hp.ChildOfFuture(OFut())
             fut.this_fut = Fut()
-            self.assertEqual(repr(fut), "<ChildOfFuture: OFUT |:| TFUT>")
+            assert repr(fut) == "<ChildOfFuture: OFUT |:| TFUT>"
 
     describe "awaiting":
 
-        def waiting_for(self, res):
-            async def waiter():
-                return await self.cof
+        @pytest.fixture()
+        def waiting_for(self, V, loop):
+            def waiting_for(res):
+                async def waiter():
+                    return await V.cof
 
-            class Waiter:
-                async def __aenter__(s):
-                    self.task = self.loop.create_task(waiter())
-                    return
+                class Waiter:
+                    async def __aenter__(s):
+                        V.task = loop.create_task(waiter())
+                        return
 
-                async def __aexit__(s, exc_type, exc, tb):
-                    if exc:
-                        return False
+                    async def __aexit__(s, exc_type, exc, tb):
+                        if exc:
+                            return False
 
-                    if res is asyncio.CancelledError:
-                        with self.fuzzyAssertRaisesError(res):
-                            await self.wait_for(self.task)
-                    elif type(res) is PhotonsAppError:
-                        with self.fuzzyAssertRaisesError(PhotonsAppError, res.message):
-                            await self.wait_for(self.task)
-                    else:
-                        self.assertEqual(await self.wait_for(self.task), res)
+                        if res is asyncio.CancelledError:
+                            with assertRaises(res):
+                                await V.task
+                        elif type(res) is PhotonsAppError:
+                            with assertRaises(PhotonsAppError, res.message):
+                                await V.task
+                        else:
+                            assert (await V.task) == res
 
-            return Waiter()
+                return Waiter()
 
-        async it "returns result from this_fut if that goes first":
+            return waiting_for
+
+        async it "returns result from this_fut if that goes first", waiting_for, V:
             res = mock.Mock(name="res")
-            async with self.waiting_for(res):
-                self.cof.set_result(res)
+            async with waiting_for(res):
+                V.cof.set_result(res)
 
-        async it "cancels this_fut if original fut gets a result":
+        async it "cancels this_fut if original fut gets a result", waiting_for, V:
             res = mock.Mock(name="res")
-            async with self.waiting_for(asyncio.CancelledError):
-                self.orig_fut.set_result(res)
+            async with waiting_for(asyncio.CancelledError):
+                V.orig_fut.set_result(res)
 
-        async it "returns result from this_fut if that cancels first":
-            async with self.waiting_for(asyncio.CancelledError):
-                self.cof.cancel()
+        async it "returns result from this_fut if that cancels first", waiting_for, V:
+            async with waiting_for(asyncio.CancelledError):
+                V.cof.cancel()
 
-        async it "returns result from orig_fut if that goes first":
-            async with self.waiting_for(asyncio.CancelledError):
-                self.orig_fut.cancel()
+        async it "returns result from orig_fut if that goes first", waiting_for, V:
+            async with waiting_for(asyncio.CancelledError):
+                V.orig_fut.cancel()
 
-        async it "returns result from this_fut if that exceptions first":
+        async it "returns result from this_fut if that exceptions first", waiting_for, V:
             error = PhotonsAppError("fail")
-            async with self.waiting_for(error):
-                self.cof.set_exception(error)
+            async with waiting_for(error):
+                V.cof.set_exception(error)
 
-        async it "returns result from orig_fut if that goes first":
+        async it "returns result from orig_fut if that goes first", waiting_for, V:
             error = PhotonsAppError("yeap")
-            async with self.waiting_for(error):
-                self.orig_fut.set_exception(error)
+            async with waiting_for(error):
+                V.orig_fut.set_exception(error)
 
-describe AsyncTestCase, "fut_has_callback":
+describe "fut_has_callback":
     async it "says no if fut has no callbacks":
 
         def func():
@@ -773,7 +792,7 @@ describe AsyncTestCase, "fut_has_callback":
         fut.add_done_callback(func2)
         assert hp.fut_has_callback(fut, func2)
 
-describe AsyncTestCase, "async_as_normal":
+describe "async_as_normal":
     async it "returns a function that spawns the coroutine as a task":
 
         async def func(one, two, three=None):
@@ -782,17 +801,17 @@ describe AsyncTestCase, "async_as_normal":
         normal = hp.async_as_normal(func)
         t = normal(1, 2, three=4)
         assert isinstance(t, asyncio.Task)
-        self.assertEqual(await t, "1.2.4")
+        assert await t == "1.2.4"
 
-describe AsyncTestCase, "async_with_timeout":
+describe "async_with_timeout":
     async it "returns the result of waiting on the coroutine":
         val = str(uuid.uuid1())
 
         async def func():
             return val
 
-        res = await self.wait_for(hp.async_with_timeout(func(), timeout=10))
-        self.assertEqual(res, val)
+        res = await hp.async_with_timeout(func(), timeout=10)
+        assert res == val
 
     async it "cancels the coroutine if it doesn't respond":
 
@@ -801,9 +820,9 @@ describe AsyncTestCase, "async_with_timeout":
             return val
 
         start = time.time()
-        with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+        with assertRaises(asyncio.CancelledError):
             await hp.async_with_timeout(func(), timeout=0.1)
-        self.assertLess(time.time() - start, 0.5)
+        assert time.time() - start < 0.5
 
     async it "cancels the coroutine and raises timeout_error":
         error = PhotonsAppError("Blah")
@@ -816,11 +835,11 @@ describe AsyncTestCase, "async_with_timeout":
             return val
 
         start = time.time()
-        with self.fuzzyAssertRaisesError(PhotonsAppError, "Blah"):
+        with assertRaises(PhotonsAppError, "Blah"):
             await hp.async_with_timeout(func(), timeout=0.1, timeout_error=error)
-        self.assertLess(time.time() - start, 0.5)
+        assert time.time() - start < 0.5
 
-describe AsyncTestCase, "async_as_background":
+describe "async_as_background":
     async it "runs the coroutine in the background":
 
         async def func(one, two, three=None):
@@ -829,7 +848,7 @@ describe AsyncTestCase, "async_as_background":
         t = hp.async_as_background(func(6, 5, three=9))
         assertFutCallbacks(t, hp.reporter)
         assert isinstance(t, asyncio.Task)
-        self.assertEqual(await t, "6.5.9")
+        assert await t == "6.5.9"
 
     async it "uses silent_reporter if silent is True":
 
@@ -839,52 +858,52 @@ describe AsyncTestCase, "async_as_background":
         t = hp.async_as_background(func(6, 5, three=9), silent=True)
         assertFutCallbacks(t, hp.silent_reporter)
         assert isinstance(t, asyncio.Task)
-        self.assertEqual(await t, "6.5.9")
+        assert await t == "6.5.9"
 
-describe AsyncTestCase, "silent_reporter":
+describe "silent_reporter":
     async it "does nothing if the future was cancelled":
         fut = asyncio.Future()
         fut.cancel()
-        self.assertEqual(hp.silent_reporter(fut), None)
+        assert hp.silent_reporter(fut) == None
 
     async it "does nothing if the future has an exception":
         fut = asyncio.Future()
         fut.set_exception(Exception("wat"))
-        self.assertEqual(hp.silent_reporter(fut), None)
+        assert hp.silent_reporter(fut) == None
 
     async it "returns true if we have a result":
         fut = asyncio.Future()
         fut.set_result(mock.Mock(name="result"))
-        self.assertEqual(hp.silent_reporter(fut), True)
+        assert hp.silent_reporter(fut) == True
 
-describe AsyncTestCase, "reporter":
+describe "reporter":
     async it "does nothing if the future was cancelled":
         fut = asyncio.Future()
         fut.cancel()
-        self.assertEqual(hp.reporter(fut), None)
+        assert hp.reporter(fut) == None
 
     async it "does nothing if the future has an exception":
         fut = asyncio.Future()
         fut.set_exception(Exception("wat"))
-        self.assertEqual(hp.reporter(fut), None)
+        assert hp.reporter(fut) == None
 
     async it "returns true if we have a result":
         fut = asyncio.Future()
         fut.set_result(mock.Mock(name="result"))
-        self.assertEqual(hp.reporter(fut), True)
+        assert hp.reporter(fut) == True
 
-describe AsyncTestCase, "transfer_result":
-    async it "works as a done_callback":
+describe "transfer_result":
+    async it "works as a done_callback", loop:
         fut = asyncio.Future()
 
         async def doit():
             return [1, 2]
 
-        t = self.loop.create_task(doit())
+        t = loop.create_task(doit())
         t.add_done_callback(hp.transfer_result(fut))
-        await self.wait_for(t)
+        await t
 
-        self.assertEqual(fut.result(), [1, 2])
+        assert fut.result() == [1, 2]
 
     describe "errors_only":
         async it "cancels fut if res is cancelled":
@@ -903,7 +922,7 @@ describe AsyncTestCase, "transfer_result":
             res.set_exception(error)
 
             hp.transfer_result(fut, errors_only=True)(res)
-            self.assertEqual(fut.exception(), error)
+            assert fut.exception() == error
 
         async it "does not transfer result":
             fut = asyncio.Future()
@@ -930,7 +949,7 @@ describe AsyncTestCase, "transfer_result":
             res.set_exception(error)
 
             hp.transfer_result(fut, errors_only=False)(res)
-            self.assertEqual(fut.exception(), error)
+            assert fut.exception() == error
 
         async it "transfers result":
             fut = asyncio.Future()
@@ -938,9 +957,9 @@ describe AsyncTestCase, "transfer_result":
             res.set_result([1, 2])
 
             hp.transfer_result(fut, errors_only=False)(res)
-            self.assertEqual(fut.result(), [1, 2])
+            assert fut.result() == [1, 2]
 
-describe AsyncTestCase, "noncancelled_results_from_futs":
+describe "noncancelled_results_from_futs":
     async it "returns results from done futures that aren't cancelled":
         fut1 = asyncio.Future()
         fut2 = asyncio.Future()
@@ -954,8 +973,9 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut3.cancel()
         fut4.set_result(result2)
 
-        self.assertEqual(
-            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (None, [result1, result2])
+        assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (
+            None,
+            [result1, result2],
         )
 
     async it "returns found errors as well":
@@ -971,9 +991,7 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut3.cancel()
         fut4.set_result(result2)
 
-        self.assertEqual(
-            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (error1, [result2])
-        )
+        assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [result2])
 
     async it "squashes the same error into one error":
         fut1 = asyncio.Future()
@@ -989,7 +1007,7 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut3.cancel()
         fut4.set_exception(error2)
 
-        self.assertEqual(hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]), (error1, []))
+        assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [])
 
     async it "can return error with multiple errors":
         fut1 = asyncio.Future()
@@ -1007,127 +1025,135 @@ describe AsyncTestCase, "noncancelled_results_from_futs":
         fut4.set_result(result2)
         fut5.set_exception(error2)
 
-        self.assertEqual(
-            hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4, fut5]),
-            (PhotonsAppError(_errors=[error1, error2]), [result2]),
+        assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4, fut5]) == (
+            PhotonsAppError(_errors=[error1, error2]),
+            [result2],
         )
 
-describe AsyncTestCase, "find_and_apply_result":
-    async before_each:
-        self.fut1 = asyncio.Future()
-        self.fut2 = asyncio.Future()
-        self.fut3 = asyncio.Future()
-        self.fut4 = asyncio.Future()
-        self.available_futs = [self.fut1, self.fut2, self.fut3, self.fut4]
-        self.final_fut = asyncio.Future()
+describe "find_and_apply_result":
 
-    async it "cancels futures if final_future is cancelled":
-        self.final_fut.cancel()
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+    @pytest.fixture()
+    def V(self):
+        class V:
+            fut1 = asyncio.Future()
+            fut2 = asyncio.Future()
+            fut3 = asyncio.Future()
+            fut4 = asyncio.Future()
+            final_fut = asyncio.Future()
 
-        assert self.fut1.cancelled()
-        assert self.fut2.cancelled()
-        assert self.fut3.cancelled()
-        assert self.fut4.cancelled()
+            @hp.memoized_property
+            def available_futs(s):
+                return [s.fut1, s.fut2, s.fut3, s.fut4]
 
-        assert self.final_fut.cancelled()
+        return V()
 
-    async it "sets exceptions on futures if final_future has an exception":
+    async it "cancels futures if final_future is cancelled", V:
+        V.final_fut.cancel()
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+
+        assert V.fut1.cancelled()
+        assert V.fut2.cancelled()
+        assert V.fut3.cancelled()
+        assert V.fut4.cancelled()
+
+        assert V.final_fut.cancelled()
+
+    async it "sets exceptions on futures if final_future has an exception", V:
         error = ValueError("NOPE")
-        self.final_fut.set_exception(error)
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+        V.final_fut.set_exception(error)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
 
-        for f in self.available_futs:
-            self.assertIs(f.exception(), error)
+        for f in V.available_futs:
+            assert f.exception() is error
 
-    async it "ignores futures already done when final_future has an exception":
+    async it "ignores futures already done when final_future has an exception", V:
         err1 = Exception("LOLZ")
-        self.available_futs[0].set_exception(err1)
-        self.available_futs[1].cancel()
-        self.available_futs[2].set_result([1, 2])
+        V.available_futs[0].set_exception(err1)
+        V.available_futs[1].cancel()
+        V.available_futs[2].set_result([1, 2])
 
         err2 = ValueError("NOPE")
-        self.final_fut.set_exception(err2)
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
+        V.final_fut.set_exception(err2)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
 
-        self.assertIs(self.available_futs[0].exception(), err1)
-        assert self.available_futs[1].cancelled()
-        self.assertEqual(self.available_futs[2].result(), [1, 2])
-        self.assertIs(self.available_futs[3].exception(), err2)
+        assert V.available_futs[0].exception() is err1
+        assert V.available_futs[1].cancelled()
+        assert V.available_futs[2].result() == [1, 2]
+        assert V.available_futs[3].exception() is err2
 
-    async it "spreads error if any is found":
+    async it "spreads error if any is found", V:
         error1 = Exception("wat")
-        self.fut2.set_exception(error1)
+        V.fut2.set_exception(error1)
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
 
-        self.assertIs(self.fut1.exception(), error1)
-        self.assertIs(self.fut2.exception(), error1)
-        self.assertIs(self.fut3.exception(), error1)
-        self.assertIs(self.fut4.exception(), error1)
+        assert V.fut1.exception() is error1
+        assert V.fut2.exception() is error1
+        assert V.fut3.exception() is error1
+        assert V.fut4.exception() is error1
 
-        self.assertIs(self.final_fut.exception(), error1)
+        assert V.final_fut.exception() is error1
 
-    async it "doesn't spread error to those already cancelled or with error":
+    async it "doesn't spread error to those already cancelled or with error", V:
         error1 = PhotonsAppError("wat")
-        self.fut2.set_exception(error1)
+        V.fut2.set_exception(error1)
 
         error2 = PhotonsAppError("wat2")
-        self.fut1.set_exception(error2)
+        V.fut1.set_exception(error2)
 
-        self.fut4.cancel()
+        V.fut4.cancel()
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
 
-        self.assertIs(self.fut1.exception(), error2)
-        self.assertIs(self.fut2.exception(), error1)
-        self.assertEqual(self.fut3.exception(), PhotonsAppError(_errors=[error2, error1]))
-        assert self.fut4.cancelled()
+        assert V.fut1.exception() is error2
+        assert V.fut2.exception() is error1
+        assert V.fut3.exception() == PhotonsAppError(_errors=[error2, error1])
+        assert V.fut4.cancelled()
 
-        self.assertEqual(self.final_fut.exception(), PhotonsAppError(_errors=[error2, error1]))
+        assert V.final_fut.exception() == PhotonsAppError(_errors=[error2, error1])
 
-    async it "sets results if one has a result":
+    async it "sets results if one has a result", V:
         result = mock.Mock(name="result")
-        self.fut1.set_result(result)
+        V.fut1.set_result(result)
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
 
-        self.assertIs(self.fut1.result(), result)
-        self.assertIs(self.fut2.result(), result)
-        self.assertIs(self.fut3.result(), result)
-        self.assertIs(self.fut4.result(), result)
+        assert V.fut1.result() is result
+        assert V.fut2.result() is result
+        assert V.fut3.result() is result
+        assert V.fut4.result() is result
 
-        self.assertIs(self.final_fut.result(), result)
+        assert V.final_fut.result() is result
 
-    async it "sets results if one has a result except for cancelled ones":
+    async it "sets results if one has a result except for cancelled ones", V:
         result = mock.Mock(name="result")
-        self.fut1.set_result(result)
-        self.fut2.cancel()
+        V.fut1.set_result(result)
+        V.fut2.cancel()
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
 
-        self.assertIs(self.fut1.result(), result)
-        assert self.fut2.cancelled()
-        self.assertIs(self.fut3.result(), result)
-        self.assertIs(self.fut4.result(), result)
+        assert V.fut1.result() is result
+        assert V.fut2.cancelled()
+        assert V.fut3.result() is result
+        assert V.fut4.result() is result
 
-        self.assertIs(self.final_fut.result(), result)
+        assert V.final_fut.result() is result
 
-    async it "sets result on final_fut unless it's already cancelled":
+    async it "sets result on final_fut unless it's already cancelled", V:
         result = mock.Mock(name="result")
-        self.fut1.set_result(result)
-        self.final_fut.cancel()
+        V.fut1.set_result(result)
+        V.final_fut.cancel()
 
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
-        assert self.final_fut.cancelled()
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert V.final_fut.cancelled()
 
-    async it "cancels final_fut if any of our futs are cancelled":
-        self.fut1.cancel()
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), True)
-        assert self.final_fut.cancelled()
+    async it "cancels final_fut if any of our futs are cancelled", V:
+        V.fut1.cancel()
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert V.final_fut.cancelled()
 
-    async it "does nothing if none of the futures are done":
-        self.assertEqual(hp.find_and_apply_result(self.final_fut, self.available_futs), False)
-        for f in self.available_futs:
+    async it "does nothing if none of the futures are done", V:
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        for f in V.available_futs:
             assert not f.done()
-        assert not self.final_fut.done()
+        assert not V.final_fut.done()

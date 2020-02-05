@@ -4,11 +4,11 @@ from photons_app.registers import Target, TargetRegister, ProtocolRegister, Refe
 from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.errors import BadYaml, BadConfiguration
 from photons_app.option_spec.task_objs import Task
-from photons_app.test_helpers import TestCase
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 
 from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.option_merge.path import Path
 from delfick_project.addons import Register
@@ -16,35 +16,12 @@ from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
 import pkg_resources
-import tempfile
 import asyncio
-import shutil
 import uuid
 import os
 
 
-class a_temp_dir:
-    def __enter__(self):
-        self.d = tempfile.mkdtemp()
-        return self.d, self.make_file
-
-    def __exit__(self, exc_type, exc, tb):
-        if hasattr(self, "d") and os.path.exists(self.d):
-            shutil.rmtree(self.d)
-
-    def make_file(self, name, contents):
-        location = os.path.join(self.d, name)
-        parent = os.path.dirname(location)
-        if not os.path.exists(parent):
-            os.makedirs(parent)
-
-        with open(location, "w") as fle:
-            fle.write(dedent(contents))
-
-        return location
-
-
-describe TestCase, "Collector":
+describe "Collector":
     it "has a shortcut to the run helper":
         coro = mock.Mock(name="coro")
         run = mock.Mock(name="run")
@@ -84,23 +61,18 @@ describe TestCase, "Collector":
 
             clone2 = collector.clone()
 
-        self.assertIsNot(clone, collector)
+        assert clone is not collector
 
         call = prepare.mock_calls[0].call_list()[0][1]
-        self.assertEqual(call[0], fle.name)
-        self.assertEqual(
-            call[1].storage.data,
-            [
-                (Path(""), {"two": 3}, None),
-                (Path(""), {"photons_app": collector.configuration["photons_app"].as_dict()}, None),
-                (Path(""), {"one": 2}, None),
-            ],
-        )
+        assert call[0] == fle.name
+        assert call[1].storage.data == [
+            (Path(""), {"two": 3}, None),
+            (Path(""), {"photons_app": collector.configuration["photons_app"].as_dict()}, None),
+            (Path(""), {"one": 2}, None),
+        ]
 
-        self.assertEqual(clone2.configuration["photons_app"].artifact, "blah")
-        self.assertIsNot(
-            clone2.configuration["photons_app"], collector.configuration["photons_app"]
-        )
+        assert clone2.configuration["photons_app"].artifact == "blah"
+        assert clone2.configuration["photons_app"] is not collector.configuration["photons_app"]
 
     describe "extra_prepare":
 
@@ -139,14 +111,15 @@ describe TestCase, "Collector":
                 collector.extra_prepare(configuration, args_dict)
 
             class AFuture:
-                def __eq__(self, other):
+                def __eq__(s, other):
                     return isinstance(other, asyncio.Future)
 
-            self.assertIs(collector.register, register)
-            self.assertEqual(
-                configuration.as_dict(),
-                {"$@": extra, "collector": collector, "photons_app": photons_app},
-            )
+            assert collector.register is register
+            assert configuration.as_dict() == {
+                "$@": extra,
+                "collector": collector,
+                "photons_app": photons_app,
+            }
 
     describe "find_photons_app_options":
         it "returns us a dictionary with options from configuration and args_dict":
@@ -154,31 +127,31 @@ describe TestCase, "Collector":
             args_dict = {"photons_app": {"one": 3, "three": 4}}
 
             photons_app = Collector().find_photons_app_options(configuration, args_dict)
-            self.assertEqual(photons_app, {"one": 3, "two": 2, "three": 4})
+            assert photons_app == {"one": 3, "two": 2, "three": 4}
 
         it "doesn't care if configuration has no photons_app":
             configuration = MergedOptions()
             args_dict = {"photons_app": {"one": 3, "three": 4}}
 
             photons_app = Collector().find_photons_app_options(configuration, args_dict)
-            self.assertEqual(photons_app, {"one": 3, "three": 4})
+            assert photons_app == {"one": 3, "three": 4}
 
             for v in (None, "", sb.NotSpecified):
                 configuration = MergedOptions.using({"photons_app": v})
                 photons_app = Collector().find_photons_app_options(configuration, args_dict)
-                self.assertEqual(photons_app, {"one": 3, "three": 4})
+                assert photons_app == {"one": 3, "three": 4}
 
         it "doesn't care if args_dict has no photons_app":
             configuration = MergedOptions.using({"photons_app": {"one": 1}})
             args_dict = {}
 
             photons_app = Collector().find_photons_app_options(configuration, args_dict)
-            self.assertEqual(photons_app, {"one": 1})
+            assert photons_app == {"one": 1}
 
             for v in (None, "", sb.NotSpecified):
                 args_dict["photons_app"] = v
                 photons_app = Collector().find_photons_app_options(configuration, args_dict)
-                self.assertEqual(photons_app, {"one": 1})
+                assert photons_app == {"one": 1}
 
     describe "determine_mainline_module":
         it "does nothing if there is no __main__":
@@ -186,7 +159,7 @@ describe TestCase, "Collector":
             working_set = mock.Mock(name="working_set", spec=[])
             with mock.patch("pkg_resources.working_set", working_set):
                 with mock.patch("builtins.__import__", fake__import__):
-                    self.assertIs(Collector().determine_mainline_module(), None)
+                    assert Collector().determine_mainline_module() is None
 
             fake__import__.assert_called_once_with("__main__")
 
@@ -196,21 +169,21 @@ describe TestCase, "Collector":
             working_set = mock.Mock(name="working_set")
             with mock.patch("pkg_resources.working_set", working_set):
                 with mock.patch("builtins.__import__", fake__import__):
-                    self.assertIs(Collector().determine_mainline_module(), __main__)
+                    assert Collector().determine_mainline_module() is __main__
 
             fake__import__.assert_called_once_with("__main__")
 
-            self.assertEqual(len(working_set.add.mock_calls), 1)
+            assert len(working_set.add.mock_calls) == 1
             call = working_set.add.mock_calls[0].call_list()[0][1]
             dist = call[0]
             working_set.add.assert_called_once_with(dist, entry="__main__")
 
             em = dist.get_entry_map("lifx.photons")
-            self.assertEqual(em["__main__"].name, "__main__")
-            self.assertEqual(em["__main__"].module_name, "__main__")
+            assert em["__main__"].name == "__main__"
+            assert em["__main__"].module_name == "__main__"
 
-            self.assertEqual(dist.get_entry_map("other"), {})
-            self.assertEqual(dist.get_entry_map(), {})
+            assert dist.get_entry_map("other") == {}
+            assert dist.get_entry_map() == {}
 
     describe "setup_addon_register":
         it "works":
@@ -226,11 +199,10 @@ describe TestCase, "Collector":
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(
-                    sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["delfick_project.addons", "lifx.photons"]),
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
+                    ["delfick_project.addons", "lifx.photons"]
                 )
-                self.assertEqual(register.known, [("lifx.photons", "one"), ("lifx.photons", "two")])
+                assert register.known == [("lifx.photons", "one"), ("lifx.photons", "two")]
                 called.append("recursive_import_known")
 
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
@@ -254,7 +226,7 @@ describe TestCase, "Collector":
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
-            self.assertEqual(called, ["recursive_import_known", "recursive_resolve_imported"])
+            assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
         it "adds pair for __main__ if that's a thing":
             original = Register
@@ -269,18 +241,14 @@ describe TestCase, "Collector":
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(
-                    sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["delfick_project.addons", "lifx.photons"]),
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
+                    ["delfick_project.addons", "lifx.photons"]
                 )
-                self.assertEqual(
-                    register.known,
-                    [
-                        ("lifx.photons", "one"),
-                        ("lifx.photons", "two"),
-                        ("lifx.photons", "__main__"),
-                    ],
-                )
+                assert register.known == [
+                    ("lifx.photons", "one"),
+                    ("lifx.photons", "two"),
+                    ("lifx.photons", "__main__"),
+                ]
                 called.append("recursive_import_known")
 
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
@@ -304,7 +272,7 @@ describe TestCase, "Collector":
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
-            self.assertEqual(called, ["recursive_import_known", "recursive_resolve_imported"])
+            assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
         it "adds nothing if photons_app has no addons option":
             original = Register
@@ -319,11 +287,10 @@ describe TestCase, "Collector":
 
             def rik(*args):
                 register = info["register"]
-                self.assertEqual(
-                    sorted(register.addon_getter.namespaces.keys()),
-                    sorted(["delfick_project.addons", "lifx.photons"]),
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
+                    ["delfick_project.addons", "lifx.photons"]
                 )
-                self.assertEqual(register.known, [])
+                assert register.known == []
                 called.append("recursive_import_known")
 
             recursive_import_known = mock.Mock(name="recursive_import_known", side_effect=rik)
@@ -345,7 +312,7 @@ describe TestCase, "Collector":
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
-            self.assertEqual(called, ["recursive_import_known", "recursive_resolve_imported"])
+            assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
     describe "extra_prepare_after_activation":
         it "calls post_register":
@@ -360,7 +327,7 @@ describe TestCase, "Collector":
             args_dict = mock.Mock(name="args_dict")
 
             collector.extra_prepare_after_activation(configuration, args_dict)
-            self.assertIs(configuration["final_future"], final_future)
+            assert configuration["final_future"] is final_future
 
             register.post_register.assert_called_once_with({"lifx.photons": {}})
 
@@ -380,7 +347,7 @@ describe TestCase, "Collector":
             with mock.patch("photons_app.collector.TaskFinder", FakeTaskFinder):
                 collector.extra_prepare_after_activation(configuration, args_dict)
 
-            self.assertIs(configuration["task_runner"], task_finder.task_runner)
+            assert configuration["task_runner"] is task_finder.task_runner
             collector.register.post_register.assert_called_once_with(mock.ANY)
 
     describe "home_dir_configuration_location":
@@ -389,8 +356,8 @@ describe TestCase, "Collector":
             current_home = os.environ.get("HOME")
             try:
                 os.environ["HOME"] = "/home/bob"
-                self.assertEqual(
-                    Collector().home_dir_configuration_location(), "/home/bob/.photons_apprc.yml"
+                assert (
+                    Collector().home_dir_configuration_location() == "/home/bob/.photons_apprc.yml"
                 )
             finally:
                 if have_current_home:
@@ -406,10 +373,10 @@ describe TestCase, "Collector":
 
             d = D(one=D(1))
             configuration = Collector().start_configuration()
-            self.assertEqual(type(configuration), MergedOptions)
+            assert type(configuration) == MergedOptions
 
             configuration["thing"] = d
-            self.assertIs(configuration["thing"], d)
+            assert configuration["thing"] is d
 
     describe "read_file":
         it "reads it as yaml":
@@ -429,7 +396,7 @@ describe TestCase, "Collector":
                 fle.close()
 
                 read = Collector().read_file(fle.name)
-                self.assertEqual(read, {"one": 2, "two": {"three": 3}})
+                assert read == {"one": 2, "two": {"three": 3}}
 
         it "complains if it's not valid yaml":
             with hp.a_temp_file() as fle:
@@ -442,7 +409,7 @@ describe TestCase, "Collector":
                 )
                 fle.close()
 
-                with self.fuzzyAssertRaisesError(BadYaml, "Failed to read yaml", location=fle.name):
+                with assertRaises(BadYaml, "Failed to read yaml", location=fle.name):
                     print(Collector().read_file(fle.name))
 
     describe "add_configuration":
@@ -456,9 +423,9 @@ describe TestCase, "Collector":
             collect_another_source = mock.NonCallableMock(name="collect_another_source")
             Collector().add_configuration(configuration, collect_another_source, done, result, src)
 
-            self.assertEqual(configuration.storage.data[0], (Path(""), {"one": 1}, src))
+            assert configuration.storage.data[0] == (Path(""), {"one": 1}, src)
 
-            self.assertEqual(configuration["config_root"], config_root)
+            assert configuration["config_root"] == config_root
 
         it "removes config_root if it's the home dir configuration":
             home_location = "/home/bob/{0}".format(str(uuid.uuid1()))
@@ -484,11 +451,12 @@ describe TestCase, "Collector":
                 )
 
             home_dir_configuration_location.assert_called_once_with()
-            self.assertEqual(
-                configuration.storage.data[0],
-                (Path(""), {"config_root": new_config_root, "one": 1}, src),
+            assert configuration.storage.data[0] == (
+                Path(""),
+                {"config_root": new_config_root, "one": 1},
+                src,
             )
-            self.assertEqual(configuration["config_root"], new_config_root)
+            assert configuration["config_root"] == new_config_root
 
         it "sets the source in terms of the config_root":
             src_item = str(uuid.uuid1())
@@ -503,7 +471,7 @@ describe TestCase, "Collector":
             collect_another_source = mock.NonCallableMock(name="collect_another_source")
             Collector().add_configuration(configuration, collect_another_source, done, result, src)
 
-            self.assertEqual(configuration.storage.data[0], (Path(""), {"one": 1}, expected_src))
+            assert configuration.storage.data[0] == (Path(""), {"one": 1}, expected_src)
 
         it "collects other sources after adding the current result":
             src = str(uuid.uuid1())
@@ -517,8 +485,8 @@ describe TestCase, "Collector":
             expected = ["/one/two/three", "/four"]
 
             def cas(name):
-                self.assertEqual(configuration["one"], one)
-                self.assertEqual(expected.pop(0), name)
+                assert configuration["one"] == one
+                assert expected.pop(0) == name
 
             collect_another_source = mock.Mock(name="collect_another_source", side_effect=cas)
 
@@ -530,9 +498,10 @@ describe TestCase, "Collector":
                     configuration, collect_another_source, done, result, src
                 )
 
-            self.assertEqual(
-                collect_another_source.mock_calls, [mock.call("/one/two/three"), mock.call("/four")]
-            )
+            assert collect_another_source.mock_calls == [
+                mock.call("/one/two/three"),
+                mock.call("/four"),
+            ]
 
         it "complains if an extra source doesn't exist":
             src = str(uuid.uuid1())
@@ -548,7 +517,7 @@ describe TestCase, "Collector":
             exists = mock.Mock(name="exists", return_value=False)
 
             with mock.patch("os.path.exists", exists):
-                with self.fuzzyAssertRaisesError(
+                with assertRaises(
                     BadConfiguration,
                     "Specified extra file doesn't exist",
                     filename="/one/two/three",
@@ -560,7 +529,7 @@ describe TestCase, "Collector":
 
             exists.assert_called_once_with("/one/two/three")
 
-        it "can do extra files before and after current configuration":
+        it "can do extra files before and after current configuration", a_temp_dir:
             with a_temp_dir() as (d, make_file):
 
                 make_file(
@@ -656,9 +625,9 @@ describe TestCase, "Collector":
 
                 dct = collector.configuration.as_dict()
                 for key, val in expected.items():
-                    self.assertEqual(dct[key], val)
+                    assert dct[key] == val
 
-        it "complains if a filename is not a file":
+        it "complains if a filename is not a file", a_temp_dir:
             with a_temp_dir() as (d, make_file):
                 d1 = os.path.join(d, "one")
                 os.makedirs(d1)
@@ -696,15 +665,13 @@ describe TestCase, "Collector":
 
                 paths = []
 
-                self.assertEqual(len(errs), 3, errs)
+                assert len(errs) == 3, errs
                 for err in errs:
-                    self.assertIsInstance(err, BadSpecValue)
-                    self.assertEqual(
-                        err.message, "Got something that exists but isn't a file",
-                    )
+                    assert isinstance(err, BadSpecValue)
+                    assert err.message == "Got something that exists but isn't a file"
                     paths.append(err.kwargs["filename"])
 
-                self.assertEqual(sorted(paths), sorted([d1, d2, d3]))
+                assert sorted(paths) == sorted([d1, d2, d3])
 
     describe "extra_configuration_collection":
         it "registers converters for serveral things":
@@ -724,14 +691,16 @@ describe TestCase, "Collector":
             protocol_register = configuration["protocol_register"]
             reference_resolver_register = configuration["reference_resolver_register"]
 
-            self.assertEqual(type(photons_app), PhotonsApp)
+            assert type(photons_app) == PhotonsApp
 
-            self.assertEqual(list(targets.keys()), ["one"])
-            self.assertEqual(type(targets["one"]), Target)
-            self.assertEqual(
-                targets["one"].as_dict(), {"type": "special", "optional": False, "options": {1: 2}}
-            )
+            assert list(targets.keys()) == ["one"]
+            assert type(targets["one"]) == Target
+            assert targets["one"].as_dict() == {
+                "type": "special",
+                "optional": False,
+                "options": {1: 2},
+            }
 
-            self.assertEqual(type(target_register), TargetRegister)
-            self.assertEqual(type(protocol_register), ProtocolRegister)
-            self.assertEqual(type(reference_resolver_register), ReferenceResolerRegister)
+            assert type(target_register) == TargetRegister
+            assert type(protocol_register) == ProtocolRegister
+            assert type(reference_resolver_register) == ReferenceResolerRegister

@@ -1,9 +1,9 @@
 # coding: spec
 
 from photons_app.runner import run, on_done_task
-from photons_app.test_helpers import TestCase
 from photons_app import helpers as hp
 
+from delfick_project.errors_pytest import assertRaises
 from textwrap import dedent
 from unittest import mock
 import subprocess
@@ -11,6 +11,7 @@ import platform
 import asyncio
 import signal
 import socket
+import pytest
 import time
 import sys
 import os
@@ -20,7 +21,7 @@ if hasattr(asyncio, "exceptions"):
 else:
     cancelled_error_name = "concurrent.futures._base.CancelledError"
 
-describe TestCase, "run":
+describe "run":
 
     def assertRunnerBehaviour(
         self, script, expected_finally_block, expected_stdout, expected_stderr, sig=signal.SIGINT
@@ -61,15 +62,15 @@ describe TestCase, "run":
                 def assertOutput(out, regex):
                     out = out.strip()
                     regex = regex.strip()
-                    self.assertEqual(len(out.split("\n")), len(regex.split("\n")))
-                    self.assertRegex(out, f"(?m){regex}")
+                    assert len(out.split("\n")) == len(regex.split("\n"))
+                    pytest.helpers.assert_regex(f"(?m){regex}", out)
 
                 assertOutput(got_stdout, expected_stdout)
                 assertOutput(got_stderr, expected_stderr)
 
                 with open(out.name) as o:
                     got = o.read()
-                self.assertEqual(got.strip(), expected_finally_block.strip())
+                assert got.strip() == expected_finally_block.strip()
 
     it "ensures with statements get cleaned up on SIGINT":
         script = dedent(
@@ -320,7 +321,7 @@ describe TestCase, "run":
         target_register = mock.Mock(name="target_register")
 
         async def cleanup(tr):
-            self.assertEqual(tr, target_register.used_targets)
+            assert tr == target_register.used_targets
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
@@ -338,7 +339,7 @@ describe TestCase, "run":
         photons_app.cleanup.side_effect = cleanup
 
         run(doit(), photons_app, target_register)
-        self.assertEqual(info, {"cleaned": True, "ran": True})
+        assert info == {"cleaned": True, "ran": True}
 
     it "cleans up even if runner raise an exception":
         info = {"cleaned": False, "ran": False}
@@ -349,7 +350,7 @@ describe TestCase, "run":
         target_register = mock.Mock(name="target_register")
 
         async def cleanup(tr):
-            self.assertEqual(tr, target_register.used_targets)
+            assert tr == target_register.used_targets
             await asyncio.sleep(0.01)
             info["cleaned"] = True
 
@@ -367,10 +368,10 @@ describe TestCase, "run":
         )
         photons_app.cleanup.side_effect = cleanup
 
-        with self.fuzzyAssertRaisesError(ValueError, "Nope"):
+        with assertRaises(ValueError, "Nope"):
             run(doit(), photons_app, target_register)
 
-        self.assertEqual(info, {"cleaned": True, "ran": True})
+        assert info == {"cleaned": True, "ran": True}
 
     describe "on_done_task":
         it "sets exception on final future if one is risen":
@@ -381,7 +382,7 @@ describe TestCase, "run":
             fut.set_exception(error)
 
             on_done_task(final_future, fut)
-            self.assertEqual(final_future.exception(), error)
+            assert final_future.exception() == error
 
         it "sets exception on final future if one is risen unless it's already cancelled":
             final_future = asyncio.Future()
@@ -412,7 +413,7 @@ describe TestCase, "run":
             fut.set_result(None)
 
             on_done_task(final_future, fut)
-            self.assertEqual(final_future.result(), None)
+            assert final_future.result() == None
 
         it "doesn't fail if the final_future already has an exception when the task finishes":
             final_future = asyncio.Future()
@@ -423,7 +424,7 @@ describe TestCase, "run":
             fut.set_result(None)
 
             on_done_task(final_future, fut)
-            self.assertEqual(final_future.exception(), error)
+            assert final_future.exception() == error
 
         it "doesn't fail if the final_future already has an exception when the task has an error":
             final_future = asyncio.Future()
@@ -435,4 +436,4 @@ describe TestCase, "run":
             fut.set_exception(error2)
 
             on_done_task(final_future, fut)
-            self.assertEqual(final_future.exception(), error)
+            assert final_future.exception() == error

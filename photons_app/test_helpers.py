@@ -294,6 +294,8 @@ def run_pytest():
                     "-W",
                     "ignore:Using or importing the ABCs:DeprecationWarning",
                     "--log-level=INFO",
+                    "-p",
+                    "helpers_namespace",
                 ]
             )
             yield

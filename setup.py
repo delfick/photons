@@ -51,7 +51,8 @@ setup(
         [ "noseOfYeti==1.9.1"
         , "asynctest==0.12.2"
         , "pytest==5.3.1"
-        , "alt-pytest-asyncio==0.5.1"
+        , "alt-pytest-asyncio==0.5.2"
+        , "pytest-helpers-namespace==2019.1.8"
         ]
       }
 

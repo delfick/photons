@@ -9,31 +9,37 @@ from photons_app.registers import (
 )
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import TargetNotFound, ResolverNotFound
-from photons_app.test_helpers import TestCase
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import dictobj, sb, Meta
 from unittest import mock
+import pytest
 import pickle
 
-describe TestCase, "Target":
+
+@pytest.fixture()
+def collector():
+    return mock.Mock(name="collector")
+
+
+describe "Target":
     it "takes in things":
         target = Target.FieldSpec().empty_normalise(type="thing", optional=True, options={"one": 2})
-        self.assertEqual(target.type, "thing")
-        self.assertEqual(target.optional, True)
-        self.assertEqual(target.options, {"one": 2})
+        assert target.type == "thing"
+        assert target.optional == True
+        assert target.options == {"one": 2}
 
     it "has defaults":
         target = Target.FieldSpec().empty_normalise(type="thing")
-        self.assertEqual(target.type, "thing")
-        self.assertEqual(target.optional, False)
-        self.assertEqual(target.options, {})
+        assert target.type == "thing"
+        assert target.optional == False
+        assert target.options == {}
 
-describe TestCase, "MessageRegister":
+describe "MessageRegister":
     it "has message_classes list":
         register = MessagesRegister()
-        self.assertEqual(register.message_classes, [])
+        assert register.message_classes == []
 
     it "can add classes":
         kls = mock.Mock(name="kls")
@@ -41,31 +47,31 @@ describe TestCase, "MessageRegister":
 
         register = MessagesRegister()
         register.add(kls)
-        self.assertEqual(register.message_classes, [kls])
+        assert register.message_classes == [kls]
 
         register.add(kls2)
-        self.assertEqual(register.message_classes, [kls, kls2])
+        assert register.message_classes == [kls, kls2]
 
     it "can iter classes":
         kls = mock.Mock(name="kls")
         kls2 = mock.Mock(name="kls2")
 
         register = MessagesRegister()
-        self.assertEqual(list(register), [])
+        assert list(register) == []
 
         register.add(kls)
-        self.assertEqual(list(register), [kls])
+        assert list(register) == [kls]
 
         register.add(kls2)
-        self.assertEqual(list(register), [kls, kls2])
+        assert list(register) == [kls, kls2]
 
-describe TestCase, "ProtocolRegister":
+describe "ProtocolRegister":
     it "can be formatted":
-        self.assertEqual(ProtocolRegister._merged_options_formattable, True)
+        assert ProtocolRegister._merged_options_formattable == True
 
     it "has a dictionary of protocol_classes":
         register = ProtocolRegister()
-        self.assertEqual(register.protocol_classes, {})
+        assert register.protocol_classes == {}
 
     it "can add protocol klses":
         protocol = mock.Mock(name="protocol")
@@ -73,7 +79,7 @@ describe TestCase, "ProtocolRegister":
         register = ProtocolRegister()
 
         register.add(protocol, kls)
-        self.assertEqual(register.protocol_classes, {protocol: (kls, mock.ANY)})
+        assert register.protocol_classes == {protocol: (kls, mock.ANY)}
         assert isinstance(register.protocol_classes[protocol][1], MessagesRegister)
 
     it "can iter protocols":
@@ -84,10 +90,10 @@ describe TestCase, "ProtocolRegister":
         register = ProtocolRegister()
 
         register.add(protocol, kls)
-        self.assertEqual(list(register), [protocol])
+        assert list(register) == [protocol]
 
         register.add(protocol2, kls)
-        self.assertEqual(list(register), [protocol, protocol2])
+        assert list(register) == [protocol, protocol2]
 
     it "has getitem and get synatx into protocol_classes":
         register = ProtocolRegister()
@@ -98,14 +104,14 @@ describe TestCase, "ProtocolRegister":
         register = ProtocolRegister()
 
         register.add(protocol, kls)
-        self.assertEqual(register[protocol], register.protocol_classes[protocol])
+        assert register[protocol] == register.protocol_classes[protocol]
 
-        self.assertEqual(register.get(protocol), register.protocol_classes[protocol])
+        assert register.get(protocol) == register.protocol_classes[protocol]
 
-        self.assertEqual(register.get(protocol2), None)
+        assert register.get(protocol2) == None
 
         dflt = mock.Mock(name="dflt")
-        self.assertIs(register.get(protocol2, dflt), dflt)
+        assert register.get(protocol2, dflt) is dflt
 
     it "can get message_register for a protocol":
         protocol = mock.Mock(name="protocol")
@@ -113,7 +119,7 @@ describe TestCase, "ProtocolRegister":
         register = ProtocolRegister()
 
         register.add(protocol, kls)
-        self.assertIs(register.message_register(protocol), register.protocol_classes[protocol][1])
+        assert register.message_register(protocol) is register.protocol_classes[protocol][1]
 
     it "can be pickled (for the docs)":
         register = ProtocolRegister()
@@ -121,33 +127,30 @@ describe TestCase, "ProtocolRegister":
         unpickled = pickle.loads(pickled)
         assert isinstance(unpickled, ProtocolRegister)
 
-describe TestCase, "TargetRegister":
-    before_each:
-        self.collector = mock.Mock(name="collector")
-
+describe "TargetRegister":
     it "can be formatted":
-        self.assertEqual(TargetRegister._merged_options_formattable, True)
+        assert TargetRegister._merged_options_formattable == True
 
-    it "has some things on it":
-        register = TargetRegister(self.collector)
-        self.assertIs(register.collector, self.collector)
-        self.assertEqual(register.types, {})
-        self.assertEqual(register.targets, {})
+    it "has some things on it", collector:
+        register = TargetRegister(collector)
+        assert register.collector is collector
+        assert register.types == {}
+        assert register.targets == {}
 
-    it "can get target_values":
+    it "can get target_values", collector:
         target1 = mock.Mock(name="target1")
         maker1 = mock.Mock(name="maker1", return_value=("type1", target1))
 
         target2 = mock.Mock(name="target2")
         maker2 = mock.Mock(name="maker2", return_value=("type2", target2))
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
         register.targets["target1"] = maker1
         register.targets["target2"] = maker2
 
-        self.assertEqual(register.target_values, [target1, target2])
+        assert register.target_values == [target1, target2]
 
-    it "can get used targets":
+    it "can get used targets", collector:
         meta = Meta({}, []).at("targets")
         targets = PhotonsAppSpec().targets_spec.normalise(
             meta,
@@ -160,41 +163,41 @@ describe TestCase, "TargetRegister":
         class T(dictobj.Spec):
             one = dictobj.Field(sb.integer_spec)
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
         register.register_type("example", T.FieldSpec())
         for name, options in targets.items():
             register.add_target(name, options)
 
-        self.assertEqual(register.used_targets, [])
+        assert register.used_targets == []
 
         first = register.resolve("target1")
-        self.assertEqual(first.one, 1)
-        self.assertEqual(register.used_targets, [first])
+        assert first.one == 1
+        assert register.used_targets == [first]
 
         second = register.resolve("target2")
-        self.assertEqual(second.one, 2)
-        self.assertEqual(register.used_targets, [first, second])
+        assert second.one == 2
+        assert register.used_targets == [first, second]
 
-    it "can get type for a target name":
+    it "can get type for a target name", collector:
         target1 = mock.Mock(name="target1")
         maker1 = mock.Mock(name="maker1", return_value=("type1", target1))
 
         target2 = mock.Mock(name="target2")
         maker2 = mock.Mock(name="maker2", return_value=("type2", target2))
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
         register.targets["target1"] = maker1
         register.targets["target2"] = maker2
 
-        self.assertEqual(register.type_for("target1"), "type1")
-        self.assertEqual(register.type_for("target2"), "type2")
-        self.assertEqual(register.type_for("target3"), None)
+        assert register.type_for("target1") == "type1"
+        assert register.type_for("target2") == "type2"
+        assert register.type_for("target3") == None
 
-    it "says the type for sb.NotSpecified is None":
-        register = TargetRegister(self.collector)
-        self.assertEqual(register.type_for(sb.NotSpecified), None)
+    it "says the type for sb.NotSpecified is None", collector:
+        register = TargetRegister(collector)
+        assert register.type_for(sb.NotSpecified) == None
 
-    it "can get description of a target":
+    it "can get description of a target", collector:
         desc = mock.Mock(name="desc")
         target1 = mock.Mock(name="target1", description=desc)
         maker1 = mock.Mock(name="maker1", return_value=("type1", target1))
@@ -202,28 +205,28 @@ describe TestCase, "TargetRegister":
         target2 = mock.Mock(name="target2", spec=[])
         maker2 = mock.Mock(name="maker2", return_value=("type2", target2))
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
         register.targets["target1"] = maker1
         register.targets["target2"] = maker2
 
-        self.assertIs(register.desc_for("target1"), desc)
-        self.assertEqual(register.desc_for("target2"), "")
-        self.assertIs(register.desc_for(sb.NotSpecified), None)
+        assert register.desc_for("target1") is desc
+        assert register.desc_for("target2") == ""
+        assert register.desc_for(sb.NotSpecified) is None
 
-    it "can register a type":
+    it "can register a type", collector:
         name = mock.Mock(name="mock")
         target = mock.Mock(name="target")
         target2 = mock.Mock(name="target")
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
 
         register.register_type(name, target)
-        self.assertEqual(register.types, {name: target})
+        assert register.types == {name: target}
 
         # And we can override
         register.register_type(name, target2)
-        self.assertEqual(register.types, {name: target2})
+        assert register.types == {name: target2}
 
-    it "can resolve a name":
+    it "can resolve a name", collector:
         desc = mock.Mock(name="desc")
         target1 = mock.Mock(name="target1", description=desc)
         maker1 = mock.Mock(name="maker1", return_value=("type1", target1))
@@ -231,22 +234,20 @@ describe TestCase, "TargetRegister":
         target2 = mock.Mock(name="target2", spec=[])
         maker2 = mock.Mock(name="maker2", return_value=("type2", target2))
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
         register.targets["target1"] = maker1
         register.targets["target2"] = maker2
 
-        self.assertIs(register.resolve("target1"), target1)
-        self.assertIs(register.resolve("target2"), target2)
+        assert register.resolve("target1") is target1
+        assert register.resolve("target2") is target2
 
-        with self.fuzzyAssertRaisesError(
-            TargetNotFound, name="target3", available=["target1", "target2"]
-        ):
+        with assertRaises(TargetNotFound, name="target3", available=["target1", "target2"]):
             register.resolve("target3")
 
-    it "can add a dictionary of targets":
+    it "can add a dictionary of targets", collector:
         add_target = mock.Mock(name="add_target")
 
-        register = TargetRegister(self.collector)
+        register = TargetRegister(collector)
 
         target1 = mock.Mock(name="target1")
         target2 = mock.Mock(name="target2")
@@ -254,57 +255,66 @@ describe TestCase, "TargetRegister":
         with mock.patch.object(register, "add_target", add_target):
             register.add_targets({"one": target1, "two": target2})
 
-        self.assertEqual(
-            add_target.mock_calls, [mock.call("one", target1), mock.call("two", target2)]
-        )
+        assert add_target.mock_calls == [mock.call("one", target1), mock.call("two", target2)]
 
     describe "adding a target":
-        before_each:
-            self.register = TargetRegister(self.collector)
-            self.configuration = MergedOptions()
-            self.collector.configuration = self.configuration
 
-        it "complains if the type doesn't exist":
+        @pytest.fixture()
+        def configuration(self):
+            return MergedOptions()
+
+        @pytest.fixture()
+        def collector(self, collector, configuration):
+            collector.configuration = configuration
+            return collector
+
+        @pytest.fixture()
+        def register(self, collector):
+            return TargetRegister(collector)
+
+        it "complains if the type doesn't exist", register:
             target = Target.FieldSpec().empty_normalise(type="blah")
-            with self.fuzzyAssertRaisesError(
+            with assertRaises(
                 TargetNotFound,
                 "Unknown type specified for target",
                 name="target1",
                 specified="blah",
             ):
-                self.register.add_target("target1", target)
+                register.add_target("target1", target)
 
-        it "does not complain if it can't find type and target is optional":
+        it "does not complain if it can't find type and target is optional", register:
             target = Target.FieldSpec().empty_normalise(type="blah", optional=True)
-            self.register.add_target("target1", target)
-            self.assertEqual(self.register.targets, {})
+            register.add_target("target1", target)
+            assert register.targets == {}
 
-        it "returns a function that creates our target":
+        it "returns a function that creates our target", register, configuration:
             value = mock.Mock(name="value")
             spec = mock.Mock(name="spec")
             spec.normalise.return_value = value
 
-            self.register.register_type("blah", spec)
-            self.register.add_target(
+            register.register_type("blah", spec)
+            register.add_target(
                 "thing", Target.FieldSpec().empty_normalise(type="blah", options={"one": 2})
             )
 
-            self.assertEqual(len(spec.normalise.mock_calls), 0)
-            self.assertEqual(self.register.resolve("thing"), value)
+            assert len(spec.normalise.mock_calls) == 0
+            assert register.resolve("thing") == value
             spec.normalise.assert_called_once_with(
-                Meta(self.configuration, []).at("targets").at("thing").at("options"), {"one": 2}
+                Meta(configuration, []).at("targets").at("thing").at("options"), {"one": 2}
             )
 
             # and it memoizes
-            self.assertEqual(self.register.targets["thing"](), ("blah", value))
-            self.assertEqual(len(spec.normalise.mock_calls), 1)
+            assert register.targets["thing"]() == ("blah", value)
+            assert len(spec.normalise.mock_calls) == 1
 
-describe TestCase, "ReferenceResolerRegister":
-    before_each:
-        self.register = ReferenceResolerRegister()
+describe "ReferenceResolerRegister":
+
+    @pytest.fixture()
+    def register(self):
+        return ReferenceResolerRegister()
 
     describe "initialization":
-        it "has file resolver by default":
+        it "has file resolver by default", register:
             filename = mock.Mock(name="filename")
             resolver = mock.Mock(name="resolver")
             FakeResolveReferencesFromFile = mock.Mock(
@@ -314,33 +324,33 @@ describe TestCase, "ReferenceResolerRegister":
             with mock.patch(
                 "photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile
             ):
-                r = self.register.resolve("file", filename, mock.Mock(name="target"))
+                r = register.resolve("file", filename, mock.Mock(name="target"))
 
-            self.assertIs(r, resolver)
+            assert r is resolver
             FakeResolveReferencesFromFile.assert_called_once_with(filename)
 
     describe "adding a resolver":
-        it "adds and overrides":
+        it "adds and overrides", register:
             typ = mock.Mock(name="typ")
             resolver = mock.Mock(name="resolver")
-            self.register.add(typ, resolver)
-            self.assertIs(self.register.resolvers[typ], resolver)
+            register.add(typ, resolver)
+            assert register.resolvers[typ] is resolver
 
             resolver2 = mock.Mock(name="resolver2")
-            self.register.add(typ, resolver2)
-            self.assertIs(self.register.resolvers[typ], resolver2)
+            register.add(typ, resolver2)
+            assert register.resolvers[typ] is resolver2
 
     describe "resolving":
-        it "complains if the typ isn't registered":
+        it "complains if the typ isn't registered", register:
             typ = mock.Mock(name="typ")
-            with self.fuzzyAssertRaisesError(ResolverNotFound, wanted=typ):
-                self.register.resolve(typ, "blah", mock.Mock(name="target"))
+            with assertRaises(ResolverNotFound, wanted=typ):
+                register.resolve(typ, "blah", mock.Mock(name="target"))
 
-        it "uses registered resolver":
+        it "uses registered resolver", register:
             ret = mock.Mock(name="ret")
             typ = mock.Mock(name="typ")
             target = mock.Mock(name="target")
             resolver = mock.Mock(name="resolver", return_value=ret)
-            self.register.add(typ, resolver)
-            self.assertIs(self.register.resolve(typ, "blah", target), ret)
+            register.add(typ, resolver)
+            assert register.resolve(typ, "blah", target) is ret
             resolver.assert_called_once_with("blah", target)

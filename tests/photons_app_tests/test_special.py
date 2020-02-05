@@ -7,17 +7,17 @@ from photons_app.special import (
     ResolveReferencesFromFile,
 )
 from photons_app.errors import PhotonsAppError, DevicesNotFound
-from photons_app.test_helpers import AsyncTestCase
 from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asynctest
 import binascii
 import asyncio
+import pytest
 import os
 
-describe AsyncTestCase, "SpecialReference":
+describe "SpecialReference":
     async it "gives itself a finding and found future":
         ref = SpecialReference()
         assert isinstance(ref.finding, hp.ResettableFuture)
@@ -36,12 +36,17 @@ describe AsyncTestCase, "SpecialReference":
         assert not ref.found.done()
 
     describe "find":
-        async before_each:
-            self.afr = mock.Mock(name="afr")
-            self.broadcast = mock.Mock(name="broadcast")
-            self.find_timeout = mock.Mock(name="find_timeout")
 
-        async it "transfers cancellation from find_serials":
+        @pytest.fixture()
+        def V(self):
+            class V:
+                afr = mock.Mock(name="afr")
+                broadcast = mock.Mock(name="broadcast")
+                find_timeout = mock.Mock(name="find_timeout")
+
+            return V()
+
+        async it "transfers cancellation from find_serials", V:
 
             class Finder(SpecialReference):
                 async def find_serials(s, afr, *, timeout, broadcast=True):
@@ -50,10 +55,10 @@ describe AsyncTestCase, "SpecialReference":
                     return await f
 
             ref = Finder()
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                await ref.find(self.afr, timeout=self.find_timeout)
+            with assertRaises(asyncio.CancelledError):
+                await ref.find(V.afr, timeout=V.find_timeout)
 
-        async it "transfers exceptions from find_serials":
+        async it "transfers exceptions from find_serials", V:
 
             class Finder(SpecialReference):
                 async def find_serials(s, afr, *, timeout, broadcast=True):
@@ -62,10 +67,10 @@ describe AsyncTestCase, "SpecialReference":
                     return await f
 
             ref = Finder()
-            with self.fuzzyAssertRaisesError(PhotonsAppError, "FIND SERIALS BAD"):
-                await ref.find(self.afr, timeout=self.find_timeout)
+            with assertRaises(PhotonsAppError, "FIND SERIALS BAD"):
+                await ref.find(V.afr, timeout=V.find_timeout)
 
-        async it "transfers result from find_serials":
+        async it "transfers result from find_serials", V:
             serial1 = "d073d5000001"
             serial2 = "d073d5000002"
 
@@ -80,11 +85,11 @@ describe AsyncTestCase, "SpecialReference":
                     return {target1: services1, target2: services2}
 
             ref = Finder()
-            found, serials = await ref.find(self.afr, timeout=self.find_timeout)
-            self.assertEqual(found, {target1: services1, target2: services2})
-            self.assertEqual(serials, [serial1, serial2])
+            found, serials = await ref.find(V.afr, timeout=V.find_timeout)
+            assert found == {target1: services1, target2: services2}
+            assert serials == [serial1, serial2]
 
-        async it "only calls find_serials once":
+        async it "only calls find_serials once", V:
             serial = "d073d5000001"
             target = binascii.unhexlify(serial)
             services = mock.Mock(name="services")
@@ -99,27 +104,27 @@ describe AsyncTestCase, "SpecialReference":
 
             ref = Finder()
             futs = []
-            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
-            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
             await asyncio.sleep(0.05)
-            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
             await asyncio.sleep(0.2)
-            futs.append(hp.async_as_background(ref.find(self.afr, timeout=self.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
 
             for t in futs:
                 found, serials = await t
-                self.assertEqual(found, {target: services})
-                self.assertEqual(serials, [serial])
+                assert found == {target: services}
+                assert serials == [serial]
 
-            self.assertEqual(called, [1])
+            assert called == [1]
 
             ref.reset()
-            found, serials = await ref.find(self.afr, timeout=self.find_timeout)
-            self.assertEqual(found, {target: services})
-            self.assertEqual(serials, [serial])
-            self.assertEqual(called, [1, 1])
+            found, serials = await ref.find(V.afr, timeout=V.find_timeout)
+            assert found == {target: services}
+            assert serials == [serial]
+            assert called == [1, 1]
 
-describe AsyncTestCase, "FoundSerials":
+describe "FoundSerials":
     async it "calls afr.find_devices with broadcast":
         found = mock.Mock(name="found")
         address = mock.Mock(name="address")
@@ -131,23 +136,33 @@ describe AsyncTestCase, "FoundSerials":
         find_timeout = mock.Mock(name="find_timeout")
 
         ref = FoundSerials()
-        res = await self.wait_for(ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout))
+        res = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
-        self.assertEqual(res, found)
+        assert res == found
         afr.find_devices.assert_called_once_with(
             broadcast=broadcast, raise_on_none=True, timeout=find_timeout
         )
 
-describe AsyncTestCase, "HardCodedSerials":
-    async before_each:
-        self.serial1 = "d073d5000001"
-        self.serial2 = "d073d5000002"
+describe "HardCodedSerials":
 
-        self.target1 = binascii.unhexlify(self.serial1)[:6]
-        self.target2 = binascii.unhexlify(self.serial2)[:6]
+    @pytest.fixture()
+    def V(self):
+        class V:
+            info1 = mock.Mock(name="info1")
+            info2 = mock.Mock(name="info2")
 
-        self.info1 = mock.Mock(name="info1")
-        self.info2 = mock.Mock(name="info2")
+            serial1 = "d073d5000001"
+            serial2 = "d073d5000002"
+
+            @hp.memoized_property
+            def target1(s):
+                return binascii.unhexlify(s.serial1)[:6]
+
+            @hp.memoized_property
+            def target2(s):
+                return binascii.unhexlify(s.serial2)[:6]
+
+        return V()
 
     async it "takes in a list of serials":
         serials = "d073d5000001,d073d500000200"
@@ -155,16 +170,16 @@ describe AsyncTestCase, "HardCodedSerials":
 
         for s in (serials, serials.split(",")):
             ref = HardCodedSerials(s)
-            self.assertEqual(ref.targets, wanted)
-            self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
+            assert ref.targets == wanted
+            assert ref.serials == ["d073d5000001", "d073d5000002"]
 
     async it "can take in list of unhexlified serials":
         serials = [binascii.unhexlify("d073d500000100"), binascii.unhexlify("d073d5000002")]
         wanted = [binascii.unhexlify(ref)[:6] for ref in ["d073d5000001", "d073d5000002"]]
 
         ref = HardCodedSerials(serials)
-        self.assertEqual(ref.targets, wanted)
-        self.assertEqual(ref.serials, ["d073d5000001", "d073d5000002"])
+        assert ref.targets == wanted
+        assert ref.serials == ["d073d5000001", "d073d5000002"]
 
     describe "find_serials":
 
@@ -180,70 +195,70 @@ describe AsyncTestCase, "HardCodedSerials":
             ref = HardCodedSerials(serials)
             f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
-            self.assertEqual(f, expected)
+            assert f == expected
 
             afr.find_specific_serials.assert_called_once_with(
                 serials, broadcast=broadcast, raise_on_none=False, timeout=find_timeout
             )
 
-            self.assertEqual(ref.missing(f), missing)
+            assert ref.missing(f) == missing
 
-        async it "uses find_specific_serials":
-            found = {self.target1: self.info1, self.target2: self.info2}
-            serials = [self.serial1, self.serial2]
-            expected = {self.target1: self.info1, self.target2: self.info2}
+        async it "uses find_specific_serials", V:
+            found = {V.target1: V.info1, V.target2: V.info2}
+            serials = [V.serial1, V.serial2]
+            expected = {V.target1: V.info1, V.target2: V.info2}
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "only returns from the serials it cares about":
-            found = {self.target1: self.info1, self.target2: self.info2}
-            serials = [self.serial1]
-            expected = {self.target1: self.info1}
+        async it "only returns from the serials it cares about", V:
+            found = {V.target1: V.info1, V.target2: V.info2}
+            serials = [V.serial1]
+            expected = {V.target1: V.info1}
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "doesn't call to find_specific_serials if the serials are already on the afr":
+        async it "doesn't call to find_specific_serials if the serials are already on the afr", V:
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
             afr = mock.Mock(name="afr")
-            afr.found = {self.target1: self.info1, self.target2: self.info2}
+            afr.found = {V.target1: V.info1, V.target2: V.info2}
             afr.find_specific_serials = asynctest.mock.CoroutineMock(
                 name="find_specific_serials", side_effect=AssertionError("Shouldn't be called")
             )
 
-            ref = HardCodedSerials([self.serial1])
+            ref = HardCodedSerials([V.serial1])
             f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
 
-            self.assertEqual(f, {self.target1: self.info1})
-            self.assertEqual(ref.missing(f), [])
+            assert f == {V.target1: V.info1}
+            assert ref.missing(f) == []
 
-        async it "doesn't care if no found":
+        async it "doesn't care if no found", V:
             found = {}
-            serials = [self.serial1, self.serial2]
+            serials = [V.serial1, V.serial2]
             expected = {}
-            missing = [self.serial1, self.serial2]
+            missing = [V.serial1, V.serial2]
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "can see partial missing":
-            found = {self.target2: self.info2}
-            serials = [self.serial1, self.serial2]
-            expected = {self.target2: self.info2}
-            missing = [self.serial1]
+        async it "can see partial missing", V:
+            found = {V.target2: V.info2}
+            serials = [V.serial1, V.serial2]
+            expected = {V.target2: V.info2}
+            missing = [V.serial1]
             await self.assertFindSerials(found, serials, expected, missing)
 
-describe AsyncTestCase, "ResolveReferencesFromFile":
+describe "ResolveReferencesFromFile":
     async it "complains if filename can't be read or is empty":
         with hp.a_temp_file() as fle:
             fle.close()
             os.remove(fle.name)
 
-            with self.fuzzyAssertRaisesError(PhotonsAppError, "Failed to read serials from a file"):
+            with assertRaises(PhotonsAppError, "Failed to read serials from a file"):
                 ResolveReferencesFromFile(fle.name)
 
         with hp.a_temp_file() as fle:
             fle.close()
-            with self.fuzzyAssertRaisesError(PhotonsAppError, "Found no serials in file"):
+            with assertRaises(PhotonsAppError, "Found no serials in file"):
                 ResolveReferencesFromFile(fle.name)
 
     async it "creates and uses a HardCodedSerials":
@@ -261,20 +276,20 @@ describe AsyncTestCase, "ResolveReferencesFromFile":
             with mock.patch("photons_app.special.HardCodedSerials", FakeHardCodedSerials):
                 r = ResolveReferencesFromFile(fle.name)
 
-        self.assertEqual(r.serials, [serial1, serial2])
-        self.assertEqual(r.reference, resolver)
+        assert r.serials == [serial1, serial2]
+        assert r.reference == resolver
         FakeHardCodedSerials.assert_called_once_with([serial1, serial2])
 
-        self.assertEqual(len(resolver.reset.mock_calls), 0)
+        assert len(resolver.reset.mock_calls) == 0
         r.reset()
         resolver.reset.assert_called_once_with()
 
         afr = mock.Mock(name="afr")
         broadcast = mock.Mock(name="broadcast")
         find_timeout = mock.Mock(name="find_timeout")
-        self.assertEqual(len(resolver.find.mock_calls), 0)
+        assert len(resolver.find.mock_calls) == 0
 
         res = mock.Mock(name="res")
         resolver.find.return_value = res
-        self.assertIs(await self.wait_for(r.find(afr, timeout=find_timeout)), res)
+        assert (await r.find(afr, timeout=find_timeout)) is res
         resolver.find.assert_called_once_with(afr, broadcast=True, timeout=find_timeout)

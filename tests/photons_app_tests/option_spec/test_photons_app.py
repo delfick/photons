@@ -2,24 +2,20 @@
 
 from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.test_helpers import TestCase
 from photons_app.errors import BadOption
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta
 from unittest import mock
 import asynctest
 import platform
 import asyncio
 
-describe TestCase, "PhotonsApp":
-    before_each:
-        self.meta = Meta({}, []).at("photons_app")
+describe "PhotonsApp":
 
     def make_photons_app(self, **kwargs):
-        return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(
-            self.meta, kwargs
-        )
+        meta = Meta.empty().at("photons_app")
+        return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, kwargs)
 
     describe "loop":
         it "gets a loop":
@@ -37,15 +33,15 @@ describe TestCase, "PhotonsApp":
         it "belongs to the loop":
             photons_app = self.make_photons_app()
             final_future = photons_app.final_future
-            self.assertIs(final_future._loop, photons_app.loop)
+            assert final_future._loop is photons_app.loop
 
     describe "extra_as_json":
         it "converts extra into json dictionary":
             photons_app = self.make_photons_app(extra='{"one": 2, "two": "three"}')
-            self.assertEqual(photons_app.extra_as_json, {"one": 2, "two": "three"})
+            assert photons_app.extra_as_json == {"one": 2, "two": "three"}
 
         it "complains if extra is not valid json":
-            with self.fuzzyAssertRaisesError(BadOption, "The options after -- wasn't valid json"):
+            with assertRaises(BadOption, "The options after -- wasn't valid json"):
                 self.make_photons_app(extra="{").extra_as_json
 
     describe "cleanup":
@@ -80,6 +76,6 @@ describe TestCase, "PhotonsApp":
 
             targets = [target1, target2, target3]
 
-            self.assertEqual(called, [])
+            assert called == []
             asyncio.new_event_loop().run_until_complete(photons_app.cleanup(targets))
-            self.assertEqual(called, [1, 2, 3, 4, 5])
+            assert called == [1, 2, 3, 4, 5]

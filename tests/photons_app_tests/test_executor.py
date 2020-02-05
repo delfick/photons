@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_app.registers import TargetRegister
-from photons_app.test_helpers import TestCase
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 from photons_app.executor import App
@@ -12,7 +11,7 @@ from textwrap import dedent
 from unittest import mock
 import uuid
 
-describe TestCase, "App":
+describe "App":
     describe "setup_collector":
 
         def from_config(self, config):
@@ -56,7 +55,7 @@ describe TestCase, "App":
             )
 
             result = collector.configuration["photons_app"].task_specifier()
-            self.assertEqual(result, ("blah", "yeap"))
+            assert result == ("blah", "yeap")
 
         it "doesn't set target if task_specifier doesn't specify target":
             location, args_dict, logging_handler, collector = self.from_config(
@@ -69,7 +68,7 @@ describe TestCase, "App":
             )
 
             result = collector.configuration["photons_app"].task_specifier()
-            self.assertEqual(result, (sb.NotSpecified, "blah"))
+            assert result == (sb.NotSpecified, "blah")
 
         it "sets up logging theme if term_colors is specified":
             setup_logging_theme = mock.Mock(name="setup_logging_theme")
@@ -117,14 +116,14 @@ describe TestCase, "App":
 
         it "adds --silent to the argv if there are no options":
             used_args = self.run_with([])
-            self.assertEqual(used_args, ["--silent"])
+            assert used_args == ["--silent"]
 
         it "adds --silent if the task is list_tasks or help":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
                 used_args = self.run_with([attempt])
-                self.assertEqual(used_args, [attempt, "--silent"])
+                assert used_args == [attempt, "--silent"]
 
         it "adds --silent before any --":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
                 used_args = self.run_with([attempt, "--", "other"])
-                self.assertEqual(used_args, [attempt, "--silent", "--", "other"])
+                assert used_args == [attempt, "--silent", "--", "other"]
