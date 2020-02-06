@@ -2,24 +2,23 @@
 
 from photons_colour import Effects, Waveform, NoSuchEffect
 
-from photons_app.test_helpers import TestCase
-
 from photons_messages import LightMessages
 
+from delfick_project.errors_pytest import assertRaises
 import random
 
-describe TestCase, "Effects":
+describe "Effects":
     it "supports a None effect":
-        self.assertEqual(Effects.make(None), {})
+        assert Effects.make(None) == {}
 
     it "complains if the effect doesn't exist":
         assert not hasattr(Effects, "blah")
-        with self.fuzzyAssertRaisesError(NoSuchEffect, effect="blah"):
+        with assertRaises(NoSuchEffect, effect="blah"):
             Effects.make("blah")
 
     it "complains if the effect does exist but isn't an effect":
         assert hasattr(Effects, "__dict__")
-        with self.fuzzyAssertRaisesError(NoSuchEffect, effect="__dict__"):
+        with assertRaises(NoSuchEffect, effect="__dict__"):
             Effects.make("__dict__")
 
     it "has built in effects":
@@ -29,7 +28,7 @@ describe TestCase, "Effects":
             assert hasattr(Effects, effect)
             assert getattr(Effects, effect)._is_effect
             options = Effects.make(effect)
-            self.assertEqual(type(options["waveform"]), Waveform)
+            assert type(options["waveform"]) == Waveform
             for k in options:
                 assert k in LightMessages.SetWaveformOptional.Meta.all_names
 
@@ -43,4 +42,4 @@ describe TestCase, "Effects":
                 final["skew_ratio"] = 1 - overrides["duty_cycle"]
 
             options2 = Effects.make(effect, **overrides)
-            self.assertEqual(options2, {"waveform": options["waveform"], **final})
+            assert options2 == {"waveform": options["waveform"], **final}

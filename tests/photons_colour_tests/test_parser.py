@@ -2,16 +2,17 @@
 
 from photons_colour import split_color_string, Parser, InvalidColor, ValueOutOfRange
 
-from photons_app.test_helpers import TestCase, assert_payloads_equals
+from photons_app.test_helpers import assert_payloads_equals
 
 from photons_messages import LightMessages, Waveform
 
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 
-describe TestCase, "split_color_string":
+describe "split_color_string":
     it "returns empty list if not color_string":
         for thing in (None, ""):
-            self.assertEqual(split_color_string(thing), [])
+            assert split_color_string(thing) == []
 
     it "splits by whitespace":
         cases = [
@@ -24,9 +25,9 @@ describe TestCase, "split_color_string":
         ]
 
         for thing, expected in cases:
-            self.assertEqual(split_color_string(thing), expected)
+            assert split_color_string(thing) == expected
 
-describe TestCase, "Parser":
+describe "Parser":
     it "has named_colors":
         for color, info in Parser.named_colors.items():
             h, s, b, k = info
@@ -38,7 +39,7 @@ describe TestCase, "Parser":
     describe "getting hsbk":
 
         def assertCorrect(self, components, h, s, b, k):
-            self.assertEqual(Parser.hsbk(components), (h, s, b, k))
+            assert Parser.hsbk(components) == (h, s, b, k)
 
             ho = mock.Mock(name="hue_override")
             so = mock.Mock(name="saturation_override")
@@ -46,31 +47,31 @@ describe TestCase, "Parser":
             ko = mock.Mock(name="kelvin_override")
 
             overrides = {"hue": ho}
-            self.assertEqual(Parser.hsbk(components, overrides), (ho, s, b, k))
+            assert Parser.hsbk(components, overrides) == (ho, s, b, k)
 
             overrides["saturation"] = so
-            self.assertEqual(Parser.hsbk(components, overrides), (ho, so, b, k))
+            assert Parser.hsbk(components, overrides) == (ho, so, b, k)
 
             overrides["brightness"] = bo
-            self.assertEqual(Parser.hsbk(components, overrides), (ho, so, bo, k))
+            assert Parser.hsbk(components, overrides) == (ho, so, bo, k)
 
             overrides["kelvin"] = ko
-            self.assertEqual(Parser.hsbk(components, overrides), (ho, so, bo, ko))
+            assert Parser.hsbk(components, overrides) == (ho, so, bo, ko)
 
         it "supports random generation":
             for _ in range(100):
                 h, s, b, k = Parser.hsbk("random")
                 assert b is None
                 assert k is None
-                self.assertEqual(s, 1)
-                self.assertGreater(h, -1)
-                self.assertLess(h, 361)
+                assert s == 1
+                assert h > -1
+                assert h < 361
 
         it "supports just kelvin":
             self.assertCorrect("kelvin:2500", None, 0, None, 2500)
             self.assertCorrect("kelvin:3500", None, 0, None, 3500)
 
-            with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
+            with assertRaises(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("kelvin:-1")
 
             error = ValueOutOfRange(
@@ -80,33 +81,33 @@ describe TestCase, "Parser":
                 maximum=9000,
                 value=9001,
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("kelvin:9001")
 
         it "supports just brightness":
             self.assertCorrect("brightness:0", None, None, 0, None)
             self.assertCorrect("brightness:0.8", None, None, 0.8, None)
 
-            with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
+            with assertRaises(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("brightness:-1")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=2
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("brightness:2")
 
         it "supports just saturation":
             self.assertCorrect("saturation:0", None, 0, None, None)
             self.assertCorrect("saturation:0.8", None, 0.8, None, None)
 
-            with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
+            with assertRaises(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("saturation:-1")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="saturation", minimum=0, maximum=1, value=2
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("saturation:2")
 
         it "supports just hue":
@@ -114,13 +115,13 @@ describe TestCase, "Parser":
             self.assertCorrect("hue:80", 80, None, None, None)
             self.assertCorrect("hue:20.5", 20.5, None, None, None)
 
-            with self.fuzzyAssertRaisesError(InvalidColor, "Unable to parse color"):
+            with assertRaises(InvalidColor, "Unable to parse color"):
                 Parser.hsbk("hue:-1")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hue:361")
 
         it "supports hex":
@@ -136,19 +137,19 @@ describe TestCase, "Parser":
             error = ValueOutOfRange(
                 "Value was not within bounds", component="r", minimum=0, maximum=255, value=256
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:256,1,255")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="g", minimum=0, maximum=255, value=256
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:255,256,255")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="b", minimum=0, maximum=255, value=256
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("rgb:255,255,256")
 
         it "supports hsb":
@@ -158,7 +159,7 @@ describe TestCase, "Parser":
             error = ValueOutOfRange(
                 "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:361,0,0.8")
 
             error = ValueOutOfRange(
@@ -168,7 +169,7 @@ describe TestCase, "Parser":
                 maximum=1,
                 value=10,
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1000%,0.8")
 
             error = ValueOutOfRange(
@@ -178,7 +179,7 @@ describe TestCase, "Parser":
                 maximum=1,
                 value=10,
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,10,0.8")
 
             error = ValueOutOfRange(
@@ -188,13 +189,13 @@ describe TestCase, "Parser":
                 maximum=1,
                 value=1.2,
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1,120%")
 
             error = ValueOutOfRange(
                 "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=8
             )
-            with self.fuzzyAssertRaisesError(InvalidColor, error=error.as_dict()):
+            with assertRaises(InvalidColor, error=error.as_dict()):
                 Parser.hsbk("hsb:240,1,8")
 
         it "supports colors by name":
