@@ -4,16 +4,17 @@ from photons_protocol.packets import PacketSpecMetaKls, dictobj, Initial
 from photons_protocol.types import Type as T
 
 from photons_app.errors import ProgrammerError
-from photons_app.test_helpers import TestCase
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
+import pytest
 import uuid
 
-describe TestCase, "PacketSpecMetaKls":
+describe "PacketSpecMetaKls":
     it "complains if we have fields that are already attributes":
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             ProgrammerError,
             r"Can't override attributes with fields\talready_attributes=\['items', 'values'\]",
         ):
@@ -21,7 +22,7 @@ describe TestCase, "PacketSpecMetaKls":
             class Together(dictobj.PacketSpec):
                 fields = [("items", T.Bool), ("values", T.Bool), ("one", T.Bool)]
 
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             ProgrammerError, r"Can't override attributes with fields\talready_attributes=\['one'\]"
         ):
 
@@ -39,19 +40,19 @@ describe TestCase, "PacketSpecMetaKls":
         class Group2(metaclass=PacketSpecMetaKls):
             fields = [("two", T.Bool), ("three", T.Bool)]
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, r"Duplicated names!\t\['two', 'two'\]"):
+        with assertRaises(ProgrammerError, r"Duplicated names!\t\['two', 'two'\]"):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("g2", Group2)]
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, r"Duplicated names!\t\['one', 'one'\]"):
+        with assertRaises(ProgrammerError, r"Duplicated names!\t\['one', 'one'\]"):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("one", T.Bool)]
 
     it "complains if we have fields as a dictionary":
         msg = "PacketSpecMixin expect fields to be a list of tuples, not a dictionary"
-        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
+        with assertRaises(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(metaclass=PacketSpecMetaKls):
                 fields = {}
@@ -62,12 +63,12 @@ describe TestCase, "PacketSpecMetaKls":
             fields = {}
 
         msg = "PacketSpecMixin expects a fields attribute on the class or a PacketSpec parent"
-        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
+        with assertRaises(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(Parent, metaclass=PacketSpecMetaKls):
                 pass
 
-        with self.fuzzyAssertRaisesError(ProgrammerError, f"{msg}\tcreating=Child"):
+        with assertRaises(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(metaclass=PacketSpecMetaKls):
                 pass
@@ -88,17 +89,17 @@ describe TestCase, "PacketSpecMetaKls":
         for name, dflt in Together.fields:
             if name in ("g1", "g2"):
                 initiald += 1
-                self.assertIs(dflt(), Initial)
+                assert dflt() is Initial
             else:
                 normald += 1
-                self.assertIs(dflt(), sb.NotSpecified)
+                assert dflt() is sb.NotSpecified
 
-        self.assertEqual(initiald, 2)
-        self.assertEqual(normald, 4)
+        assert initiald == 2
+        assert normald == 4
 
         for g in (Group1, Group2):
             for name, dflt in g.fields:
-                self.assertIs(dflt(), sb.NotSpecified)
+                assert dflt() is sb.NotSpecified
 
     it "allows mixins":
         yeap = str(uuid.uuid1())
@@ -111,146 +112,153 @@ describe TestCase, "PacketSpecMetaKls":
         class Wat(Mixin, metaclass=PacketSpecMetaKls):
             fields = []
 
-        self.assertEqual(Wat().yeap, yeap)
+        assert Wat().yeap == yeap
 
         class Wat2(Wat):
             fields = []
 
-        self.assertEqual(Wat2().yeap, yeap)
+        assert Wat2().yeap == yeap
 
     describe "Meta":
-        before_each:
-            self.one_typ = mock.Mock(name="one_typ", spec=[])
-            self.two_typ = mock.Mock(name="two_typ", spec=[])
-            self.three_typ = mock.Mock(name="three_typ", spec=[])
-            self.four_typ = mock.Mock(name="four_typ", spec=[])
 
-            # Make us example groups
-            class Group1(metaclass=PacketSpecMetaKls):
-                fields = [("one", self.one_typ), ("two", self.two_typ)]
+        @pytest.fixture()
+        def V(self):
+            class V:
+                one_typ = mock.Mock(name="one_typ", spec=[])
+                two_typ = mock.Mock(name="two_typ", spec=[])
+                three_typ = mock.Mock(name="three_typ", spec=[])
+                four_typ = mock.Mock(name="four_typ", spec=[])
 
-            class Group2(metaclass=PacketSpecMetaKls):
-                fields = [("three", self.three_typ), ("four", self.four_typ)]
+                @hp.memoized_property
+                def Group1(s):
+                    class Group1(metaclass=PacketSpecMetaKls):
+                        fields = [("one", s.one_typ), ("two", s.two_typ)]
 
-            self.Group1 = Group1
-            self.Group2 = Group2
+                    return Group1
+
+                @hp.memoized_property
+                def Group2(s):
+                    class Group2(metaclass=PacketSpecMetaKls):
+                        fields = [("three", s.three_typ), ("four", s.four_typ)]
+
+                    return Group2
+
+            return V()
 
         it "has a nice repr":
 
             class Thing(metaclass=PacketSpecMetaKls):
                 fields = []
 
-            self.assertEqual(repr(Thing.Meta), "<type Thing.Meta>")
+            assert repr(Thing.Meta) == "<type Thing.Meta>"
 
         it "has multi":
 
             class Thing(metaclass=PacketSpecMetaKls):
                 fields = []
 
-            self.assertIs(Thing.Meta.multi, None)
+            assert Thing.Meta.multi is None
 
-        it "has groups":
-
-            class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
-
-            self.assertEqual(Together.Meta.groups, {"g1": ["one", "two"], "g2": ["three", "four"]})
-
-            self.assertEqual(self.Group1.Meta.groups, {})
-
-        it "has name_to_group":
+        it "has groups", V:
 
             class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
 
-            self.assertEqual(
-                Together.Meta.name_to_group, {"one": "g1", "two": "g1", "three": "g2", "four": "g2"}
-            )
+            assert Together.Meta.groups == {"g1": ["one", "two"], "g2": ["three", "four"]}
 
-            self.assertEqual(self.Group1.Meta.name_to_group, {})
+            assert V.Group1.Meta.groups == {}
 
-        it "has all_names":
+        it "has name_to_group", V:
 
             class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
 
-            self.assertEqual(Together.Meta.all_names, ["one", "two", "three", "four", "another"])
-            self.assertEqual(self.Group1.Meta.all_names, ["one", "two"])
+            assert Together.Meta.name_to_group == {
+                "one": "g1",
+                "two": "g1",
+                "three": "g2",
+                "four": "g2",
+            }
 
-        it "has all_field_types":
+            assert V.Group1.Meta.name_to_group == {}
 
-            class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
-
-            self.assertEqual(
-                Together.Meta.all_field_types,
-                [
-                    ("one", self.one_typ),
-                    ("two", self.two_typ),
-                    ("three", self.three_typ),
-                    ("four", self.four_typ),
-                    ("another", T.Bool),
-                ],
-            )
-            self.assertEqual(
-                Together.Meta.all_field_types_dict, dict(Together.Meta.all_field_types)
-            )
-
-            self.assertEqual(
-                self.Group1.Meta.all_field_types, [("one", self.one_typ), ("two", self.two_typ)]
-            )
-            self.assertEqual(
-                self.Group1.Meta.all_field_types_dict, dict(self.Group1.Meta.all_field_types)
-            )
-
-        it "has field_types":
+        it "has all_names", V:
 
             class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
 
-            self.assertEqual(
-                Together.Meta.field_types,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)],
-            )
-            self.assertEqual(Together.Meta.field_types_dict, dict(Together.Meta.field_types))
+            assert Together.Meta.all_names == ["one", "two", "three", "four", "another"]
+            assert V.Group1.Meta.all_names == ["one", "two"]
 
-            self.assertEqual(
-                self.Group1.Meta.field_types, [("one", self.one_typ), ("two", self.two_typ)]
-            )
-            self.assertEqual(self.Group1.Meta.field_types_dict, dict(self.Group1.Meta.field_types))
-
-        it "has format_types":
+        it "has all_field_types", V:
 
             class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
 
-            self.assertEqual(Together.Meta.format_types, [self.Group1, self.Group2, T.Bool])
+            assert Together.Meta.all_field_types == [
+                ("one", V.one_typ),
+                ("two", V.two_typ),
+                ("three", V.three_typ),
+                ("four", V.four_typ),
+                ("another", T.Bool),
+            ]
+            assert Together.Meta.all_field_types_dict == dict(Together.Meta.all_field_types)
 
-            self.assertEqual(self.Group1.Meta.format_types, [self.one_typ, self.two_typ])
+            assert V.Group1.Meta.all_field_types == [
+                ("one", V.one_typ),
+                ("two", V.two_typ),
+            ]
+            assert V.Group1.Meta.all_field_types_dict == dict(V.Group1.Meta.all_field_types)
 
-            self.assertEqual(self.Group2.Meta.format_types, [self.three_typ, self.four_typ])
-
-        it "has original_fields":
-
-            class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)]
-
-            self.assertEqual(
-                self.Group1.Meta.original_fields, [("one", self.one_typ), ("two", self.two_typ)]
-            )
-            self.assertEqual(
-                self.Group2.Meta.original_fields,
-                [("three", self.three_typ), ("four", self.four_typ)],
-            )
-            self.assertEqual(
-                Together.Meta.original_fields,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", T.Bool)],
-            )
-
-        it "can get type from a string":
+        it "has field_types", V:
 
             class Together(metaclass=PacketSpecMetaKls):
-                fields = [("g1", self.Group1), ("g2", self.Group2), ("another", "Another")]
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
+
+            assert Together.Meta.field_types == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", T.Bool),
+            ]
+            assert Together.Meta.field_types_dict == dict(Together.Meta.field_types)
+
+            assert V.Group1.Meta.field_types == [("one", V.one_typ), ("two", V.two_typ)]
+            assert V.Group1.Meta.field_types_dict == dict(V.Group1.Meta.field_types)
+
+        it "has format_types", V:
+
+            class Together(metaclass=PacketSpecMetaKls):
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
+
+            assert Together.Meta.format_types == [V.Group1, V.Group2, T.Bool]
+
+            assert V.Group1.Meta.format_types == [V.one_typ, V.two_typ]
+
+            assert V.Group2.Meta.format_types == [V.three_typ, V.four_typ]
+
+        it "has original_fields", V:
+
+            class Together(metaclass=PacketSpecMetaKls):
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
+
+            assert V.Group1.Meta.original_fields == [
+                ("one", V.one_typ),
+                ("two", V.two_typ),
+            ]
+            assert V.Group2.Meta.original_fields == [
+                ("three", V.three_typ),
+                ("four", V.four_typ),
+            ]
+            assert Together.Meta.original_fields == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", T.Bool),
+            ]
+
+        it "can get type from a string", V:
+
+            class Together(metaclass=PacketSpecMetaKls):
+                fields = [("g1", V.Group1), ("g2", V.Group2), ("another", "Another")]
 
                 class Another(metaclass=PacketSpecMetaKls):
                     fields = []
@@ -259,80 +267,77 @@ describe TestCase, "PacketSpecMetaKls":
                 class Another(metaclass=PacketSpecMetaKls):
                     fields = [("five", T.String), ("six", T.JSON)]
 
-            self.assertEqual(repr(Together.Meta), "<type Together.Meta>")
-            self.assertEqual(repr(Child.Meta), "<type Child.Meta>")
+            assert repr(Together.Meta) == "<type Together.Meta>"
+            assert repr(Child.Meta) == "<type Child.Meta>"
 
-            self.assertEqual(
-                Together.Meta.groups, {"g1": ["one", "two"], "g2": ["three", "four"], "another": []}
-            )
-            self.assertEqual(
-                Together.Meta.name_to_group, {"one": "g1", "two": "g1", "three": "g2", "four": "g2"}
-            )
-            self.assertEqual(
-                Child.Meta.groups,
-                {"g1": ["one", "two"], "g2": ["three", "four"], "another": ["five", "six"]},
-            )
-            self.assertEqual(
-                Child.Meta.name_to_group,
-                {
-                    "one": "g1",
-                    "two": "g1",
-                    "three": "g2",
-                    "four": "g2",
-                    "five": "another",
-                    "six": "another",
-                },
-            )
+            assert Together.Meta.groups == {
+                "g1": ["one", "two"],
+                "g2": ["three", "four"],
+                "another": [],
+            }
+            assert Together.Meta.name_to_group == {
+                "one": "g1",
+                "two": "g1",
+                "three": "g2",
+                "four": "g2",
+            }
+            assert Child.Meta.groups == {
+                "g1": ["one", "two"],
+                "g2": ["three", "four"],
+                "another": ["five", "six"],
+            }
+            assert Child.Meta.name_to_group == {
+                "one": "g1",
+                "two": "g1",
+                "three": "g2",
+                "four": "g2",
+                "five": "another",
+                "six": "another",
+            }
 
-            self.assertEqual(Together.Meta.all_names, ["one", "two", "three", "four"])
-            self.assertEqual(Child.Meta.all_names, ["one", "two", "three", "four", "five", "six"])
+            assert Together.Meta.all_names == ["one", "two", "three", "four"]
+            assert Child.Meta.all_names == ["one", "two", "three", "four", "five", "six"]
 
-            self.assertEqual(
-                Together.Meta.all_field_types,
-                [
-                    ("one", self.one_typ),
-                    ("two", self.two_typ),
-                    ("three", self.three_typ),
-                    ("four", self.four_typ),
-                ],
-            )
-            self.assertEqual(
-                Together.Meta.all_field_types_dict, dict(Together.Meta.all_field_types)
-            )
-            self.assertEqual(
-                Child.Meta.all_field_types,
-                [
-                    ("one", self.one_typ),
-                    ("two", self.two_typ),
-                    ("three", self.three_typ),
-                    ("four", self.four_typ),
-                    ("five", T.String),
-                    ("six", T.JSON),
-                ],
-            )
-            self.assertEqual(Child.Meta.all_field_types_dict, dict(Child.Meta.all_field_types))
+            assert Together.Meta.all_field_types == [
+                ("one", V.one_typ),
+                ("two", V.two_typ),
+                ("three", V.three_typ),
+                ("four", V.four_typ),
+            ]
+            assert Together.Meta.all_field_types_dict == dict(Together.Meta.all_field_types)
+            assert Child.Meta.all_field_types == [
+                ("one", V.one_typ),
+                ("two", V.two_typ),
+                ("three", V.three_typ),
+                ("four", V.four_typ),
+                ("five", T.String),
+                ("six", T.JSON),
+            ]
+            assert Child.Meta.all_field_types_dict == dict(Child.Meta.all_field_types)
 
-            self.assertEqual(
-                Together.Meta.field_types,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", Together.Another)],
-            )
-            self.assertEqual(Together.Meta.field_types_dict, dict(Together.Meta.field_types))
-            self.assertEqual(
-                Child.Meta.field_types,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", Child.Another)],
-            )
-            self.assertEqual(Child.Meta.field_types_dict, dict(Child.Meta.field_types))
+            assert Together.Meta.field_types == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", Together.Another),
+            ]
+            assert Together.Meta.field_types_dict == dict(Together.Meta.field_types)
+            assert Child.Meta.field_types == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", Child.Another),
+            ]
+            assert Child.Meta.field_types_dict == dict(Child.Meta.field_types)
 
-            self.assertEqual(
-                Together.Meta.format_types, [self.Group1, self.Group2, Together.Another]
-            )
-            self.assertEqual(Child.Meta.format_types, [self.Group1, self.Group2, Child.Another])
+            assert Together.Meta.format_types == [V.Group1, V.Group2, Together.Another]
+            assert Child.Meta.format_types == [V.Group1, V.Group2, Child.Another]
 
-            self.assertEqual(
-                Together.Meta.original_fields,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", "Another")],
-            )
-            self.assertEqual(
-                Child.Meta.original_fields,
-                [("g1", self.Group1), ("g2", self.Group2), ("another", "Another")],
-            )
+            assert Together.Meta.original_fields == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", "Another"),
+            ]
+            assert Child.Meta.original_fields == [
+                ("g1", V.Group1),
+                ("g2", V.Group2),
+                ("another", "Another"),
+            ]

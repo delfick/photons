@@ -5,79 +5,88 @@ from photons_protocol.errors import BadConversion
 from photons_protocol.types import Type as T
 
 from photons_app.errors import ProgrammerError
-from photons_app.test_helpers import TestCase
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import sb, Meta, BadSpecValue
+from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
 from bitarray import bitarray
 from unittest import mock
+import pytest
 import json
 
-describe TestCase, "the json spec":
+describe "the json spec":
     it "can match just static types":
         for val in ("adsf", True, False, None, 0, 1, 1.2):
-            self.assertEqual(json_spec.normalise(Meta.empty(), val), val)
+            assert json_spec.normalise(Meta.empty(), val) == val
 
     it "can match lists":
         for val in ([], ["asdf"], ["asdf", True, 1]):
-            self.assertEqual(json_spec.normalise(Meta.empty(), val), val)
+            assert json_spec.normalise(Meta.empty(), val) == val
 
     it "can match nested lists":
         for val in ([[]], ["asdf", [1]], [["asdf", True], [1]]):
-            self.assertEqual(json_spec.normalise(Meta.empty(), val), val)
+            assert json_spec.normalise(Meta.empty(), val) == val
 
     it "can match dictionaries":
         for val in ({}, {"1": "2", "2": 2, "3": False}):
-            self.assertEqual(json_spec.normalise(Meta.empty(), val), val)
+            assert json_spec.normalise(Meta.empty(), val) == val
 
     it "can match nested dictionaries":
         val = {"asdf": {"adf": {"asdf": 2, "adf": False, "eieu": None}}}
-        self.assertEqual(json_spec.normalise(Meta.empty(), val), val)
+        assert json_spec.normalise(Meta.empty(), val) == val
 
     it "complains about things that aren't json like objects, callables and non string keys":
         for val in (type("adf", (object,), {}), any, json, lambda: 1):
-            with self.fuzzyAssertRaisesError(BadSpecValue):
+            with assertRaises(BadSpecValue):
                 json_spec.normalise(Meta.empty(), val)
 
         try:
             json_spec.normalise(Meta.empty(), {"one": {1: 2}})
             assert False, "Expected an error"
         except BadSpecValue as error:
-            self.assertEqual(error.errors[0].errors[0].message, "Expected a string")
+            assert error.errors[0].errors[0].message == "Expected a string"
 
-describe TestCase, "Type":
+describe "Type":
     it "takes in struct_format and conversion":
         struct_format = mock.Mock(name="struct_format")
         conversion = mock.Mock(name="conversion")
         t = Type(struct_format, conversion)
-        self.assertIs(t.struct_format, struct_format)
-        self.assertIs(t.conversion, conversion)
+        assert t.struct_format is struct_format
+        assert t.conversion is conversion
 
     describe "Adding size_bits":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = mock.Mock(name="conversion")
-            self.t = Type(self.struct_format, self.conversion)
+
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = mock.Mock(name="conversion")
+
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
+
+            return V()
 
         describe "calling an instance":
-            it "defers to the S function":
+            it "defers to the S function", V:
                 S = mock.Mock(name="S")
                 size_bits = mock.Mock(name="size_bits")
                 left = mock.Mock(name="left")
 
                 ret = mock.Mock(name="ret")
                 S.return_value = ret
-                with mock.patch.object(self.t, "S", S):
-                    self.assertIs(self.t(size_bits, left=left), ret)
+                with mock.patch.object(V.t, "S", S):
+                    assert V.t(size_bits, left=left) is ret
 
                 S.assert_called_once_with(size_bits, left=left)
 
                 # Doesn't touch the original type
-                self.assertIs(self.t.size_bits, NotImplemented)
+                assert V.t.size_bits is NotImplemented
 
         describe "calling the S function":
-            it "creates a new object and passes on 'private' attributes":
+            it "creates a new object and passes on 'private' attributes", V:
                 field_names = (
                     "_enum",
                     "_bitmask",
@@ -98,32 +107,32 @@ describe TestCase, "Type":
                 fields = {}
                 for field in field_names:
                     fields[field] = mock.Mock(name="field")
-                    assert getattr(self.t, field) in (sb.NotSpecified, False)
+                    assert getattr(V.t, field) in (sb.NotSpecified, False)
 
                 size_bits = mock.Mock(name="size_bits")
                 left = mock.Mock(name="left")
 
-                res = self.t.S(size_bits, left=left)
-                self.assertIs(res.size_bits, size_bits)
-                self.assertIs(res.left_cut, left)
+                res = V.t.S(size_bits, left=left)
+                assert res.size_bits is size_bits
+                assert res.left_cut is left
 
                 for name, val in fields.items():
                     setattr(res, name, val)
 
                 for field in field_names:
-                    assert getattr(self.t, field) in (sb.NotSpecified, False)
+                    assert getattr(V.t, field) in (sb.NotSpecified, False)
                     assert getattr(res, field) is fields[field]
 
                 size_bits2 = mock.Mock(name="size_bits2")
                 res2 = res.S(size_bits2)
 
                 # Res is untouched
-                self.assertIs(res.size_bits, size_bits)
-                self.assertIs(res.left_cut, left)
+                assert res.size_bits is size_bits
+                assert res.left_cut is left
 
                 # res2 has the new things
-                self.assertIs(res2.size_bits, size_bits2)
-                self.assertIs(res2.left_cut, left)
+                assert res2.size_bits is size_bits2
+                assert res2.left_cut is left
 
                 # Our custom fields are passed on
                 for field in field_names:
@@ -135,152 +144,160 @@ describe TestCase, "Type":
             conversion = mock.Mock(name="conversion")
             t = Type.t("bob", struct_format, conversion)
 
-            self.assertEqual(t.__class__.__name__, "bob")
-            self.assertIs(t.struct_format, struct_format)
-            self.assertIs(t.conversion, conversion)
+            assert t.__class__.__name__ == "bob"
+            assert t.struct_format is struct_format
+            assert t.conversion is conversion
             assert issubclass(t.__class__, Type)
-            self.assertIsNot(t.__class__, Type)
+            assert t.__class__ is not Type
 
     describe "modifiers":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = mock.Mock(name="conversion")
-            self.t = Type(self.struct_format, self.conversion)
 
-        @contextmanager
-        def clone(self, cloned=True):
-            setd = {}
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = mock.Mock(name="conversion")
 
-            class Clone(object):
-                def __setattr__(s, name, val):
-                    assert name not in setd
-                    setd[name] = val
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
 
-            size_bits = mock.Mock(name="size_bits")
-            self.t.size_bits = size_bits
+                @contextmanager
+                def clone(s, cloned=True):
+                    setd = {}
 
-            res = Clone()
-            S = mock.Mock(name="S", return_value=res)
-            with mock.patch.object(self.t, "S", S):
-                yield res, setd
+                    class Clone(object):
+                        def __setattr__(s, name, val):
+                            assert name not in setd
+                            setd[name] = val
 
-            if cloned:
-                S.assert_called_once_with(size_bits)
-            else:
-                self.assertEqual(len(S.mock_calls), 0)
+                    size_bits = mock.Mock(name="size_bits")
+                    s.t.size_bits = size_bits
+
+                    res = Clone()
+                    S = mock.Mock(name="S", return_value=res)
+                    with mock.patch.object(s.t, "S", S):
+                        yield res, setd
+
+                    if cloned:
+                        S.assert_called_once_with(size_bits)
+                    else:
+                        assert len(S.mock_calls) == 0
+
+            return V()
 
         describe "allow_float":
-            it "sets _allow_float to True":
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.allow_float(), res)
-                self.assertEqual(setd, {"_allow_float": True})
+            it "sets _allow_float to True", V:
+                with V.clone() as (res, setd):
+                    assert V.t.allow_float() is res
+                assert setd == {"_allow_float": True}
 
         describe "version_number":
-            it "sets _version_number to True":
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.version_number(), res)
-                self.assertEqual(setd, {"_version_number": True})
+            it "sets _version_number to True", V:
+                with V.clone() as (res, setd):
+                    assert V.t.version_number() is res
+                assert setd == {"_version_number": True}
 
         describe "enum":
-            it "sets _enum to the value passed in":
+            it "sets _enum to the value passed in", V:
                 em = mock.Mock(name="enum")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.enum(em), res)
-                self.assertEqual(setd, {"_enum": em, "_unknown_enum_values": False})
+                with V.clone() as (res, setd):
+                    assert V.t.enum(em) is res
+                assert setd == {"_enum": em, "_unknown_enum_values": False}
 
-            it "sets _unknown_enum_values to the allow_unknown value passed in":
+            it "sets _unknown_enum_values to the allow_unknown value passed in", V:
                 em = mock.Mock(name="enum")
                 allow_unknown = mock.Mock(name="allow_unknown")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.enum(em, allow_unknown=allow_unknown), res)
-                self.assertEqual(setd, {"_enum": em, "_unknown_enum_values": allow_unknown})
+                with V.clone() as (res, setd):
+                    assert V.t.enum(em, allow_unknown=allow_unknown) is res
+                assert setd == {"_enum": em, "_unknown_enum_values": allow_unknown}
 
         describe "dynamic":
-            it "sets _dynamic to the value passed in":
+            it "sets _dynamic to the value passed in", V:
                 dn = mock.Mock(name="dynamiser")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.dynamic(dn), res)
-                self.assertEqual(setd, {"_dynamic": dn})
+                with V.clone() as (res, setd):
+                    assert V.t.dynamic(dn) is res
+                assert setd == {"_dynamic": dn}
 
         describe "bitmask":
-            it "sets _bitmask to the value passed in":
+            it "sets _bitmask to the value passed in", V:
                 bm = mock.Mock(name="bitmask")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.bitmask(bm), res)
-                self.assertEqual(setd, {"_bitmask": bm})
+                with V.clone() as (res, setd):
+                    assert V.t.bitmask(bm) is res
+                assert setd == {"_bitmask": bm}
 
         describe "transform":
-            it "sets _transform and _unpack_transform in that order":
+            it "sets _transform and _unpack_transform in that order", V:
                 pack_func = mock.Mock(name="pack_Func")
                 unpack_func = mock.Mock(name="unpack_func")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.transform(pack_func, unpack_func), res)
-                self.assertEqual(setd, {"_transform": pack_func, "_unpack_transform": unpack_func})
+                with V.clone() as (res, setd):
+                    assert V.t.transform(pack_func, unpack_func) is res
+                assert setd == {"_transform": pack_func, "_unpack_transform": unpack_func}
 
-            it "complains if either function isn't callable":
+            it "complains if either function isn't callable", V:
                 pack_func = mock.Mock(name="pack_Func")
                 unpack_func = mock.Mock(name="unpack_func")
 
                 uncallable_pack_func = mock.NonCallableMock(name="uncallable_pack_func")
                 uncallable_unpack_func = mock.NonCallableMock(name="uncallable_unpack_func")
 
-                with self.clone(cloned=False) as (res, setd):
-                    with self.fuzzyAssertRaisesError(
+                with V.clone(cloned=False) as (res, setd):
+                    with assertRaises(
                         ProgrammerError, "Sorry, transform can only be given two callables"
                     ):
-                        self.t.transform(uncallable_pack_func, unpack_func)
+                        V.t.transform(uncallable_pack_func, unpack_func)
 
-                    with self.fuzzyAssertRaisesError(
+                    with assertRaises(
                         ProgrammerError, "Sorry, transform can only be given two callables"
                     ):
-                        self.t.transform(pack_func, uncallable_unpack_func)
+                        V.t.transform(pack_func, uncallable_unpack_func)
 
-                    with self.fuzzyAssertRaisesError(
+                    with assertRaises(
                         ProgrammerError, "Sorry, transform can only be given two callables"
                     ):
-                        self.t.transform(uncallable_pack_func, uncallable_unpack_func)
+                        V.t.transform(uncallable_pack_func, uncallable_unpack_func)
 
         describe "allow_callable":
-            it "sets _allow_callable to the value passed in":
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.allow_callable(), res)
-                self.assertEqual(setd, {"_allow_callable": True})
+            it "sets _allow_callable to the value passed in", V:
+                with V.clone() as (res, setd):
+                    assert V.t.allow_callable() is res
+                assert setd == {"_allow_callable": True}
 
         describe "default":
-            it "creates a function that takes in the pkt if not callable":
+            it "creates a function that takes in the pkt if not callable", V:
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="value")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.default(val), res)
-                self.assertEqual(list(setd), ["_default"])
-                self.assertIs(setd["_default"](pkt), val)
+                with V.clone() as (res, setd):
+                    assert V.t.default(val) is res
+                assert list(setd) == ["_default"]
+                assert setd["_default"](pkt) is val
 
-            it "just sets the callable if already callable":
+            it "just sets the callable if already callable", V:
                 val = mock.Mock(name="value")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.default(val), res)
-                self.assertEqual(setd, {"_default": val})
+                with V.clone() as (res, setd):
+                    assert V.t.default(val) is res
+                assert setd == {"_default": val}
 
         describe "optional":
-            it "sets _optional to True":
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.optional(), res)
-                self.assertEqual(setd, {"_optional": True})
+            it "sets _optional to True", V:
+                with V.clone() as (res, setd):
+                    assert V.t.optional() is res
+                assert setd == {"_optional": True}
 
         describe "override":
-            it "sets _override to the value if callable":
+            it "sets _override to the value if callable", V:
                 val = mock.Mock(name="val")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.override(val), res)
-                self.assertEqual(setd, {"_override": val})
+                with V.clone() as (res, setd):
+                    assert V.t.override(val) is res
+                assert setd == {"_override": val}
 
-            it "sets _override to a callable taking in packet return value if not callable":
+            it "sets _override to a callable taking in packet return value if not callable", V:
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="val")
-                with self.clone() as (res, setd):
-                    self.assertIs(self.t.override(val), res)
-                self.assertEqual(list(setd), ["_override"])
-                self.assertIs(setd["_override"](pkt), val)
+                with V.clone() as (res, setd):
+                    assert V.t.override(val) is res
+                assert list(setd) == ["_override"]
+                assert setd["_override"](pkt) is val
 
     describe "installing types":
         it "expects a list of (name, size, fmt, conversion) to create types from":
@@ -304,8 +321,8 @@ describe TestCase, "Type":
 
                     Type.install(*install)
 
-                    self.assertEqual(Type.D2, ("D2", "<d", float, 64))
-                    self.assertEqual(Type.B2, ("B2", None, bytes, None))
+                    assert Type.D2 == ("D2", "<d", float, 64)
+                    assert Type.B2 == ("B2", None, bytes, None)
             finally:
                 if hasattr(Type, "D2"):
                     del Type.D2
@@ -314,71 +331,75 @@ describe TestCase, "Type":
                     del Type.B2
 
     describe "spec":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = any
-            self.t = Type(self.struct_format, self.conversion)
 
-            self.pkt = mock.Mock(name="pkt")
-            self.transform = mock.Mock(name="transform")
-            self.unpacking = mock.Mock(name="unpacking")
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = any
 
-        @contextmanager
-        def mocked_spec(self, pkt, unpacking, transform):
-            s = mock.Mock(name="untransformed_spec")
-            spec = mock.Mock(name="spec")
-            _spec = mock.Mock(name="_spec", return_value=s)
-            _mts = mock.Mock(name="_maybe_transform_spec", return_value=spec)
-            with mock.patch.object(Type, "_maybe_transform_spec", _mts):
-                with mock.patch.object(Type, "_spec", _spec):
-                    yield spec
-            _spec.assert_called_once_with(pkt, unpacking=unpacking)
-            _mts.assert_called_once_with(pkt, s, unpacking, transform=transform)
+                pkt = mock.Mock(name="pkt")
+                transform = mock.Mock(name="transform")
+                unpacking = mock.Mock(name="unpacking")
 
-        it "returns override if that is specified":
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
+
+                @contextmanager
+                def mocked_spec(s):
+                    uts = mock.Mock(name="untransformed_spec")
+
+                    spec = mock.Mock(name="spec")
+                    _spec = mock.Mock(name="_spec", return_value=uts)
+                    _mts = mock.Mock(name="_maybe_transform_spec", return_value=spec)
+
+                    with mock.patch.object(Type, "_maybe_transform_spec", _mts):
+                        with mock.patch.object(Type, "_spec", _spec):
+                            yield spec
+
+                    _spec.assert_called_once_with(s.pkt, unpacking=s.unpacking)
+                    _mts.assert_called_once_with(s.pkt, uts, s.unpacking, transform=s.transform)
+
+            return V()
+
+        it "returns override if that is specified", V:
             res = mock.Mock(name="res")
             overrider = mock.Mock(name="overrider")
             overridden = mock.Mock(name="overridden", return_value=res)
-            with self.mocked_spec(self.pkt, self.unpacking, self.transform) as spec:
+            with V.mocked_spec() as spec:
                 with mock.patch("photons_protocol.types.overridden", overridden):
-                    self.assertIs(
-                        self.t.override(overrider).spec(
-                            self.pkt, self.unpacking, transform=self.transform
-                        ),
-                        res,
-                    )
+                    assert (
+                        V.t.override(overrider).spec(V.pkt, V.unpacking, transform=V.transform)
+                    ) is res
 
-                overridden.assert_called_once_with(overrider, self.pkt)
+                overridden.assert_called_once_with(overrider, V.pkt)
 
             # and without mocks
             val = mock.NonCallableMock(name="val")
             pkt = mock.Mock(name="pkt", val=val)
             overrider = lambda pkt: pkt.val
-            self.assertIs(
-                self.t.override(overrider)
+            assert (
+                V.t.override(overrider)
                 .spec(pkt)
-                .normalise(Meta.empty(), mock.Mock(name="whatever")),
-                val,
-            )
-            self.assertIs(
-                self.t.override(val).spec(pkt).normalise(Meta.empty(), mock.Mock(name="whatever")),
-                val,
+                .normalise(Meta.empty(), mock.Mock(name="whatever"))
+            ) is val
+            assert (
+                V.t.override(val).spec(pkt).normalise(Meta.empty(), mock.Mock(name="whatever"))
+                is val
             )
 
-        it "returns default if that is specified":
+        it "returns default if that is specified", V:
             res = mock.Mock(name="res")
             defaulter = mock.Mock(name="defaulter")
             defaulted = mock.Mock(name="defaulted", return_value=res)
-            with self.mocked_spec(self.pkt, self.unpacking, self.transform) as spec:
+            with V.mocked_spec() as spec:
                 with mock.patch("photons_protocol.types.defaulted", defaulted):
-                    self.assertIs(
-                        self.t.default(defaulter).spec(
-                            self.pkt, self.unpacking, transform=self.transform
-                        ),
-                        res,
-                    )
+                    assert (
+                        V.t.default(defaulter).spec(V.pkt, V.unpacking, transform=V.transform)
+                    ) is res
 
-                defaulted.assert_called_once_with(spec, defaulter, self.pkt)
+                defaulted.assert_called_once_with(spec, defaulter, V.pkt)
 
             # and without mocks
             val = mock.NonCallableMock(name="val")
@@ -386,105 +407,107 @@ describe TestCase, "Type":
             defaulter = lambda pkt: pkt.val
 
             whatever = mock.Mock(name="whatever")
-            self.assertIs(
-                self.t.default(defaulter).spec(pkt).normalise(Meta.empty(), whatever), whatever
-            )
-            self.assertIs(
-                self.t.default(defaulter).spec(pkt).normalise(Meta.empty(), sb.NotSpecified), val
-            )
-            self.assertIs(
-                self.t.default(val).spec(pkt).normalise(Meta.empty(), sb.NotSpecified), val
-            )
+            assert V.t.default(defaulter).spec(pkt).normalise(Meta.empty(), whatever) is whatever
+            assert V.t.default(defaulter).spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is val
+            assert V.t.default(val).spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is val
 
-        it "returns optional if that is specified":
+        it "returns optional if that is specified", V:
             res = mock.Mock(name="res")
             optional = mock.Mock(name="optional", return_value=res)
-            with self.mocked_spec(self.pkt, self.unpacking, self.transform) as spec:
+            with V.mocked_spec() as spec:
                 with mock.patch("photons_protocol.types.optional", optional):
-                    self.assertIs(
-                        self.t.optional().spec(self.pkt, self.unpacking, transform=self.transform),
-                        res,
-                    )
+                    assert V.t.optional().spec(V.pkt, V.unpacking, transform=V.transform) is res
 
                 optional.assert_called_once_with(spec)
 
             # and without mocks
             pkt = mock.Mock(name="pkt")
             whatever = mock.Mock(name="whatever")
-            self.assertIs(self.t.optional().spec(pkt).normalise(Meta.empty(), whatever), whatever)
-            self.assertIs(
-                self.t.optional().spec(pkt).normalise(Meta.empty(), sb.NotSpecified), Optional
-            )
+            assert V.t.optional().spec(pkt).normalise(Meta.empty(), whatever) is whatever
+            assert V.t.optional().spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is Optional
 
-        it "returns just the spec otherwise":
-            with self.mocked_spec(self.pkt, self.unpacking, transform=self.transform) as spec:
-                self.assertIs(self.t.spec(self.pkt, self.unpacking, transform=self.transform), spec)
+        it "returns just the spec otherwise", V:
+            with V.mocked_spec() as spec:
+                assert V.t.spec(V.pkt, V.unpacking, transform=V.transform) is spec
 
-        it "wraps with callable_spec if we allow callable":
+        it "wraps with callable_spec if we allow callable", V:
             t = T.String.allow_callable()
-            spec = t.spec(self.pkt, self.unpacking)
+            spec = t.spec(V.pkt, V.unpacking)
 
             def cb(*args):
                 return "hello"
 
-            self.assertIs(spec.normalise(Meta.empty(), cb), cb)
-            self.assertEqual(spec.normalise(Meta.empty(), "hello"), "hello")
+            assert spec.normalise(Meta.empty(), cb) is cb
+            assert spec.normalise(Meta.empty(), "hello") == "hello"
 
     describe "dynamic_wrapper":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = any
-            self.t = Type(self.struct_format, self.conversion)
 
-            self.spec = mock.Mock(name="spec")
-            self.pkt = mock.Mock(name="pkt")
-            self.unpacking = mock.Mock(name="unpacking")
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = any
 
-        it "returns us an expand_spec with a made up PacketSpec class":
+                spec = mock.Mock(name="spec")
+                pkt = mock.Mock(name="pkt")
+                unpacking = mock.Mock(name="unpacking")
+
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
+
+            return V()
+
+        it "returns us an expand_spec with a made up PacketSpec class", V:
             res = mock.Mock(name="res")
             expand_spec = mock.Mock(name="expand_spec", return_value=res)
 
             def dynamic(pkt):
-                self.assertIs(pkt, self.pkt)
+                assert pkt is V.pkt
                 return [("one", T.Bool), ("two", T.Int8), ("three", T.Int8)]
 
             with mock.patch("photons_protocol.types.expand_spec", expand_spec):
-                self.assertIs(
-                    self.t.dynamic(dynamic).dynamic_wrapper(
-                        self.spec, self.pkt, unpacking=self.unpacking
-                    ),
-                    res,
-                )
+                assert (
+                    V.t.dynamic(dynamic).dynamic_wrapper(V.spec, V.pkt, unpacking=V.unpacking)
+                ) is res
 
-            expand_spec.assert_called_once_with(mock.ANY, self.spec, self.unpacking)
+            expand_spec.assert_called_once_with(mock.ANY, V.spec, V.unpacking)
             kls = expand_spec.mock_calls[0][1][0]
-            self.assertEqual(kls.Meta.all_names, ["one", "two", "three"])
+            assert kls.Meta.all_names == ["one", "two", "three"]
             instance = kls(one=True, two=1, three=4)
-            self.assertEqual(instance.pack(), bitarray("11000000000100000"))
+            assert instance.pack() == bitarray("11000000000100000")
 
     describe "hidden _spec":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = mock.Mock(name="conversion")
-            self.t = Type(self.struct_format, self.conversion)
 
-            self.pkt = mock.Mock(name="pkt")
-            self.unpacking = mock.Mock(name="unpacking")
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = mock.Mock(name="conversion")
 
-        it "returns spec as is if found one and no _dynamic":
-            self.assertIs(self.t._dynamic, sb.NotSpecified)
+                pkt = mock.Mock(name="pkt")
+                unpacking = mock.Mock(name="unpacking")
+
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
+
+            return V()
+
+        it "returns spec as is if found one and no _dynamic", V:
+            assert V.t._dynamic is sb.NotSpecified
 
             spec = mock.Mock(name="spec")
             spec_from_conversion = mock.Mock(name="spec_from_conversion", return_value=spec)
 
-            with mock.patch.object(self.t, "spec_from_conversion", spec_from_conversion):
-                self.assertIs(self.t._spec(self.pkt, unpacking=self.unpacking), spec)
+            with mock.patch.object(V.t, "spec_from_conversion", spec_from_conversion):
+                assert V.t._spec(V.pkt, unpacking=V.unpacking) is spec
 
-            spec_from_conversion.assert_called_once_with(self.pkt, self.unpacking)
+            spec_from_conversion.assert_called_once_with(V.pkt, V.unpacking)
 
-        it "returns dynamic_wraper if found one and _dynamic":
+        it "returns dynamic_wraper if found one and _dynamic", V:
             dynamiser = mock.Mock(name="dynamiser")
-            t = self.t.dynamic(dynamiser)
+            t = V.t.dynamic(dynamiser)
 
             res = mock.Mock(name="res")
             dynamic_wrapper = mock.Mock(name="dynamic_wrapper", return_value=res)
@@ -494,68 +517,63 @@ describe TestCase, "Type":
 
             with mock.patch.object(t, "spec_from_conversion", spec_from_conversion):
                 with mock.patch.object(t, "dynamic_wrapper", dynamic_wrapper):
-                    self.assertIs(t._spec(self.pkt, unpacking=self.unpacking), res)
+                    assert t._spec(V.pkt, unpacking=V.unpacking) is res
 
-            spec_from_conversion.assert_called_once_with(self.pkt, self.unpacking)
-            dynamic_wrapper.assert_called_once_with(spec, self.pkt, unpacking=self.unpacking)
+            spec_from_conversion.assert_called_once_with(V.pkt, V.unpacking)
+            dynamic_wrapper.assert_called_once_with(spec, V.pkt, unpacking=V.unpacking)
 
-        it "complains if it can't find a spec for the conversion":
+        it "complains if it can't find a spec for the conversion", V:
             spec_from_conversion = mock.Mock(name="spec_from_conversion", return_value=None)
 
-            with self.fuzzyAssertRaisesError(
+            with assertRaises(
                 BadConversion,
                 "Cannot create a specification for this conversion",
-                conversion=self.conversion,
+                conversion=V.conversion,
             ):
-                with mock.patch.object(self.t, "spec_from_conversion", spec_from_conversion):
-                    self.t._spec(self.pkt, unpacking=self.unpacking)
+                with mock.patch.object(V.t, "spec_from_conversion", spec_from_conversion):
+                    V.t._spec(V.pkt, unpacking=V.unpacking)
 
     describe "_maybe_transform_spec":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = mock.Mock(name="conversion")
-            self.t = Type(self.struct_format, self.conversion)
 
-            self.pkt = mock.Mock(name="pkt")
-            self.spec = mock.Mock(name="spec")
+        @pytest.fixture()
+        def V(self):
+            class V:
+                struct_format = mock.Mock(name="struct_format")
+                conversion = mock.Mock(name="conversion")
 
-        it "returns as is if unpacking or don't have _transform":
-            self.t._transform = mock.Mock(name="transform")
-            self.assertIs(self.t._maybe_transform_spec(self.pkt, self.spec, True), self.spec)
+                pkt = mock.Mock(name="pkt")
+                spec = mock.Mock(name="spec")
 
-            self.t._transform = sb.NotSpecified
-            self.assertIs(self.t._maybe_transform_spec(self.pkt, self.spec, False), self.spec)
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
 
-        it "returns as is if no _transform":
-            self.t._transform = sb.NotSpecified
-            self.assertIs(self.t._maybe_transform_spec(self.pkt, self.spec, False), self.spec)
-            self.assertIs(self.t._maybe_transform_spec(self.pkt, self.spec, True), self.spec)
+            return V()
 
-        it "wraps in transform_spec if we have _transform and aren't unpacking":
-            self.t._transform = mock.Mock(name="_transform")
+        it "returns as is if unpacking or don't have _transform", V:
+            V.t._transform = mock.Mock(name="transform")
+            assert V.t._maybe_transform_spec(V.pkt, V.spec, True) is V.spec
+
+            V.t._transform = sb.NotSpecified
+            assert V.t._maybe_transform_spec(V.pkt, V.spec, False) is V.spec
+
+        it "returns as is if no _transform", V:
+            V.t._transform = sb.NotSpecified
+            assert V.t._maybe_transform_spec(V.pkt, V.spec, False) is V.spec
+            assert V.t._maybe_transform_spec(V.pkt, V.spec, True) is V.spec
+
+        it "wraps in transform_spec if we have _transform and aren't unpacking", V:
+            V.t._transform = mock.Mock(name="_transform")
 
             wrapped = mock.Mock(name="wrapped")
             transform_spec = mock.Mock(name="transform_spec", return_value=wrapped)
 
             with mock.patch("photons_protocol.types.transform_spec", transform_spec):
-                self.assertIs(self.t._maybe_transform_spec(self.pkt, self.spec, False), wrapped)
+                assert V.t._maybe_transform_spec(V.pkt, V.spec, False) is wrapped
 
-            transform_spec.assert_called_once_with(self.pkt, self.spec, self.t.do_transform)
+            transform_spec.assert_called_once_with(V.pkt, V.spec, V.t.do_transform)
 
     describe "spec_from_conversion":
-        it "returns from the static types if in there":
-            pkt = mock.Mock(name="pkt")
-            unpacking = mock.Mock(name="unpacking")
-            struct_format = mock.Mock(name="struct_format")
-
-            self.assertEqual(type(static_conversion_from_spec), dict)
-            self.assertEqual(len(static_conversion_from_spec), 5)
-
-            for conv in static_conversion_from_spec:
-                t = Type(struct_format, conv)
-                self.assertIs(
-                    t.spec_from_conversion(pkt, unpacking), static_conversion_from_spec[conv]
-                )
 
         @contextmanager
         def mocked_spec(self, name, conversion):
@@ -568,12 +586,24 @@ describe TestCase, "Type":
             with mock.patch("photons_protocol.types.{0}".format(name), spec_maker):
                 yield t, spec_maker, spec, size_bits
 
+        it "returns from the static types if in there":
+            pkt = mock.Mock(name="pkt")
+            unpacking = mock.Mock(name="unpacking")
+            struct_format = mock.Mock(name="struct_format")
+
+            assert type(static_conversion_from_spec) == dict
+            assert len(static_conversion_from_spec) == 5
+
+            for conv in static_conversion_from_spec:
+                t = Type(struct_format, conv)
+                assert t.spec_from_conversion(pkt, unpacking) is static_conversion_from_spec[conv]
+
         it "gets us a bytes_spec if conversion is bytes":
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
             with self.mocked_spec("bytes_spec", bytes) as (t, spec_maker, spec, size_bits):
-                self.assertIs(t.spec_from_conversion(pkt, unpacking), spec)
+                assert t.spec_from_conversion(pkt, unpacking) is spec
 
             spec_maker.assert_called_once_with(pkt, size_bits)
 
@@ -588,7 +618,7 @@ describe TestCase, "Type":
             t = Type(struct_format, int)
 
             with mock.patch.object(t, "make_integer_spec", make_integer_spec):
-                self.assertIs(t.spec_from_conversion(pkt, unpacking), spec)
+                assert t.spec_from_conversion(pkt, unpacking) is spec
 
             make_integer_spec.assert_called_once_with(pkt, unpacking)
 
@@ -597,7 +627,7 @@ describe TestCase, "Type":
             unpacking = mock.Mock(name="unpacking")
 
             with self.mocked_spec("bytes_as_string_spec", str) as (t, spec_maker, spec, size_bits):
-                self.assertIs(t.spec_from_conversion(pkt, unpacking), spec)
+                assert t.spec_from_conversion(pkt, unpacking) is spec
 
             spec_maker.assert_called_once_with(pkt, size_bits, unpacking=unpacking)
 
@@ -605,131 +635,145 @@ describe TestCase, "Type":
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
-            with self.mocked_spec("csv_spec", (list, str, ",")) as (t, spec_maker, spec, size_bits):
-                self.assertIs(t.spec_from_conversion(pkt, unpacking), spec)
+            with self.mocked_spec("csv_spec", (list, str, ",")) as (
+                t,
+                spec_maker,
+                spec,
+                size_bits,
+            ):
+                assert t.spec_from_conversion(pkt, unpacking) is spec
 
             spec_maker.assert_called_once_with(pkt, size_bits, unpacking=unpacking)
 
     describe "make_integer_spec":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.t = Type(self.struct_format, int)
 
-            self.allow_float = mock.Mock(name="allow_float")
-            self.t._allow_float = self.allow_float
+        @pytest.fixture()
+        def V(self):
+            class V:
+                pkt = mock.Mock(name="pkt")
+                unpacking = mock.Mock(name="unpacking")
+                allow_float = mock.Mock(name="allow_float")
+                struct_format = mock.Mock(name="struct_format")
+                unknown_enum_values = mock.Mock(name="unknown_enum_values")
 
-            self.unknown_enum_values = mock.Mock(name="unknown_enum_values")
-            self.t._unknown_enum_values = self.unknown_enum_values
+                @hp.memoized_property
+                def t(s):
+                    t = Type(s.struct_format, int)
+                    t._allow_float = s.allow_float
+                    t._unknown_enum_values = s.unknown_enum_values
+                    return t
 
-            self.pkt = mock.Mock(name="pkt")
-            self.unpacking = mock.Mock(name="unpacking")
+                @contextmanager
+                def mocked_integer_spec(s):
+                    spec = mock.Mock(name="spec")
+                    integer_spec = mock.Mock(name="integer_spec", return_value=spec)
+                    with mock.patch("photons_protocol.types.integer_spec", integer_spec):
+                        yield integer_spec, spec
 
-        @contextmanager
-        def mocked_integer_spec(self):
-            spec = mock.Mock(name="spec")
-            integer_spec = mock.Mock(name="integer_spec", return_value=spec)
-            with mock.patch("photons_protocol.types.integer_spec", integer_spec):
-                yield integer_spec, spec
+                @contextmanager
+                def mocked_version_number_spec(s):
+                    spec = mock.Mock(name="spec")
+                    version_number_spec = mock.Mock(name="version_number_spec", return_value=spec)
+                    with mock.patch(
+                        "photons_protocol.types.version_number_spec", version_number_spec
+                    ):
+                        yield version_number_spec, spec
 
-        @contextmanager
-        def mocked_version_number_spec(self):
-            spec = mock.Mock(name="spec")
-            version_number_spec = mock.Mock(name="version_number_spec", return_value=spec)
-            with mock.patch("photons_protocol.types.version_number_spec", version_number_spec):
-                yield version_number_spec, spec
+            return V()
 
-        it "creates version_number_spec if we have _version_number set":
+        it "creates version_number_spec if we have _version_number set", V:
             em = mock.Mock(name="em")
 
-            with self.mocked_version_number_spec() as (version_number_spec, spec):
-                self.assertIs(
-                    self.t.version_number().make_integer_spec(self.pkt, self.unpacking), spec
-                )
+            with V.mocked_version_number_spec() as (version_number_spec, spec):
+                assert V.t.version_number().make_integer_spec(V.pkt, V.unpacking) is spec
 
-            version_number_spec.assert_called_once_with(unpacking=self.unpacking)
+            version_number_spec.assert_called_once_with(unpacking=V.unpacking)
 
-        it "creates integer_spec with enum if we have one":
+        it "creates integer_spec with enum if we have one", V:
             em = mock.Mock(name="em")
 
-            with self.mocked_integer_spec() as (integer_spec, spec):
-                t = self.t.enum(em, allow_unknown=self.unknown_enum_values)
-                self.assertIs(t.make_integer_spec(self.pkt, self.unpacking), spec)
+            with V.mocked_integer_spec() as (integer_spec, spec):
+                t = V.t.enum(em, allow_unknown=V.unknown_enum_values)
+                assert t.make_integer_spec(V.pkt, V.unpacking) is spec
 
             integer_spec.assert_called_once_with(
-                self.pkt,
+                V.pkt,
                 em,
                 None,
-                unpacking=self.unpacking,
-                allow_float=self.allow_float,
-                unknown_enum_values=self.unknown_enum_values,
+                unpacking=V.unpacking,
+                allow_float=V.allow_float,
+                unknown_enum_values=V.unknown_enum_values,
             )
 
-        it "creates integer_spec with bitmask if we have one":
+        it "creates integer_spec with bitmask if we have one", V:
             bitmask = mock.Mock(name="bitmask")
 
-            with self.mocked_integer_spec() as (integer_spec, spec):
-                self.assertIs(
-                    self.t.bitmask(bitmask).make_integer_spec(self.pkt, self.unpacking), spec
-                )
+            with V.mocked_integer_spec() as (integer_spec, spec):
+                assert V.t.bitmask(bitmask).make_integer_spec(V.pkt, V.unpacking) is spec
 
             integer_spec.assert_called_once_with(
-                self.pkt,
+                V.pkt,
                 None,
                 bitmask,
-                unpacking=self.unpacking,
-                allow_float=self.allow_float,
-                unknown_enum_values=self.unknown_enum_values,
+                unpacking=V.unpacking,
+                allow_float=V.allow_float,
+                unknown_enum_values=V.unknown_enum_values,
             )
 
-        it "creates integer_spec with neither enum or bitmask if we have neither":
-            with self.mocked_integer_spec() as (integer_spec, spec):
-                self.assertIs(self.t.make_integer_spec(self.pkt, self.unpacking), spec)
+        it "creates integer_spec with neither enum or bitmask if we have neither", V:
+            with V.mocked_integer_spec() as (integer_spec, spec):
+                assert V.t.make_integer_spec(V.pkt, V.unpacking) is spec
 
             integer_spec.assert_called_once_with(
-                self.pkt,
+                V.pkt,
                 None,
                 None,
-                unpacking=self.unpacking,
-                allow_float=self.allow_float,
-                unknown_enum_values=self.unknown_enum_values,
+                unpacking=V.unpacking,
+                allow_float=V.allow_float,
+                unknown_enum_values=V.unknown_enum_values,
             )
 
     describe "transforming":
-        before_each:
-            self.struct_format = mock.Mock(name="struct_format")
-            self.conversion = mock.Mock(name="conversion")
-            self.t = Type(self.struct_format, self.conversion)
 
-            self.pkt = mock.Mock(name="pkt")
-            self.value = mock.Mock(name="value")
+        @pytest.fixture()
+        def V(self):
+            class V:
+                pkt = mock.Mock(name="pkt")
+                value = mock.Mock(name="value")
+                conversion = mock.Mock(name="conversion")
+                transformed = mock.Mock(name="transformed")
+                struct_format = mock.Mock(name="struct_format")
+                untransformed = mock.Mock(name="untransformed")
 
-            self.transformed = mock.Mock(name="transformed")
-            self.transformer = mock.Mock(name="transformer", return_value=self.transformed)
+                @hp.memoized_property
+                def transformer(s):
+                    return mock.Mock(name="transformer", return_value=s.transformed)
 
-            self.untransformed = mock.Mock(name="untransformed")
-            self.untransformer = mock.Mock(name="untransformer", return_value=self.untransformed)
+                @hp.memoized_property
+                def untransformer(s):
+                    return mock.Mock(name="untransformer", return_value=s.untransformed)
+
+                @hp.memoized_property
+                def t(s):
+                    return Type(s.struct_format, s.conversion)
+
+            return V()
 
         describe "do_transform":
-            it "return value if no transformer":
-                self.assertIs(self.t.do_transform(self.pkt, self.value), self.value)
+            it "return value if no transformer", V:
+                assert V.t.do_transform(V.pkt, V.value) is V.value
 
-            it "uses the transformer if we have one":
-                self.assertIs(
-                    self.t.transform(self.transformer, self.untransformer).do_transform(
-                        self.pkt, self.value
-                    ),
-                    self.transformed,
-                )
+            it "uses the transformer if we have one", V:
+                assert (
+                    V.t.transform(V.transformer, V.untransformer).do_transform(V.pkt, V.value)
+                ) is V.transformed
 
         describe "untransform":
-            it "does nothing if no untransformer":
-                self.assertIs(self.t.untransform(self.pkt, self.value), self.value)
+            it "does nothing if no untransformer", V:
+                assert V.t.untransform(V.pkt, V.value) is V.value
 
-            it "transforms if we have an untransformer":
-                self.assertIs(
-                    self.t.transform(self.transformer, self.untransformer).untransform(
-                        self.pkt, self.value
-                    ),
-                    self.untransformed,
-                )
-                self.untransformer.assert_called_once_with(self.pkt, self.value)
+            it "transforms if we have an untransformer", V:
+                assert (
+                    V.t.transform(V.transformer, V.untransformer).untransform(V.pkt, V.value)
+                ) is V.untransformed
+                V.untransformer.assert_called_once_with(V.pkt, V.value)

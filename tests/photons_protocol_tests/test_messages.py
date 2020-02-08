@@ -3,11 +3,9 @@
 from photons_protocol.messages import Messages
 from photons_protocol.types import Type as T
 
-from photons_app.test_helpers import TestCase
-
 from unittest import mock
 
-describe TestCase, "MessagesMeta":
+describe "MessagesMeta":
     it "calls any _lifx_packet_message attribute with the name and put onto resulting kls":
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
@@ -24,10 +22,10 @@ describe TestCase, "MessagesMeta":
             three = three_msg
             four = four_msg
 
-        self.assertIs(M.one, omsg)
-        self.assertIs(M.two, tmsg)
-        self.assertIs(M.three, three_msg)
-        self.assertIs(M.four, four_msg)
+        assert M.one is omsg
+        assert M.two is tmsg
+        assert M.three is three_msg
+        assert M.four is four_msg
 
         one_msg.assert_called_once_with("one")
         two_msg.assert_called_once_with("two")
@@ -48,14 +46,11 @@ describe TestCase, "MessagesMeta":
             three = three_msg
             four = four_msg
 
-        self.assertEqual(
-            M.by_type,
-            {
-                omsg.Payload.message_type: omsg,
-                tmsg.Payload.message_type: tmsg,
-                three_msg.Payload.message_type: three_msg,
-            },
-        )
+        assert M.by_type == {
+            omsg.Payload.message_type: omsg,
+            tmsg.Payload.message_type: tmsg,
+            three_msg.Payload.message_type: three_msg,
+        }
 
     it "has the MessagesMixin":
 
