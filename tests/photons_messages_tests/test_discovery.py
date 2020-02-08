@@ -2,12 +2,12 @@
 
 from photons_messages import Services, DiscoveryMessages, protocol_register
 
-from photons_app.test_helpers import TestCase, print_packet_difference
+from photons_app.test_helpers import print_packet_difference
 from photons_app.registers import ProtocolRegister
 
 import binascii
 
-describe TestCase, "DiscoveryMessages":
+describe "DiscoveryMessages":
     it "can unpack":
         hexd = "29000014f7f15496d073d51261e200004c49465856320101000000000000000003000000017cdd0000"
 
@@ -39,4 +39,4 @@ describe TestCase, "DiscoveryMessages":
         different = print_packet_difference(unpackd, expected)
         assert not different
 
-        self.assertEqual(binascii.hexlify(expected.pack().tobytes()).decode(), hexd)
+        assert binascii.hexlify(expected.pack().tobytes()).decode() == hexd

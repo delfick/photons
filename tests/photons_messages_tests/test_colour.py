@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.test_helpers import TestCase, assert_payloads_equals
+from photons_app.test_helpers import assert_payloads_equals
 
 from photons_messages import LightMessages, Waveform, protocol_register
 
@@ -8,8 +8,9 @@ from photons_protocol.messages import Messages
 from photons_protocol.types import Optional
 
 from delfick_project.norms import sb
+import pytest
 
-describe TestCase, "LightMessages":
+describe "LightMessages":
 
     def unpack(self, msg):
         return LightMessages.unpack(msg, protocol_register=protocol_register)
@@ -30,11 +31,11 @@ describe TestCase, "LightMessages":
             },
         )
 
-        self.assertEqual(msg.payload.actual("hue"), 1820)
-        self.assertEqual(msg.payload.actual("saturation"), 6553)
-        self.assertEqual(msg.payload.actual("brightness"), 32767)
-        self.assertEqual(msg.payload.actual("kelvin"), 2500)
-        self.assertEqual(msg.payload.actual("duration"), 1000)
+        assert msg.payload.actual("hue") == 1820
+        assert msg.payload.actual("saturation") == 6553
+        assert msg.payload.actual("brightness") == 32767
+        assert msg.payload.actual("kelvin") == 2500
+        assert msg.payload.actual("duration") == 1000
 
     it "has SetWaveform":
         msg = self.unpack(
@@ -56,15 +57,15 @@ describe TestCase, "LightMessages":
             },
         )
 
-        self.assertEqual(msg.payload.actual("transient"), 0)
-        self.assertEqual(msg.payload.actual("hue"), 18204)
-        self.assertEqual(msg.payload.actual("saturation"), 6553)
-        self.assertEqual(msg.payload.actual("brightness"), 32767)
-        self.assertEqual(msg.payload.actual("kelvin"), 2500)
-        self.assertEqual(msg.payload.actual("period"), 2000)
-        self.assertEqual(msg.payload.actual("cycles"), 5)
-        self.assertEqual(msg.payload.actual("skew_ratio"), 3276)
-        self.assertEqual(msg.payload.actual("waveform"), 1)
+        assert msg.payload.actual("transient") == 0
+        assert msg.payload.actual("hue") == 18204
+        assert msg.payload.actual("saturation") == 6553
+        assert msg.payload.actual("brightness") == 32767
+        assert msg.payload.actual("kelvin") == 2500
+        assert msg.payload.actual("period") == 2000
+        assert msg.payload.actual("cycles") == 5
+        assert msg.payload.actual("skew_ratio") == 3276
+        assert msg.payload.actual("waveform") == 1
 
     it "has SetWaveformOptional":
         msg = self.unpack(
@@ -90,59 +91,59 @@ describe TestCase, "LightMessages":
             },
         )
 
-        self.assertEqual(msg.payload.actual("transient"), 0)
-        self.assertEqual(msg.payload.actual("hue"), 18204)
-        self.assertEqual(msg.payload.actual("saturation"), 0)
-        self.assertEqual(msg.payload.actual("brightness"), 32767)
-        self.assertEqual(msg.payload.actual("kelvin"), 2500)
-        self.assertEqual(msg.payload.actual("period"), 2000)
-        self.assertEqual(msg.payload.actual("cycles"), 5)
-        self.assertEqual(msg.payload.actual("skew_ratio"), 32767)
-        self.assertEqual(msg.payload.actual("waveform"), 1)
-        self.assertEqual(msg.payload.actual("set_hue"), 1)
-        self.assertEqual(msg.payload.actual("set_saturation"), 0)
-        self.assertEqual(msg.payload.actual("set_brightness"), 1)
-        self.assertEqual(msg.payload.actual("set_kelvin"), 1)
+        assert msg.payload.actual("transient") == 0
+        assert msg.payload.actual("hue") == 18204
+        assert msg.payload.actual("saturation") == 0
+        assert msg.payload.actual("brightness") == 32767
+        assert msg.payload.actual("kelvin") == 2500
+        assert msg.payload.actual("period") == 2000
+        assert msg.payload.actual("cycles") == 5
+        assert msg.payload.actual("skew_ratio") == 32767
+        assert msg.payload.actual("waveform") == 1
+        assert msg.payload.actual("set_hue") == 1
+        assert msg.payload.actual("set_saturation") == 0
+        assert msg.payload.actual("set_brightness") == 1
+        assert msg.payload.actual("set_kelvin") == 1
 
     it "SetWaveformOptional does not require all hsbk values":
         msg = LightMessages.SetWaveformOptional(hue=100, source=1, sequence=0, target=None)
-        self.assertIs(msg.actual("brightness"), sb.NotSpecified)
+        assert msg.actual("brightness") is sb.NotSpecified
 
-        self.assertEqual(msg.set_hue, 1)
-        self.assertEqual(msg.set_saturation, 0)
-        self.assertEqual(msg.set_brightness, 0)
-        self.assertEqual(msg.set_kelvin, 0)
+        assert msg.set_hue == 1
+        assert msg.set_saturation == 0
+        assert msg.set_brightness == 0
+        assert msg.set_kelvin == 0
         unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
 
-        self.assertAlmostEqual(unpackd.hue, 100, places=2)
-        self.assertEqual(unpackd.set_hue, 1)
-        self.assertEqual(unpackd.set_saturation, 0)
-        self.assertEqual(unpackd.saturation, 0)
-        self.assertEqual(unpackd.set_brightness, 0)
-        self.assertEqual(unpackd.brightness, 0)
-        self.assertEqual(unpackd.set_kelvin, 0)
-        self.assertEqual(unpackd.kelvin, 0)
+        assert unpackd.hue == pytest.approx(100, rel=1e-2)
+        assert unpackd.set_hue == 1
+        assert unpackd.set_saturation == 0
+        assert unpackd.saturation == 0
+        assert unpackd.set_brightness == 0
+        assert unpackd.brightness == 0
+        assert unpackd.set_kelvin == 0
+        assert unpackd.kelvin == 0
 
         msg = LightMessages.SetWaveformOptional.empty_normalise(
             hue=100, source=1, sequence=0, target=None
         )
-        self.assertIs(msg.actual("brightness"), Optional)
+        assert msg.actual("brightness") is Optional
 
-        self.assertEqual(msg.set_hue, 1)
-        self.assertEqual(msg.set_saturation, 0)
-        self.assertEqual(msg.set_brightness, 0)
-        self.assertEqual(msg.set_kelvin, 0)
+        assert msg.set_hue == 1
+        assert msg.set_saturation == 0
+        assert msg.set_brightness == 0
+        assert msg.set_kelvin == 0
 
         unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
 
-        self.assertAlmostEqual(unpackd.hue, 100, places=2)
-        self.assertEqual(unpackd.set_hue, 1)
-        self.assertEqual(unpackd.set_saturation, 0)
-        self.assertEqual(unpackd.saturation, 0)
-        self.assertEqual(unpackd.set_brightness, 0)
-        self.assertEqual(unpackd.brightness, 0)
-        self.assertEqual(unpackd.set_kelvin, 0)
-        self.assertEqual(unpackd.kelvin, 0)
+        assert unpackd.hue == pytest.approx(100, rel=1e-2)
+        assert unpackd.set_hue == 1
+        assert unpackd.set_saturation == 0
+        assert unpackd.saturation == 0
+        assert unpackd.set_brightness == 0
+        assert unpackd.brightness == 0
+        assert unpackd.set_kelvin == 0
+        assert unpackd.kelvin == 0
 
     it "has LightState":
         msg = self.unpack(
@@ -161,12 +162,12 @@ describe TestCase, "LightMessages":
             },
         )
 
-        self.assertEqual(msg.payload.actual("hue"), 1792)
-        self.assertEqual(msg.payload.actual("saturation"), 6553)
-        self.assertEqual(msg.payload.actual("brightness"), 32767)
-        self.assertEqual(msg.payload.actual("kelvin"), 2500)
-        self.assertEqual(msg.payload.actual("power"), 65535)
-        self.assertEqual(
-            msg.payload.actual("label").tobytes(),
-            b"den\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        assert msg.payload.actual("hue") == 1792
+        assert msg.payload.actual("saturation") == 6553
+        assert msg.payload.actual("brightness") == 32767
+        assert msg.payload.actual("kelvin") == 2500
+        assert msg.payload.actual("power") == 65535
+        assert (
+            msg.payload.actual("label").tobytes()
+            == b"den\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         )
