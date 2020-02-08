@@ -9,17 +9,15 @@ from photons_themes.appliers.stripes import (
 )
 from photons_themes.theme import Theme
 
-from photons_app.test_helpers import TestCase
-
 from contextlib import contextmanager
 from unittest import mock
 
 
 def assertTileHues(t, got, *expect):
-    t.assertEqual(len(got), len(expect))
+    assert len(got) == len(expect)
     got_hues = [float("{:.3f}".format(c.hue)) for c in got]
     expect_hues = [float("{:.3f}".format(h)) for h in expect]
-    t.assertEqual(got_hues, expect_hues)
+    assert got_hues == expect_hues
 
 
 @contextmanager
@@ -30,7 +28,7 @@ def no_shuffle(theme):
     shuffled.assert_called_once_with()
 
 
-describe TestCase, "TileApplierVerticalStripe":
+describe "TileApplierVerticalStripe":
     it "applies a vertical stripe":
         theme = Theme()
         theme.add_hsbk(0, 1, 1, 3500)
@@ -133,7 +131,7 @@ describe TestCase, "TileApplierVerticalStripe":
         )
         # fmt: on
 
-describe TestCase, "TileApplierHorizontalStripe":
+describe "TileApplierHorizontalStripe":
     it "applies a vertical stripe":
         theme = Theme()
         theme.add_hsbk(0, 1, 1, 3500)
@@ -236,7 +234,7 @@ describe TestCase, "TileApplierHorizontalStripe":
         )
         # fmt: on
 
-describe TestCase, "TileApplierDownDiagnoalStripe":
+describe "TileApplierDownDiagnoalStripe":
     it "applies a vertical stripe":
         theme = Theme()
         theme.add_hsbk(0, 1, 1, 3500)
@@ -339,7 +337,7 @@ describe TestCase, "TileApplierDownDiagnoalStripe":
         )
         # fmt: on
 
-describe TestCase, "TileApplierUpDiagonalStripe":
+describe "TileApplierUpDiagonalStripe":
     it "applies an up diagonal stripe":
         theme = Theme()
         theme.add_hsbk(0, 1, 1, 3500)
@@ -442,7 +440,7 @@ describe TestCase, "TileApplierUpDiagonalStripe":
         )
         # fmt: on
 
-describe TestCase, "TileApplierSquareStripe":
+describe "TileApplierSquareStripe":
     it "applies a vertical stripe":
         theme = Theme()
         theme.add_hsbk(0, 1, 1, 3500)

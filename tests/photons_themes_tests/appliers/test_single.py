@@ -3,11 +3,9 @@
 from photons_themes.appliers.single import LightApplier
 from photons_themes.theme import Theme, ThemeColor
 
-from photons_app.test_helpers import TestCase
-
 from unittest import mock
 
-describe TestCase, "LightApplier":
+describe "LightApplier":
     it "just returns a random color from the theme":
         color = mock.Mock(name="color")
 
@@ -16,9 +14,9 @@ describe TestCase, "LightApplier":
         theme.random.return_value = color
 
         applier = LightApplier()
-        self.assertIs(applier.apply_theme(theme), color)
+        assert applier.apply_theme(theme) is color
 
     it "returns white if there is no colors in the theme":
         theme = Theme()
         applier = LightApplier()
-        self.assertEqual(applier.apply_theme(theme), ThemeColor(0, 0, 1, 3500))
+        assert applier.apply_theme(theme) == ThemeColor(0, 0, 1, 3500)

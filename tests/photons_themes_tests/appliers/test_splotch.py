@@ -4,22 +4,24 @@ from photons_themes.appliers.splotch import StripApplierSplotch, TileApplierSplo
 from photons_themes.theme import Theme, ThemeColor
 from photons_themes.canvas import Canvas
 
-from photons_app.test_helpers import TestCase
-
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
 from unittest import mock
+import pytest
 
-describe TestCase, "StripApplierSplotch":
-    before_each:
-        self.theme = Theme()
-        self.theme.add_hsbk(0, 1, 1, 3500)
-        self.theme.add_hsbk(100, 1, 1, 3500)
-        self.theme.add_hsbk(200, 1, 1, 3500)
-        self.theme.add_hsbk(300, 1, 1, 3500)
+describe "StripApplierSplotch":
+
+    @pytest.fixture()
+    def theme(self):
+        theme = Theme()
+        theme.add_hsbk(0, 1, 1, 3500)
+        theme.add_hsbk(100, 1, 1, 3500)
+        theme.add_hsbk(200, 1, 1, 3500)
+        theme.add_hsbk(300, 1, 1, 3500)
+        return theme
 
     def assertHues(self, got, *expect):
-        self.assertEqual(len(got), len(expect), "Expected {} to be {}".format(got, expect))
+        assert len(got) == len(expect), "Expected {} to be {}".format(got, expect)
 
         expected = []
         i = 0
@@ -32,15 +34,15 @@ describe TestCase, "StripApplierSplotch":
                 expected.append((i, i))
                 i += 1
 
-        self.assertEqual([z for z, _ in got], expected)
+        assert [z for z, _ in got] == expected
 
         got_hues = []
         expected_hues = []
 
         for _, c in got:
-            self.assertEqual(c.saturation, 1)
-            self.assertEqual(c.brightness, 1)
-            self.assertEqual(c.kelvin, 3500)
+            assert c.saturation == 1
+            assert c.brightness == 1
+            assert c.kelvin == 3500
             got_hues.append("{:.3f}".format(c.hue))
 
         for thing in expect:
@@ -49,26 +51,26 @@ describe TestCase, "StripApplierSplotch":
                 h = thing[1]
             expected_hues.append("{:.3f}".format(h))
 
-        self.assertEqual(got_hues, expected_hues)
+        assert got_hues == expected_hues
 
     @contextmanager
-    def not_shuffled_theme(self):
-        shuffled = mock.Mock(name="shuffled", return_value=self.theme)
-        with mock.patch.object(self.theme, "shuffled", shuffled):
+    def not_shuffled(self, theme):
+        shuffled = mock.Mock(name="shuffled", return_value=theme)
+        with mock.patch.object(theme, "shuffled", shuffled):
             yield
         shuffled.assert_called_once_with()
 
-    it "distributes the theme to the strip":
+    it "distributes the theme to the strip", theme:
         applier = StripApplierSplotch(4)
-        with self.not_shuffled_theme():
-            got = applier.apply_theme(self.theme)
+        with self.not_shuffled(theme):
+            got = applier.apply_theme(theme)
 
         self.assertHues(got, 0, 100, 200, 300)
 
-    it "transitions to each color":
+    it "transitions to each color", theme:
         applier = StripApplierSplotch(16)
-        with self.not_shuffled_theme():
-            got = applier.apply_theme(self.theme)
+        with self.not_shuffled(theme):
+            got = applier.apply_theme(theme)
 
         # fmt: off
         self.assertHues(
@@ -79,12 +81,12 @@ describe TestCase, "StripApplierSplotch":
         )
         # fmt: on
 
-    it "transitions nicely when the colors aren't sequential":
-        self.theme.colors.insert(2, ThemeColor(40, 1, 1, 3500))
+    it "transitions nicely when the colors aren't sequential", theme:
+        theme.colors.insert(2, ThemeColor(40, 1, 1, 3500))
 
         applier = StripApplierSplotch(16)
-        with self.not_shuffled_theme():
-            got = applier.apply_theme(self.theme)
+        with self.not_shuffled(theme):
+            got = applier.apply_theme(theme)
 
         # fmt: off
         self.assertHues(
@@ -96,16 +98,20 @@ describe TestCase, "StripApplierSplotch":
         )
         # fmt: on
 
-describe TestCase, "TileApplierSplotch":
-    before_each:
-        self.user_coords_and_sizes = [
+describe "TileApplierSplotch":
+
+    @pytest.fixture()
+    def applier(self):
+        user_coords_and_sizes = [
             ((0.5, 1.5), (6, 6)),
             ((0.5, 0.5), (6, 6)),
             ((1.5, 0.5), (6, 6)),
         ]
 
-        self.applier = TileApplierSplotch.from_user_coords(self.user_coords_and_sizes)
+        return TileApplierSplotch.from_user_coords(user_coords_and_sizes)
 
+    @pytest.fixture()
+    def canvas(self):
         # fmt: off
         points = [
             (0, 12, 0),   None, None,        None, None, (5, 12, 300), # noqa
@@ -123,32 +129,34 @@ describe TestCase, "TileApplierSplotch":
         ]
         # fmt: on
 
-        self.canvas = Canvas()
+        canvas = Canvas()
         for point in points:
             if point is not None:
                 i, j, h = point
-                self.canvas[(i, j)] = ThemeColor(h, 1, 1, 3500)
+                canvas[(i, j)] = ThemeColor(h, 1, 1, 3500)
+
+        return canvas
 
     def assertHues(self, got, *hues):
         got_hues = []
         expected_hues = []
 
-        self.assertEqual(len(got), len(hues))
+        assert len(got) == len(hues)
 
         for g, e in zip(got, hues):
             if e is None:
-                self.assertEqual(g, ThemeColor(0, 0, 0.3, 3500))
+                assert g == ThemeColor(0, 0, 0.3, 3500)
                 got_hues.append(0)
                 expected_hues.append(0)
             else:
-                self.assertEqual(g.saturation, 1)
-                self.assertEqual(g.brightness, 1)
-                self.assertEqual(g.kelvin, 3500)
+                assert g.saturation == 1
+                assert g.brightness == 1
+                assert g.kelvin == 3500
 
                 got_hues.append("{:.3f}".format(g.hue))
                 expected_hues.append("{:.3f}".format(e))
 
-        self.assertEqual(got_hues, expected_hues)
+        assert got_hues == expected_hues
 
     it "can create the canvas":
         theme = Theme()
@@ -157,7 +165,11 @@ describe TestCase, "TileApplierSplotch":
         theme.add_hsbk(200, 1, 1, 3500)
         theme.add_hsbk(300, 1, 1, 3500)
 
-        user_coords_and_sizes = [((0.5, 1.5), (8, 8)), ((0.5, 0.5), (8, 8)), ((1.5, 0.5), (8, 8))]
+        user_coords_and_sizes = [
+            ((0.5, 1.5), (8, 8)),
+            ((0.5, 0.5), (8, 8)),
+            ((1.5, 0.5), (8, 8)),
+        ]
 
         applier = TileApplierSplotch.from_user_coords(user_coords_and_sizes)
         applier.just_points = True
@@ -168,17 +180,17 @@ describe TestCase, "TileApplierSplotch":
         for tile in tiles:
             hues = [c.hue for c in tile if c.saturation == 1]
             all_hues.extend(hues)
-            self.assertGreater(len(hues), 2)
-            self.assertLess(len(hues), (8 * 8) / 2)
+            assert len(hues) > 2
+            assert len(hues) < (8 * 8) / 2
 
-        self.assertGreater(len(all_hues), 6)
-        self.assertLess(len(all_hues), 3 * ((8 * 8) / 2))
+        assert len(all_hues) > 6
+        assert len(all_hues) < 3 * ((8 * 8) / 2)
 
-    it "can return just the points":
-        self.applier.just_points = True
-        tiles = self.applier.apply_theme(Theme(), canvas=self.canvas)
+    it "can return just the points", canvas, applier:
+        applier.just_points = True
+        tiles = applier.apply_theme(Theme(), canvas=canvas)
 
-        self.assertEqual(len(tiles), 3)
+        assert len(tiles) == 3
         # fmt: off
         self.assertHues(
             tiles[0],
@@ -211,10 +223,10 @@ describe TestCase, "TileApplierSplotch":
         )
         # fmt: on
 
-    it "fills in the blanks and blurs":
-        tiles = self.applier.apply_theme(Theme(), canvas=self.canvas)
+    it "fills in the blanks and blurs", canvas, applier:
+        tiles = applier.apply_theme(Theme(), canvas=canvas)
 
-        self.assertEqual(len(tiles), 3)
+        assert len(tiles) == 3
 
         # fmt: off
         self.assertHues(

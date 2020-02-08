@@ -2,11 +2,10 @@
 
 from photons_themes.theme import Theme, ThemeColor
 
-from photons_app.test_helpers import TestCase
-
 from unittest import mock
+import pytest
 
-describe TestCase, "ThemeColor":
+describe "ThemeColor":
     it "takes in hsbk":
         hue = mock.Mock(name="hue")
         saturation = mock.Mock(name="saturation")
@@ -15,10 +14,10 @@ describe TestCase, "ThemeColor":
 
         color = ThemeColor(hue, saturation, brightness, kelvin)
 
-        self.assertIs(color.hue, hue)
-        self.assertIs(color.saturation, saturation)
-        self.assertIs(color.brightness, brightness)
-        self.assertIs(color.kelvin, kelvin)
+        assert color.hue is hue
+        assert color.saturation is saturation
+        assert color.brightness is brightness
+        assert color.kelvin is kelvin
 
     it "can return as a dict":
         hue = mock.Mock(name="hue")
@@ -28,10 +27,12 @@ describe TestCase, "ThemeColor":
 
         color = ThemeColor(hue, saturation, brightness, kelvin)
 
-        self.assertEqual(
-            color.as_dict(),
-            {"hue": hue, "saturation": saturation, "brightness": brightness, "kelvin": kelvin},
-        )
+        assert color.as_dict() == {
+            "hue": hue,
+            "saturation": saturation,
+            "brightness": brightness,
+            "kelvin": kelvin,
+        }
 
     it "can return as a key suitable for a cache":
         hue = mock.Mock(name="hue")
@@ -41,7 +42,7 @@ describe TestCase, "ThemeColor":
 
         color = ThemeColor(hue, saturation, brightness, kelvin)
 
-        self.assertEqual(color.cache_key, tuple(sorted(color.as_dict().items())))
+        assert color.cache_key == tuple(sorted(color.as_dict().items()))
 
     it "can be cloned":
         hue = mock.Mock(name="hue")
@@ -51,16 +52,16 @@ describe TestCase, "ThemeColor":
         color = ThemeColor(hue, saturation, brightness, kelvin)
 
         clone = color.clone()
-        self.assertIsNot(clone, color)
+        assert clone is not color
 
-        self.assertIs(clone.hue, hue)
-        self.assertIs(clone.saturation, saturation)
-        self.assertIs(clone.brightness, brightness)
-        self.assertEqual(clone.kelvin, kelvin)
+        assert clone.hue is hue
+        assert clone.saturation is saturation
+        assert clone.brightness is brightness
+        assert clone.kelvin == kelvin
 
     it "makes sure kelvin is an integer":
         color = ThemeColor(320, 0, 0, 3500.5)
-        self.assertEqual(color.kelvin, 3500)
+        assert color.kelvin == 3500
 
     describe "creating a set of ThemeColor":
         it "works":
@@ -81,26 +82,26 @@ describe TestCase, "ThemeColor":
 
             unique = list(set(colors))
 
-            self.assertEqual(len(unique), 3)
-            self.assertEqual(sorted([c.hue for c in unique]), [0, 100, 320])
+            assert len(unique) == 3
+            assert sorted([c.hue for c in unique]) == [0, 100, 320]
 
     describe "equality":
         it "is equal if it has the same hsbk":
             color = ThemeColor(230, 0, 0, 2500)
             color2 = ThemeColor(230, 0, 0, 2500)
-            self.assertEqual(color, color2)
+            assert color == color2
 
         it "is not equal if it has different hsbk values":
             color = ThemeColor(230, 0, 0, 2400)
-            self.assertNotEqual(color, ThemeColor(230, 0, 0, 2500))
-            self.assertNotEqual(color, ThemeColor(230, 0, 1, 2400))
-            self.assertNotEqual(color, ThemeColor(230, 1, 0, 2400))
-            self.assertNotEqual(color, ThemeColor(231, 0, 0, 2400))
-            self.assertNotEqual(color, ThemeColor(231, 1, 0, 2400))
-            self.assertNotEqual(color, ThemeColor(231, 0, 1, 2400))
-            self.assertNotEqual(color, ThemeColor(231, 0, 0, 2500))
-            self.assertNotEqual(color, ThemeColor(231, 1, 0, 2500))
-            self.assertNotEqual(color, ThemeColor(231, 1, 1, 2500))
+            assert color != ThemeColor(230, 0, 0, 2500)
+            assert color != ThemeColor(230, 0, 1, 2400)
+            assert color != ThemeColor(230, 1, 0, 2400)
+            assert color != ThemeColor(231, 0, 0, 2400)
+            assert color != ThemeColor(231, 1, 0, 2400)
+            assert color != ThemeColor(231, 0, 1, 2400)
+            assert color != ThemeColor(231, 0, 0, 2500)
+            assert color != ThemeColor(231, 1, 0, 2500)
+            assert color != ThemeColor(231, 1, 1, 2500)
 
     describe "limit distance to":
 
@@ -108,7 +109,7 @@ describe TestCase, "ThemeColor":
             color = ThemeColor(hue1, 0.1, 0.6, 3500)
             color2 = ThemeColor(hue2, 0.2, 0.5, 4500)
             limited = color.limit_distance_to(color2)
-            self.assertEqual(limited, ThemeColor(expected_hue, 0.1, 0.6, 3500))
+            assert limited == ThemeColor(expected_hue, 0.1, 0.6, 3500)
 
         it "adds 90 if the distance is greater than 180":
             # The distance wraps around 360
@@ -136,20 +137,19 @@ describe TestCase, "ThemeColor":
     describe "__repr__":
         it "returns the hsbk in a nice fashion":
             color = ThemeColor(320, 0.5, 0.6, 5600)
-            self.assertEqual(repr(color), "<Color (320, 0.5, 0.6, 5600)>")
+            assert repr(color) == "<Color (320, 0.5, 0.6, 5600)>"
 
     describe "averaging colors":
 
         def assertColorAlmostEqual(self, color, want):
-            msg = "Expect {} to almost equal {}".format(color, want)
-            self.assertAlmostEqual(color.hue, want.hue, 3, msg=msg)
-            self.assertAlmostEqual(color.saturation, want.saturation, 3, msg=msg)
-            self.assertAlmostEqual(color.brightness, want.brightness, 3, msg=msg)
-            self.assertAlmostEqual(color.kelvin, want.kelvin, 3, msg=msg)
+            assert want.hue == pytest.approx(color.hue, rel=1e-3)
+            assert want.saturation == pytest.approx(color.saturation, rel=1e-3)
+            assert want.brightness == pytest.approx(color.brightness, rel=1e-3)
+            assert want.kelvin == pytest.approx(color.kelvin, rel=1e-3)
 
         it "returns white if there are no colors":
             color = ThemeColor.average([])
-            self.assertEqual(color, ThemeColor(0, 0, 1, 3500))
+            assert color == ThemeColor(0, 0, 1, 3500)
 
         it "averages saturation, brightness and kelvin":
             colors = [
@@ -193,30 +193,32 @@ describe TestCase, "ThemeColor":
             color = ThemeColor.average(colors)
             self.assertColorAlmostEqual(color, ThemeColor(20, 1, 1, 3500))
 
-describe TestCase, "Theme":
+describe "Theme":
     it "has colors":
         theme = Theme()
-        self.assertEqual(theme.colors, [])
+        assert theme.colors == []
 
     it "can have colors added":
         theme = Theme()
-        self.assertEqual(theme.colors, [])
+        assert theme.colors == []
 
         theme.add_hsbk(320, 1, 0, 3500)
         theme.add_hsbk(100, 0.5, 0.3, 3400)
 
-        self.assertEqual(
-            theme.colors, [ThemeColor(320, 1, 0, 3500), ThemeColor(100, 0.5, 0.3, 3400)]
-        )
+        assert theme.colors == [
+            ThemeColor(320, 1, 0, 3500),
+            ThemeColor(100, 0.5, 0.3, 3400),
+        ]
 
     it "iterates over the colors":
         theme = Theme()
         theme.add_hsbk(320, 1, 0, 3500)
         theme.add_hsbk(100, 0.5, 0.3, 3400)
 
-        self.assertEqual(
-            list(theme), [ThemeColor(320, 1, 0, 3500), ThemeColor(100, 0.5, 0.3, 3400)]
-        )
+        assert list(theme) == [
+            ThemeColor(320, 1, 0, 3500),
+            ThemeColor(100, 0.5, 0.3, 3400),
+        ]
 
     it "can say if a color is in the theme":
         theme = Theme()
@@ -228,7 +230,7 @@ describe TestCase, "Theme":
 
     it "can choose a random color":
         theme = Theme()
-        self.assertEqual(theme.colors, [])
+        assert theme.colors == []
 
         for i in range(0, 100, 5):
             theme.add_hsbk(i, 1, 0, 3500)
@@ -237,25 +239,25 @@ describe TestCase, "Theme":
         for _ in range(100):
             got.append(theme.random())
 
-        self.assertGreater(len(set(got)), 10)
+        assert len(set(got)) > 10
 
     it "can return how many colors are in the theme":
         theme = Theme()
-        self.assertEqual(len(theme), 0)
+        assert len(theme) == 0
 
         theme.add_hsbk(320, 1, 0, 3500)
-        self.assertEqual(len(theme), 1)
+        assert len(theme) == 1
 
         theme.add_hsbk(100, 0.5, 0.3, 3400)
-        self.assertEqual(len(theme), 2)
+        assert len(theme) == 2
 
     it "can return the i'th item in the theme":
         theme = Theme()
         theme.add_hsbk(320, 1, 0, 3500)
         theme.add_hsbk(100, 0.5, 0.3, 3400)
 
-        self.assertEqual(theme[0], ThemeColor(320, 1, 0, 3500))
-        self.assertEqual(theme[1], ThemeColor(100, 0.5, 0.3, 3400))
+        assert theme[0] == ThemeColor(320, 1, 0, 3500)
+        assert theme[1] == ThemeColor(100, 0.5, 0.3, 3400)
 
     it "can return the next item in the theme or the current if there is no next":
         theme = Theme()
@@ -263,9 +265,9 @@ describe TestCase, "Theme":
         theme.add_hsbk(0, 0.5, 0, 4500)
         theme.add_hsbk(100, 0.5, 0.3, 3400)
 
-        self.assertEqual(theme.get_next_bounds_checked(0), ThemeColor(0, 0.5, 0, 4500))
-        self.assertEqual(theme.get_next_bounds_checked(1), ThemeColor(100, 0.5, 0.3, 3400))
-        self.assertEqual(theme.get_next_bounds_checked(2), ThemeColor(100, 0.5, 0.3, 3400))
+        assert theme.get_next_bounds_checked(0) == ThemeColor(0, 0.5, 0, 4500)
+        assert theme.get_next_bounds_checked(1) == ThemeColor(100, 0.5, 0.3, 3400)
+        assert theme.get_next_bounds_checked(2) == ThemeColor(100, 0.5, 0.3, 3400)
 
     it "can return a shuffled version of the theme":
         theme = Theme()
@@ -281,15 +283,15 @@ describe TestCase, "Theme":
             theme[i].hue = i * 5
             got.append(shuffled[i].hue)
 
-        self.assertNotEqual(got, ordered)
-        self.assertEqual(sorted(got), ordered)
+        assert got != ordered
+        assert sorted(got) == ordered
 
     it "can make sure there is atleast one color":
         theme = Theme()
-        self.assertEqual(theme.colors, [])
+        assert theme.colors == []
 
         theme.ensure_color()
-        self.assertEqual(theme.colors, [ThemeColor(0, 0, 1, 3500)])
+        assert theme.colors == [ThemeColor(0, 0, 1, 3500)]
 
         theme.ensure_color()
-        self.assertEqual(theme.colors, [ThemeColor(0, 0, 1, 3500)])
+        assert theme.colors == [ThemeColor(0, 0, 1, 3500)]

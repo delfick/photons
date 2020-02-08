@@ -4,16 +4,14 @@ from photons_themes.appliers.base import TileApplier, TileApplierPattern
 from photons_themes.theme import ThemeColor, Theme
 from photons_themes.canvas import Canvas
 
-from photons_app.test_helpers import TestCase
-
 from contextlib import contextmanager
 from unittest import mock
 
-describe TestCase, "TileApplier":
+describe "TileApplier":
     it "takes in coords and sizes":
         coords_and_sizes = mock.Mock(name="coords_and_sizes")
         applier = TileApplier(coords_and_sizes)
-        self.assertIs(applier.coords_and_sizes, coords_and_sizes)
+        assert applier.coords_and_sizes is coords_and_sizes
 
     describe "from_user_coords":
         it "translates to top left corner":
@@ -25,23 +23,20 @@ describe TestCase, "TileApplier":
             ]
 
             applier = TileApplier.from_user_coords(coords_and_sizes)
-            self.assertEqual(
-                applier.coords_and_sizes,
-                [
+            assert applier.coords_and_sizes == [
                     ((8 - 4, 8 + 4), (8, 8)),
                     ((20 - 5, int(18 + 4.5)), (10, 9)),
                     ((18 - 3, 18 + 3), (6, 6))
                 ]
-            )
             # fmt: on
 
-describe TestCase, "TileApplierPattern":
+describe "TileApplierPattern":
     it "can apply a theme using the color func":
         theme = Theme()
 
         class Applier(TileApplierPattern):
             def color_func_generator(s, t, c):
-                self.assertIs(t, theme)
+                assert t is theme
 
                 def f(i, j):
                     return ThemeColor(i * 10 + j, 1, 1, 3500)
@@ -54,9 +49,7 @@ describe TestCase, "TileApplierPattern":
         tiles = applier.apply_theme(theme)
 
         # fmt: off
-        self.assertEqual(
-            [c.hue for c in tiles[0]],
-            [
+        assert [c.hue for c in tiles[0]] == [
                 105, 115, 125, 135, 145, 155,
                 104, 114, 124, 134, 144, 154,
                 103, 113, 123, 133, 143, 153,
@@ -64,11 +57,8 @@ describe TestCase, "TileApplierPattern":
                 101, 111, 121, 131, 141, 151,
                 100, 110, 120, 130, 140, 150
             ]
-        )
 
-        self.assertEqual(
-            [c.hue for c in tiles[1]],
-            [
+        assert [c.hue for c in tiles[1]] == [
                 171, 181, 191, 201, 211, 221,
                 170, 180, 190, 200, 210, 220,
                 169, 179, 189, 199, 209, 219,
@@ -76,15 +66,11 @@ describe TestCase, "TileApplierPattern":
                 167, 177, 187, 197, 207, 217,
                 166, 176, 186, 196, 206, 216
             ]
-        )
 
-        self.assertEqual(
-            applier.coords_and_sizes,
-            [
+        assert applier.coords_and_sizes == [
                 ((9, 15), (6, 6)),
                 ((15, 21), (6, 6))
             ]
-        )
         # fmt: on
 
     it "puts the corners of the tiles on the canvas":
@@ -92,7 +78,7 @@ describe TestCase, "TileApplierPattern":
 
         class Applier(TileApplierPattern):
             def color_func_generator(s, t, c):
-                self.assertIs(t, theme)
+                assert t is theme
 
                 def f(i, j):
                     return ThemeColor(i * 10 + j, 1, 1, 3500)
@@ -109,22 +95,21 @@ describe TestCase, "TileApplierPattern":
         applier = Applier.from_user_coords(user_coords_and_sizes)
         _, canvas = applier.apply_theme(theme, return_canvas=True)
 
-        self.assertEqual(
-            sorted(canvas.points.keys()),
-            sorted([(9, 15), (9 + 6, 15 - 6), (21, 21), (21 + 6, 21 - 6)]),
+        assert sorted(canvas.points.keys()) == sorted(
+            [(9, 15), (9 + 6, 15 - 6), (21, 21), (21 + 6, 21 - 6)]
         )
 
         # 1 is added to the actual width and height
-        self.assertEqual(canvas.width, 19)
-        self.assertEqual(canvas.height, 13)
+        assert canvas.width == 19
+        assert canvas.height == 13
 
     it "can get a range of colors":
 
         def assertHues(got, *expect):
-            self.assertEqual(len(got), len(expect))
+            assert len(got) == len(expect)
             got_hues = [float("{:.3f}".format(c.hue)) for c in got]
             expect_hues = [float("{:.3f}".format(h)) for h in expect]
-            self.assertEqual(got_hues, expect_hues)
+            assert got_hues == expect_hues
 
         theme = Theme()
 
@@ -138,7 +123,7 @@ describe TestCase, "TileApplierPattern":
         applier = TileApplierPattern([])
 
         with no_shuffle():
-            self.assertEqual(applier.make_colors(theme), [ThemeColor(0, 0, 1, 3500)] * 3)
+            assert applier.make_colors(theme) == [ThemeColor(0, 0, 1, 3500)] * 3
 
         theme.add_hsbk(10, 1, 1, 3500)
         theme.add_hsbk(100, 1, 1, 3500)

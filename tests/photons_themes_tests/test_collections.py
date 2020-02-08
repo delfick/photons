@@ -3,20 +3,21 @@
 from photons_themes.collections import ZoneColors, TileColors
 from photons_themes.theme import ThemeColor, Theme
 
-from photons_app.test_helpers import TestCase
-
 from unittest import mock
 
-describe TestCase, "ZoneColors":
+describe "ZoneColors":
     it "has colors":
         colors = ZoneColors()
-        self.assertEqual(colors._colors, [])
+        assert colors._colors == []
 
     it "can add a color":
         colors = ZoneColors()
         colors.add_hsbk(ThemeColor(0, 1, 1, 3500))
         colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
-        self.assertEqual(colors._colors, [ThemeColor(0, 1, 1, 3500), ThemeColor(100, 1, 1, 3500)])
+        assert colors._colors == [
+            ThemeColor(0, 1, 1, 3500),
+            ThemeColor(100, 1, 1, 3500),
+        ]
 
     describe "returning colors":
         it "returns with appropriate start_index, end_index":
@@ -25,14 +26,11 @@ describe TestCase, "ZoneColors":
             colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
             colors.add_hsbk(ThemeColor(200, 1, 1, 3500))
 
-            self.assertEqual(
-                colors.colors,
-                [
-                    ((0, 0), ThemeColor(0, 1, 1, 3500)),
-                    ((1, 1), ThemeColor(100, 1, 1, 3500)),
-                    ((2, 2), ThemeColor(200, 1, 1, 3500)),
-                ],
-            )
+            assert colors.colors == [
+                ((0, 0), ThemeColor(0, 1, 1, 3500)),
+                ((1, 1), ThemeColor(100, 1, 1, 3500)),
+                ((2, 2), ThemeColor(200, 1, 1, 3500)),
+            ]
 
         it "groups the same colors together":
             colors = ZoneColors()
@@ -44,15 +42,12 @@ describe TestCase, "ZoneColors":
             colors.add_hsbk(ThemeColor(200, 1, 1, 3500))
             colors.add_hsbk(ThemeColor(100, 1, 1, 3500))
 
-            self.assertEqual(
-                colors.colors,
-                [
-                    ((0, 2), ThemeColor(0, 1, 1, 3500)),
-                    ((3, 3), ThemeColor(100, 1, 1, 3500)),
-                    ((4, 5), ThemeColor(200, 1, 1, 3500)),
-                    ((6, 6), ThemeColor(100, 1, 1, 3500)),
-                ],
-            )
+            assert colors.colors == [
+                ((0, 2), ThemeColor(0, 1, 1, 3500)),
+                ((3, 3), ThemeColor(100, 1, 1, 3500)),
+                ((4, 5), ThemeColor(200, 1, 1, 3500)),
+                ((6, 6), ThemeColor(100, 1, 1, 3500)),
+            ]
 
     describe "applying a range":
         it "adds one color if length is 1":
@@ -60,7 +55,7 @@ describe TestCase, "ZoneColors":
             color2 = ThemeColor(100, 1, 1, 3500)
             colors = ZoneColors()
             colors.apply_to_range(color, color2, 1)
-            self.assertEqual(colors._colors, [color])
+            assert colors._colors == [color]
 
         it "adds two colors if length is 2 where second color is averaged":
             color = ThemeColor(0, 1, 1, 3500)
@@ -69,7 +64,7 @@ describe TestCase, "ZoneColors":
 
             colors = ZoneColors()
             colors.apply_to_range(color, color2, 2)
-            self.assertEqual(colors._colors, [color, second_color])
+            assert colors._colors == [color, second_color]
 
         it "applies a gradient for length greater than two":
             color = ThemeColor(0, 1, 1, 3500)
@@ -78,7 +73,7 @@ describe TestCase, "ZoneColors":
             colors = ZoneColors()
             colors.apply_to_range(color, color2, 8)
             hues = [float("{:.3f}".format(c.hue)) for c in colors._colors]
-            self.assertEqual(hues, [0.0, 12.5, 25.0, 37.5, 50.0, 62.5, 75.0, 87.5])
+            assert hues == [0.0, 12.5, 25.0, 37.5, 50.0, 62.5, 75.0, 87.5]
 
     describe "applying a theme":
         it "applies a gradient of the colors in the theme":
@@ -98,12 +93,12 @@ describe TestCase, "ZoneColors":
                 27.5, 15.0, 2.5, 356.25, 350.0, 337.5, 325.0, 312.5, 306.25, 300.0, 300.0
             ]
             # fmt: on
-            self.assertEqual(hues, expected)
+            assert hues == expected
 
-describe TestCase, "TileColors":
+describe "TileColors":
     it "has tiles":
         colors = TileColors()
-        self.assertEqual(colors.tiles, [])
+        assert colors.tiles == []
 
     it "can add a tile":
         colors = TileColors()
@@ -113,4 +108,4 @@ describe TestCase, "TileColors":
         colors.add_tile(hsbks)
         colors.add_tile(hsbks2)
 
-        self.assertEqual(colors.tiles, [hsbks, hsbks2])
+        assert colors.tiles == [hsbks, hsbks2]
