@@ -2,27 +2,26 @@
 
 from photons_device_finder import Filter, InvalidJson, InfoPoints
 
-from photons_app.test_helpers import TestCase
-
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb, Meta
 from unittest import mock
 import json
 
-describe TestCase, "Filter":
+describe "Filter":
     describe "construction":
 
         def assertFiltrMatches(self, filtr, expect):
             for field in Filter.fields:
                 if field == "force_refresh" and field not in expect:
-                    self.assertEqual(filtr[field], False)
+                    assert filtr[field] == False
                 elif field in expect:
-                    self.assertEqual(filtr[field], expect[field])
+                    assert filtr[field] == expect[field]
                 else:
-                    self.assertEqual(filtr[field], sb.NotSpecified)
+                    assert filtr[field] == sb.NotSpecified
 
         it "defaults everything to NotSpecified":
             filtr = Filter.FieldSpec().empty_normalise()
-            self.assertEqual(len(filtr.fields), 16)
+            assert len(filtr.fields) == 16
             self.assertFiltrMatches(filtr, {})
 
         describe "from_json_str":
@@ -32,12 +31,12 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.from_json_str(json.dumps(want)), filtr)
+                    assert Filter.from_json_str(json.dumps(want)) is filtr
 
                 from_options.assert_called_once_with(want)
 
             it "complains if the string is not valid json":
-                with self.fuzzyAssertRaisesError(InvalidJson):
+                with assertRaises(InvalidJson):
                     Filter.from_json_str("{")
 
             it "complains if the string is not a dictionary":
@@ -46,7 +45,7 @@ describe TestCase, "Filter":
                     json.dumps(s)
 
                     # And make sure it complains it's not a dictionary
-                    with self.fuzzyAssertRaisesError(InvalidJson, "Expected a dictionary"):
+                    with assertRaises(InvalidJson, "Expected a dictionary"):
                         Filter.from_json_str(s)
 
             it "works":
@@ -74,7 +73,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.from_key_value_str(s), filtr)
+                    assert Filter.from_key_value_str(s) is filtr
 
                 from_options.assert_called_once_with(want)
 
@@ -91,7 +90,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.from_key_value_str(s), filtr)
+                    assert Filter.from_key_value_str(s) is filtr
 
                 from_options.assert_called_once_with(want)
 
@@ -125,7 +124,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.from_url_str(s), filtr)
+                    assert Filter.from_url_str(s) is filtr
 
                 from_options.assert_called_once_with(want)
 
@@ -136,7 +135,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.from_kwargs(**want), filtr)
+                    assert Filter.from_kwargs(**want) is filtr
 
                 from_options.assert_called_once_with(want)
 
@@ -152,7 +151,7 @@ describe TestCase, "Filter":
                 options = mock.Mock(name="options")
 
                 with mock.patch.object(Filter, "FieldSpec", FieldSpec):
-                    self.assertIs(Filter.from_options(options), normalised)
+                    assert Filter.from_options(options) is normalised
 
                 FieldSpec.assert_called_once_with()
                 spec.normalise.assert_called_once_with(Meta.empty(), options)
@@ -172,7 +171,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.empty(), filtr)
+                    assert Filter.empty() is filtr
 
                 from_options.assert_called_once_with({"force_refresh": False})
 
@@ -181,7 +180,7 @@ describe TestCase, "Filter":
                 from_options = mock.Mock(name="from_options", return_value=filtr)
 
                 with mock.patch.object(Filter, "from_options", from_options):
-                    self.assertIs(Filter.empty(force_refresh=True), filtr)
+                    assert Filter.empty(force_refresh=True) is filtr
 
                 from_options.assert_called_once_with({"force_refresh": True})
 
@@ -194,7 +193,7 @@ describe TestCase, "Filter":
             filtr = Filter.empty()
             for field in filtr.fields:
                 if field != "force_refresh":
-                    self.assertEqual(filtr[field], sb.NotSpecified)
+                    assert filtr[field] == sb.NotSpecified
                     assert not filtr.has(field)
 
         it "says yes if the field has a value":
@@ -284,8 +283,11 @@ describe TestCase, "Filter":
     describe "label_fields":
         it "has a pre-filled list":
             filtr = Filter.empty()
-            self.assertEqual(
-                filtr.label_fields, ("product_identifier", "label", "location_name", "group_name")
+            assert filtr.label_fields == (
+                "product_identifier",
+                "label",
+                "location_name",
+                "group_name",
             )
 
     describe "matches_all":
@@ -303,9 +305,9 @@ describe TestCase, "Filter":
     describe "points":
         it "returns the InfoPoint enums for the fields that have values":
             filtr = Filter.from_kwargs(label="kitchen", product_id=22)
-            self.assertEqual(set(filtr.points), set([InfoPoints.LIGHT_STATE, InfoPoints.VERSION]))
+            assert set(filtr.points) == set([InfoPoints.LIGHT_STATE, InfoPoints.VERSION])
 
             filtr = Filter.from_kwargs(group_name="one")
-            self.assertEqual(set(filtr.points), set([InfoPoints.GROUP]))
+            assert set(filtr.points) == set([InfoPoints.GROUP])
 
-            self.assertEqual(set(Filter.empty().points), set())
+            assert set(Filter.empty().points) == set()

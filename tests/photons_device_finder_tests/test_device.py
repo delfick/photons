@@ -2,102 +2,102 @@
 
 from photons_device_finder import Device, Collection, Collections, Filter, InfoPoints
 
-from photons_app.test_helpers import TestCase
-
 from photons_messages import DeviceMessages, LightMessages
 from photons_products import Products
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.norms import sb
 from unittest import mock
+import pytest
 import uuid
 
-describe TestCase, "Device":
-    before_each:
-        self.device = Device.FieldSpec().empty_normalise(serial="d073d5000001")
+describe "Device":
 
-    it "has property_fields":
-        self.assertEqual(
-            self.device.property_fields, ["group_id", "group_name", "location_name", "location_id"]
-        )
-        for field in self.device.property_fields:
-            self.assertEqual(getattr(self.device, field), sb.NotSpecified)
+    @pytest.fixture()
+    def device(self):
+        return Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
-        self.device.group = Collection.FieldSpec().empty_normalise(
+    it "has property_fields", device:
+        assert device.property_fields == [
+            "group_id",
+            "group_name",
+            "location_name",
+            "location_id",
+        ]
+        for field in device.property_fields:
+            assert getattr(device, field) == sb.NotSpecified
+
+        device.group = Collection.FieldSpec().empty_normalise(
             typ="group", uuid="uuidg", name="blah"
         )
-        self.device.location = Collection.FieldSpec().empty_normalise(
+        device.location = Collection.FieldSpec().empty_normalise(
             typ="location", uuid="uuidl", name="meh"
         )
 
-        self.assertEqual(self.device.group_id, "uuidg")
-        self.assertEqual(self.device.group_name, "blah")
+        assert device.group_id == "uuidg"
+        assert device.group_name == "blah"
 
-        self.assertEqual(self.device.location_id, "uuidl")
-        self.assertEqual(self.device.location_name, "meh")
+        assert device.location_id == "uuidl"
+        assert device.location_name == "meh"
 
-    it "modifies as_dict to have the property_fields instead of group and location":
-        self.device.label = "kitchen"
-        self.device.power = "on"
-        self.device.group = Collection.FieldSpec().empty_normalise(
+    it "modifies as_dict to have the property_fields instead of group and location", device:
+        device.label = "kitchen"
+        device.power = "on"
+        device.group = Collection.FieldSpec().empty_normalise(
             typ="group", uuid="uuidg", name="blah"
         )
-        self.device.location = Collection.FieldSpec().empty_normalise(
+        device.location = Collection.FieldSpec().empty_normalise(
             typ="location", uuid="uuidl", name="meh"
         )
-        self.device.hue = 20
-        self.device.saturation = 0.5
-        self.device.brightness = 0.6
-        self.device.kelvin = 2500
-        self.device.firmware_version = "1.2"
-        self.device.product_id = 22
-        self.device.product_identifier = "color_a19"
-        self.device.cap = ["multizone", "color"]
+        device.hue = 20
+        device.saturation = 0.5
+        device.brightness = 0.6
+        device.kelvin = 2500
+        device.firmware_version = "1.2"
+        device.product_id = 22
+        device.product_identifier = "color_a19"
+        device.cap = ["multizone", "color"]
 
-        self.assertEqual(
-            self.device.as_dict(),
-            {
-                "serial": "d073d5000001",
-                "label": "kitchen",
-                "power": "on",
-                "group_id": "uuidg",
-                "group_name": "blah",
-                "location_id": "uuidl",
-                "location_name": "meh",
-                "hue": 20,
-                "saturation": 0.5,
-                "brightness": 0.6,
-                "kelvin": 2500,
-                "firmware_version": "1.2",
-                "product_id": 22,
-                "product_identifier": "color_a19",
-                "cap": ["multizone", "color"],
-            },
-        )
+        assert device.as_dict() == {
+            "serial": "d073d5000001",
+            "label": "kitchen",
+            "power": "on",
+            "group_id": "uuidg",
+            "group_name": "blah",
+            "location_id": "uuidl",
+            "location_name": "meh",
+            "hue": 20,
+            "saturation": 0.5,
+            "brightness": 0.6,
+            "kelvin": 2500,
+            "firmware_version": "1.2",
+            "product_id": 22,
+            "product_identifier": "color_a19",
+            "cap": ["multizone", "color"],
+        }
 
     describe "matches":
-        it "says yes if the filter matches all":
-            self.device.label = "kitchen"
-            self.device.power = "on"
+        it "says yes if the filter matches all", device:
+            device.label = "kitchen"
+            device.power = "on"
             filtr = Filter.empty()
             assert filtr.matches_all
-            assert self.device.matches(filtr)
+            assert device.matches(filtr)
 
-        it "says yes if the filter matches all and device has no fields":
+        it "says yes if the filter matches all and device has no fields", device:
             filtr = Filter.empty()
             assert filtr.matches_all
-            assert self.device.matches(filtr)
+            assert device.matches(filtr)
 
-        it "says no if the filtr does not match":
+        it "says no if the filtr does not match", device:
             filtr = Filter.from_kwargs(label="bathroom")
-            self.device.label = "kitchen"
-            assert not self.device.matches(filtr)
+            device.label = "kitchen"
+            assert not device.matches(filtr)
 
-        it "says no if the device has nothing on it":
+        it "says no if the device has nothing on it", device:
             filtr = Filter.from_kwargs(label="bathroom")
-            assert not self.device.matches(filtr)
+            assert not device.matches(filtr)
 
-        it "says yes if the filtr matches":
+        it "says yes if the filtr matches", device:
             filtr = mock.Mock(name="filtr", matches_all=False)
             filtr.matches.return_value = True
 
@@ -106,17 +106,16 @@ describe TestCase, "Device":
 
             filtr.has.side_effect = has
 
-            self.device.label = "kitchen"
-            self.device.power = "on"
-            self.device.product_id = 22
-            self.device.group = Collection.FieldSpec().empty_normalise(
+            device.label = "kitchen"
+            device.power = "on"
+            device.product_id = 22
+            device.group = Collection.FieldSpec().empty_normalise(
                 typ="group", uuid="uuidg", name="blah"
             )
 
-            assert self.device.matches(filtr)
+            assert device.matches(filtr)
 
-            self.assertEqual(
-                sorted(filtr.has.mock_calls),
+            assert sorted(filtr.has.mock_calls) == (
                 sorted(
                     [
                         mock.call("label"),
@@ -127,11 +126,10 @@ describe TestCase, "Device":
                         mock.call("group_name"),
                         mock.call("serial"),
                     ]
-                ),
+                )
             )
 
-            self.assertEqual(
-                sorted(filtr.matches.mock_calls),
+            assert sorted(filtr.matches.mock_calls) == (
                 sorted(
                     [
                         mock.call("label", "kitchen"),
@@ -141,136 +139,129 @@ describe TestCase, "Device":
                         mock.call("group_name", "blah"),
                         mock.call("serial", "d073d5000001"),
                     ]
-                ),
+                )
             )
 
     describe "set_from_pkt":
-        before_each:
-            self.collections = Collections()
 
-        it "can take in a LightState":
+        @pytest.fixture()
+        def collections(self):
+            return Collections()
+
+        it "can take in a LightState", device, collections:
             pkt = LightMessages.LightState.empty_normalise(
                 label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LIGHT_STATE)
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
 
-            self.assertEqual(self.device.label, "kitchen")
-            self.assertEqual(self.device.power, "off")
-            self.assertEqual(self.device.hue, pkt.hue)
-            self.assertEqual(self.device.saturation, pkt.saturation)
-            self.assertEqual(self.device.brightness, pkt.brightness)
-            self.assertEqual(self.device.kelvin, 4500)
+            assert device.label == "kitchen"
+            assert device.power == "off"
+            assert device.hue == pkt.hue
+            assert device.saturation == pkt.saturation
+            assert device.brightness == pkt.brightness
+            assert device.kelvin == 4500
 
             # And test when power is on
             pkt = LightMessages.LightState.empty_normalise(
                 label="kitchen", power=65535, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
             )
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LIGHT_STATE)
-            self.assertEqual(self.device.power, "on")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
+            assert device.power == "on"
 
-        it "can take in StateGroup":
+        it "can take in StateGroup", device, collections:
             group_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.empty_normalise(
                 group=group_uuid, updated_at=1, label="group1"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
-            self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid])
-            self.assertEqual(self.device.group_id, group_uuid)
-            self.assertEqual(self.device.group_name, "group1")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
+            assert device.group == collections.collections["group"][group_uuid]
+            assert device.group_id == group_uuid
+            assert device.group_name == "group1"
 
-            group = self.device.group
+            group = device.group
 
             pkt = DeviceMessages.StateGroup.empty_normalise(
                 group=group_uuid, updated_at=2, label="group1renamed"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
-            self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid])
-            self.assertIs(self.device.group, group)
-            self.assertEqual(self.device.group_id, group_uuid)
-            self.assertEqual(self.device.group_name, "group1renamed")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
+            assert device.group == collections.collections["group"][group_uuid]
+            assert device.group is group
+            assert device.group_id == group_uuid
+            assert device.group_name == "group1renamed"
 
             group_uuid2 = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.empty_normalise(
                 group=group_uuid2, updated_at=2, label="group2"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.GROUP)
-            self.assertEqual(self.device.group, self.collections.collections["group"][group_uuid2])
-            self.assertIsNot(self.device.group, group)
-            self.assertEqual(self.device.group_id, group_uuid2)
-            self.assertEqual(self.device.group_name, "group2")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
+            assert device.group == collections.collections["group"][group_uuid2]
+            assert device.group is not group
+            assert device.group_id == group_uuid2
+            assert device.group_name == "group2"
 
-            assert group_uuid in self.collections.collections["group"]
-            assert group_uuid2 in self.collections.collections["group"]
+            assert group_uuid in collections.collections["group"]
+            assert group_uuid2 in collections.collections["group"]
 
-        it "can take in StateLocation":
+        it "can take in StateLocation", device, collections:
             location_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateLocation.empty_normalise(
                 location=location_uuid, updated_at=1, label="location1"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(
-                self.device.location, self.collections.collections["location"][location_uuid]
-            )
-            self.assertEqual(self.device.location_id, location_uuid)
-            self.assertEqual(self.device.location_name, "location1")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
+            assert device.location == collections.collections["location"][location_uuid]
+            assert device.location_id == location_uuid
+            assert device.location_name == "location1"
 
-            location = self.device.location
+            location = device.location
 
             pkt = DeviceMessages.StateLocation.empty_normalise(
                 location=location_uuid, updated_at=2, label="location1renamed"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(
-                self.device.location, self.collections.collections["location"][location_uuid]
-            )
-            self.assertIs(self.device.location, location)
-            self.assertEqual(self.device.location_id, location_uuid)
-            self.assertEqual(self.device.location_name, "location1renamed")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
+            assert device.location == collections.collections["location"][location_uuid]
+            assert device.location is location
+            assert device.location_id == location_uuid
+            assert device.location_name == "location1renamed"
 
             location_uuid2 = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateLocation.empty_normalise(
                 location=location_uuid2, updated_at=2, label="location2"
             )
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.LOCATION)
-            self.assertEqual(
-                self.device.location, self.collections.collections["location"][location_uuid2]
-            )
-            self.assertIsNot(self.device.location, location)
-            self.assertEqual(self.device.location_id, location_uuid2)
-            self.assertEqual(self.device.location_name, "location2")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
+            assert device.location == collections.collections["location"][location_uuid2]
+            assert device.location is not location
+            assert device.location_id == location_uuid2
+            assert device.location_name == "location2"
 
-            assert location_uuid in self.collections.collections["location"]
-            assert location_uuid2 in self.collections.collections["location"]
+            assert location_uuid in collections.collections["location"]
+            assert location_uuid2 in collections.collections["location"]
 
-        it "takes in StateHostFirmware":
+        it "takes in StateHostFirmware", device, collections:
             pkt = DeviceMessages.StateHostFirmware.empty_normalise(
                 version_major=1, version_minor=20
             )
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.FIRMWARE)
-            self.assertEqual(self.device.firmware_version, "1.20")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.FIRMWARE
+            assert device.firmware_version == "1.20"
 
-        it "takes in StateVersion":
+        it "takes in StateVersion", device, collections:
             pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
 
-            self.assertIs(self.device.set_from_pkt(pkt, self.collections), InfoPoints.VERSION)
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 
-            self.assertEqual(self.device.product_id, 22)
-            self.assertEqual(self.device.product_identifier, Products[1, 22].identifier)
-            self.assertEqual(
-                self.device.cap,
-                [
-                    "color",
-                    "not_chain",
-                    "not_ir",
-                    "not_matrix",
-                    "not_multizone",
-                    "variable_color_temp",
-                ],
-            )
+            assert device.product_id == 22
+            assert device.product_identifier == Products[1, 22].identifier
+            assert device.cap == [
+                "color",
+                "not_chain",
+                "not_ir",
+                "not_matrix",
+                "not_multizone",
+                "variable_color_temp",
+            ]

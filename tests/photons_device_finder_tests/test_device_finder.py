@@ -3,15 +3,15 @@
 from photons_device_finder import DeviceFinder, Filter
 
 from photons_app.errors import PhotonsAppError, FoundNoDevices
-from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import SpecialReference
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asynctest
 import binascii
+import pytest
 
-describe AsyncTestCase, "DeviceFinder":
+describe "DeviceFinder":
     async it "makes itself a loops and sets daemon to False":
         target = mock.Mock(name="target")
         loops = mock.Mock(name="loops")
@@ -29,8 +29,8 @@ describe AsyncTestCase, "DeviceFinder":
                 repeat_spread=repeat_spread,
             )
 
-        self.assertIs(finder.loops, loops)
-        self.assertEqual(finder.daemon, False)
+        assert finder.loops is loops
+        assert finder.daemon == False
 
         DeviceFinderLoops.assert_called_once_with(
             target,
@@ -40,65 +40,69 @@ describe AsyncTestCase, "DeviceFinder":
         )
 
     describe "functionality":
-        async before_each:
-            self.target = mock.Mock(name="target")
-            self.loops = mock.Mock(name="loops")
-            self.interval = mock.Mock(name="interval")
 
-            DeviceFinderLoops = mock.Mock(name="DeviceFinderLoops", return_value=self.loops)
+        @pytest.fixture()
+        def loops(self):
+            return mock.Mock(name="loops")
+
+        @pytest.fixture()
+        def finder(self, loops):
+            target = mock.Mock(name="target")
+            interval = mock.Mock(name="interval")
+            DeviceFinderLoops = mock.Mock(name="DeviceFinderLoops", return_value=loops)
 
             with mock.patch("photons_device_finder.DeviceFinderLoops", DeviceFinderLoops):
-                self.finder = DeviceFinder(self.target, service_search_interval=self.interval)
+                yield DeviceFinder(target, service_search_interval=interval)
 
         describe "start":
-            async it "starts the loops and sets daemon to True":
+            async it "starts the loops and sets daemon to True", loops, finder:
                 start = asynctest.mock.CoroutineMock(name="start")
-                self.loops.start = start
+                loops.start = start
 
                 quickstart = mock.Mock(name="quickstrt")
-                await self.finder.start(quickstart=quickstart)
-                self.assertIs(self.finder.daemon, True)
+                await finder.start(quickstart=quickstart)
+                assert finder.daemon is True
 
                 start.assert_called_once_with(quickstart=quickstart)
 
-            async it "defaults to not being a quickstart":
+            async it "defaults to not being a quickstart", loops, finder:
                 start = asynctest.mock.CoroutineMock(name="start")
-                self.loops.start = start
+                loops.start = start
 
-                await self.finder.start()
+                await finder.start()
 
                 start.assert_called_once_with(quickstart=False)
 
         describe "finish":
-            async it "calls finish on the loops":
+            async it "calls finish on the loops", loops, finder:
                 finish = asynctest.mock.CoroutineMock(name="finish")
-                self.loops.finish = finish
+                loops.finish = finish
 
-                await self.finder.finish()
+                await finder.finish()
                 finish.assert_called_once_with()
 
         describe "args_for_run":
-            async it "proxies to loops":
+            async it "proxies to loops", finder, loops:
                 afr = mock.Mock(name="afr")
                 args_for_run = asynctest.mock.CoroutineMock(name="finish", return_value=afr)
-                self.loops.args_for_run = args_for_run
+                loops.args_for_run = args_for_run
 
-                self.assertIs(await self.finder.args_for_run(), afr)
+                assert await finder.args_for_run() is afr
                 args_for_run.assert_called_once_with()
 
         describe "find":
-            async it "proxies _find":
+            async it "proxies _find", finder:
                 res = mock.Mock(name="res")
                 _find = mock.Mock(name="_find", return_value=res)
 
                 kwargs = {"one": "two", "three": "four"}
-                with mock.patch.object(self.finder, "_find", _find):
-                    self.assertIs(self.finder.find(**kwargs), res)
+                with mock.patch.object(finder, "_find", _find):
+                    assert finder.find(**kwargs) is res
 
                 _find.assert_called_once_with(kwargs)
 
         describe "serials":
-            async it "gets serials from our special reference":
+            async it "gets serials from our special reference", finder:
                 found = mock.Mock(name="found")
                 serials = mock.Mock(name="serials")
 
@@ -113,19 +117,19 @@ describe AsyncTestCase, "DeviceFinder":
                 _find = mock.Mock(name="_find", return_value=reference)
 
                 kwargs = {"one": "two", "three": "four"}
-                with mock.patch.multiple(self.finder, _find=_find, args_for_run=args_for_run):
-                    self.assertIs(await self.wait_for(self.finder.serials(**kwargs)), serials)
+                with mock.patch.multiple(finder, _find=_find, args_for_run=args_for_run):
+                    assert (await finder.serials(**kwargs)) is serials
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs)
                 reference.find.assert_called_once_with(afr, timeout=5)
 
         describe "info_for":
-            async it "gets info from the store given found from our special reference":
+            async it "gets info from the store given found from our special reference", loops, finder:
                 info = mock.Mock(name="info")
                 store = mock.Mock(name="store")
                 store.info_for.return_value = info
-                self.loops.store = store
+                loops.store = store
 
                 found = mock.Mock(name="found")
                 serials = ["d1", "d2"]
@@ -141,8 +145,8 @@ describe AsyncTestCase, "DeviceFinder":
                 _find = mock.Mock(name="_find", return_value=reference)
 
                 kwargs = {"one": "two", "three": "four"}
-                with mock.patch.multiple(self.finder, _find=_find, args_for_run=args_for_run):
-                    self.assertIs(await self.wait_for(self.finder.info_for(**kwargs)), info)
+                with mock.patch.multiple(finder, _find=_find, args_for_run=args_for_run):
+                    assert (await finder.info_for(**kwargs)) is info
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs, for_info=True)
@@ -150,24 +154,24 @@ describe AsyncTestCase, "DeviceFinder":
                 store.info_for.assert_called_once_with(["d1", "d2"])
 
         describe "private _find":
-            async it "ensures the loops are interpreting and uses _reference with provided filtr":
+            async it "ensures the loops are interpreting and uses _reference with provided filtr", loops, finder:
                 reference = mock.Mock(name="reference")
                 _reference = mock.Mock(name="_reference", return_value=reference)
                 filtr = mock.Mock(name="filtr")
 
-                with mock.patch.object(self.finder, "_reference", _reference):
-                    self.assertIs(self.finder._find({"filtr": filtr}), reference)
+                with mock.patch.object(finder, "_reference", _reference):
+                    assert finder._find({"filtr": filtr}) is reference
 
                 _reference.assert_called_once_with(filtr, for_info=False)
-                self.loops.ensure_interpreting.assert_called_once_with()
+                loops.ensure_interpreting.assert_called_once_with()
 
-            async it "complains if filtr is accompanied by other kwargs":
-                with self.fuzzyAssertRaisesError(
+            async it "complains if filtr is accompanied by other kwargs", finder:
+                with assertRaises(
                     PhotonsAppError, "Please either specify filters or a filtr, not both"
                 ):
-                    self.finder._find({"filtr": mock.Mock(name="filtr"), "one": "two"})
+                    finder._find({"filtr": mock.Mock(name="filtr"), "one": "two"})
 
-            async it "uses from_options if filtr not provided":
+            async it "uses from_options if filtr not provided", loops, finder:
                 reference = mock.Mock(name="reference")
                 _reference = mock.Mock(name="_reference", return_value=reference)
 
@@ -176,104 +180,109 @@ describe AsyncTestCase, "DeviceFinder":
 
                 kwargs = {"one": "two", "three": "four"}
                 with mock.patch.object(Filter, "from_options", from_options):
-                    with mock.patch.object(self.finder, "_reference", _reference):
-                        self.assertIs(self.finder._find(kwargs), reference)
+                    with mock.patch.object(finder, "_reference", _reference):
+                        assert finder._find(kwargs) is reference
 
                 _reference.assert_called_once_with(filtr, for_info=False)
-                self.loops.ensure_interpreting.assert_called_once_with()
+                loops.ensure_interpreting.assert_called_once_with()
                 from_options.assert_called_once_with(kwargs)
 
         describe "private _reference":
-            async before_each:
+
+            @pytest.fixture()
+            def found(self):
                 target1 = binascii.unhexlify("d071")
                 target2 = binascii.unhexlify("d072")
-                self.found = {
+                return {
                     target1: mock.Mock(name="target1"),
                     target2: mock.Mock(name="target2"),
                 }
-                self.serials = ["d071", "d072"]
 
-            async it "sets serials if that's the only thing in the filter":
+            @pytest.fixture()
+            def serials(self):
+                return ["d071", "d072"]
+
+            async it "sets serials if that's the only thing in the filter", finder:
                 filtr = Filter.from_kwargs(serial=["d1", "d2"])
-                ref = self.finder._reference(filtr)
-                self.assertEqual(ref.serials, ["d1", "d2"])
+                ref = finder._reference(filtr)
+                assert ref.serials == ["d1", "d2"]
 
                 filtr = Filter.from_kwargs(serial=["d1", "d2"], label="den")
-                ref = self.finder._reference(filtr)
+                ref = finder._reference(filtr)
                 assert not hasattr(ref, "serials")
 
                 filtr = Filter.from_kwargs(label="den")
-                ref = self.finder._reference(filtr)
+                ref = finder._reference(filtr)
                 assert not hasattr(ref, "serials")
 
                 filtr = Filter.from_kwargs()
-                ref = self.finder._reference(filtr)
+                ref = finder._reference(filtr)
                 assert not hasattr(ref, "serials")
 
-            async it "does a refresh_from_filter if force_refresh":
-                self.finder.daemon = True
+            async it "does a refresh_from_filter if force_refresh", loops, finder, found, serials:
+                finder.daemon = True
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=True)
-                self.loops.refresh_from_filter = asynctest.mock.CoroutineMock(
-                    name="refresh_from_filter", return_value=self.found
+                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                    name="refresh_from_filter", return_value=found
                 )
 
-                reference = self.finder._reference(filtr)
+                reference = finder._reference(filtr)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, timeout=1))
-                self.assertEqual(f, self.found)
-                self.assertEqual(sorted(s), sorted(self.serials))
-                self.loops.refresh_from_filter.assert_called_once_with(
+                f, s = await reference.find(afr, timeout=1)
+                assert f == found
+                assert sorted(s) == sorted(serials)
+                loops.refresh_from_filter.assert_called_once_with(
                     filtr, for_info=False, find_timeout=1
                 )
 
-            async it "does a refresh_from_filter if not a daemon":
-                assert not self.finder.daemon
+            async it "does a refresh_from_filter if not a daemon", loops, finder, found, serials:
+                assert not finder.daemon
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
-                self.loops.refresh_from_filter = asynctest.mock.CoroutineMock(
-                    name="refresh_from_filter", return_value=self.found
+                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                    name="refresh_from_filter", return_value=found
                 )
 
-                reference = self.finder._reference(filtr, for_info=True)
+                reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, timeout=2))
-                self.assertEqual(f, self.found)
-                self.assertEqual(sorted(s), sorted(self.serials))
-                self.loops.refresh_from_filter.assert_called_once_with(
+                f, s = await reference.find(afr, timeout=2)
+                assert f == found
+                assert sorted(s) == sorted(serials)
+                loops.refresh_from_filter.assert_called_once_with(
                     filtr, for_info=True, find_timeout=2
                 )
 
-            async it "does just a found_from_filter if a daemon and not force_refresh":
-                self.finder.daemon = True
+            async it "does just a found_from_filter if a daemon and not force_refresh", loops, finder, found, serials:
+                finder.daemon = True
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 store = mock.Mock(name="store")
                 store.found_from_filter = asynctest.mock.CoroutineMock(
-                    name="found_from_filter", return_value=self.found
+                    name="found_from_filter", return_value=found
                 )
-                self.loops.store = store
+                loops.store = store
 
-                reference = self.finder._reference(filtr, for_info=True)
+                reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await self.wait_for(reference.find(afr, timeout=3))
-                self.assertEqual(f, self.found)
-                self.assertEqual(sorted(s), sorted(self.serials))
+                f, s = await reference.find(afr, timeout=3)
+                assert f == found
+                assert sorted(s) == sorted(serials)
 
-                self.assertEqual(len(self.loops.refresh_from_filter.mock_calls), 0)
+                assert len(loops.refresh_from_filter.mock_calls) == 0
                 store.found_from_filter.assert_called_once_with(
                     filtr, for_info=True, find_timeout=3
                 )
 
-            async it "raises FondNoDevices if there are no devices to be found":
-                self.finder.daemon = True
+            async it "raises FondNoDevices if there are no devices to be found", loops, finder:
+                finder.daemon = True
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
@@ -282,33 +291,33 @@ describe AsyncTestCase, "DeviceFinder":
                 store.found_from_filter = asynctest.mock.CoroutineMock(
                     name="found_from_filter", return_value={}
                 )
-                self.loops.store = store
+                loops.store = store
 
-                reference = self.finder._reference(filtr, for_info=True)
+                reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                with self.fuzzyAssertRaisesError(FoundNoDevices):
-                    await self.wait_for(reference.find(afr, timeout=3))
+                with assertRaises(FoundNoDevices):
+                    await reference.find(afr, timeout=3)
 
-                self.assertEqual(len(self.loops.refresh_from_filter.mock_calls), 0)
+                assert len(loops.refresh_from_filter.mock_calls) == 0
                 store.found_from_filter.assert_called_once_with(
                     filtr, for_info=True, find_timeout=3
                 )
 
-            async it "raises FoundNoDevices if we go via refresh_from_filter":
+            async it "raises FoundNoDevices if we go via refresh_from_filter", loops, finder:
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
-                self.loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
                     name="refresh_from_filter", return_value={}
                 )
 
-                reference = self.finder._reference(filtr, for_info=True)
+                reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                with self.fuzzyAssertRaisesError(FoundNoDevices):
-                    await self.wait_for(reference.find(afr, timeout=4))
+                with assertRaises(FoundNoDevices):
+                    await reference.find(afr, timeout=4)
 
-                self.loops.refresh_from_filter.assert_called_once_with(
+                loops.refresh_from_filter.assert_called_once_with(
                     filtr, for_info=True, find_timeout=4
                 )

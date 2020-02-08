@@ -3,7 +3,6 @@
 from photons_device_finder import DeviceFinder, InfoPoints, DeviceFinderWrap, Filter
 
 from photons_app.registers import ProtocolRegister
-from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages, protocol_register
 from photons_transport.fake import FakeDevice, Responder
@@ -13,6 +12,7 @@ from photons_products import Products
 
 from delfick_project.norms import dictobj
 import asyncio
+import pytest
 import uuid
 
 
@@ -88,17 +88,23 @@ device3 = FakeDevice(
     ],
 )
 
-mlr = chp.ModuleLevelRunner([device1, device2, device3])
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner([device1, device2, device3]) as runner:
+        yield runner
 
-describe AsyncTestCase, "Device finder":
-    use_default_loop = True
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
+
+
+describe "Device finder":
 
     def expect_received(self, device, *msgs):
         if not msgs:
-            self.assertEqual(device.received, [])
+            assert device.received == []
 
         # De-duplicate to not fail on retries
         typs = []
@@ -106,63 +112,58 @@ describe AsyncTestCase, "Device finder":
             if type(m) not in typs:
                 typs.append(type(m))
 
-        self.assertEqual(len(typs), len(msgs), typs)
+        assert len(typs) == len(msgs), typs
         for t, m in zip(typs, msgs):
             assert t == m, "expected {0} to be {1}".format(t, m)
 
         while device.received:
             device.received.pop()
 
-    @mlr.test
     async it "can find all serials", runner:
         async with runner.target.session() as afr:
             finder = DeviceFinder(runner.target)
             try:
                 serials = await finder.serials()
-                self.assertEqual(
-                    sorted(serials), sorted([device1.serial, device2.serial, device3.serial])
-                )
+                assert sorted(serials) == sorted([device1.serial, device2.serial, device3.serial])
             finally:
                 await finder.finish()
 
-    @mlr.test
     async it "can find a particular serial", runner:
         async with runner.target.session() as afr:
             finder = DeviceFinder(runner.target)
             try:
                 serials = await finder.serials(serial=[device1.serial])
-                self.assertEqual(sorted(serials), sorted([device1.serial]))
+                assert sorted(serials) == sorted([device1.serial])
             finally:
                 await finder.finish()
 
-    @mlr.test
     async it "can find with the device finder wrap", runner:
         wrap = DeviceFinderWrap(Filter.from_kwargs(), runner.target)
         try:
             async with runner.target.session() as afr:
                 found, serials = await wrap.find(afr, timeout=5)
                 want = sorted([d.serial for d in runner.devices])
-                self.assertEqual(sorted(found.serials), want)
-                self.assertEqual(sorted(serials), want)
+                assert sorted(found.serials) == want
+                assert sorted(serials) == want
         finally:
             await wrap.finish()
 
-    @mlr.test
+    @pytest.mark.async_timeout(10)
     async it "can be used to get info", runner:
 
         class W:
-            async def __aenter__(self):
-                self.finder = DeviceFinder(
+            async def __aenter__(s):
+                s.finder = DeviceFinder(
                     runner.target,
                     service_search_interval=1,
                     information_search_interval=2,
                     repeat_spread=0.1,
                 )
-                await self.finder.start()
-                return self.finder
+                await s.finder.start()
+                return s.finder
 
-            async def __aexit__(self, exc_type, exc, tb):
-                await self.finder.finish()
+            async def __aexit__(s, exc_type, exc, tb):
+                await s.finder.finish()
 
         async with W() as finder:
             info = await finder.info_for()
@@ -241,8 +242,7 @@ describe AsyncTestCase, "Device finder":
                 },
             }
 
-            self.maxDiff = None
-            self.assertEqual(info, expected)
+            assert info == expected
 
             self.expect_received(device1, *[type(e.value.msg) for e in InfoPoints])
             self.expect_received(device2, *[type(e.value.msg) for e in InfoPoints])
@@ -252,21 +252,21 @@ describe AsyncTestCase, "Device finder":
             self.expect_received(device1, LightMessages.GetColor)
             self.expect_received(device2, LightMessages.GetColor)
             self.expect_received(device3, LightMessages.GetColor)
-            self.assertEqual(serials, [device1.serial])
+            assert serials == [device1.serial]
 
             serials = await finder.serials(group_name="two", force_refresh=True)
             self.expect_received(device1, DeviceMessages.GetGroup)
             self.expect_received(device2, DeviceMessages.GetGroup)
             self.expect_received(device3, DeviceMessages.GetGroup)
-            self.assertEqual(set(serials), set([device1.serial, device2.serial]))
+            assert set(serials) == set([device1.serial, device2.serial])
 
             # And make sure filters without refresh don't ruin other filters
-            self.assertEqual(
-                set(await finder.serials()), set([device1.serial, device2.serial, device3.serial])
+            assert set(await finder.serials()) == set(
+                [device1.serial, device2.serial, device3.serial]
             )
-            self.assertEqual(set(await finder.serials(label="kitchen")), set([device1.serial]))
-            self.assertEqual(
-                set(await finder.serials(group_name="two")), set([device1.serial, device2.serial])
+            assert set(await finder.serials(label="kitchen")) == set([device1.serial])
+            assert set(await finder.serials(group_name="two")) == set(
+                [device1.serial, device2.serial]
             )
 
             device1.attrs.color = chp.Color(72, 0.8, 0.6, 2500)
@@ -354,8 +354,7 @@ describe AsyncTestCase, "Device finder":
                 },
             }
 
-            self.maxDiff = None
-            self.assertEqual(info, expected)
+            assert info == expected
 
             self.expect_received(device1)
             self.expect_received(device2)
@@ -373,9 +372,8 @@ describe AsyncTestCase, "Device finder":
                 self.expect_received(device2, DeviceMessages.GetPower)
                 self.expect_received(device3, DeviceMessages.GetPower)
 
-                self.assertEqual(
-                    sorted(found),
-                    sorted([(device1.serial, 65535), (device2.serial, 0), (device3.serial, 65535)]),
+                assert sorted(found) == sorted(
+                    [(device1.serial, 65535), (device2.serial, 0), (device3.serial, 65535)]
                 )
 
                 found = []
@@ -383,12 +381,10 @@ describe AsyncTestCase, "Device finder":
                     assert pkt | DeviceMessages.StatePower
                     found.append((pkt.serial, pkt.payload.level))
 
-                self.assertEqual(
-                    sorted(found), sorted([(device1.serial, 65535), (device3.serial, 65535)])
-                )
+                assert sorted(found) == sorted([(device1.serial, 65535), (device3.serial, 65535)])
 
                 self.expect_received(device1, DeviceMessages.GetPower)
                 self.expect_received(device3, DeviceMessages.GetPower)
 
                 serials = await finder.serials(product_identifier="*color*", force_refresh=True)
-                self.assertEqual(sorted(serials), sorted([device1.serial, device2.serial]))
+                assert sorted(serials) == sorted([device1.serial, device2.serial])

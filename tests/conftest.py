@@ -1,6 +1,10 @@
+from photons_transport.targets import MemoryTarget
+from photons_messages import protocol_register
+
 from textwrap import dedent
 from unittest import mock
 import tempfile
+import asyncio
 import pytest
 import shutil
 import re
@@ -82,3 +86,47 @@ def assert_regex(regex, value):
     ]
 
     pytest.fail("\n".join(lines))
+
+
+class MemoryDevicesRunner:
+    def __init__(self, devices):
+        self.final_future = asyncio.Future()
+        options = {
+            "devices": devices,
+            "final_future": self.final_future,
+            "protocol_register": protocol_register,
+        }
+        self.target = MemoryTarget.create(options)
+        self.devices = devices
+
+    async def __aenter__(self):
+        for device in self.devices:
+            await device.start()
+
+        self.afr = await self.target.args_for_run()
+        return self
+
+    async def __aexit__(self, typ, exc, tb):
+        if hasattr(self, "afr"):
+            await self.target.close_args_for_run(self.afr)
+
+        for device in self.target.devices:
+            await device.finish()
+
+        self.final_future.cancel()
+
+    async def reset_devices(self):
+        for device in self.devices:
+            await device.reset()
+
+    async def per_test(self):
+        await self.reset_devices()
+
+    @property
+    def serials(self):
+        return [device.serial for device in self.devices]
+
+
+@pytest.fixture(scope="session")
+def memory_devices_runner():
+    return MemoryDevicesRunner
