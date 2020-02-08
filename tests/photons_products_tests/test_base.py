@@ -3,29 +3,28 @@
 from photons_products import base, Family, VendorRegistry
 from photons_products.errors import IncompleteProduct
 
-from photons_app.test_helpers import TestCase
-
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+import pytest
 
-describe TestCase, "Capability":
+describe "Capability":
     it "takes in product and firmware info":
         product = mock.Mock(name="product")
         firmware_major = mock.Mock(name="firmware_major")
         firmware_minor = mock.Mock(name="firmware_minor")
         cap = base.Capability(product, firmware_major, firmware_minor)
 
-        self.assertIs(cap.product, product)
-        self.assertIs(cap.firmware_major, firmware_major)
-        self.assertIs(cap.firmware_minor, firmware_minor)
+        assert cap.product is product
+        assert cap.firmware_major is firmware_major
+        assert cap.firmware_minor is firmware_minor
 
     it "defaults firmware info":
         product = mock.Mock(name="product")
         cap = base.Capability(product)
 
-        self.assertIs(cap.product, product)
-        self.assertIs(cap.firmware_major, 0)
-        self.assertIs(cap.firmware_minor, 0)
+        assert cap.product is product
+        assert cap.firmware_major is 0
+        assert cap.firmware_minor is 0
 
     it "can create a clone with new firmware info":
         product = mock.Mock(name="product")
@@ -34,42 +33,42 @@ describe TestCase, "Capability":
         firmware_major = mock.Mock(name="firmware_major")
         firmware_minor = mock.Mock(name="firmware_minor")
         clone = cap(firmware_major=firmware_major, firmware_minor=firmware_minor)
-        self.assertIs(clone.product, product)
-        self.assertIs(clone.firmware_major, firmware_major)
-        self.assertIs(clone.firmware_minor, firmware_minor)
+        assert clone.product is product
+        assert clone.firmware_major is firmware_major
+        assert clone.firmware_minor is firmware_minor
 
-        self.assertIs(cap.product, product)
-        self.assertIs(cap.firmware_major, 0)
-        self.assertIs(cap.firmware_minor, 0)
+        assert cap.product is product
+        assert cap.firmware_major is 0
+        assert cap.firmware_minor is 0
 
     it "has a repr":
         product = mock.Mock(name="product")
         product.name = "LIFX_Amaze"
         cap = base.Capability(product)
-        self.assertEqual(repr(cap), "<Capability LIFX_Amaze>")
+        assert repr(cap) == "<Capability LIFX_Amaze>"
 
     it "equals if product and firmware are the same":
         product = mock.Mock(name="product")
         cap = base.Capability(product)
         cap2 = base.Capability(product)
 
-        self.assertEqual(cap, cap2)
+        assert cap == cap2
 
         cap3 = cap2(firmware_major=3, firmware_minor=4)
-        self.assertNotEqual(cap2, cap3)
+        assert cap2 != cap3
 
         product2 = mock.Mock(name="product")
         cap4 = base.Capability(product2)
-        self.assertNotEqual(cap, cap4)
+        assert cap != cap4
 
     it "returns no items by default":
         product = mock.Mock(name="product")
         cap = base.Capability(product)
-        self.assertEqual(list(cap.items()), [])
+        assert list(cap.items()) == []
 
-describe TestCase, "Product":
+describe "Product":
     it "complains about not having a cap":
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             IncompleteProduct, "Product doesn't have a capability specified", name="P"
         ):
 
@@ -77,7 +76,7 @@ describe TestCase, "Product":
                 pass
 
     it "complains about attributes not implemented":
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             IncompleteProduct, "Attribute wasn't overridden", attr="family", name="P"
         ):
 
@@ -95,8 +94,8 @@ describe TestCase, "Product":
             class cap(base.Capability):
                 pass
 
-        self.assertIsInstance(P.cap, P.cap_kls)
-        self.assertEqual(P.cap.product, P)
+        assert isinstance(P.cap, P.cap_kls)
+        assert P.cap.product == P
 
     it "sets a default for friendly and identifier":
 
@@ -108,20 +107,20 @@ describe TestCase, "Product":
             class cap(base.Capability):
                 pass
 
-        self.assertEqual(LCM9_AMAZE_SPHERE.friendly, "lcm9 amaze sphere")
-        self.assertEqual(LCM9_AMAZE_SPHERE.identifier, "lcm9_amaze_sphere")
+        assert LCM9_AMAZE_SPHERE.friendly == "lcm9 amaze sphere"
+        assert LCM9_AMAZE_SPHERE.identifier == "lcm9_amaze_sphere"
 
     it "uses modifier methods on the baseclass if they exist":
 
         class Product(base.Product):
             @classmethod
             def _modify_family(s, val):
-                self.assertIs(val, Family.LCM2)
+                assert val is Family.LCM2
                 return "lcm9"
 
             @classmethod
             def _modify_friendly(s, val):
-                self.assertEqual(val, "lcm9 amaze sphere")
+                assert val == "lcm9 amaze sphere"
                 return "sphere"
 
         class LCM9_AMAZE_SPHERE(Product):
@@ -132,9 +131,9 @@ describe TestCase, "Product":
             class cap(base.Capability):
                 pass
 
-        self.assertEqual(LCM9_AMAZE_SPHERE.family, "lcm9")
-        self.assertEqual(LCM9_AMAZE_SPHERE.friendly, "sphere")
-        self.assertEqual(LCM9_AMAZE_SPHERE.identifier, "lcm9_amaze_sphere")
+        assert LCM9_AMAZE_SPHERE.family == "lcm9"
+        assert LCM9_AMAZE_SPHERE.friendly == "sphere"
+        assert LCM9_AMAZE_SPHERE.identifier == "lcm9_amaze_sphere"
 
     it "has company":
 
@@ -146,7 +145,7 @@ describe TestCase, "Product":
             class cap(base.Capability):
                 pass
 
-        self.assertEqual(CUBE.company, "LIFX")
+        assert CUBE.company == "LIFX"
 
     it "is equal if pid and vendor match":
 
@@ -177,16 +176,16 @@ describe TestCase, "Product":
             vendor = VendorRegistry.choose(5)
             cap = capability
 
-        self.assertEqual(P1, P1)
-        self.assertEqual(P1, P2)
-        self.assertNotEqual(P1, P4)
-        self.assertNotEqual(P1, P3)
+        assert P1 == P1
+        assert P1 == P2
+        assert P1 != P4
+        assert P1 != P3
 
-        self.assertEqual(P1, (VendorRegistry.LIFX, 1))
-        self.assertEqual(P1, (1, 1))
+        assert P1 == (VendorRegistry.LIFX, 1)
+        assert P1 == (1, 1)
 
-        self.assertEqual(P4, (5, 1))
-        self.assertEqual(P3, (1, 2))
+        assert P4 == (5, 1)
+        assert P3 == (1, 2)
 
     it "can be used as a key in a dictionary":
 
@@ -199,9 +198,9 @@ describe TestCase, "Product":
                 pass
 
         d = {P1: "thing"}
-        self.assertEqual(d[P1], "thing")
-        self.assertEqual(d[(1, 29)], "thing")
-        self.assertEqual(d[(VendorRegistry.LIFX, 29)], "thing")
+        assert d[P1] == "thing"
+        assert d[(1, 29)] == "thing"
+        assert d[(VendorRegistry.LIFX, 29)] == "thing"
 
     it "has a repr":
 
@@ -226,9 +225,9 @@ describe TestCase, "Product":
             vendor = VendorRegistry.choose(5)
             cap = capability
 
-        self.assertEqual(repr(LCM1_BOUNCY_BALL), "<Product 1(LIFX):1(LCM1_BOUNCY_BALL)>")
-        self.assertEqual(repr(LCM2_DESK), "<Product 1(LIFX):1(LCM2_DESK)>")
-        self.assertEqual(repr(LCM2_MONITOR_STAND), "<Product 5(UNKNOWN):29(LCM2_MONITOR_STAND)>")
+        assert repr(LCM1_BOUNCY_BALL) == "<Product 1(LIFX):1(LCM1_BOUNCY_BALL)>"
+        assert repr(LCM2_DESK) == "<Product 1(LIFX):1(LCM2_DESK)>"
+        assert repr(LCM2_MONITOR_STAND) == "<Product 5(UNKNOWN):29(LCM2_MONITOR_STAND)>"
 
     it "has an as_dict":
 
@@ -243,20 +242,17 @@ describe TestCase, "Product":
                     yield "two", "other"
 
         dct = LCM2_MONITOR_STAND.as_dict()
-        self.assertEqual(
-            dct,
-            {
-                "cap": {"one": "blah", "two": "other"},
-                "family": Family.LCM2,
-                "friendly": "lcm2 monitor stand",
-                "identifier": "lcm2_monitor_stand",
-                "name": "LCM2_MONITOR_STAND",
-                "pid": 29,
-                "vendor": VendorRegistry.LIFX,
-            },
-        )
+        assert dct == {
+            "cap": {"one": "blah", "two": "other"},
+            "family": Family.LCM2,
+            "friendly": "lcm2 monitor stand",
+            "identifier": "lcm2_monitor_stand",
+            "name": "LCM2_MONITOR_STAND",
+            "pid": 29,
+            "vendor": VendorRegistry.LIFX,
+        }
 
-describe TestCase, "make_unknown_product":
+describe "make_unknown_product":
     it "works":
 
         class cap(base.Capability):
@@ -264,82 +260,83 @@ describe TestCase, "make_unknown_product":
 
         P = base.make_unknown_product(1, 9001, cap)
 
-        self.assertEqual(P.pid, 9001)
-        self.assertEqual(P.vendor, VendorRegistry.LIFX)
-        self.assertIs(P.family, Family.UNKNOWN)
+        assert P.pid == 9001
+        assert P.vendor == VendorRegistry.LIFX
+        assert P.family is Family.UNKNOWN
         assert P.cap.has_lattice
-        self.assertEqual(repr(P), "<Product 1(LIFX):9001(Unknown)>")
+        assert repr(P) == "<Product 1(LIFX):9001(Unknown)>"
 
-describe TestCase, "ProductsHolder":
-    before_each:
+describe "ProductsHolder":
 
+    @pytest.fixture()
+    def default_capability_kls(self):
         class capability(base.Capability):
             has_amaze = True
 
+        return capability
+
+    @pytest.fixture()
+    def ProductRegistry(self, default_capability_kls):
         class ProductRegistry:
             class LCM1_BOUNCY_BALL(base.Product):
                 pid = 1
                 family = Family.LCM1
                 vendor = VendorRegistry.LIFX
-                cap = capability
+                cap = default_capability_kls
 
             class LCM2_DESK(base.Product):
                 pid = 3
                 family = Family.LCM2
                 vendor = VendorRegistry.LIFX
-                cap = capability
+                cap = default_capability_kls
 
             class LCM2_MONITOR_STAND(base.Product):
                 pid = 29
                 family = Family.LCM2
                 vendor = VendorRegistry.choose(5)
-                cap = capability
+                cap = default_capability_kls
 
-        self.ProductRegistry = ProductRegistry
-        self.default_capability_kls = capability
-        self.holder = base.ProductsHolder(self.ProductRegistry, self.default_capability_kls)
+        return ProductRegistry
 
-    it "holds onto the products and creates by_pair":
-        self.assertIs(self.holder.products, self.ProductRegistry)
-        self.assertIs(self.holder.default_capability_kls, self.default_capability_kls)
-        self.assertEqual(
-            self.holder.by_pair,
-            {
-                (VendorRegistry.LIFX, 1): self.ProductRegistry.LCM1_BOUNCY_BALL,
-                (VendorRegistry.LIFX, 3): self.ProductRegistry.LCM2_DESK,
-                (VendorRegistry.choose(5), 29): self.ProductRegistry.LCM2_MONITOR_STAND,
-            },
+    @pytest.fixture()
+    def holder(self, ProductRegistry, default_capability_kls):
+        return base.ProductsHolder(ProductRegistry, default_capability_kls)
+
+    it "holds onto the products and creates by_pair", ProductRegistry, holder, default_capability_kls:
+        assert holder.products is ProductRegistry
+        assert holder.default_capability_kls is default_capability_kls
+        assert holder.by_pair == {
+            (VendorRegistry.LIFX, 1): ProductRegistry.LCM1_BOUNCY_BALL,
+            (VendorRegistry.LIFX, 3): ProductRegistry.LCM2_DESK,
+            (VendorRegistry.choose(5), 29): ProductRegistry.LCM2_MONITOR_STAND,
+        }
+
+    it "can yield product names", holder, ProductRegistry:
+        assert sorted(holder.names) == sorted(
+            ["LCM1_BOUNCY_BALL", "LCM2_DESK", "LCM2_MONITOR_STAND"]
         )
 
-    it "can yield product names":
-        self.assertEqual(
-            sorted(self.holder.names),
-            sorted(["LCM1_BOUNCY_BALL", "LCM2_DESK", "LCM2_MONITOR_STAND"]),
-        )
+    it "can access products by name", holder, ProductRegistry:
+        assert holder.LCM1_BOUNCY_BALL is ProductRegistry.LCM1_BOUNCY_BALL
+        assert holder.LCM2_DESK is ProductRegistry.LCM2_DESK
 
-    it "can access products by name":
-        self.assertIs(self.holder.LCM1_BOUNCY_BALL, self.ProductRegistry.LCM1_BOUNCY_BALL)
-        self.assertIs(self.holder.LCM2_DESK, self.ProductRegistry.LCM2_DESK)
+    it "complains if the product doesn't exist", holder:
+        with assertRaises(AttributeError, "'ProductsHolder' object has no attribute 'LCM9_SPHERE'"):
+            holder.LCM9_SPHERE
 
-    it "complains if the product doesn't exist":
-        with self.fuzzyAssertRaisesError(
-            AttributeError, "'ProductsHolder' object has no attribute 'LCM9_SPHERE'"
-        ):
-            self.holder.LCM9_SPHERE
+    it "can still get hidden things from the holder", holder:
+        assert holder.__name__ == "ProductRegistry"
 
-    it "can still get hidden things from the holder":
-        self.assertEqual(self.holder.__name__, "ProductRegistry")
+    it "can access products by dictionary access", holder, ProductRegistry:
+        assert holder["LCM1_BOUNCY_BALL"] is ProductRegistry.LCM1_BOUNCY_BALL
+        assert holder[VendorRegistry.LIFX, 3] is ProductRegistry.LCM2_DESK
+        assert holder[1, 3] is ProductRegistry.LCM2_DESK
 
-    it "can access products by dictionary access":
-        self.assertIs(self.holder["LCM1_BOUNCY_BALL"], self.ProductRegistry.LCM1_BOUNCY_BALL)
-        self.assertIs(self.holder[VendorRegistry.LIFX, 3], self.ProductRegistry.LCM2_DESK)
-        self.assertIs(self.holder[1, 3], self.ProductRegistry.LCM2_DESK)
+        with assertRaises(KeyError, "No such product definition: LCM9_SPHERE"):
+            holder["LCM9_SPHERE"]
 
-        with self.fuzzyAssertRaisesError(KeyError, "No such product definition: LCM9_SPHERE"):
-            self.holder["LCM9_SPHERE"]
-
-        p = self.holder[9, 1]
+        p = holder[9, 1]
         assert p.cap.has_amaze
-        self.assertEqual(p.vendor, VendorRegistry.choose(9))
-        self.assertEqual(p.pid, 1)
-        self.assertIs(p.family, Family.UNKNOWN)
+        assert p.vendor == VendorRegistry.choose(9)
+        assert p.pid == 1
+        assert p.family is Family.UNKNOWN

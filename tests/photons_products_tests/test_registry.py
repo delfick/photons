@@ -2,12 +2,11 @@
 
 from photons_products import registry, VendorRegistry, Family, Zones
 
-from photons_app.test_helpers import TestCase
-
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue
 from unittest import mock
 
-describe TestCase, "LIFXProduct":
+describe "LIFXProduct":
     it "has default vendor":
 
         class P(registry.LIFXProduct):
@@ -17,7 +16,7 @@ describe TestCase, "LIFXProduct":
             class cap(registry.Capability):
                 pass
 
-        self.assertIs(P.vendor, VendorRegistry.LIFX)
+        assert P.vendor is VendorRegistry.LIFX
 
     it "modifies identifier":
         examples = [
@@ -36,7 +35,7 @@ describe TestCase, "LIFXProduct":
             P = type(
                 n, (registry.LIFXProduct,), {"pid": 1, "family": Family.LCM3, "cap": capability}
             )
-            self.assertEqual(P.identifier, want)
+            assert P.identifier == want
 
         class Stuff(registry.LIFXProduct):
             pid = 1
@@ -44,7 +43,7 @@ describe TestCase, "LIFXProduct":
             identifier = "other"
             cap = capability
 
-        self.assertEqual(Stuff.identifier, "lifx_other")
+        assert Stuff.identifier == "lifx_other"
 
     it "modifies friendly":
         examples = [
@@ -63,7 +62,7 @@ describe TestCase, "LIFXProduct":
             P = type(
                 n, (registry.LIFXProduct,), {"pid": 1, "family": Family.LCM3, "cap": capability}
             )
-            self.assertEqual(P.friendly, want)
+            assert P.friendly == want
 
         class Stuff(registry.LIFXProduct):
             pid = 1
@@ -71,24 +70,24 @@ describe TestCase, "LIFXProduct":
             friendly = "Other"
             cap = capability
 
-        self.assertEqual(Stuff.friendly, "LIFX Other")
+        assert Stuff.friendly == "LIFX Other"
 
-describe TestCase, "Capability":
+describe "Capability":
     it "complains if min_extended_fw is wrong":
 
-        with self.fuzzyAssertRaisesError(BadSpecValue, "Expected a tuple", got=str):
+        with assertRaises(BadSpecValue, "Expected a tuple", got=str):
 
             class cap(registry.Capability):
                 min_extended_fw = "WAT"
 
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             BadSpecValue, "Expected tuple to be of a particular length", got=3, expected=2
         ):
 
             class cap(registry.Capability):
                 min_extended_fw = (1, 2, 1)
 
-        with self.fuzzyAssertRaisesError(BadSpecValue, "Expected a tuple", got=list):
+        with assertRaises(BadSpecValue, "Expected a tuple", got=list):
 
             class cap(registry.Capability):
                 min_extended_fw = [1, 2]
@@ -98,17 +97,17 @@ describe TestCase, "Capability":
         class cap(registry.Capability):
             min_extended_fw = (1, 2)
 
-        self.assertEqual(cap.min_extended_fw, (1, 2))
+        assert cap.min_extended_fw == (1, 2)
 
         class cap(registry.Capability):
             min_extended_fw = None
 
-        self.assertIs(cap.min_extended_fw, None)
+        assert cap.min_extended_fw is None
 
         class cap(registry.Capability):
             pass
 
-        self.assertIs(cap.min_extended_fw, None)
+        assert cap.min_extended_fw is None
 
     it "has has_matrix":
         product = mock.Mock(name="product")
@@ -193,7 +192,7 @@ describe TestCase, "Capability":
         for k in list(dct):
             if k not in expected:
                 del dct[k]
-        self.assertEqual(dct, expected)
+        assert dct == expected
 
         class cap(registry.Capability):
             min_extended_fw = (3, 60)
@@ -220,4 +219,4 @@ describe TestCase, "Capability":
         for k in list(dct):
             if k not in expected:
                 del dct[k]
-        self.assertEqual(dct, expected)
+        assert dct == expected
