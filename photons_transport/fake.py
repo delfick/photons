@@ -441,12 +441,16 @@ class FakeDevice:
         return fut
 
     async def got_message(self, pkt, source):
+        payload_repr = repr(pkt.payload)
+        if len(payload_repr) > 300:
+            payload_repr = f"{payload_repr[:300]}..."
+
         log.info(
             hp.lc(
                 "Got packet",
                 source=source,
                 pkt=pkt.__class__.__name__,
-                payload=repr(pkt.payload),
+                payload=payload_repr,
                 pkt_source=pkt.source,
                 serial=self.serial,
             )
