@@ -1,10 +1,13 @@
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
-from photons_products import Products
+from photons_products import Products, Zones
+from photons_messages.fields import Tile
 
 from delfick_project.norms import sb, dictobj
 from collections import defaultdict
+from functools import partial
+import random
 
 plan_by_key = {}
 
@@ -355,43 +358,116 @@ class ZonesPlan(Plan):
 @a_plan("chain")
 class ChainPlan(Plan):
     """
-    Return ``{"chain": <tiles>, "orientations": <orientations>}``
+    Return ```
+      {
+        "chain": <Tile objects>,
+        "orientations": {<index>: <orientation>},
+        "reorient": def(index, colors): <reorientated_colors>,
+        "reverse_orient": def(index, colors): <colors made RightSideUp>,
+        "coords_and_sizes": [((x, y), (width, height)) for each Tile object],
+      }
+    ```
 
-    Will take into account if the device has a chain or not
+    For strips and bulbs we will return a single chain item that is orientated
+    right side up. For strips, the width of this single item is the number of
+    zones in the device.
     """
 
     default_refresh = 1
 
     @property
     def dependant_info(kls):
-        return {"c": CapabilityPlan()}
+        return {"c": CapabilityPlan(), "zones": ZonesPlan()}
 
     class Instance(Plan.Instance):
-        def setup(self):
-            self.chain = []
-            self.orientations = {}
-
         @property
-        def has_chain(self):
-            return self.deps["c"]["cap"].has_chain
+        def zones(self):
+            return self.deps["c"]["cap"].zones
 
         @property
         def messages(self):
-            if self.has_chain:
+            if self.zones is Zones.MATRIX:
                 return [TileMessages.GetDeviceChain()]
-            return Skip
+            return []
+
+        @property
+        def O(self):
+            return __import__("photons_control.orientation").orientation.Orientation
 
         def process(self, pkt):
-            if pkt | TileMessages.StateDeviceChain:
-                from photons_control.tile import tiles_from, orientations_from
-
-                for tile in tiles_from(pkt):
-                    self.chain.append(tile)
-                self.orientations = orientations_from(pkt)
+            if self.zones is not Zones.MATRIX:
+                item = self.tile_for_single()
+                self.chain = [item]
+                self.orientations = {0: self.O.RightSideUp}
                 return True
 
+            if pkt | TileMessages.StateDeviceChain:
+                helpers = __import__("photons_control.tile").tile
+
+                self.chain = []
+                for tile in helpers.tiles_from(pkt):
+                    self.chain.append(tile)
+
+                self.orientations = helpers.orientations_from(pkt)
+
+                return True
+
+        def tile_for_single(self):
+            cap = self.deps["c"]["cap"]
+            firmware = self.deps["c"]["firmware"]
+
+            width = 1
+            if self.deps["zones"] is not Skip:
+                width = len(self.deps["zones"])
+
+            return Tile.empty_normalise(
+                accel_meas_x=0,
+                accel_meas_y=0,
+                accel_meas_z=0,
+                user_x=0,
+                user_y=0,
+                width=width,
+                height=1,
+                device_version_vendor=cap.product.vendor.vid,
+                device_version_product=cap.product.pid,
+                device_version_version=0,
+                firmware_build=firmware.build,
+                firmware_version_minor=firmware.version_minor,
+                firmware_version_major=firmware.version_major,
+            )
+
+        def reverse_orient(self, orientations, index, colors):
+            orientation = __import__("photons_control").orientation
+            o = orientation.reverse_orientation(orientations.get(index, self.O.RightSideUp))
+            return orientation.reorient(colors, o)
+
+        def reorient(self, orientations, random_orientations, index, colors, randomize=False):
+            reorient = __import__("photons_control").orientation.reorient
+
+            if randomize:
+                orientations = random_orientations
+
+            return reorient(colors, orientations.get(index, self.O.RightSideUp))
+
         async def info(self):
-            return {"chain": self.chain, "orientations": self.orientations}
+            coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in self.chain]
+
+            random_orientations = {
+                i: random.choice(list(self.O.__members__.values())) for i in self.orientations
+            }
+
+            reorient = partial(self.reorient, self.orientations, random_orientations)
+            reverse_orient = partial(self.reverse_orient, self.orientations)
+
+            return {
+                "chain": self.chain,
+                "width": max([width for (_, _), (width, height) in coords_and_sizes]),
+                "reorient": reorient,
+                "orientations": self.orientations,
+                "reverse_orient": reverse_orient,
+                "coords_and_sizes": coords_and_sizes,
+                "random_orientations": random_orientations,
+            }
 
 
 @a_plan("capability")
