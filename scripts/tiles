@@ -4,7 +4,8 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import DeviceMessages, TileMessages
-from photons_products import Products
+from photons_control.planner import Gatherer, make_plans
+from photons_control.script import FromGenerator
 
 from delfick_project.addons import addon_hook
 import logging
@@ -17,12 +18,39 @@ log = logging.getLogger("info")
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "messages"),
-        ("lifx.photons", "products"),
+        ("lifx.photons", "control"),
         ("lifx.photons", "device_finder"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):
     pass
+
+
+def make_set_64s(coords_and_sizes):
+    for index, (_, (width, height)) in enumerate(coords_and_sizes):
+        colors = []
+
+        for _ in range(width):
+            for _ in range(height):
+                colors.append(
+                    {
+                        "hue": random.randint(0, 360),
+                        "saturation": 1,
+                        "brightness": 0.2,
+                        "kelvin": 3500,
+                    }
+                )
+
+        yield TileMessages.Set64(
+            x=0,
+            y=0,
+            width=width,
+            length=1,
+            duration=2,
+            colors=colors,
+            tile_index=index,
+            res_required=False,
+        )
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -38,47 +66,27 @@ async def tiles(collector, target, reference, **kwargs):
 
     ``tiles match:group_name=kitchen``
     """
-    tiles = []
-    async with target.session() as afr:
-        async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
-            if pkt | DeviceMessages.StateVersion:
-                if Products[pkt.vendor, pkt.product].cap.has_matrix:
-                    tiles.append(pkt.serial)
+    gatherer = Gatherer(target)
+    plans = make_plans("capability", "chain")
 
-        if not tiles:
-            raise PhotonsAppError("Couldn't find any tiles on your network")
+    def e(error):
+        log.error(error)
 
-        colors = []
-        for i in range(5):
-            nxt = []
-            for i in range(64):
-                nxt.append(
-                    {
-                        "hue": random.randint(0, 360),
-                        "saturation": 1,
-                        "brightness": 0.5,
-                        "kelvin": 3500,
-                    }
-                )
-            colors.append(nxt)
+    async def gen(reference, afr, **kwargs):
+        async for serial, _, info in gatherer.gather_per_serial(plans, reference, afr, **kwargs):
+            if "chain" not in info:
+                continue
 
-        msgs = [DeviceMessages.SetPower(level=65535)]
+            if not info["capability"]["cap"].has_matrix:
+                continue
 
-        for i, colors in enumerate(colors):
-            msgs.append(
-                TileMessages.Set64(
-                    x=0,
-                    y=0,
-                    width=8,
-                    length=1,
-                    duration=2,
-                    colors=colors,
-                    tile_index=i,
-                    res_required=False,
-                )
-            )
+            yield DeviceMessages.SetPower(level=65535, target=serial, res_required=False)
 
-        await target.script(msgs).run_with_all(tiles, afr)
+            for msg in make_set_64s(info["chain"]["coords_and_sizes"]):
+                msg.target = serial
+                yield msg
+
+    await target.script(FromGenerator(gen)).run_with_all(reference, error_catcher=e)
 
 
 if __name__ == "__main__":

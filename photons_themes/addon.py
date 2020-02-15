@@ -1,9 +1,8 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import LightMessages, TileMessages
-from photons_control.orientation import Orientation as O, reorient
 from photons_control.script import FromGeneratorPerSerial
+from photons_messages import LightMessages, TileMessages
 from photons_control.planner import Gatherer, make_plans
 from photons_themes.appliers import types as appliers
 from photons_control.multizone import SetZonesPlan
@@ -177,30 +176,31 @@ class ApplyTheme:
             yield messages
 
     async def tile_msgs(self):
-        chain = None
-        orientations = None
+        coords_and_sizes = None
         async for _, _, info in self.gather(make_plans("chain")):
-            chain = info["chain"]
-            orientations = info["orientations"]
+            reorient = info["reorient"]
+            coords_and_sizes = info["coords_and_sizes"]
 
-        if not chain or not orientations:
-            log.warning(hp.lc("Couldn't work out how many zones the light had", serial=self.serial))
+        if not coords_and_sizes:
+            log.warning(
+                hp.lc("Couldn't work out how many zones the device had", serial=self.serial)
+            )
             return
-
-        coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in chain]
 
         applied = self.aps["2d"].from_user_coords(coords_and_sizes).apply_theme(self.theme)
         for i, (hsbks, coords_and_size) in enumerate(zip(applied, coords_and_sizes)):
-            colors = [
-                {
-                    "hue": self.options.overrides.get("hue", hsbk.hue),
-                    "saturation": self.options.overrides.get("saturation", hsbk.saturation),
-                    "brightness": self.options.overrides.get("brightness", hsbk.brightness),
-                    "kelvin": self.options.overrides.get("kelvin", hsbk.kelvin),
-                }
-                for hsbk in hsbks
-            ]
-            colors = reorient(colors, orientations.get(i, O.RightSideUp))
+            colors = reorient(
+                i,
+                [
+                    {
+                        "hue": self.options.overrides.get("hue", hsbk.hue),
+                        "saturation": self.options.overrides.get("saturation", hsbk.saturation),
+                        "brightness": self.options.overrides.get("brightness", hsbk.brightness),
+                        "kelvin": self.options.overrides.get("kelvin", hsbk.kelvin),
+                    }
+                    for hsbk in hsbks
+                ],
+            )
 
             yield TileMessages.Set64(
                 tile_index=i,

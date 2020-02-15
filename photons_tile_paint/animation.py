@@ -4,9 +4,9 @@ from photons_tile_paint.set_64 import set_64_maker
 from photons_app.errors import PhotonsAppError, TimedOut
 from photons_app import helpers as hp
 
-from photons_messages import LightMessages, DeviceMessages, TileMessages, Services
-from photons_control.tile import tiles_from, orientations_from
+from photons_messages import LightMessages, DeviceMessages, Services
 from photons_themes.coords import user_coords_to_pixel_coords
+from photons_control.planner import Gatherer, make_plans
 from photons_control.orientation import Orientation as O
 from photons_themes.theme import ThemeColor as Color
 from photons_transport.comms.result import Result
@@ -17,7 +17,6 @@ from photons_products import Products
 from collections import defaultdict
 import logging
 import asyncio
-import random
 import time
 
 log = logging.getLogger("photons_tile_paint.animation")
@@ -46,11 +45,11 @@ async def tile_serials_from_reference(target, reference, afr):
     return serials
 
 
-def canvas_to_msgs(canvas, coords, duration=1, orientations=None, acks=False):
+def canvas_to_msgs(canvas, coords, duration=1, reorient=None, acks=False):
     for i, coord in enumerate(coords):
         colors = canvas.points_for_tile(*coord[0], *coord[1])
-        if orientations:
-            colors = orientation.reorient(colors, orientations.get(i, O.RightSideUp))
+        if reorient:
+            colors = reorient(i, colors)
 
         yield set_64_maker(
             tile_index=i, width=coord[1][0], duration=duration, colors=colors, ack_required=acks
@@ -71,14 +70,14 @@ def put_characters_on_canvas(canvas, chars, coords, fill_color=None):
 class TileStateGetter:
     class Info:
         def __init__(self, coords, default_color):
-            self.states = []
+            self.colors = []
             self.coords = coords
-            self.orientations = {}
+            self.reorient = None
             self.default_color = default_color
 
         @hp.memoized_property
         def default_color_func(self):
-            if not self.states:
+            if not self.colors:
 
                 def get_empty(x, y):
                     return self.default_color
@@ -95,11 +94,8 @@ class TileStateGetter:
         @property
         def canvas(self):
             canvas = Canvas()
-            for i, state in sorted(self.states):
-                colors = state.colors
+            for i, colors in sorted(self.colors):
                 coords = self.coords
-                o = orientation.reverse_orientation(self.orientations.get(i, O.RightSideUp))
-                colors = orientation.reorient(colors, o)
 
                 if not coords:
                     continue
@@ -144,34 +140,37 @@ class TileStateGetter:
         return funcs
 
     async def fill(self, random_orientations=False):
-        msgs = []
+        plans = ["chain"]
         if self.background_option.type == "current":
-            msgs.append(
-                TileMessages.Get64.empty_normalise(tile_index=0, length=255, x=0, y=0, width=8)
-            )
+            plans.append("colors")
 
-        msgs.append(TileMessages.GetDeviceChain())
+        def e(error):
+            log.error(error)
 
-        async for pkt, _, _ in self.target.script(msgs).run_with(self.serials, self.afr):
-            serial = pkt.serial
+        gatherer = Gatherer(self.target)
 
-            if pkt | TileMessages.State64:
-                self.info_by_serial[serial].states.append((pkt.tile_index, pkt))
+        async for serial, name, info in gatherer.gather(
+            make_plans(*plans), self.serials, self.afr, error_catcher=e
+        ):
+            if name == "colors":
+                self.info_by_serial[serial].colors = list(enumerate(info))
 
-            elif pkt | TileMessages.StateDeviceChain:
-                if self.coords is None:
-                    coords = []
-                    for tile in tiles_from(pkt):
-                        coords.append(((tile.user_x, tile.user_y), (tile.width, tile.height)))
-                    self.info_by_serial[serial].coords = user_coords_to_pixel_coords(coords)
+            elif name == "chain":
+                self.info_by_serial[serial].coords = user_coords_to_pixel_coords(
+                    info["coords_and_sizes"]
+                )
 
-                orientations = orientations_from(pkt)
-                if random_orientations:
-                    self.info_by_serial[serial].orientations = {
-                        i: random.choice(list(O.__members__.values())) for i in orientations
-                    }
-                else:
-                    self.info_by_serial[serial].orientations = orientations
+                def make_reorient(random_orientations, info):
+                    kwargs = {}
+                    if random_orientations:
+                        kwargs["randomize"] = True
+
+                    def reorient(index, colors):
+                        return info["reorient"](index, colors, **kwargs)
+
+                    return reorient
+
+                self.info_by_serial[serial].reorient = make_reorient(random_orientations, info)
 
 
 class AnimateTask:
@@ -411,13 +410,9 @@ class Animation:
                     canvas, state.info_by_serial[serial].default_color_func
                 )
 
-                orientations = state.info_by_serial[serial].orientations
+                reorient = state.info_by_serial[serial].reorient
                 for msg in canvas_to_msgs(
-                    canvas,
-                    coords,
-                    duration=self.duration,
-                    orientations=orientations,
-                    acks=self.retries,
+                    canvas, coords, duration=self.duration, reorient=reorient, acks=self.retries,
                 ):
                     msg.target = serial
                     msgs.append(msg)

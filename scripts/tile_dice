@@ -9,10 +9,11 @@ from photons_tile_paint.animation import (
     put_characters_on_canvas,
     canvas_to_msgs,
 )
-from photons_messages import TileMessages, DeviceMessages
+from photons_control.planner import Gatherer, make_plans
 from photons_themes.theme import ThemeColor as Color
-from photons_control.tile import orientations_from
+from photons_control.script import FromGenerator
 from photons_tile_paint.font.dice import dice
+from photons_messages import DeviceMessages
 from photons_themes.canvas import Canvas
 
 from delfick_project.addons import addon_hook
@@ -46,10 +47,6 @@ async def tile_dice(collector, target, reference, **kwargs):
     ignore_orientation = extra.get("ignore_orientation", False)
 
     async with target.session() as afr:
-        serials = await tile_serials_from_reference(target, reference, afr)
-        if not serials:
-            raise PhotonsAppError("Didn't find any tiles")
-
         canvas = Canvas()
 
         def default_color_func(i, j):
@@ -64,26 +61,45 @@ async def tile_dice(collector, target, reference, **kwargs):
         color = Color(100, 1, 1, 3500)
         put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
 
-        orientations = {}
-        if not ignore_orientation:
-            async for pkt, _, _ in target.script(TileMessages.GetDeviceChain()).run_with(
-                serials, afr
+        plans = make_plans("chain", "capability")
+        gatherer = Gatherer(target)
+
+        def e(error):
+            log.error(error)
+
+        found = []
+
+        async def gen(reference, afr, **kwargs):
+            async for serial, _, info in gatherer.gather_per_serial(
+                plans, reference, afr, **kwargs
             ):
-                if pkt | TileMessages.StateDeviceChain:
-                    orientations[pkt.serial] = orientations_from(pkt)
+                if "chain" not in info:
+                    continue
 
-        msgs = []
-        for serial in serials:
-            os = orientations.get(serial)
-            msgs.append(DeviceMessages.SetPower(level=65535, target=serial))
+                if not info["capability"]["cap"].has_matrix:
+                    continue
 
-            for msg in canvas_to_msgs(
-                canvas, coords_for_horizontal_line, duration=1, acks=True, orientations=os
-            ):
-                msg.target = serial
-                msgs.append(msg)
+                yield DeviceMessages.SetPower(
+                    level=65535, res_required=False, target=serial
+                )
 
-        await target.script(msgs).run_with_all(None, afr)
+                found.append(serial)
+                msgs = canvas_to_msgs(
+                    canvas,
+                    coords_for_horizontal_line,
+                    duration=1,
+                    acks=True,
+                    reorient=info["chain"]["reorient"],
+                )
+
+                for msg in msgs:
+                    msg.target = serial
+                    yield msg
+
+        await target.script(FromGenerator(gen)).run_with_all(reference, error_catcher=e)
+
+        if not found:
+            raise PhotonsAppError("Didn't find any tiles")
 
 
 if __name__ == "__main__":
