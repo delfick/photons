@@ -422,6 +422,7 @@ def with_runner(func):
 
 class ModuleLevelRunner:
     def __init__(self, *args, **kwargs):
+        self.old_loop = asyncio.get_event_loop()
         self.loop = asyncio.new_event_loop()
 
         self.args = args
@@ -456,7 +457,7 @@ class ModuleLevelRunner:
         if self.closer is not None:
             self.loop.run_until_complete(self.closer())
         self.loop.close()
-        asyncio.set_event_loop(asyncio.new_event_loop())
+        asyncio.set_event_loop(self.old_loop)
 
     def test(self, func):
         async def test(s):
