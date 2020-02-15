@@ -65,7 +65,7 @@ def assert_payloads_equals(payload, expected):
     different = []
     for k, v in expected.items():
         if v != dct[k]:
-            different.append(k, dct[k], v)
+            different.append([k, dct[k], v])
 
     for k, got, want in different:
         print(f"KEY: {k} |:| GOT: {got} |:| WANT: {want}")
