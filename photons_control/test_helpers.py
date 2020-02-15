@@ -124,12 +124,13 @@ class InfraredResponder(Responder):
 
 class MatrixResponder(Responder):
     _fields = [
-        ("matrix_effect", lambda: TileEffectType.OFF),
-        ("palette_count", lambda: 0),
+        ("chain", lambda: []),
         ("palette", lambda: []),
-        ("chain", lambda: [TileChild.FieldSpec().empty_normalise() for _ in range(5)]),
+        ("chain_length", lambda: 5),
         ("matrix_width", lambda: 8),
         ("matrix_height", lambda: 8),
+        ("matrix_effect", lambda: TileEffectType.OFF),
+        ("palette_count", lambda: 0),
     ]
 
     async def start(self, device):
@@ -137,13 +138,18 @@ class MatrixResponder(Responder):
             return
 
         cap = ProductResponder.capability(device)
-        for child in device.attrs.chain:
-            child.firmware_version_major = cap.firmware_major
-            child.firmware_version_minor = cap.firmware_minor
-            child.device_version_vendor = cap.product.vendor.vid
-            child.device_version_product = cap.product.pid
-            child.width = device.attrs.matrix_width
-            child.height = device.attrs.matrix_height
+        if not device.attrs.chain:
+            for _ in range(device.attrs.chain_length):
+                child = TileChild.FieldSpec().empty_normalise(
+                    firmware_version_major=cap.firmware_major,
+                    firmware_version_minor=cap.firmware_minor,
+                    device_version_vendor=cap.product.vendor.vid,
+                    device_version_product=cap.product.pid,
+                    width=device.attrs.matrix_width,
+                    height=device.attrs.matrix_height,
+                )
+                colors = [Color(0, 0, 0, 3500) for _ in range(64)]
+                device.attrs.chain.append((child, colors))
 
     def has_matrix(self, device):
         return ProductResponder.capability(device).has_matrix
@@ -158,14 +164,32 @@ class MatrixResponder(Responder):
 
         if pkt | TileMessages.GetTileEffect:
             yield self.make_state_tile_effect(device)
+
         elif pkt | TileMessages.SetTileEffect:
             res = self.make_state_tile_effect(device, instanceid=pkt.instanceid)
             device.attrs.palette = pkt.palette
             device.attrs.palette_count = pkt.palette_count
             device.attrs.matrix_effect = pkt.type
             yield res
+
         elif pkt | TileMessages.GetDeviceChain:
             yield self.make_device_chain(device)
+
+        elif pkt | TileMessages.Get64:
+            for msg in self.make_state_64s(device, pkt):
+                yield msg
+
+        elif pkt | TileMessages.Set64:
+            replies = list(self.make_state_64s(device, pkt))
+
+            for i in range(pkt.tile_index, pkt.length):
+                if i < len(device.attrs.chain):
+                    chain, colors = device.attrs.chain[i]
+                    colors.clear()
+                    colors.extend(pkt.colors)
+
+            for msg in replies:
+                yield msg
 
     def make_state_tile_effect(self, device, instanceid=sb.NotSpecified):
         return TileMessages.StateTileEffect.empty_normalise(
@@ -180,8 +204,16 @@ class MatrixResponder(Responder):
         return TileMessages.StateDeviceChain(
             start_index=0,
             tile_devices_count=len(device.attrs.chain),
-            tile_devices=[c.as_dict() for c in device.attrs.chain],
+            tile_devices=[c.as_dict() for c, _ in device.attrs.chain],
         )
+
+    def make_state_64s(self, device, pkt):
+        for i in range(pkt.tile_index, pkt.tile_index + pkt.length):
+            if i < len(device.attrs.chain):
+                chain, colors = device.attrs.chain[i]
+                yield TileMessages.State64(
+                    tile_index=i, x=0, y=0, width=chain.width, colors=list(colors)
+                )
 
 
 class ZonesResponder(Responder):
@@ -335,6 +367,7 @@ def default_responders(
     zones_effect=MultiZoneEffectType.OFF,
     matrix_effect=TileEffectType.OFF,
     chain=None,
+    chain_length=5,
     matrix_width=8,
     matrix_height=8,
     **kwargs,
@@ -360,11 +393,16 @@ def default_responders(
 
     if cap.has_matrix:
         kw = {"matrix_width": matrix_width, "matrix_height": matrix_height}
+        if not cap.has_chain:
+            kw["chain_length"] = 1
+
         kw["matrix_effect"] = enum_spec(None, TileEffectType, unpacking=True).normalise(
             meta, matrix_effect
         )
+
         if chain:
             kw["chain"] = chain
+
         responders.append(MatrixResponder(**kw))
 
     return responders
