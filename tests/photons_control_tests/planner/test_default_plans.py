@@ -3,8 +3,8 @@
 from photons_control.planner import Gatherer, make_plans, Skip
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import AsyncTestCase, assert_payloads_equals
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
+from photons_app.test_helpers import assert_payloads_equals
 
 from photons_messages import (
     DeviceMessages,
@@ -19,8 +19,8 @@ from photons_control.orientation import Orientation, reorient
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from unittest import mock
+import pytest
 import uuid
 import json
 
@@ -106,17 +106,21 @@ striplcm2extended = FakeDevice(
 )
 
 lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
-mlr = chp.ModuleLevelRunner(lights)
+two_lights = [light1.serial, light2.serial]
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
 
-describe AsyncTestCase, "Default Plans":
-    use_default_loop = True
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner(lights) as runner:
+        yield runner
 
-    async before_each:
-        self.maxDiff = None
-        self.two_lights = [light1.serial, light2.serial]
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
+
+
+describe "Default Plans":
 
     async def gather(self, runner, reference, *by_label, **kwargs):
         gatherer = Gatherer(runner.target)
@@ -125,24 +129,19 @@ describe AsyncTestCase, "Default Plans":
 
     describe "PresencePlan":
 
-        @mlr.test
         async it "returns True", runner:
-            got = await self.gather(runner, self.two_lights, "presence")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"presence": True}),
-                    light2.serial: (True, {"presence": True}),
-                },
-            )
+            got = await self.gather(runner, two_lights, "presence")
+            assert got == {
+                light1.serial: (True, {"presence": True}),
+                light2.serial: (True, {"presence": True}),
+            }
 
-        @mlr.test
         async it "allows us to get serials that otherwise wouldn't", runner:
             errors = []
             with light2.no_replies_for(DeviceMessages.GetLabel):
                 got = await self.gather(
                     runner,
-                    self.two_lights,
+                    two_lights,
                     "presence",
                     "label",
                     error_catcher=errors,
@@ -150,21 +149,17 @@ describe AsyncTestCase, "Default Plans":
                     find_timeout=0.1,
                 )
 
-                self.assertEqual(
-                    got,
-                    {
-                        light1.serial: (True, {"presence": True, "label": "bob"}),
-                        light2.serial: (False, {"presence": True}),
-                    },
-                )
+                assert got == {
+                    light1.serial: (True, {"presence": True, "label": "bob"}),
+                    light2.serial: (False, {"presence": True}),
+                }
 
-        @mlr.test
         async it "does not fire for offline devices", runner:
             errors = []
             with light2.offline():
                 got = await self.gather(
                     runner,
-                    self.two_lights,
+                    two_lights,
                     "presence",
                     "label",
                     error_catcher=errors,
@@ -172,45 +167,38 @@ describe AsyncTestCase, "Default Plans":
                     find_timeout=0.1,
                 )
 
-                self.assertEqual(got, {light1.serial: (True, {"presence": True, "label": "bob"})})
+                assert got == {light1.serial: (True, {"presence": True, "label": "bob"})}
 
     describe "AddressPlan":
 
-        @mlr.test
         async it "gets the address", runner:
-            got = await self.gather(runner, self.two_lights, "label", "address")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (
-                        True,
-                        {"label": "bob", "address": (f"fake://{light1.serial}/memory", 56700)},
-                    ),
-                    light2.serial: (
-                        True,
-                        {"label": "sam", "address": (f"fake://{light2.serial}/memory", 56700)},
-                    ),
-                },
-            )
+            got = await self.gather(runner, two_lights, "label", "address")
+            assert got == {
+                light1.serial: (
+                    True,
+                    {"label": "bob", "address": (f"fake://{light1.serial}/memory", 56700)},
+                ),
+                light2.serial: (
+                    True,
+                    {"label": "sam", "address": (f"fake://{light2.serial}/memory", 56700)},
+                ),
+            }
 
-        @mlr.test
         async it "requires atleast one other plan", runner:
-            got = await self.gather(runner, self.two_lights, "address")
-            self.assertEqual(got, {})
+            got = await self.gather(runner, two_lights, "address")
+            assert got == {}
 
     describe "LabelPlan":
 
-        @mlr.test
         async it "gets the label", runner:
-            got = await self.gather(runner, self.two_lights, "label")
-            self.assertEqual(
-                got,
-                {light1.serial: (True, {"label": "bob"}), light2.serial: (True, {"label": "sam"})},
-            )
+            got = await self.gather(runner, two_lights, "label")
+            assert got == {
+                light1.serial: (True, {"label": "bob"}),
+                light2.serial: (True, {"label": "sam"}),
+            }
 
     describe "StatePlan":
 
-        @mlr.test
         async it "gets the power", runner:
             state1 = {
                 "hue": 99.9990844586862,
@@ -230,31 +218,23 @@ describe AsyncTestCase, "Default Plans":
                 "power": 65535,
             }
 
-            got = await self.gather(runner, self.two_lights, "state")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"state": state1}),
-                    light2.serial: (True, {"state": state2}),
-                },
-            )
+            got = await self.gather(runner, two_lights, "state")
+            assert got == {
+                light1.serial: (True, {"state": state1}),
+                light2.serial: (True, {"state": state2}),
+            }
 
     describe "PowerPlan":
 
-        @mlr.test
         async it "gets the power", runner:
-            got = await self.gather(runner, self.two_lights, "power")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"power": {"level": 0, "on": False}}),
-                    light2.serial: (True, {"power": {"level": 65535, "on": True}}),
-                },
-            )
+            got = await self.gather(runner, two_lights, "power")
+            assert got == {
+                light1.serial: (True, {"power": {"level": 0, "on": False}}),
+                light2.serial: (True, {"power": {"level": 65535, "on": True}}),
+            }
 
     describe "CapabilityPlan":
 
-        @mlr.test
         async it "gets the power", runner:
             l1c = {
                 "cap": Products.LCM3_TILE.cap(3, 50),
@@ -299,16 +279,13 @@ describe AsyncTestCase, "Default Plans":
             }
 
             got = await self.gather(runner, runner.serials, "capability")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"capability": l1c}),
-                    light2.serial: (True, {"capability": l2c}),
-                    striplcm1.serial: (True, {"capability": slcm1c}),
-                    striplcm2noextended.serial: (True, {"capability": slcm2nec}),
-                    striplcm2extended.serial: (True, {"capability": slcm2ec}),
-                },
-            )
+            assert got == {
+                light1.serial: (True, {"capability": l1c}),
+                light2.serial: (True, {"capability": l2c}),
+                striplcm1.serial: (True, {"capability": slcm1c}),
+                striplcm2noextended.serial: (True, {"capability": slcm2nec}),
+                striplcm2extended.serial: (True, {"capability": slcm2ec}),
+            }
 
             for serial, (_, info) in got.items():
                 if serial == striplcm2extended.serial:
@@ -318,7 +295,6 @@ describe AsyncTestCase, "Default Plans":
 
     describe "FirmwarePlan":
 
-        @mlr.test
         async it "gets the firmware", runner:
             l1c = {
                 "build": 1548977726000000000,
@@ -347,45 +323,34 @@ describe AsyncTestCase, "Default Plans":
             }
 
             got = await self.gather(runner, runner.serials, "firmware")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"firmware": l1c}),
-                    light2.serial: (True, {"firmware": l2c}),
-                    striplcm1.serial: (True, {"firmware": slcm1c}),
-                    striplcm2noextended.serial: (True, {"firmware": slcm2nec}),
-                    striplcm2extended.serial: (True, {"firmware": slcm2ec}),
-                },
-            )
+            assert got == {
+                light1.serial: (True, {"firmware": l1c}),
+                light2.serial: (True, {"firmware": l2c}),
+                striplcm1.serial: (True, {"firmware": slcm1c}),
+                striplcm2noextended.serial: (True, {"firmware": slcm2nec}),
+                striplcm2extended.serial: (True, {"firmware": slcm2ec}),
+            }
 
     describe "VersionPlan":
 
-        @mlr.test
         async it "gets the version", runner:
             got = await self.gather(runner, runner.serials, "version")
-            self.assertEqual(
-                got,
-                {
-                    light1.serial: (True, {"version": {"product": 55, "vendor": 1, "version": 0}}),
-                    light2.serial: (True, {"version": {"product": 1, "vendor": 1, "version": 0}}),
-                    striplcm1.serial: (
-                        True,
-                        {"version": {"product": 31, "vendor": 1, "version": 0}},
-                    ),
-                    striplcm2noextended.serial: (
-                        True,
-                        {"version": {"product": 32, "vendor": 1, "version": 0}},
-                    ),
-                    striplcm2extended.serial: (
-                        True,
-                        {"version": {"product": 32, "vendor": 1, "version": 0}},
-                    ),
-                },
-            )
+            assert got == {
+                light1.serial: (True, {"version": {"product": 55, "vendor": 1, "version": 0}}),
+                light2.serial: (True, {"version": {"product": 1, "vendor": 1, "version": 0}}),
+                striplcm1.serial: (True, {"version": {"product": 31, "vendor": 1, "version": 0}},),
+                striplcm2noextended.serial: (
+                    True,
+                    {"version": {"product": 32, "vendor": 1, "version": 0}},
+                ),
+                striplcm2extended.serial: (
+                    True,
+                    {"version": {"product": 32, "vendor": 1, "version": 0}},
+                ),
+            }
 
     describe "ZonesPlan":
 
-        @mlr.test
         async it "gets zones", runner:
             got = await self.gather(runner, runner.serials, "zones")
             expected = {
@@ -398,7 +363,7 @@ describe AsyncTestCase, "Default Plans":
                 ),
                 striplcm2extended.serial: (True, {"zones": [(i, c) for i, c in enumerate(zones3)]}),
             }
-            self.assertEqual(got, expected)
+            assert got == expected
 
             expected = {
                 light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
@@ -428,7 +393,6 @@ describe AsyncTestCase, "Default Plans":
 
     describe "ColorsPlan":
 
-        @mlr.test
         async it "gets colors for different devices", runner:
             serials = [light1.serial, light2.serial, striplcm1.serial, striplcm2extended.serial]
 
@@ -439,8 +403,8 @@ describe AsyncTestCase, "Default Plans":
                     z.hue = i
                     ex.append(chp.Color(i, z.saturation, z.brightness, z.kelvin))
 
-            self.assertEqual(len(expectedlcm1), 30)
-            self.assertEqual(len(expectedlcm2), 40)
+            assert len(expectedlcm1) == 30
+            assert len(expectedlcm2) == 40
 
             tile_expected = []
             for i in range(len(light1.attrs.chain)):
@@ -452,10 +416,10 @@ describe AsyncTestCase, "Default Plans":
 
             got = await self.gather(runner, serials, "colors")
 
-            self.assertEqual(got[light1.serial][1]["colors"], tile_expected)
-            self.assertEqual(got[light2.serial][1]["colors"], [[chp.Color(100, 0.5, 0.8, 2500)]])
-            self.assertEqual(got[striplcm1.serial][1]["colors"], [expectedlcm1])
-            self.assertEqual(got[striplcm2extended.serial][1]["colors"], [expectedlcm2])
+            assert got[light1.serial][1]["colors"] == tile_expected
+            assert got[light2.serial][1]["colors"] == [[chp.Color(100, 0.5, 0.8, 2500)]]
+            assert got[striplcm1.serial][1]["colors"] == [expectedlcm1]
+            assert got[striplcm2extended.serial][1]["colors"] == [expectedlcm2]
 
             expected = {
                 light1: [
@@ -490,144 +454,125 @@ describe AsyncTestCase, "Default Plans":
 
     describe "ChainPlan":
 
-        @mlr.test
         async it "gets chain for a bulb", runner:
             got = await self.gather(runner, [light2.serial], "chain")
             info = got[light2.serial][1]["chain"]
 
-            self.assertEqual(
-                info["chain"],
-                [
-                    Partial(
-                        0,
-                        {
-                            "accel_meas_x": 0,
-                            "accel_meas_y": 0,
-                            "accel_meas_z": 0,
-                            "device_version_product": 1,
-                            "device_version_vendor": 1,
-                            "device_version_version": 0,
-                            "firmware_build": 1448861477000000000,
-                            "firmware_version_major": 2,
-                            "firmware_version_minor": 2,
-                            "height": 1,
-                            "user_x": 0,
-                            "user_y": 0,
-                            "width": 1,
-                        },
-                    ),
-                ],
-            )
-            self.assertEqual(info["width"], 1)
+            assert info["chain"] == [
+                Partial(
+                    0,
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 1,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 1448861477000000000,
+                        "firmware_version_major": 2,
+                        "firmware_version_minor": 2,
+                        "height": 1,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 1,
+                    },
+                ),
+            ]
+            assert info["width"] == 1
 
-            self.assertEqual(info["orientations"], {0: Orientation.RightSideUp})
-            self.assertEqual(len(info["random_orientations"]), 1)
-            self.assertEqual(info["coords_and_sizes"], [((0.0, 0.0), (1, 1))])
+            assert info["orientations"] == {0: Orientation.RightSideUp}
+            assert len(info["random_orientations"]) == 1
+            assert info["coords_and_sizes"] == [((0.0, 0.0), (1, 1))]
 
             colors = [chp.Color(200, 1, 1, 3500)]
-            self.assertEqual(info["reorient"](0, colors), reorient(colors, Orientation.RightSideUp))
-            self.assertEqual(
-                info["reverse_orient"](0, colors), reorient(colors, Orientation.RightSideUp)
-            )
+            assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
+            assert info["reverse_orient"](0, colors) == reorient(colors, Orientation.RightSideUp)
 
-        @mlr.test
         async it "gets chain for a strip", runner:
             serials = [striplcm1.serial, striplcm2noextended.serial, striplcm2extended.serial]
             got = await self.gather(runner, serials, "chain")
 
             lcm1_info = got[striplcm1.serial][1]["chain"]
-            self.assertEqual(
-                lcm1_info["chain"],
-                [
-                    Partial(
-                        0,
-                        {
-                            "accel_meas_x": 0,
-                            "accel_meas_y": 0,
-                            "accel_meas_z": 0,
-                            "device_version_product": 31,
-                            "device_version_vendor": 1,
-                            "device_version_version": 0,
-                            "firmware_build": 1502237570000000000,
-                            "firmware_version_major": 1,
-                            "firmware_version_minor": 22,
-                            "height": 1,
-                            "user_x": 0,
-                            "user_y": 0,
-                            "width": 30,
-                        },
-                    ),
-                ],
-            )
-            self.assertEqual(lcm1_info["width"], 30)
+            assert lcm1_info["chain"] == [
+                Partial(
+                    0,
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 31,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 1502237570000000000,
+                        "firmware_version_major": 1,
+                        "firmware_version_minor": 22,
+                        "height": 1,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 30,
+                    },
+                ),
+            ]
+            assert lcm1_info["width"] == 30
 
             striplcm2ne_info = got[striplcm2noextended.serial][1]["chain"]
-            self.assertEqual(
-                striplcm2ne_info["chain"],
-                [
-                    Partial(
-                        0,
-                        {
-                            "accel_meas_x": 0,
-                            "accel_meas_y": 0,
-                            "accel_meas_z": 0,
-                            "device_version_product": 32,
-                            "device_version_vendor": 1,
-                            "device_version_version": 0,
-                            "firmware_build": 1508122125000000000,
-                            "firmware_version_major": 2,
-                            "firmware_version_minor": 70,
-                            "height": 1,
-                            "user_x": 0,
-                            "user_y": 0,
-                            "width": 20,
-                        },
-                    ),
-                ],
-            )
-            self.assertEqual(striplcm2ne_info["width"], 20)
+            assert striplcm2ne_info["chain"] == [
+                Partial(
+                    0,
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 32,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 1508122125000000000,
+                        "firmware_version_major": 2,
+                        "firmware_version_minor": 70,
+                        "height": 1,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 20,
+                    },
+                ),
+            ]
+            assert striplcm2ne_info["width"] == 20
 
             striplcm2_info = got[striplcm2extended.serial][1]["chain"]
-            self.assertEqual(
-                striplcm2_info["chain"],
-                [
-                    Partial(
-                        0,
-                        {
-                            "accel_meas_x": 0,
-                            "accel_meas_y": 0,
-                            "accel_meas_z": 0,
-                            "device_version_product": 32,
-                            "device_version_vendor": 1,
-                            "device_version_version": 0,
-                            "firmware_build": 1543215651000000000,
-                            "firmware_version_major": 2,
-                            "firmware_version_minor": 77,
-                            "height": 1,
-                            "user_x": 0,
-                            "user_y": 0,
-                            "width": 40,
-                        },
-                    ),
-                ],
-            )
-            self.assertEqual(striplcm2_info["width"], 40)
+            assert striplcm2_info["chain"] == [
+                Partial(
+                    0,
+                    {
+                        "accel_meas_x": 0,
+                        "accel_meas_y": 0,
+                        "accel_meas_z": 0,
+                        "device_version_product": 32,
+                        "device_version_vendor": 1,
+                        "device_version_version": 0,
+                        "firmware_build": 1543215651000000000,
+                        "firmware_version_major": 2,
+                        "firmware_version_minor": 77,
+                        "height": 1,
+                        "user_x": 0,
+                        "user_y": 0,
+                        "width": 40,
+                    },
+                ),
+            ]
+            assert striplcm2_info["width"] == 40
 
             for _, info in got.values():
                 info = info["chain"]
 
-                self.assertEqual(info["orientations"], {0: Orientation.RightSideUp})
+                assert info["orientations"] == {0: Orientation.RightSideUp}
 
                 colors = [chp.Color(i, 1, 1, 3500) for i in range(30)]
-                self.assertEqual(
-                    info["reorient"](0, colors), reorient(colors, Orientation.RightSideUp)
+                assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
+                assert info["reverse_orient"](0, colors) == reorient(
+                    colors, Orientation.RightSideUp
                 )
-                self.assertEqual(
-                    info["reverse_orient"](0, colors), reorient(colors, Orientation.RightSideUp)
-                )
-            self.assertEqual(info["coords_and_sizes"], [((0.0, 0.0), (info["width"], 1))])
+            assert info["coords_and_sizes"] == [((0.0, 0.0), (info["width"], 1))]
 
-        @mlr.test
         async it "gets chain for tiles", runner:
             chain = light1.attrs.chain
 
@@ -765,39 +710,35 @@ describe AsyncTestCase, "Default Plans":
                 device.compare_received(expected[device])
 
             info = got[light1.serial][1]["chain"]
-            self.assertEqual(info["chain"], chain)
-            self.assertEqual(info["orientations"], orientations)
-            self.assertEqual(info["width"], 8)
-            self.assertEqual(
-                info["coords_and_sizes"],
-                [
-                    ((0.0, 0.0), (8, 8)),
-                    ((3.0, 5.0), (8, 8)),
-                    ((0.0, 0.0), (8, 8)),
-                    ((10.0, 25.0), (8, 8)),
-                    ((0.0, 0.0), (8, 8)),
-                ],
-            )
+            assert info["chain"] == chain
+            assert info["orientations"] == orientations
+            assert info["width"] == 8
+            assert info["coords_and_sizes"] == [
+                ((0.0, 0.0), (8, 8)),
+                ((3.0, 5.0), (8, 8)),
+                ((0.0, 0.0), (8, 8)),
+                ((10.0, 25.0), (8, 8)),
+                ((0.0, 0.0), (8, 8)),
+            ]
 
-            self.assertEqual(len(info["random_orientations"]), len(info["orientations"]))
+            assert len(info["random_orientations"]) == len(info["orientations"])
 
             colors = [chp.Color(i, 1, 1, 3500) for i in range(64)]
 
-            self.assertEqual(info["reorient"](1, colors), reorient(colors, Orientation.RotatedLeft))
-            self.assertEqual(info["reorient"](3, colors), reorient(colors, Orientation.FaceDown))
-            self.assertEqual(info["reorient"](4, colors), reorient(colors, Orientation.RightSideUp))
+            assert info["reorient"](1, colors) == reorient(colors, Orientation.RotatedLeft)
+            assert info["reorient"](3, colors) == reorient(colors, Orientation.FaceDown)
+            assert info["reorient"](4, colors) == reorient(colors, Orientation.RightSideUp)
 
             # and make sure we don't fail if we randomize
             info["reorient"](1, colors, randomize=True)
 
             ro = info["reverse_orient"]
-            self.assertEqual(ro(1, colors), reorient(colors, Orientation.RotatedRight))
-            self.assertEqual(ro(3, colors), reorient(colors, Orientation.FaceUp))
-            self.assertEqual(ro(4, colors), reorient(colors, Orientation.RightSideUp))
+            assert ro(1, colors) == reorient(colors, Orientation.RotatedRight)
+            assert ro(3, colors) == reorient(colors, Orientation.FaceUp)
+            assert ro(4, colors) == reorient(colors, Orientation.RightSideUp)
 
     describe "FirmwareEffectsPlan":
 
-        @mlr.test
         async it "gets firmware effects", runner:
             light1.set_reply(
                 TileMessages.GetTileEffect,
@@ -847,7 +788,7 @@ describe AsyncTestCase, "Default Plans":
                 light2.serial: (True, {"firmware_effects": Skip}),
                 striplcm1.serial: (True, {"firmware_effects": slcm1}),
             }
-            self.assertEqual(got, expected)
+            assert got == expected
 
             expected = {
                 light1: [

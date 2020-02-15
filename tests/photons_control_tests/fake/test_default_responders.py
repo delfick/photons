@@ -2,23 +2,23 @@
 
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import AsyncTestCase
-
 from photons_messages import MultiZoneEffectType, TileEffectType
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-describe AsyncTestCase, "default_responders":
+from delfick_project.errors_pytest import assertRaises
+
+describe "default_responders":
     async it "has defaults":
         device = FakeDevice("d073d5000001", chp.default_responders())
         await device.start()
 
-        self.assertEqual(device.attrs.vendor_id, 1)
-        self.assertEqual(device.attrs.product_id, 27)
+        assert device.attrs.vendor_id == 1
+        assert device.attrs.product_id == 27
 
-        self.assertEqual(device.attrs.firmware, chp.Firmware(0, 0, 0))
-        self.assertEqual(device.attrs.color, chp.Color(0, 1, 1, 3500))
-        self.assertEqual(device.attrs.power, 0)
+        assert device.attrs.firmware == chp.Firmware(0, 0, 0)
+        assert device.attrs.color == chp.Color(0, 1, 1, 3500)
+        assert device.attrs.power == 0
 
         assert not any(isinstance(r, chp.ZonesResponder) for r in device.responders)
         assert not any(isinstance(r, chp.MatrixResponder) for r in device.responders)
@@ -32,18 +32,18 @@ describe AsyncTestCase, "default_responders":
         await device.start()
 
         assert any(isinstance(r, chp.InfraredResponder) for r in device.responders)
-        self.assertEqual(device.attrs.infrared, 0)
-        self.assertEqual(device.attrs.vendor_id, 1)
-        self.assertEqual(device.attrs.product_id, 29)
+        assert device.attrs.infrared == 0
+        assert device.attrs.vendor_id == 1
+        assert device.attrs.product_id == 29
 
         device = FakeDevice(
             "d073d5000001", chp.default_responders(Products.LCM2_A19_PLUS, infrared=200)
         )
         await device.start()
-        self.assertEqual(device.attrs.infrared, 200)
+        assert device.attrs.infrared == 200
 
     async it "can be multizone":
-        with self.fuzzyAssertRaisesError(
+        with assertRaises(
             AssertionError, "Product has multizone capability but no zones specified"
         ):
             device = FakeDevice("d073d5000001", chp.default_responders(Products.LCM1_Z))
@@ -53,10 +53,10 @@ describe AsyncTestCase, "default_responders":
         await device.start()
 
         assert any(isinstance(r, chp.ZonesResponder) for r in device.responders)
-        self.assertEqual(device.attrs.zones, zones)
-        self.assertEqual(device.attrs.zones_effect, MultiZoneEffectType.OFF)
-        self.assertEqual(device.attrs.vendor_id, 1)
-        self.assertEqual(device.attrs.product_id, 31)
+        assert device.attrs.zones == zones
+        assert device.attrs.zones_effect == MultiZoneEffectType.OFF
+        assert device.attrs.vendor_id == 1
+        assert device.attrs.product_id == 31
 
         device = FakeDevice(
             "d073d5000001",
@@ -65,21 +65,21 @@ describe AsyncTestCase, "default_responders":
             ),
         )
         await device.start()
-        self.assertEqual(device.attrs.zones_effect, MultiZoneEffectType.MOVE)
+        assert device.attrs.zones_effect == MultiZoneEffectType.MOVE
 
     async it "can be a tile":
         device = FakeDevice("d073d5000001", chp.default_responders(Products.LCM3_TILE))
         await device.start()
 
-        self.assertEqual(device.attrs.vendor_id, 1)
-        self.assertEqual(device.attrs.product_id, 55)
+        assert device.attrs.vendor_id == 1
+        assert device.attrs.product_id == 55
 
         assert any(isinstance(r, chp.MatrixResponder) for r in device.responders)
-        self.assertEqual(device.attrs.matrix_effect, TileEffectType.OFF)
+        assert device.attrs.matrix_effect == TileEffectType.OFF
 
         device = FakeDevice(
             "d073d5000001",
             chp.default_responders(Products.LCM3_TILE, matrix_effect=TileEffectType.FLAME),
         )
         await device.start()
-        self.assertEqual(device.attrs.matrix_effect, TileEffectType.FLAME)
+        assert device.attrs.matrix_effect == TileEffectType.FLAME

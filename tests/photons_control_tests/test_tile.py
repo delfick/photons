@@ -5,14 +5,14 @@ from photons_control import test_helpers as chp
 from photons_control.planner import Gatherer
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_transport.fake import FakeDevice
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, TileMessages, TileEffectType
 from photons_products import Products
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
+import pytest
 import uuid
 
 
@@ -51,18 +51,22 @@ nottile = FakeDevice(
     ),
 )
 
-lights = [tile1, tile2, nottile]
-mlr = chp.ModuleLevelRunner(lights)
+tiles = [tile1, tile2]
+lights = [*tiles, nottile]
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
 
-describe AsyncTestCase, "Tile helpers":
-    use_default_loop = True
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner(lights) as runner:
+        yield runner
 
-    async before_each:
-        self.maxDiff = None
-        self.tiles = [tile1, tile2]
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
+
+
+describe "Tile helpers":
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
@@ -72,21 +76,17 @@ describe AsyncTestCase, "Tile helpers":
 
     describe "SetTileEffect":
 
-        @mlr.test
         async it "complains if we have more than 16 colors in the palette", runner:
-            with self.fuzzyAssertRaisesError(
-                PhotonsAppError, "Palette can only be up to 16 colors", got=17
-            ):
+            with assertRaises(PhotonsAppError, "Palette can only be up to 16 colors", got=17):
                 SetTileEffect("flame", palette=["red"] * 17)
 
-        @mlr.test
         async it "can power on devices and set tile effect", runner:
             msg = SetTileEffect("flame")
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for tile in self.tiles:
-                self.assertIs(tile.attrs.matrix_effect, TileEffectType.FLAME)
+            for tile in tiles:
+                assert tile.attrs.matrix_effect is TileEffectType.FLAME
 
             self.compare_received(
                 {
@@ -114,16 +114,15 @@ describe AsyncTestCase, "Tile helpers":
                 }
             )
 
-        @mlr.test
         async it "has options", runner:
             msg = SetTileEffect(
                 "flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"]
             )
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for tile in self.tiles:
-                self.assertIs(tile.attrs.matrix_effect, TileEffectType.FLAME)
+            for tile in tiles:
+                assert tile.attrs.matrix_effect is TileEffectType.FLAME
 
             palette = [
                 {"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 3500},
@@ -160,14 +159,13 @@ describe AsyncTestCase, "Tile helpers":
                 }
             )
 
-        @mlr.test
         async it "can choose not to turn on devices", runner:
             msg = SetTileEffect("morph", power_on=False)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for tile in self.tiles:
-                self.assertIs(tile.attrs.matrix_effect, TileEffectType.MORPH)
+            for tile in tiles:
+                assert tile.attrs.matrix_effect is TileEffectType.MORPH
 
             self.compare_received(
                 {
@@ -193,15 +191,14 @@ describe AsyncTestCase, "Tile helpers":
                 }
             )
 
-        @mlr.test
         async it "can target particular devices", runner:
             msg = SetTileEffect("morph", reference=tile1.serial)
             msg2 = SetTileEffect("flame", power_on=False, reference=tile2.serial)
             got = await runner.target.script([msg, msg2]).run_with_all(None)
-            self.assertEqual(got, [])
+            assert got == []
 
-            self.assertIs(tile1.attrs.matrix_effect, TileEffectType.MORPH)
-            self.assertIs(tile2.attrs.matrix_effect, TileEffectType.FLAME)
+            assert tile1.attrs.matrix_effect is TileEffectType.MORPH
+            assert tile2.attrs.matrix_effect is TileEffectType.FLAME
 
             self.compare_received(
                 {

@@ -3,34 +3,37 @@
 from photons_control.script import Repeater, Pipeline
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import AsyncTestCase
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from collections import defaultdict
 import asyncio
+import pytest
 
 light1 = FakeDevice("d073d5000001", chp.default_responders())
 light2 = FakeDevice("d073d5000002", chp.default_responders())
 light3 = FakeDevice("d073d5000003", chp.default_responders())
 
-mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner([light1, light2, light3]) as runner:
+        yield runner
+
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
 
 
 def loop_time():
     return asyncio.get_event_loop().time()
 
 
-describe AsyncTestCase, "Repeater":
-    use_default_loop = True
+describe "Repeater":
 
-    @mlr.test
     async it "repeats messages", runner:
         for use_pipeline in (True, False):
             pipeline = [
@@ -79,7 +82,7 @@ describe AsyncTestCase, "Repeater":
                         got_power = False
                         got_light = False
 
-    @mlr.test
+    @pytest.mark.async_timeout(3)
     async it "can have a min loop time", runner:
         msgs = [
             DeviceMessages.SetPower(level=0),
@@ -109,16 +112,15 @@ describe AsyncTestCase, "Repeater":
             current = pkts.pop(0)[1]
 
             while pkts:
-                self.assertLess(current - first, 0.1)
+                assert current - first < 0.1
 
                 nxt = pkts.pop(0)[1]
-                self.assertGreater(nxt - current, 0.3)
+                assert nxt - current > 0.3
                 current = nxt
 
                 if pkts:
                     first = pkts.pop(0)[1]
 
-    @mlr.test
     async it "can have a on_done_loop", runner:
         msgs = [
             DeviceMessages.SetPower(level=0),
@@ -144,9 +146,8 @@ describe AsyncTestCase, "Repeater":
                 break
 
         assert all(serial in got for serial in runner.serials), got
-        self.assertEqual(len(done), 3)
+        assert len(done) == 3
 
-    @mlr.test
     async it "can be stopped by a on_done_loop", runner:
         msgs = [
             DeviceMessages.SetPower(level=0),
@@ -175,9 +176,8 @@ describe AsyncTestCase, "Repeater":
         assert all(len(pkts) == 6 for pkts in got.values()), [
             (serial, len(pkts)) for serial, pkts in got.items()
         ]
-        self.assertEqual(len(done), 3)
+        assert len(done) == 3
 
-    @mlr.test
     async it "is not stopped by errors", runner:
 
         async def waiter(pkt, source):
@@ -220,4 +220,4 @@ describe AsyncTestCase, "Repeater":
         assert all(
             all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()
         ), got
-        self.assertEqual(len(done), 2)
+        assert len(done) == 2

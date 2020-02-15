@@ -387,16 +387,19 @@ class FromGenerator(object):
             return nxt
 
         async def _stop_ts(self, cancelled=False):
+            d = None
             try:
                 if hasattr(self, "getter_t"):
                     if cancelled:
                         self.getter_t.cancel()
-                    await self.getter_t
+                    d, _ = await asyncio.wait([self.getter_t])
             except asyncio.CancelledError:
-                pass
-            except Exception as error:
-                hp.add_error(self.error_catcher, error)
-                return
+                raise
+            else:
+                if d:
+                    exc = list(d)[0].exception()
+                    if exc:
+                        hp.add_error(self.error_catcher, exc)
 
         async def getter(self):
             gen = self.item.generator(self.generator_reference, self.args_for_run, **self.kwargs)

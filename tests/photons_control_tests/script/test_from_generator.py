@@ -4,16 +4,17 @@ from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeli
 from photons_control import test_helpers as chp
 
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
-from photons_app.test_helpers import TestCase, AsyncTestCase
 from photons_app import helpers as hp
 
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.fake import FakeDevice
 from photons_messages import DeviceMessages
 
+from delfick_project.errors_pytest import assertRaises
 from collections import defaultdict
 from functools import partial
 import asyncio
+import pytest
 
 light1 = FakeDevice(
     "d073d5000001", chp.default_responders(power=0, color=chp.Color(0, 1, 0.3, 2500))
@@ -25,18 +26,23 @@ light2 = FakeDevice(
 
 light3 = FakeDevice("d073d5000003", chp.default_responders(color=chp.Color(100, 1, 0.5, 2500)))
 
-mlr = chp.ModuleLevelRunner([light1, light2, light3])
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner([light1, light2, light3]) as runner:
+        yield runner
+
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
 
 
 def loop_time():
     return asyncio.get_event_loop().time()
 
 
-describe AsyncTestCase, "FromGenerator":
-    use_default_loop = True
+describe "FromGenerator":
 
     async def assertScript(self, runner, gen, *, generator_kwargs=None, expected, **kwargs):
         msg = FromGenerator(gen, **(generator_kwargs or {}))
@@ -50,7 +56,6 @@ describe AsyncTestCase, "FromGenerator":
 
             device.compare_received(expected[device])
 
-    @mlr.test
     async it "is able to do a FromGenerator per serial", runner:
 
         async def gen(serial, afr, **kwargs):
@@ -83,13 +88,12 @@ describe AsyncTestCase, "FromGenerator":
             device.compare_received(expected[device])
 
             if expected[device]:
-                self.assertEqual(len(got[device.serial]), 2)
+                assert len(got[device.serial]) == 2
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-        self.assertEqual(errors, [FailedToFindDevice(serial=light3.serial)])
+        assert errors == [FailedToFindDevice(serial=light3.serial)]
 
-    @mlr.test
     async it "is able to do a FromGenerator per serial with per serial error_catchers", runner:
 
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
@@ -134,23 +138,20 @@ describe AsyncTestCase, "FromGenerator":
 
             device.compare_received(expected[device])
 
-        self.assertEqual(
-            errors,
-            [
-                FailedToFindDevice(serial=light3.serial),
-                TimedOut("Waiting for reply to a packet", serial=light1.serial),
-                TimedOut("Waiting for reply to a packet", serial=light2.serial),
-            ],
-        )
+        assert errors == [
+            FailedToFindDevice(serial=light3.serial),
+            TimedOut("Waiting for reply to a packet", serial=light1.serial),
+            TimedOut("Waiting for reply to a packet", serial=light2.serial),
+        ]
 
         # The FailedToFindDevice happens before the script is run and so doesn't get taken into
         # account by the error_catcher_override
-        self.assertEqual(
-            per_light_errors,
-            {light1.serial: [errors[1]], light3.serial: [], light2.serial: [errors[2]]},
-        )
+        assert per_light_errors == {
+            light1.serial: [errors[1]],
+            light3.serial: [],
+            light2.serial: [errors[2]],
+        }
 
-    @mlr.test
     async it "Can get results", runner:
 
         async def gen(reference, afr, **kwargs):
@@ -176,10 +177,9 @@ describe AsyncTestCase, "FromGenerator":
 
             device.compare_received(expected[device])
 
-            self.assertEqual(len(got[device.serial]), 1)
+            assert len(got[device.serial]) == 1
             assert got[device.serial][0] | DeviceMessages.StatePower
 
-    @mlr.test
     async it "Sends all the messages that are yielded", runner:
 
         async def gen(reference, afr, **kwargs):
@@ -202,7 +202,6 @@ describe AsyncTestCase, "FromGenerator":
 
         await self.assertScript(runner, gen, expected=expected)
 
-    @mlr.test
     async it "does not ignore exception in generator", runner:
         error = Exception("NOPE")
 
@@ -211,10 +210,9 @@ describe AsyncTestCase, "FromGenerator":
             yield DeviceMessages.GetPower()
 
         expected = {light1: [], light2: [], light3: []}
-        with self.fuzzyAssertRaisesError(BadRun, _errors=[error]):
+        with assertRaises(BadRun, _errors=[error]):
             await self.assertScript(runner, gen, expected=expected)
 
-    @mlr.test
     async it "adds exception from generator to error_catcher", runner:
         got = []
 
@@ -229,9 +227,8 @@ describe AsyncTestCase, "FromGenerator":
 
         expected = {light1: [], light2: [], light3: []}
         await self.assertScript(runner, gen, expected=expected, error_catcher=err)
-        self.assertEqual(got, [error])
+        assert got == [error]
 
-    @mlr.test
     async it "it can know if the message was sent successfully", runner:
 
         async def gen(reference, afr, **kwargs):
@@ -248,7 +245,6 @@ describe AsyncTestCase, "FromGenerator":
             runner, gen, generator_kwargs={"reference_override": True}, expected=expected
         )
 
-    @mlr.test
     async it "it can know if the message was not sent successfully", runner:
 
         async def waiter(pkt, source):
@@ -278,18 +274,17 @@ describe AsyncTestCase, "FromGenerator":
             error_catcher=errors,
         )
 
-        self.assertEqual(errors, [TimedOut("Waiting for reply to a packet", serial=light1.serial)])
+        assert errors == [TimedOut("Waiting for reply to a packet", serial=light1.serial)]
 
-    @mlr.test
     async it "it can have a serial override", runner:
 
         async def gen(reference, afr, **kwargs):
             async def inner_gen(level, reference, afr2, **kwargs2):
-                self.assertIs(afr, afr2)
+                assert afr is afr2
                 del kwargs2["error_catcher"]
                 kwargs1 = dict(kwargs)
                 del kwargs1["error_catcher"]
-                self.assertEqual(kwargs1, kwargs2)
+                assert kwargs1 == kwargs2
                 assert reference in runner.serials
                 yield DeviceMessages.SetPower(level=level)
 
@@ -316,7 +311,6 @@ describe AsyncTestCase, "FromGenerator":
 
         await self.assertScript(runner, gen, expected=expected)
 
-    @mlr.test
     async it "it sends messages in parallel", runner:
         got = []
 
@@ -343,11 +337,10 @@ describe AsyncTestCase, "FromGenerator":
 
         start = loop_time()
         await self.assertScript(runner, gen, expected=expected)
-        self.assertEqual(len(got), 3)
+        assert len(got) == 3
         for t in got:
-            self.assertLess(t - start, 0.1)
+            assert t - start < 0.1
 
-    @mlr.test
     async it "can wait for other messages", runner:
         got = {}
 
@@ -381,14 +374,13 @@ describe AsyncTestCase, "FromGenerator":
             runner, gen, expected=expected, error_catcher=errors, message_timeout=0.2
         )
         got = list(got.values())
-        self.assertEqual(len(got), 3)
-        self.assertLess(got[0] - start, 0.1)
-        self.assertLess(got[1] - start, 0.1)
-        self.assertGreater(got[2] - got[1], 0.1)
+        assert len(got) == 3
+        assert got[0] - start < 0.1
+        assert got[1] - start < 0.1
+        assert got[2] - got[1] > 0.1
 
-        self.assertEqual(errors, [TimedOut("Waiting for reply to a packet", serial=light2.serial)])
+        assert errors == [TimedOut("Waiting for reply to a packet", serial=light2.serial)]
 
-    @mlr.test
     async it "can provide errors", runner:
 
         async def gen(reference, afr, **kwargs):
@@ -404,9 +396,7 @@ describe AsyncTestCase, "FromGenerator":
 
         errors = []
         await self.assertScript(runner, gen, expected=expected, error_catcher=errors)
-        self.assertEqual(errors, [FailedToFindDevice(serial=light1.serial)])
+        assert errors == [FailedToFindDevice(serial=light1.serial)]
 
-        with self.fuzzyAssertRaisesError(
-            BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]
-        ):
+        with assertRaises(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
             await self.assertScript(runner, gen, expected=expected)

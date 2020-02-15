@@ -2,15 +2,15 @@
 
 from photons_control.attributes import make_colors
 
-from photons_app.test_helpers import TestCase
-
 from photons_colour import Parser
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+import pytest
 
-describe TestCase, "make_colors":
-    before_each:
-        self.colors = [
+describe "make_colors":
+
+    @pytest.fixture()
+    def colors(self):
+        return [
             ["red", 10],
             ["blue", 3],
             ["hue:78 brightness:0.5", 5],
@@ -29,7 +29,7 @@ describe TestCase, "make_colors":
             [(120, 1, 1, 9000), 1],
         ]
 
-    it "can make colors":
+    it "can make colors", colors:
 
         def hsbk(*args, **kwargs):
             h, s, b, k = Parser.hsbk(*args, **kwargs)
@@ -40,7 +40,6 @@ describe TestCase, "make_colors":
         colorHSBK = hsbk("hue:78 brightness:0.5", overrides={"saturation": 0, "kelvin": 3500})
         colorHEX = hsbk("#234455", overrides={"kelvin": 3500})
 
-        self.maxDiff = None
         expected = [colorRed] * 10 + [colorBlue] * 3 + [colorHSBK] * 5 + [colorHEX] * 2
         for _ in range(2):
             expected.append({"hue": 100, "saturation": 0, "brightness": 1, "kelvin": 3500})
@@ -50,26 +49,26 @@ describe TestCase, "make_colors":
             expected.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0})
             expected.append({"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 9000})
 
-        self.assertEqual(list(make_colors(self.colors)), expected)
+        assert list(make_colors(colors)) == expected
 
-    it "can overrides hue":
-        colors = list(make_colors(self.colors, overrides={"hue": 1}))
+    it "can overrides hue", colors:
+        colors = list(make_colors(colors, overrides={"hue": 1}))
         for c in colors:
-            self.assertEqual(c["hue"], 1)
+            assert c["hue"] == 1
 
-    it "can overrides saturation":
-        colors = list(make_colors(self.colors, overrides={"saturation": 0.3}))
+    it "can overrides saturation", colors:
+        colors = list(make_colors(colors, overrides={"saturation": 0.3}))
         for c in colors:
-            self.assertEqual(c["saturation"], 0.3)
+            assert c["saturation"] == 0.3
 
-    it "can overrides brightness":
-        colors = list(make_colors(self.colors, overrides={"brightness": 0.6}))
-
-        for c in colors:
-            self.assertEqual(c["brightness"], 0.6)
-
-    it "can overrides kelvin":
-        colors = list(make_colors(self.colors, overrides={"kelvin": 8000}))
+    it "can overrides brightness", colors:
+        colors = list(make_colors(colors, overrides={"brightness": 0.6}))
 
         for c in colors:
-            self.assertEqual(c["kelvin"], 8000)
+            assert c["brightness"] == 0.6
+
+    it "can overrides kelvin", colors:
+        colors = list(make_colors(colors, overrides={"kelvin": 8000}))
+
+        for c in colors:
+            assert c["kelvin"] == 8000

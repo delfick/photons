@@ -4,13 +4,12 @@ from photons_control.planner.script import WithSender
 from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
-from photons_app.test_helpers import AsyncTestCase
 
 from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+import pytest
 import uuid
 
 light1 = FakeDevice(
@@ -21,15 +20,20 @@ light2 = FakeDevice(
     "d073d5000002", chp.default_responders(Products.LCM2_A19_PLUS, power=65535, infrared=0)
 )
 
-mlr = chp.ModuleLevelRunner([light1, light2])
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner([light1, light2]) as runner:
+        yield runner
 
-describe AsyncTestCase, "WithSender":
-    use_default_loop = True
 
-    @mlr.test
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
+
+
+describe "WithSender":
+
     async it "yields responses with key from original message", runner:
         key1 = str(uuid.uuid4())
         key2 = str(uuid.uuid4())
@@ -51,13 +55,13 @@ describe AsyncTestCase, "WithSender":
             assert k not in got
             got[k] = pkt
 
-        self.assertEqual(len(got), 4)
+        assert len(got) == 4
 
         def assertCorrect(pkt, kls, serial, **kwargs):
             assert pkt | kls, pkt
-            self.assertEqual(pkt.serial, serial, pkt)
+            assert pkt.serial == serial, pkt
             for k, v in kwargs.items():
-                self.assertEqual(getattr(pkt, k), v, pkt)
+                assert getattr(pkt, k) == v, pkt
 
         assertCorrect(got[key1], DeviceMessages.StatePower, light1.serial, level=0)
         assertCorrect(got[key2], LightMessages.StateInfrared, light1.serial, brightness=100)
@@ -65,7 +69,7 @@ describe AsyncTestCase, "WithSender":
         assertCorrect(got[key4], LightMessages.StateInfrared, light2.serial, brightness=0)
 
         for pkt in (got[key1], got[key2]):
-            self.assertEqual(pkt._with_sender_address, (f"fake://{light1.serial}/memory", 56700))
+            assert pkt._with_sender_address == (f"fake://{light1.serial}/memory", 56700)
 
         for pkt in (got[key3], got[key4]):
-            self.assertEqual(pkt._with_sender_address, (f"fake://{light2.serial}/memory", 56700))
+            assert pkt._with_sender_address == (f"fake://{light2.serial}/memory", 56700)

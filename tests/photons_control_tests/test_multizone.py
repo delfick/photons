@@ -11,7 +11,6 @@ from photons_control.planner import Gatherer, Skip, NoMessages
 from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_colour import Parser
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
@@ -19,7 +18,8 @@ from photons_products.registry import Capability
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
+import pytest
 import uuid
 
 
@@ -85,15 +85,26 @@ striplcm2extended = FakeDevice(
     ),
 )
 
-lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
-mlr = chp.ModuleLevelRunner(lights)
+strips = [striplcm1, striplcm2extended, striplcm2noextended]
+lights = [light1, light2, *strips]
 
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
 
-describe AsyncTestCase, "SetZonesPlan":
-    async before_each:
-        self.specifier = [
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner(lights) as runner:
+        yield runner
+
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
+
+
+describe "SetZonesPlan":
+
+    @pytest.fixture()
+    def specifier(self):
+        return [
             ["red", 10],
             ["blue", 3],
             ["hue:78 brightness:0.5", 5],
@@ -110,8 +121,8 @@ describe AsyncTestCase, "SetZonesPlan":
             [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1],
         ]
 
-    async it "works out old style and extended style messages":
-        plan = SetZonesPlan(self.specifier)
+    async it "works out old style and extended style messages", specifier:
+        plan = SetZonesPlan(specifier)
 
         assert all(msg | MultiZoneMessages.SetColorZones for msg in plan.set_color_old)
         assert plan.set_color_new | MultiZoneMessages.SetExtendedColorZones
@@ -211,10 +222,10 @@ describe AsyncTestCase, "SetZonesPlan":
             },
         ]
 
-        self.assertEqual(len(plan.set_color_old), len(expected_old))
+        assert len(plan.set_color_old) == len(expected_old)
         for e, o in zip(expected_old, plan.set_color_old):
             for k, v in e.items():
-                self.assertAlmostEqual(v, o[k])
+                assert v == pytest.approx(o[k])
 
         def hsbk(*args, **kwargs):
             h, s, b, k = Parser.hsbk(*args, **kwargs)
@@ -235,76 +246,76 @@ describe AsyncTestCase, "SetZonesPlan":
             expected_new.append(chp.Color(0, 0, 0, 0))
 
         nw = plan.set_color_new
-        self.assertEqual(nw.colors_count, len(expected_new), nw)
+        assert nw.colors_count == len(expected_new), nw
 
         for i, (c, n) in enumerate(zip(nw.colors, expected_new)):
             for k in n:
-                self.assertAlmostEqual(c[k], n[k], 6, f"{i}.{n}")
-        self.assertEqual(nw.zone_index, 0)
+                assert c[k] == pytest.approx(n[k], rel=1e-6)
+        assert nw.zone_index == 0
 
-    async it "can overrides hue":
-        plan = SetZonesPlan(self.specifier, overrides={"hue": 1})
+    async it "can overrides hue", specifier:
+        plan = SetZonesPlan(specifier, overrides={"hue": 1})
 
         expected = chp.Color(1, 0, 0, 3500).hue
 
         for o in plan.set_color_old:
-            self.assertEqual(o.hue, expected)
+            assert o.hue == expected
 
-        self.assertEqual(plan.set_color_new.colors_count, 30)
+        assert plan.set_color_new.colors_count == 30
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i].hue, expected)
+            assert plan.set_color_new.colors[i].hue == expected
 
-    async it "can overrides saturation":
-        plan = SetZonesPlan(self.specifier, overrides={"saturation": 0.3})
+    async it "can overrides saturation", specifier:
+        plan = SetZonesPlan(specifier, overrides={"saturation": 0.3})
 
         expected = chp.Color(0, 0.3, 0, 3500).saturation
 
         for o in plan.set_color_old:
-            self.assertEqual(o.saturation, expected)
+            assert o.saturation == expected
 
-        self.assertEqual(plan.set_color_new.colors_count, 30)
+        assert plan.set_color_new.colors_count == 30
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i].saturation, expected)
+            assert plan.set_color_new.colors[i].saturation == expected
 
-    async it "can overrides brightness":
-        plan = SetZonesPlan(self.specifier, overrides={"brightness": 0.6})
+    async it "can overrides brightness", specifier:
+        plan = SetZonesPlan(specifier, overrides={"brightness": 0.6})
 
         expected = chp.Color(0, 0, 0.6, 3500).brightness
 
         for o in plan.set_color_old:
-            self.assertEqual(o.brightness, expected)
+            assert o.brightness == expected
 
-        self.assertEqual(plan.set_color_new.colors_count, 30)
+        assert plan.set_color_new.colors_count == 30
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i].brightness, expected)
+            assert plan.set_color_new.colors[i].brightness == expected
 
-    async it "can overrides kelvin":
-        plan = SetZonesPlan(self.specifier, overrides={"kelvin": 8000})
+    async it "can overrides kelvin", specifier:
+        plan = SetZonesPlan(specifier, overrides={"kelvin": 8000})
 
         for o in plan.set_color_old:
-            self.assertEqual(o.kelvin, 8000)
+            assert o.kelvin == 8000
 
-        self.assertEqual(plan.set_color_new.colors_count, 30)
+        assert plan.set_color_new.colors_count == 30
         for i in range(28):
-            self.assertEqual(plan.set_color_new.colors[i].kelvin, 8000)
+            assert plan.set_color_new.colors[i].kelvin == 8000
 
-    async it "can override duration":
-        plan = SetZonesPlan(self.specifier)
-
-        for o in plan.set_color_old:
-            self.assertEqual(o.duration, 1)
-
-        self.assertEqual(plan.set_color_new.duration, 1)
-
-        plan = SetZonesPlan(self.specifier, duration=20)
+    async it "can override duration", specifier:
+        plan = SetZonesPlan(specifier)
 
         for o in plan.set_color_old:
-            self.assertEqual(o.duration, 20)
+            assert o.duration == 1
 
-        self.assertEqual(plan.set_color_new.duration, 20)
+        assert plan.set_color_new.duration == 1
 
-    async it "can start at a different zone_index":
-        plan = SetZonesPlan(self.specifier, zone_index=10)
+        plan = SetZonesPlan(specifier, duration=20)
+
+        for o in plan.set_color_old:
+            assert o.duration == 20
+
+        assert plan.set_color_new.duration == 20
+
+    async it "can start at a different zone_index", specifier:
+        plan = SetZonesPlan(specifier, zone_index=10)
 
         expected_old = [
             {"start_index": 10 + 0, "end_index": 10 + 9},
@@ -324,23 +335,20 @@ describe AsyncTestCase, "SetZonesPlan":
 
         for e, o in zip(expected_old, plan.set_color_old):
             for k, v in e.items():
-                self.assertEqual(v, o[k])
+                assert v == o[k]
 
-        self.assertEqual(plan.set_color_new.zone_index, 10)
+        assert plan.set_color_new.zone_index == 10
 
     async it "complains if we have more than 82 colors":
-        with self.fuzzyAssertRaisesError(
-            PhotonsAppError, "colors can only go up to 82 colors", got=87
-        ):
+        with assertRaises(PhotonsAppError, "colors can only go up to 82 colors", got=87):
             SetZonesPlan([["red", 80], ["blue", 7]])
 
     async it "complains if we have no colors":
-        with self.fuzzyAssertRaisesError(PhotonsAppError, "No colors were specified"):
+        with assertRaises(PhotonsAppError, "No colors were specified"):
             SetZonesPlan([])
 
-    @with_timeout
-    async it "can create messages to send back":
-        plan = SetZonesPlan(self.specifier)
+    async it "can create messages to send back", specifier:
+        plan = SetZonesPlan(specifier)
 
         def make(options):
             return type("Capability", (Capability,), options)
@@ -366,9 +374,9 @@ describe AsyncTestCase, "SetZonesPlan":
             {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": True})}},
         )
 
-        self.assertIs(instance1.messages, Skip)
+        assert instance1.messages is Skip
         for instance in (instance2, instance3, instance4):
-            self.assertIs(instance.messages, NoMessages)
+            assert instance.messages is NoMessages
 
         msgsLcm1 = await instance2.info()
         msgsLcm2Noextended = await instance3.info()
@@ -379,19 +387,14 @@ describe AsyncTestCase, "SetZonesPlan":
         assert msgsLcm2Extended | MultiZoneMessages.SetExtendedColorZones
 
         for msg in msgsLcm1:
-            self.assertEqual(msg.serial, striplcm1.serial)
+            assert msg.serial == striplcm1.serial
 
         for msg in msgsLcm2Noextended:
-            self.assertEqual(msg.serial, striplcm2noextended.serial)
+            assert msg.serial == striplcm2noextended.serial
 
-        self.assertEqual(msgsLcm2Extended.serial, striplcm2extended.serial)
+        assert msgsLcm2Extended.serial == striplcm2extended.serial
 
-describe AsyncTestCase, "Multizone helpers":
-    use_default_loop = True
-
-    async before_each:
-        self.maxDiff = None
-        self.strips = [striplcm1, striplcm2extended, striplcm2noextended]
+describe "Multizone helpers":
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
@@ -407,7 +410,6 @@ describe AsyncTestCase, "Multizone helpers":
 
     describe "find_multizone":
 
-        @mlr.test
         async it "yields serials and capability", runner:
             got = {}
             async with runner.target.session() as afr:
@@ -415,16 +417,12 @@ describe AsyncTestCase, "Multizone helpers":
                     assert serial not in got
                     got[serial] = cap.has_extended_multizone
 
-            self.assertEqual(
-                got,
-                {
-                    striplcm1.serial: False,
-                    striplcm2noextended.serial: False,
-                    striplcm2extended.serial: True,
-                },
-            )
+            assert got == {
+                striplcm1.serial: False,
+                striplcm2noextended.serial: False,
+                striplcm2extended.serial: True,
+            }
 
-        @mlr.test
         async it "resends messages each time if we don't give a gatherer", runner:
             async with runner.target.session() as afr:
                 async for serial, cap in find_multizone(runner.target, runner.serials, afr):
@@ -445,7 +443,6 @@ describe AsyncTestCase, "Multizone helpers":
                 }
                 self.compare_received(want)
 
-        @mlr.test
         async it "has cache if we provide a gatherer", runner:
             gatherer = Gatherer(runner.target)
 
@@ -471,7 +468,6 @@ describe AsyncTestCase, "Multizone helpers":
 
     describe "zones_from_reference":
 
-        @mlr.test
         async it "yield zones", runner:
             got = {}
             async with runner.target.session() as afr:
@@ -479,16 +475,12 @@ describe AsyncTestCase, "Multizone helpers":
                     assert serial not in got
                     got[serial] = zones
 
-            self.assertEqual(
-                got,
-                {
-                    striplcm1.serial: [(i, c) for i, c in enumerate(zones1)],
-                    striplcm2noextended.serial: [(i, c) for i, c in enumerate(zones2)],
-                    striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
-                },
-            )
+            assert got == {
+                striplcm1.serial: [(i, c) for i, c in enumerate(zones1)],
+                striplcm2noextended.serial: [(i, c) for i, c in enumerate(zones2)],
+                striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
+            }
 
-        @mlr.test
         async it "resends messages if no gatherer is provided", runner:
             async with runner.target.session() as afr:
                 async for serial, zones in zones_from_reference(runner.target, runner.serials, afr):
@@ -511,7 +503,6 @@ describe AsyncTestCase, "Multizone helpers":
 
             self.compare_received(want)
 
-        @mlr.test
         async it "caches messages if gatherer is provided", runner:
             gatherer = Gatherer(runner.target)
             async with runner.target.session() as afr:
@@ -541,24 +532,19 @@ describe AsyncTestCase, "Multizone helpers":
 
     describe "SetZones":
 
-        @mlr.test
         async it "can power on devices and set zones", runner:
-            for device in self.strips:
+            for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["red", 7], ["blue", 5]])
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
             red = chp.Color(0, 1, 1, 3500)
             blue = chp.Color(250, 1, 1, 3500)
-            self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
-            self.assertEqual(
-                striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4
-            )
-            self.assertEqual(
-                striplcm2extended.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4
-            )
+            assert striplcm1.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
+            assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
+            assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
 
             self.compare_received_klses(
                 {
@@ -587,14 +573,13 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can skip turning on lights", runner:
-            for device in self.strips:
+            for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["red", 7], ["blue", 5]], power_on=False)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
             self.compare_received_klses(
                 {
@@ -620,9 +605,8 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can target particular lights", runner:
-            for device in self.strips:
+            for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
@@ -630,20 +614,16 @@ describe AsyncTestCase, "Multizone helpers":
             msg2 = SetZones([["red", 7], ["blue", 5]], reference=striplcm1.serial)
             msg = SetZones([["green", 7], ["yellow", 5]], power_on=False, reference=lcm2strips)
             got = await runner.target.script([msg, msg2]).run_with_all(None)
-            self.assertEqual(got, [])
+            assert got == []
 
             red = chp.Color(0, 1, 1, 3500)
             blue = chp.Color(250, 1, 1, 3500)
-            self.assertEqual(striplcm1.attrs.zones, [red] * 7 + [blue] * 5 + [zeroColor] * 4)
+            assert striplcm1.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
 
             green = chp.Color(120, 1, 1, 3500)
             yellow = chp.Color(60, 1, 1, 3500)
-            self.assertEqual(
-                striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4
-            )
-            self.assertEqual(
-                striplcm2extended.attrs.zones, [green] * 7 + [yellow] * 5 + [zeroColor] * 4
-            )
+            assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
+            assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
 
             self.compare_received_klses(
                 {
@@ -668,32 +648,30 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can give duration to messages", runner:
-            for device in self.strips:
+            for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["green", 7], ["yellow", 5]], duration=5)
-            got = await runner.target.script(msg).run_with_all([s.serial for s in self.strips])
-            self.assertEqual(got, [])
+            got = await runner.target.script(msg).run_with_all([s.serial for s in strips])
+            assert got == []
 
-            for device in self.strips:
+            for device in strips:
                 assert device.received.pop(0) | DeviceMessages.GetHostFirmware
                 assert device.received.pop(0) | DeviceMessages.GetVersion
 
                 for msg in device.received:
-                    self.assertEqual(msg.duration, 5)
+                    assert msg.duration == 5
 
-        @mlr.test
         async it "can reuse a gatherer", runner:
             gatherer = Gatherer(runner.target)
 
-            for device in self.strips:
+            for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
             msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
             self.compare_received_klses(
                 {
@@ -723,8 +701,8 @@ describe AsyncTestCase, "Multizone helpers":
             )
 
             msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
-            got = await runner.target.script(msg).run_with_all([s.serial for s in self.strips])
-            self.assertEqual(got, [])
+            got = await runner.target.script(msg).run_with_all([s.serial for s in strips])
+            assert got == []
 
             self.compare_received_klses(
                 {
@@ -747,14 +725,13 @@ describe AsyncTestCase, "Multizone helpers":
 
     describe "SetZonesEffect":
 
-        @mlr.test
         async it "can power on devices and set zones effect", runner:
             msg = SetZonesEffect("move")
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
             self.compare_received(
                 {
@@ -787,14 +764,13 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "has options", runner:
             msg = SetZonesEffect("move", speed=5, duration=10, power_on_duration=20)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
             self.compare_received(
                 {
@@ -827,14 +803,13 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can choose not to turn on devices", runner:
             msg = SetZonesEffect("move", power_on=False)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
             self.compare_received(
                 {
@@ -864,17 +839,16 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can target particular devices", runner:
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
             msg = SetZonesEffect("move", power_on=False, reference=striplcm1.serial)
             msg2 = SetZonesEffect("move", duration=5, reference=lcm2strips)
             got = await runner.target.script([msg, msg2]).run_with_all(None)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
             self.compare_received(
                 {
@@ -904,16 +878,15 @@ describe AsyncTestCase, "Multizone helpers":
                 }
             )
 
-        @mlr.test
         async it "can be passed in a gatherer", runner:
             gatherer = Gatherer(runner.target)
 
             msg = SetZonesEffect("move", gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.MOVE)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
             self.compare_received(
                 {
@@ -948,10 +921,10 @@ describe AsyncTestCase, "Multizone helpers":
 
             msg = SetZonesEffect("off", gatherer=gatherer)
             got = await runner.target.script(msg).run_with_all(runner.serials)
-            self.assertEqual(got, [])
+            assert got == []
 
-            for strip in self.strips:
-                self.assertIs(strip.attrs.zones_effect, MultiZoneEffectType.OFF)
+            for strip in strips:
+                assert strip.attrs.zones_effect is MultiZoneEffectType.OFF
 
             self.compare_received(
                 {

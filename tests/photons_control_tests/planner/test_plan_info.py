@@ -3,34 +3,37 @@
 from photons_control.planner.plans import Plan, Skip, NoMessages
 from photons_control.planner.gatherer import PlanInfo
 
-from photons_app.test_helpers import TestCase
-
 from photons_messages import DeviceMessages
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from unittest import mock
+import pytest
 
-describe TestCase, "PlanInfo":
-    before_each:
-        self.plan = mock.Mock(name="plan")
-        self.plankey = mock.Mock(name="plankey")
-        self.instance = mock.Mock(name="instance")
-        self.completed = mock.Mock(name="completed")
+describe "PlanInfo":
 
-    it "takes in some things":
-        info = PlanInfo(self.plan, self.plankey, self.instance, self.completed)
-        self.assertIs(info.plan, self.plan)
-        self.assertIs(info.plankey, self.plankey)
-        self.assertIs(info.instance, self.instance)
-        self.assertIs(info.completed, self.completed)
+    @pytest.fixture()
+    def V(self):
+        class V:
+            plan = mock.Mock(name="plan")
+            plankey = mock.Mock(name="plankey")
+            instance = mock.Mock(name="instance")
+            completed = mock.Mock(name="completed")
+
+        return V()
+
+    it "takes in some things", V:
+        info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
+        assert info.plan is V.plan
+        assert info.plankey is V.plankey
+        assert info.instance is V.instance
+        assert info.completed is V.completed
         assert info.done
 
-        info = PlanInfo(self.plan, self.plankey, self.instance, None)
-        self.assertIs(info.completed, None)
+        info = PlanInfo(V.plan, V.plankey, V.instance, None)
+        assert info.completed is None
         assert not info.done
 
-    it "can be marked done":
-        info = PlanInfo(self.plan, self.plankey, self.instance, None)
+    it "can be marked done", V:
+        info = PlanInfo(V.plan, V.plankey, V.instance, None)
         assert not info.done
 
         info.mark_done()
@@ -45,13 +48,13 @@ describe TestCase, "PlanInfo":
 
             class P(Plan):
                 @property
-                def messages(self):
+                def messages(s):
                     called.append("shouldn't be called")
                     return [get_label]
 
                 class Instance(Plan.Instance):
                     @property
-                    def messages(self):
+                    def messages(s):
                         called.append(1)
                         return [get_power]
 
@@ -61,21 +64,21 @@ describe TestCase, "PlanInfo":
 
             info = PlanInfo(plan, plankey, instance, None)
 
-            self.assertEqual(called, [])
+            assert called == []
             messages = info.messages
-            self.assertEqual(called, [1])
-            self.assertEqual(messages, [get_power])
+            assert called == [1]
+            assert messages == [get_power]
 
             # Memoized!
             messages = info.messages
-            self.assertEqual(called, [1])
-            self.assertEqual(messages, [get_power])
+            assert called == [1]
+            assert messages == [get_power]
 
             called = []
 
             class P(Plan):
                 @property
-                def messages(self):
+                def messages(s):
                     called.append(2)
                     return [get_label]
 
@@ -85,39 +88,39 @@ describe TestCase, "PlanInfo":
 
             info = PlanInfo(plan, plankey, instance, None)
 
-            self.assertEqual(called, [])
+            assert called == []
             messages = info.messages
-            self.assertEqual(called, [2])
-            self.assertEqual(messages, [get_label])
+            assert called == [2]
+            assert messages == [get_label]
 
             # Memoized!
             messages = info.messages
-            self.assertEqual(called, [2])
-            self.assertEqual(messages, [get_label])
+            assert called == [2]
+            assert messages == [get_label]
 
     describe "not_done_messages":
-        it "yields messages if not already done":
+        it "yields messages if not already done", V:
             get_power = DeviceMessages.GetPower()
             get_label = DeviceMessages.GetLabel()
 
-            self.instance.messages = [get_power, get_label]
+            V.instance.messages = [get_power, get_label]
 
-            info = PlanInfo(self.plan, self.plankey, self.instance, None)
-            self.assertEqual(list(info.not_done_messages), [get_power, get_label])
-            self.assertEqual(list(info.not_done_messages), [get_power, get_label])
+            info = PlanInfo(V.plan, V.plankey, V.instance, None)
+            assert list(info.not_done_messages) == [get_power, get_label]
+            assert list(info.not_done_messages) == [get_power, get_label]
 
             info.mark_done()
-            self.assertEqual(list(info.not_done_messages), [])
+            assert list(info.not_done_messages) == []
 
-            info = PlanInfo(self.plan, self.plankey, self.instance, self.completed)
-            self.assertEqual(list(info.not_done_messages), [])
+            info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
+            assert list(info.not_done_messages) == []
 
-        it "does not yield messages if the messages is Skip":
-            self.instance.messages = Skip
-            info = PlanInfo(self.plan, self.plankey, self.instance, self.completed)
-            self.assertEqual(list(info.not_done_messages), [])
+        it "does not yield messages if the messages is Skip", V:
+            V.instance.messages = Skip
+            info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
+            assert list(info.not_done_messages) == []
 
-        it "does not yield messages if the messages is NoMessages":
-            self.instance.messages = NoMessages
-            info = PlanInfo(self.plan, self.plankey, self.instance, self.completed)
-            self.assertEqual(list(info.not_done_messages), [])
+        it "does not yield messages if the messages is NoMessages", V:
+            V.instance.messages = NoMessages
+            info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
+            assert list(info.not_done_messages) == []

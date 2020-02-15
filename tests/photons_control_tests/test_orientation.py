@@ -3,9 +3,7 @@
 from photons_control.orientation import Orientation as O
 from photons_control import orientation
 
-from photons_app.test_helpers import TestCase
-
-describe TestCase, "rotated_index":
+describe "rotated_index":
     it "works":
         testcases = [
             (0, O.RightSideUp, 0),
@@ -28,7 +26,7 @@ describe TestCase, "rotated_index":
                 got == expected
             ), f"Rotated {i} to {got} instead of {expected} with orientation {o.name}"
 
-describe TestCase, "reverse_orientation":
+describe "reverse_orientation":
     it "works":
         testcases = [
             (O.RightSideUp, O.RightSideUp),
@@ -45,7 +43,7 @@ describe TestCase, "reverse_orientation":
                 got is expected
             ), f"Expected reverse of {o.name} to be {expected.name}, got {got.name}"
 
-describe TestCase, "nearest_orientation":
+describe "nearest_orientation":
     it "works":
         testcases = [
             # empty
@@ -65,11 +63,11 @@ describe TestCase, "nearest_orientation":
                 got is expected
             ), f"Expected accel meas ({x}, {y}, {x}) to be orientated {expected.name}, got {got.name}"
 
-describe TestCase, "reorient":
+describe "reorient":
     it "does nothing if it doesn't need to":
         colors = list(range(64))
         for o in (O.RightSideUp, O.FaceUp, O.FaceDown):
-            self.assertEqual(orientation.reorient(colors, o), colors)
+            assert orientation.reorient(colors, o) == colors
 
     it "can fix a rotated left tile":
         _ = "_"
@@ -100,7 +98,7 @@ describe TestCase, "reorient":
             ]
         # fmt: on
 
-        self.assertEqual(orientation.reorient(colors, O.RotatedLeft), expected)
+        assert orientation.reorient(colors, O.RotatedLeft) == expected
 
     it "can fix a rotated right tile":
         _ = "_"
@@ -132,7 +130,7 @@ describe TestCase, "reorient":
 
         # fmt: on
 
-        self.assertEqual(orientation.reorient(colors, O.RotatedRight), expected)
+        assert orientation.reorient(colors, O.RotatedRight) == expected
 
     it "can fix an upside down tile":
         _ = "_"
@@ -164,4 +162,4 @@ describe TestCase, "reorient":
 
         # fmt: on
 
-        self.assertEqual(orientation.reorient(colors, O.UpsideDown), expected)
+        assert orientation.reorient(colors, O.UpsideDown) == expected

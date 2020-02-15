@@ -2,8 +2,6 @@
 
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import TestCase, AsyncTestCase
-
 from photons_control.transform import Transformer, PowerToggle
 from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
@@ -14,6 +12,7 @@ from delfick_project.norms import dictobj
 import itertools
 import asyncio
 import random
+import pytest
 
 light1 = FakeDevice("d073d5000001", chp.default_responders(color=chp.Color(0, 1, 0.3, 2500)))
 
@@ -24,6 +23,17 @@ light2 = FakeDevice(
 light3 = FakeDevice(
     "d073d5000003", chp.default_responders(power=65535, color=chp.Color(100, 0, 0.8, 2500))
 )
+
+
+@pytest.fixture(scope="module")
+async def runner(memory_devices_runner):
+    async with memory_devices_runner([light1, light2, light3]) as runner:
+        yield runner
+
+
+@pytest.fixture(autouse=True)
+async def reset_runner(runner):
+    await runner.per_test()
 
 
 def generate_options(color, exclude=None):
@@ -77,13 +87,7 @@ def generate_options(color, exclude=None):
                         yield make_state(comb, comb2)
 
 
-mlr = chp.ModuleLevelRunner([light1, light2, light3])
-
-setup_module = mlr.setUp
-teardown_module = mlr.tearDown
-
-describe AsyncTestCase, "PowerToggle":
-    use_default_loop = True
+describe "PowerToggle":
 
     async def run_and_compare(self, runner, msg, *, expected):
         await runner.target.script(msg).run_with_all(runner.serials)
@@ -96,7 +100,6 @@ describe AsyncTestCase, "PowerToggle":
 
             device.compare_received(expected[device])
 
-    @mlr.test
     async it "toggles the power", runner:
         expected = {
             light1: [
@@ -124,8 +127,7 @@ describe AsyncTestCase, "PowerToggle":
         }
         await self.run_and_compare(runner, PowerToggle(duration=2), expected=expected)
 
-describe AsyncTestCase, "Transformer":
-    use_default_loop = True
+describe "Transformer":
 
     async def transform(self, runner, state, *, expected, keep_brightness=False):
         msg = Transformer.using(state, keep_brightness=keep_brightness)
@@ -140,9 +142,8 @@ describe AsyncTestCase, "Transformer":
             device.compare_received(expected[device])
 
     async it "returns an empty list if no power or color options":
-        self.assertEqual(Transformer.using({}), [])
+        assert Transformer.using({}) == []
 
-    @mlr.test
     async it "Uses SetPower if no duration", runner:
         msg = DeviceMessages.SetPower(level=0, res_required=False)
         expected = {device: [msg] for device in runner.devices}
@@ -153,7 +154,6 @@ describe AsyncTestCase, "Transformer":
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "on"}, expected=expected)
 
-    @mlr.test
     async it "uses SetLightPower if we have duration", runner:
         msg = LightMessages.SetLightPower(level=0, duration=100, res_required=False)
         expected = {device: [msg] for device in runner.devices}
@@ -164,7 +164,6 @@ describe AsyncTestCase, "Transformer":
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "on", "duration": 20}, expected=expected)
 
-    @mlr.test
     async it "just uses Parser.color_to_msg", runner:
         for color in (random.choice(["red", "blue", "green", "yellow"]), None):
             for state in generate_options(color, exclude=["power"]):
@@ -175,7 +174,6 @@ describe AsyncTestCase, "Transformer":
                 expected = {device: [want] for device in runner.devices}
                 await self.transform(runner, state, expected=expected)
 
-    @mlr.test
     async it "can ignore brightness", runner:
         want = Parser.color_to_msg("hue:200 saturation:1")
         want.res_required = False
@@ -188,14 +186,12 @@ describe AsyncTestCase, "Transformer":
             keep_brightness=True,
         )
 
-    @mlr.test
     async it "sets color with duration", runner:
         state = {"color": "blue", "duration": 10}
         want = Parser.color_to_msg("blue", overrides={"duration": 10})
         expected = {device: [want] for device in runner.devices}
         await self.transform(runner, state, expected=expected, keep_brightness=True)
 
-    @mlr.test
     async it "sets power off even if light already off", runner:
         state = {"color": "blue", "power": "off", "duration": 10}
         power = LightMessages.SetLightPower(level=0, duration=10)
@@ -203,7 +199,6 @@ describe AsyncTestCase, "Transformer":
         expected = {device: [power, set_color] for device in runner.devices}
         await self.transform(runner, state, expected=expected)
 
-    @mlr.test
     async it "pipelines turn off and color when both color and power=off", runner:
         for state in generate_options("red"):
             state["power"] = "off"
@@ -220,7 +215,6 @@ describe AsyncTestCase, "Transformer":
 
     describe "When power on and need color":
 
-        @mlr.test
         async it "sets power on if it needs to", runner:
             state = {"color": "blue", "power": "on"}
             expected = {
@@ -237,7 +231,6 @@ describe AsyncTestCase, "Transformer":
             }
             await self.transform(runner, state, expected=expected)
 
-        @mlr.test
         async it "sets power on if it needs to with duration", runner:
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
             expected = {
@@ -258,7 +251,6 @@ describe AsyncTestCase, "Transformer":
             }
             await self.transform(runner, state, expected=expected)
 
-        @mlr.test
         async it "can see brightness in state", runner:
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
             expected = {
@@ -279,7 +271,6 @@ describe AsyncTestCase, "Transformer":
             }
             await self.transform(runner, state, expected=expected)
 
-        @mlr.test
         async it "can ignore brightness in color", runner:
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
             expected = {
@@ -303,7 +294,6 @@ describe AsyncTestCase, "Transformer":
             }
             await self.transform(runner, state, expected=expected, keep_brightness=True)
 
-        @mlr.test
         async it "can ignore brightness in state", runner:
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
             expected = {

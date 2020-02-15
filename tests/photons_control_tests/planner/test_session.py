@@ -2,48 +2,57 @@
 
 from photons_control.planner.gatherer import Session, Planner
 
-from photons_app.test_helpers import TestCase
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
 from unittest import mock
+import pytest
 import uuid
 
-describe TestCase, "Session":
-    before_each:
-        self.session = Session()
 
-    it "has received and filled":
-        assert hasattr(self.session, "received")
-        assert hasattr(self.session, "filled")
+@pytest.fixture()
+def session():
+    return Session()
+
+
+@pytest.fixture(autouse=True)
+def fake_time(FakeTime):
+    with FakeTime() as t:
+        yield t
+
+
+describe "Session":
+    it "has received and filled", session:
+        assert hasattr(session, "received")
+        assert hasattr(session, "filled")
 
         key = str(uuid.uuid4())
-        d = self.session.received[key]
-        self.assertIsInstance(d, dict)
+        d = session.received[key]
+        assert isinstance(d, dict)
 
         key2 = str(uuid.uuid4())
         l = d[key2]
-        self.assertIsInstance(l, list)
+        assert isinstance(l, list)
 
         key3 = str(uuid.uuid4())
-        d = self.session.filled[key3]
-        self.assertIsInstance(d, dict)
+        d = session.filled[key3]
+        assert isinstance(d, dict)
 
-    it "can make a planner":
+    it "can make a planner", session:
         plans = mock.Mock(name="plans")
         serial = mock.Mock(name="serial")
         depinfo = mock.Mock(name="depinfo")
         error_catcher = mock.Mock(name="error_catcher")
-        planner = self.session.planner(plans, depinfo, serial, error_catcher)
+        planner = session.planner(plans, depinfo, serial, error_catcher)
 
-        self.assertIsInstance(planner, Planner)
-        self.assertIs(planner.session, self.session)
-        self.assertIs(planner.plans, plans)
-        self.assertIs(planner.depinfo, depinfo)
-        self.assertIs(planner.serial, serial)
-        self.assertIs(planner.error_catcher, error_catcher)
+        assert isinstance(planner, Planner)
+        assert planner.session is session
+        assert planner.plans is plans
+        assert planner.depinfo is depinfo
+        assert planner.serial is serial
+        assert planner.error_catcher is error_catcher
 
-    it "can add received packets":
+    it "can add received packets", session:
         t1 = mock.Mock(name="t1")
         t2 = mock.Mock(name="t2")
         t3 = mock.Mock(name="t3")
@@ -60,41 +69,38 @@ describe TestCase, "Session":
         pkt1 = mock.Mock(name="pkt1", serial=serial)
         pkt2 = mock.Mock(name="pkt2", serial=serial)
 
-        self.assertEqual(self.session.received, {})
+        assert session.received == {}
 
         with mock.patch("time.time", t):
-            self.session.receive(key, pkt1)
-            self.assertEqual(self.session.received[serial][key], [(t1, pkt1)])
+            session.receive(key, pkt1)
+            assert session.received[serial][key] == [(t1, pkt1)]
 
-            self.session.receive(key, pkt2)
-            self.assertEqual(self.session.received[serial][key], [(t1, pkt1), (t2, pkt2)])
+            session.receive(key, pkt2)
+            assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
 
         serial2 = "d073d5000002"
         pkt3 = mock.Mock(name="pkt3", serial=serial2)
 
         with mock.patch("time.time", t):
-            self.assertEqual(self.session.received[serial][key], [(t1, pkt1), (t2, pkt2)])
+            assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
 
-            self.session.receive(key, pkt3)
-            self.assertEqual(self.session.received[serial][key], [(t1, pkt1), (t2, pkt2)])
-            self.assertEqual(self.session.received[serial2][key], [(t3, pkt3)])
+            session.receive(key, pkt3)
+            assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
+            assert session.received[serial2][key] == [(t3, pkt3)]
 
         pkt4 = mock.Mock(name="pkt4", serial=serial)
         key2 = str(uuid.uuid4())
 
         with mock.patch("time.time", t):
-            self.session.receive(key2, pkt4)
-            self.assertEqual(self.session.received[serial][key2], [(t4, pkt4)])
+            session.receive(key2, pkt4)
+            assert session.received[serial][key2] == [(t4, pkt4)]
 
-        self.assertEqual(
-            self.session.received,
-            {
-                serial: {key: [(t1, pkt1), (t2, pkt2)], key2: [(t4, pkt4)]},
-                serial2: {key: [(t3, pkt3)]},
-            },
-        )
+        assert session.received == {
+            serial: {key: [(t1, pkt1), (t2, pkt2)], key2: [(t4, pkt4)]},
+            serial2: {key: [(t3, pkt3)]},
+        }
 
-    it "can fill results":
+    it "can fill results", session:
         t1 = mock.Mock(name="t1")
         t2 = mock.Mock(name="t2")
         t3 = mock.Mock(name="t3")
@@ -111,71 +117,66 @@ describe TestCase, "Session":
         result = mock.Mock(name="result")
         result2 = mock.Mock(name="result2")
 
-        self.assertEqual(self.session.filled, {})
+        assert session.filled == {}
 
         with mock.patch("time.time", t):
-            self.session.fill(plankey, serial, result)
-            self.assertEqual(self.session.filled, {plankey: {serial: (t1, result)}})
+            session.fill(plankey, serial, result)
+            assert session.filled == {plankey: {serial: (t1, result)}}
 
-            self.session.fill(plankey, serial, result2)
-            self.assertEqual(self.session.filled, {plankey: {serial: (t2, result2)}})
+            session.fill(plankey, serial, result2)
+            assert session.filled == {plankey: {serial: (t2, result2)}}
 
         serial2 = "d073d5000002"
         with mock.patch("time.time", t):
-            self.session.fill(plankey, serial2, result)
-            self.assertEqual(
-                self.session.filled, {plankey: {serial: (t2, result2), serial2: (t3, result)}}
-            )
+            session.fill(plankey, serial2, result)
+            assert session.filled == {plankey: {serial: (t2, result2), serial2: (t3, result)}}
 
         plankey2 = str(uuid.uuid4())
         serial3 = "d073d5000003"
         result3 = mock.Mock(name="result3")
 
         with mock.patch("time.time", t):
-            self.session.fill(plankey2, serial3, result3)
-            self.assertEqual(
-                self.session.filled,
-                {
-                    plankey: {serial: (t2, result2), serial2: (t3, result)},
-                    plankey2: {serial3: (t4, result3)},
-                },
-            )
+            session.fill(plankey2, serial3, result3)
+            assert session.filled == {
+                plankey: {serial: (t2, result2), serial2: (t3, result)},
+                plankey2: {serial3: (t4, result3)},
+            }
 
     describe "completed":
-        it "returns result if we have one":
+        it "returns result if we have one", session:
             plankey = str(uuid.uuid4())
             serial = "d073d5000001"
             serial2 = "d073d5000002"
             result = mock.Mock(name="result")
 
-            self.assertIs(self.session.completed(plankey, serial), None)
-            self.assertIs(self.session.completed(plankey, serial2), None)
+            assert session.completed(plankey, serial) is None
+            assert session.completed(plankey, serial2) is None
 
-            self.session.fill(plankey, serial, result)
-            self.assertIs(self.session.completed(plankey, serial), result)
+            session.fill(plankey, serial, result)
+            assert session.completed(plankey, serial) is result
 
-            self.assertIs(self.session.completed(plankey, serial2), None)
+            assert session.completed(plankey, serial2) is None
 
     describe "has_received":
-        it "says whether we have results for that serial and key":
+        it "says whether we have results for that serial and key", session:
             key = str(uuid.uuid4())
             key2 = str(uuid.uuid4())
             serial = "d073d5000001"
             serial2 = "d073d5000002"
             pkt1 = mock.Mock(name="pkt1", serial=serial)
 
-            assert not self.session.has_received(key, serial)
-            assert not self.session.has_received(key, serial2)
-            assert not self.session.has_received(key2, serial2)
+            assert not session.has_received(key, serial)
+            assert not session.has_received(key, serial2)
+            assert not session.has_received(key2, serial2)
 
-            self.session.receive(key, pkt1)
+            session.receive(key, pkt1)
 
-            assert self.session.has_received(key, serial)
-            assert not self.session.has_received(key, serial2)
-            assert not self.session.has_received(key2, serial2)
+            assert session.has_received(key, serial)
+            assert not session.has_received(key, serial2)
+            assert not session.has_received(key2, serial2)
 
     describe "known_packets":
-        it "yields known packets for this serial":
+        it "yields known packets for this serial", session:
             key = str(uuid.uuid4())
             key2 = str(uuid.uuid4())
 
@@ -188,288 +189,237 @@ describe TestCase, "Session":
             pkt4 = mock.Mock(name="pkt4", serial=serial)
             pkt5 = mock.Mock(name="pkt5", serial=serial2)
 
-            self.assertEqual(list(self.session.known_packets(serial)), [])
-            self.assertEqual(list(self.session.known_packets(serial2)), [])
+            assert list(session.known_packets(serial)) == []
+            assert list(session.known_packets(serial2)) == []
 
-            self.session.receive(key, pkt1)
-            self.session.receive(key, pkt2)
-            self.session.receive(key2, pkt3)
-            self.session.receive(key2, pkt4)
-            self.session.receive(key2, pkt5)
+            session.receive(key, pkt1)
+            session.receive(key, pkt2)
+            session.receive(key2, pkt3)
+            session.receive(key2, pkt4)
+            session.receive(key2, pkt5)
 
-            ls = list(self.session.known_packets(serial))
-            self.assertEqual(ls, [pkt1, pkt2, pkt4])
+            ls = list(session.known_packets(serial))
+            assert ls == [pkt1, pkt2, pkt4]
 
-            ls = list(self.session.known_packets(serial2))
-            self.assertEqual(ls, [pkt3, pkt5])
+            ls = list(session.known_packets(serial2))
+            assert ls == [pkt3, pkt5]
 
     describe "refresh_received":
-        before_each:
-            self.key1 = str(uuid.uuid4())
-            self.key2 = str(uuid.uuid4())
 
-            self.serial1 = "d073d5000001"
-            self.serial2 = "d073d5000002"
+        @pytest.fixture()
+        def V(self, fake_time, session):
+            class V:
+                key1 = str(uuid.uuid4())
+                key2 = str(uuid.uuid4())
 
-            def add(s, l, *, t, k):
-                key = getattr(self, f"key{k}")
+                serial1 = "d073d5000001"
+                serial2 = "d073d5000002"
 
-                pkt = mock.Mock(name=f"pkt{s}{l}{k}", serial=getattr(self, f"serial{s}"))
-                setattr(self, f"pkt{s}{l}{k}", pkt)
+                def add(s, n, l, *, t, k):
+                    key = getattr(s, f"key{k}")
 
-                with self.a_time(t):
-                    self.session.receive(key, pkt)
+                    pkt = mock.Mock(name=f"pkt{n}{l}{k}", serial=getattr(s, f"serial{n}"))
+                    setattr(s, f"pkt{n}{l}{k}", pkt)
 
-            add(1, "a", t=1, k=1)
-            add(1, "b", t=10, k=1)
-            add(1, "c", t=15, k=1)
+                    fake_time.set(t)
+                    session.receive(key, pkt)
 
-            add(1, "a", t=1, k=2)
-            add(1, "b", t=5, k=2)
-            add(1, "c", t=20, k=2)
+                @hp.memoized_property
+                def starting_received(s):
+                    return {
+                        s.serial1: {
+                            s.key1: [(1, s.pkt1a1), (10, s.pkt1b1), (15, s.pkt1c1)],
+                            s.key2: [(1, s.pkt1a2), (5, s.pkt1b2), (20, s.pkt1c2)],
+                        },
+                        s.serial2: {
+                            s.key1: [(10, s.pkt2a1), (12, s.pkt2b1), (13, s.pkt2c1)],
+                            s.key2: [(5, s.pkt2a2), (5, s.pkt2b2), (5, s.pkt2c2)],
+                        },
+                    }
 
-            add(2, "a", t=10, k=1)
-            add(2, "b", t=12, k=1)
-            add(2, "c", t=13, k=1)
+                def __init__(s):
+                    s.add(1, "a", t=1, k=1)
+                    s.add(1, "b", t=10, k=1)
+                    s.add(1, "c", t=15, k=1)
 
-            add(2, "a", t=5, k=2)
-            add(2, "b", t=5, k=2)
-            add(2, "c", t=5, k=2)
+                    s.add(1, "a", t=1, k=2)
+                    s.add(1, "b", t=5, k=2)
+                    s.add(1, "c", t=20, k=2)
 
-            self.starting_received = {
-                self.serial1: {
-                    self.key1: [(1, self.pkt1a1), (10, self.pkt1b1), (15, self.pkt1c1)],
-                    self.key2: [(1, self.pkt1a2), (5, self.pkt1b2), (20, self.pkt1c2)],
-                },
-                self.serial2: {
-                    self.key1: [(10, self.pkt2a1), (12, self.pkt2b1), (13, self.pkt2c1)],
-                    self.key2: [(5, self.pkt2a2), (5, self.pkt2b2), (5, self.pkt2c2)],
+                    s.add(2, "a", t=10, k=1)
+                    s.add(2, "b", t=12, k=1)
+                    s.add(2, "c", t=13, k=1)
+
+                    s.add(2, "a", t=5, k=2)
+                    s.add(2, "b", t=5, k=2)
+                    s.add(2, "c", t=5, k=2)
+
+                    assert session.received == s.starting_received
+
+            return V()
+
+        it "does nothing if refresh is False", session, V:
+            session.refresh_received(V.key1, V.serial1, False)
+            assert session.received == V.starting_received
+
+        it "does nothing if serial not in received", session, V:
+            session.refresh_received(V.key1, "not here", 1)
+            assert session.received == V.starting_received
+
+        it "does nothing if key not in received", session, V:
+            session.refresh_received("not here", V.serial1, 1)
+            assert session.received == V.starting_received
+
+        it "removes everything if refresh is 0", session, V:
+            session.refresh_received(V.key1, V.serial1, 0)
+            assert session.received == {
+                V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
+                V.serial2: {
+                    V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)],
+                    V.key2: [(5, V.pkt2a2), (5, V.pkt2b2), (5, V.pkt2c2)],
                 },
             }
-            self.assertEqual(self.session.received, self.starting_received)
 
-        @contextmanager
-        def a_time(self, t):
-            time = mock.Mock(name="time", return_value=t)
-            with mock.patch("time.time", time):
-                yield
+            session.refresh_received(V.key2, V.serial2, 0)
+            assert session.received == {
+                V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
+                V.serial2: {V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)]},
+            }
 
-        it "does nothing if refresh is False":
-            self.session.refresh_received(self.key1, self.serial1, False)
-            self.assertEqual(self.session.received, self.starting_received)
-
-        it "does nothing if serial not in received":
-            self.session.refresh_received(self.key1, "not here", 1)
-            self.assertEqual(self.session.received, self.starting_received)
-
-        it "does nothing if key not in received":
-            self.session.refresh_received("not here", self.serial1, 1)
-            self.assertEqual(self.session.received, self.starting_received)
-
-        it "removes everything if refresh is 0":
-            self.session.refresh_received(self.key1, self.serial1, 0)
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key2: [(1, self.pkt1a2), (5, self.pkt1b2), (20, self.pkt1c2)]
-                    },
-                    self.serial2: {
-                        self.key1: [(10, self.pkt2a1), (12, self.pkt2b1), (13, self.pkt2c1)],
-                        self.key2: [(5, self.pkt2a2), (5, self.pkt2b2), (5, self.pkt2c2)],
-                    },
+        it "removes everything if refresh is True", session, V:
+            session.refresh_received(V.key1, V.serial1, True)
+            assert session.received == {
+                V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
+                V.serial2: {
+                    V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)],
+                    V.key2: [(5, V.pkt2a2), (5, V.pkt2b2), (5, V.pkt2c2)],
                 },
-            )
+            }
 
-            self.session.refresh_received(self.key2, self.serial2, 0)
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key2: [(1, self.pkt1a2), (5, self.pkt1b2), (20, self.pkt1c2)]
-                    },
-                    self.serial2: {
-                        self.key1: [(10, self.pkt2a1), (12, self.pkt2b1), (13, self.pkt2c1)]
-                    },
+            session.refresh_received(V.key2, V.serial2, True)
+            assert session.received == {
+                V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
+                V.serial2: {V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)]},
+            }
+
+        it "removes anything older than refresh seconds", session, fake_time, V:
+            fake_time.set(16)
+            session.refresh_received(V.key1, V.serial1, 6)
+            assert session.received == {
+                V.serial1: {
+                    V.key1: [(10, V.pkt1b1), (15, V.pkt1c1)],
+                    V.key2: V.starting_received[V.serial1][V.key2],
                 },
-            )
+                V.serial2: V.starting_received[V.serial2],
+            }
 
-        it "removes everything if refresh is True":
-            self.session.refresh_received(self.key1, self.serial1, True)
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key2: [(1, self.pkt1a2), (5, self.pkt1b2), (20, self.pkt1c2)]
-                    },
-                    self.serial2: {
-                        self.key1: [(10, self.pkt2a1), (12, self.pkt2b1), (13, self.pkt2c1)],
-                        self.key2: [(5, self.pkt2a2), (5, self.pkt2b2), (5, self.pkt2c2)],
-                    },
+            fake_time.set(21)
+            session.refresh_received(V.key1, V.serial1, 6)
+
+            assert session.received == {
+                V.serial1: {
+                    V.key1: [(15, V.pkt1c1)],
+                    V.key2: V.starting_received[V.serial1][V.key2],
                 },
-            )
+                V.serial2: V.starting_received[V.serial2],
+            }
 
-            self.session.refresh_received(self.key2, self.serial2, True)
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key2: [(1, self.pkt1a2), (5, self.pkt1b2), (20, self.pkt1c2)]
-                    },
-                    self.serial2: {
-                        self.key1: [(10, self.pkt2a1), (12, self.pkt2b1), (13, self.pkt2c1)]
-                    },
-                },
-            )
+            session.refresh_received(V.key1, V.serial1, 5)
 
-        it "removes anything older than refresh seconds":
-            with self.a_time(2):
-                self.session.refresh_received(self.key1, self.serial1, 1)
+            assert session.received == {
+                V.serial1: {V.key2: V.starting_received[V.serial1][V.key2]},
+                V.serial2: V.starting_received[V.serial2],
+            }
 
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key1: [(10, self.pkt1b1), (15, self.pkt1c1)],
-                        self.key2: self.starting_received[self.serial1][self.key2],
-                    },
-                    self.serial2: self.starting_received[self.serial2],
-                },
-            )
+            session.refresh_received(V.key1, V.serial1, 4)
 
-            with self.a_time(20):
-                self.session.refresh_received(self.key1, self.serial1, 6)
+            assert session.received == {
+                V.serial1: {V.key2: V.starting_received[V.serial1][V.key2]},
+                V.serial2: V.starting_received[V.serial2],
+            }
 
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {
-                        self.key1: [(15, self.pkt1c1)],
-                        self.key2: self.starting_received[self.serial1][self.key2],
-                    },
-                    self.serial2: self.starting_received[self.serial2],
-                },
-            )
+            session.refresh_received(V.key2, V.serial2, 10)
 
-            with self.a_time(20):
-                self.session.refresh_received(self.key1, self.serial1, 5)
-
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {self.key2: self.starting_received[self.serial1][self.key2]},
-                    self.serial2: self.starting_received[self.serial2],
-                },
-            )
-
-            with self.a_time(20):
-                self.session.refresh_received(self.key1, self.serial1, 4)
-
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {self.key2: self.starting_received[self.serial1][self.key2]},
-                    self.serial2: self.starting_received[self.serial2],
-                },
-            )
-
-            with self.a_time(20):
-                self.session.refresh_received(self.key2, self.serial2, 10)
-
-            self.assertEqual(
-                self.session.received,
-                {
-                    self.serial1: {self.key2: self.starting_received[self.serial1][self.key2]},
-                    self.serial2: {self.key1: self.starting_received[self.serial2][self.key1]},
-                },
-            )
+            assert session.received == {
+                V.serial1: {V.key2: V.starting_received[V.serial1][V.key2]},
+                V.serial2: {V.key1: V.starting_received[V.serial2][V.key1]},
+            }
 
     describe "refresh_filled":
-        before_each:
-            self.plankeya = str(uuid.uuid4())
-            self.plankeyb = str(uuid.uuid4())
 
-            self.serial1 = "d073d5000001"
-            self.serial2 = "d073d5000002"
+        @pytest.fixture()
+        def V(self, session, fake_time):
+            class V:
+                plankeya = str(uuid.uuid4())
+                plankeyb = str(uuid.uuid4())
 
-            self.result1a = mock.Mock(name="result1a")
-            self.result1b = mock.Mock(name="result1b")
-            self.result2a = mock.Mock(name="result2a")
-            self.result2b = mock.Mock(name="result2b")
+                serial1 = "d073d5000001"
+                serial2 = "d073d5000002"
 
-            with self.a_time(1):
-                self.session.fill(self.plankeya, self.serial1, self.result1a)
+                result1a = mock.Mock(name="result1a")
+                result1b = mock.Mock(name="result1b")
+                result2a = mock.Mock(name="result2a")
+                result2b = mock.Mock(name="result2b")
 
-            with self.a_time(2):
-                self.session.fill(self.plankeya, self.serial2, self.result2a)
+                @hp.memoized_property
+                def starting_filled(s):
+                    return {
+                        s.plankeya: {s.serial1: (1, s.result1a), s.serial2: (2, s.result2a),},
+                        s.plankeyb: {s.serial1: (5, s.result1b), s.serial2: (10, s.result2b),},
+                    }
 
-            with self.a_time(5):
-                self.session.fill(self.plankeyb, self.serial1, self.result1b)
+                def __init__(s):
+                    fake_time.set(1)
+                    session.fill(s.plankeya, s.serial1, s.result1a)
 
-            with self.a_time(10):
-                self.session.fill(self.plankeyb, self.serial2, self.result2b)
+                    fake_time.set(2)
+                    session.fill(s.plankeya, s.serial2, s.result2a)
 
-            self.starting_filled = {
-                self.plankeya: {self.serial1: (1, self.result1a), self.serial2: (2, self.result2a)},
-                self.plankeyb: {
-                    self.serial1: (5, self.result1b),
-                    self.serial2: (10, self.result2b),
-                },
+                    fake_time.set(5)
+                    session.fill(s.plankeyb, s.serial1, s.result1b)
+
+                    fake_time.set(10)
+                    session.fill(s.plankeyb, s.serial2, s.result2b)
+
+                    assert session.filled == s.starting_filled
+
+            return V()
+
+        it "does nothing if refresh is False", session, V:
+            session.refresh_filled(V.plankeya, V.serial1, False)
+            assert session.filled == V.starting_filled
+
+        it "does nothing if plankey not there", session, V:
+            session.refresh_filled("not there", V.serial1, 1)
+            assert session.filled == V.starting_filled
+
+        it "does nothing if serial not there", session, V:
+            session.refresh_filled(V.plankeya, "not there", 1)
+            assert session.filled == V.starting_filled
+
+        it "removes result if refresh is True or 0", session, V:
+            session.refresh_filled(V.plankeya, V.serial1, True)
+            assert session.filled == {
+                V.plankeya: {V.serial2: session.filled[V.plankeya][V.serial2]},
+                V.plankeyb: session.filled[V.plankeyb],
             }
-            self.assertEqual(self.session.filled, self.starting_filled)
 
-        @contextmanager
-        def a_time(self, t):
-            time = mock.Mock(name="time", return_value=t)
-            with mock.patch("time.time", time):
-                yield
+            session.refresh_filled(V.plankeya, V.serial2, 0)
+            assert session.filled == {V.plankeyb: session.filled[V.plankeyb]}
 
-        it "does nothing if refresh is False":
-            self.session.refresh_filled(self.plankeya, self.serial1, False)
-            self.assertEqual(self.session.filled, self.starting_filled)
+        it "removes result if been refresh seconds", session, fake_time, V:
+            fake_time.set(6)
+            session.refresh_filled(V.plankeyb, V.serial1, 2)
+            assert session.filled == V.starting_filled
 
-        it "does nothing if plankey not there":
-            self.session.refresh_filled("not there", self.serial1, 1)
-            self.assertEqual(self.session.filled, self.starting_filled)
+            session.refresh_filled(V.plankeyb, V.serial1, 1)
 
-        it "does nothing if serial not there":
-            self.session.refresh_filled(self.plankeya, "not there", 1)
-            self.assertEqual(self.session.filled, self.starting_filled)
+            assert session.filled == {
+                V.plankeya: session.filled[V.plankeya],
+                V.plankeyb: {V.serial2: session.filled[V.plankeyb][V.serial2]},
+            }
 
-        it "removes result if refresh is True or 0":
-            self.session.refresh_filled(self.plankeya, self.serial1, True)
-            self.assertEqual(
-                self.session.filled,
-                {
-                    self.plankeya: {self.serial2: self.session.filled[self.plankeya][self.serial2]},
-                    self.plankeyb: self.session.filled[self.plankeyb],
-                },
-            )
+            fake_time.set(20)
+            session.refresh_filled(V.plankeyb, V.serial2, 5)
 
-            self.session.refresh_filled(self.plankeya, self.serial2, 0)
-            self.assertEqual(
-                self.session.filled, {self.plankeyb: self.session.filled[self.plankeyb]}
-            )
-
-        it "removes result if been refresh seconds":
-            with self.a_time(6):
-                self.session.refresh_filled(self.plankeyb, self.serial1, 2)
-            self.assertEqual(self.session.filled, self.starting_filled)
-
-            with self.a_time(6):
-                self.session.refresh_filled(self.plankeyb, self.serial1, 1)
-
-            self.assertEqual(
-                self.session.filled,
-                {
-                    self.plankeya: self.session.filled[self.plankeya],
-                    self.plankeyb: {self.serial2: self.session.filled[self.plankeyb][self.serial2]},
-                },
-            )
-
-            with self.a_time(20):
-                self.session.refresh_filled(self.plankeyb, self.serial2, 5)
-
-            self.assertEqual(
-                self.session.filled, {self.plankeya: self.session.filled[self.plankeya]}
-            )
+            assert session.filled == {V.plankeya: session.filled[V.plankeya]}

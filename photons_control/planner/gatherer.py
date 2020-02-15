@@ -291,10 +291,10 @@ class Session:
 
         for s, infos in self.received.items():
             if s == serial and key in infos:
-                if refresh is True:
+                if refresh is True or refresh == 0:
                     del infos[key]
                 else:
-                    infos[key] = [(ts, i) for ts, i in infos[key] if now - ts < refresh]
+                    infos[key] = [(ts, i) for ts, i in infos[key] if 0 < now - ts <= refresh]
                     if not infos[key]:
                         del infos[key]
 

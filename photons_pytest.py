@@ -68,6 +68,9 @@ def FakeTime():
         def __init__(self):
             self.time = 0
 
+        def set(self, t):
+            self.time = t
+
         def add(self, t):
             self.time += t
 
