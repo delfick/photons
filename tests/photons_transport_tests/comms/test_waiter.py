@@ -22,14 +22,14 @@ describe AsyncTestCase, "Waiter":
 
         waiter = Waiter(stop_fut, writer, retry_options)
 
-        self.assertIs(waiter.writer, writer)
-        self.assertIs(waiter.retry_options, retry_options)
+        assert waiter.writer is writer
+        assert waiter.retry_options is retry_options
 
-        self.assertIs(waiter.final_future.done(), False)
+        assert waiter.final_future.done() is False
         stop_fut.cancel()
-        self.assertIs(waiter.final_future.cancelled(), True)
+        assert waiter.final_future.cancelled() is True
 
-        self.assertEqual(waiter.results, [])
+        assert waiter.results == []
         await waiter.finish()
 
     describe "Usage":
@@ -50,8 +50,8 @@ describe AsyncTestCase, "Waiter":
             assert not hasattr(self.waiter, "__writings_cb")
             cb = self.waiter._writings_cb
             assert cb is not None
-            self.assertEqual(getattr(self.waiter, "__writings_cb", None), cb)
-            self.assertEqual(self.waiter._writings_cb, cb)
+            assert getattr(self.waiter, "__writings_cb", None) == cb
+            assert self.waiter._writings_cb == cb
             del self.waiter._writings_cb
             assert not hasattr(self.waiter, "__writings_cb")
 
@@ -84,8 +84,8 @@ describe AsyncTestCase, "Waiter":
                 result.set_result(results)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
-                self.assertIs(r, results)
+                assert took < 0.1
+                assert r is results
                 self.writer.assert_called_once_with()
 
             async it "propagates error from failed writer":
@@ -151,19 +151,19 @@ describe AsyncTestCase, "Waiter":
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.005)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
                 await asyncio.sleep(0.06)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
 
                 res = mock.Mock(name="res")
                 result1.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
-                self.assertIs(r, res)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert took < 0.1
+                assert r is res
+                assert self.writer.mock_calls == [mock.call()]
 
-                self.assertEqual(await self.wait_for(result1), res)
+                assert await self.wait_for(result1) == res
 
             async it "two writings":
                 request = mock.Mock(name="request", ack_required=False, res_required=True)
@@ -192,19 +192,19 @@ describe AsyncTestCase, "Waiter":
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.005)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
                 await asyncio.sleep(0.06)
-                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+                assert self.writer.mock_calls == [mock.call(), mock.call()]
 
                 res = mock.Mock(name="res")
                 result2.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.1)
-                self.assertIs(r, res)
-                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+                assert took < 0.1
+                assert r is res
+                assert self.writer.mock_calls == [mock.call(), mock.call()]
 
-                self.assertEqual(await self.wait_for(result1), res)
+                assert await self.wait_for(result1) == res
 
             async it "one writings with partial write":
                 request = mock.Mock(name="request", ack_required=True, res_required=True)
@@ -231,18 +231,18 @@ describe AsyncTestCase, "Waiter":
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.005)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
                 result.add_ack()
                 await asyncio.sleep(0.08)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
 
                 res = mock.Mock(name="res")
                 result.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.15)
-                self.assertIs(r, res)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert took < 0.15
+                assert r is res
+                assert self.writer.mock_calls == [mock.call()]
 
             async it "two writings with partial write for first writing":
                 request = mock.Mock(name="request", ack_required=True, res_required=True)
@@ -274,22 +274,22 @@ describe AsyncTestCase, "Waiter":
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0.005)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
                 result1.add_ack()
                 await asyncio.sleep(0.08)
-                self.assertEqual(self.writer.mock_calls, [mock.call()])
+                assert self.writer.mock_calls == [mock.call()]
                 await asyncio.sleep(0.05)
-                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+                assert self.writer.mock_calls == [mock.call(), mock.call()]
 
                 res = mock.Mock(name="res")
                 result2.set_result(res)
 
                 r, took = await self.wait_for(t)
-                self.assertLess(took, 0.2)
-                self.assertIs(r, res)
-                self.assertEqual(self.writer.mock_calls, [mock.call(), mock.call()])
+                assert took < 0.2
+                assert r is res
+                assert self.writer.mock_calls == [mock.call(), mock.call()]
 
-                self.assertEqual(await self.wait_for(result1), res)
+                assert await self.wait_for(result1) == res
 
         describe "future":
             async it "cancel the final future on cancel":
@@ -319,13 +319,13 @@ describe AsyncTestCase, "Waiter":
             async it "can get result from final future":
                 result = mock.Mock(name="result")
                 self.waiter.final_future.set_result(result)
-                self.assertIs(self.waiter.result(), result)
+                assert self.waiter.result() is result
                 assert self.waiter.done()
 
             async it "can get exception from the final future":
                 error = PhotonsAppError("error")
                 self.waiter.final_future.set_exception(error)
-                self.assertIs(self.waiter.exception(), error)
+                assert self.waiter.exception() is error
                 assert self.waiter.done()
 
         describe "await":
@@ -343,19 +343,19 @@ describe AsyncTestCase, "Waiter":
 
                 t = self.loop.create_task(doit())
                 await asyncio.sleep(0)
-                self.assertEqual(called, [1])
+                assert called == [1]
                 res = mock.Mock(name="res")
                 self.waiter.final_future.set_result(res)
-                self.assertIs(await t, res)
+                assert await t is res
 
-                self.assertEqual(called, [1])
+                assert called == [1]
                 self.waiter._writings_cb()
                 await asyncio.sleep(0)
-                self.assertEqual(called, [1, 1])
+                assert called == [1, 1]
 
                 # Awaiting again doesn't call writings
-                self.assertIs(await t, res)
-                self.assertEqual(called, [1, 1])
+                assert await t is res
+                assert called == [1, 1]
 
         describe "writings":
             async it "does nothing if final_future is done":
@@ -381,7 +381,7 @@ describe AsyncTestCase, "Waiter":
                 ):
                     await self.waiter.writings()
 
-                self.assertIs(self.waiter.result(), res)
+                assert self.waiter.result() is res
 
             async it "cancels all the results if the final future gets cancelled":
                 results = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
@@ -389,7 +389,7 @@ describe AsyncTestCase, "Waiter":
                 original_find_and_apply_result = hp.find_and_apply_result
 
                 def faar(ff, fs):
-                    self.assertEqual(fs, results)
+                    assert fs == results
                     for f in results:
                         assert not f.cancelled()
                     ff.cancel()
@@ -438,8 +438,8 @@ describe AsyncTestCase, "Waiter":
                         await self.waiter.writings()
 
                 await self.wait_for(fut)
-                self.assertEqual(called, [(15, ())])
-                self.assertEqual(self.waiter.results, [result])
+                assert called == [(15, ())]
+                assert self.waiter.results == [result]
 
             async it "does not call writer if we have a partial result":
                 writings_cb = mock.Mock(name="writings_cb")
@@ -470,9 +470,9 @@ describe AsyncTestCase, "Waiter":
                         with mock.patch.object(self.waiter, "do_write", do_write):
                             await self.waiter.writings()
 
-                self.assertEqual(called, [(9001, ())])
-                self.assertEqual(self.waiter.results, [result])
-                self.assertEqual(do_write.mock_calls, [])
+                assert called == [(9001, ())]
+                assert self.waiter.results == [result]
+                assert do_write.mock_calls == []
 
             async it "calls writer if we have results that we shouldn't wait for":
                 writings_cb = mock.Mock(name="writings_cb")
@@ -499,8 +499,8 @@ describe AsyncTestCase, "Waiter":
                         with mock.patch.object(self.waiter, "do_write", do_write):
                             await self.waiter.writings()
 
-                self.assertEqual(called, [(9002, ())])
-                self.assertEqual(self.waiter.results, [result])
+                assert called == [(9002, ())]
+                assert self.waiter.results == [result]
                 do_write.assert_called_with()
 
             async it "passes on errors from do_write":
@@ -564,8 +564,8 @@ describe AsyncTestCase, "Waiter":
                 with mock.patch.object(self.loop, "call_soon", cs):
                     await self.wait_for(self.waiter.do_write())
 
-                self.assertEqual(self.waiter.results, [result])
-                self.assertEqual(called, ["writer", ("call_soon", ())])
+                assert self.waiter.results == [result]
+                assert called == ["writer", ("call_soon", ())]
 
             async it "calls _writings_cb when result is done if result isn't already done":
                 called = []
@@ -591,10 +591,10 @@ describe AsyncTestCase, "Waiter":
 
                 await self.wait_for(self.waiter.do_write())
 
-                self.assertEqual(self.waiter.results, [result])
-                self.assertEqual(called, ["writer"])
+                assert self.waiter.results == [result]
+                assert called == ["writer"]
                 assertFutCallbacks(result, writings_cb)
 
                 result.set_result([])
                 await self.wait_for(fut)
-                self.assertEqual(called, ["writer", "writings_cb"])
+                assert called == ["writer", "writings_cb"]

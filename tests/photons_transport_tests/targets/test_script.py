@@ -47,17 +47,17 @@ describe AsyncTestCase, "AFRWrapper":
         self.target = FakeTarget()
 
     async it "does not impose a limit if limit is given as None":
-        self.assertEqual(self.called, [])
+        assert self.called == []
 
         a = mock.Mock(name="a")
         kwargs = {"b": a, "limit": None}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
         async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-            self.assertIs(afr, args_for_run)
+            assert afr is args_for_run
 
-        self.assertEqual(kwargs, {"b": a, "limit": None})
-        self.assertEqual(self.called, [])
+        assert kwargs == {"b": a, "limit": None}
+        assert self.called == []
 
     async it "turns limit into a semaphore":
         a = mock.Mock(name="a")
@@ -65,10 +65,10 @@ describe AsyncTestCase, "AFRWrapper":
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
         async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-            self.assertIs(afr, args_for_run)
+            assert afr is args_for_run
 
-        self.assertEqual(kwargs, {"b": a, "limit": Sem(50)})
-        self.assertEqual(self.called, [])
+        assert kwargs == {"b": a, "limit": Sem(50)}
+        assert self.called == []
 
     async it "passes on limit if it has acquire":
         a = mock.Mock(name="a")
@@ -77,10 +77,10 @@ describe AsyncTestCase, "AFRWrapper":
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
         async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-            self.assertIs(afr, args_for_run)
+            assert afr is args_for_run
 
-        self.assertEqual(kwargs, {"b": a, "limit": limit})
-        self.assertEqual(self.called, [])
+        assert kwargs == {"b": a, "limit": limit}
+        assert self.called == []
 
     async it "passes on limit if it is already a Semaphore":
         a = mock.Mock(name="a")
@@ -89,10 +89,10 @@ describe AsyncTestCase, "AFRWrapper":
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
         async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-            self.assertIs(afr, args_for_run)
+            assert afr is args_for_run
 
-        self.assertEqual(kwargs, {"b": a, "limit": limit})
-        self.assertEqual(self.called, [])
+        assert kwargs == {"b": a, "limit": limit}
+        assert self.called == []
 
     async it "creates and closes the afr if none provided":
         a = mock.Mock(name="a")
@@ -100,17 +100,14 @@ describe AsyncTestCase, "AFRWrapper":
         kwargs = {"b": a}
 
         async with AFRWrapper(self.target, sb.NotSpecified, kwargs) as afr:
-            self.assertIs(afr, self.afr)
+            assert afr is self.afr
             self.called.append(("middle", kwargs))
 
-        self.assertEqual(
-            self.called,
-            [
+        assert self.called == [
                 ("args_for_run", (), {}),
                 ("middle", {"b": a, "limit": Sem(30)}),
                 ("close_args_for_run", (self.afr,), {}),
-            ],
-        )
+            ]
 
 describe AsyncTestCase, "ScriptRunner":
     async before_each:
@@ -147,8 +144,8 @@ describe AsyncTestCase, "ScriptRunner":
 
         runner = ScriptRunner(script, target)
 
-        self.assertIs(runner.script, script)
-        self.assertIs(runner.target, target)
+        assert runner.script is script
+        assert runner.target is target
 
     describe "run_with":
         async it "does nothing if no script":
@@ -159,10 +156,10 @@ describe AsyncTestCase, "ScriptRunner":
             async for info in runner.run_with(reference):
                 got.append(info)
 
-            self.assertEqual(got, [])
+            assert got == []
 
         async it "calls run_with on the script":
-            self.assertEqual(self.called, [])
+            assert self.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
@@ -172,10 +169,8 @@ describe AsyncTestCase, "ScriptRunner":
             async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a):
                 found.append(info)
 
-            self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(
-                self.called, [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
-            )
+            assert found == [self.res1, self.res2]
+            assert self.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
         async it "can create an args_for_run":
             a = mock.Mock(name="a")
@@ -187,19 +182,16 @@ describe AsyncTestCase, "ScriptRunner":
             async for info in self.runner.run_with(reference, b=a):
                 found.append(info)
 
-            self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(
-                self.called,
-                [
+            assert found == [self.res1, self.res2]
+            assert self.called == [
                     ("args_for_run", (), {}),
                     ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
                     ("close_args_for_run", (self.afr,), {}),
-                ],
-            )
+                ]
 
     describe "run_with_all":
         async it "calls run_with on the script":
-            self.assertEqual(self.called, [])
+            assert self.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
@@ -207,10 +199,8 @@ describe AsyncTestCase, "ScriptRunner":
 
             found = await self.runner.run_with_all(reference, args_for_run=args_for_run, b=a)
 
-            self.assertEqual(found, [self.res1, self.res2])
-            self.assertEqual(
-                self.called, [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
-            )
+            assert found == [self.res1, self.res2]
+            assert self.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
         async it "raises BadRunWithResults if we have risen exceptions":
             error1 = PhotonsAppError("failure")
@@ -223,7 +213,7 @@ describe AsyncTestCase, "ScriptRunner":
 
             runner = ScriptRunner(FakeScript(), self.FakeTarget())
 
-            self.assertEqual(self.called, [])
+            assert self.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
@@ -236,11 +226,8 @@ describe AsyncTestCase, "ScriptRunner":
                 # self.assertEqual(error.errors, [error1])
                 pass
 
-            self.assertEqual(
-                self.called,
-                [
+            assert self.called == [
                     ("args_for_run", (), {}),
                     ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
                     ("close_args_for_run", (self.afr,), {}),
-                ],
-            )
+                ]

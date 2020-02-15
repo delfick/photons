@@ -28,12 +28,12 @@ describe AsyncTestCase, "Target":
 
             t = T.create(config, {"one": 20})
 
-            self.assertIs(t.protocol_register, protocol_register)
-            self.assertIs(t.final_future, final_future)
-            self.assertEqual(t.one, 20)
+            assert t.protocol_register is protocol_register
+            assert t.final_future is final_future
+            assert t.one == 20
 
-            self.assertIs(t.item_kls, Item)
-            self.assertIs(t.script_runner_kls, ScriptRunner)
+            assert t.item_kls is Item
+            assert t.script_runner_kls is ScriptRunner
 
     describe "normalise":
         async it "gets protocol_register and final_future from the meta":
@@ -45,8 +45,8 @@ describe AsyncTestCase, "Target":
             spec = Target.FieldSpec(formatter=MergedOptionStringFormatter)
             t = spec.normalise(meta, {})
 
-            self.assertIs(t.protocol_register, protocol_register)
-            self.assertIs(t.final_future, final_future)
+            assert t.protocol_register is protocol_register
+            assert t.final_future is final_future
 
     describe "Usage":
         async before_each:
@@ -90,7 +90,7 @@ describe AsyncTestCase, "Target":
                 raw = mock.Mock(name="raw")
 
                 with self.mocked_simplify() as simplify:
-                    self.assertIs(self.target.script(raw), self.script)
+                    assert self.target.script(raw) is self.script
 
                 simplify.assert_called_once_with(raw)
                 self.script_runner_kls.assert_called_once_with(None, target=self.target)
@@ -100,7 +100,7 @@ describe AsyncTestCase, "Target":
                 item = mock.Mock(name="item")
 
                 with self.mocked_simplify(item) as simplify:
-                    self.assertIs(self.target.script(raw), self.script)
+                    assert self.target.script(raw) is self.script
 
                 simplify.assert_called_once_with(raw)
                 self.script_runner_kls.assert_called_once_with(item, target=self.target)
@@ -114,21 +114,21 @@ describe AsyncTestCase, "Target":
                 info = {"gen": None}
 
                 def onsecond(r):
-                    self.assertIsInstance(r, FromGenerator)
+                    assert isinstance(r, FromGenerator)
                     assert r.reference_override
                     info["gen"] = r.generator
                     yield finalitem
 
                 with self.mocked_simplify(item1, item2, onsecond=onsecond) as simplify:
-                    self.assertIs(self.target.script(raw), self.script)
+                    assert self.target.script(raw) is self.script
 
-                self.assertEqual(simplify.mock_calls, [mock.call(raw), mock.call(mock.ANY)])
+                assert simplify.mock_calls == [mock.call(raw), mock.call(mock.ANY)]
                 self.script_runner_kls.assert_called_once_with(finalitem, target=self.target)
 
                 items = []
                 async for thing in info["gen"]():
                     items.append(thing)
-                self.assertEqual(items, [item1, item2])
+                assert items == [item1, item2]
 
         describe "args_for_run":
             async it "creates the session":
@@ -136,7 +136,7 @@ describe AsyncTestCase, "Target":
                 self.target.session_kls = mock.Mock(name="session_kls", return_value=session)
 
                 ret = await self.target.args_for_run()
-                self.assertIs(ret, session)
+                assert ret is session
 
                 self.target.session_kls.assert_called_once_with(self.target)
 
@@ -160,9 +160,9 @@ describe AsyncTestCase, "Target":
 
                 with args_for_run_patch, close_args_for_run_patch:
                     async with self.target.session() as a:
-                        self.assertIs(a, afr)
+                        assert a is afr
                         args_for_run.assert_called_once_with()
-                        self.assertEqual(len(close_args_for_run.mock_calls), 0)
+                        assert len(close_args_for_run.mock_calls) == 0
 
                     args_for_run.assert_called_once_with()
                     close_args_for_run.assert_called_once_with(afr)
@@ -174,7 +174,7 @@ describe AsyncTestCase, "Target":
 
             async it "uses part as is if it already has a run_with on it":
                 part = mock.Mock(name="part", spec=["run_with"])
-                self.assertEqual(list(self.target.simplify(part)), [part])
+                assert list(self.target.simplify(part)) == [part]
 
             async it "simplifies items that have a simplified method":
                 simplified = mock.Mock(name="simplified", spec=[])
@@ -184,7 +184,7 @@ describe AsyncTestCase, "Target":
                 res = mock.Mock(name="res")
                 self.item_kls.return_value = res
 
-                self.assertEqual(list(self.target.simplify(part)), [res])
+                assert list(self.target.simplify(part)) == [res]
 
                 part.simplified.assert_called_once_with(self.target.simplify)
                 self.item_kls.assert_called_once_with([simplified])
@@ -215,14 +215,11 @@ describe AsyncTestCase, "Target":
                 self.item_kls.side_effect = item_kls_init
 
                 res = list(self.target.simplify([part11, part12, part13, part2, part31, part32]))
-                self.assertEqual(res, [res1, part2simplified, res2])
+                assert res == [res1, part2simplified, res2]
 
                 part2.simplified.assert_called_once_with(self.target.simplify)
 
-                self.assertEqual(
-                    self.item_kls.mock_calls,
-                    [mock.call([part11, part12, part13]), mock.call([part31, part32])],
-                )
+                assert self.item_kls.mock_calls == [mock.call([part11, part12, part13]), mock.call([part31, part32])]
 
             async it "doesn't separate simplified items if they don't have a run_with method":
                 part11 = mock.Mock(name="part11", spec=[])
@@ -240,11 +237,8 @@ describe AsyncTestCase, "Target":
                 self.item_kls.return_value = res1
 
                 res = list(self.target.simplify([part11, part12, part13, part2, part31, part32]))
-                self.assertEqual(res, [res1])
+                assert res == [res1]
 
                 part2.simplified.assert_called_once_with(self.target.simplify)
 
-                self.assertEqual(
-                    self.item_kls.mock_calls,
-                    [mock.call([part11, part12, part13, part2simplified, part31, part32])],
-                )
+                assert self.item_kls.mock_calls == [mock.call([part11, part12, part13, part2simplified, part31, part32])]

@@ -29,14 +29,14 @@ describe AsyncTestCase, "Memory":
         transport3 = Memory(mock.Mock(name="othersession"), writer1)
         transport4 = Memory(self.session, writer2)
 
-        self.assertEqual(transport1, transport1)
-        self.assertEqual(transport1, transport2)
-        self.assertEqual(transport1, transport3)
+        assert transport1 == transport1
+        assert transport1 == transport2
+        assert transport1 == transport3
 
-        self.assertNotEqual(transport1, transport4)
+        assert transport1 != transport4
 
     async it "takes in the writer":
-        self.assertIs(self.transport.writer, self.writer)
+        assert self.transport.writer is self.writer
 
     async it "can be cloned":
         transport = Memory(self.session, self.writer)
@@ -44,9 +44,9 @@ describe AsyncTestCase, "Memory":
 
         new_session = mock.Mock(name="new_session")
         clone = transport.clone_for(new_session)
-        self.assertIs(clone.session, new_session)
-        self.assertEqual(clone.writer, self.writer)
-        self.assertIs(clone.transport, None)
+        assert clone.session is new_session
+        assert clone.writer == self.writer
+        assert clone.transport is None
 
     @with_timeout
     async it "writes to writer":
@@ -84,14 +84,14 @@ describe AsyncTestCase, "Memory":
         self.session.received_data.side_effect = receive
 
         transport = Memory(self.session, writer)
-        self.assertIs(await transport.spawn(self.original_message, timeout=1), writer)
+        assert await transport.spawn(self.original_message, timeout=1) is writer
 
         await transport.write(transport, request1, self.original_message)
         await first_receive
-        self.assertEqual(received, [reply1, reply2])
+        assert received == [reply1, reply2]
 
         await transport.write(transport, request2, self.original_message)
         await second_receive
-        self.assertEqual(received, [reply1, reply2, reply3])
+        assert received == [reply1, reply2, reply3]
 
-        self.assertEqual(called, ["writer", "writer"])
+        assert called == ["writer", "writer"]

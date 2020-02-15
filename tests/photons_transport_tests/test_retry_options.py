@@ -7,13 +7,14 @@ from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout
 from contextlib import contextmanager
 from unittest import mock
 import asynctest
+import pytest
 import time
 
 describe TestCase, "RetryOptions":
     it "can be given a different timeouts":
         timeouts = mock.Mock(name="timeouts")
         options = RetryOptions(timeouts)
-        self.assertIs(options.timeouts, timeouts)
+        assert options.timeouts is timeouts
 
     it "has some options":
         options = RetryOptions()
@@ -23,26 +24,26 @@ describe TestCase, "RetryOptions":
             "gap_between_ack_and_res",
             "next_check_after_wait_for_result",
         ):
-            self.assertEqual(type(getattr(options, attr)), float)
-            self.assertGreater(getattr(options, attr), 0)
+            assert type(getattr(options, attr)) == float
+            assert getattr(options, attr) > 0
 
-        self.assertEqual(type(options.timeouts), list)
+        assert type(options.timeouts) == list
         for i, thing in enumerate(options.timeouts):
-            self.assertEqual(type(thing), tuple, f"Item {i} is not a tuple: {thing}")
-            self.assertEqual(len(thing), 2, f"Item {i} is not length two: {thing}")
+            assert type(thing) == tuple, f"Item {i} is not a tuple: {thing}"
+            assert len(thing) == 2, f"Item {i} is not length two: {thing}"
             assert all(type(t) in (float, int) for t in thing), f"Item {i} has not numbers: {thing}"
 
-        self.assertIs(options.timeout, None)
-        self.assertIs(options.timeout_item, None)
+        assert options.timeout is None
+        assert options.timeout_item is None
 
     describe "next_time":
         it "returns first time from timeouts if first time":
-            self.assertEqual(RetryOptions().next_time, 0.2)
+            assert RetryOptions().next_time == 0.2
 
             class Options(RetryOptions):
                 timeouts = [(0.3, 0.4)]
 
-            self.assertEqual(Options().next_time, 0.3)
+            assert Options().next_time == 0.3
 
         it "keeps adding step till we get past end, before going to next timeout item":
 
@@ -54,7 +55,7 @@ describe TestCase, "RetryOptions":
 
             for i, want in enumerate(expected):
                 nxt = options.next_time
-                self.assertAlmostEqual(nxt, want, 3, f"Expected item {i} to be {want}, got {nxt}")
+                assert nxt == pytest.approx(want, rel=1e-3)
 
     describe "iterator":
         it "creates a RetryIterator":
@@ -62,13 +63,13 @@ describe TestCase, "RetryOptions":
             now = time.time()
             get_now = mock.Mock(name="get_now", return_value=now)
             iterator = options.iterator(end_after=12, min_wait=2, get_now=get_now)
-            self.assertIsInstance(iterator, RetryIterator)
-            self.assertEqual(iterator.end_at, now + 12)
-            self.assertEqual(iterator.min_wait, 2)
+            assert isinstance(iterator, RetryIterator)
+            assert iterator.end_at == now + 12
+            assert iterator.min_wait == 2
 
             get_now.assert_called_once_with()
             get_now.reset_mock()
-            self.assertEqual(iterator.get_now(), now)
+            assert iterator.get_now() == now
             get_now.assert_called_once_with()
 
             next_times = []
@@ -76,7 +77,7 @@ describe TestCase, "RetryOptions":
                 next_times.append(iterator.get_next_time())
 
             # I have no idea why 0.3 is so weird here
-            self.assertEqual(next_times, [0.1, 0.2, 0.30000000000000004, 0.8, 1.3, 1.8])
+            assert next_times == [0.1, 0.2, 0.30000000000000004, 0.8, 1.3, 1.8]
 
 describe AsyncTestCase, "RetryIterator":
 
@@ -87,12 +88,12 @@ describe AsyncTestCase, "RetryIterator":
 
         start = time.time()
         await iterator.wait(-1)
-        self.assertLess(time.time() - start, 0.001)
+        assert time.time() - start < 0.001
 
         start = time.time()
         await iterator.wait(0.1)
-        self.assertGreater(time.time() - start, 0.09)
-        self.assertLess(time.time() - start, 0.15)
+        assert time.time() - start > 0.09
+        assert time.time() - start < 0.15
 
     describe "usage":
 
@@ -147,9 +148,7 @@ describe AsyncTestCase, "RetryIterator":
                     calls.append(("loop", end_in, time_till_next, 0.5))
 
             self.maxDiff = None
-            self.assertEqual(
-                calls,
-                [
+            assert calls == [
                     "get_now",
                     "next_time",
                     ("loop", 3.0, 1.0, 0.5),
@@ -164,11 +163,9 @@ describe AsyncTestCase, "RetryIterator":
                     "next_time",
                     ("loop", 1.0, 1.0, 0.5),
                     "get_now",
-                ],
-                calls,
-            )
+                ], calls
 
-            self.assertEqual(next_times, [])
+            assert next_times == []
 
         @with_timeout
         async it "can skip a next time":
@@ -180,9 +177,7 @@ describe AsyncTestCase, "RetryIterator":
                     calls.append(("loop", end_in, time_till_next, 0.5))
 
             self.maxDiff = None
-            self.assertEqual(
-                calls,
-                [
+            assert calls == [
                     "get_now",
                     "next_time",
                     ("loop", 3, 0.1, 0.5),
@@ -199,11 +194,9 @@ describe AsyncTestCase, "RetryIterator":
                     "next_time",
                     ("loop", 2.0, 2.0, 0.5),
                     "get_now",
-                ],
-                calls,
-            )
+                ], calls
 
-            self.assertEqual(next_times, [])
+            assert next_times == []
 
         @with_timeout
         async it "can skip a wait if we've gone past end_in":
@@ -217,9 +210,7 @@ describe AsyncTestCase, "RetryIterator":
                     calls.append(("loop", end_in, time_till_next, skip))
 
             self.maxDiff = None
-            self.assertEqual(
-                calls,
-                [
+            assert calls == [
                     "get_now",
                     "next_time",
                     ("loop", 3, 0.1, 0.1),
@@ -234,8 +225,6 @@ describe AsyncTestCase, "RetryIterator":
                     "next_time",
                     ("loop", 2.6, 0.6, 3),
                     "get_now",
-                ],
-                calls,
-            )
+                ], calls
 
-            self.assertEqual(next_times, [])
+            assert next_times == []

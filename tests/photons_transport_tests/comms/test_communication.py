@@ -56,13 +56,13 @@ describe AsyncTestCase, "Communication":
             Meta(options, []).at("thing"), {}
         )
 
-        self.assertIs(thing.comms, self.communication)
-        self.assertEqual(thing.other, str(other))
+        assert thing.comms is self.communication
+        assert thing.other == str(other)
 
     async it "takes in a transport_target":
-        self.assertIs(self.communication.transport_target, self.transport_target)
-        self.assertEqual(self.communication.found, Found())
-        self.assertIsInstance(self.communication.receiver, Receiver)
+        assert self.communication.transport_target is self.transport_target
+        assert self.communication.found == Found()
+        assert isinstance(self.communication.receiver, Receiver)
 
     async it "has a stop fut":
         assert not self.communication.stop_fut.done()
@@ -85,9 +85,9 @@ describe AsyncTestCase, "Communication":
                 self.wat = 2
 
         c = C(self.transport_target)
-        self.assertEqual(c.wat, 2)
+        assert c.wat == 2
 
-        self.assertEqual(called, ["setup"])
+        assert called == ["setup"]
 
     describe "finish":
         async it "can finish":
@@ -135,7 +135,7 @@ describe AsyncTestCase, "Communication":
             assert self.communication.stop_fut.done()
             assert not self.final_future.done()
 
-            self.assertEqual(called, ["d073d5000001", "d073d5000002"])
+            assert called == ["d073d5000001", "d073d5000002"]
 
     describe "source":
         async it "generates a source":
@@ -143,11 +143,11 @@ describe AsyncTestCase, "Communication":
             assert source > 0 and source < 1 << 32, source
 
             s2 = self.communication.source
-            self.assertEqual(s2, source)
+            assert s2 == source
 
             del self.communication.source
             s3 = self.communication.source
-            self.assertNotEqual(s3, source)
+            assert s3 != source
 
             for _ in range(1000):
                 del self.communication.source
@@ -158,30 +158,30 @@ describe AsyncTestCase, "Communication":
         async it "records where we're at with the target":
             target = mock.Mock(name="target")
             assert not hasattr(self.communication, "_seq")
-            self.assertEqual(self.communication.seq(target), 1)
-            self.assertEqual(self.communication._seq, {target: 1})
+            assert self.communication.seq(target) == 1
+            assert self.communication._seq == {target: 1}
 
-            self.assertEqual(self.communication.seq(target), 2)
-            self.assertEqual(self.communication._seq, {target: 2})
+            assert self.communication.seq(target) == 2
+            assert self.communication._seq == {target: 2}
 
             target2 = mock.Mock(name="target2")
-            self.assertEqual(self.communication.seq(target2), 1)
-            self.assertEqual(self.communication._seq, {target: 2, target2: 1})
+            assert self.communication.seq(target2) == 1
+            assert self.communication._seq == {target: 2, target2: 1}
 
-            self.assertEqual(self.communication.seq(target), 3)
-            self.assertEqual(self.communication._seq, {target: 3, target2: 1})
+            assert self.communication.seq(target) == 3
+            assert self.communication._seq == {target: 3, target2: 1}
 
         async it "wraps around at 255":
             target = mock.Mock(name="target2")
-            self.assertEqual(self.communication.seq(target), 1)
-            self.assertEqual(self.communication._seq, {target: 1})
+            assert self.communication.seq(target) == 1
+            assert self.communication._seq == {target: 1}
 
             self.communication._seq[target] = 254
-            self.assertEqual(self.communication.seq(target), 255)
-            self.assertEqual(self.communication._seq, {target: 255})
+            assert self.communication.seq(target) == 255
+            assert self.communication._seq == {target: 255}
 
-            self.assertEqual(self.communication.seq(target), 0)
-            self.assertEqual(self.communication._seq, {target: 0})
+            assert self.communication.seq(target) == 0
+            assert self.communication._seq == {target: 0}
 
     describe "forget":
         async it "does nothing if serial not in found":
@@ -222,7 +222,7 @@ describe AsyncTestCase, "Communication":
             with mock.patch.object(self.communication, "make_transport", make_transport):
                 await self.communication.add_service(serial, service, a=a)
 
-            self.assertEqual(self.communication.found[serial], {service: t})
+            assert self.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
         async it "can make a new transport when serial already in found":
@@ -239,7 +239,7 @@ describe AsyncTestCase, "Communication":
             with mock.patch.object(self.communication, "make_transport", make_transport):
                 await self.communication.add_service(serial, service, a=a)
 
-            self.assertEqual(self.communication.found[serial], {"OTH": othertransport, service: t})
+            assert self.communication.found[serial] == {"OTH": othertransport, service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
         async it "can replace a transport":
@@ -258,7 +258,7 @@ describe AsyncTestCase, "Communication":
             with mock.patch.object(self.communication, "make_transport", make_transport):
                 await self.communication.add_service(serial, service, a=a)
 
-            self.assertEqual(self.communication.found[serial], {service: t})
+            assert self.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
             othertransport.close.assert_called_once_with()
 
@@ -280,7 +280,7 @@ describe AsyncTestCase, "Communication":
             with mock.patch.object(self.communication, "make_transport", make_transport):
                 await self.communication.add_service(serial, service, a=a)
 
-            self.assertEqual(self.communication.found[serial], {service: t})
+            assert self.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
             othertransport.close.assert_called_once_with()
 
@@ -305,7 +305,7 @@ describe AsyncTestCase, "Communication":
             with mock.patch.object(self.communication, "make_transport", make_transport):
                 await self.communication.add_service(serial, service, a=a)
 
-            self.assertEqual(self.communication.found[serial], {service: t1})
+            assert self.communication.found[serial] == {service: t1}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
     describe "find_devices":
@@ -327,7 +327,7 @@ describe AsyncTestCase, "Communication":
                     ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
                 )
 
-            self.assertIs(f, found)
+            assert f is found
             find_specific_serials.assert_called_once_with(
                 None, ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
             )
@@ -346,7 +346,7 @@ describe AsyncTestCase, "Communication":
             ):
                 f = await self.communication.find_devices(a=a)
 
-            self.assertIs(f, found)
+            assert f is found
             find_specific_serials.assert_called_once_with(
                 None, ignore_lost=False, raise_on_none=False, a=a
             )
@@ -386,8 +386,8 @@ describe AsyncTestCase, "Communication":
                     a=a,
                 )
 
-            self.assertIs(f2, f)
-            self.assertEqual(m, missing)
+            assert f2 is f
+            assert m == missing
             _find_specific_serials.assert_called_once_with(
                 serials,
                 ignore_lost=ignore_lost,
@@ -404,8 +404,8 @@ describe AsyncTestCase, "Communication":
                     serials, broadcast=broadcast, a=a
                 )
 
-            self.assertIs(f3, f)
-            self.assertEqual(m, missing)
+            assert f3 is f
+            assert m == missing
             _find_specific_serials.assert_called_once_with(
                 serials, ignore_lost=False, raise_on_none=False, broadcast=broadcast, a=a
             )
@@ -471,10 +471,7 @@ describe AsyncTestCase, "Communication":
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(self.communication, "_do_search", _do_search):
-                self.assertIs(
-                    await self.communication._find_specific_serials(serials, timeout=timeout, a=a),
-                    found,
-                )
+                assert await self.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -501,10 +498,7 @@ describe AsyncTestCase, "Communication":
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(self.communication, "_do_search", _do_search):
-                self.assertIs(
-                    await self.communication._find_specific_serials(serials, timeout=timeout, a=a),
-                    found,
-                )
+                assert await self.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -533,12 +527,9 @@ describe AsyncTestCase, "Communication":
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(self.communication, "_do_search", _do_search):
-                self.assertIs(
-                    await self.communication._find_specific_serials(
+                assert ( await self.communication._find_specific_serials(
                         serials, timeout=timeout, ignore_lost=True, a=a
-                    ),
-                    found,
-                )
+                    )) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -586,12 +577,9 @@ describe AsyncTestCase, "Communication":
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(self.communication, "_do_search", _do_search):
-                self.assertIs(
-                    await self.communication._find_specific_serials(
+                assert ( await self.communication._find_specific_serials(
                         serials, raise_on_none=True, timeout=timeout, a=a
-                    ),
-                    found,
-                )
+                    )) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -610,12 +598,9 @@ describe AsyncTestCase, "Communication":
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(self.communication, "_do_search", _do_search):
-                self.assertIs(
-                    await self.communication._find_specific_serials(
+                assert ( await self.communication._find_specific_serials(
                         None, ignore_lost=True, timeout=timeout, a=a
-                    ),
-                    found,
-                )
+                    )) is found
 
             _do_search.assert_called_once_with(None, timeout, a=a)
 
@@ -637,7 +622,7 @@ describe AsyncTestCase, "Communication":
 
             mod = {"send": send, "make_broadcast_transport": make_broadcast_transport}
             with mock.patch.multiple(self.communication, **mod):
-                self.assertIs(await self.communication.broadcast(packet, broadcast, a=a), res)
+                assert await self.communication.broadcast(packet, broadcast, a=a) is res
 
             make_broadcast_transport.assert_awaited_once_with(broadcast)
             send.assert_awaited_once_with(packet, is_broadcast=True, transport=transport, a=a)
@@ -714,7 +699,7 @@ describe AsyncTestCase, "Communication":
                     "broadcast": broadcast,
                     "connect_timeout": connect_timeout,
                 }
-                self.assertIs(await self.communication.send(original, packet, **kwargs), res)
+                assert await self.communication.send(original, packet, **kwargs) is res
 
                 _transport_for_send.assert_called_once_with(
                     transport_in, packet, original, broadcast, connect_timeout
@@ -807,38 +792,35 @@ describe AsyncTestCase, "Communication":
 
                 async def make_transport(s, serial, service, kwargs):
                     called.append("make_transport")
-                    self.assertEqual(service, "SERV")
+                    assert service == "SERV"
                     return T(s)
 
             comms = C(self.transport_target)
             serial = "d073d5000001"
             await comms.add_service(serial, "SERV")
-            self.assertEqual(called, ["make_transport", "__eq__"])
+            assert called == ["make_transport", "__eq__"]
 
             original = DeviceMessages.EchoRequest(echoing=b"ping")
             packet = original.clone()
             packet.update(source=1, sequence=1, target=serial)
 
             res = await comms.send(original, packet, timeout=2)
-            self.assertEqual(len(res), 1)
+            assert len(res) == 1
             pkt, addr, orig = res[0]
             assert pkt | DeviceMessages.EchoResponse
-            self.assertEqual(pkt.echoing[: pkt.echoing.find(b"\x00")], b"pong")
+            assert pkt.echoing[: pkt.echoing.find(b"\x00")] == b"pong"
 
-            self.assertEqual(addr, ("fake://device", 56700))
-            self.assertIs(orig, original)
+            assert addr == ("fake://device", 56700)
+            assert orig is original
 
-            self.assertEqual(
-                called,
-                [
+            assert called == [
                     "make_transport",
                     "__eq__",
                     "choose_transport",
                     "spawn_transport",
                     "retry_options_for",
                     "write",
-                ],
-            )
+                ]
 
     describe "private transport_for_send":
         async before_each:
@@ -872,10 +854,10 @@ describe AsyncTestCase, "Communication":
                 res = await self.communication._transport_for_send(
                     None, self.packet, self.original, True, self.connect_timeout
                 )
-                self.assertEqual(res, (self.transport, True))
+                assert res == (self.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
-            self.assertEqual(len(choose_transport.mock_calls), 0)
+            assert len(choose_transport.mock_calls) == 0
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
             )
@@ -888,10 +870,10 @@ describe AsyncTestCase, "Communication":
                 res = await self.communication._transport_for_send(
                     None, self.packet, self.original, broadcast, self.connect_timeout
                 )
-                self.assertEqual(res, (self.transport, True))
+                assert res == (self.transport, True)
 
             make_broadcast_transport.assert_called_once_with(broadcast)
-            self.assertEqual(len(choose_transport.mock_calls), 0)
+            assert len(choose_transport.mock_calls) == 0
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
             )
@@ -904,10 +886,10 @@ describe AsyncTestCase, "Communication":
                 res = await self.communication._transport_for_send(
                     None, self.packet, self.original, False, self.connect_timeout
                 )
-                self.assertEqual(res, (self.transport, True))
+                assert res == (self.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
-            self.assertEqual(len(choose_transport.mock_calls), 0)
+            assert len(choose_transport.mock_calls) == 0
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
             )
@@ -924,10 +906,10 @@ describe AsyncTestCase, "Communication":
                 res = await self.communication._transport_for_send(
                     None, self.packet, self.original, False, self.connect_timeout
                 )
-                self.assertEqual(res, (self.transport, False))
+                assert res == (self.transport, False)
 
             choose_transport.assert_called_once_with(self.original, services)
-            self.assertEqual(len(make_broadcast_transport.mock_calls), 0)
+            assert len(make_broadcast_transport.mock_calls) == 0
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
             )
@@ -943,9 +925,9 @@ describe AsyncTestCase, "Communication":
                         None, self.packet, self.original, False, self.connect_timeout
                     )
 
-            self.assertEqual(len(make_broadcast_transport.mock_calls), 0)
-            self.assertEqual(len(choose_transport.mock_calls), 0)
-            self.assertEqual(len(self.transport.spawn.mock_calls), 0)
+            assert len(make_broadcast_transport.mock_calls) == 0
+            assert len(choose_transport.mock_calls) == 0
+            assert len(self.transport.spawn.mock_calls) == 0
 
         @with_timeout
         async it "just spawns transport if one is provided":
@@ -953,10 +935,10 @@ describe AsyncTestCase, "Communication":
                 res = await self.communication._transport_for_send(
                     self.transport, self.packet, self.original, False, self.connect_timeout
                 )
-                self.assertEqual(res, (self.transport, False))
+                assert res == (self.transport, False)
 
-            self.assertEqual(len(make_broadcast_transport.mock_calls), 0)
-            self.assertEqual(len(choose_transport.mock_calls), 0)
+            assert len(make_broadcast_transport.mock_calls) == 0
+            assert len(choose_transport.mock_calls) == 0
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout
             )
@@ -968,7 +950,7 @@ describe AsyncTestCase, "Communication":
 
             def recv(pkt, addr, *, allow_zero):
                 assert pkt | DeviceMessages.StatePower
-                self.assertEqual(pkt.level, 100)
+                assert pkt.level == 100
 
             recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
@@ -984,9 +966,9 @@ describe AsyncTestCase, "Communication":
             addr = mock.Mock(name="addr")
 
             def recv(pkt, addr, *, allow_zero):
-                self.assertIsInstance(pkt, LIFXPacket)
-                self.assertEqual(pkt.pkt_type, 9001)
-                self.assertEqual(pkt.payload, b"things")
+                assert isinstance(pkt, LIFXPacket)
+                assert pkt.pkt_type == 9001
+                assert pkt.payload == b"things"
 
             recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
@@ -1009,7 +991,7 @@ describe AsyncTestCase, "Communication":
                 data = "NOPE"
                 await self.communication.received_data(data, addr, allow_zero=allow_zero)
 
-            self.assertEqual(len(recv.mock_calls), 0)
+            assert len(recv.mock_calls) == 0
 
     describe "private get_response":
         async before_each:
@@ -1025,7 +1007,7 @@ describe AsyncTestCase, "Communication":
             t = hp.async_as_background(self.communication._get_response(self.packet, 0.1, waiter))
             asyncio.get_event_loop().call_later(0.05, waiter.set_result, [a, b])
 
-            self.assertEqual(await t, [a, b])
+            assert await t == [a, b]
             assert not waiter.cancelled()
 
         async it "can timeout a task":

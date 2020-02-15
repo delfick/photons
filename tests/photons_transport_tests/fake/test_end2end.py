@@ -20,7 +20,7 @@ describe AsyncTestCase, "Fake device":
         target = MemoryTarget.create(options, {"devices": device})
 
         await device.start()
-        self.assertEqual(len(device.services), 1)
+        assert len(device.services) == 1
         device_port = device.services[0].state_service.port
 
         async with target.session() as afr:
@@ -30,9 +30,7 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(
-                dict(got), {"d073d5000001": [{"service": Services.UDP, "port": device_port}]}
-            )
+            assert dict(got) == {"d073d5000001": [{"service": Services.UDP, "port": device_port}]}
 
         lantarget = LanTarget.create(options)
         async with lantarget.session() as afr:
@@ -44,7 +42,7 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(dict(got), {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]})
+            assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}
 
     @with_timeout
     async it "works without sockets":
@@ -62,4 +60,4 @@ describe AsyncTestCase, "Fake device":
             async for pkt, _, _ in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
-            self.assertEqual(dict(got), {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]})
+            assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}

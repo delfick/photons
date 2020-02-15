@@ -20,8 +20,8 @@ describe TestCase, "throw_error":
             hp.add_error(error_catcher, e1)
             raise e2
 
-        self.assertIs(error_catcher, ec)
-        self.assertEqual(es, [e1, e2])
+        assert error_catcher is ec
+        assert es == [e1, e2]
 
     it "passes on errors if error_catcher is a list":
         es = []
@@ -33,8 +33,8 @@ describe TestCase, "throw_error":
             hp.add_error(error_catcher, e1)
             raise e2
 
-        self.assertIs(error_catcher, es)
-        self.assertEqual(es, [e1, e2])
+        assert error_catcher is es
+        assert es == [e1, e2]
 
     it "does nothing if no errors":
         with catch_errors():
@@ -47,11 +47,11 @@ describe TestCase, "throw_error":
 
         with catch_errors(ec):
             pass
-        self.assertEqual(es, [])
+        assert es == []
 
         with catch_errors(es):
             pass
-        self.assertEqual(es, [])
+        assert es == []
 
     it "throws the error if just one":
         with self.fuzzyAssertRaisesError(ValueError, "NOPE"):

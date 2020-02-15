@@ -19,9 +19,9 @@ describe AsyncTestCase, "Responder":
 
         r = R(one="things", three=5)
 
-        self.assertEqual(r._attr_default_one, "things")
-        self.assertEqual(r._attr_default_two, 3)
-        self.assertEqual(r._attr_default_three, 5)
+        assert r._attr_default_one == "things"
+        assert r._attr_default_two == 3
+        assert r._attr_default_three == 5
 
     async it "complains if missing a value without a default":
 
@@ -65,7 +65,7 @@ describe AsyncTestCase, "Responder":
             r = R(one=2, three=True)
 
             dflt1.assert_called_once_with()
-            self.assertEqual(len(dflt2.mock_calls), 0)
+            assert len(dflt2.mock_calls) == 0
 
             device = mock.Mock(name="device")
             device.attrs = Attrs(device)
@@ -73,19 +73,19 @@ describe AsyncTestCase, "Responder":
             dflt1.reset_mock()
 
             await r.reset(device)
-            self.assertEqual(device.attrs._attrs, {"one": 2, "two": 1, "three": True})
-            self.assertEqual(len(dflt1.mock_calls), 0)
-            self.assertEqual(len(dflt2.mock_calls), 0)
+            assert device.attrs._attrs == {"one": 2, "two": 1, "three": True}
+            assert len(dflt1.mock_calls) == 0
+            assert len(dflt2.mock_calls) == 0
 
             device.attrs.one = 20
             device.attrs.two = 21
             device.attrs.three = 22
-            self.assertEqual(device.attrs._attrs, {"one": 20, "two": 21, "three": 22})
+            assert device.attrs._attrs == {"one": 20, "two": 21, "three": 22}
 
             await r.reset(device)
-            self.assertEqual(device.attrs._attrs, {"one": 2, "two": 1, "three": True})
-            self.assertEqual(len(dflt1.mock_calls), 0)
-            self.assertEqual(len(dflt2.mock_calls), 0)
+            assert device.attrs._attrs == {"one": 2, "two": 1, "three": True}
+            assert len(dflt1.mock_calls) == 0
+            assert len(dflt2.mock_calls) == 0
 
             device.attrs.one = 20
             device.attrs.two = 21
@@ -93,7 +93,7 @@ describe AsyncTestCase, "Responder":
 
             # And zero will use default func regardless of passed in values
             await r.reset(device, zero=True)
-            self.assertEqual(device.attrs._attrs, {"one": 2, "two": 2, "three": 11})
+            assert device.attrs._attrs == {"one": 2, "two": 2, "three": 11}
             dflt1.assert_called_once_with()
             dflt2.assert_called_once_with()
 
@@ -109,12 +109,12 @@ describe AsyncTestCase, "Responder":
             got = []
             async for m in R().respond(device, pkt, source):
                 got.append(m)
-            self.assertEqual(got, [])
+            assert got == []
 
 describe AsyncTestCase, "default responders":
     async before_each:
         self.device = FakeDevice("d073d5001337", [])
-        self.assertEqual(self.device.attrs._attrs, {"online": False})
+        assert self.device.attrs._attrs == {"online": False}
 
     describe "ServicesResponder":
         async before_each:
@@ -122,7 +122,7 @@ describe AsyncTestCase, "default responders":
 
         async it "puts limited_services on the device":
             await self.responder.reset(self.device)
-            self.assertEqual(self.device.attrs.limited_services, None)
+            assert self.device.attrs.limited_services == None
 
         async it "has a contextmanager for changing limited services":
             await self.responder.reset(self.device)
@@ -131,8 +131,8 @@ describe AsyncTestCase, "default responders":
             self.device.attrs.limited_services = ls
 
             with ServicesResponder.limited_services(self.device, Services.UDP, MemoryService):
-                self.assertEqual(self.device.attrs.limited_services, (Services.UDP, MemoryService))
-            self.assertIs(self.device.attrs.limited_services, ls)
+                assert self.device.attrs.limited_services == (Services.UDP, MemoryService)
+            assert self.device.attrs.limited_services is ls
 
         async it "can yield State service messages":
             await self.responder.reset(self.device)
@@ -160,25 +160,25 @@ describe AsyncTestCase, "default responders":
             async for m in self.responder.respond(self.device, get_service, "UDP"):
                 got.append(m)
 
-            self.assertEqual(got, [state_service1, state_service2, state_service3])
+            assert got == [state_service1, state_service2, state_service3]
 
             got = []
             with ServicesResponder.limited_services(self.device, Services.UDP, AnotherService):
                 async for m in self.responder.respond(self.device, get_service, "UDP"):
                     got.append(m)
-            self.assertEqual(got, [state_service1, state_service2])
+            assert got == [state_service1, state_service2]
 
             got = []
             with ServicesResponder.limited_services(self.device, MemoryService):
                 async for m in self.responder.respond(self.device, get_service, "UDP"):
                     got.append(m)
-            self.assertEqual(got, [state_service3])
+            assert got == [state_service3]
 
             got = []
             with ServicesResponder.limited_services(self.device, mock.Mock(name="Service")):
                 async for m in self.responder.respond(self.device, get_service, "UDP"):
                     got.append(m)
-            self.assertEqual(got, [])
+            assert got == []
 
     describe "EchoResponder":
         async before_each:
@@ -190,4 +190,4 @@ describe AsyncTestCase, "default responders":
             async for m in self.responder.respond(self.device, pkt, "memory"):
                 got.append(m)
 
-            self.assertEqual(got, [DeviceMessages.EchoResponse(echoing=pkt.echoing)])
+            assert got == [DeviceMessages.EchoResponse(echoing=pkt.echoing)]

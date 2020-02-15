@@ -14,12 +14,12 @@ describe TestCase, "Found":
         self.found = Found()
 
     it "starts empty":
-        self.assertEqual(self.found.found, {})
+        assert self.found.found == {}
         assert not self.found
-        self.assertEqual(len(self.found), 0)
-        self.assertEqual(self.found.serials, [])
+        assert len(self.found) == 0
+        assert self.found.serials == []
         assert self.found == Found()
-        self.assertEqual(list(self.found), [])
+        assert list(self.found) == []
 
     it "can be cloned":
         found = Found()
@@ -30,28 +30,19 @@ describe TestCase, "Found":
 
         found2 = found.clone()
         del found2["d073d5000001"]["one"]
-        self.assertEqual(
-            found.found,
-            {h("d073d5000001"): {"one": 1, "two": 2}, h("d073d5000002"): {"three": 3, "four": 4}},
-        )
+        assert found.found == {h("d073d5000001"): {"one": 1, "two": 2}, h("d073d5000002"): {"three": 3, "four": 4}}
 
-        self.assertEqual(
-            found2.found,
-            {h("d073d5000001"): {"two": 2}, h("d073d5000002"): {"three": 3, "four": 4}},
-        )
+        assert found2.found == {h("d073d5000001"): {"two": 2}, h("d073d5000002"): {"three": 3, "four": 4}}
 
         del found2["d073d5000002"]
-        self.assertEqual(
-            found.found,
-            {h("d073d5000001"): {"one": 1, "two": 2}, h("d073d5000002"): {"three": 3, "four": 4}},
-        )
+        assert found.found == {h("d073d5000001"): {"one": 1, "two": 2}, h("d073d5000002"): {"three": 3, "four": 4}}
 
-        self.assertEqual(found2.found, {h("d073d5000001"): {"two": 2}})
+        assert found2.found == {h("d073d5000001"): {"two": 2}}
 
     it "can cleanse a serial":
 
         def assertCleansed(i, o):
-            self.assertEqual(self.found.cleanse_serial(i), o)
+            assert self.found.cleanse_serial(i) == o
 
         assertCleansed("d073d5000001", binascii.unhexlify("d073d5000001")[:6])
         assertCleansed("d073d500000111", binascii.unhexlify("d073d5000001")[:6])
@@ -64,37 +55,32 @@ describe TestCase, "Found":
         self.found[binascii.unhexlify("d073d5000003")] = 3
         self.found[binascii.unhexlify("d073d500000455")] = 4
 
-        self.assertEqual(len(self.found), 4)
+        assert len(self.found) == 4
         assert self.found
 
-        self.assertEqual(
-            self.found.serials, ["d073d5000001", "d073d5000002", "d073d5000003", "d073d5000004"]
-        )
+        assert self.found.serials == ["d073d5000001", "d073d5000002", "d073d5000003", "d073d5000004"]
 
-        self.assertEqual(
-            list(self.found),
-            [
+        assert list(self.found) == [
                 binascii.unhexlify("d073d5000001"),
                 binascii.unhexlify("d073d5000002"),
                 binascii.unhexlify("d073d5000003"),
                 binascii.unhexlify("d073d5000004"),
-            ],
-        )
+            ]
 
         otherfound = Found()
-        self.assertNotEqual(self.found, otherfound)
+        assert self.found != otherfound
 
         otherfound["d073d5000001"] = 1
         otherfound["d073d5000002"] = 2
         otherfound["d073d5000003"] = 3
         otherfound["d073d5000004"] = 4
-        self.assertEqual(self.found, otherfound)
+        assert self.found == otherfound
 
         otherfound["d073d5000004"] = 5
-        self.assertNotEqual(self.found, otherfound)
+        assert self.found != otherfound
 
         self.found["d073d5000005"] = 6
-        self.assertEqual(len(self.found), 5)
+        assert len(self.found) == 5
 
     it "has getitem":
         with self.fuzzyAssertRaisesError(KeyError):
@@ -103,23 +89,23 @@ describe TestCase, "Found":
         services = mock.Mock(name="services")
         self.found["d073d5000001"] = services
 
-        self.assertIs(self.found["d073d5000001"], services)
-        self.assertIs(self.found["d073d500000111"], services)
-        self.assertIs(self.found[binascii.unhexlify("d073d5000001")], services)
-        self.assertIs(self.found[binascii.unhexlify("d073d500000122")], services)
+        assert self.found["d073d5000001"] is services
+        assert self.found["d073d500000111"] is services
+        assert self.found[binascii.unhexlify("d073d5000001")] is services
+        assert self.found[binascii.unhexlify("d073d500000122")] is services
 
     it "has setitem":
         self.found["d073d5000001"] = 1
-        self.assertEqual(self.found["d073d5000001"], 1)
+        assert self.found["d073d5000001"] == 1
 
         self.found["d073d500000122"] = 2
-        self.assertEqual(self.found["d073d5000001"], 2)
+        assert self.found["d073d5000001"] == 2
 
         self.found[binascii.unhexlify("d073d500000122")] = 3
-        self.assertEqual(self.found["d073d5000001"], 3)
+        assert self.found["d073d5000001"] == 3
 
         self.found[binascii.unhexlify("d073d5000001")] = 4
-        self.assertEqual(self.found["d073d5000001"], 4)
+        assert self.found["d073d5000001"] == 4
 
     it "has delitem":
         ts = [
@@ -134,7 +120,7 @@ describe TestCase, "Found":
                 self.found["d073d5000001"]
 
             self.found["d073d5000001"] = 1
-            self.assertEqual(self.found["d073d5000001"], 1)
+            assert self.found["d073d5000001"] == 1
 
             del self.found[t]
 
@@ -167,10 +153,7 @@ describe TestCase, "Found":
         self.found["d073d5000001"] = {"UDP": 1, "THI": 2}
         self.found["d073d5000002"] = {"MEMORY": 1}
 
-        self.assertEqual(
-            repr(self.found),
-            """<FOUND: {"d073d5000001": "'UDP','THI'", "d073d5000002": "'MEMORY'"}>""",
-        )
+        assert repr(self.found) == """<FOUND: {"d073d5000001": "'UDP','THI'", "d073d5000002": "'MEMORY'"}>"""
 
     it "can borrow found":
         t1clone = mock.Mock(name="t1clone")
@@ -197,10 +180,10 @@ describe TestCase, "Found":
         afr = mock.Mock(name="afr")
         otherfound.borrow(self.found, afr)
 
-        self.assertEqual(otherfound.serials, ["d073d5000001", "d073d5000002"])
-        self.assertEqual(otherfound["d073d5000001"], {"UDP": t1clone, "THI": t2clone})
+        assert otherfound.serials == ["d073d5000001", "d073d5000002"]
+        assert otherfound["d073d5000001"] == {"UDP": t1clone, "THI": t2clone}
 
-        self.assertEqual(otherfound["d073d5000002"], {"MEM": t3clone, "OTH": t5})
+        assert otherfound["d073d5000002"] == {"MEM": t3clone, "OTH": t5}
 
         t1.clone_for.assert_called_once_with(afr)
         t2.clone_for.assert_called_once_with(afr)
@@ -231,9 +214,9 @@ describe AsyncTestCase, "Found.remove_lost":
             found["d073d5000001"] = {"UDP": t1, "THI": t2}
             found["d073d5000002"] = {"MEM": t3}
 
-            self.assertEqual(found.serials, ["d073d5000001", "d073d5000002"])
+            assert found.serials == ["d073d5000001", "d073d5000002"]
             await found.remove_lost(set([t]))
-            self.assertEqual(found.serials, ["d073d5000002"])
+            assert found.serials == ["d073d5000002"]
 
             t1.close.assert_called_once_with()
             t2.close.assert_called_once_with()

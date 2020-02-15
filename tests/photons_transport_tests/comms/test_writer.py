@@ -32,15 +32,15 @@ describe AsyncTestCase, "Writer":
         )
 
     async it "takes in a bunch of things":
-        self.assertEqual(self.writer.sent, 0)
-        self.assertEqual(self.writer.clone, self.packet.clone())
-        self.assertEqual(self.writer.session, self.session)
-        self.assertEqual(self.writer.original, self.original)
-        self.assertEqual(self.writer.receiver, self.receiver)
-        self.assertEqual(self.writer.transport, self.transport)
-        self.assertEqual(self.writer.retry_options, self.retry_options)
-        self.assertEqual(self.writer.did_broadcast, self.did_broadcast)
-        self.assertEqual(self.writer.connect_timeout, self.connect_timeout)
+        assert self.writer.sent == 0
+        assert self.writer.clone == self.packet.clone()
+        assert self.writer.session == self.session
+        assert self.writer.original == self.original
+        assert self.writer.receiver == self.receiver
+        assert self.writer.transport == self.transport
+        assert self.writer.retry_options == self.retry_options
+        assert self.writer.did_broadcast == self.did_broadcast
+        assert self.writer.connect_timeout == self.connect_timeout
 
     @with_timeout
     async it "sends when we call it":
@@ -62,9 +62,9 @@ describe AsyncTestCase, "Writer":
         mods = {"modify_sequence": modify_sequence, "register": register, "write": write}
 
         with mock.patch.multiple(self.writer, **mods):
-            self.assertIs(await self.writer(), result)
+            assert await self.writer() is result
 
-        self.assertEqual(called, ["modify_sequence", "register", "write"])
+        assert called == ["modify_sequence", "register", "write"]
 
         modify_sequence.assert_called_once_with()
         register.assert_called_once_with()
@@ -80,18 +80,18 @@ describe AsyncTestCase, "Writer":
             self.writer.clone.sequence = original_sequence
 
             self.writer.modify_sequence()
-            self.assertIs(self.writer.clone.sequence, original_sequence)
-            self.assertEqual(len(seq.mock_calls), 0)
+            assert self.writer.clone.sequence is original_sequence
+            assert len(seq.mock_calls) == 0
 
             self.writer.modify_sequence()
-            self.assertIs(self.writer.clone.sequence, sequence)
+            assert self.writer.clone.sequence is sequence
             seq.assert_called_once_with(self.original.serial)
 
             seq.reset_mock()
             other_sequence = mock.Mock(name="other_sequence")
             seq.return_value = other_sequence
             self.writer.modify_sequence()
-            self.assertIs(self.writer.clone.sequence, other_sequence)
+            assert self.writer.clone.sequence is other_sequence
             seq.assert_called_once_with(self.original.serial)
 
     describe "register":
@@ -101,13 +101,13 @@ describe AsyncTestCase, "Writer":
             FakeResult = mock.Mock(name="FakeResult", return_value=result)
 
             with mock.patch("photons_transport.comms.writer.Result", FakeResult):
-                self.assertIs(self.writer.register(), result)
+                assert self.writer.register() is result
 
             result.done.assert_called_once_with()
             FakeResult.assert_called_once_with(
                 self.original, self.did_broadcast, self.retry_options
             )
-            self.assertEqual(len(self.receiver.register.mock_calls), 0)
+            assert len(self.receiver.register.mock_calls) == 0
 
         async it "registers if the Result is not already done":
             result = mock.Mock(name="result", spec=["done", "add_done_callback"])
@@ -115,7 +115,7 @@ describe AsyncTestCase, "Writer":
             FakeResult = mock.Mock(name="FakeResult", return_value=result)
 
             with mock.patch("photons_transport.comms.writer.Result", FakeResult):
-                self.assertIs(self.writer.register(), result)
+                assert self.writer.register() is result
 
             result.done.assert_called_once_with()
             FakeResult.assert_called_once_with(
@@ -134,7 +134,7 @@ describe AsyncTestCase, "Writer":
             self.transport.spawn = asynctest.mock.CoroutineMock(name="spawn", return_value=t)
             self.transport.write = asynctest.mock.CoroutineMock(name="write")
 
-            self.assertIs(await self.writer.write(), bts)
+            assert await self.writer.write() is bts
 
             self.transport.spawn.assert_called_once_with(
                 self.original, timeout=self.connect_timeout

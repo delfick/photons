@@ -19,17 +19,17 @@ describe TestCase, "service_type_spec":
 
     it "returns as is if the value is already a Services":
         val = Services.UDP
-        self.assertIs(self.spec.normalise(self.meta, val), val)
+        assert self.spec.normalise(self.meta, val) is val
 
     it "returns the enum value if it matches":
         val = "UDP"
-        self.assertIs(self.spec.normalise(self.meta, val), Services.UDP)
+        assert self.spec.normalise(self.meta, val) is Services.UDP
 
     it "complains if we don't have a match":
         msg = "Unknown service type"
 
         services = sorted([s.name for s in Services if not s.name.startswith("RESERVED")])
-        self.assertGreater(len(services), 0)
+        assert len(services) > 0
 
         kwargs = dict(want="WAT", available=services)
         with self.fuzzyAssertRaisesError(BadSpecValue, msg, **kwargs):
@@ -49,24 +49,24 @@ describe TestCase, "hardcoded_discovery_spec":
 
         with modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
             for v in (sb.NotSpecified, None, {"three": "four"}):
-                self.assertIs(self.spec.normalise(self.meta, v), self.ret)
+                assert self.spec.normalise(self.meta, v) is self.ret
                 self.fake_spec.normalise.called_once_with(self.meta, {"one": "two"})
                 self.fake_spec.normalise.reset_mock()
 
         with modified_env(HARDCODED_DISCOVERY="null"):
             for v in (sb.NotSpecified, None, {"three": "four"}):
-                self.assertIs(self.spec.normalise(self.meta, v), None)
-                self.assertEqual(len(self.fake_spec.normalise.mock_calls), 0)
+                assert self.spec.normalise(self.meta, v) is None
+                assert len(self.fake_spec.normalise.mock_calls) == 0
 
     it "does nothing with sb.NotSpecified":
         self.spec.spec = self.fake_spec
-        self.assertIs(self.spec.normalise(self.meta, sb.NotSpecified), sb.NotSpecified)
-        self.assertEqual(len(self.fake_spec.normalise.mock_calls), 0)
+        assert self.spec.normalise(self.meta, sb.NotSpecified) is sb.NotSpecified
+        assert len(self.fake_spec.normalise.mock_calls) == 0
 
     it "otherwise uses self.spec":
         self.spec.spec = self.fake_spec
         val = mock.Mock(name="val")
-        self.assertIs(self.spec.normalise(self.meta, val), self.ret)
+        assert self.spec.normalise(self.meta, val) is self.ret
         self.fake_spec.normalise.assert_called_once_with(self.meta, val)
 
     it "works":
@@ -82,9 +82,7 @@ describe TestCase, "hardcoded_discovery_spec":
 
         res = self.spec.normalise(self.meta, val)
 
-        self.assertEqual(
-            res,
-            {
+        assert res == {
                 "d073d5001337": {Services.UDP: {"host": "192.168.0.14", "port": 56700}},
                 "d073d5001338": {Services.UDP: {"host": "192.168.0.15", "port": 56700}},
                 "d073d5001339": {Services.UDP: {"host": "192.168.0.16", "port": 56}},
@@ -92,8 +90,7 @@ describe TestCase, "hardcoded_discovery_spec":
                 "d073d5001341": {Services.UDP: {"host": "192.168.0.18", "port": 56700}},
                 "d073d5001342": {Services.UDP: {"host": "192.168.0.19", "port": 78}},
                 "d073d5001343": {Services.UDP: {"host": "192.168.0.20", "port": 90}},
-            },
-        )
+            }
 
     it "complains if the keys are not serials":
         val = {
@@ -137,15 +134,15 @@ describe TestCase, "service_info_spec":
 
     it "can expand a string":
         res = self.spec.normalise(self.meta, "192.168.0.1")
-        self.assertEqual(res, {Services.UDP: {"host": "192.168.0.1", "port": 56700}})
+        assert res == {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
 
     it "can expand a singe item list":
         res = self.spec.normalise(self.meta, ["192.168.0.1"])
-        self.assertEqual(res, {Services.UDP: {"host": "192.168.0.1", "port": 56700}})
+        assert res == {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
 
     it "can expand a two item list":
         res = self.spec.normalise(self.meta, ["192.168.0.1", 67])
-        self.assertEqual(res, {Services.UDP: {"host": "192.168.0.1", "port": 67}})
+        assert res == {Services.UDP: {"host": "192.168.0.1", "port": 67}}
 
     it "complains about other length lists":
         msg = r"A list must be \[host\] or \[host, port\]"
@@ -165,7 +162,7 @@ describe TestCase, "service_info_spec":
     it "can take in a dictionary":
         val = {"UDP": {"host": "192.168.5.6", "port": 89}}
         res = self.spec.normalise(self.meta, val)
-        self.assertEqual(res, {Services.UDP: {"host": "192.168.5.6", "port": 89}})
+        assert res == {Services.UDP: {"host": "192.168.5.6", "port": 89}}
 
     it "complains about incomplete dictionaries":
         val = {"UDP": {}}
@@ -201,7 +198,7 @@ describe TestCase, "serial_spec":
             self.spec.normalise(self.meta, True)
 
     it "otherwise returns the serial":
-        self.assertEqual(self.spec.normalise(self.meta, "d073d5001337"), "d073d5001337")
+        assert self.spec.normalise(self.meta, "d073d5001337") == "d073d5001337"
 
 describe TestCase, "serial_filter_spec":
     before_each:
@@ -212,32 +209,29 @@ describe TestCase, "serial_filter_spec":
         with modified_env(SERIAL_FILTER="d073d5001337"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = self.spec.normalise(self.meta, v)
-                self.assertEqual(res, ["d073d5001337"])
+                assert res == ["d073d5001337"]
 
         with modified_env(SERIAL_FILTER="d073d5001337,d073d5001338"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = self.spec.normalise(self.meta, v)
-                self.assertEqual(res, ["d073d5001337", "d073d5001338"])
+                assert res == ["d073d5001337", "d073d5001338"]
 
         with modified_env(SERIAL_FILTER="null"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = self.spec.normalise(self.meta, v)
-                self.assertEqual(res, None)
+                assert res == None
 
     it "returns sb.NotSpecified as sb.NotSpecified":
-        self.assertIs(self.spec.normalise(self.meta, sb.NotSpecified), sb.NotSpecified)
+        assert self.spec.normalise(self.meta, sb.NotSpecified) is sb.NotSpecified
 
     it "returns None as None":
-        self.assertIs(self.spec.normalise(self.meta, None), None)
+        assert self.spec.normalise(self.meta, None) is None
 
     it "converts a string into a list":
-        self.assertEqual(self.spec.normalise(self.meta, "d073d5001337"), ["d073d5001337"])
+        assert self.spec.normalise(self.meta, "d073d5001337") == ["d073d5001337"]
 
     it "understands list of strings":
-        self.assertEqual(
-            self.spec.normalise(self.meta, ["d073d5001337", "d073d5000001"]),
-            ["d073d5001337", "d073d5000001"],
-        )
+        assert self.spec.normalise(self.meta, ["d073d5001337", "d073d5000001"]) == ["d073d5001337", "d073d5000001"]
 
     it "complains about invalid serials in SERIAL_FILTER":
         e = BadSpecValue(
@@ -264,24 +258,18 @@ describe AsyncTestCase, "DiscoveryOptions":
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.DiscoveryOptions.FieldSpec().empty_normalise()
-            self.assertEqual(options.serial_filter, ["d073d5001337"])
-            self.assertEqual(
-                options.hardcoded_discovery,
-                {"d073d5001337": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}},
-            )
+            assert options.serial_filter == ["d073d5001337"]
+            assert options.hardcoded_discovery == {"d073d5001337": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}}
 
         options = do.DiscoveryOptions.FieldSpec().empty_normalise()
-        self.assertEqual(options.serial_filter, sb.NotSpecified)
-        self.assertEqual(options.hardcoded_discovery, sb.NotSpecified)
+        assert options.serial_filter == sb.NotSpecified
+        assert options.hardcoded_discovery == sb.NotSpecified
 
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
             serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
         )
-        self.assertEqual(options.serial_filter, ["d073d5001338"])
-        self.assertEqual(
-            options.hardcoded_discovery,
-            {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}},
-        )
+        assert options.serial_filter == ["d073d5001338"]
+        assert options.hardcoded_discovery == {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}}
 
     async it "says we don't have hardcoded_discovery if that's the case":
         options = do.DiscoveryOptions.FieldSpec().empty_normalise()
@@ -327,15 +315,12 @@ describe AsyncTestCase, "DiscoveryOptions":
         expected_found = set(
             [binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")]
         )
-        self.assertEqual(await options.discover(add_service), expected_found)
+        assert await options.discover(add_service) == expected_found
 
-        self.assertEqual(
-            add_service.mock_calls,
-            [
+        assert add_service.mock_calls == [
                 mock.call("d073d5000001", Services.UDP, host="192.168.9.3", port=56700),
                 mock.call("d073d5000002", Services.UDP, host="192.168.7.8", port=56),
-            ],
-        )
+            ]
 
     async it "pays attention to serial_filter in discover":
         add_service = asynctest.mock.CoroutineMock(name="add_service")
@@ -351,15 +336,12 @@ describe AsyncTestCase, "DiscoveryOptions":
         expected_found = set(
             [binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")]
         )
-        self.assertEqual(await options.discover(add_service), expected_found)
+        assert await options.discover(add_service) == expected_found
 
-        self.assertEqual(
-            add_service.mock_calls,
-            [
+        assert add_service.mock_calls == [
                 mock.call("d073d5000001", Services.UDP, host="192.168.9.3", port=56700),
                 mock.call("d073d5000002", Services.UDP, host="192.168.7.8", port=56),
-            ],
-        )
+            ]
 
 describe TestCase, "NoDiscoveryOptions":
     it "overrides serial_filter and hardcoded_discovery with None":
@@ -367,18 +349,18 @@ describe TestCase, "NoDiscoveryOptions":
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
-            self.assertEqual(options.serial_filter, None)
-            self.assertEqual(options.hardcoded_discovery, None)
+            assert options.serial_filter == None
+            assert options.hardcoded_discovery == None
 
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
-        self.assertEqual(options.serial_filter, None)
-        self.assertEqual(options.hardcoded_discovery, None)
+        assert options.serial_filter == None
+        assert options.hardcoded_discovery == None
 
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise(
             serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
         )
-        self.assertEqual(options.serial_filter, None)
-        self.assertEqual(options.hardcoded_discovery, None)
+        assert options.serial_filter == None
+        assert options.hardcoded_discovery == None
 
     it "says no hardcoded_discovery":
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
@@ -395,19 +377,16 @@ describe TestCase, "NoEnvDiscoveryOptions":
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.NoEnvDiscoveryOptions.FieldSpec().empty_normalise()
-            self.assertEqual(options.serial_filter, sb.NotSpecified)
-            self.assertEqual(options.hardcoded_discovery, sb.NotSpecified)
+            assert options.serial_filter == sb.NotSpecified
+            assert options.hardcoded_discovery == sb.NotSpecified
 
             options = do.NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
                 serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
             )
-            self.assertEqual(options.serial_filter, ["d073d5001338"])
-            self.assertEqual(
-                options.hardcoded_discovery,
-                {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}},
-            )
+            assert options.serial_filter == ["d073d5001338"]
+            assert options.hardcoded_discovery == {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}}
 
-            self.assertIsInstance(options, do.DiscoveryOptions)
+            assert isinstance(options, do.DiscoveryOptions)
 
 describe TestCase, "discovery_options_spec":
     before_each:
@@ -416,7 +395,7 @@ describe TestCase, "discovery_options_spec":
 
     it "creates a DiscoveryOptions when no discovery_options in meta.everything":
         res = self.spec.normalise(self.meta, sb.NotSpecified)
-        self.assertIsInstance(res, do.DiscoveryOptions)
+        assert isinstance(res, do.DiscoveryOptions)
 
     it "inherits from global discovery_options":
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
@@ -424,21 +403,15 @@ describe TestCase, "discovery_options_spec":
         )
         self.meta.everything["discovery_options"] = options
         res = self.spec.normalise(self.meta, sb.NotSpecified)
-        self.assertEqual(res.serial_filter, ["d073d5000001"])
-        self.assertEqual(
-            res.hardcoded_discovery,
-            {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}},
-        )
+        assert res.serial_filter == ["d073d5000001"]
+        assert res.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}}
 
         # And modifying res doesn't change global
         res.serial_filter.append("d073d5000002")
         res.hardcoded_discovery["d073d5000001"][Services.UDP]["wat"] = True
 
-        self.assertEqual(options.serial_filter, ["d073d5000001"])
-        self.assertEqual(
-            options.hardcoded_discovery,
-            {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}},
-        )
+        assert options.serial_filter == ["d073d5000001"]
+        assert options.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}}
 
     it "can override global serial_filter":
         for gl in ("d073d5000001", ["d073d5000002"], None, sb.NotSpecified):
@@ -447,13 +420,13 @@ describe TestCase, "discovery_options_spec":
 
             for v in (None, [], ["d073d5000001"]):
                 res = self.spec.normalise(self.meta, {"serial_filter": v})
-                self.assertEqual(res.serial_filter, v)
+                assert res.serial_filter == v
 
             # And global is not touched
             if isinstance(gl, str):
-                self.assertEqual(options.serial_filter, [gl])
+                assert options.serial_filter == [gl]
             else:
-                self.assertEqual(options.serial_filter, gl)
+                assert options.serial_filter == gl
 
     it "can override global hardcoded_discovery":
         for gl in (None, sb.NotSpecified):
@@ -461,15 +434,12 @@ describe TestCase, "discovery_options_spec":
             self.meta.everything["discovery_options"] = options
 
             res = self.spec.normalise(self.meta, {"hardcoded_discovery": None})
-            self.assertEqual(res.hardcoded_discovery, None)
+            assert res.hardcoded_discovery == None
 
             res = self.spec.normalise(
                 self.meta, {"hardcoded_discovery": {"d073d5000002": "192.168.0.2"}}
             )
-            self.assertEqual(
-                res.hardcoded_discovery,
-                {"d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}}},
-            )
+            assert res.hardcoded_discovery == {"d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}}}
 
             res = self.spec.normalise(
                 self.meta,
@@ -480,16 +450,13 @@ describe TestCase, "discovery_options_spec":
                     }
                 },
             )
-            self.assertEqual(
-                res.hardcoded_discovery,
-                {
+            assert res.hardcoded_discovery == {
                     "d073d5000001": {Services.UDP: {"host": "192.168.0.3", "port": 56700}},
                     "d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}},
-                },
-            )
+                }
 
             # And global is not touched
-            self.assertEqual(options.hardcoded_discovery, gl)
+            assert options.hardcoded_discovery == gl
 
     it "can add to global hardcoded_discovery":
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
@@ -498,32 +465,23 @@ describe TestCase, "discovery_options_spec":
         self.meta.everything["discovery_options"] = options
 
         res = self.spec.normalise(self.meta, {"hardcoded_discovery": None})
-        self.assertEqual(res.hardcoded_discovery, None)
+        assert res.hardcoded_discovery == None
 
         res = self.spec.normalise(
             self.meta, {"hardcoded_discovery": {"d073d5000002": "192.168.0.2"}}
         )
-        self.assertEqual(
-            res.hardcoded_discovery,
-            {
+        assert res.hardcoded_discovery == {
                 "d073d5000001": {Services.UDP: {"host": "192.168.0.1", "port": 56700}},
                 "d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}},
-            },
-        )
+            }
 
         res = self.spec.normalise(
             self.meta,
             {"hardcoded_discovery": {"d073d5000001": "192.168.0.3", "d073d5000002": "192.168.0.2"}},
         )
-        self.assertEqual(
-            res.hardcoded_discovery,
-            {
+        assert res.hardcoded_discovery == {
                 "d073d5000001": {Services.UDP: {"host": "192.168.0.3", "port": 56700}},
                 "d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}},
-            },
-        )
+            }
 
-        self.assertEqual(
-            options.hardcoded_discovery,
-            {"d073d5000001": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}},
-        )
+        assert options.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}}

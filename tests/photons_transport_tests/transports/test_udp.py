@@ -60,22 +60,22 @@ describe AsyncTestCase, "UDP":
         transport4 = UDP(self.session, "two", 1)
         transport5 = UDP(self.session, "two", 2)
 
-        self.assertEqual(transport1, transport1)
-        self.assertEqual(transport1, transport2)
-        self.assertEqual(transport1, transport3)
+        assert transport1 == transport1
+        assert transport1 == transport2
+        assert transport1 == transport3
 
-        self.assertNotEqual(transport1, transport4)
-        self.assertNotEqual(transport1, transport5)
+        assert transport1 != transport4
+        assert transport1 != transport5
 
     async it "takes in address":
-        self.assertEqual(self.transport.host, self.host)
-        self.assertEqual(self.transport.port, self.port)
-        self.assertEqual(self.transport.address, (self.host, self.port))
-        self.assertEqual(self.transport.serial, self.serial)
-        self.assertEqual(self.transport.lc.context, {"serial": self.serial})
+        assert self.transport.host == self.host
+        assert self.transport.port == self.port
+        assert self.transport.address == (self.host, self.port)
+        assert self.transport.serial == self.serial
+        assert self.transport.lc.context == {"serial": self.serial}
 
         transport = UDP(self.session, self.host, self.port)
-        self.assertEqual(transport.serial, None)
+        assert transport.serial == None
 
     async it "can be cloned":
         transport = UDP(self.session, self.host, self.port, serial=self.serial)
@@ -83,11 +83,11 @@ describe AsyncTestCase, "UDP":
 
         new_session = mock.Mock(name="new_session")
         clone = transport.clone_for(new_session)
-        self.assertIs(clone.session, new_session)
-        self.assertEqual(clone.host, self.host)
-        self.assertEqual(clone.port, self.port)
-        self.assertEqual(clone.serial, self.serial)
-        self.assertIs(clone.transport, None)
+        assert clone.session is new_session
+        assert clone.host == self.host
+        assert clone.port == self.port
+        assert clone.serial == self.serial
+        assert clone.transport is None
 
     @with_timeout
     async it "can send and receive bytes":
@@ -104,7 +104,7 @@ describe AsyncTestCase, "UDP":
         second_receive = asyncio.Future()
 
         def receive(message, addr):
-            self.assertEqual(addr, (self.host, self.port))
+            assert addr == (self.host, self.port)
             received.append(message)
 
             if message == reply2:
@@ -131,11 +131,11 @@ describe AsyncTestCase, "UDP":
         try:
             await self.transport.write(transport, request1, self.original_message)
             await first_receive
-            self.assertEqual(received, [reply1, reply2])
+            assert received == [reply1, reply2]
 
             await self.transport.write(transport, request2, self.original_message)
             await second_receive
-            self.assertEqual(received, [reply1, reply2, reply3])
+            assert received == [reply1, reply2, reply3]
         finally:
             await device.finish()
 

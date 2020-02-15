@@ -30,10 +30,10 @@ describe AsyncTestCase, "Item":
         part2 = mock.Mock(name="part2")
 
         item = Item(part)
-        self.assertEqual(item.parts, [part])
+        assert item.parts == [part]
 
         item = Item([part, part2])
-        self.assertEqual(item.parts, [part, part2])
+        assert item.parts == [part, part2]
 
     describe "Functionality":
         async before_each:
@@ -62,15 +62,12 @@ describe AsyncTestCase, "Item":
                 simplified = Item(
                     [part1_dynamic, part2_static, part3_static, part4_dynamic]
                 ).simplify_parts()
-                self.assertEqual(
-                    simplified,
-                    [
+                assert simplified == [
                         (part1_dynamic, part1_dynamic),
                         (part2_static, part2_simple),
                         (part3_static, part3_simple),
                         (part4_dynamic, part4_dynamic),
-                    ],
-                )
+                    ]
 
         describe "making packets":
             async it "duplicates parts for each serial and only clones those already with targets":
@@ -134,16 +131,13 @@ describe AsyncTestCase, "Item":
                 with mock.patch.object(item, "simplify_parts", simplify_parts):
                     packets = item.make_packets(afr, serials)
 
-                self.assertEqual(
-                    packets,
-                    [
+                assert packets == [
                         (original1, c1),
                         (original1, c2),
                         (original2, c3),
                         (original2, c4),
                         (original3, c5),
-                    ],
-                )
+                    ]
 
                 c1.update.assert_called_once_with(dict(source=source, sequence=1, target=s1))
                 c2.update.assert_called_once_with(dict(source=source, sequence=1, target=s2))
@@ -218,9 +212,9 @@ describe AsyncTestCase, "Item":
                 found[self.target2] = self.found_info2
 
                 f, missing = await self.search(found, False)
-                self.assertIs(f, found)
-                self.assertEqual(missing, [])
-                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
+                assert f is found
+                assert missing == []
+                assert len(self.find_specific_serials.mock_calls) == 0
 
             @with_timeout
             async it "returns without looking if accept_found is True":
@@ -229,16 +223,16 @@ describe AsyncTestCase, "Item":
                 found[self.target2] = self.found_info2
 
                 f, missing = await self.search(found, True)
-                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
-                self.assertIs(f, found)
-                self.assertEqual(missing, [])
+                assert len(self.find_specific_serials.mock_calls) == 0
+                assert f is found
+                assert missing == []
 
                 found = Found()
                 found[self.target1] = self.found_info1
                 f, missing = await self.search(found, True)
-                self.assertEqual(len(self.find_specific_serials.mock_calls), 0)
-                self.assertIs(f, found)
-                self.assertEqual(missing, [self.serial2])
+                assert len(self.find_specific_serials.mock_calls) == 0
+                assert f is found
+                assert missing == [self.serial2]
 
             @with_timeout
             async it "uses find_specific_serials if found is None":
@@ -247,8 +241,8 @@ describe AsyncTestCase, "Item":
                 self.find_specific_serials.return_value = (found, missing)
 
                 f, missing = await self.search(None, False, find_timeout=20)
-                self.assertIs(f, found)
-                self.assertIs(missing, missing)
+                assert f is found
+                assert missing is missing
 
                 class L:
                     def __init__(self, want):
@@ -272,8 +266,8 @@ describe AsyncTestCase, "Item":
                 self.find_specific_serials.return_value = (found, missing)
 
                 f, missing = await self.search(None, True, find_timeout=20)
-                self.assertIs(f, found)
-                self.assertIs(missing, missing)
+                assert f is found
+                assert missing is missing
 
                 class L:
                     def __init__(self, want):
@@ -300,8 +294,8 @@ describe AsyncTestCase, "Item":
                 fin[self.target1] = self.found_info1
 
                 f, missing = await self.search(fin, False, find_timeout=20)
-                self.assertIs(f, found)
-                self.assertIs(missing, missing)
+                assert f is found
+                assert missing is missing
 
                 class L:
                     def __init__(self, want):
@@ -359,7 +353,7 @@ describe AsyncTestCase, "Item":
             async it "sends the packets and gets the replies":
 
                 async def send(original, packet, **kwargs):
-                    self.assertIs(dict(self.packets)[original], packet)
+                    assert dict(self.packets)[original] is packet
                     if original is self.o1:
                         await asyncio.sleep(0.01)
                         return [self.results[5], self.results[6]]
@@ -378,13 +372,11 @@ describe AsyncTestCase, "Item":
                 res = []
                 async for r in self.item.write_messages(self.afr, self.packets, self.kwargs):
                     res.append(r)
-                self.assertEqual(self.error_catcher, [])
+                assert self.error_catcher == []
 
-                self.assertEqual(res, [self.results[i] for i in (1, 2, 7, 5, 6, 3, 4)])
+                assert res == [self.results[i] for i in (1, 2, 7, 5, 6, 3, 4)]
 
-                self.assertEqual(
-                    self.afr.send.mock_calls,
-                    [
+                assert self.afr.send.mock_calls == [
                         mock.call(
                             self.o1,
                             self.p1,
@@ -421,14 +413,13 @@ describe AsyncTestCase, "Item":
                             broadcast=None,
                             connect_timeout=10,
                         ),
-                    ],
-                )
+                    ]
 
             @with_timeout
             async it "gets arguments for send from kwargs":
 
                 async def send(original, packet, **kwargs):
-                    self.assertIs(dict(self.packets)[original], packet)
+                    assert dict(self.packets)[original] is packet
                     if original is self.o1:
                         return [self.results[1], self.results[2]]
                     elif original is self.o2:
@@ -460,13 +451,11 @@ describe AsyncTestCase, "Item":
                 res = []
                 async for r in self.item.write_messages(self.afr, self.packets, kwargs):
                     res.append(r)
-                self.assertEqual(self.error_catcher, [])
+                assert self.error_catcher == []
 
-                self.assertEqual(res, [self.results[i] for i in (1, 2, 3, 4, 5, 6)])
+                assert res == [self.results[i] for i in (1, 2, 3, 4, 5, 6)]
 
-                self.assertEqual(
-                    self.afr.send.mock_calls,
-                    [
+                assert self.afr.send.mock_calls == [
                         mock.call(
                             self.o1,
                             self.p1,
@@ -503,14 +492,13 @@ describe AsyncTestCase, "Item":
                             broadcast=broadcast,
                             connect_timeout=ct,
                         ),
-                    ],
-                )
+                    ]
 
             @with_timeout
             async it "records errors":
 
                 async def send(original, packet, **kwargs):
-                    self.assertIs(dict(self.packets)[original], packet)
+                    assert dict(self.packets)[original] is packet
                     if original is self.o1:
                         return [self.results[0]]
                     elif original is self.o2:
@@ -534,15 +522,12 @@ describe AsyncTestCase, "Item":
                 res = []
                 async for r in self.item.write_messages(self.afr, self.packets, self.kwargs):
                     res.append(r)
-                self.assertEqual(
-                    self.error_catcher,
-                    [
+                assert self.error_catcher == [
                         TimedOut("Message was cancelled", serial=self.p1.serial),
                         IS(ValueError("NOPE")),
-                    ],
-                )
+                    ]
 
-                self.assertEqual(res, [self.results[i] for i in (0, 6)])
+                assert res == [self.results[i] for i in (0, 6)]
 
         describe "private find":
             async before_each:
@@ -555,32 +540,32 @@ describe AsyncTestCase, "Item":
                 f, s, m = await self.item._find(
                     None, "d073d5000000", self.afr, self.broadcast, self.timeout
                 )
-                self.assertIs(f, self.found)
-                self.assertEqual(s, ["d073d5000000"])
-                self.assertIs(m, None)
+                assert f is self.found
+                assert s == ["d073d5000000"]
+                assert m is None
 
                 f, s, m = await self.item._find(
                     None, ["d073d5000000"], self.afr, self.broadcast, self.timeout
                 )
-                self.assertIs(f, self.found)
-                self.assertEqual(s, ["d073d5000000"])
-                self.assertIs(m, None)
+                assert f is self.found
+                assert s == ["d073d5000000"]
+                assert m is None
 
                 f, s, m = await self.item._find(
                     None, ["d073d5000000", "d073d5000001"], self.afr, self.broadcast, self.timeout
                 )
-                self.assertIs(f, self.found)
-                self.assertEqual(s, ["d073d5000000", "d073d5000001"])
-                self.assertIs(m, None)
+                assert f is self.found
+                assert s == ["d073d5000000", "d073d5000001"]
+                assert m is None
 
             async it "returns the provided found if one was given":
                 found = mock.Mock(name="found")
                 f, s, m = await self.item._find(
                     found, ["d073d5000000", "d073d5000001"], self.afr, self.broadcast, self.timeout
                 )
-                self.assertIs(f, found)
-                self.assertEqual(s, ["d073d5000000", "d073d5000001"])
-                self.assertIs(m, None)
+                assert f is found
+                assert s == ["d073d5000000", "d073d5000001"]
+                assert m is None
 
             async it "resolves the reference if it's a SpecialReference":
                 ss = ["d073d5000000", "d073d5000001"]
@@ -597,21 +582,18 @@ describe AsyncTestCase, "Item":
                         return []
 
                 f, s, m = await self.item._find(None, Ref(), self.afr, self.broadcast, self.timeout)
-                self.assertIs(f, found)
-                self.assertEqual(s, ss)
-                self.assertEqual(m, [])
+                assert f is found
+                assert s == ss
+                assert m == []
 
-                self.assertEqual(
-                    called,
-                    [
+                assert called == [
                         (
                             "find",
                             (self.afr,),
                             {"broadcast": self.broadcast, "timeout": self.timeout},
                         ),
                         ("missing", found),
-                    ],
-                )
+                    ]
 
             async it "gives missing to serials":
                 ss = ["d073d5000000"]
@@ -628,21 +610,18 @@ describe AsyncTestCase, "Item":
                         return ["d073d5000001"]
 
                 f, s, m = await self.item._find(None, Ref(), self.afr, self.broadcast, self.timeout)
-                self.assertIs(f, found)
-                self.assertEqual(s, ["d073d5000000", "d073d5000001"])
-                self.assertEqual(m, ["d073d5000001"])
+                assert f is found
+                assert s == ["d073d5000000", "d073d5000001"]
+                assert m == ["d073d5000001"]
 
-                self.assertEqual(
-                    called,
-                    [
+                assert called == [
                         (
                             "find",
                             (self.afr,),
                             {"broadcast": self.broadcast, "timeout": self.timeout},
                         ),
                         ("missing", found),
-                    ],
-                )
+                    ]
 
         describe "run_with":
             async before_each:
@@ -702,7 +681,7 @@ describe AsyncTestCase, "Item":
                     async for r in self.item.run_with(reference, self.afr, a=a):
                         res.append(r)
 
-                self.assertEqual(res, [res1, res2])
+                assert res == [res1, res2]
 
                 _find.assert_called_once_with(None, reference, self.afr, False, 20)
                 make_packets.assert_called_once_with(self.afr, serials)
@@ -742,12 +721,12 @@ describe AsyncTestCase, "Item":
                     async for r in self.item.run_with(reference, self.afr, a=a):
                         res.append(r)
 
-                self.assertEqual(res, [])
+                assert res == []
 
                 _find.assert_called_once_with(None, reference, self.afr, False, 20)
                 make_packets.assert_called_once_with(self.afr, serials)
-                self.assertEqual(len(search.mock_calls), 0)
-                self.assertEqual(len(write_messages.mock_calls), 0)
+                assert len(search.mock_calls) == 0
+                assert len(write_messages.mock_calls) == 0
 
             @with_timeout
             async it "doesn't search if broadcasting":
@@ -764,7 +743,7 @@ describe AsyncTestCase, "Item":
                     async for r in self.item.run_with(None, self.afr, broadcast=True):
                         res.append(r)
 
-                self.assertEqual(res, [])
+                assert res == []
 
                 packets = []
                 for part in self.item.parts:
@@ -772,7 +751,7 @@ describe AsyncTestCase, "Item":
                     clone.update(source=9001, sequence=1, target=None)
                     packets.append((part, clone))
 
-                self.assertEqual(len(search.mock_calls), 0)
+                assert len(search.mock_calls) == 0
                 write_messages.assert_called_once_with(
                     self.afr, packets, {"broadcast": True, "error_catcher": mock.ANY}
                 )
@@ -797,7 +776,7 @@ describe AsyncTestCase, "Item":
                     Ref(), self.afr, require_all_devices=True, error_catcher=es
                 ):
                     pass
-                self.assertEqual(es, [DevicesNotFound(missing=["d073d5000001"])])
+                assert es == [DevicesNotFound(missing=["d073d5000001"])]
 
                 es = mock.Mock(name="es")
                 async for _ in self.item.run_with(
@@ -826,7 +805,7 @@ describe AsyncTestCase, "Item":
                         async for r in self.item.run_with(None, self.afr, broadcast=True):
                             res.append(r)
 
-                self.assertEqual(res, [res1, res2])
+                assert res == [res1, res2]
 
                 res = []
                 es = []
@@ -836,8 +815,8 @@ describe AsyncTestCase, "Item":
                     ):
                         res.append(r)
 
-                self.assertEqual(es, [error])
-                self.assertEqual(res, [res1, res2])
+                assert es == [error]
+                assert res == [res1, res2]
 
                 res = []
                 es = mock.Mock(name="es")
@@ -848,7 +827,7 @@ describe AsyncTestCase, "Item":
                         res.append(r)
 
                 es.assert_called_once_with(error)
-                self.assertEqual(res, [res1, res2])
+                assert res == [res1, res2]
 
             async it "raises multiple errors from write_messages":
                 res1 = mock.Mock(name="res1")
@@ -872,7 +851,7 @@ describe AsyncTestCase, "Item":
                         async for r in self.item.run_with(None, self.afr, broadcast=True):
                             res.append(r)
 
-                self.assertEqual(res, [res1, res2])
+                assert res == [res1, res2]
 
                 res = []
                 es = []
@@ -882,8 +861,8 @@ describe AsyncTestCase, "Item":
                     ):
                         res.append(r)
 
-                self.assertEqual(es, [error1, error2])
-                self.assertEqual(res, [res1, res2])
+                assert es == [error1, error2]
+                assert res == [res1, res2]
 
                 res = []
                 es = mock.Mock(name="es")
@@ -893,5 +872,5 @@ describe AsyncTestCase, "Item":
                     ):
                         res.append(r)
 
-                self.assertEqual(es.mock_calls, [mock.call(error1), mock.call(error2)])
-                self.assertEqual(res, [res1, res2])
+                assert es.mock_calls == [mock.call(error1), mock.call(error2)]
+                assert res == [res1, res2]

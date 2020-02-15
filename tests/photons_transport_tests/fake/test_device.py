@@ -34,12 +34,12 @@ import time
 describe AsyncTestCase, "FakeDevice":
     it "has a repr":
         device = FakeDevice("d073d5001337", [])
-        self.assertEqual(repr(device), "<FakeDevice d073d5001337>")
+        assert repr(device) == "<FakeDevice d073d5001337>"
 
         device.attrs.vendor_id = 1
         device.attrs.product_id = 55
         device.attrs.product = Products[1, 55]
-        self.assertEqual(repr(device), "<FakeDevice d073d5001337: LIFX Tile>")
+        assert repr(device) == "<FakeDevice d073d5001337: LIFX Tile>"
 
     describe "init":
         async it "takes in serial and responders":
@@ -47,24 +47,24 @@ describe AsyncTestCase, "FakeDevice":
             responders = [mock.Mock(name="responders")]
             device = FakeDevice(serial, responders)
 
-            self.assertIs(device.serial, serial)
-            self.assertIs(device.responders, responders)
+            assert device.serial is serial
+            assert device.responders is responders
 
-            self.assertIs(device.port, None)
-            self.assertIs(device.use_sockets, False)
-            self.assertIs(device.protocol_register, protocol_register)
+            assert device.port is None
+            assert device.use_sockets is False
+            assert device.protocol_register is protocol_register
 
-            self.assertIsInstance(device.echo_responder, EchoResponder)
-            self.assertIsInstance(device.service_responder, ServicesResponder)
+            assert isinstance(device.echo_responder, EchoResponder)
+            assert isinstance(device.service_responder, ServicesResponder)
 
-            self.assertIsInstance(device.attrs, Attrs)
-            self.assertIs(device.attrs._device, device)
-            self.assertIs(device.attrs.online, False)
+            assert isinstance(device.attrs, Attrs)
+            assert device.attrs._device is device
+            assert device.attrs.online is False
 
-            self.assertEqual(device.reboots, [])
-            self.assertEqual(device.services, [])
-            self.assertEqual(device.pre_reboot, None)
-            self.assertEqual(device.time_rebooting, 1)
+            assert device.reboots == []
+            assert device.services == []
+            assert device.pre_reboot == None
+            assert device.time_rebooting == 1
 
         async it "can be given different values for protocol_register, port and use_sockets":
             pr = mock.Mock(name="protocol_register")
@@ -73,9 +73,9 @@ describe AsyncTestCase, "FakeDevice":
                 "d073d5001337", [], protocol_register=pr, port=port, use_sockets=True
             )
 
-            self.assertIs(device.port, port)
-            self.assertIs(device.protocol_register, pr)
-            self.assertIs(device.use_sockets, True)
+            assert device.port is port
+            assert device.protocol_register is pr
+            assert device.use_sockets is True
 
         async it "calls setup":
             called = []
@@ -85,7 +85,7 @@ describe AsyncTestCase, "FakeDevice":
                     called.append(("setup", self.attrs.online))
 
             device = Device("d073d5001337", [])
-            self.assertEqual(called, [("setup", False)])
+            assert called == [("setup", False)]
 
     describe "Usage":
         async before_each:
@@ -99,7 +99,7 @@ describe AsyncTestCase, "FakeDevice":
             with mock.patch.multiple(self.device, start=start, finish=finish):
                 async with self.device:
                     start.assert_called_once_with()
-                    self.assertEqual(len(finish.mock_calls), 0)
+                    assert len(finish.mock_calls) == 0
                 finish.assert_called_once_with()
 
         async it "can get all responders":
@@ -111,10 +111,7 @@ describe AsyncTestCase, "FakeDevice":
             for r in self.device.all_responders:
                 got.append(r)
 
-            self.assertEqual(
-                got,
-                [responder1, responder2, self.device.service_responder, self.device.echo_responder],
-            )
+            assert got == [responder1, responder2, self.device.service_responder, self.device.echo_responder]
 
         async it "can validate an attribute":
             r1 = mock.NonCallableMock(name="responder1", spec=["validate_attr"])
@@ -138,7 +135,7 @@ describe AsyncTestCase, "FakeDevice":
                     self.device.validate_attr(key, value)
 
             r1.validate_attr.assert_called_once_with(self.device, key, value)
-            self.assertEqual(len(r2.validate_attr.mock_calls), 0)
+            assert len(r2.validate_attr.mock_calls) == 0
 
         async it "has a contextmanger for reboot options":
             tr = mock.Mock(name="time_rebooting")
@@ -149,28 +146,28 @@ describe AsyncTestCase, "FakeDevice":
 
             ntr = mock.Mock(name="new_time_rebooting")
             with self.device.reboot_options(ntr):
-                self.assertIs(self.device.time_rebooting, ntr)
-                self.assertIs(self.device.pre_reboot, None)
+                assert self.device.time_rebooting is ntr
+                assert self.device.pre_reboot is None
 
-            self.assertIs(self.device.time_rebooting, tr)
-            self.assertIs(self.device.pre_reboot, pr)
+            assert self.device.time_rebooting is tr
+            assert self.device.pre_reboot is pr
 
             npr = mock.Mock(name="new_pre_reboot")
             with self.device.reboot_options(ntr, pre_reboot=npr):
-                self.assertIs(self.device.time_rebooting, ntr)
-                self.assertIs(self.device.pre_reboot, npr)
+                assert self.device.time_rebooting is ntr
+                assert self.device.pre_reboot is npr
 
-            self.assertIs(self.device.time_rebooting, tr)
-            self.assertIs(self.device.pre_reboot, pr)
+            assert self.device.time_rebooting is tr
+            assert self.device.pre_reboot is pr
 
             with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
                 with self.device.reboot_options(ntr, pre_reboot=npr):
-                    self.assertIs(self.device.time_rebooting, ntr)
-                    self.assertIs(self.device.pre_reboot, npr)
+                    assert self.device.time_rebooting is ntr
+                    assert self.device.pre_reboot is npr
                     raise ValueError("NOPE")
 
-            self.assertIs(self.device.time_rebooting, tr)
-            self.assertIs(self.device.pre_reboot, pr)
+            assert self.device.time_rebooting is tr
+            assert self.device.pre_reboot is pr
 
         async it "can be turned back on":
             r1 = mock.NonCallableMock(name="responder1", spec=[])
@@ -182,14 +179,14 @@ describe AsyncTestCase, "FakeDevice":
             with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
                 await self.device.power_on()
 
-            self.assertEqual(self.device.attrs.online, True)
+            assert self.device.attrs.online == True
 
             r2.restart.assert_called_once_with(self.device)
 
         async it "can set intercept_got_message":
             interceptor = mock.Mock(name="interceptor")
             self.device.set_intercept_got_message(interceptor)
-            self.assertIs(self.device.intercept_got_message, interceptor)
+            assert self.device.intercept_got_message is interceptor
 
         async it "can set replies":
             await self.device.reset()
@@ -199,15 +196,15 @@ describe AsyncTestCase, "FakeDevice":
             msg2 = mock.Mock(name="msg2")
 
             self.device.set_reply(kls, msg1)
-            self.assertEqual(self.device.set_replies, {kls: [msg1]})
+            assert self.device.set_replies == {kls: [msg1]}
 
             self.device.set_reply(kls, msg2)
-            self.assertEqual(self.device.set_replies, {kls: [msg1, msg2]})
+            assert self.device.set_replies == {kls: [msg1, msg2]}
 
         async it "can reset received":
             self.device.received = mock.Mock(name="received")
             self.device.reset_received()
-            self.assertEqual(self.device.received, [])
+            assert self.device.received == []
 
         async it "says a device is reachable if it's online":
             broadcast_address = mock.NonCallableMock(name="broadcast_address", spec=[])
@@ -229,8 +226,8 @@ describe AsyncTestCase, "FakeDevice":
             await self.device.reset()
 
             def assertValues(*vals):
-                self.assertEqual(self.device.no_res, {})
-                self.assertEqual(list(self.device.no_acks.values()), list(vals))
+                assert self.device.no_res == {}
+                assert list(self.device.no_acks.values()) == list(vals)
 
             assertValues()
             with self.device.no_acks_for(kls):
@@ -245,8 +242,8 @@ describe AsyncTestCase, "FakeDevice":
             await self.device.reset()
 
             def assertValues(*vals):
-                self.assertEqual(self.device.no_acks, {})
-                self.assertEqual(list(self.device.no_res.values()), list(vals))
+                assert self.device.no_acks == {}
+                assert list(self.device.no_res.values()) == list(vals)
 
             assertValues()
             with self.device.no_replies_for(kls):
@@ -261,8 +258,8 @@ describe AsyncTestCase, "FakeDevice":
             await self.device.reset()
 
             def assertValues(*vals):
-                self.assertEqual(list(self.device.no_acks.values()), list(vals))
-                self.assertEqual(list(self.device.no_res.values()), list(vals))
+                assert list(self.device.no_acks.values()) == list(vals)
+                assert list(self.device.no_res.values()) == list(vals)
 
             assertValues()
             with self.device.no_responses_for(kls):
@@ -280,10 +277,10 @@ describe AsyncTestCase, "FakeDevice":
             assert await self.device.ack_for(pkt, source) | CoreMessages.Acknowledgement
 
             with self.device.no_acks_for(DeviceMessages.SetPower):
-                self.assertIs(await self.device.ack_for(pkt, source), None)
+                assert await self.device.ack_for(pkt, source) is None
 
             pkt = DeviceMessages.SetPower(level=0, ack_required=False)
-            self.assertIs(await self.device.ack_for(pkt, source), None)
+            assert await self.device.ack_for(pkt, source) is None
 
         async it "can determine if we send a response":
             pkt = DeviceMessages.SetPower(level=0)
@@ -330,30 +327,30 @@ describe AsyncTestCase, "FakeDevice":
             make_response.return_value = res
             do_send_response.return_value = True
             got = await collect()
-            self.assertEqual(got, [res])
+            assert got == [res]
             make_response.assert_called_once_with(pkt, source)
             do_send_response.assert_called_once_with(pkt, source)
 
             make_response.return_value = [res, res2]
             do_send_response.return_value = True
             got = await collect()
-            self.assertEqual(got, [res, res2])
+            assert got == [res, res2]
             make_response.assert_called_once_with(pkt, source)
             do_send_response.assert_called_once_with(pkt, source)
 
             make_response.return_value = [res, res2]
             do_send_response.return_value = False
             got = await collect()
-            self.assertEqual(got, [])
+            assert got == []
             make_response.assert_called_once_with(pkt, source)
             do_send_response.assert_called_once_with(pkt, source)
 
         async it "can make a port":
             port = self.device.make_port()
-            self.assertGreater(port, 0)
+            assert port > 0
 
             port2 = self.device.make_port()
-            self.assertNotEqual(port, port2)
+            assert port != port2
 
         async it "has empty hook for extra response":
             pkt = mock.NonCallableMock(name="pkt", spec=[])
@@ -362,7 +359,7 @@ describe AsyncTestCase, "FakeDevice":
             got = []
             async for r in self.device.extra_make_response(pkt, source):
                 got.apend(r)
-            self.assertEqual(got, [])
+            assert got == []
 
         describe "discoverable":
             async it "is discoverable if we are reachable and no responders have undiscoverable":
@@ -432,7 +429,7 @@ describe AsyncTestCase, "FakeDevice":
                 r2.undiscoverable.assert_called_once_with(self.device)
 
                 # We shortcut after r2 returns True
-                self.assertEqual(len(r4.undiscoverable.mock_calls), 0)
+                assert len(r4.undiscoverable.mock_calls) == 0
 
             async it "is discoverable if we are reachable but responder say False to undiscoverable":
                 r1 = mock.Mock(name="r1", spec=["undiscoverable"])
@@ -483,22 +480,22 @@ describe AsyncTestCase, "FakeDevice":
                 with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
                     await self.device.reset()
 
-                self.assertEqual(self.device.no_res, {})
-                self.assertEqual(self.device.no_acks, {})
-                self.assertEqual(self.device.reboots, [])
-                self.assertEqual(self.device.waiters, {})
+                assert self.device.no_res == {}
+                assert self.device.no_acks == {}
+                assert self.device.reboots == []
+                assert self.device.waiters == {}
 
-                self.assertEqual(self.device.set_replies, {})
+                assert self.device.set_replies == {}
                 self.device.set_replies[1].append(2)
-                self.assertEqual(self.device.set_replies, {1: [2]})
+                assert self.device.set_replies == {1: [2]}
 
-                self.assertIs(self.device.intercept_got_message, None)
-                self.assertEqual(self.device.received, [])
+                assert self.device.intercept_got_message is None
+                assert self.device.received == []
 
                 r1.reset.assert_called_once_with(self.device, zero=False)
                 r2.reset.assert_called_once_with(self.device, zero=False)
 
-                self.assertEqual(self.device.attrs.online, True)
+                assert self.device.attrs.online == True
 
             async it "can reset to zero":
                 r1 = mock.NonCallableMock(name="responder1", spec=["reset"])
@@ -531,13 +528,13 @@ describe AsyncTestCase, "FakeDevice":
                 r2 = mock.NonCallableMock(name="responder2", spec=["shutdown"])
 
                 async def shut(d):
-                    self.assertIs(d, self.device)
+                    assert d is self.device
                     called.append("shutdown")
 
                 r2.shutdown = asynctest.mock.CoroutineMock(name="shutdown", side_effect=shut)
 
                 async def pre_reboot(d):
-                    self.assertIs(d, self.device)
+                    assert d is self.device
                     called.append("pre_reboot")
 
                 pre_reboot = asynctest.mock.CoroutineMock(name="pre_reboot", side_effect=pre_reboot)
@@ -547,15 +544,15 @@ describe AsyncTestCase, "FakeDevice":
                         with self.device.reboot_options(0.01, pre_reboot):
                             await self.device.reboot()
 
-                self.assertEqual(len(power_on.mock_calls), 0)
-                self.assertEqual(self.device.attrs.online, False)
+                assert len(power_on.mock_calls) == 0
+                assert self.device.attrs.online == False
                 pre_reboot.assert_awaited_once_with(self.device)
                 r2.shutdown.assert_called_once_with(self.device)
 
                 await fut
 
                 power_on.assert_called_once_with()
-                self.assertEqual(called, ["pre_reboot", "shutdown", "power_on"])
+                assert called == ["pre_reboot", "shutdown", "power_on"]
 
             @with_timeout
             async it "can be told not to come back online":
@@ -577,9 +574,9 @@ describe AsyncTestCase, "FakeDevice":
 
                 await asyncio.sleep(0.1)
 
-                self.assertEqual(len(power_on.mock_calls), 0)
-                self.assertEqual(self.device.attrs.online, False)
-                self.assertEqual(called, [])
+                assert len(power_on.mock_calls) == 0
+                assert self.device.attrs.online == False
+                assert called == []
 
         describe "start":
             async it "can start udp service":
@@ -611,7 +608,7 @@ describe AsyncTestCase, "FakeDevice":
                     self.device.use_sockets = True
                     await self.device.start()
 
-                self.assertEqual(called, ["finish", "reset", "ensure_udp_service"])
+                assert called == ["finish", "reset", "ensure_udp_service"]
 
             async it "can start memory service":
                 called = []
@@ -642,19 +639,19 @@ describe AsyncTestCase, "FakeDevice":
                     self.device.use_sockets = False
                     await self.device.start()
 
-                self.assertEqual(called, ["finish", "reset", "ensure_memory_service"])
+                assert called == ["finish", "reset", "ensure_memory_service"]
 
             async it "works without mocks":
                 self.device.use_sockets = False
 
                 await self.device.start()
-                self.assertEqual([s.service for s in self.device.services], [MemoryService])
+                assert [s.service for s in self.device.services] == [MemoryService]
                 await self.device.start()
-                self.assertEqual([s.service for s in self.device.services], [MemoryService])
+                assert [s.service for s in self.device.services] == [MemoryService]
 
                 self.device.use_sockets = True
                 await self.device.start()
-                self.assertEqual([s.service for s in self.device.services], [Services.UDP])
+                assert [s.service for s in self.device.services] == [Services.UDP]
 
         describe "finish":
             async it "closes services and resets services to []":
@@ -666,7 +663,7 @@ describe AsyncTestCase, "FakeDevice":
 
                 self.device.services = [s1, s2]
                 await self.device.finish()
-                self.assertEqual(self.device.services, [])
+                assert self.device.services == []
 
                 s1.closer.assert_called_once_with()
                 s2.closer.assert_called_once_with()
@@ -706,8 +703,8 @@ describe AsyncTestCase, "FakeDevice":
                     session, host="127.0.0.1", port=self.device.services[0].state_service.port
                 )
 
-                self.assertEqual(session.found.serials, [self.serial])
-                self.assertEqual(session.found[self.serial], {Services.UDP: transport})
+                assert session.found.serials == [self.serial]
+                assert session.found[self.serial] == {Services.UDP: transport}
 
         describe "write":
             async it "does nothing if none of the services recognise the source":
@@ -760,13 +757,10 @@ describe AsyncTestCase, "FakeDevice":
                         "memory", received_data, pkt.tobytes(serial=self.serial)
                     )
 
-                self.assertEqual(
-                    received_data.mock_calls,
-                    [
+                assert received_data.mock_calls == [
                         mock.call(m1b, (f"fake://{self.serial}/memory", 56700)),
                         mock.call(m2b, (f"fake://{self.serial}/memory", 56700)),
-                    ],
-                )
+                    ]
 
             async it "chooses address based on the services":
                 self.device.use_sockets = True
@@ -789,7 +783,7 @@ describe AsyncTestCase, "FakeDevice":
                 with mock.patch.object(self.device, "got_message", got_message):
                     await self.device.write("udp", received_data, pkt.tobytes(serial=None))
 
-                self.assertEqual(received_data.mock_calls, [mock.call(m1b, (f"127.0.0.1", port))])
+                assert received_data.mock_calls == [mock.call(m1b, (f"127.0.0.1", port))]
 
             async it "does nothing if the serial is incorrect":
                 self.device.use_sockets = False
@@ -856,22 +850,19 @@ describe AsyncTestCase, "FakeDevice":
                     async for m in self.device.got_message(pkt, message_source):
                         got.append(m)
 
-                self.assertEqual(got, [ack, res1, res2])
+                assert got == [ack, res1, res2]
                 for g in got:
-                    self.assertIs(g.source, source)
-                    self.assertIs(g.sequence, sequence)
-                    self.assertEqual(g.target, self.serial)
+                    assert g.source is source
+                    assert g.sequence is sequence
+                    assert g.target == self.serial
 
                 ack_for.assert_called_once_with(pkt, message_source)
                 response_for.assert_called_once_with(pkt, message_source)
-                self.assertEqual(
-                    process_reply.mock_calls,
-                    [
+                assert process_reply.mock_calls == [
                         mock.call(ack, message_source, pkt),
                         mock.call(res1, message_source, pkt),
                         mock.call(res2, message_source, pkt),
-                    ],
-                )
+                    ]
 
             async it "yields nothing if intercept_got_message returns False":
                 await self.device.reset()
@@ -894,7 +885,7 @@ describe AsyncTestCase, "FakeDevice":
                     async for m in self.device.got_message(pkt, message_source):
                         got.append(m)
 
-                self.assertEqual(got, [])
+                assert got == []
                 igm.assert_called_once_with(pkt, message_source)
 
             async it "works":
@@ -920,14 +911,14 @@ describe AsyncTestCase, "FakeDevice":
                     async for m in self.device.got_message(msg, "memory"):
                         got.append(m)
 
-                    self.assertEqual(len(got), 2)
+                    assert len(got) == 2
                     assert got[0] | CoreMessages.Acknowledgement
                     assert got[1] | DeviceMessages.StateLabel
 
                     for g in got:
-                        self.assertEqual(g.source, 1)
-                        self.assertEqual(g.sequence, 2)
-                        self.assertEqual(g.serial, self.serial)
+                        assert g.source == 1
+                        assert g.sequence == 2
+                        assert g.serial == self.serial
 
             @with_timeout
             async it "resolves waiters":
@@ -944,13 +935,10 @@ describe AsyncTestCase, "FakeDevice":
 
                 fut = self.device.wait_for("udp", DeviceMessages.SetLabel)
                 fut2 = self.device.wait_for("udp", DeviceMessages.SetGroup)
-                self.assertEqual(
-                    self.device.waiters,
-                    {
+                assert self.device.waiters == {
                         ("udp", DeviceMessages.SetGroup): mock.ANY,
                         ("udp", DeviceMessages.SetLabel): mock.ANY,
-                    },
-                )
+                    }
 
                 label_msg = DeviceMessages.SetLabel(
                     label="hello", source=1, sequence=2, target=self.serial
@@ -964,29 +952,26 @@ describe AsyncTestCase, "FakeDevice":
                 got = []
                 async for m in self.device.got_message(power_msg, "memory"):
                     got.append(m)
-                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
+                assert len(got) == 2, [g.__class__.__name__ for g in got]
                 assert not fut.done()
 
                 got = []
                 async for m in self.device.got_message(label_msg, "memory"):
                     got.append(m)
-                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
+                assert len(got) == 2, [g.__class__.__name__ for g in got]
                 assert not fut.done()
 
-                self.assertEqual(
-                    self.device.waiters,
-                    {
+                assert self.device.waiters == {
                         ("udp", DeviceMessages.SetGroup): mock.ANY,
                         ("udp", DeviceMessages.SetLabel): mock.ANY,
-                    },
-                )
+                    }
 
                 got = []
                 async for m in self.device.got_message(label_msg, "udp"):
                     got.append(m)
-                self.assertEqual(len(got), 2, [g.__class__.__name__ for g in got])
-                self.assertEqual(await fut, label_msg)
-                self.assertEqual(self.device.waiters, {("udp", DeviceMessages.SetGroup): mock.ANY})
+                assert len(got) == 2, [g.__class__.__name__ for g in got]
+                assert await fut == label_msg
+                assert self.device.waiters == {("udp", DeviceMessages.SetGroup): mock.ANY}
 
         describe "process_reply":
             async it "gives every responder a chance to do something with the packet":
@@ -1014,12 +999,12 @@ describe AsyncTestCase, "FakeDevice":
                 await self.device.stop_service(Services.UDP)
 
                 await self.device.start()
-                self.assertEqual(len(self.device.services), 1)
-                self.assertIs(self.device.services[0].service, MemoryService)
+                assert len(self.device.services) == 1
+                assert self.device.services[0].service is MemoryService
 
                 await self.device.stop_service(Services.UDP)
-                self.assertEqual(len(self.device.services), 1)
-                self.assertIs(self.device.services[0].service, MemoryService)
+                assert len(self.device.services) == 1
+                assert self.device.services[0].service is MemoryService
 
             async it "closes and removes services if it finds one":
                 s1 = mock.Mock(name="service1", service=MemoryService)
@@ -1030,8 +1015,8 @@ describe AsyncTestCase, "FakeDevice":
 
                 self.device.services = [s1, s2]
                 await self.device.stop_service(Services.UDP)
-                self.assertEqual(len(self.device.services), 1)
-                self.assertIs(self.device.services[0].service, MemoryService)
+                assert len(self.device.services) == 1
+                assert self.device.services[0].service is MemoryService
 
                 s2.closer.assert_called_once_with()
 
@@ -1040,27 +1025,27 @@ describe AsyncTestCase, "FakeDevice":
                 info = {}
 
                 async def adder(serial, service, *, writer):
-                    self.assertEqual(serial, self.serial)
-                    self.assertIs(service, MemoryService)
+                    assert serial == self.serial
+                    assert service is MemoryService
                     info["writer"] = writer
 
                 write = asynctest.mock.CoroutineMock(name="write")
 
-                self.assertEqual(len(self.device.services), 0)
+                assert len(self.device.services) == 0
                 await self.device.ensure_memory_service()
-                self.assertEqual(len(self.device.services), 1)
+                assert len(self.device.services) == 1
                 await self.device.ensure_memory_service()
-                self.assertEqual(len(self.device.services), 1)
+                assert len(self.device.services) == 1
 
                 service = self.device.services[0]
-                self.assertIs(service.service, MemoryService)
+                assert service.service is MemoryService
                 await service.closer()
 
-                self.assertEqual(info, {})
+                assert info == {}
                 with mock.patch.object(self.device, "write", write):
                     await service.add_service(adder)
                 assert "writer" in info
-                self.assertEqual(len(write.mock_calls), 0)
+                assert len(write.mock_calls) == 0
                 a = mock.Mock(name="a")
                 b = mock.Mock(name="b")
                 await info["writer"](a, b)
@@ -1068,29 +1053,29 @@ describe AsyncTestCase, "FakeDevice":
 
                 state_service = service.state_service
                 assert state_service | DiscoveryMessages.StateService
-                self.assertEqual(state_service.service, Services.UDP)
-                self.assertEqual(state_service.port, 56700)
+                assert state_service.service == Services.UDP
+                assert state_service.port == 56700
 
-                self.assertEqual(service.address("memory"), (f"fake://{self.serial}/memory", 56700))
-                self.assertEqual(service.address("udp"), None)
+                assert service.address("memory") == (f"fake://{self.serial}/memory", 56700)
+                assert service.address("udp") == None
 
         describe "ensure_udp_service":
 
             @with_timeout
             async it "works":
-                self.assertEqual(len(self.device.services), 0)
+                assert len(self.device.services) == 0
 
                 await self.device.ensure_udp_service()
-                self.assertEqual(len(self.device.services), 1)
+                assert len(self.device.services) == 1
                 first_service = self.device.services[0]
                 port1 = first_service.state_service.port
 
                 await self.device.ensure_udp_service()
-                self.assertEqual(len(self.device.services), 1)
+                assert len(self.device.services) == 1
                 second_service = self.device.services[0]
                 port2 = second_service.state_service.port
 
-                self.assertNotEqual(port1, port2)
+                assert port1 != port2
 
                 final_future = asyncio.Future()
                 target = MemoryTarget.create(
@@ -1109,10 +1094,8 @@ describe AsyncTestCase, "FakeDevice":
                         self.serial, afr, message_timeout=0.05, error_catcher=es
                     ):
                         got.append(pkt)
-                    self.assertEqual(len(got), 0)
-                    self.assertEqual(
-                        es, [TimedOut("Waiting for reply to a packet", serial=self.serial)]
-                    )
+                    assert len(got) == 0
+                    assert es == [TimedOut("Waiting for reply to a packet", serial=self.serial)]
 
                     await afr.forget(self.serial)
                     await second_service.add_service(afr.add_service)
@@ -1121,15 +1104,15 @@ describe AsyncTestCase, "FakeDevice":
                     async for pkt, addr, _ in target.script(echo).run_with(
                         self.serial, afr, message_timeout=0.05, error_catcher=es
                     ):
-                        self.assertEqual(addr, ("127.0.0.1", port2))
+                        assert addr == ("127.0.0.1", port2)
                         got.append(pkt)
-                    self.assertEqual(es, [])
-                    self.assertEqual(len(got), 1)
+                    assert es == []
+                    assert len(got) == 1
 
         describe "make_response":
             async it "can use set_replies":
                 await self.device.start()
-                self.assertEqual(self.device.received, [])
+                assert self.device.received == []
 
                 pkt = DeviceMessages.EchoRequest(
                     echoing=b"hello", source=1, sequence=2, target=self.serial
@@ -1138,32 +1121,32 @@ describe AsyncTestCase, "FakeDevice":
                 shortcut = DeviceMessages.EchoResponse(echoing=b"REPSONDING")
                 self.device.set_reply(DeviceMessages.EchoRequest, shortcut)
                 res = await self.device.make_response(pkt, "memory")
-                self.assertEqual(self.device.received, [pkt])
+                assert self.device.received == [pkt]
                 assert res | DeviceMessages.EchoResponse
-                self.assertEqual(res.echoing, shortcut.echoing)
+                assert res.echoing == shortcut.echoing
 
                 res = await self.device.make_response(pkt, "memory")
-                self.assertEqual(self.device.received, [pkt, pkt])
-                self.assertEqual(len(res), 1)
+                assert self.device.received == [pkt, pkt]
+                assert len(res) == 1
                 res = res[0]
                 assert res | DeviceMessages.EchoResponse
-                self.assertEqual(res.echoing, pkt.echoing)
+                assert res.echoing == pkt.echoing
 
                 self.device.set_reply(
                     DeviceMessages.SetLabel, DeviceMessages.StateLabel(label="wat")
                 )
                 res = await self.device.make_response(pkt, "memory")
-                self.assertEqual(self.device.received, [pkt, pkt, pkt])
-                self.assertEqual(len(res), 1)
+                assert self.device.received == [pkt, pkt, pkt]
+                assert len(res) == 1
                 res = res[0]
                 assert res | DeviceMessages.EchoResponse
-                self.assertEqual(res.echoing, pkt.echoing)
+                assert res.echoing == pkt.echoing
 
             async it "does nothing if it doesn't find a responder":
                 await self.device.start()
                 pkt = DeviceMessages.SetLabel(label="hi")
                 res = await self.device.make_response(pkt, "memory")
-                self.assertEqual(res, None)
+                assert res == None
 
             async it "uses extra_make_response if we didn't find a responder":
                 await self.device.start()
@@ -1183,7 +1166,7 @@ describe AsyncTestCase, "FakeDevice":
                 with mock.patch.object(self.device, "extra_make_response", extra_make_response):
                     extra_make_response.side_effect = yld()
                     res = await self.device.make_response(pkt, "memory")
-                    self.assertEqual(res, None)
+                    assert res == None
                     extra_make_response.assert_called_once_with(pkt, "memory")
                     extra_make_response.reset_mock()
 
@@ -1191,7 +1174,7 @@ describe AsyncTestCase, "FakeDevice":
                     r2 = mock.Mock(name="r2")
                     extra_make_response.side_effect = yld(r1, r2)
                     res = await self.device.make_response(pkt, "memory")
-                    self.assertEqual(res, [r1, r2])
+                    assert res == [r1, r2]
                     extra_make_response.assert_called_once_with(pkt, "memory")
                     extra_make_response.reset_mock()
 
@@ -1228,10 +1211,10 @@ describe AsyncTestCase, "FakeDevice":
                 await self.device.start()
 
                 pkt = DeviceMessages.SetLabel(label="hi")
-                self.assertEqual(await self.device.make_response(pkt, "memory"), [res])
+                assert await self.device.make_response(pkt, "memory") == [res]
                 r1.respond.assert_called_once_with(self.device, pkt, "memory")
                 r2.respond.assert_called_once_with(self.device, pkt, "memory")
-                self.assertEqual(len(r3.respond.mock_calls), 0)
+                assert len(r3.respond.mock_calls) == 0
 
                 r1.respond.side_effect = yld(fail=True)
                 with self.fuzzyAssertRaisesError(IgnoreMessage):

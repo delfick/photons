@@ -113,7 +113,7 @@ describe AsyncTestCase, "timeout_task":
         assert task.cancelled()
         assert errf.done()
 
-        self.assertEqual(await errf, 1)
+        assert await errf == 1
 
     @with_timeout
     async it "does not set exception on errf already has an exception":
@@ -182,7 +182,7 @@ describe AsyncTestCase, "NoLimit":
             called.append("no limit")
         assert not lock.locked()
 
-        self.assertEqual(called, ["no limit"])
+        assert called == ["no limit"]
 
     @with_timeout
     async it "behaves like a normal semaphore not context manager":
@@ -197,4 +197,4 @@ describe AsyncTestCase, "NoLimit":
         lock.release()
         assert not lock.locked()
 
-        self.assertEqual(called, ["no limit"])
+        assert called == ["no limit"]

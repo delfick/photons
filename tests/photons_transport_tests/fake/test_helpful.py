@@ -24,7 +24,7 @@ describe AsyncTestCase, "WithDevices":
         async with WithDevices(devices):
             for d in devices:
                 d.start.assert_called_once_with()
-                self.assertEqual(len(d.finish.mock_calls), 0)
+                assert len(d.finish.mock_calls) == 0
 
         for d in devices:
             d.finish.assert_called_once_with()
@@ -42,7 +42,7 @@ describe AsyncTestCase, "WithDevices":
             async with WithDevices(devices):
                 for d in devices:
                     d.start.assert_called_once_with()
-                    self.assertEqual(len(d.finish.mock_calls), 0)
+                    assert len(d.finish.mock_calls) == 0
                 raise ValueError("NOPE")
 
         for d in devices:
@@ -55,7 +55,7 @@ describe TestCase, "pktkeys":
         msg3 = DeviceMessages.SetLabel(label="bob", source=5, sequence=6, target="d073d503")
         keys = pktkeys([msg1, msg2, msg3])
 
-        self.assertEqual(keys, [(1024, 21, '{"level": 65535}'), (1024, 24, '{"label": "bob"}')])
+        assert keys == [(1024, 21, '{"level": 65535}'), (1024, 24, '{"label": "bob"}')]
 
     it "can be told to keep duplicates":
         msg1 = DeviceMessages.SetPower(level=65535, source=1, sequence=2, target="d073d501")
@@ -63,28 +63,25 @@ describe TestCase, "pktkeys":
         msg3 = DeviceMessages.SetLabel(label="bob", source=5, sequence=6, target="d073d503")
         keys = pktkeys([msg1, msg2, msg3], keep_duplicates=True)
 
-        self.assertEqual(
-            keys,
-            [
+        assert keys == [
                 (1024, 21, '{"level": 65535}'),
                 (1024, 24, '{"label": "bob"}'),
                 (1024, 24, '{"label": "bob"}'),
-            ],
-        )
+            ]
 
     it "knows to zero instanceid":
         msg = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
             source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={},
         )
 
-        self.assertGreater(msg.instanceid, 0)
+        assert msg.instanceid > 0
 
         keys = pktkeys([msg])
-        self.assertEqual(keys, [(1024, 508, mock.ANY)])
+        assert keys == [(1024, 508, mock.ANY)]
 
         dct = json.loads(keys[0][-1])
-        self.assertEqual(dct["instanceid"], 0)
-        self.assertGreater(msg.instanceid, 0)
+        assert dct["instanceid"] == 0
+        assert msg.instanceid > 0
 
     it "knows to zero reserved fields":
         from photons_protocol.messages import T, Messages
@@ -94,14 +91,11 @@ describe TestCase, "pktkeys":
             SetExample = msg(9001, ("one", T.Reserved(6)), ("two", T.String(10)))
 
         msg = Messages.SetExample(source=1, sequence=2, target="d073d512", two="stuff")
-        self.assertEqual(msg.actual("one"), sb.NotSpecified)
+        assert msg.actual("one") == sb.NotSpecified
 
         keys = pktkeys([msg])
 
-        self.assertEqual(keys, [(1024, 9001, '{"one": "00", "two": "stuff"}')])
+        assert keys == [(1024, 9001, '{"one": "00", "two": "stuff"}')]
 
-        self.assertEqual(msg.actual("one"), sb.NotSpecified)
-        self.assertEqual(
-            repr(msg.payload),
-            """{"one": "<class 'delfick_project.norms.spec_base.NotSpecified'>", "two": "stuff"}""",
-        )
+        assert msg.actual("one") == sb.NotSpecified
+        assert repr(msg.payload) == """{"one": "<class 'delfick_project.norms.spec_base.NotSpecified'>", "two": "stuff"}"""

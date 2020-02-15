@@ -13,44 +13,44 @@ describe TestCase, "Attrs":
         self.attrs = Attrs(self.device)
 
     it "takes in a device":
-        self.assertEqual(self.attrs._attrs, {})
-        self.assertIs(self.attrs._device, self.device)
+        assert self.attrs._attrs == {}
+        assert self.attrs._device is self.device
 
     it "can use dictionary syntax":
         val = mock.Mock(name="val")
         key = mock.Mock(name="key")
         self.attrs[key] = val
         self.device.validate_attr.assert_called_once_with(key, val)
-        self.assertIs(self.attrs[key], val)
+        assert self.attrs[key] is val
 
         self.device.validate_attr.reset_mock()
         val2 = mock.Mock(name="val")
         key2 = mock.Mock(name="key")
         self.attrs[key2] = val2
         self.device.validate_attr.assert_called_once_with(key2, val2)
-        self.assertIs(self.attrs[key], val)
-        self.assertIs(self.attrs[key2], val2)
+        assert self.attrs[key] is val
+        assert self.attrs[key2] is val2
 
     it "can use object syntax":
         val = mock.Mock(name="val")
         self.attrs.wat = val
         self.device.validate_attr.assert_called_once_with("wat", val)
-        self.assertIs(self.attrs.wat, val)
+        assert self.attrs.wat is val
 
         self.device.validate_attr.reset_mock()
         val2 = mock.Mock(name="val")
         self.attrs.wat2 = val2
         self.device.validate_attr.assert_called_once_with("wat2", val2)
-        self.assertIs(self.attrs.wat, val)
-        self.assertIs(self.attrs.wat2, val2)
+        assert self.attrs.wat is val
+        assert self.attrs.wat2 is val2
 
     it "doesn't set key if validate_attr raises an error":
-        self.assertEqual(self.attrs._attrs, {})
+        assert self.attrs._attrs == {}
 
         self.attrs.wat = 2
         self.attrs["things"] = 3
         expected = {"wat": 2, "things": 3}
-        self.assertEqual(self.attrs._attrs, expected)
+        assert self.attrs._attrs == expected
 
         self.device.validate_attr.side_effect = ValueError("NOPE")
 

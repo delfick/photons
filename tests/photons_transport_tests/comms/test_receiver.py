@@ -16,9 +16,9 @@ import random
 describe AsyncTestCase, "Receiver":
     async it "inits some variables":
         receiver = Receiver()
-        self.assertIs(receiver.loop, self.loop)
-        self.assertEqual(receiver.results, {})
-        self.assertEqual(receiver.blank_target, b"\x00\x00\x00\x00\x00\x00\x00\x00")
+        assert receiver.loop is self.loop
+        assert receiver.results == {}
+        assert receiver.blank_target == b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
     describe "Usage":
         async before_each:
@@ -45,7 +45,7 @@ describe AsyncTestCase, "Receiver":
 
         describe "register":
             async it "puts the result under a key of source, sequence, target":
-                self.assertEqual(self.receiver.results, {})
+                assert self.receiver.results == {}
                 key = self.register(self.source, self.sequence, self.target)
 
                 loop = mock.Mock(name="loop")
@@ -56,8 +56,8 @@ describe AsyncTestCase, "Receiver":
                 def call_later(t, cb):
                     called.append("call_later")
 
-                    self.assertEqual(t, 0.5)
-                    self.assertEqual(self.receiver.results, {key: (self.original, self.result)})
+                    assert t == 0.5
+                    assert self.receiver.results == {key: (self.original, self.result)}
 
                     self.receiver.results["other"] = other
                     cb()
@@ -66,13 +66,13 @@ describe AsyncTestCase, "Receiver":
                 loop.call_later.side_effect = call_later
 
                 with mock.patch.object(Receiver, "loop", loop):
-                    self.assertEqual(called, [])
+                    assert called == []
 
                     self.result.set_result([])
                     await self.wait_for(fut)
 
-                    self.assertEqual(called, ["call_later"])
-                    self.assertEqual(self.receiver.results, {"other": other})
+                    assert called == ["call_later"]
+                    assert self.receiver.results == {"other": other}
 
         describe "recv":
             async it "finds result based on source, sequence, target":
@@ -92,7 +92,7 @@ describe AsyncTestCase, "Receiver":
             async it "does nothing if it can't find the key":
                 self.register(1, 2, binascii.unhexlify("d073d5000001"))
                 await self.receiver.recv(self.packet, self.addr)
-                self.assertEqual(len(self.result.add_packet.mock_calls), 0)
+                assert len(self.result.add_packet.mock_calls) == 0
 
             async it "uses message_catcher if can't find the key and that's defined":
                 message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
@@ -110,7 +110,7 @@ describe AsyncTestCase, "Receiver":
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original
                 )
-                self.assertEqual(len(message_catcher.mock_calls), 0)
+                assert len(message_catcher.mock_calls) == 0
 
                 self.result.add_packet.reset_mock()
                 self.register(self.source, self.sequence, self.receiver.blank_target)
@@ -122,4 +122,4 @@ describe AsyncTestCase, "Receiver":
                 self.result.add_packet.assert_called_once_with(
                     self.packet, self.addr, self.original
                 )
-                self.assertEqual(len(message_catcher.mock_calls), 0)
+                assert len(message_catcher.mock_calls) == 0
