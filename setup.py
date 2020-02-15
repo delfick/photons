@@ -59,8 +59,9 @@ setup(
     , entry_points =
       { 'console_scripts' :
         [ 'lifx = photons_app.executor:lifx_main'
-        , 'run_photons_core_tests = photons_app.test_helpers:run_pytest'
+        , 'run_photons_core_tests = photons_pytest:run_pytest'
         ]
+      , "pytest11": ["lifx_photons_core = photons_pytest"]
       , "lifx.photons": photons_entry_points
       }
 

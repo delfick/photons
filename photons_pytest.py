@@ -1,5 +1,4 @@
-from photons_transport.targets import MemoryTarget
-from photons_messages import protocol_register
+"""pytest-cov: avoid already-imported warning: PYTEST_DONT_REWRITE."""
 
 from textwrap import dedent
 from unittest import mock
@@ -7,8 +6,33 @@ import tempfile
 import asyncio
 import pytest
 import shutil
+import sys
 import re
 import os
+
+
+def run_pytest():
+    class EditConfig:
+        @pytest.hookimpl(hookwrapper=True)
+        def pytest_cmdline_parse(pluginmanager, args):
+            args.extend(
+                [
+                    "--tb=short",
+                    "-o",
+                    "console_output_style=classic",
+                    "-o",
+                    "default_alt_async_timeout=1",
+                    "-W",
+                    "ignore:Using or importing the ABCs:DeprecationWarning",
+                    "--log-level=INFO",
+                    "-p",
+                    "helpers_namespace",
+                ]
+            )
+            yield
+
+    sys.exit(pytest.main(plugins=[EditConfig()]))
+
 
 regexes = {}
 
@@ -61,31 +85,32 @@ def FakeTime():
     return FakeTime
 
 
-@pytest.helpers.register
-def assert_regex(regex, value):
-    __tracebackhide__ = True
+def pytest_configure():
+    @pytest.helpers.register
+    def assert_regex(regex, value):
+        __tracebackhide__ = True
 
-    if isinstance(regex, str):
-        if regex not in regexes:
-            regexes[regex] = re.compile(regex)
-        regex = regexes[regex]
+        if isinstance(regex, str):
+            if regex not in regexes:
+                regexes[regex] = re.compile(regex)
+            regex = regexes[regex]
 
-    m = regex.match(value)
-    if m:
-        return
+        m = regex.match(value)
+        if m:
+            return
 
-    def indented(v):
-        return "\n".join(f"  {line}" for line in v.split("\n"))
+        def indented(v):
+            return "\n".join(f"  {line}" for line in v.split("\n"))
 
-    lines = [
-        "Regex didn't match",
-        "Wanted:\n",
-        indented(regex.pattern),
-        "\nto match:",
-        indented(value),
-    ]
+        lines = [
+            "Regex didn't match",
+            "Wanted:\n",
+            indented(regex.pattern),
+            "\nto match:",
+            indented(value),
+        ]
 
-    pytest.fail("\n".join(lines))
+        pytest.fail("\n".join(lines))
 
 
 class MemoryDevicesRunner:
@@ -94,8 +119,10 @@ class MemoryDevicesRunner:
         options = {
             "devices": devices,
             "final_future": self.final_future,
-            "protocol_register": protocol_register,
+            "protocol_register": __import__("photons_messages").protocol_register,
         }
+
+        MemoryTarget = __import__("photons_transport.targets").targets.MemoryTarget
         self.target = MemoryTarget.create(options)
         self.devices = devices
 

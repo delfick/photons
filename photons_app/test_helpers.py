@@ -8,7 +8,6 @@ from collections import defaultdict
 from unittest import TestCase
 from unittest import mock
 import asyncio
-import sys
 import os
 
 
@@ -276,28 +275,3 @@ def modified_env(**env):
                     del os.environ[key]
             else:
                 os.environ[key] = val
-
-
-def run_pytest():
-    import pytest
-
-    class EditConfig:
-        @pytest.hookimpl(hookwrapper=True)
-        def pytest_cmdline_parse(pluginmanager, args):
-            args.extend(
-                [
-                    "--tb=short",
-                    "-o",
-                    "console_output_style=classic",
-                    "-o",
-                    "default_alt_async_timeout=1",
-                    "-W",
-                    "ignore:Using or importing the ABCs:DeprecationWarning",
-                    "--log-level=INFO",
-                    "-p",
-                    "helpers_namespace",
-                ]
-            )
-            yield
-
-    sys.exit(pytest.main(plugins=[EditConfig()]))
