@@ -451,14 +451,14 @@ class ChainPlan(Plan):
             return []
 
         @property
-        def O(self):
+        def Orien(self):
             return __import__("photons_control.orientation").orientation.Orientation
 
         def process(self, pkt):
             if self.zones is not Zones.MATRIX:
                 item = self.tile_for_single()
                 self.chain = [item]
-                self.orientations = {0: self.O.RightSideUp}
+                self.orientations = {0: self.Orien.RightSideUp}
                 return True
 
             if pkt | TileMessages.StateDeviceChain:
@@ -498,7 +498,7 @@ class ChainPlan(Plan):
 
         def reverse_orient(self, orientations, index, colors):
             orientation = __import__("photons_control").orientation
-            o = orientation.reverse_orientation(orientations.get(index, self.O.RightSideUp))
+            o = orientation.reverse_orientation(orientations.get(index, self.Orien.RightSideUp))
             return orientation.reorient(colors, o)
 
         def reorient(self, orientations, random_orientations, index, colors, randomize=False):
@@ -507,13 +507,13 @@ class ChainPlan(Plan):
             if randomize:
                 orientations = random_orientations
 
-            return reorient(colors, orientations.get(index, self.O.RightSideUp))
+            return reorient(colors, orientations.get(index, self.Orien.RightSideUp))
 
         async def info(self):
             coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in self.chain]
 
             random_orientations = {
-                i: random.choice(list(self.O.__members__.values())) for i in self.orientations
+                i: random.choice(list(self.Orien.__members__.values())) for i in self.orientations
             }
 
             reorient = partial(self.reorient, self.orientations, random_orientations)

@@ -79,9 +79,7 @@ async def tile_dice(collector, target, reference, **kwargs):
                 if not info["capability"]["cap"].has_matrix:
                     continue
 
-                yield DeviceMessages.SetPower(
-                    level=65535, res_required=False, target=serial
-                )
+                yield DeviceMessages.SetPower(level=65535, res_required=False, target=serial)
 
                 found.append(serial)
                 msgs = canvas_to_msgs(

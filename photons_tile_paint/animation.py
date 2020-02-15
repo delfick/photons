@@ -7,11 +7,9 @@ from photons_app import helpers as hp
 from photons_messages import LightMessages, DeviceMessages, Services
 from photons_themes.coords import user_coords_to_pixel_coords
 from photons_control.planner import Gatherer, make_plans
-from photons_control.orientation import Orientation as O
 from photons_themes.theme import ThemeColor as Color
 from photons_transport.comms.result import Result
 from photons_themes.canvas import Canvas
-from photons_control import orientation
 from photons_products import Products
 
 from collections import defaultdict
