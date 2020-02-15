@@ -236,11 +236,47 @@ describe AsyncTestCase, "Default Plans":
 
         @mlr.test
         async it "gets the power", runner:
-            l1c = {"cap": Products.LCM3_TILE.cap(3, 50), "product": Products.LCM3_TILE}
-            l2c = {"cap": Products.LMB_MESH_A21.cap(2, 2), "product": Products.LMB_MESH_A21}
-            slcm1c = {"cap": Products.LCM1_Z.cap(1, 22), "product": Products.LCM1_Z}
-            slcm2nec = {"cap": Products.LCM2_Z.cap(2, 70), "product": Products.LCM2_Z}
-            slcm2ec = {"cap": Products.LCM2_Z.cap(2, 77), "product": Products.LCM2_Z}
+            l1c = {
+                "cap": Products.LCM3_TILE.cap(3, 50),
+                "product": Products.LCM3_TILE,
+                "firmware": {
+                    "build": 1548977726000000000,
+                    "version_major": 3,
+                    "version_minor": 50,
+                },
+            }
+            l2c = {
+                "cap": Products.LMB_MESH_A21.cap(2, 2),
+                "product": Products.LMB_MESH_A21,
+                "firmware": {"build": 1448861477000000000, "version_major": 2, "version_minor": 2,},
+            }
+            slcm1c = {
+                "cap": Products.LCM1_Z.cap(1, 22),
+                "product": Products.LCM1_Z,
+                "firmware": {
+                    "build": 1502237570000000000,
+                    "version_major": 1,
+                    "version_minor": 22,
+                },
+            }
+            slcm2nec = {
+                "cap": Products.LCM2_Z.cap(2, 70),
+                "product": Products.LCM2_Z,
+                "firmware": {
+                    "build": 1508122125000000000,
+                    "version_major": 2,
+                    "version_minor": 70,
+                },
+            }
+            slcm2ec = {
+                "cap": Products.LCM2_Z.cap(2, 77),
+                "product": Products.LCM2_Z,
+                "firmware": {
+                    "build": 1543215651000000000,
+                    "version_major": 2,
+                    "version_minor": 77,
+                },
+            }
 
             got = await self.gather(runner, runner.serials, "capability")
             self.assertEqual(

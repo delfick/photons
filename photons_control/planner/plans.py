@@ -3,7 +3,7 @@ from photons_app.errors import PhotonsAppError
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
 from photons_products import Products
 
-from delfick_project.norms import sb
+from delfick_project.norms import sb, dictobj
 from collections import defaultdict
 
 plan_by_key = {}
@@ -22,6 +22,10 @@ class NoMessages:
     to just call plan.info() and use the result from that rather than processing
     any messages that are sent from the device
     """
+
+
+class FirmwareInfo(dictobj):
+    fields = ["build", "version_major", "version_minor"]
 
 
 class a_plan:
@@ -406,7 +410,11 @@ class CapabilityPlan(Plan):
     class Instance(Plan.Instance):
         def process(self, pkt):
             if pkt | DeviceMessages.StateHostFirmware:
-                self.firmware = pkt
+                self.firmware = FirmwareInfo(
+                    build=pkt.build,
+                    version_major=pkt.version_major,
+                    version_minor=pkt.version_minor,
+                )
             elif pkt | DeviceMessages.StateVersion:
                 self.version = pkt
             return hasattr(self, "firmware") and hasattr(self, "version")
@@ -414,7 +422,7 @@ class CapabilityPlan(Plan):
         async def info(self):
             product = Products[self.version.vendor, self.version.product]
             cap = product.cap(self.firmware.version_major, self.firmware.version_minor)
-            return {"cap": cap, "product": product}
+            return {"cap": cap, "product": product, "firmware": self.firmware}
 
 
 @a_plan("firmware")
@@ -426,17 +434,15 @@ class FirmwarePlan(Plan):
     class Instance(Plan.Instance):
         def process(self, pkt):
             if pkt | DeviceMessages.StateHostFirmware:
-                dct = pkt.payload.as_dict()
-
-                result = {}
-                for k in ("build", "version_major", "version_minor"):
-                    result[k] = dct[k]
-                self.dct = result
-
+                self.firmware = FirmwareInfo(
+                    build=pkt.build,
+                    version_major=pkt.version_major,
+                    version_minor=pkt.version_minor,
+                )
                 return True
 
         async def info(self):
-            return self.dct
+            return self.firmware
 
 
 @a_plan("version")
