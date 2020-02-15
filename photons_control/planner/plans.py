@@ -1,8 +1,8 @@
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_messages.fields import Tile, Color
 from photons_products import Products, Zones
-from photons_messages.fields import Tile
 
 from delfick_project.norms import sb, dictobj
 from collections import defaultdict
@@ -353,6 +353,66 @@ class ZonesPlan(Plan):
 
         async def info(self):
             return sorted(self.staging)
+
+
+@a_plan("colors")
+class ColorsPlan(Plan):
+    """
+    Return `[[hsbk, ...]]` for all the items in the chain of the device.
+
+    So for a bulb you'll get `[[<hsbk>]]`.
+
+    For a Strip or candle you'll get `[[<hsbk>, <hsbk>, ...]]`
+
+    And for a tile you'll get `[[<hsbk>, <hsbk>, ...], [<hsbk>, <hsbk>, ...]]`
+    """
+
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan(), "chain": ChainPlan(), "zones": ZonesPlan()}
+
+    class Instance(Plan.Instance):
+        def setup(self):
+            self.result = []
+
+        @property
+        def zones(self):
+            return self.deps["c"]["cap"].zones
+
+        @property
+        def messages(self):
+            if self.zones is Zones.SINGLE:
+                return [LightMessages.GetColor()]
+
+            elif self.zones is Zones.MATRIX:
+                return [
+                    TileMessages.Get64(
+                        x=0, y=0, tile_index=0, length=255, width=self.deps["chain"]["width"]
+                    )
+                ]
+
+            return []
+
+        def process(self, pkt):
+            if self.zones is Zones.LINEAR:
+                self.result = [(0, [c for _, c in self.deps["zones"]])]
+                return True
+
+            if self.zones is Zones.SINGLE and pkt | LightMessages.LightState:
+                self.result = [(0, [Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin)])]
+                return True
+
+            if pkt | TileMessages.State64:
+                colors = self.deps["chain"]["reverse_orient"](pkt.tile_index, pkt.colors)
+                self.result.append((pkt.tile_index, colors))
+
+                if len(self.result) == len(self.deps["chain"]["chain"]):
+                    return True
+
+        async def info(self):
+            return [colors for _, colors in sorted(self.result)]
 
 
 @a_plan("chain")

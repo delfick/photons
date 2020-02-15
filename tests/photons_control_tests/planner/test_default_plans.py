@@ -426,6 +426,68 @@ describe AsyncTestCase, "Default Plans":
 
                 device.compare_received(expected[device])
 
+    describe "ColorsPlan":
+
+        @mlr.test
+        async it "gets colors for different devices", runner:
+            serials = [light1.serial, light2.serial, striplcm1.serial, striplcm2extended.serial]
+
+            expectedlcm1 = []
+            expectedlcm2 = []
+            for ex, strip in [(expectedlcm1, striplcm1), (expectedlcm2, striplcm2extended)]:
+                for i, z in enumerate(strip.attrs.zones):
+                    z.hue = i
+                    ex.append(chp.Color(i, z.saturation, z.brightness, z.kelvin))
+
+            self.assertEqual(len(expectedlcm1), 30)
+            self.assertEqual(len(expectedlcm2), 40)
+
+            tile_expected = []
+            for i in range(len(light1.attrs.chain)):
+                for j in range(64):
+                    light1.attrs.chain[i][1][j].hue = i + j
+                tile_expected.append(list(light1.attrs.chain[i][1]))
+
+            light2.attrs.color = chp.Color(100, 0.5, 0.8, 2500)
+
+            got = await self.gather(runner, serials, "colors")
+
+            self.assertEqual(got[light1.serial][1]["colors"], tile_expected)
+            self.assertEqual(got[light2.serial][1]["colors"], [[chp.Color(100, 0.5, 0.8, 2500)]])
+            self.assertEqual(got[striplcm1.serial][1]["colors"], [expectedlcm1])
+            self.assertEqual(got[striplcm2extended.serial][1]["colors"], [expectedlcm2])
+
+            expected = {
+                light1: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                    TileMessages.GetDeviceChain(),
+                    TileMessages.Get64(length=255, tile_index=0, width=8, x=0, y=0),
+                ],
+                light2: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                    LightMessages.GetColor(),
+                ],
+                striplcm1: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                    MultiZoneMessages.GetColorZones(start_index=0, end_index=255),
+                ],
+                striplcm2noextended: [],
+                striplcm2extended: [
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetVersion(),
+                    MultiZoneMessages.GetExtendedColorZones(),
+                ],
+            }
+
+            for device in runner.devices:
+                if device not in expected:
+                    assert False, f"No expectation for {device.serial}"
+
+                device.compare_received(expected[device])
+
     describe "ChainPlan":
 
         @mlr.test
