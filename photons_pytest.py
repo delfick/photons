@@ -5,11 +5,24 @@ from unittest import mock
 import tempfile
 import asyncio
 import socket
-import pytest
 import shutil
 import sys
 import re
 import os
+
+try:
+    import pytest
+except:
+
+    class FakePytest:
+        class fixture:
+            def __init__(self, **kwargs):
+                pass
+
+            def __call__(self, func):
+                return func
+
+    pytest = FakePytest()
 
 
 def run_pytest():
