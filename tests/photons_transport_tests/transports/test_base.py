@@ -2,27 +2,34 @@
 
 from photons_transport.transports.base import Transport
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asynctest
 import asyncio
+import pytest
 
-describe AsyncTestCase, "Transport":
-    async before_each:
-        self.session = mock.Mock(name="session")
-        self.original_message = mock.Mock(name="original_message")
 
+@pytest.fixture()
+def session():
+    return mock.Mock(name="session")
+
+
+@pytest.fixture()
+def original_message():
+    return mock.Mock(name="original_message")
+
+
+describe "Transport":
     describe "__init__":
-        async it "takes in arguments":
-            transport = Transport(self.session)
-            assert transport.session is self.session
+        async it "takes in arguments", session:
+            transport = Transport(session)
+            assert transport.session is session
             assert transport.transport is None
 
-        async it "has a setup function":
+        async it "has a setup function", session:
 
             class T(Transport):
                 def setup(s, one, two, *, three):
@@ -34,178 +41,181 @@ describe AsyncTestCase, "Transport":
             two = mock.Mock(name="two")
             three = mock.Mock(name="three")
 
-            transport = T(self.session, one, two, three=three)
+            transport = T(session, one, two, three=three)
 
             assert transport.one is one
             assert transport.two is two
             assert transport.three is three
 
     describe "spawn":
-        async before_each:
-            self.called = []
-            self.spawned = mock.NonCallableMock(name="spawned", spec=[])
 
-            def spawn(timeout):
-                return self.spawned
+        @pytest.fixture()
+        def V(self, session):
+            class V:
+                called = []
+                spawned = mock.NonCallableMock(name="spawned", spec=[])
 
-            self.spawn_transport = mock.Mock(name="spawn_transport", side_effect=spawn)
+                @hp.memoized_property
+                def spawn_transport(s):
+                    def spawn(timeout):
+                        return s.spawned
 
-            class T(Transport):
-                async def spawn_transport(s, timeout):
-                    self.called.append(("spawn_transport", timeout))
-                    return self.spawn_transport(timeout)
+                    return mock.Mock(name="spawn_transport", side_effect=spawn)
 
-            self.transport = T(self.session)
+                @hp.memoized_property
+                def transport(s):
+                    class T(Transport):
+                        async def spawn_transport(ts, timeout):
+                            s.called.append(("spawn_transport", timeout))
+                            return s.spawn_transport(timeout)
 
-        @with_timeout
-        async it "gets the transport from spawn_transport":
-            assert self.called == []
-            s = await self.transport.spawn(self.original_message, timeout=10)
-            assert s is self.spawned
-            assert self.called == [("spawn_transport", 10)]
+                    return T(session)
+
+            return V()
+
+        async it "gets the transport from spawn_transport", original_message, V:
+            assert V.called == []
+            s = await V.transport.spawn(original_message, timeout=10)
+            assert s is V.spawned
+            assert V.called == [("spawn_transport", 10)]
 
             # And it caches the result
-            s = await self.transport.spawn(self.original_message, timeout=20)
-            assert s is self.spawned
-            assert self.called == [("spawn_transport", 10)]
+            s = await V.transport.spawn(original_message, timeout=20)
+            assert s is V.spawned
+            assert V.called == [("spawn_transport", 10)]
 
-        @with_timeout
-        async it "re gets the transport was cancelled first time":
-            assert self.called == []
-            self.spawn_transport.side_effect = asyncio.CancelledError()
+        async it "re gets the transport was cancelled first time", original_message, V:
+            assert V.called == []
+            V.spawn_transport.side_effect = asyncio.CancelledError()
 
-            with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                await self.transport.spawn(self.original_message, timeout=10)
-            assert self.called == [("spawn_transport", 10)]
+            with assertRaises(asyncio.CancelledError):
+                await V.transport.spawn(original_message, timeout=10)
+            assert V.called == [("spawn_transport", 10)]
 
-            self.spawn_transport.side_effect = lambda t: self.spawned
+            V.spawn_transport.side_effect = lambda t: V.spawned
 
             # And it can retry
             try:
-                s = await self.transport.spawn(self.original_message, timeout=20)
+                s = await V.transport.spawn(original_message, timeout=20)
             except asyncio.CancelledError:
                 assert False, "Expected it not to use old future!"
 
-            assert s is self.spawned
-            assert self.called == [("spawn_transport", 10), ("spawn_transport", 20)]
+            assert s is V.spawned
+            assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        @with_timeout
-        async it "re gets the transport if has exception first time":
-            assert self.called == []
-            self.spawn_transport.side_effect = ValueError("YEAP")
+        async it "re gets the transport if has exception first time", original_message, V:
+            assert V.called == []
+            V.spawn_transport.side_effect = ValueError("YEAP")
 
-            with self.fuzzyAssertRaisesError(ValueError, "YEAP"):
-                await self.transport.spawn(self.original_message, timeout=10)
-            assert self.called == [("spawn_transport", 10)]
+            with assertRaises(ValueError, "YEAP"):
+                await V.transport.spawn(original_message, timeout=10)
+            assert V.called == [("spawn_transport", 10)]
 
-            self.spawn_transport.side_effect = lambda t: self.spawned
+            V.spawn_transport.side_effect = lambda t: V.spawned
 
             # And it can retry
             try:
-                s = await self.transport.spawn(self.original_message, timeout=20)
+                s = await V.transport.spawn(original_message, timeout=20)
             except ValueError:
                 assert False, "Expected it not to use old future!"
 
-            assert s is self.spawned
-            assert self.called == [("spawn_transport", 10), ("spawn_transport", 20)]
+            assert s is V.spawned
+            assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        @with_timeout
-        async it "re gets transport if it's no longer active":
+        async it "re gets transport if it's no longer active", original_message, V:
             is_transport_active = asynctest.mock.CoroutineMock(name="is_transport_active")
             is_transport_active.return_value = False
 
-            with mock.patch.object(self.transport, "is_transport_active", is_transport_active):
-                assert self.called == []
-                s = await self.transport.spawn(self.original_message, timeout=10)
-                assert s is self.spawned
+            with mock.patch.object(V.transport, "is_transport_active", is_transport_active):
+                assert V.called == []
+                s = await V.transport.spawn(original_message, timeout=10)
+                assert s is V.spawned
 
                 assert len(is_transport_active.mock_calls) == 0
 
-                s = await self.transport.spawn(self.original_message, timeout=20)
-                assert s is self.spawned
-                assert self.called == [("spawn_transport", 10), ("spawn_transport", 20)]
+                s = await V.transport.spawn(original_message, timeout=20)
+                assert s is V.spawned
+                assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-                is_transport_active.assert_called_once_with(self.original_message, self.spawned)
+                is_transport_active.assert_called_once_with(original_message, V.spawned)
 
         describe "close":
-            async before_each:
-                self.spawned = mock.NonCallableMock(name="spawned", spec=[])
-                self.transport = Transport(self.session)
 
-            @with_timeout
-            async it "does nothing if transport is None":
-                await self.transport.close()
+            @pytest.fixture()
+            def transport(self, session):
+                return Transport(session)
 
-            @with_timeout
-            async it "doesn't swallow cancellations":
+            async it "does nothing if transport is None", transport:
+                await transport.close()
+
+            async it "doesn't swallow cancellations", transport, V:
 
                 async def getter():
                     await asyncio.sleep(2)
-                    return self.spawned
+                    return V.spawned
 
-                self.transport.transport = hp.async_as_background(getter())
-                t = hp.async_as_background(self.transport.close())
+                transport.transport = hp.async_as_background(getter())
+                t = hp.async_as_background(transport.close())
                 await asyncio.sleep(0.01)
                 t.cancel()
 
-                with self.fuzzyAssertRaisesError(asyncio.CancelledError):
+                with assertRaises(asyncio.CancelledError):
                     await t
 
-                self.transport.transport.cancel()
+                transport.transport.cancel()
 
-            @with_timeout
-            async it "doesn't raise cancellations on transport":
+            async it "doesn't raise cancellations on transport", transport:
                 fut = asyncio.Future()
                 fut.cancel()
 
-                self.transport.transport = fut
-                t = hp.async_as_background(self.transport.close())
+                transport.transport = fut
+                t = hp.async_as_background(transport.close())
                 await t
                 assert True, "No CancelledError raised"
 
-            @with_timeout
-            async it "doesn't raise exceptions on transport":
+            async it "doesn't raise exceptions on transport", transport:
                 fut = asyncio.Future()
                 fut.set_exception(ValueError("YEAP"))
 
-                self.transport.transport = fut
-                t = hp.async_as_background(self.transport.close())
+                transport.transport = fut
+                t = hp.async_as_background(transport.close())
                 await t
                 assert True, "No Exception raised"
 
-            @with_timeout
-            async it "closes the transport if there is one":
+            async it "closes the transport if there is one", transport, V:
                 close_transport = asynctest.mock.CoroutineMock(name="close_transport")
 
                 fut = asyncio.Future()
-                fut.set_result(self.spawned)
-                self.transport.transport = fut
+                fut.set_result(V.spawned)
+                transport.transport = fut
 
-                with mock.patch.object(self.transport, "close_transport", close_transport):
-                    await self.transport.close()
+                with mock.patch.object(transport, "close_transport", close_transport):
+                    await transport.close()
 
-                close_transport.assert_called_once_with(self.spawned)
+                close_transport.assert_called_once_with(V.spawned)
 
         describe "hooks":
-            async before_each:
-                self.transport = Transport(self.session)
 
-            async it "does nothing for close_transport":
-                transport = mock.NonCallableMock(name="transport", spec=[])
-                await self.transport.close_transport(transport)
+            @pytest.fixture()
+            def transport(self, session):
+                return Transport(session)
 
-            async it "says True for is_transport_active":
-                transport = mock.NonCallableMock(name="transport", spec=[])
-                assert await self.transport.is_transport_active(self.original_message, transport)
+            async it "does nothing for close_transport", original_message, transport:
+                t = mock.NonCallableMock(name="transport", spec=[])
+                await transport.close_transport(t)
 
-            async it "must have spawn_transport implemented":
-                with self.fuzzyAssertRaisesError(NotImplementedError):
-                    await self.transport.spawn_transport(10)
+            async it "says True for is_transport_active", transport:
+                t = mock.NonCallableMock(name="transport", spec=[])
+                assert await transport.is_transport_active(original_message, t)
 
-            async it "must have write implemented":
+            async it "must have spawn_transport implemented", transport:
+                with assertRaises(NotImplementedError):
+                    await transport.spawn_transport(10)
+
+            async it "must have write implemented", transport:
                 bts = mock.Mock(name="bts")
-                transport = mock.NonCallableMock(name="transport", spec=[])
+                t = mock.NonCallableMock(name="transport", spec=[])
                 original_message = mock.Mock(name="original_message")
 
-                with self.fuzzyAssertRaisesError(NotImplementedError):
-                    await self.transport.write(transport, bts, original_message)
+                with assertRaises(NotImplementedError):
+                    await transport.write(t, bts, original_message)

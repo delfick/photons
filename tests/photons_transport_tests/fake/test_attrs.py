@@ -2,66 +2,70 @@
 
 from photons_transport.fake import Attrs
 
-from photons_app.test_helpers import TestCase
-
-from noseOfYeti.tokeniser.support import noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+import pytest
 
-describe TestCase, "Attrs":
-    before_each:
-        self.device = mock.Mock(name="device")
-        self.attrs = Attrs(self.device)
+describe "Attrs":
 
-    it "takes in a device":
-        assert self.attrs._attrs == {}
-        assert self.attrs._device is self.device
+    @pytest.fixture()
+    def device(self):
+        return mock.Mock(name="device")
 
-    it "can use dictionary syntax":
+    @pytest.fixture()
+    def attrs(self, device):
+        return Attrs(device)
+
+    it "takes in a device", device, attrs:
+        assert attrs._attrs == {}
+        assert attrs._device is device
+
+    it "can use dictionary syntax", device, attrs:
         val = mock.Mock(name="val")
         key = mock.Mock(name="key")
-        self.attrs[key] = val
-        self.device.validate_attr.assert_called_once_with(key, val)
-        assert self.attrs[key] is val
+        attrs[key] = val
+        device.validate_attr.assert_called_once_with(key, val)
+        assert attrs[key] is val
 
-        self.device.validate_attr.reset_mock()
+        device.validate_attr.reset_mock()
         val2 = mock.Mock(name="val")
         key2 = mock.Mock(name="key")
-        self.attrs[key2] = val2
-        self.device.validate_attr.assert_called_once_with(key2, val2)
-        assert self.attrs[key] is val
-        assert self.attrs[key2] is val2
+        attrs[key2] = val2
+        device.validate_attr.assert_called_once_with(key2, val2)
+        assert attrs[key] is val
+        assert attrs[key2] is val2
 
-    it "can use object syntax":
+    it "can use object syntax", device, attrs:
         val = mock.Mock(name="val")
-        self.attrs.wat = val
-        self.device.validate_attr.assert_called_once_with("wat", val)
-        assert self.attrs.wat is val
+        attrs.wat = val
+        device.validate_attr.assert_called_once_with("wat", val)
+        assert attrs.wat is val
 
-        self.device.validate_attr.reset_mock()
+        device.validate_attr.reset_mock()
         val2 = mock.Mock(name="val")
-        self.attrs.wat2 = val2
-        self.device.validate_attr.assert_called_once_with("wat2", val2)
-        assert self.attrs.wat is val
-        assert self.attrs.wat2 is val2
+        attrs.wat2 = val2
+        device.validate_attr.assert_called_once_with("wat2", val2)
+        assert attrs.wat is val
+        assert attrs.wat2 is val2
 
-    it "doesn't set key if validate_attr raises an error":
-        assert self.attrs._attrs == {}
+    it "doesn't set key if validate_attr raises an error", device, attrs:
+        assert attrs._attrs == {}
 
-        self.attrs.wat = 2
-        self.attrs["things"] = 3
+        attrs.wat = 2
+        attrs["things"] = 3
         expected = {"wat": 2, "things": 3}
-        assert self.attrs._attrs == expected
+        assert attrs._attrs == expected
 
-        self.device.validate_attr.side_effect = ValueError("NOPE")
+        device.validate_attr.side_effect = ValueError("NOPE")
 
-        with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
-            self.attrs.nope = 2
+        with assertRaises(ValueError, "NOPE"):
+            attrs.nope = 2
 
-        with self.fuzzyAssertRaisesError(AttributeError):
-            self.attrs.nope
+        with assertRaises(AttributeError):
+            attrs.nope
 
-        with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
-            self.attrs["hello"] = 3
+        with assertRaises(ValueError, "NOPE"):
+            attrs["hello"] = 3
 
-        with self.fuzzyAssertRaisesError(KeyError):
-            self.attrs["hello"]
+        with assertRaises(KeyError):
+            attrs["hello"]

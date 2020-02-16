@@ -3,15 +3,14 @@
 from photons_transport.fake import Responder, Attrs, ServicesResponder, EchoResponder, FakeDevice
 from photons_transport.session.memory import MemoryService
 
-from photons_app.test_helpers import AsyncTestCase
-
 from photons_messages import Services, DiscoveryMessages, DeviceMessages
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asynctest
+import pytest
 
-describe AsyncTestCase, "Responder":
+describe "Responder":
     async it "holds onto defaults and provided values":
 
         class R(Responder):
@@ -28,7 +27,7 @@ describe AsyncTestCase, "Responder":
         class R(Responder):
             _fields = ["one", ("two", lambda: 3), ("three", lambda: 4)]
 
-        with self.fuzzyAssertRaisesError(TypeError, "Missing argument one"):
+        with assertRaises(TypeError, "Missing argument one"):
             R(three=5)
 
     async it "complains about invalid fields":
@@ -37,9 +36,7 @@ describe AsyncTestCase, "Responder":
             class R(Responder):
                 _fields = [invalid]
 
-            with self.fuzzyAssertRaisesError(
-                TypeError, r"tuple field should be \(name, default\), got .+"
-            ):
+            with assertRaises(TypeError, r"tuple field should be \(name, default\), got .+"):
                 R()
 
     describe "reset":
@@ -111,31 +108,36 @@ describe AsyncTestCase, "Responder":
                 got.append(m)
             assert got == []
 
-describe AsyncTestCase, "default responders":
-    async before_each:
-        self.device = FakeDevice("d073d5001337", [])
-        assert self.device.attrs._attrs == {"online": False}
+describe "default responders":
+
+    @pytest.fixture()
+    def device(self):
+        device = FakeDevice("d073d5001337", [])
+        assert device.attrs._attrs == {"online": False}
+        return device
 
     describe "ServicesResponder":
-        async before_each:
-            self.responder = self.device.service_responder
 
-        async it "puts limited_services on the device":
-            await self.responder.reset(self.device)
-            assert self.device.attrs.limited_services == None
+        @pytest.fixture()
+        def responder(self, device):
+            return device.service_responder
 
-        async it "has a contextmanager for changing limited services":
-            await self.responder.reset(self.device)
+        async it "puts limited_services on the device", device, responder:
+            await responder.reset(device)
+            assert device.attrs.limited_services == None
+
+        async it "has a contextmanager for changing limited services", device, responder:
+            await responder.reset(device)
 
             ls = mock.Mock(name="ls")
-            self.device.attrs.limited_services = ls
+            device.attrs.limited_services = ls
 
-            with ServicesResponder.limited_services(self.device, Services.UDP, MemoryService):
-                assert self.device.attrs.limited_services == (Services.UDP, MemoryService)
-            assert self.device.attrs.limited_services is ls
+            with ServicesResponder.limited_services(device, Services.UDP, MemoryService):
+                assert device.attrs.limited_services == (Services.UDP, MemoryService)
+            assert device.attrs.limited_services is ls
 
-        async it "can yield State service messages":
-            await self.responder.reset(self.device)
+        async it "can yield State service messages", device, responder:
+            await responder.reset(device)
 
             class AnotherService:
                 pass
@@ -153,41 +155,43 @@ describe AsyncTestCase, "default responders":
                 name="service", service=MemoryService, state_service=state_service3
             )
 
-            self.device.services = [service1, service2, service3]
+            device.services = [service1, service2, service3]
 
             got = []
             get_service = DiscoveryMessages.GetService()
-            async for m in self.responder.respond(self.device, get_service, "UDP"):
+            async for m in responder.respond(device, get_service, "UDP"):
                 got.append(m)
 
             assert got == [state_service1, state_service2, state_service3]
 
             got = []
-            with ServicesResponder.limited_services(self.device, Services.UDP, AnotherService):
-                async for m in self.responder.respond(self.device, get_service, "UDP"):
+            with ServicesResponder.limited_services(device, Services.UDP, AnotherService):
+                async for m in responder.respond(device, get_service, "UDP"):
                     got.append(m)
             assert got == [state_service1, state_service2]
 
             got = []
-            with ServicesResponder.limited_services(self.device, MemoryService):
-                async for m in self.responder.respond(self.device, get_service, "UDP"):
+            with ServicesResponder.limited_services(device, MemoryService):
+                async for m in responder.respond(device, get_service, "UDP"):
                     got.append(m)
             assert got == [state_service3]
 
             got = []
-            with ServicesResponder.limited_services(self.device, mock.Mock(name="Service")):
-                async for m in self.responder.respond(self.device, get_service, "UDP"):
+            with ServicesResponder.limited_services(device, mock.Mock(name="Service")):
+                async for m in responder.respond(device, get_service, "UDP"):
                     got.append(m)
             assert got == []
 
     describe "EchoResponder":
-        async before_each:
-            self.responder = self.device.echo_responder
 
-        async it "returns an EchoResponse":
+        @pytest.fixture()
+        def responder(self, device):
+            return device.echo_responder
+
+        async it "returns an EchoResponse", device, responder:
             pkt = DeviceMessages.EchoRequest(echoing=b"hello")
             got = []
-            async for m in self.responder.respond(self.device, pkt, "memory"):
+            async for m in responder.respond(device, pkt, "memory"):
                 got.append(m)
 
             assert got == [DeviceMessages.EchoResponse(echoing=pkt.echoing)]

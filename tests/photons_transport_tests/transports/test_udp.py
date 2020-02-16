@@ -2,22 +2,12 @@
 
 from photons_transport.transports.udp import UDP
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
 from unittest import mock
 import asyncio
 import socket
-
-
-def free_port():
-    """
-    Return an unused port number
-    """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("0.0.0.0", 0))
-        return s.getsockname()[1]
+import pytest
 
 
 class FakeDevice:
@@ -42,23 +32,31 @@ class FakeDevice:
         self.remote.close()
 
 
-describe AsyncTestCase, "UDP":
-    async before_each:
-        self.host = "127.0.0.1"
-        self.port = free_port()
+describe "UDP":
 
-        self.session = mock.Mock(name="session")
-        self.original_message = mock.Mock(name="original_message")
+    @pytest.fixture()
+    def V(self):
+        class V:
+            host = "127.0.0.1"
+            port = pytest.helpers.free_port()
 
-        self.serial = "d073d5000001"
-        self.transport = UDP(self.session, self.host, self.port, serial=self.serial)
+            session = mock.Mock(name="session")
+            original_message = mock.Mock(name="original_message")
 
-    async it "has equality checks":
-        transport1 = UDP(self.session, "one", 1)
-        transport2 = UDP(self.session, "one", 1)
+            serial = "d073d5000001"
+
+            @hp.memoized_property
+            def transport(s):
+                return UDP(s.session, s.host, s.port, serial=s.serial)
+
+        return V()
+
+    async it "has equality checks", V:
+        transport1 = UDP(V.session, "one", 1)
+        transport2 = UDP(V.session, "one", 1)
         transport3 = UDP(lambda: 1, "one", 1)
-        transport4 = UDP(self.session, "two", 1)
-        transport5 = UDP(self.session, "two", 2)
+        transport4 = UDP(V.session, "two", 1)
+        transport5 = UDP(V.session, "two", 2)
 
         assert transport1 == transport1
         assert transport1 == transport2
@@ -67,30 +65,29 @@ describe AsyncTestCase, "UDP":
         assert transport1 != transport4
         assert transport1 != transport5
 
-    async it "takes in address":
-        assert self.transport.host == self.host
-        assert self.transport.port == self.port
-        assert self.transport.address == (self.host, self.port)
-        assert self.transport.serial == self.serial
-        assert self.transport.lc.context == {"serial": self.serial}
+    async it "takes in address", V:
+        assert V.transport.host == V.host
+        assert V.transport.port == V.port
+        assert V.transport.address == (V.host, V.port)
+        assert V.transport.serial == V.serial
+        assert V.transport.lc.context == {"serial": V.serial}
 
-        transport = UDP(self.session, self.host, self.port)
+        transport = UDP(V.session, V.host, V.port)
         assert transport.serial == None
 
-    async it "can be cloned":
-        transport = UDP(self.session, self.host, self.port, serial=self.serial)
+    async it "can be cloned", V:
+        transport = UDP(V.session, V.host, V.port, serial=V.serial)
         transport.transport = mock.Mock(name="transport")
 
         new_session = mock.Mock(name="new_session")
         clone = transport.clone_for(new_session)
         assert clone.session is new_session
-        assert clone.host == self.host
-        assert clone.port == self.port
-        assert clone.serial == self.serial
+        assert clone.host == V.host
+        assert clone.port == V.port
+        assert clone.serial == V.serial
         assert clone.transport is None
 
-    @with_timeout
-    async it "can send and receive bytes":
+    async it "can send and receive bytes", V:
         reply1 = b"reply1"
         reply2 = b"reply2"
         reply3 = b"reply3"
@@ -104,7 +101,7 @@ describe AsyncTestCase, "UDP":
         second_receive = asyncio.Future()
 
         def receive(message, addr):
-            assert addr == (self.host, self.port)
+            assert addr == (V.host, V.port)
             received.append(message)
 
             if message == reply2:
@@ -112,7 +109,7 @@ describe AsyncTestCase, "UDP":
             elif message == reply3:
                 second_receive.set_result(True)
 
-        self.session.sync_received_data.side_effect = receive
+        V.session.sync_received_data.side_effect = receive
 
         def translate(bts, addr):
             if bts == request1:
@@ -123,32 +120,31 @@ describe AsyncTestCase, "UDP":
             else:
                 assert False, "Unknown message"
 
-        device = FakeDevice(self.port, translate)
+        device = FakeDevice(V.port, translate)
         await device.start()
 
-        transport = await self.transport.spawn(self.original_message, timeout=1)
+        transport = await V.transport.spawn(V.original_message, timeout=1)
 
         try:
-            await self.transport.write(transport, request1, self.original_message)
+            await V.transport.write(transport, request1, V.original_message)
             await first_receive
             assert received == [reply1, reply2]
 
-            await self.transport.write(transport, request2, self.original_message)
+            await V.transport.write(transport, request2, V.original_message)
             await second_receive
             assert received == [reply1, reply2, reply3]
         finally:
             await device.finish()
 
-    @with_timeout
-    async it "can close the transport":
-        device = FakeDevice(self.port, lambda b, a: [])
+    async it "can close the transport", V:
+        device = FakeDevice(V.port, lambda b, a: [])
         await device.start()
 
         try:
-            transport = await self.transport.spawn(self.original_message, timeout=1)
-            assert await self.transport.is_transport_active(self.original_message, transport)
+            transport = await V.transport.spawn(V.original_message, timeout=1)
+            assert await V.transport.is_transport_active(V.original_message, transport)
 
-            await self.transport.close()
-            assert not await self.transport.is_transport_active(self.original_message, transport)
+            await V.transport.close()
+            assert not await V.transport.is_transport_active(V.original_message, transport)
         finally:
             await device.finish()

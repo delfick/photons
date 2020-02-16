@@ -3,10 +3,11 @@
 from photons_transport import catch_errors
 
 from photons_app.errors import RunErrors, PhotonsAppError
-from photons_app.test_helpers import TestCase
 from photons_app import helpers as hp
 
-describe TestCase, "throw_error":
+from delfick_project.errors_pytest import assertRaises
+
+describe "throw_error":
     it "passes on errors if error_catcher is a callable":
         es = []
 
@@ -54,7 +55,7 @@ describe TestCase, "throw_error":
         assert es == []
 
     it "throws the error if just one":
-        with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
+        with assertRaises(ValueError, "NOPE"):
             with catch_errors():
                 raise ValueError("NOPE")
 
@@ -62,12 +63,12 @@ describe TestCase, "throw_error":
         e1 = PhotonsAppError("yeap", a=1)
         e2 = PhotonsAppError("yeap", a=1)
 
-        with self.fuzzyAssertRaisesError(PhotonsAppError, "yeap", a=1):
+        with assertRaises(PhotonsAppError, "yeap", a=1):
             with catch_errors() as ec:
                 hp.add_error(ec, e1)
                 raise e2
 
-        with self.fuzzyAssertRaisesError(PhotonsAppError, "yeap", a=1):
+        with assertRaises(PhotonsAppError, "yeap", a=1):
             with catch_errors() as ec:
                 hp.add_error(ec, e1)
                 hp.add_error(ec, e2)
@@ -76,12 +77,12 @@ describe TestCase, "throw_error":
         e1 = PhotonsAppError("yeap", a=1)
         e2 = PhotonsAppError("yeap", b=1)
 
-        with self.fuzzyAssertRaisesError(RunErrors, _errors=[e1, e2]):
+        with assertRaises(RunErrors, _errors=[e1, e2]):
             with catch_errors() as ec:
                 hp.add_error(ec, e1)
                 raise e2
 
-        with self.fuzzyAssertRaisesError(RunErrors, _errors=[e2, e1]):
+        with assertRaises(RunErrors, _errors=[e2, e1]):
             with catch_errors() as ec:
                 hp.add_error(ec, e2)
                 hp.add_error(ec, e1)

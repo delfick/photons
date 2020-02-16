@@ -3,16 +3,13 @@
 from photons_transport.targets import MemoryTarget, LanTarget
 from photons_transport.fake import FakeDevice
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
-
 from photons_messages import DiscoveryMessages, Services, DeviceMessages, protocol_register
 
 from collections import defaultdict
 import asyncio
 
-describe AsyncTestCase, "Fake device":
+describe "Fake device":
 
-    @with_timeout
     async it "works with sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=True)
 
@@ -44,7 +41,6 @@ describe AsyncTestCase, "Fake device":
 
             assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}
 
-    @with_timeout
     async it "works without sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=False)
 

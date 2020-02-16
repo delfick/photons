@@ -3,13 +3,13 @@
 from photons_transport.targets.script import AFRWrapper, ScriptRunner
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
-from photons_app.test_helpers import AsyncTestCase
+from photons_app import helpers as hp
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp
 from delfick_project.norms import sb
 from unittest import mock
 import asynctest
 import asyncio
+import pytest
 
 
 class Sem:
@@ -20,123 +20,143 @@ class Sem:
         return isinstance(other, asyncio.Semaphore) and other._value == self.limit
 
 
-describe AsyncTestCase, "AFRWrapper":
-    async before_each:
-        self.called = []
+describe "AFRWrapper":
 
-        self.afr = mock.Mock(name="afr")
+    @pytest.fixture()
+    def V(self):
+        class V:
+            called = []
 
-        self.res1 = mock.Mock(name="res1")
-        self.res2 = mock.Mock(name="res2")
+            afr = mock.Mock(name="afr")
 
-        class FakeScript:
-            async def run_with(s, *args, **kwargs):
-                self.called.append(("run_with", args, kwargs))
-                yield self.res1
-                yield self.res2
+            res1 = mock.Mock(name="res1")
+            res2 = mock.Mock(name="res2")
 
-        class FakeTarget:
-            async def args_for_run(s, *args, **kwargs):
-                self.called.append(("args_for_run", args, kwargs))
-                return self.afr
+            @hp.memoized_property
+            def script(s):
+                class FakeScript:
+                    async def run_with(fs, *args, **kwargs):
+                        s.called.append(("run_with", args, kwargs))
+                        yield s.res1
+                        yield s.res2
 
-            async def close_args_for_run(s, *args, **kwargs):
-                self.called.append(("close_args_for_run", args, kwargs))
+                return FakeScript()
 
-        self.script = FakeScript()
-        self.target = FakeTarget()
+            @hp.memoized_property
+            def target(s):
+                class FakeTarget:
+                    async def args_for_run(fs, *args, **kwargs):
+                        s.called.append(("args_for_run", args, kwargs))
+                        return s.afr
 
-    async it "does not impose a limit if limit is given as None":
-        assert self.called == []
+                    async def close_args_for_run(fs, *args, **kwargs):
+                        s.called.append(("close_args_for_run", args, kwargs))
+
+                return FakeTarget()
+
+        return V()
+
+    async it "does not impose a limit if limit is given as None", V:
+        assert V.called == []
 
         a = mock.Mock(name="a")
         kwargs = {"b": a, "limit": None}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
             assert afr is args_for_run
 
         assert kwargs == {"b": a, "limit": None}
-        assert self.called == []
+        assert V.called == []
 
-    async it "turns limit into a semaphore":
+    async it "turns limit into a semaphore", V:
         a = mock.Mock(name="a")
         kwargs = {"b": a, "limit": 50}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
             assert afr is args_for_run
 
         assert kwargs == {"b": a, "limit": Sem(50)}
-        assert self.called == []
+        assert V.called == []
 
-    async it "passes on limit if it has acquire":
+    async it "passes on limit if it has acquire", V:
         a = mock.Mock(name="a")
         limit = mock.NonCallableMock(name="limit", spec=["acquire"])
         kwargs = {"b": a, "limit": limit}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
             assert afr is args_for_run
 
         assert kwargs == {"b": a, "limit": limit}
-        assert self.called == []
+        assert V.called == []
 
-    async it "passes on limit if it is already a Semaphore":
+    async it "passes on limit if it is already a Semaphore", V:
         a = mock.Mock(name="a")
         limit = asyncio.Semaphore(1)
         kwargs = {"b": a, "limit": limit}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
             assert afr is args_for_run
 
         assert kwargs == {"b": a, "limit": limit}
-        assert self.called == []
+        assert V.called == []
 
-    async it "creates and closes the afr if none provided":
+    async it "creates and closes the afr if none provided", V:
         a = mock.Mock(name="a")
         limit = asyncio.Semaphore(1)
         kwargs = {"b": a}
 
-        async with AFRWrapper(self.target, sb.NotSpecified, kwargs) as afr:
-            assert afr is self.afr
-            self.called.append(("middle", kwargs))
+        async with AFRWrapper(V.target, sb.NotSpecified, kwargs) as afr:
+            assert afr is V.afr
+            V.called.append(("middle", kwargs))
 
-        assert self.called == [
-                ("args_for_run", (), {}),
-                ("middle", {"b": a, "limit": Sem(30)}),
-                ("close_args_for_run", (self.afr,), {}),
-            ]
+        assert V.called == [
+            ("args_for_run", (), {}),
+            ("middle", {"b": a, "limit": Sem(30)}),
+            ("close_args_for_run", (V.afr,), {}),
+        ]
 
-describe AsyncTestCase, "ScriptRunner":
-    async before_each:
-        self.called = []
+describe "ScriptRunner":
 
-        self.res1 = mock.Mock(name="res1")
-        self.res2 = mock.Mock(name="res2")
+    @pytest.fixture()
+    def V(self):
+        class V:
+            afr = mock.Mock(name="afr")
+            res1 = mock.Mock(name="res1")
+            res2 = mock.Mock(name="res2")
+            called = []
+            target = mock.Mock(name="target", spec=[])
 
-        class FakeScript:
-            async def run_with(s, *args, **kwargs):
-                self.called.append(("run_with", args, kwargs))
-                yield self.res1
-                yield self.res2
+            @hp.memoized_property
+            def script(s):
+                class FakeScript:
+                    async def run_with(fs, *args, **kwargs):
+                        s.called.append(("run_with", args, kwargs))
+                        yield s.res1
+                        yield s.res2
 
-        self.script = FakeScript()
-        self.target = mock.Mock(name="target", spec=[])
-        self.runner = ScriptRunner(self.script, self.target)
+                return FakeScript()
 
-        self.afr = mock.Mock(name="afr")
+            @hp.memoized_property
+            def runner(s):
+                return ScriptRunner(s.script, s.target)
 
-        class FakeTarget:
-            async def args_for_run(s, *args, **kwargs):
-                self.called.append(("args_for_run", args, kwargs))
-                return self.afr
+            @hp.memoized_property
+            def FakeTarget(s):
+                class FakeTarget:
+                    async def args_for_run(fs, *args, **kwargs):
+                        s.called.append(("args_for_run", args, kwargs))
+                        return s.afr
 
-            async def close_args_for_run(s, *args, **kwargs):
-                self.called.append(("close_args_for_run", args, kwargs))
+                    async def close_args_for_run(fs, *args, **kwargs):
+                        s.called.append(("close_args_for_run", args, kwargs))
 
-        self.FakeTarget = FakeTarget
+                return FakeTarget
+
+        return V()
 
     async it "takes in script and target":
         script = mock.Mock(name="script")
@@ -158,62 +178,62 @@ describe AsyncTestCase, "ScriptRunner":
 
             assert got == []
 
-        async it "calls run_with on the script":
-            assert self.called == []
+        async it "calls run_with on the script", V:
+            assert V.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
             args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
 
             found = []
-            async for info in self.runner.run_with(reference, args_for_run=args_for_run, b=a):
+            async for info in V.runner.run_with(reference, args_for_run=args_for_run, b=a):
                 found.append(info)
 
-            assert found == [self.res1, self.res2]
-            assert self.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            assert found == [V.res1, V.res2]
+            assert V.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
-        async it "can create an args_for_run":
+        async it "can create an args_for_run", V:
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
 
-            self.runner.target = self.FakeTarget()
+            V.runner.target = V.FakeTarget()
 
             found = []
-            async for info in self.runner.run_with(reference, b=a):
+            async for info in V.runner.run_with(reference, b=a):
                 found.append(info)
 
-            assert found == [self.res1, self.res2]
-            assert self.called == [
-                    ("args_for_run", (), {}),
-                    ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
-                    ("close_args_for_run", (self.afr,), {}),
-                ]
+            assert found == [V.res1, V.res2]
+            assert V.called == [
+                ("args_for_run", (), {}),
+                ("run_with", (reference, V.afr), {"b": a, "limit": Sem(30)}),
+                ("close_args_for_run", (V.afr,), {}),
+            ]
 
     describe "run_with_all":
-        async it "calls run_with on the script":
-            assert self.called == []
+        async it "calls run_with on the script", V:
+            assert V.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
             args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
 
-            found = await self.runner.run_with_all(reference, args_for_run=args_for_run, b=a)
+            found = await V.runner.run_with_all(reference, args_for_run=args_for_run, b=a)
 
-            assert found == [self.res1, self.res2]
-            assert self.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            assert found == [V.res1, V.res2]
+            assert V.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
-        async it "raises BadRunWithResults if we have risen exceptions":
+        async it "raises BadRunWithResults if we have risen exceptions", V:
             error1 = PhotonsAppError("failure")
 
             class FakeScript:
                 async def run_with(s, *args, **kwargs):
-                    self.called.append(("run_with", args, kwargs))
-                    yield self.res1
+                    V.called.append(("run_with", args, kwargs))
+                    yield V.res1
                     raise error1
 
-            runner = ScriptRunner(FakeScript(), self.FakeTarget())
+            runner = ScriptRunner(FakeScript(), V.FakeTarget())
 
-            assert self.called == []
+            assert V.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
@@ -222,12 +242,11 @@ describe AsyncTestCase, "ScriptRunner":
                 await runner.run_with_all(reference, b=a)
                 assert False, "Expected error"
             except BadRunWithResults as error:
-                # self.assertEqual(error.kwargs["results"], [self.res1])
-                # self.assertEqual(error.errors, [error1])
-                pass
+                assert error.kwargs["results"] == [V.res1]
+                assert error.errors == [error1]
 
-            assert self.called == [
-                    ("args_for_run", (), {}),
-                    ("run_with", (reference, self.afr), {"b": a, "limit": Sem(30)}),
-                    ("close_args_for_run", (self.afr,), {}),
-                ]
+            assert V.called == [
+                ("args_for_run", (), {}),
+                ("run_with", (reference, V.afr), {"b": a, "limit": Sem(30)}),
+                ("close_args_for_run", (V.afr,), {}),
+            ]

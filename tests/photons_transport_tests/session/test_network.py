@@ -8,44 +8,62 @@ from photons_transport.targets import LanTarget
 from photons_transport.comms.base import Found
 from photons_transport.fake import FakeDevice
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.errors import TimedOut
+from photons_app import helpers as hp
 
 from photons_messages import Services, DeviceMessages, DiscoveryMessages, protocol_register
 from photons_control import test_helpers as chp
 from photons_products import Products
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
+from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
 from unittest import mock
 import asynctest
 import binascii
 import asyncio
+import pytest
 
-describe AsyncTestCase, "NetworkSession":
-    async before_each:
-        self.final_future = asyncio.Future()
-        self.default_broadcast = "1.2.3.255"
+describe "NetworkSession":
 
-        self.transport_target = mock.Mock(
-            name="target", spec=["script", "final_future", "default_broadcast", "discovery_options"]
-        )
-        self.transport_target.final_future = self.final_future
-        self.transport_target.default_broadcast = self.default_broadcast
-        self.transport_target.discovery_options = NoDiscoveryOptions.FieldSpec().empty_normalise()
+    @pytest.fixture()
+    def V(self):
+        class V:
+            final_future = asyncio.Future()
+            default_broadcast = "1.2.3.255"
 
-        self.session = NetworkSession(self.transport_target)
+            @hp.memoized_property
+            def transport_target(s):
+                transport_target = mock.Mock(
+                    name="target",
+                    spec=["script", "final_future", "default_broadcast", "discovery_options"],
+                )
+                transport_target.final_future = s.final_future
+                transport_target.default_broadcast = s.default_broadcast
+                transport_target.discovery_options = (
+                    NoDiscoveryOptions.FieldSpec().empty_normalise()
+                )
+                return transport_target
 
-    async after_each:
-        await self.session.finish()
-        self.final_future.cancel()
+            @hp.memoized_property
+            def session(s):
+                return NetworkSession(s.transport_target)
 
-    async it "has properties":
-        assert self.session.UDPTransport is UDP
-        assert self.session.broadcast_transports == {}
+        return V()
+
+    @pytest.fixture(autouse=True)
+    async def cleanup(self, V):
+        try:
+            yield
+        finally:
+            await V.session.finish()
+            V.final_future.cancel()
+
+    async it "has properties", V:
+        assert V.session.UDPTransport is UDP
+        assert V.session.broadcast_transports == {}
 
     describe "finish":
-        async it "closes all the broadcast_transports":
+        async it "closes all the broadcast_transports", V:
             b1 = mock.Mock(name="b1")
             b1.close = asynctest.mock.CoroutineMock(name="close")
 
@@ -55,42 +73,42 @@ describe AsyncTestCase, "NetworkSession":
             b3 = mock.Mock(name="b3")
             b3.close = asynctest.mock.CoroutineMock(name="close")
 
-            self.session.broadcast_transports["one"] = b1
-            self.session.broadcast_transports["two"] = b2
-            self.session.broadcast_transports["three"] = b3
+            V.session.broadcast_transports["one"] = b1
+            V.session.broadcast_transports["two"] = b2
+            V.session.broadcast_transports["three"] = b3
 
-            await self.session.finish()
+            await V.session.finish()
             b1.close.assert_called_once_with()
             b2.close.assert_called_once_with()
             b3.close.assert_called_once_with()
 
     describe "retry_options_for":
-        async it "returns a UDPRetryOptions if it's a UDP transport":
+        async it "returns a UDPRetryOptions if it's a UDP transport", V:
             kwargs = {"host": "192.168.0.3", "port": 56700}
-            transport = await self.session.make_transport("d073d5", Services.UDP, kwargs)
+            transport = await V.session.make_transport("d073d5", Services.UDP, kwargs)
             assert isinstance(transport, UDP)
 
             packet = mock.NonCallableMock(name="packet", spec=[])
 
-            uro1 = self.session.retry_options_for(packet, transport)
+            uro1 = V.session.retry_options_for(packet, transport)
             assert isinstance(uro1, UDPRetryOptions)
 
-            uro2 = self.session.retry_options_for(packet, transport)
+            uro2 = V.session.retry_options_for(packet, transport)
             assert isinstance(uro2, UDPRetryOptions)
 
             assert uro1 is not uro2
 
     describe "determine_needed_transport":
-        async it "says udp":
+        async it "says udp", V:
             services = mock.NonCallableMock(name="services", spec=[])
             packets = [DeviceMessages.GetPower(), DeviceMessages.StateLabel()]
 
             for packet in packets:
-                got = await self.session.determine_needed_transport(packet, services)
+                got = await V.session.determine_needed_transport(packet, services)
                 assert got == [Services.UDP]
 
     describe "choose_transport":
-        async it "complains if we can't determined need transport":
+        async it "complains if we can't determined need transport", V:
             determine_needed_transport = asynctest.mock.CoroutineMock(
                 name="determine_needed_transport"
             )
@@ -101,15 +119,15 @@ describe AsyncTestCase, "NetworkSession":
 
             msg = "Unable to determine what service to send packet to"
             kwargs = {"protocol": 9001, "pkt_type": 89}
-            with self.fuzzyAssertRaisesError(NoDesiredService, msg, **kwargs):
+            with assertRaises(NoDesiredService, msg, **kwargs):
                 with mock.patch.object(
-                    self.session, "determine_needed_transport", determine_needed_transport
+                    V.session, "determine_needed_transport", determine_needed_transport
                 ):
-                    await self.session.choose_transport(packet, services)
+                    await V.session.choose_transport(packet, services)
 
             determine_needed_transport.assert_awaited_once_with(packet, services)
 
-        async it "returns the desired service or complains if can't be found":
+        async it "returns the desired service or complains if can't be found", V:
             need = [Services.UDP]
             determine_needed_transport = asynctest.mock.CoroutineMock(
                 name="determine_needed_transport"
@@ -122,65 +140,71 @@ describe AsyncTestCase, "NetworkSession":
             services = {Services.UDP: udpservice}
 
             with mock.patch.object(
-                self.session, "determine_needed_transport", determine_needed_transport
+                V.session, "determine_needed_transport", determine_needed_transport
             ):
-                assert await self.session.choose_transport(packet, services) is udpservice
+                assert await V.session.choose_transport(packet, services) is udpservice
 
                 msg = "Don't have a desired service"
                 kwargs = {"need": need, "have": []}
                 del services[Services.UDP]
-                with self.fuzzyAssertRaisesError(NoDesiredService, msg, **kwargs):
-                    await self.session.choose_transport(packet, services)
+                with assertRaises(NoDesiredService, msg, **kwargs):
+                    await V.session.choose_transport(packet, services)
 
     describe "private do_search":
 
-        @contextmanager
-        def mocks(self, timeout, run_with):
-            async def iterator(timeout):
-                yield 10, 1
-                yield 9, 2
-                yield 7, 3
-                yield 4, 4
+        @pytest.fixture()
+        def mocks(self, V):
+            @contextmanager
+            def mocks(timeout, run_with):
+                async def iterator(timeout):
+                    yield 10, 1
+                    yield 9, 2
+                    yield 7, 3
+                    yield 4, 4
 
-            _search_retry_iterator = asynctest.MagicMock(
-                name="_search_retry_iterator", side_effect=iterator
-            )
+                _search_retry_iterator = asynctest.MagicMock(
+                    name="_search_retry_iterator", side_effect=iterator
+                )
 
-            script = mock.Mock(name="script", spec=["run_with"])
-            script.run_with = asynctest.MagicMock(name="run_with", side_effect=run_with)
+                script = mock.Mock(name="script", spec=["run_with"])
+                script.run_with = asynctest.MagicMock(name="run_with", side_effect=run_with)
 
-            self.transport_target.script.return_value = script
+                V.transport_target.script.return_value = script
 
-            with mock.patch.object(self.session, "_search_retry_iterator", _search_retry_iterator):
-                yield script
+                with mock.patch.object(V.session, "_search_retry_iterator", _search_retry_iterator):
+                    yield script
 
-            _search_retry_iterator.assert_called_once_with(timeout)
+                _search_retry_iterator.assert_called_once_with(timeout)
 
-        async it "can use hard coded discovery":
-            self.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+            return mocks
+
+        async it "can use hard coded discovery", V:
+            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
                 hardcoded_discovery={"d073d5000001": "192.168.0.1", "d073d5000002": "192.168.0.2"}
             )
 
-            assert self.session.found == Found()
-            fn = await self.session._do_search(None, 20)
+            assert V.session.found == Found()
+            fn = await V.session._do_search(None, 20)
 
-            assert sorted(fn) == sorted([binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")])
+            assert sorted(fn) == sorted(
+                [binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")]
+            )
 
-            assert self.session.found.serials == ["d073d5000001", "d073d5000002"]
-            assert self.session.found["d073d5000001"] == {
-                    Services.UDP: await self.session.make_transport(
-                        "d073d5000001", Services.UDP, {"host": "192.168.0.1", "port": 56700}
-                    )
-                }
-            assert self.session.found["d073d5000002"] == {
-                    Services.UDP: await self.session.make_transport(
-                        "d073d5000002", Services.UDP, {"host": "192.168.0.2", "port": 56700}
-                    )
-                }
+            assert V.session.found.serials == ["d073d5000001", "d073d5000002"]
+            assert V.session.found["d073d5000001"] == {
+                Services.UDP: await V.session.make_transport(
+                    "d073d5000001", Services.UDP, {"host": "192.168.0.1", "port": 56700}
+                )
+            }
+            assert V.session.found["d073d5000002"] == {
+                Services.UDP: await V.session.make_transport(
+                    "d073d5000002", Services.UDP, {"host": "192.168.0.2", "port": 56700}
+                )
+            }
 
-            assert len(self.transport_target.script.mock_calls) == 0
+            assert len(V.transport_target.script.mock_calls) == 0
 
-        async it "finds":
+        async it "finds", V, mocks:
 
             async def run_with(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -193,11 +217,11 @@ describe AsyncTestCase, "NetworkSession":
                 )
                 yield (s3, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
+            assert V.session.found == Found()
 
             a = mock.Mock(name="a")
-            with self.mocks(20, run_with) as script:
-                fn = await self.session._do_search(["d073d5000001", "d073d5000002"], 20, a=a)
+            with mocks(20, run_with) as script:
+                fn = await V.session._do_search(["d073d5000001", "d073d5000002"], 20, a=a)
 
             kwargs = {
                 "a": a,
@@ -207,9 +231,9 @@ describe AsyncTestCase, "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, self.session, **kwargs)
+            script.run_with.assert_called_once_with(None, V.session, **kwargs)
 
-            self.transport_target.script.assert_called_once_with(
+            V.transport_target.script.assert_called_once_with(
                 DiscoveryMessages.GetService(
                     target=None,
                     tagged=True,
@@ -219,21 +243,23 @@ describe AsyncTestCase, "NetworkSession":
                 )
             )
 
-            assert sorted(fn) == sorted([binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")])
+            assert sorted(fn) == sorted(
+                [binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")]
+            )
 
-            assert self.session.found.serials == ["d073d5000001", "d073d5000002"]
-            assert self.session.found["d073d5000001"] == {
-                    Services.UDP: await self.session.make_transport(
-                        "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
-                    )
-                }
-            assert self.session.found["d073d5000002"] == {
-                    Services.UDP: await self.session.make_transport(
-                        "d073d5000002", Services.UDP, {"host": "192.168.0.4", "port": 58}
-                    )
-                }
+            assert V.session.found.serials == ["d073d5000001", "d073d5000002"]
+            assert V.session.found["d073d5000001"] == {
+                Services.UDP: await V.session.make_transport(
+                    "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
+                )
+            }
+            assert V.session.found["d073d5000002"] == {
+                Services.UDP: await V.session.make_transport(
+                    "d073d5000002", Services.UDP, {"host": "192.168.0.4", "port": 58}
+                )
+            }
 
-        async it "can filter serials":
+        async it "can filter serials", V, mocks:
 
             async def run_with(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -246,14 +272,14 @@ describe AsyncTestCase, "NetworkSession":
                 )
                 yield (s3, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
-            self.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+            assert V.session.found == Found()
+            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
                 serial_filter=["d073d5000001"]
             )
 
             a = mock.Mock(name="a")
-            with self.mocks(20, run_with) as script:
-                fn = await self.session._do_search(None, 20, a=a)
+            with mocks(20, run_with) as script:
+                fn = await V.session._do_search(None, 20, a=a)
 
             kwargs = {
                 "a": a,
@@ -263,9 +289,9 @@ describe AsyncTestCase, "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, self.session, **kwargs)
+            script.run_with.assert_called_once_with(None, V.session, **kwargs)
 
-            self.transport_target.script.assert_called_once_with(
+            V.transport_target.script.assert_called_once_with(
                 DiscoveryMessages.GetService(
                     target=None,
                     tagged=True,
@@ -277,14 +303,14 @@ describe AsyncTestCase, "NetworkSession":
 
             assert sorted(fn) == sorted([binascii.unhexlify(s) for s in ("d073d5000001",)])
 
-            assert self.session.found.serials == ["d073d5000001"]
-            assert self.session.found["d073d5000001"] == {
-                    Services.UDP: await self.session.make_transport(
-                        "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
-                    )
-                }
+            assert V.session.found.serials == ["d073d5000001"]
+            assert V.session.found["d073d5000001"] == {
+                Services.UDP: await V.session.make_transport(
+                    "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
+                )
+            }
 
-        async it "stops after first search if serials is None and we found serials":
+        async it "stops after first search if serials is None and we found serials", V, mocks:
 
             async def run_with(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -292,10 +318,10 @@ describe AsyncTestCase, "NetworkSession":
                 )
                 yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
+            assert V.session.found == Found()
 
-            with self.mocks(30, run_with) as script:
-                fn = await self.session._do_search(None, 30, broadcast="172.16.0.255")
+            with mocks(30, run_with) as script:
+                fn = await V.session._do_search(None, 30, broadcast="172.16.0.255")
 
             kwargs = {
                 "no_retry": True,
@@ -304,12 +330,12 @@ describe AsyncTestCase, "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, self.session, **kwargs)
+            script.run_with.assert_called_once_with(None, V.session, **kwargs)
 
             assert fn == [binascii.unhexlify("d073d5000001")]
-            assert self.session.found.serials == ["d073d5000001"]
+            assert V.session.found.serials == ["d073d5000001"]
 
-        async it "keeps trying till we find devices if serials is None":
+        async it "keeps trying till we find devices if serials is None", V, mocks:
             called = []
 
             async def run_with(*args, **kwargs):
@@ -322,14 +348,14 @@ describe AsyncTestCase, "NetworkSession":
                 )
                 yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
+            assert V.session.found == Found()
 
-            with self.mocks(40, run_with) as script:
-                fn = await self.session._do_search(None, 40, broadcast=False)
+            with mocks(40, run_with) as script:
+                fn = await V.session._do_search(None, 40, broadcast=False)
 
             call1 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -339,7 +365,7 @@ describe AsyncTestCase, "NetworkSession":
 
             call2 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -349,7 +375,7 @@ describe AsyncTestCase, "NetworkSession":
 
             call3 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -360,9 +386,9 @@ describe AsyncTestCase, "NetworkSession":
             assert script.run_with.mock_calls == [call1, call2, call3]
 
             assert fn == [binascii.unhexlify("d073d5000001")]
-            assert self.session.found.serials == ["d073d5000001"]
+            assert V.session.found.serials == ["d073d5000001"]
 
-        async it "keeps trying till we have all serials if serials is not None":
+        async it "keeps trying till we have all serials if serials is not None", V, mocks:
             called = []
 
             async def run_with(*args, **kwargs):
@@ -386,17 +412,17 @@ describe AsyncTestCase, "NetworkSession":
                     )
                     yield (s3, ("192.168.0.5", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
+            assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
 
-            with self.mocks(10, run_with) as script:
-                fn = await self.session._do_search(serials, 10, broadcast=True)
+            with mocks(10, run_with) as script:
+                fn = await V.session._do_search(serials, 10, broadcast=True)
 
             assert called == ["run_with", "run_with", "run_with"]
 
             call1 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -406,7 +432,7 @@ describe AsyncTestCase, "NetworkSession":
 
             call2 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -416,7 +442,7 @@ describe AsyncTestCase, "NetworkSession":
 
             call3 = mock.call(
                 None,
-                self.session,
+                V.session,
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
@@ -427,9 +453,9 @@ describe AsyncTestCase, "NetworkSession":
             assert script.run_with.mock_calls == [call1, call2, call3]
 
             assert sorted(fn) == sorted([binascii.unhexlify(s) for s in serials])
-            assert self.session.found.serials == serials
+            assert V.session.found.serials == serials
 
-        async it "keeps trying till it's out of retries":
+        async it "keeps trying till it's out of retries", V, mocks:
             called = []
 
             async def run_with(*args, **kwargs):
@@ -441,21 +467,20 @@ describe AsyncTestCase, "NetworkSession":
                     )
                     yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
 
-            assert self.session.found == Found()
+            assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
 
-            with self.mocks(10, run_with) as script:
-                fn = await self.session._do_search(serials, 10, broadcast=True)
+            with mocks(10, run_with) as script:
+                fn = await V.session._do_search(serials, 10, broadcast=True)
 
             assert called == ["run_with"] * 4
 
             assert fn == [binascii.unhexlify("d073d5000001")]
-            assert self.session.found.serials == ["d073d5000001"]
+            assert V.session.found.serials == ["d073d5000001"]
 
     describe "private _search_retry_iterator":
 
-        @with_timeout
-        async it "returns an iterator":
+        async it "returns an iterator", V:
 
             class Now:
                 def __init__(s):
@@ -481,47 +506,47 @@ describe AsyncTestCase, "NetworkSession":
             additions = [0.5, 0.7, 1, 2, 4, 2, 20]
 
             res = []
-            with mock.patch.object(self.loop, "call_later", call_later):
-                async for r in self.session._search_retry_iterator(20, get_now=now):
+            with mock.patch.object(asyncio.get_event_loop(), "call_later", call_later):
+                async for r in V.session._search_retry_iterator(20, get_now=now):
                     res.append(r)
                     now.skip(additions.pop(0))
 
             assert additions == []
             assert sleeps == [
-                    0.09999999999999998,
-                    0.5,
-                    0.7999999999999998,
-                    0.40000000000000036,
-                    -0.5999999999999996,
-                    1.8000000000000007,
-                ]
+                0.09999999999999998,
+                0.5,
+                0.7999999999999998,
+                0.40000000000000036,
+                -0.5999999999999996,
+                1.8000000000000007,
+            ]
             assert res == [
-                    (20, 0.6),
-                    (19.4, 1.1999999999999997),
-                    (18.2, 1.7999999999999998),
-                    (16.4, 2.4000000000000004),
-                    (14.0, 3.4000000000000004),
-                    (10.0, 3.8000000000000007),
-                    (6.199999999999999, 4.400000000000002),
-                ]
+                (20, 0.6),
+                (19.4, 1.1999999999999997),
+                (18.2, 1.7999999999999998),
+                (16.4, 2.4000000000000004),
+                (14.0, 3.4000000000000004),
+                (10.0, 3.8000000000000007),
+                (6.199999999999999, 4.400000000000002),
+            ]
 
     describe "make_transport":
-        async it "complains if the service isn't a valid Service":
+        async it "complains if the service isn't a valid Service", V:
             serial = "d073d5000001"
             kwargs = {}
             service = mock.Mock(name="service", spec=[])
 
-            with self.fuzzyAssertRaisesError(UnknownService, service=service):
-                await self.session.make_transport(serial, service, kwargs)
+            with assertRaises(UnknownService, service=service):
+                await V.session.make_transport(serial, service, kwargs)
 
-        async it "returns None for reserved services":
+        async it "returns None for reserved services", V:
             serial = "d073d5000001"
             kwargs = {}
             service = Services.RESERVED4
 
-            assert await self.session.make_transport(serial, service, kwargs) is None
+            assert await V.session.make_transport(serial, service, kwargs) is None
 
-        async it "creates a UDP transport for everything":
+        async it "creates a UDP transport for everything", V:
             transport = mock.Mock(name="transport")
             FakeUDPTransport = mock.Mock(name="UDPTransport", return_value=transport)
 
@@ -531,31 +556,31 @@ describe AsyncTestCase, "NetworkSession":
             service = Services.UDP
             kwargs = {"host": host, "port": port}
 
-            with mock.patch.object(self.session, "UDPTransport", FakeUDPTransport):
-                assert await self.session.make_transport(serial, service, kwargs) is transport
-            FakeUDPTransport.assert_called_once_with(self.session, host, port, serial=serial)
+            with mock.patch.object(V.session, "UDPTransport", FakeUDPTransport):
+                assert await V.session.make_transport(serial, service, kwargs) is transport
+            FakeUDPTransport.assert_called_once_with(V.session, host, port, serial=serial)
 
     describe "make_broadcast_transport":
-        async it "uses default_broadcast if broadcast is True":
-            transport = await self.session.make_broadcast_transport(True)
-            want = UDP(self.session, host=self.default_broadcast, port=56700)
-            assert self.session.broadcast_transports == {(self.default_broadcast, 56700): want}
+        async it "uses default_broadcast if broadcast is True", V:
+            transport = await V.session.make_broadcast_transport(True)
+            want = UDP(V.session, host=V.default_broadcast, port=56700)
+            assert V.session.broadcast_transports == {(V.default_broadcast, 56700): want}
             assert transport == want
 
-        async it "uses provided broadcast if it's a string":
-            transport = await self.session.make_broadcast_transport("192.168.0.255")
-            want = UDP(self.session, host="192.168.0.255", port=56700)
-            assert self.session.broadcast_transports == {("192.168.0.255", 56700): want}
+        async it "uses provided broadcast if it's a string", V:
+            transport = await V.session.make_broadcast_transport("192.168.0.255")
+            want = UDP(V.session, host="192.168.0.255", port=56700)
+            assert V.session.broadcast_transports == {("192.168.0.255", 56700): want}
             assert transport == want
 
-        async it "uses provided broacast if it's a tuple of host and port":
-            transport = await self.session.make_broadcast_transport(("192.168.0.255", 57))
-            want = UDP(self.session, host="192.168.0.255", port=57)
-            assert self.session.broadcast_transports == {("192.168.0.255", 57): want}
+        async it "uses provided broacast if it's a tuple of host and port", V:
+            transport = await V.session.make_broadcast_transport(("192.168.0.255", 57))
+            want = UDP(V.session, host="192.168.0.255", port=57)
+            assert V.session.broadcast_transports == {("192.168.0.255", 57): want}
             assert transport == want
 
-        async it "complains if broadcast isn't a good type":
+        async it "complains if broadcast isn't a good type", V:
             for bad in (None, 0, False, 1, {}, [], (), (1,), (1, 1, 1), [1], {1: 1}, lambda: 1):
                 msg = r"Expect a string or \(host, port\) tuple"
-                with self.fuzzyAssertRaisesError(InvalidBroadcast, msg, got=bad):
-                    await self.session.make_broadcast_transport(bad)
+                with assertRaises(InvalidBroadcast, msg, got=bad):
+                    await V.session.make_broadcast_transport(bad)

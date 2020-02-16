@@ -2,16 +2,15 @@
 
 from photons_transport.comms.base import timeout_task, NoLimit
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asyncio
 
-describe AsyncTestCase, "timeout_task":
+describe "timeout_task":
 
-    @with_timeout
     async it "does nothing if the task has a result":
 
         async def doit():
@@ -25,7 +24,6 @@ describe AsyncTestCase, "timeout_task":
 
         assert not errf.done()
 
-    @with_timeout
     async it "does nothing if the task has an exception":
 
         async def doit():
@@ -33,7 +31,7 @@ describe AsyncTestCase, "timeout_task":
 
         task = hp.async_as_background(doit())
 
-        with self.fuzzyAssertRaisesError(Exception, "NOPE"):
+        with assertRaises(Exception, "NOPE"):
             await task
 
         errf = asyncio.Future()
@@ -41,7 +39,6 @@ describe AsyncTestCase, "timeout_task":
 
         assert not errf.done()
 
-    @with_timeout
     async it "does nothing if the task was cancelled":
 
         async def doit():
@@ -61,7 +58,6 @@ describe AsyncTestCase, "timeout_task":
 
         assert not errf.done()
 
-    @with_timeout
     async it "cancels the task if it's not done":
         called = []
 
@@ -85,10 +81,9 @@ describe AsyncTestCase, "timeout_task":
         assert errf.done()
 
         msg = "Waiting for reply to a packet"
-        with self.fuzzyAssertRaisesError(TimedOut, msg, serial=serial):
+        with assertRaises(TimedOut, msg, serial=serial):
             await errf
 
-    @with_timeout
     async it "does not set exception on errf if it's already done":
         called = []
 
@@ -115,7 +110,6 @@ describe AsyncTestCase, "timeout_task":
 
         assert await errf == 1
 
-    @with_timeout
     async it "does not set exception on errf already has an exception":
         called = []
 
@@ -140,10 +134,9 @@ describe AsyncTestCase, "timeout_task":
         assert task.cancelled()
         assert errf.done()
 
-        with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
+        with assertRaises(ValueError, "NOPE"):
             await errf
 
-    @with_timeout
     async it "does not set exception on errf already cancelled":
         called = []
 
@@ -168,9 +161,8 @@ describe AsyncTestCase, "timeout_task":
         assert task.cancelled()
         assert errf.cancelled()
 
-describe AsyncTestCase, "NoLimit":
+describe "NoLimit":
 
-    @with_timeout
     async it "behaves like a normal semaphore context manager":
         called = []
 
@@ -184,7 +176,6 @@ describe AsyncTestCase, "NoLimit":
 
         assert called == ["no limit"]
 
-    @with_timeout
     async it "behaves like a normal semaphore not context manager":
         called = []
 

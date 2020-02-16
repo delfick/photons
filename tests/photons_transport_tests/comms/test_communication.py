@@ -6,7 +6,6 @@ from photons_transport.transports.base import Transport
 from photons_transport.comms.receiver import Receiver
 from photons_transport import RetryOptions
 
-from photons_app.test_helpers import AsyncTestCase, with_timeout
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import FoundNoDevices, TimedOut
 from photons_app import helpers as hp
@@ -14,39 +13,54 @@ from photons_app import helpers as hp
 from photons_messages import DeviceMessages, protocol_register, LIFXPacket
 from photons_protocol.messages import Messages
 
-from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
+from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
 import asynctest
 import binascii
 import asyncio
+import pytest
 
-describe AsyncTestCase, "Communication":
-    async before_each:
-        self.final_future = asyncio.Future()
-        self.protocol_register = protocol_register
 
-        self.transport_target = mock.Mock(
-            name="transport_target",
-            final_future=self.final_future,
-            protocol_register=self.protocol_register,
-            spec=["final_future", "protocol_register"],
-        )
+@pytest.fixture()
+def V():
+    class V:
+        final_future = asyncio.Future()
 
-        self.communication = Communication(self.transport_target)
+        @hp.memoized_property
+        def transport_target(s):
+            return mock.Mock(
+                name="transport_target",
+                final_future=s.final_future,
+                protocol_register=protocol_register,
+                spec=["final_future", "protocol_register"],
+            )
 
-    async after_each:
-        self.final_future.cancel()
-        await self.communication.finish()
+        @hp.memoized_property
+        def communication(s):
+            return Communication(s.transport_target)
 
-    async it "is formattable":
+    return V()
+
+
+@pytest.fixture(autouse=True)
+async def cleanup(V):
+    try:
+        yield
+    finally:
+        V.final_future.cancel()
+        await V.communication.finish()
+
+
+describe "Communication":
+    async it "is formattable", V:
 
         class Other:
             pass
 
         other = Other()
-        options = {"comms": self.communication, "other": other}
+        options = {"comms": V.communication, "other": other}
 
         class Thing(dictobj.Spec):
             other = dictobj.Field(sb.overridden("{other}"), formatted=True)
@@ -56,41 +70,41 @@ describe AsyncTestCase, "Communication":
             Meta(options, []).at("thing"), {}
         )
 
-        assert thing.comms is self.communication
+        assert thing.comms is V.communication
         assert thing.other == str(other)
 
-    async it "takes in a transport_target":
-        assert self.communication.transport_target is self.transport_target
-        assert self.communication.found == Found()
-        assert isinstance(self.communication.receiver, Receiver)
+    async it "takes in a transport_target", V:
+        assert V.communication.transport_target is V.transport_target
+        assert V.communication.found == Found()
+        assert isinstance(V.communication.receiver, Receiver)
 
-    async it "has a stop fut":
-        assert not self.communication.stop_fut.done()
-        self.communication.stop_fut.cancel()
-        assert not self.final_future.cancelled()
+    async it "has a stop fut", V:
+        assert not V.communication.stop_fut.done()
+        V.communication.stop_fut.cancel()
+        assert not V.final_future.cancelled()
 
-        comm2 = Communication(self.transport_target)
+        comm2 = Communication(V.transport_target)
         assert not comm2.stop_fut.done()
-        self.final_future.set_result(1)
+        V.final_future.set_result(1)
         assert comm2.stop_fut.cancelled()
 
-    async it "calls setup":
+    async it "calls setup", V:
         called = []
 
         class C(Communication):
-            def setup(self):
+            def setup(s):
                 for n in ("transport_target", "stop_fut", "receiver", "found"):
-                    assert hasattr(self, n)
+                    assert hasattr(s, n)
                 called.append("setup")
-                self.wat = 2
+                s.wat = 2
 
-        c = C(self.transport_target)
+        c = C(V.transport_target)
         assert c.wat == 2
 
         assert called == ["setup"]
 
     describe "finish":
-        async it "can finish":
+        async it "can finish", V:
             t1 = mock.Mock(name="t1")
             t1.close = asynctest.mock.CoroutineMock(name="close")
 
@@ -100,15 +114,15 @@ describe AsyncTestCase, "Communication":
             t3 = mock.Mock(name="t3")
             t3.close = asynctest.mock.CoroutineMock(name="close")
 
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000001"] = {"UDP": t1, "OTH": t2}
             found["d073d5000002"] = {"MEM": t3}
             assert found
 
-            assert not self.communication.stop_fut.done()
-            await self.communication.finish()
-            assert self.communication.stop_fut.done()
-            assert not self.final_future.done()
+            assert not V.communication.stop_fut.done()
+            await V.communication.finish()
+            assert V.communication.stop_fut.done()
+            assert not V.final_future.done()
 
             assert not found
 
@@ -116,80 +130,80 @@ describe AsyncTestCase, "Communication":
             t2.close.assert_called_once_with()
             t3.close.assert_called_once_with()
 
-        async it "can finish even if forget raise errors":
+        async it "can finish even if forget raise errors", V:
             called = []
 
             async def forget(serial):
                 called.append(serial)
                 raise Exception("NOPE")
 
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000001"] = {"UDP": mock.Mock(name="UDP"), "OTH": mock.Mock(name="OTH")}
             found["d073d5000002"] = {"MEM": mock.Mock(name="MEM")}
 
-            assert not self.communication.stop_fut.done()
+            assert not V.communication.stop_fut.done()
 
-            with mock.patch.object(self.communication, "forget", forget):
-                await self.communication.finish()
+            with mock.patch.object(V.communication, "forget", forget):
+                await V.communication.finish()
 
-            assert self.communication.stop_fut.done()
-            assert not self.final_future.done()
+            assert V.communication.stop_fut.done()
+            assert not V.final_future.done()
 
             assert called == ["d073d5000001", "d073d5000002"]
 
     describe "source":
-        async it "generates a source":
-            source = self.communication.source
+        async it "generates a source", V:
+            source = V.communication.source
             assert source > 0 and source < 1 << 32, source
 
-            s2 = self.communication.source
+            s2 = V.communication.source
             assert s2 == source
 
-            del self.communication.source
-            s3 = self.communication.source
+            del V.communication.source
+            s3 = V.communication.source
             assert s3 != source
 
             for _ in range(1000):
-                del self.communication.source
-                s = self.communication.source
+                del V.communication.source
+                s = V.communication.source
                 assert s > 0 and s < 1 << 32, s
 
     describe "seq":
-        async it "records where we're at with the target":
+        async it "records where we're at with the target", V:
             target = mock.Mock(name="target")
-            assert not hasattr(self.communication, "_seq")
-            assert self.communication.seq(target) == 1
-            assert self.communication._seq == {target: 1}
+            assert not hasattr(V.communication, "_seq")
+            assert V.communication.seq(target) == 1
+            assert V.communication._seq == {target: 1}
 
-            assert self.communication.seq(target) == 2
-            assert self.communication._seq == {target: 2}
+            assert V.communication.seq(target) == 2
+            assert V.communication._seq == {target: 2}
 
             target2 = mock.Mock(name="target2")
-            assert self.communication.seq(target2) == 1
-            assert self.communication._seq == {target: 2, target2: 1}
+            assert V.communication.seq(target2) == 1
+            assert V.communication._seq == {target: 2, target2: 1}
 
-            assert self.communication.seq(target) == 3
-            assert self.communication._seq == {target: 3, target2: 1}
+            assert V.communication.seq(target) == 3
+            assert V.communication._seq == {target: 3, target2: 1}
 
-        async it "wraps around at 255":
+        async it "wraps around at 255", V:
             target = mock.Mock(name="target2")
-            assert self.communication.seq(target) == 1
-            assert self.communication._seq == {target: 1}
+            assert V.communication.seq(target) == 1
+            assert V.communication._seq == {target: 1}
 
-            self.communication._seq[target] = 254
-            assert self.communication.seq(target) == 255
-            assert self.communication._seq == {target: 255}
+            V.communication._seq[target] = 254
+            assert V.communication.seq(target) == 255
+            assert V.communication._seq == {target: 255}
 
-            assert self.communication.seq(target) == 0
-            assert self.communication._seq == {target: 0}
+            assert V.communication.seq(target) == 0
+            assert V.communication._seq == {target: 0}
 
     describe "forget":
-        async it "does nothing if serial not in found":
+        async it "does nothing if serial not in found", V:
             serial = "d073d5000001"
-            assert serial not in self.communication.found
-            await self.communication.forget(serial)
+            assert serial not in V.communication.found
+            await V.communication.forget(serial)
 
-        async it "closes services and removes from found":
+        async it "closes services and removes from found", V:
             t1 = mock.Mock(name="t1")
             t1.close = asynctest.mock.CoroutineMock(name="close", side_effect=Exception("NOPE"))
 
@@ -198,10 +212,10 @@ describe AsyncTestCase, "Communication":
 
             serial = "d073d5000001"
 
-            found = self.communication.found
+            found = V.communication.found
             found[serial] = {"UDP": t1, "OTH": t2}
 
-            await self.communication.forget(serial)
+            await V.communication.forget(serial)
 
             t1.close.assert_called_once_with()
             t2.close.assert_called_once_with()
@@ -209,8 +223,8 @@ describe AsyncTestCase, "Communication":
             assert serial not in found
 
     describe "add_service":
-        async it "can make a new transport when serial not already in found":
-            assert not self.communication.found
+        async it "can make a new transport when serial not already in found", V:
+            assert not V.communication.found
 
             serial = "d073d5000001"
             service = mock.Mock(name="service")
@@ -219,16 +233,16 @@ describe AsyncTestCase, "Communication":
             t = mock.Mock(name="transport")
             make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
 
-            with mock.patch.object(self.communication, "make_transport", make_transport):
-                await self.communication.add_service(serial, service, a=a)
+            with mock.patch.object(V.communication, "make_transport", make_transport):
+                await V.communication.add_service(serial, service, a=a)
 
-            assert self.communication.found[serial] == {service: t}
+            assert V.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
-        async it "can make a new transport when serial already in found":
+        async it "can make a new transport when serial already in found", V:
             serial = "d073d5000001"
             othertransport = mock.Mock(name="othertransport")
-            self.communication.found[serial] = {"OTH": othertransport}
+            V.communication.found[serial] = {"OTH": othertransport}
 
             service = mock.Mock(name="service")
             a = mock.Mock(name="a")
@@ -236,33 +250,33 @@ describe AsyncTestCase, "Communication":
             t = mock.Mock(name="transport")
             make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
 
-            with mock.patch.object(self.communication, "make_transport", make_transport):
-                await self.communication.add_service(serial, service, a=a)
+            with mock.patch.object(V.communication, "make_transport", make_transport):
+                await V.communication.add_service(serial, service, a=a)
 
-            assert self.communication.found[serial] == {"OTH": othertransport, service: t}
+            assert V.communication.found[serial] == {"OTH": othertransport, service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
-        async it "can replace a transport":
+        async it "can replace a transport", V:
             serial = "d073d5000001"
             service = mock.Mock(name="service")
             othertransport = mock.Mock(name="othertransport")
             othertransport.close = asynctest.mock.CoroutineMock(name="close")
 
-            self.communication.found[serial] = {service: othertransport}
+            V.communication.found[serial] = {service: othertransport}
 
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
             make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
 
-            with mock.patch.object(self.communication, "make_transport", make_transport):
-                await self.communication.add_service(serial, service, a=a)
+            with mock.patch.object(V.communication, "make_transport", make_transport):
+                await V.communication.add_service(serial, service, a=a)
 
-            assert self.communication.found[serial] == {service: t}
+            assert V.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
             othertransport.close.assert_called_once_with()
 
-        async it "can replace a transport when closing it fails":
+        async it "can replace a transport when closing it fails", V:
             serial = "d073d5000001"
             service = mock.Mock(name="service")
             othertransport = mock.Mock(name="othertransport")
@@ -270,24 +284,24 @@ describe AsyncTestCase, "Communication":
                 name="close", side_effect=Exception("NOPE")
             )
 
-            self.communication.found[serial] = {service: othertransport}
+            V.communication.found[serial] = {service: othertransport}
 
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
             make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
 
-            with mock.patch.object(self.communication, "make_transport", make_transport):
-                await self.communication.add_service(serial, service, a=a)
+            with mock.patch.object(V.communication, "make_transport", make_transport):
+                await V.communication.add_service(serial, service, a=a)
 
-            assert self.communication.found[serial] == {service: t}
+            assert V.communication.found[serial] == {service: t}
             make_transport.assert_called_once_with(serial, service, {"a": a})
             othertransport.close.assert_called_once_with()
 
-        async it "does not replace if the transport is equal":
+        async it "does not replace if the transport is equal", V:
 
             class T:
-                def __eq__(self, other):
+                def __eq__(s, other):
                     return True
 
             t1 = T()
@@ -296,20 +310,20 @@ describe AsyncTestCase, "Communication":
             serial = "d073d5000001"
             service = mock.Mock(name="service")
 
-            self.communication.found[serial] = {service: t1}
+            V.communication.found[serial] = {service: t1}
 
             a = mock.Mock(name="a")
 
             make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t2)
 
-            with mock.patch.object(self.communication, "make_transport", make_transport):
-                await self.communication.add_service(serial, service, a=a)
+            with mock.patch.object(V.communication, "make_transport", make_transport):
+                await V.communication.add_service(serial, service, a=a)
 
-            assert self.communication.found[serial] == {service: t1}
+            assert V.communication.found[serial] == {service: t1}
             make_transport.assert_called_once_with(serial, service, {"a": a})
 
     describe "find_devices":
-        async it "uses find_specific_serials":
+        async it "uses find_specific_serials", V:
             a = mock.Mock(name="a")
             broadcast = mock.Mock(name="broadcast")
             ignore_lost = mock.Mock(name="ignore_lost")
@@ -320,10 +334,8 @@ describe AsyncTestCase, "Communication":
             find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
             find_specific_serials.return_value = (found, missing)
 
-            with mock.patch.object(
-                self.communication, "find_specific_serials", find_specific_serials
-            ):
-                f = await self.communication.find_devices(
+            with mock.patch.object(V.communication, "find_specific_serials", find_specific_serials):
+                f = await V.communication.find_devices(
                     ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
                 )
 
@@ -332,7 +344,7 @@ describe AsyncTestCase, "Communication":
                 None, ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
             )
 
-        async it "has defaults for ignore_lost and raise_on_none":
+        async it "has defaults for ignore_lost and raise_on_none", V:
             a = mock.Mock(name="a")
             broadcast = mock.Mock(name="broadcast")
 
@@ -341,10 +353,8 @@ describe AsyncTestCase, "Communication":
             find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
             find_specific_serials.return_value = (found, missing)
 
-            with mock.patch.object(
-                self.communication, "find_specific_serials", find_specific_serials
-            ):
-                f = await self.communication.find_devices(a=a)
+            with mock.patch.object(V.communication, "find_specific_serials", find_specific_serials):
+                f = await V.communication.find_devices(a=a)
 
             assert f is found
             find_specific_serials.assert_called_once_with(
@@ -352,107 +362,119 @@ describe AsyncTestCase, "Communication":
             )
 
     describe "find_specific_serials":
-        async before_each:
-            self.serial1 = "d073d5000001"
-            self.serial2 = "d073d5000002"
 
-            self.target1 = binascii.unhexlify(self.serial1)[:6]
-            self.target2 = binascii.unhexlify(self.serial2)[:6]
+        @pytest.fixture()
+        def V(self, V):
+            class V(V.__class__):
+                info1 = mock.Mock(name="info1")
+                info2 = mock.Mock(name="info2")
 
-            self.info1 = mock.Mock(name="info1")
-            self.info2 = mock.Mock(name="info2")
+                serial1 = "d073d5000001"
+                serial2 = "d073d5000002"
 
-        async def assertSpecificSerials(self, serials, found, missing):
-            a = mock.Mock(name="a")
-            broadcast = mock.Mock(name="broadcast")
-            ignore_lost = mock.Mock(name="ignore_lost")
-            raise_on_none = mock.Mock(name="raise_on_none")
+                @hp.memoized_property
+                def target1(s):
+                    return binascii.unhexlify(s.serial1)[:6]
 
-            f = Found()
-            for target, info in found.items():
-                f[target] = info
+                @hp.memoized_property
+                def target2(s):
+                    return binascii.unhexlify(s.serial2)[:6]
 
-            _find_specific_serials = asynctest.mock.CoroutineMock(name="_find_specific_serials")
-            _find_specific_serials.return_value = f
+                async def assertSpecificSerials(s, serials, found, missing):
+                    a = mock.Mock(name="a")
+                    broadcast = mock.Mock(name="broadcast")
+                    ignore_lost = mock.Mock(name="ignore_lost")
+                    raise_on_none = mock.Mock(name="raise_on_none")
 
-            with mock.patch.object(
-                self.communication, "_find_specific_serials", _find_specific_serials
-            ):
-                f2, m = await self.communication.find_specific_serials(
-                    serials,
-                    ignore_lost=ignore_lost,
-                    raise_on_none=raise_on_none,
-                    broadcast=broadcast,
-                    a=a,
-                )
+                    f = Found()
+                    for target, info in found.items():
+                        f[target] = info
 
-            assert f2 is f
-            assert m == missing
-            _find_specific_serials.assert_called_once_with(
-                serials,
-                ignore_lost=ignore_lost,
-                raise_on_none=raise_on_none,
-                broadcast=broadcast,
-                a=a,
-            )
+                    _find_specific_serials = asynctest.mock.CoroutineMock(
+                        name="_find_specific_serials"
+                    )
+                    _find_specific_serials.return_value = f
 
-            _find_specific_serials.reset_mock()
-            with mock.patch.object(
-                self.communication, "_find_specific_serials", _find_specific_serials
-            ):
-                f3, m = await self.communication.find_specific_serials(
-                    serials, broadcast=broadcast, a=a
-                )
+                    with mock.patch.object(
+                        s.communication, "_find_specific_serials", _find_specific_serials
+                    ):
+                        f2, m = await s.communication.find_specific_serials(
+                            serials,
+                            ignore_lost=ignore_lost,
+                            raise_on_none=raise_on_none,
+                            broadcast=broadcast,
+                            a=a,
+                        )
 
-            assert f3 is f
-            assert m == missing
-            _find_specific_serials.assert_called_once_with(
-                serials, ignore_lost=False, raise_on_none=False, broadcast=broadcast, a=a
-            )
+                    assert f2 is f
+                    assert m == missing
+                    _find_specific_serials.assert_called_once_with(
+                        serials,
+                        ignore_lost=ignore_lost,
+                        raise_on_none=raise_on_none,
+                        broadcast=broadcast,
+                        a=a,
+                    )
 
-        async it "No missing if no found and no serials":
+                    _find_specific_serials.reset_mock()
+                    with mock.patch.object(
+                        s.communication, "_find_specific_serials", _find_specific_serials
+                    ):
+                        f3, m = await s.communication.find_specific_serials(
+                            serials, broadcast=broadcast, a=a
+                        )
+
+                    assert f3 is f
+                    assert m == missing
+                    _find_specific_serials.assert_called_once_with(
+                        serials, ignore_lost=False, raise_on_none=False, broadcast=broadcast, a=a
+                    )
+
+            return V()
+
+        async it "No missing if no found and no serials", V:
             serials = None
             found = {}
             missing = []
-            await self.assertSpecificSerials(serials, found, missing)
+            await V.assertSpecificSerials(serials, found, missing)
 
-        async it "No missing if found has all the serials":
-            serials = [self.serial1, self.serial2]
+        async it "No missing if found has all the serials", V:
+            serials = [V.serial1, V.serial2]
 
-            found = {self.target1: self.info1, self.target2: self.info2}
+            found = {V.target1: V.info1, V.target2: V.info2}
             missing = []
-            await self.assertSpecificSerials(serials, found, missing)
+            await V.assertSpecificSerials(serials, found, missing)
 
-        async it "No missing if more found than serials":
-            serials = [self.serial1]
+        async it "No missing if more found than serials", V:
+            serials = [V.serial1]
 
-            found = {self.target1: self.info1, self.target2: self.info2}
+            found = {V.target1: V.info1, V.target2: V.info2}
             missing = []
-            await self.assertSpecificSerials(serials, found, missing)
+            await V.assertSpecificSerials(serials, found, missing)
 
-        async it "has missing if less found than serials":
-            serials = [self.serial1, self.serial2]
+        async it "has missing if less found than serials", V:
+            serials = [V.serial1, V.serial2]
 
-            found = {self.target1: self.info1}
-            missing = [self.serial2]
-            await self.assertSpecificSerials(serials, found, missing)
+            found = {V.target1: V.info1}
+            missing = [V.serial2]
+            await V.assertSpecificSerials(serials, found, missing)
 
-        async it "has missing if no found":
-            serials = [self.serial1, self.serial2]
+        async it "has missing if no found", V:
+            serials = [V.serial1, V.serial2]
 
             found = {}
-            missing = [self.serial1, self.serial2]
-            await self.assertSpecificSerials(serials, found, missing)
+            missing = [V.serial1, V.serial2]
+            await V.assertSpecificSerials(serials, found, missing)
 
-        async it "no missing if found and no serials":
+        async it "no missing if found and no serials", V:
             serials = None
-            found = {self.target1: self.info1, self.target2: self.info2}
+            found = {V.target1: V.info1, V.target2: V.info2}
             missing = []
-            await self.assertSpecificSerials(serials, found, missing)
+            await V.assertSpecificSerials(serials, found, missing)
 
     describe "private find_specific_serials":
-        async it "uses _do_search":
-            found = self.communication.found
+        async it "uses _do_search", V:
+            found = V.communication.found
 
             s1 = mock.Mock(name="s1")
             s2 = mock.Mock(name="s2")
@@ -461,7 +483,7 @@ describe AsyncTestCase, "Communication":
 
             async def _do_search(serials, timeout, **kwargs):
                 for serial in serials:
-                    self.communication.found[serial] = services[serial]
+                    V.communication.found[serial] = services[serial]
                 return set(serials)
 
             _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
@@ -470,25 +492,28 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with mock.patch.object(self.communication, "_do_search", _do_search):
-                assert await self.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
+            with mock.patch.object(V.communication, "_do_search", _do_search):
+                assert (
+                    await V.communication._find_specific_serials(serials, timeout=timeout, a=a)
+                    is found
+                )
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
-        async it "can remove lost":
+        async it "can remove lost", V:
             s1 = mock.Mock(name="s1", spec=[])
             s2 = mock.Mock(name="s2", spec=[])
             s3 = mock.Mock(name="s3", spec=["close"])
             s3.close = asynctest.mock.CoroutineMock(name="s3")
 
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
 
             services = {"d073d5000001": s1, "d073d5000002": s2}
 
             async def _do_search(serials, timeout, **kwargs):
                 for serial in serials:
-                    self.communication.found[serial] = services[serial]
+                    V.communication.found[serial] = services[serial]
                 return set(serials)
 
             _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
@@ -497,27 +522,30 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with mock.patch.object(self.communication, "_do_search", _do_search):
-                assert await self.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
+            with mock.patch.object(V.communication, "_do_search", _do_search):
+                assert (
+                    await V.communication._find_specific_serials(serials, timeout=timeout, a=a)
+                    is found
+                )
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
             assert "d073d5000003" not in found
             s3.close.assert_called_once_with()
 
-        async it "does not remove lost if ignore_lost":
+        async it "does not remove lost if ignore_lost", V:
             s1 = mock.Mock(name="s1", spec=[])
             s2 = mock.Mock(name="s2", spec=[])
             s3 = mock.Mock(name="s3", spec=[])
 
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
 
             services = {"d073d5000001": s1, "d073d5000002": s2}
 
             async def _do_search(serials, timeout, **kwargs):
                 for serial in serials:
-                    self.communication.found[serial] = services[serial]
+                    V.communication.found[serial] = services[serial]
                 return set(serials)
 
             _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
@@ -526,20 +554,22 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with mock.patch.object(self.communication, "_do_search", _do_search):
-                assert ( await self.communication._find_specific_serials(
+            with mock.patch.object(V.communication, "_do_search", _do_search):
+                assert (
+                    await V.communication._find_specific_serials(
                         serials, timeout=timeout, ignore_lost=True, a=a
-                    )) is found
+                    )
+                ) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
             assert "d073d5000003" in found
 
-        async it "complains if none are found and raise_on_none":
+        async it "complains if none are found and raise_on_none", V:
             s3 = mock.Mock(name="s3", spec=["close"])
             s3.close = asynctest.mock.CoroutineMock(name="close")
 
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
 
             async def _do_search(serials, timeout, **kwargs):
@@ -551,9 +581,9 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with self.fuzzyAssertRaisesError(FoundNoDevices):
-                with mock.patch.object(self.communication, "_do_search", _do_search):
-                    await self.communication._find_specific_serials(
+            with assertRaises(FoundNoDevices):
+                with mock.patch.object(V.communication, "_do_search", _do_search):
+                    await V.communication._find_specific_serials(
                         None, timeout=timeout, raise_on_none=True, a=a
                     )
 
@@ -562,9 +592,9 @@ describe AsyncTestCase, "Communication":
             assert not found
             s3.close.assert_called_once_with()
 
-        async it "does not complain if none are found and raise_on_none but non None serials":
+        async it "does not complain if none are found and raise_on_none but non None serials", V:
             s3 = mock.Mock(name="s3", spec=[])
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
 
             async def _do_search(serials, timeout, **kwargs):
@@ -576,16 +606,18 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with mock.patch.object(self.communication, "_do_search", _do_search):
-                assert ( await self.communication._find_specific_serials(
+            with mock.patch.object(V.communication, "_do_search", _do_search):
+                assert (
+                    await V.communication._find_specific_serials(
                         serials, raise_on_none=True, timeout=timeout, a=a
-                    )) is found
+                    )
+                ) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
-        async it "does not complain if none are found if not raise_on_none":
+        async it "does not complain if none are found if not raise_on_none", V:
             s3 = mock.Mock(name="s3", spec=[])
-            found = self.communication.found
+            found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
 
             async def _do_search(serials, timeout, **kwargs):
@@ -597,17 +629,19 @@ describe AsyncTestCase, "Communication":
             serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
-            with mock.patch.object(self.communication, "_do_search", _do_search):
-                assert ( await self.communication._find_specific_serials(
+            with mock.patch.object(V.communication, "_do_search", _do_search):
+                assert (
+                    await V.communication._find_specific_serials(
                         None, ignore_lost=True, timeout=timeout, a=a
-                    )) is found
+                    )
+                ) is found
 
             _do_search.assert_called_once_with(None, timeout, a=a)
 
             assert "d073d5000003" in found
 
     describe "broadcast":
-        async it "is a send with a broadcast transport":
+        async it "is a send with a broadcast transport", V:
             a = mock.Mock(name="a")
             res = mock.Mock(name="res")
             packet = mock.Mock(name="packet")
@@ -621,16 +655,15 @@ describe AsyncTestCase, "Communication":
             )
 
             mod = {"send": send, "make_broadcast_transport": make_broadcast_transport}
-            with mock.patch.multiple(self.communication, **mod):
-                assert await self.communication.broadcast(packet, broadcast, a=a) is res
+            with mock.patch.multiple(V.communication, **mod):
+                assert await V.communication.broadcast(packet, broadcast, a=a) is res
 
             make_broadcast_transport.assert_awaited_once_with(broadcast)
             send.assert_awaited_once_with(packet, is_broadcast=True, transport=transport, a=a)
 
     describe "send":
 
-        @with_timeout
-        async it "sends":
+        async it "sends", V:
             transport_in = mock.Mock(name="transport_in")
             transport_out = mock.Mock(name="transport_out")
 
@@ -654,14 +687,14 @@ describe AsyncTestCase, "Communication":
             FakeWriter = mock.Mock(name="Writer", return_value=writer)
 
             class Waiter:
-                def __init__(self):
-                    self.reset()
+                def __init__(s):
+                    s.reset()
 
-                def reset(self):
-                    self.cancelled = False
+                def reset(s):
+                    s.cancelled = False
 
-                def cancel(self):
-                    self.cancelled = True
+                def cancel(s):
+                    s.cancelled = True
 
             waiter = Waiter()
             FakeWaiter = mock.Mock(name="Waiter", return_value=waiter)
@@ -686,7 +719,7 @@ describe AsyncTestCase, "Communication":
                 "_get_response": _get_response,
                 "_transport_for_send": _transport_for_send,
             }
-            patch_comms = mock.patch.multiple(self.communication, **mod)
+            patch_comms = mock.patch.multiple(V.communication, **mod)
             patch_writer = mock.patch("photons_transport.comms.base.Writer", FakeWriter)
             patch_waiter = mock.patch("photons_transport.comms.base.Waiter", FakeWaiter)
 
@@ -699,16 +732,16 @@ describe AsyncTestCase, "Communication":
                     "broadcast": broadcast,
                     "connect_timeout": connect_timeout,
                 }
-                assert await self.communication.send(original, packet, **kwargs) is res
+                assert await V.communication.send(original, packet, **kwargs) is res
 
                 _transport_for_send.assert_called_once_with(
                     transport_in, packet, original, broadcast, connect_timeout
                 )
                 retry_options_for.assert_called_once_with(original, transport_out)
                 FakeWriter.assert_called_once_with(
-                    self.communication,
+                    V.communication,
                     transport_out,
-                    self.communication.receiver,
+                    V.communication.receiver,
                     original,
                     packet,
                     retry_options,
@@ -716,7 +749,7 @@ describe AsyncTestCase, "Communication":
                     connect_timeout=connect_timeout,
                 )
                 FakeWaiter.assert_called_once_with(
-                    self.communication.stop_fut, writer, retry_options, no_retry=no_retry
+                    V.communication.stop_fut, writer, retry_options, no_retry=no_retry
                 )
                 _get_response.assert_awaited_once_with(packet, timeout, waiter, limit=limit)
                 assert waiter.cancelled
@@ -729,8 +762,8 @@ describe AsyncTestCase, "Communication":
 
                 get_response_info["ret"] = raise_error
                 assert not waiter.cancelled
-                with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
-                    await self.communication.send(original, packet, **kwargs)
+                with assertRaises(ValueError, "NOPE"):
+                    await V.communication.send(original, packet, **kwargs)
                 assert waiter.cancelled
 
                 # Make sure waiter is cancelled if _get_response gets cancelled
@@ -743,12 +776,11 @@ describe AsyncTestCase, "Communication":
 
                 get_response_info["ret"] = cancel
                 assert not waiter.cancelled
-                with self.fuzzyAssertRaisesError(asyncio.CancelledError):
-                    await self.communication.send(original, packet, **kwargs)
+                with assertRaises(asyncio.CancelledError):
+                    await V.communication.send(original, packet, **kwargs)
                 assert waiter.cancelled
 
-        @with_timeout
-        async it "works without so much mocks":
+        async it "works without so much mocks", V:
             called = []
 
             class T(Transport):
@@ -795,7 +827,7 @@ describe AsyncTestCase, "Communication":
                     assert service == "SERV"
                     return T(s)
 
-            comms = C(self.transport_target)
+            comms = C(V.transport_target)
             serial = "d073d5000001"
             await comms.add_service(serial, "SERV")
             assert called == ["make_transport", "__eq__"]
@@ -814,137 +846,131 @@ describe AsyncTestCase, "Communication":
             assert orig is original
 
             assert called == [
-                    "make_transport",
-                    "__eq__",
-                    "choose_transport",
-                    "spawn_transport",
-                    "retry_options_for",
-                    "write",
-                ]
+                "make_transport",
+                "__eq__",
+                "choose_transport",
+                "spawn_transport",
+                "retry_options_for",
+                "write",
+            ]
 
     describe "private transport_for_send":
-        async before_each:
-            self.transport = mock.Mock(name="transport")
-            self.transport.spawn = asynctest.mock.CoroutineMock(name="spawn")
 
-            self.packet = mock.Mock(name="packet")
-            self.original = mock.Mock(name="original")
-            self.connect_timeout = mock.Mock(name="connect_timeout")
+        @pytest.fixture()
+        def V(self, V):
+            class V(V.__class__):
+                packet = mock.Mock(name="packet")
+                original = mock.Mock(name="original")
+                connect_timeout = mock.Mock(name="connect_timeout")
 
-        @contextmanager
-        def maker_mocks(self):
-            make_broadcast_transport = asynctest.mock.CoroutineMock(
-                name="make_broadcast_transport", return_value=self.transport
-            )
-            choose_transport = asynctest.mock.CoroutineMock(
-                name="choose_transport", return_value=self.transport
-            )
+                @hp.memoized_property
+                def transport(s):
+                    transport = mock.Mock(name="transport")
+                    transport.spawn = asynctest.mock.CoroutineMock(name="spawn")
+                    return transport
 
-            mbt_patch = mock.patch.object(
-                self.communication, "make_broadcast_transport", make_broadcast_transport
-            )
-            ct_patch = mock.patch.object(self.communication, "choose_transport", choose_transport)
+                @contextmanager
+                def maker_mocks(s):
+                    make_broadcast_transport = asynctest.mock.CoroutineMock(
+                        name="make_broadcast_transport", return_value=s.transport
+                    )
+                    choose_transport = asynctest.mock.CoroutineMock(
+                        name="choose_transport", return_value=s.transport
+                    )
 
-            with mbt_patch, ct_patch:
-                yield (make_broadcast_transport, choose_transport)
+                    mbt_patch = mock.patch.object(
+                        s.communication, "make_broadcast_transport", make_broadcast_transport
+                    )
+                    ct_patch = mock.patch.object(
+                        s.communication, "choose_transport", choose_transport
+                    )
 
-        @with_timeout
-        async it "uses make_broadcast_transport if broadcast":
-            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await self.communication._transport_for_send(
-                    None, self.packet, self.original, True, self.connect_timeout
+                    with mbt_patch, ct_patch:
+                        yield (make_broadcast_transport, choose_transport)
+
+            return V()
+
+        async it "uses make_broadcast_transport if broadcast", V:
+            with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await V.communication._transport_for_send(
+                    None, V.packet, V.original, True, V.connect_timeout
                 )
-                assert res == (self.transport, True)
+                assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
             assert len(choose_transport.mock_calls) == 0
-            self.transport.spawn.assert_called_once_with(
-                self.original, timeout=self.connect_timeout
-            )
+            V.transport.spawn.assert_called_once_with(V.original, timeout=V.connect_timeout)
 
-        @with_timeout
-        async it "uses make_broadcast_transport if broadcast is an address":
+        async it "uses make_broadcast_transport if broadcast is an address", V:
             broadcast = "192.168.0.255"
 
-            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await self.communication._transport_for_send(
-                    None, self.packet, self.original, broadcast, self.connect_timeout
+            with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await V.communication._transport_for_send(
+                    None, V.packet, V.original, broadcast, V.connect_timeout
                 )
-                assert res == (self.transport, True)
+                assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(broadcast)
             assert len(choose_transport.mock_calls) == 0
-            self.transport.spawn.assert_called_once_with(
-                self.original, timeout=self.connect_timeout
-            )
+            V.transport.spawn.assert_called_once_with(V.original, timeout=V.connect_timeout)
 
-        @with_timeout
-        async it "uses make_broadcast_transport if packet target is None":
-            self.packet.target = None
+        async it "uses make_broadcast_transport if packet target is None", V:
+            V.packet.target = None
 
-            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await self.communication._transport_for_send(
-                    None, self.packet, self.original, False, self.connect_timeout
+            with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await V.communication._transport_for_send(
+                    None, V.packet, V.original, False, V.connect_timeout
                 )
-                assert res == (self.transport, True)
+                assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
             assert len(choose_transport.mock_calls) == 0
-            self.transport.spawn.assert_called_once_with(
-                self.original, timeout=self.connect_timeout
-            )
+            V.transport.spawn.assert_called_once_with(V.original, timeout=V.connect_timeout)
 
-        @with_timeout
-        async it "uses choose_transport if not for broadcasting":
-            self.packet.target = binascii.unhexlify("d073d5")
-            self.packet.serial = "d073d5"
+        async it "uses choose_transport if not for broadcasting", V:
+            V.packet.target = binascii.unhexlify("d073d5")
+            V.packet.serial = "d073d5"
 
             services = mock.Mock(name="services")
-            self.communication.found["d073d5"] = services
+            V.communication.found["d073d5"] = services
 
-            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await self.communication._transport_for_send(
-                    None, self.packet, self.original, False, self.connect_timeout
+            with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await V.communication._transport_for_send(
+                    None, V.packet, V.original, False, V.connect_timeout
                 )
-                assert res == (self.transport, False)
+                assert res == (V.transport, False)
 
-            choose_transport.assert_called_once_with(self.original, services)
+            choose_transport.assert_called_once_with(V.original, services)
             assert len(make_broadcast_transport.mock_calls) == 0
-            self.transport.spawn.assert_called_once_with(
-                self.original, timeout=self.connect_timeout
-            )
+            V.transport.spawn.assert_called_once_with(V.original, timeout=V.connect_timeout)
 
-        @with_timeout
-        async it "complains if the serial doesn't exist":
-            self.packet.target = binascii.unhexlify("d073d5")
-            self.packet.serial = "d073d5"
+        async it "complains if the serial doesn't exist", V:
+            V.packet.target = binascii.unhexlify("d073d5")
+            V.packet.serial = "d073d5"
 
-            with self.fuzzyAssertRaisesError(FailedToFindDevice, serial="d073d5"):
-                with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                    await self.communication._transport_for_send(
-                        None, self.packet, self.original, False, self.connect_timeout
+            with assertRaises(FailedToFindDevice, serial="d073d5"):
+                with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                    await V.communication._transport_for_send(
+                        None, V.packet, V.original, False, V.connect_timeout
                     )
 
             assert len(make_broadcast_transport.mock_calls) == 0
             assert len(choose_transport.mock_calls) == 0
-            assert len(self.transport.spawn.mock_calls) == 0
+            assert len(V.transport.spawn.mock_calls) == 0
 
-        @with_timeout
-        async it "just spawns transport if one is provided":
-            with self.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await self.communication._transport_for_send(
-                    self.transport, self.packet, self.original, False, self.connect_timeout
+        async it "just spawns transport if one is provided", V:
+            with V.maker_mocks() as (make_broadcast_transport, choose_transport):
+                res = await V.communication._transport_for_send(
+                    V.transport, V.packet, V.original, False, V.connect_timeout
                 )
-                assert res == (self.transport, False)
+                assert res == (V.transport, False)
 
             assert len(make_broadcast_transport.mock_calls) == 0
             assert len(choose_transport.mock_calls) == 0
-            self.transport.spawn.assert_called_once_with(
-                self.original, timeout=self.connect_timeout
-            )
+            V.transport.spawn.assert_called_once_with(V.original, timeout=V.connect_timeout)
 
     describe "received_data":
-        async it "unpacks bytes and sends to the receiver":
+        async it "unpacks bytes and sends to the receiver", V:
             allow_zero = mock.Mock(name="allow_zero")
             addr = mock.Mock(name="addr")
 
@@ -954,14 +980,14 @@ describe AsyncTestCase, "Communication":
 
             recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
-            with mock.patch.object(self.communication.receiver, "recv", recv):
+            with mock.patch.object(V.communication.receiver, "recv", recv):
                 pkt = DeviceMessages.StatePower(level=100, source=1, sequence=1, target=None)
                 data = pkt.pack().tobytes()
-                await self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await V.communication.received_data(data, addr, allow_zero=allow_zero)
 
             recv.assert_called_once_with(mock.ANY, addr, allow_zero=allow_zero)
 
-        async it "unpacks unknown packets":
+        async it "unpacks unknown packets", V:
             allow_zero = mock.Mock(name="allow_zero")
             addr = mock.Mock(name="addr")
 
@@ -972,72 +998,75 @@ describe AsyncTestCase, "Communication":
 
             recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
 
-            with mock.patch.object(self.communication.receiver, "recv", recv):
+            with mock.patch.object(V.communication.receiver, "recv", recv):
                 pkt = LIFXPacket(
                     payload=b"things", pkt_type=9001, source=1, sequence=1, target=None
                 )
                 data = pkt.pack().tobytes()
-                await self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await V.communication.received_data(data, addr, allow_zero=allow_zero)
 
             recv.assert_called_once_with(mock.ANY, addr, allow_zero=allow_zero)
 
-        async it "ignores invalid data":
+        async it "ignores invalid data", V:
             allow_zero = mock.Mock(name="allow_zero")
             addr = mock.Mock(name="addr")
 
             recv = asynctest.mock.CoroutineMock(name="recv")
 
-            with mock.patch.object(self.communication.receiver, "recv", recv):
+            with mock.patch.object(V.communication.receiver, "recv", recv):
                 data = "NOPE"
-                await self.communication.received_data(data, addr, allow_zero=allow_zero)
+                await V.communication.received_data(data, addr, allow_zero=allow_zero)
 
             assert len(recv.mock_calls) == 0
 
     describe "private get_response":
-        async before_each:
-            self.serial = "d073d5001337"
-            self.packet = mock.Mock(name="packet", serial=self.serial)
 
-        async it "can successfully return results":
+        @pytest.fixture()
+        def serial(self):
+            return "d073d5001337"
+
+        @pytest.fixture()
+        def packet(self, serial):
+            return mock.Mock(name="packet", serial=serial)
+
+        async it "can successfully return results", V, packet:
             a = mock.Mock(name="a")
             b = mock.Mock(name="b")
 
             waiter = asyncio.Future()
 
-            t = hp.async_as_background(self.communication._get_response(self.packet, 0.1, waiter))
+            t = hp.async_as_background(V.communication._get_response(packet, 0.1, waiter))
             asyncio.get_event_loop().call_later(0.05, waiter.set_result, [a, b])
 
             assert await t == [a, b]
             assert not waiter.cancelled()
 
-        async it "can timeout a task":
+        async it "can timeout a task", V, packet, serial:
             waiter = asyncio.Future()
 
-            t = hp.async_as_background(self.communication._get_response(self.packet, 0.05, waiter))
+            t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
 
-            with self.fuzzyAssertRaisesError(
-                TimedOut, "Waiting for reply to a packet", serial=self.serial
-            ):
+            with assertRaises(TimedOut, "Waiting for reply to a packet", serial=serial):
                 await t
 
             assert waiter.cancelled()
 
-        async it "understands when waiter is cancelled":
+        async it "understands when waiter is cancelled", V, serial, packet:
             waiter = asyncio.Future()
 
-            t = hp.async_as_background(self.communication._get_response(self.packet, 0.05, waiter))
+            t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
             asyncio.get_event_loop().call_later(0.01, waiter.cancel)
 
-            with self.fuzzyAssertRaisesError(TimedOut, "Message was cancelled", serial=self.serial):
+            with assertRaises(TimedOut, "Message was cancelled", serial=serial):
                 await t
 
             assert waiter.cancelled()
 
-        async it "passes on error from waiter":
+        async it "passes on error from waiter", V, packet:
             waiter = asyncio.Future()
 
-            t = hp.async_as_background(self.communication._get_response(self.packet, 0.05, waiter))
+            t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
             asyncio.get_event_loop().call_later(0.01, waiter.set_exception, ValueError("NOPE"))
 
-            with self.fuzzyAssertRaisesError(ValueError, "NOPE"):
+            with assertRaises(ValueError, "NOPE"):
                 await t

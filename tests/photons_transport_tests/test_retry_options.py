@@ -2,15 +2,13 @@
 
 from photons_transport import RetryOptions, RetryIterator
 
-from photons_app.test_helpers import TestCase, AsyncTestCase, with_timeout
-
 from contextlib import contextmanager
 from unittest import mock
 import asynctest
 import pytest
 import time
 
-describe TestCase, "RetryOptions":
+describe "RetryOptions":
     it "can be given a different timeouts":
         timeouts = mock.Mock(name="timeouts")
         options = RetryOptions(timeouts)
@@ -79,9 +77,8 @@ describe TestCase, "RetryOptions":
             # I have no idea why 0.3 is so weird here
             assert next_times == [0.1, 0.2, 0.30000000000000004, 0.8, 1.3, 1.8]
 
-describe AsyncTestCase, "RetryIterator":
+describe "RetryIterator":
 
-    @with_timeout
     async it "can wait amounts":
         now = time.time()
         iterator = RetryIterator(now + 10, get_now=time.time, get_next_time=None)
@@ -138,7 +135,6 @@ describe AsyncTestCase, "RetryIterator":
             with mock.patch.object(iterator, "wait", wait):
                 yield iterator, now, calls
 
-        @with_timeout
         async it "works":
             next_times = [1, 1, 1]
 
@@ -149,25 +145,24 @@ describe AsyncTestCase, "RetryIterator":
 
             self.maxDiff = None
             assert calls == [
-                    "get_now",
-                    "next_time",
-                    ("loop", 3.0, 1.0, 0.5),
-                    "get_now",
-                    ("wait", 0.5),
-                    "get_now",
-                    "next_time",
-                    ("loop", 2.0, 1, 0.5),
-                    "get_now",
-                    ("wait", 0.5),
-                    "get_now",
-                    "next_time",
-                    ("loop", 1.0, 1.0, 0.5),
-                    "get_now",
-                ], calls
+                "get_now",
+                "next_time",
+                ("loop", 3.0, 1.0, 0.5),
+                "get_now",
+                ("wait", 0.5),
+                "get_now",
+                "next_time",
+                ("loop", 2.0, 1, 0.5),
+                "get_now",
+                ("wait", 0.5),
+                "get_now",
+                "next_time",
+                ("loop", 1.0, 1.0, 0.5),
+                "get_now",
+            ], calls
 
             assert next_times == []
 
-        @with_timeout
         async it "can skip a next time":
             next_times = [0.1, 0.2, 0.1, 0.6, 2]
 
@@ -178,27 +173,26 @@ describe AsyncTestCase, "RetryIterator":
 
             self.maxDiff = None
             assert calls == [
-                    "get_now",
-                    "next_time",
-                    ("loop", 3, 0.1, 0.5),
-                    "get_now",
-                    ("wait", -0.4),
-                    "get_now",
-                    "next_time",
-                    "next_time",
-                    "next_time",
-                    ("loop", 2.5, 0.5, 0.5),
-                    "get_now",
-                    ("wait", 0.0),
-                    "get_now",
-                    "next_time",
-                    ("loop", 2.0, 2.0, 0.5),
-                    "get_now",
-                ], calls
+                "get_now",
+                "next_time",
+                ("loop", 3, 0.1, 0.5),
+                "get_now",
+                ("wait", -0.4),
+                "get_now",
+                "next_time",
+                "next_time",
+                "next_time",
+                ("loop", 2.5, 0.5, 0.5),
+                "get_now",
+                ("wait", 0.0),
+                "get_now",
+                "next_time",
+                ("loop", 2.0, 2.0, 0.5),
+                "get_now",
+            ], calls
 
             assert next_times == []
 
-        @with_timeout
         async it "can skip a wait if we've gone past end_in":
             skips = [0.1, 0.2, 3]
             next_times = [0.1, 0.3, 0.6]
@@ -211,20 +205,20 @@ describe AsyncTestCase, "RetryIterator":
 
             self.maxDiff = None
             assert calls == [
-                    "get_now",
-                    "next_time",
-                    ("loop", 3, 0.1, 0.1),
-                    "get_now",
-                    ("wait", 0.0),
-                    "get_now",
-                    "next_time",
-                    ("loop", 2.9, 0.30000000000000004, 0.2),
-                    "get_now",
-                    ("wait", 0.09999999999999998),
-                    "get_now",
-                    "next_time",
-                    ("loop", 2.6, 0.6, 3),
-                    "get_now",
-                ], calls
+                "get_now",
+                "next_time",
+                ("loop", 3, 0.1, 0.1),
+                "get_now",
+                ("wait", 0.0),
+                "get_now",
+                "next_time",
+                ("loop", 2.9, 0.30000000000000004, 0.2),
+                "get_now",
+                ("wait", 0.09999999999999998),
+                "get_now",
+                "next_time",
+                ("loop", 2.6, 0.6, 3),
+                "get_now",
+            ], calls
 
             assert next_times == []

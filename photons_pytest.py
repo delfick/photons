@@ -4,6 +4,7 @@ from textwrap import dedent
 from unittest import mock
 import tempfile
 import asyncio
+import socket
 import pytest
 import shutil
 import sys
@@ -114,6 +115,15 @@ def pytest_configure():
         ]
 
         pytest.fail("\n".join(lines))
+
+    @pytest.helpers.register
+    def free_port():
+        """
+        Return an unused port number
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("0.0.0.0", 0))
+            return s.getsockname()[1]
 
 
 class MemoryDevicesRunner:
