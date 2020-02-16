@@ -90,6 +90,9 @@ def FakeTime():
 
 
 def pytest_configure():
+    if not hasattr(pytest, "helpers"):
+        return
+
     @pytest.helpers.register
     def assert_regex(regex, value):
         __tracebackhide__ = True
