@@ -3,6 +3,15 @@
 ChangeLog
 =========
 
+0.24.6 - 16 February 2020
+    * Introduced the "colors" plan for getting the colors on devices with Single,
+      Linear and Matrix zones.
+    * Expanded the "chain" plan so that it would return a single chain "item"
+      for devices with only a single "item" in the "chain"
+    * The "capability" plan now also returns firmware information
+    * The apply_theme action now works against candles
+    * Rewrote all the tests to use pytest
+
 0.24.5 - 9 January 2020
     * Fixed a mistake in the product registry
       (``LCM3_MINI2_WARM_WHITE`` should be ``WARM_TO_WHITE``)
