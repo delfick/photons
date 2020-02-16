@@ -3,6 +3,7 @@ from docutils import statemachine
 import pkg_resources
 import os
 
+
 class ShowAvailableModulesDirective(Directive):
     has_content = True
 
@@ -22,7 +23,13 @@ class ShowAvailableModulesDirective(Directive):
                 continue
 
             template.append("    modules/{0}".format(module_name))
-            with open(os.path.join(folder, "modules", "{0}.rst".format(module_name)), 'w') as fle:
+            filename = f"{module_name}.rst"
+            location = os.path.join(folder, "modules", filename)
+
+            if os.path.exists(location):
+                continue
+
+            with open(location, "w") as fle:
                 lines = []
                 lines.append(".. _{0}:".format(module_name))
                 lines.append("")
@@ -39,14 +46,19 @@ class ShowAvailableModulesDirective(Directive):
                 continue
 
             template.append(":ref:`{0}`".format(module_name))
-            shortdesc = getattr(e.resolve(), "__shortdesc__", "This module has no __shortdesc__ property")
+            shortdesc = getattr(
+                e.resolve(), "__shortdesc__", "This module has no __shortdesc__ property"
+            )
             template.append("    {0}".format(shortdesc))
 
-        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
-        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
-        lines = statemachine.string2lines('\n'.join(template), tab_width, convert_whitespace=True)
+        source = self.state_machine.input_lines.source(
+            self.lineno - self.state_machine.input_offset - 1
+        )
+        tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
+        lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
         return []
 
+
 def setup(app):
-    app.add_directive('available_modules', ShowAvailableModulesDirective)
+    app.add_directive("available_modules", ShowAvailableModulesDirective)
