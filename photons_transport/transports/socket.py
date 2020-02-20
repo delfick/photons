@@ -3,6 +3,7 @@ from photons_transport.transports.base import Transport
 from photons_app import helpers as hp
 
 import logging
+import asyncio
 
 log = logging.getLogger("photons_transport.transports.socket")
 
@@ -15,7 +16,7 @@ def close_socket(socket):
 
 
 def close_existing(fut):
-    if fut.done() and not fut.exception() and not fut.cancelled():
+    if fut.done() and not fut.cancelled() and not fut.exception():
         close_socket(fut.result())
     fut.reset()
 
@@ -35,6 +36,7 @@ class Socket(Transport):
         self.serial = serial
         self.address = (self.host, self.port)
         self.lc = hp.lc.using(serial=serial)
+        self.socket_futs = []
 
     def clone_for(self, session):
         return self.__class__(session, self.host, self.port, serial=self.serial)
@@ -46,6 +48,16 @@ class Socket(Transport):
             and other.port == self.port
         )
 
+    async def close(self):
+        await super().close()
+
+        for fut in self.socket_futs:
+            close_existing(fut)
+            fut.cancel()
+
+        if self.socket_futs:
+            await asyncio.wait(self.socket_futs)
+
     async def close_transport(self, transport):
         close_socket(transport)
 
@@ -54,6 +66,9 @@ class Socket(Transport):
 
     def make_socket_protocol(self):
         fut = hp.ResettableFuture()
+        fut.add_done_callback(hp.reporter)
+        self.socket_futs.append(fut)
+        self.socket_futs = [t for t in self.socket_futs if not t.done()]
 
         class SocketProtocol:
             def error_received(sp, exc):
