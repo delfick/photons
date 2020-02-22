@@ -3,6 +3,14 @@
 ChangeLog
 =========
 
+0.24.7 - TBD
+    * Introduced a ``transition_color`` option to the Transformer that says
+      if we're going from off to on, then don't reset the color when we reset
+      brightness before turning the device on. Many thanks to @Djelibeybi
+    * The transform cli command now takes in ``transform_options`` so you can
+      specify ``keep_brightness`` and ``transition_color``
+    * Improved cleanup of sockets.
+
 0.24.6 - 16 February 2020
     * Introduced the "colors" plan for getting the colors on devices with Single,
       Linear and Matrix zones.
