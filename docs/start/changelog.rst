@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.24.7 - TBD
+0.24.7 - 23 February 2020
     * Introduced a ``transition_color`` option to the Transformer that says
       if we're going from off to on, then don't reset the color when we reset
       brightness before turning the device on. Many thanks to @Djelibeybi
