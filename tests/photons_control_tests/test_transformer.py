@@ -129,8 +129,12 @@ describe "PowerToggle":
 
 describe "Transformer":
 
-    async def transform(self, runner, state, *, expected, keep_brightness=False):
-        msg = Transformer.using(state, keep_brightness=keep_brightness)
+    async def transform(
+        self, runner, state, *, expected, keep_brightness=False, transition_color=False
+    ):
+        msg = Transformer.using(
+            state, keep_brightness=keep_brightness, transition_color=transition_color
+        )
         await runner.target.script(msg).run_with_all(runner.serials)
 
         assert len(runner.devices) > 0
@@ -316,3 +320,27 @@ describe "Transformer":
                 ],
             }
             await self.transform(runner, state, expected=expected, keep_brightness=True)
+
+        async it "can retain previous color when powering on", runner:
+            state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
+            light1_reset = Parser.color_to_msg("blue", overrides={"brightness": 0})
+            light1_reset.set_hue = 0
+            light1_reset.set_saturation = 0
+            light1_reset.set_kelvin = 0
+            expected = {
+                light1: [
+                    LightMessages.GetColor(),
+                    light1_reset,
+                    LightMessages.SetLightPower(level=65535, duration=10),
+                    Parser.color_to_msg("blue ", overrides={"brightness": 0.3, "duration": 10},),
+                ],
+                light2: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                ],
+                light3: [
+                    LightMessages.GetColor(),
+                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                ],
+            }
+            await self.transform(runner, state, expected=expected, transition_color=True)
