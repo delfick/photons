@@ -1,29 +1,7 @@
-from photons_app.errors import PhotonsAppError
-
 from contextlib import contextmanager
 from delfick_project.norms import sb
 from collections import defaultdict
 import os
-
-
-class BadTest(PhotonsAppError):
-    desc = "bad test"
-
-
-class FakeScript(object):
-    def __init__(self, target, part):
-        self.part = part
-        self.target = target
-
-    async def run_with(self, *args, **kwargs):
-        async for info in self.target.run_with(self.part, *args, **kwargs):
-            yield info
-
-    async def run_with_all(self, *args, **kwargs):
-        msgs = []
-        async for msg in self.run_with(*args, **kwargs):
-            msgs.append(msg)
-        return msgs
 
 
 def print_packet_difference(one, two, ignore_unspecified_expected=True):

@@ -8,6 +8,7 @@ import tempfile
 import asyncio
 import socket
 import shutil
+import time
 import sys
 import re
 import os
@@ -25,6 +26,20 @@ except:
                 return func
 
     pytest = FakePytest()
+
+
+def _port_connected(port):
+    """
+    Return whether something is listening on this port
+    """
+    s = socket.socket()
+    s.settimeout(5)
+    try:
+        s.connect(("127.0.0.1", port))
+        s.close()
+        return True
+    except Exception:
+        return False
 
 
 def run_pytest():
@@ -142,6 +157,22 @@ def pytest_configure():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(("0.0.0.0", 0))
             return s.getsockname()[1]
+
+    @pytest.helpers.register
+    async def wait_for_port(port, timeout=3, gap=0.01):
+        """
+        Wait for a port to have something behind it
+        """
+        start = time.time()
+        while time.time() - start < timeout:
+            if _port_connected(port):
+                break
+            await asyncio.sleep(gap)
+        assert _port_connected(port)
+
+    @pytest.helpers.register
+    def port_connected(port):
+        return _port_connected(port)
 
 
 class MemoryDevicesRunner:
