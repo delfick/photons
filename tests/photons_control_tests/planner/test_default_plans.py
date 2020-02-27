@@ -1,10 +1,10 @@
 # coding: spec
 
-from photons_control.planner import Gatherer, make_plans, Skip
+from photons_control.planner import Gatherer, make_plans, Skip, PacketPlan
 from photons_control import test_helpers as chp
 
+from photons_app.test_helpers import assert_payloads_equals, print_packet_difference
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
-from photons_app.test_helpers import assert_payloads_equals
 
 from photons_messages import (
     DeviceMessages,
@@ -124,8 +124,37 @@ describe "Default Plans":
 
     async def gather(self, runner, reference, *by_label, **kwargs):
         gatherer = Gatherer(runner.target)
-        plans = make_plans(*by_label)
+        plan_args = []
+        plan_kwargs = {}
+        for thing in by_label:
+            if isinstance(thing, str):
+                plan_args.append(thing)
+            else:
+                plan_kwargs.update(thing)
+        plans = make_plans(*plan_args, **plan_kwargs)
         return dict(await gatherer.gather_all(plans, reference, **kwargs))
+
+    describe "PacketPlan":
+
+        async it "gets the packet", runner:
+            plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StatePower)
+            got = await self.gather(runner, two_lights, {"result": plan})
+            assert got == {
+                light1.serial: (True, {"result": mock.ANY}),
+                light2.serial: (True, {"result": mock.ANY}),
+            }
+
+            print_packet_difference(
+                got[light1.serial][1]["result"], DeviceMessages.StatePower(level=0)
+            )
+            print_packet_difference(
+                got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535)
+            )
+
+        async it "fails if we can't get the correct response", runner:
+            plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StateLabel)
+            got = await self.gather(runner, two_lights, {"result": plan})
+            assert got == {}
 
     describe "PresencePlan":
 

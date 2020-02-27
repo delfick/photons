@@ -4,6 +4,8 @@ ChangeLog
 =========
 
 0.25.0 - TBD
+    * Added photons_control.planner.PacketPlan for making a plan that sends
+      a message and returns a reply.
     * Made it easier to make long lived servers with more graceful shutdown.
       Usually you wait on ``photons_app.final_future`` to determine when to
       shutdown the server. Unfortunately this means that many resources that

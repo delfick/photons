@@ -68,14 +68,10 @@ For example:
 .. autoclass:: photons_control.planner.plans.Skip
 
 .. autoclass:: photons_control.planner.plans.NoMessages
+
+.. autoclass:: photons_control.planner.plans.PacketPlan
 """
-from photons_control.planner.plans import Skip, NoMessages, Plan, a_plan, make_plans
+from photons_control.planner.plans import Skip, NoMessages, Plan, PacketPlan, a_plan, make_plans
 from photons_control.planner.gatherer import Gatherer
 
-# Make vim quiet!
-Skip = Skip
-Plan = Plan
-a_plan = a_plan
-Gatherer = Gatherer
-NoMessages = NoMessages
-make_plans = make_plans
+__all__ = ["Skip", "NoMessages", "Plan", "PacketPlan", "a_plan", "make_plans", "Gatherer"]

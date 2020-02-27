@@ -216,6 +216,44 @@ class Plan:
             raise NotImplementedError()
 
 
+class PacketPlan(Plan):
+    """
+    Takes in a packet to send and a packet class to expect.
+
+    If we successfully get the correct type of packet, then we return that
+    packet.
+
+    .. code-block:: python
+
+        from photons_control.planner import make_plans, Gatherer, PacketPlan
+        from photons_messages import LightMessages
+
+        plans = make_plans(infrared=PacketPlan(LightMessages.GetInfrared(), LightMessages.StateInfrared))
+        gatherer = Gatherer(target)
+
+        async for serial, label, info in gatherer.gather(plans):
+            if label == "infrared":
+                # info will be a StateInfrared packet
+    """
+
+    def setup(self, sender_pkt, receiver_kls):
+        self.sender_pkt = sender_pkt
+        self.receiver_kls = receiver_kls
+
+    class Instance(Plan.Instance):
+        @property
+        def messages(self):
+            return [self.parent.sender_pkt]
+
+        def process(self, pkt):
+            if pkt | self.parent.receiver_kls:
+                self.pkt = pkt
+                return True
+
+        async def info(self):
+            return self.pkt
+
+
 @a_plan("presence")
 class PresencePlan(Plan):
     """
