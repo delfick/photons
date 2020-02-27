@@ -5,6 +5,7 @@
   tasks
   scripts
   library
+  long_lived_applications
   venvstarter
   script_mechanism
   planner

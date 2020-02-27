@@ -1,6 +1,7 @@
-from photons_app.errors import ApplicationCancelled
+from photons_app.errors import ApplicationCancelled, ApplicationStopped
+from photons_app.errors import UserQuit
+from photons_app import helpers as hp
 
-from functools import partial
 import platform
 import asyncio
 import logging
@@ -10,22 +11,22 @@ import sys
 log = logging.getLogger("photons_app.runner")
 
 
-def on_done_task(final_future, res):
-    if res.cancelled():
-        if not final_future.done():
-            final_future.cancel()
+def transfer_result(complete, pending):
+    if complete.cancelled():
+        if not pending.done():
+            pending.cancel()
         return
 
-    exc = res.exception()
+    exc = complete.exception()
     if exc:
-        if not final_future.done():
-            final_future.set_exception(exc)
+        if not pending.done():
+            pending.set_exception(exc)
         return
 
-    res.result()
+    complete.result()
 
-    if not final_future.done():
-        final_future.set_result(None)
+    if not pending.done():
+        pending.set_result(None)
 
 
 def run(coro, photons_app, target_register):
@@ -34,40 +35,83 @@ def run(coro, photons_app, target_register):
     """
     loop = photons_app.loop
     final_future = photons_app.final_future
+    graceful_future = photons_app.graceful_final_future
+
+    final_future.add_done_callback(hp.silent_reporter)
+    graceful_future.add_done_callback(hp.silent_reporter)
 
     if platform.system() != "Windows":
 
         def stop_final_fut():
-            final_future.cancel()
+            if not final_future.done():
+                final_future.set_exception(ApplicationStopped())
 
         loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
     task = loop.create_task(coro)
-    task.add_done_callback(partial(on_done_task, final_future))
+    task.add_done_callback(hp.silent_reporter)
 
     async def wait():
-        await final_future
+        done, _ = await asyncio.wait(
+            [final_future, graceful_future, task], return_when=asyncio.FIRST_COMPLETED
+        )
+        if task.done():
+            await task
+        elif graceful_future.done():
+            await graceful_future
+        else:
+            await final_future
 
     waiter = loop.create_task(wait())
+    waiter.add_done_callback(hp.silent_reporter)
 
     try:
         loop.run_until_complete(waiter)
+    except KeyboardInterrupt:
+        significant_future = final_future
+        if graceful_future.setup:
+            significant_future = graceful_future
+
+        if not significant_future.done():
+            significant_future.set_exception(UserQuit())
+
+        raise
     except asyncio.CancelledError:
         raise ApplicationCancelled()
     finally:
         log.debug("CLEANING UP")
 
-        final_future.cancel()
-
         try:
             targets = target_register.used_targets
+
+            # Make sure the main task is complete before we do cleanup activities
+            # This is so anything that still needs to run doesn't stop because of
+            # resources being stopped beneath it
+            log.debug("Waiting for main task to finish")
+            if not graceful_future.setup:
+                task.cancel()
+            loop.run_until_complete(asyncio.tasks.gather(task, loop=loop, return_exceptions=True))
+
+            # Perform cleanup duties so that resources are stopped appropriately
+            log.debug("Running cleaners")
             loop.run_until_complete(photons_app.cleanup(targets))
+
+            # Now make sure final_future is done
+            task.cancel()
+            graceful_future.cancel()
+            transfer_result(task, final_future)
+            transfer_result(graceful_future, final_future)
+
+            # Cancel everything left
+            # And ensure any remaining async generators are shutdown
+            log.debug("Cancelling tasks and async generators")
             cancel_all_tasks(loop, task, waiter)
             loop.run_until_complete(shutdown_asyncgens(loop))
         finally:
             loop.close()
             del photons_app.loop
             del photons_app.final_future
+            del photons_app.graceful_final_future
 
 
 async def shutdown_asyncgens(loop):

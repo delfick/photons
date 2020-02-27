@@ -1,16 +1,17 @@
+from photons_docs import VERSION
+
 from setuptools import setup, find_packages
 
 # fmt: off
 
 setup(
       name = "lifx-photons-docs"
-    , version = "0.1"
+    , version = VERSION
     , packages = ["photons_docs"] + ["photons_docs.{0}".format(pkg) for pkg in find_packages("photons_docs")]
 
     , install_requires =
-      [ "Sphinx==1.6.3"
-      , "sphinx_rtd_theme==0.2.5b1"
-      , "sphinxcontrib-trio==1.0.0"
+      [ "Sphinx==2.4.3"
+      , "sphinx_rtd_theme==0.4.3"
       ]
 
     , entry_points =

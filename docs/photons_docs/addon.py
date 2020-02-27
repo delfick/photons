@@ -1,6 +1,7 @@
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.actions import an_action, available_actions
 from photons_app import actions as original_actions
+from photons_app.errors import PhotonsAppError
 
 from sphinx.util.docutils import docutils_namespace
 from sphinx.cmdline import handle_exception
@@ -137,4 +138,4 @@ async def build_docs(collector, reference, tasks, **kwargs):
     except (Exception, KeyboardInterrupt) as exc:
         opts = type("opts", (object,), {"pdb": False, "verbosity": verbosity, "traceback": True})
         handle_exception(app, opts, exc, sys.stderr)
-        sys.exit(1)
+        raise PhotonsAppError("Failed to run sphinx")

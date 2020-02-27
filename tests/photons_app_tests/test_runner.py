@@ -1,9 +1,14 @@
 # coding: spec
 
-from photons_app.runner import run, on_done_task
+from photons_app.errors import ApplicationCancelled, ApplicationStopped
+from photons_app.option_spec.photons_app_spec import PhotonsApp
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.runner import run, transfer_result
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta
+from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
 import subprocess
@@ -20,6 +25,19 @@ if hasattr(asyncio, "exceptions"):
     cancelled_error_name = "asyncio.exceptions.CancelledError"
 else:
     cancelled_error_name = "concurrent.futures._base.CancelledError"
+
+
+@contextmanager
+def make_photons_app(cleanup, **options):
+    photons_app = PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter).normalise(
+        Meta({}, []).at("photons_app"), options
+    )
+
+    photons_app.loop = asyncio.new_event_loop()
+
+    with mock.patch.object(photons_app, "cleanup", cleanup):
+        yield photons_app
+
 
 describe "run":
 
@@ -38,6 +56,7 @@ describe "run":
                 os.remove(ss.name)
 
                 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.settimeout(2)
                 s.bind(ss.name)
                 s.listen(1)
 
@@ -45,10 +64,16 @@ describe "run":
                 p = subprocess.Popen(
                     [sys.executable, fle.name, out.name, ss.name], stdout=pipe, stderr=pipe
                 )
-                s.accept()
-                time.sleep(0.1)
 
-                p.send_signal(sig)
+                if sig is not None:
+                    try:
+                        s.accept()
+                        time.sleep(0.1)
+                    except socket.timeout:
+                        pass
+
+                    p.send_signal(sig)
+
                 p.wait(timeout=2)
 
                 got_stdout = p.stdout.read().decode()
@@ -72,10 +97,11 @@ describe "run":
                     got = o.read()
                 assert got.strip() == expected_finally_block.strip()
 
-    it "ensures with statements get cleaned up on SIGINT":
+    it "SIGINT gets given a UserQuit":
         script = dedent(
             """
         from photons_app.actions import an_action
+        from photons_app.errors import UserQuit
 
         from delfick_project.addons import addon_hook
         import asyncio
@@ -88,15 +114,26 @@ describe "run":
 
         @an_action()
         async def a_test(collector, reference, artifact, **kwargs):
-            try:
-                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                s.connect(artifact)
-                s.close()
+            photons_app = collector.configuration["photons_app"]
 
-                await asyncio.sleep(20)
-            finally:
-                with open(reference, 'w') as fle:
-                    fle.write("FINALLY")
+            # KeyboardInterrupt is special and requires the graceful future
+            # Otherwise the error that we get from the final_future is
+            # asyncio.CancelledError because final_future gets cancelled
+            # before this task has time to act on the UserQuit
+            with photons_app.using_graceful_future() as final_future:
+                try:
+                    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                    s.connect(artifact)
+                    s.close()
+                    await final_future
+                except UserQuit:
+                    with open(reference, 'w') as fle:
+                        fle.write("USERQUIT")
+                finally:
+                    # So python is a bit strange in that KeyboardInterrupt is special
+                    # And sys.exc_info() here is the KeyboardInterrupt rather than the UserQuit
+                    with open(reference, 'a') as fle:
+                        fle.write(str(sys.exc_info()[0]))
 
         if __name__ == "__main__":
             from photons_app.executor import main
@@ -123,7 +160,13 @@ describe "run":
         """
         )
 
-        self.assertRunnerBehaviour(script, "FINALLY", expected_stdout, expected_stderr)
+        self.assertRunnerBehaviour(
+            script,
+            f"USERQUIT<class 'KeyboardInterrupt'>",
+            expected_stdout,
+            expected_stderr,
+            sig=signal.SIGINT,
+        )
 
     it "ensures with statements get cleaned up on SIGINT when we have an exception":
         script = dedent(
@@ -241,7 +284,7 @@ describe "run":
             script, f"CANCELLED<class '{cancelled_error_name}'>", expected_stdout, expected_stderr,
         )
 
-    it "stops the program on SIGTERM":
+    it "says the program was cancelled if the program quits with asyncio.CancelledError":
         if platform.system() == "Windows":
             return
 
@@ -258,26 +301,19 @@ describe "run":
         def __lifx__(*args, **kwargs):
             pass
 
-        async def gen(out, sock):
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
             try:
-                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                s.connect(sock)
-                s.close()
-
-                await asyncio.sleep(10)
-                yield 1
+                fut = asyncio.Future()
+                fut.cancel()
+                await fut
             except asyncio.CancelledError:
-                with open(out, 'w') as fle:
+                with open(reference, 'w') as fle:
                     fle.write("CANCELLED")
                 raise
             finally:
-                with open(out, 'a') as fle:
+                with open(reference, 'a') as fle:
                     fle.write(str(sys.exc_info()[0]))
-
-        @an_action()
-        async def a_test(collector, reference, artifact, **kwargs):
-            async for i in gen(reference, artifact):
-                pass
 
         if __name__ == "__main__":
             from photons_app.executor import main
@@ -290,7 +326,7 @@ describe "run":
             r"""
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Something went wrong! -- ApplicationCancelled
-        \t"The application itself was shutdown"
+        \t"The application itself was cancelled"
         """
         )
 
@@ -307,6 +343,77 @@ describe "run":
         self.assertRunnerBehaviour(
             script,
             f"CANCELLED<class '{cancelled_error_name}'>",
+            expected_stdout,
+            expected_stderr,
+            sig=None,
+        )
+
+    it "stops the program on SIGTERM":
+        if platform.system() == "Windows":
+            return
+
+        script = dedent(
+            """
+        from photons_app.errors import ApplicationCancelled, UserQuit, ApplicationStopped
+        from photons_app.actions import an_action
+
+        from delfick_project.addons import addon_hook
+        import asyncio
+        import socket
+        import sys
+
+        @addon_hook()
+        def __lifx__(*args, **kwargs):
+            pass
+
+        @an_action()
+        async def a_test(collector, reference, artifact, **kwargs):
+            try:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(artifact)
+                s.close()
+
+                await collector.configuration["photons_app"].final_future
+            except (asyncio.CancelledError, ApplicationCancelled, UserQuit):
+                with open(reference, 'w') as fle:
+                    fle.write(f"Stopped incorrectly {sys.exc_info()}")
+                raise
+            except ApplicationStopped:
+                with open(reference, 'w') as fle:
+                    fle.write("STOPPED")
+                raise
+            finally:
+                with open(reference, 'a') as fle:
+                    fle.write(str(sys.exc_info()[0]))
+
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+            main(["a_test"] + sys.argv[1:])
+        """
+        )
+
+        expected_stdout = dedent(
+            r"""
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Something went wrong! -- ApplicationStopped
+        \t"The application itself was stopped"
+        """
+        )
+
+        expected_stderr = dedent(
+            r"""
+        [^I]+INFO\s+delfick_project.option_merge.collector Adding configuration from .+
+        [^I]+INFO\s+delfick_project.addons Found lifx.photons.__main__ addon
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting photons_app
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting target_register
+        [^I]+INFO\s+delfick_project.option_merge.collector Converting targets
+        """
+        )
+
+        self.assertRunnerBehaviour(
+            script,
+            f"STOPPED<class 'photons_app.errors.ApplicationStopped'>",
             expected_stdout,
             expected_stderr,
             sig=signal.SIGTERM,
@@ -329,16 +436,9 @@ describe "run":
             await asyncio.sleep(0.01)
             info["ran"] = True
 
-        photons_app = mock.Mock(
-            name="photons_app",
-            loop=loop,
-            chosen_task="task",
-            reference="reference",
-            final_future=final_future,
-        )
-        photons_app.cleanup.side_effect = cleanup
+        with make_photons_app(cleanup) as photons_app:
+            run(doit(), photons_app, target_register)
 
-        run(doit(), photons_app, target_register)
         assert info == {"cleaned": True, "ran": True}
 
     it "cleans up even if runner raise an exception":
@@ -359,21 +459,121 @@ describe "run":
             info["ran"] = True
             raise ValueError("Nope")
 
-        photons_app = mock.Mock(
-            name="photons_app",
-            loop=loop,
-            chosen_task="task",
-            reference="reference",
-            final_future=final_future,
-        )
-        photons_app.cleanup.side_effect = cleanup
-
-        with assertRaises(ValueError, "Nope"):
-            run(doit(), photons_app, target_register)
+        with make_photons_app(cleanup) as photons_app:
+            with assertRaises(ValueError, "Nope"):
+                run(doit(), photons_app, target_register)
 
         assert info == {"cleaned": True, "ran": True}
 
-    describe "on_done_task":
+    it "cleans up before we finish task if it's cancelled outside":
+        info = {
+            "ran": None,
+            "cleaned": None,
+            "cleaned_in_except": None,
+            "cleaned_in_finally": None,
+        }
+
+        target_register = mock.Mock(name="target_register")
+
+        async def cleanup(tr):
+            assert tr == target_register.used_targets
+            await asyncio.sleep(0.01)
+            info["cleaned"] = True
+
+        async def doit():
+            info["ran"] = True
+            try:
+                asyncio.get_event_loop().call_later(0.02, photons_app.final_future.cancel)
+                await asyncio.sleep(10)
+            except:
+                await asyncio.sleep(0.05)
+                info["cleaned_in_except"] = info["cleaned"]
+                raise
+            finally:
+                info["cleaned_in_finally"] = info["cleaned"]
+
+        with make_photons_app(cleanup) as photons_app:
+            with assertRaises(ApplicationCancelled):
+                run(doit(), photons_app, target_register)
+
+        assert info == {
+            "ran": True,
+            "cleaned": True,
+            "cleaned_in_except": None,
+            "cleaned_in_finally": None,
+        }
+
+    it "has a graceful future ability so that the application stops before final_future is done":
+        info = {
+            "ran": None,
+            "cleaned": None,
+            "exception": None,
+            "cleaned_in_except": None,
+            "cleaned_in_finally": None,
+            "final_future_in_hanging": None,
+            "final_future_done_in_except": None,
+            "final_future_done_in_finally": None,
+            "final_future_done_in_cleanup": None,
+        }
+
+        fut = {"final": None}
+
+        target_register = mock.Mock(name="target_register")
+
+        async def cleanup(tr):
+            assert tr == target_register.used_targets
+            await asyncio.sleep(0.01)
+            info["cleaned"] = True
+            info["final_future_done_in_cleanup"] = fut["final"].done()
+
+        async def doit(photons_app):
+            info["ran"] = True
+
+            async def hanging():
+                # This task will be cancelled in cleanup
+                try:
+                    await asyncio.sleep(20)
+                finally:
+                    info["final_future_in_hanging"] = fut["final"].done()
+
+            asyncio.get_event_loop().create_task(hanging())
+
+            asyncio.get_event_loop().call_later(
+                0.02, photons_app.graceful_final_future.set_exception, ApplicationStopped
+            )
+
+            with photons_app.using_graceful_future() as final_future:
+                try:
+                    await final_future
+                except:
+                    info["exception"] = sys.exc_info()[0]
+                    await asyncio.sleep(0.05)
+                    info["final_future_done_in_except"] = fut["final"].done()
+                    info["cleaned_in_except"] = info["cleaned"]
+                    raise
+                finally:
+                    info["cleaned_in_finally"] = info["cleaned"]
+                    info["final_future_done_in_finally"] = fut["final"].done()
+
+        with make_photons_app(cleanup) as photons_app:
+            fut["final"] = photons_app.final_future
+
+            with assertRaises(ApplicationStopped):
+                run(doit(photons_app), photons_app, target_register)
+
+        assert info == {
+            "ran": True,
+            "cleaned": True,
+            "cleaned_in_except": None,
+            "cleaned_in_finally": None,
+            "exception": ApplicationStopped,
+            "final_future_done_in_except": False,
+            "final_future_done_in_finally": False,
+            "final_future_done_in_cleanup": False,
+            "final_future_in_hanging": True,
+        }
+
+    describe "transfer_result":
         it "sets exception on final future if one is risen":
             final_future = asyncio.Future()
 
@@ -381,7 +581,7 @@ describe "run":
             fut = asyncio.Future()
             fut.set_exception(error)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.exception() == error
 
         it "sets exception on final future if one is risen unless it's already cancelled":
@@ -392,7 +592,7 @@ describe "run":
             fut = asyncio.Future()
             fut.set_exception(error)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.cancelled()
 
         it "doesn't fail if the final_future is already cancelled when the task finishes":
@@ -402,7 +602,7 @@ describe "run":
             fut = asyncio.Future()
             fut.set_result(None)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.cancelled()
 
         it "doesn't fail if the final_future is already done when the task finishes":
@@ -412,7 +612,7 @@ describe "run":
             fut = asyncio.Future()
             fut.set_result(None)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.result() == None
 
         it "doesn't fail if the final_future already has an exception when the task finishes":
@@ -423,7 +623,7 @@ describe "run":
             fut = asyncio.Future()
             fut.set_result(None)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.exception() == error
 
         it "doesn't fail if the final_future already has an exception when the task has an error":
@@ -435,5 +635,5 @@ describe "run":
             error2 = Exception("WAT2")
             fut.set_exception(error2)
 
-            on_done_task(final_future, fut)
+            transfer_result(fut, final_future)
             assert final_future.exception() == error

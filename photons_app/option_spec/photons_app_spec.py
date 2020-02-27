@@ -3,21 +3,22 @@ Here we define the yaml specification for photons_app options and task options
 
 The specifications are responsible for sanitation, validation and normalisation.
 """
-
 from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
 from photons_app.option_spec.task_specifier import task_specifier_spec
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import BadOption
+from photons_app.errors import BadOption, ApplicationStopped
 from photons_app import helpers as hp
 
 from delfick_project.norms import sb, dictobj, va
+from contextlib import contextmanager
+import platform
 import asyncio
 import logging
 import signal
 import json
 import sys
 
-log = logging.getLogger("photons_app.options_spec.photons_app-spec")
+log = logging.getLogger("photons_app.options_spec.photons_app_spec")
 
 
 class PhotonsApp(dictobj.Spec):
@@ -58,6 +59,12 @@ class PhotonsApp(dictobj.Spec):
         return self.loop.create_future()
 
     @hp.memoized_property
+    def graceful_final_future(self):
+        fut = self.loop.create_future()
+        fut.setup = False
+        return fut
+
+    @hp.memoized_property
     def loop(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -92,6 +99,56 @@ class PhotonsApp(dictobj.Spec):
                 self.final_future.cancel()
 
         return CM()
+
+    @contextmanager
+    def using_graceful_future(self, on_done=None):
+        """
+        This context manager is used so that a server may shut down before
+        the real final_future is stopped.
+
+        This is useful because many photons resources will stop themselves
+        when the real final_future is stopped.
+
+        But we may want to stop (say a server) before we run cleanup activities
+        and mark final_future as done.
+
+        Usage is like::
+
+            with photons_app.graceful_final_future() as final_future:
+                try:
+                    await final_future
+                except ApplicationStopped:
+                    await asyncio.sleep(7)
+        """
+        final_future = self.final_future
+
+        graceful_future = self.graceful_final_future
+        graceful_future.setup = True
+
+        reinstate_handler = False
+
+        if platform.system() != "Windows":
+
+            def stop():
+                if not graceful_future.done():
+                    graceful_future.set_exception(ApplicationStopped)
+
+            reinstate_handler = self.loop.remove_signal_handler(signal.SIGTERM)
+            self.loop.add_signal_handler(signal.SIGTERM, stop)
+
+        yield graceful_future
+
+        # graceful future is no longer in use
+        graceful_future.setup = False
+
+        if reinstate_handler:
+
+            def stop():
+                if not final_future.done():
+                    final_future.set_exception(ApplicationStopped)
+
+            self.loop.remove_signal_handler(signal.SIGTERM)
+            self.loop.add_signal_handler(signal.SIGTERM, stop)
 
     async def cleanup(self, targets):
         for cleaner in self.cleaners:

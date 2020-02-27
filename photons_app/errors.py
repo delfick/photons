@@ -35,7 +35,11 @@ ProgrammerError = ProgrammerError
 
 
 class ApplicationCancelled(PhotonsAppError):
-    desc = "The application itself was shutdown"
+    desc = "The application itself was cancelled"
+
+
+class ApplicationStopped(PhotonsAppError):
+    desc = "The application itself was stopped"
 
 
 class BadConfiguration(PhotonsAppError):

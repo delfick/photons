@@ -3,6 +3,32 @@
 ChangeLog
 =========
 
+0.25.0 - TBD
+    * Made it easier to make long lived servers with more graceful shutdown.
+      Usually you wait on ``photons_app.final_future`` to determine when to
+      shutdown the server. Unfortunately this means that many resources that
+      depend on this future to shutdown will also shutdown. Now you can do:
+
+      .. code-block:: python
+
+        from photons_app.errors import ApplicationStopped, UserQuit
+
+        import asyncio
+
+        with photons_app.using_graceful_future() as final_future:
+            try:
+                start_my_server()
+                await final_future
+            except ApplicationStopped:
+                # Application got a SIGTERM
+            except UserQuit:
+                # The user did a ctrl-c
+            except asyncio.CancelledError:
+                # Something did photons_app.final_future.cancel()
+            finally:
+                # This is run before final_future is cancelled
+                # Unless something already cancelled it!
+
 0.24.7 - 23 February 2020
     * Introduced a ``transition_color`` option to the Transformer that says
       if we're going from off to on, then don't reset the color when we reset
