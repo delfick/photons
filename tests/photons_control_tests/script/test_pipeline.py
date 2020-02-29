@@ -150,7 +150,7 @@ describe "Pipeline":
 
         for serial, times in got_times.items():
             assert len(times) == 3, times
-            assert times[0] - start < 0.07
+            assert times[0] - start < 0.15
             assert times[1] - start > 0.2
 
     async it "understands SpecialReference objects", runner:
