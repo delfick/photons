@@ -12,7 +12,7 @@ from photons_colour import Parser
 from delfick_project.norms import sb, Meta
 
 
-def PowerToggle(duration=1):
+def PowerToggle(duration=1, **kwargs):
     """
     Returns a valid message that will toggle the power of devices used against it.
 
@@ -212,4 +212,19 @@ async def transform(collector, target, reference, **kwargs):
             'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
         )
 
+    await target.script(msg).run_with_all(reference)
+
+
+@an_action(needs_target=True, special_reference=True)
+async def power_toggle(collector, target, reference, **kwargs):
+    """
+    Toggle the power of devices.
+
+    ``target:power_toggle match:group_label=kitchen -- '{"duration": 2}'``
+
+    It takes in a ``duration`` field that is the seconds of the duration. This defaults
+    to 1 second.
+    """
+    extra = collector.configuration["photons_app"].extra_as_json
+    msg = PowerToggle(**extra)
     await target.script(msg).run_with_all(reference)

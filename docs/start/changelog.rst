@@ -30,6 +30,7 @@ ChangeLog
             finally:
                 # This is run before final_future is cancelled
                 # Unless something already cancelled it!
+    * Add a lan:power_toggle cli action for toggling the power of lights
 
 0.24.7 - 23 February 2020
     * Introduced a ``transition_color`` option to the Transformer that says
