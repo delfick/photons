@@ -92,6 +92,9 @@ def run(coro, photons_app, target_register):
                 task.cancel()
             loop.run_until_complete(asyncio.tasks.gather(task, loop=loop, return_exceptions=True))
 
+            waiter.cancel()
+            loop.run_until_complete(asyncio.tasks.gather(waiter, loop=loop, return_exceptions=True))
+
             # Perform cleanup duties so that resources are stopped appropriately
             log.debug("Running cleaners")
             loop.run_until_complete(photons_app.cleanup(targets))
