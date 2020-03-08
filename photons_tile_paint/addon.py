@@ -67,11 +67,15 @@ class Animator:
 
     def make_action(self):
         async def action(collector, target, reference, **kwargs):
-            extra = collector.configuration["photons_app"].extra_as_json
-            final_future = collector.configuration["photons_app"].final_future
+            photons_app = collector.configuration["photons_app"]
+
+            extra = photons_app.extra_as_json
+
             global_options = collector.configuration["animation_options"]
-            async with target.session() as afr:
-                await self.animate(target, afr, final_future, reference, extra, global_options)
+
+            with photons_app.using_graceful_future() as final_future:
+                async with target.session() as afr:
+                    await self.animate(target, afr, final_future, reference, extra, global_options)
 
         action.__name__ = self.name
         action.__doc__ = self.__doc__
