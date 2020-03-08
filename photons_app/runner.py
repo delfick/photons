@@ -90,9 +90,16 @@ def run(coro, photons_app, target_register):
             log.debug("Waiting for main task to finish")
             if not graceful_future.setup:
                 task.cancel()
-            loop.run_until_complete(asyncio.tasks.gather(task, loop=loop, return_exceptions=True))
+
+            try:
+                loop.run_until_complete(
+                    asyncio.tasks.gather(task, loop=loop, return_exceptions=True)
+                )
+            except KeyboardInterrupt:
+                pass
 
             waiter.cancel()
+            log.debug("Waiting for waiter task to finish")
             loop.run_until_complete(asyncio.tasks.gather(waiter, loop=loop, return_exceptions=True))
 
             # Perform cleanup duties so that resources are stopped appropriately
