@@ -4,7 +4,6 @@ from photons_themes.appliers.splotch import StripApplierSplotch, TileApplierSplo
 from photons_themes.theme import Theme, ThemeColor
 from photons_themes.canvas import Canvas
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
 from unittest import mock
 import pytest

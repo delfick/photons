@@ -3,7 +3,6 @@
 from photons_themes.canvas import color_weighting, shuffle_point, Canvas
 from photons_themes.theme import ThemeColor, Theme
 
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import random
