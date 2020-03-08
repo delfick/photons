@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.25.0 - TBD
+0.25.0 - 8 March 2020
     * Added photons_control.planner.PacketPlan for making a plan that sends
       a message and returns a reply.
     * Made it easier to make long lived servers with more graceful shutdown.
