@@ -181,6 +181,21 @@ describe "expand_spec":
             spec = spec.spec(pkt, True)
             return types.expand_spec(kls, spec, True)
 
+        it "returns instance of kls if NotSpecified", meta, spec, pkt:
+
+            class Kls(dictobj.PacketSpec):
+                fields = [("one", T.Bool.default(False)), ("two", T.Int8.default(10))]
+
+            spec = spec.spec(pkt, True)
+            subject = types.expand_spec(Kls, spec, True)
+
+            val = Kls.empty_normalise()
+            assert subject.normalise(meta, sb.NotSpecified) == val
+
+        it "returns instance of kls if a dictionary", meta, subject, kls:
+            val = kls.empty_normalise(one=True, two=12)
+            assert subject.normalise(meta, {"one": True, "two": 12}) == val
+
         it "returns as is if already of the kls type", meta, subject, kls:
             val = kls.empty_normalise(one=True, two=12)
             assert subject.normalise(meta, val) is val
@@ -194,7 +209,7 @@ describe "expand_spec":
             assert subject.normalise(meta, val.pack().tobytes()) == val
 
         it "complains if not bitarray, bytes or instance of kls", meta, subject, kls:
-            for thing in (0, 1, False, True, [], [1], {}, {1: 2}, None, "adsf", lambda: True):
+            for thing in (0, 1, False, True, [], [1], None, "adsf", lambda: True):
                 with assertRaises(
                     BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls,
                 ):

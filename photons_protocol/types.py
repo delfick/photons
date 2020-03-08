@@ -577,6 +577,10 @@ class expand_spec(sb.Spec):
                 return self.kls.unpack(self.spec.normalise(meta, val))
             elif isinstance(val, self.kls):
                 return val
+            elif isinstance(val, dict):
+                return self.kls.empty_normalise(**val)
+            elif val is sb.NotSpecified:
+                return self.kls.empty_normalise()
             else:
                 raise BadSpecValue(
                     "Expected to unpack bytes", found=val, transforming_into=self.kls
