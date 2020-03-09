@@ -25,10 +25,11 @@ We define actions by using the ``an_action`` decorator.
 .. autoclass:: photons_app.actions.an_action
 """
 
+from photons_app.option_spec.task_specifier import task_specifier_spec
 from photons_app.option_spec.task_objs import Task
 from photons_app.errors import PhotonsAppError
 
-from delfick_project.norms import sb
+from delfick_project.norms import sb, Meta
 from collections import defaultdict
 from textwrap import dedent
 import itertools
@@ -125,7 +126,12 @@ async def help(collector, tasks, reference, target, **kwargs):
     You can also be tricky and do something like ``<target>:help`` instead
     of ``help <target>``
     """
-    target_name, task_name = collector.configuration["photons_app"].task_specifier()
+    if reference in ("", sb.NotSpecified, None):
+        task_name = "help"
+        target_name = sb.NotSpecified
+    else:
+        target_name, task_name = task_specifier_spec().normalise(Meta.empty(), reference)
+
     target_register = collector.configuration["target_register"]
 
     if task_name == "help":
