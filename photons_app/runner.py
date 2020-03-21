@@ -115,7 +115,7 @@ def run(coro, photons_app, target_register):
             # Cancel everything left
             # And ensure any remaining async generators are shutdown
             log.debug("Cancelling tasks and async generators")
-            cancel_all_tasks(loop, task, waiter)
+            cancel_all_tasks(loop)
             loop.run_until_complete(shutdown_asyncgens(loop))
         finally:
             loop.close()
@@ -150,11 +150,13 @@ async def shutdown_asyncgens(loop):
             )
 
 
-def cancel_all_tasks(loop, *ignore_errors):
+def cancel_all_tasks(loop):
     if hasattr(asyncio.tasks, "all_tasks"):
         to_cancel = asyncio.tasks.all_tasks(loop)
     else:
         to_cancel = asyncio.Task.all_tasks(loop)
+
+    to_cancel = [t for t in to_cancel if not t.done()]
 
     if not to_cancel:
         return
@@ -169,7 +171,7 @@ def cancel_all_tasks(loop, *ignore_errors):
         if task.cancelled():
             continue
 
-        if task not in ignore_errors and task.exception() is not None:
+        if task.exception() is not None:
             loop.call_exception_handler(
                 {
                     "message": "unhandled exception during shutdown",
