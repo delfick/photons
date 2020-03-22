@@ -49,7 +49,7 @@ setup(
     , extras_require =
       { "tests":
         [ "noseOfYeti==2.0.0"
-        , "asynctest==0.12.2"
+        , "asynctest==0.13.0"
         , "pytest==5.3.1"
         , "alt-pytest-asyncio==0.5.2"
         , "pytest-helpers-namespace==2019.1.8"

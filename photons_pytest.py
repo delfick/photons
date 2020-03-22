@@ -174,6 +174,20 @@ def pytest_configure():
     def port_connected(port):
         return _port_connected(port)
 
+    @pytest.helpers.register
+    def AsyncMock(*args, **kwargs):
+        if sys.version_info < (3, 8):
+            return __import__("asynctest.mock").mock.CoroutineMock(*args, **kwargs)
+        else:
+            return mock.AsyncMock(*args, **kwargs)
+
+    @pytest.helpers.register
+    def MagicAsyncMock(*args, **kwargs):
+        if sys.version_info < (3, 8):
+            return __import__("asynctest").MagicMock(*args, **kwargs)
+        else:
+            return mock.MagicMock(*args, **kwargs)
+
 
 class MemoryDevicesRunner:
     def __init__(self, devices):

@@ -10,7 +10,6 @@ from photons_transport.comms.base import Found
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -57,7 +56,7 @@ describe "InfoStore":
 
         def pretend_services(self):
             transport = mock.Mock(name="transport")
-            transport.close = asynctest.mock.CoroutineMock(name="close")
+            transport.close = pytest.helpers.AsyncMock(name="close")
             return {"UDP": transport}
 
         describe "finish":

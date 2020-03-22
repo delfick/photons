@@ -9,7 +9,6 @@ from photons_app import helpers as hp
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
 import pytest
 
 describe "TaskFinder":
@@ -44,13 +43,13 @@ describe "TaskFinder":
                 @hp.memoized_property
                 def one_task(s):
                     one_task = mock.Mock(name="one")
-                    one_task.run = asynctest.mock.CoroutineMock(name="run")
+                    one_task.run = pytest.helpers.AsyncMock(name="run")
                     return one_task
 
                 @hp.memoized_property
                 def two_task(s):
                     two_task = mock.Mock(name="two")
-                    two_task.run = asynctest.mock.CoroutineMock(name="two_task")
+                    two_task.run = pytest.helpers.AsyncMock(name="two_task")
                     return two_task
 
                 @hp.memoized_property

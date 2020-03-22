@@ -19,7 +19,6 @@ from photons_messages import DeviceMessages
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -156,7 +155,7 @@ describe "Item":
             @pytest.fixture()
             def V(self, item):
                 class V:
-                    find_specific_serials = asynctest.mock.CoroutineMock(
+                    find_specific_serials = pytest.helpers.AsyncMock(
                         name="find_specific_serials"
                     )
                     serial1 = "d073d5000000"
@@ -337,7 +336,7 @@ describe "Item":
                     results = [mock.Mock(name=f"res{i}") for i in range(10)]
 
                     afr = mock.Mock(name="afr", spec=["send"])
-                    send = asynctest.mock.CoroutineMock(name="send")
+                    send = pytest.helpers.AsyncMock(name="send")
 
                     error_catcher = []
 
@@ -666,7 +665,7 @@ describe "Item":
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
-                _find = asynctest.mock.CoroutineMock(
+                _find = pytest.helpers.AsyncMock(
                     name="_find", return_value=(found, serials, missing)
                 )
 
@@ -675,7 +674,7 @@ describe "Item":
 
                 found2 = mock.Mock(name="found2")
                 missing2 = mock.Mock(name="missing2")
-                search = asynctest.mock.CoroutineMock(
+                search = pytest.helpers.AsyncMock(
                     name="search", return_value=(found2, missing2)
                 )
 
@@ -686,7 +685,7 @@ describe "Item":
                     yield res1
                     yield res2
 
-                write_messages = asynctest.MagicMock(
+                write_messages = pytest.helpers.MagicAsyncMock(
                     name="write_messages", side_effect=write_messages
                 )
 
@@ -720,14 +719,14 @@ describe "Item":
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
-                _find = asynctest.mock.CoroutineMock(
+                _find = pytest.helpers.AsyncMock(
                     name="_find", return_value=(found, serials, missing)
                 )
 
                 make_packets = mock.Mock(name="make_packets", return_value=[])
 
-                search = asynctest.mock.CoroutineMock(name="search")
-                write_messages = asynctest.MagicMock(name="write_messages")
+                search = pytest.helpers.AsyncMock(name="search")
+                write_messages = pytest.helpers.MagicAsyncMock(name="write_messages")
 
                 mod = {
                     "_find": _find,
@@ -752,8 +751,8 @@ describe "Item":
                 assert len(write_messages.mock_calls) == 0
 
             async it "doesn't search if broadcasting", item, V:
-                search = asynctest.mock.CoroutineMock(name="search")
-                write_messages = asynctest.MagicMock(name="write_messages")
+                search = pytest.helpers.AsyncMock(name="search")
+                write_messages = pytest.helpers.MagicAsyncMock(name="write_messages")
 
                 mod = {"search": search, "write_messages": write_messages}
 
@@ -817,7 +816,7 @@ describe "Item":
                     hp.add_error(kwargs["error_catcher"], error)
                     yield res2
 
-                write_messages = asynctest.MagicMock(
+                write_messages = pytest.helpers.MagicAsyncMock(
                     name="write_messages", side_effect=write_messages
                 )
 
@@ -859,7 +858,7 @@ describe "Item":
                     yield res2
                     hp.add_error(kwargs["error_catcher"], error2)
 
-                write_messages = asynctest.MagicMock(
+                write_messages = pytest.helpers.MagicAsyncMock(
                     name="write_messages", side_effect=write_messages
                 )
 

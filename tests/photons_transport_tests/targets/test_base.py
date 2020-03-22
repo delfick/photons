@@ -12,7 +12,6 @@ from photons_messages import protocol_register
 from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -161,15 +160,15 @@ describe "Target":
         describe "close_args_for_run":
             async it "just calls finish on the args_for_run", target:
                 args_for_run = mock.Mock(name="args_for_run")
-                args_for_run.finish = asynctest.mock.CoroutineMock(name="finish")
+                args_for_run.finish = pytest.helpers.AsyncMock(name="finish")
                 await target.close_args_for_run(args_for_run)
                 args_for_run.finish.assert_called_once_with()
 
         describe "session":
             async it "creates and closes an args_for_run", target:
                 afr = mock.Mock(name="afr")
-                args_for_run = asynctest.mock.CoroutineMock(name="args_for_run", return_value=afr)
-                close_args_for_run = asynctest.mock.CoroutineMock(name="close_args_for_run")
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
+                close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
 
                 args_for_run_patch = mock.patch.object(target, "args_for_run", args_for_run)
                 close_args_for_run_patch = mock.patch.object(

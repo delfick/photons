@@ -18,7 +18,6 @@ from photons_products import Products
 from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -65,13 +64,13 @@ describe "NetworkSession":
     describe "finish":
         async it "closes all the broadcast_transports", V:
             b1 = mock.Mock(name="b1")
-            b1.close = asynctest.mock.CoroutineMock(name="close")
+            b1.close = pytest.helpers.AsyncMock(name="close")
 
             b2 = mock.Mock(name="b2")
-            b2.close = asynctest.mock.CoroutineMock(name="close", side_effect=ValueError("NOPE"))
+            b2.close = pytest.helpers.AsyncMock(name="close", side_effect=ValueError("NOPE"))
 
             b3 = mock.Mock(name="b3")
-            b3.close = asynctest.mock.CoroutineMock(name="close")
+            b3.close = pytest.helpers.AsyncMock(name="close")
 
             V.session.broadcast_transports["one"] = b1
             V.session.broadcast_transports["two"] = b2
@@ -109,7 +108,7 @@ describe "NetworkSession":
 
     describe "choose_transport":
         async it "complains if we can't determined need transport", V:
-            determine_needed_transport = asynctest.mock.CoroutineMock(
+            determine_needed_transport = pytest.helpers.AsyncMock(
                 name="determine_needed_transport"
             )
             determine_needed_transport.return_value = []
@@ -129,7 +128,7 @@ describe "NetworkSession":
 
         async it "returns the desired service or complains if can't be found", V:
             need = [Services.UDP]
-            determine_needed_transport = asynctest.mock.CoroutineMock(
+            determine_needed_transport = pytest.helpers.AsyncMock(
                 name="determine_needed_transport"
             )
             determine_needed_transport.return_value = need
@@ -162,12 +161,12 @@ describe "NetworkSession":
                     yield 7, 3
                     yield 4, 4
 
-                _search_retry_iterator = asynctest.MagicMock(
+                _search_retry_iterator = pytest.helpers.MagicAsyncMock(
                     name="_search_retry_iterator", side_effect=iterator
                 )
 
                 script = mock.Mock(name="script", spec=["run_with"])
-                script.run_with = asynctest.MagicMock(name="run_with", side_effect=run_with)
+                script.run_with = pytest.helpers.MagicAsyncMock(name="run_with", side_effect=run_with)
 
                 V.transport_target.script.return_value = script
 

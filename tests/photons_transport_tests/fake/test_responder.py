@@ -7,7 +7,6 @@ from photons_messages import Services, DiscoveryMessages, DeviceMessages
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import pytest
 
 describe "Responder":

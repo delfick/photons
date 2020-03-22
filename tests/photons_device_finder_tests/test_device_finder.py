@@ -7,7 +7,6 @@ from photons_app.special import SpecialReference
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import binascii
 import pytest
 
@@ -56,7 +55,7 @@ describe "DeviceFinder":
 
         describe "start":
             async it "starts the loops and sets daemon to True", loops, finder:
-                start = asynctest.mock.CoroutineMock(name="start")
+                start = pytest.helpers.AsyncMock(name="start")
                 loops.start = start
 
                 quickstart = mock.Mock(name="quickstrt")
@@ -66,7 +65,7 @@ describe "DeviceFinder":
                 start.assert_called_once_with(quickstart=quickstart)
 
             async it "defaults to not being a quickstart", loops, finder:
-                start = asynctest.mock.CoroutineMock(name="start")
+                start = pytest.helpers.AsyncMock(name="start")
                 loops.start = start
 
                 await finder.start()
@@ -75,7 +74,7 @@ describe "DeviceFinder":
 
         describe "finish":
             async it "calls finish on the loops", loops, finder:
-                finish = asynctest.mock.CoroutineMock(name="finish")
+                finish = pytest.helpers.AsyncMock(name="finish")
                 loops.finish = finish
 
                 await finder.finish()
@@ -84,7 +83,7 @@ describe "DeviceFinder":
         describe "args_for_run":
             async it "proxies to loops", finder, loops:
                 afr = mock.Mock(name="afr")
-                args_for_run = asynctest.mock.CoroutineMock(name="finish", return_value=afr)
+                args_for_run = pytest.helpers.AsyncMock(name="finish", return_value=afr)
                 loops.args_for_run = args_for_run
 
                 assert await finder.args_for_run() is afr
@@ -107,12 +106,12 @@ describe "DeviceFinder":
                 serials = mock.Mock(name="serials")
 
                 reference = mock.Mock(name="reference")
-                reference.find = asynctest.mock.CoroutineMock(
+                reference.find = pytest.helpers.AsyncMock(
                     name="find", return_value=(found, serials)
                 )
 
                 afr = mock.Mock(name="afr")
-                args_for_run = asynctest.mock.CoroutineMock(name="args_for_run", return_value=afr)
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
@@ -135,12 +134,12 @@ describe "DeviceFinder":
                 serials = ["d1", "d2"]
 
                 reference = mock.Mock(name="reference")
-                reference.find = asynctest.mock.CoroutineMock(
+                reference.find = pytest.helpers.AsyncMock(
                     name="find", return_value=(found, serials)
                 )
 
                 afr = mock.Mock(name="afr")
-                args_for_run = asynctest.mock.CoroutineMock(name="args_for_run", return_value=afr)
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
@@ -224,7 +223,7 @@ describe "DeviceFinder":
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=True)
-                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                loops.refresh_from_filter = pytest.helpers.AsyncMock(
                     name="refresh_from_filter", return_value=found
                 )
 
@@ -243,7 +242,7 @@ describe "DeviceFinder":
 
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
-                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                loops.refresh_from_filter = pytest.helpers.AsyncMock(
                     name="refresh_from_filter", return_value=found
                 )
 
@@ -264,7 +263,7 @@ describe "DeviceFinder":
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 store = mock.Mock(name="store")
-                store.found_from_filter = asynctest.mock.CoroutineMock(
+                store.found_from_filter = pytest.helpers.AsyncMock(
                     name="found_from_filter", return_value=found
                 )
                 loops.store = store
@@ -288,7 +287,7 @@ describe "DeviceFinder":
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 store = mock.Mock(name="store")
-                store.found_from_filter = asynctest.mock.CoroutineMock(
+                store.found_from_filter = pytest.helpers.AsyncMock(
                     name="found_from_filter", return_value={}
                 )
                 loops.store = store
@@ -308,7 +307,7 @@ describe "DeviceFinder":
                 afr = mock.Mock(name="afr")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
-                loops.refresh_from_filter = asynctest.mock.CoroutineMock(
+                loops.refresh_from_filter = pytest.helpers.AsyncMock(
                     name="refresh_from_filter", return_value={}
                 )
 

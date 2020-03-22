@@ -9,7 +9,6 @@ from photons_messages import Services
 from delfick_project.norms import Meta, sb, BadSpecValue
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import binascii
 import pytest
 
@@ -333,7 +332,7 @@ describe "DiscoveryOptions":
         assert options.want("d073d5001338")
 
     async it "can do discovery":
-        add_service = asynctest.mock.CoroutineMock(name="add_service")
+        add_service = pytest.helpers.AsyncMock(name="add_service")
         v = {"d073d5000001": "192.168.9.3", "d073d5000002": ["192.168.7.8", 56]}
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=v)
 
@@ -348,7 +347,7 @@ describe "DiscoveryOptions":
         ]
 
     async it "pays attention to serial_filter in discover":
-        add_service = asynctest.mock.CoroutineMock(name="add_service")
+        add_service = pytest.helpers.AsyncMock(name="add_service")
         v = {
             "d073d5000001": "192.168.9.3",
             "d073d5000002": ["192.168.7.8", 56],

@@ -26,7 +26,6 @@ from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import asyncio
 import pytest
 import time
@@ -98,8 +97,8 @@ describe "FakeDevice":
             return FakeDevice(serial, [])
 
         async it "is an asynchronous context manager", device:
-            start = asynctest.mock.CoroutineMock(name="start")
-            finish = asynctest.mock.CoroutineMock(name="finish")
+            start = pytest.helpers.AsyncMock(name="start")
+            finish = pytest.helpers.AsyncMock(name="finish")
 
             with mock.patch.multiple(device, start=start, finish=finish):
                 async with device:
@@ -183,7 +182,7 @@ describe "FakeDevice":
             r1 = mock.NonCallableMock(name="responder1", spec=[])
             r2 = mock.NonCallableMock(name="responder2", spec=["restart"])
 
-            r2.restart = asynctest.mock.CoroutineMock(name="restart")
+            r2.restart = pytest.helpers.AsyncMock(name="restart")
             device.attrs.online = False
 
             with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
@@ -318,8 +317,8 @@ describe "FakeDevice":
             res = mock.Mock(name="res")
             res2 = mock.Mock(name="res2")
             source = mock.Mock(name="source")
-            make_response = asynctest.mock.CoroutineMock(name="make_response")
-            do_send_response = asynctest.mock.CoroutineMock(name="do_send_response")
+            make_response = pytest.helpers.AsyncMock(name="make_response")
+            do_send_response = pytest.helpers.AsyncMock(name="do_send_response")
 
             await device.reset()
 
@@ -376,7 +375,7 @@ describe "FakeDevice":
                 r1 = mock.Mock(name="r1", spec=[])
                 r2 = mock.Mock(name="r2", spec=[])
                 broadcast = mock.Mock(name="broadcast")
-                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                is_reachable = pytest.helpers.AsyncMock(name="is_reachable", return_value=True)
                 with mock.patch.multiple(
                     FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable
                 ):
@@ -387,7 +386,7 @@ describe "FakeDevice":
                 r1 = mock.Mock(name="r1", spec=[])
                 r2 = mock.Mock(name="r2", spec=[])
                 broadcast = mock.Mock(name="broadcast")
-                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=False)
+                is_reachable = pytest.helpers.AsyncMock(name="is_reachable", return_value=False)
                 with mock.patch.multiple(
                     FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable
                 ):
@@ -396,13 +395,13 @@ describe "FakeDevice":
 
             async it "is not discoverable if we are reachable but a responder is undiscoverable", device:
                 r1 = mock.Mock(name="r1", spec=["undiscoverable"])
-                r1.undiscoverable = asynctest.mock.CoroutineMock(
+                r1.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=True
                 )
 
                 r2 = mock.Mock(name="r2", spec=[])
                 broadcast = mock.Mock(name="broadcast")
-                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                is_reachable = pytest.helpers.AsyncMock(name="is_reachable", return_value=True)
                 with mock.patch.multiple(
                     FakeDevice, all_responders=[r1, r2], is_reachable=is_reachable
                 ):
@@ -412,24 +411,24 @@ describe "FakeDevice":
 
             async it "is not discoverable if we are reachable but a responder is undiscoverable even if others are", device:
                 r1 = mock.Mock(name="r1", spec=["undiscoverable"])
-                r1.undiscoverable = asynctest.mock.CoroutineMock(
+                r1.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=False
                 )
 
                 r2 = mock.Mock(name="r2", spec=["undiscoverable"])
-                r2.undiscoverable = asynctest.mock.CoroutineMock(
+                r2.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=True
                 )
 
                 r3 = mock.Mock(name="r3", spec=[])
 
                 r4 = mock.Mock(name="r4", spec=["undiscoverable"])
-                r4.undiscoverable = asynctest.mock.CoroutineMock(
+                r4.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=None
                 )
 
                 broadcast = mock.Mock(name="broadcast")
-                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                is_reachable = pytest.helpers.AsyncMock(name="is_reachable", return_value=True)
                 with mock.patch.multiple(
                     FakeDevice, all_responders=[r1, r2, r3, r4], is_reachable=is_reachable
                 ):
@@ -443,24 +442,24 @@ describe "FakeDevice":
 
             async it "is discoverable if we are reachable but responder say False to undiscoverable", device:
                 r1 = mock.Mock(name="r1", spec=["undiscoverable"])
-                r1.undiscoverable = asynctest.mock.CoroutineMock(
+                r1.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=False
                 )
 
                 r2 = mock.Mock(name="r2", spec=["undiscoverable"])
-                r2.undiscoverable = asynctest.mock.CoroutineMock(
+                r2.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=False
                 )
 
                 r3 = mock.Mock(name="r3", spec=[])
 
                 r4 = mock.Mock(name="r4", spec=["undiscoverable"])
-                r4.undiscoverable = asynctest.mock.CoroutineMock(
+                r4.undiscoverable = pytest.helpers.AsyncMock(
                     name="undiscoverable", return_value=None
                 )
 
                 broadcast = mock.Mock(name="broadcast")
-                is_reachable = asynctest.mock.CoroutineMock(name="is_reachable", return_value=True)
+                is_reachable = pytest.helpers.AsyncMock(name="is_reachable", return_value=True)
                 with mock.patch.multiple(
                     FakeDevice, all_responders=[r1, r2, r3, r4], is_reachable=is_reachable
                 ):
@@ -475,8 +474,8 @@ describe "FakeDevice":
                 r1 = mock.NonCallableMock(name="responder1", spec=["reset"])
                 r2 = mock.NonCallableMock(name="responder2", spec=["reset"])
 
-                r1.reset = asynctest.mock.CoroutineMock(name="reset")
-                r2.reset = asynctest.mock.CoroutineMock(name="reset")
+                r1.reset = pytest.helpers.AsyncMock(name="reset")
+                r2.reset = pytest.helpers.AsyncMock(name="reset")
 
                 device.no_res = mock.Mock(name="no_res")
                 device.no_acks = mock.Mock(name="no_acks")
@@ -511,8 +510,8 @@ describe "FakeDevice":
                 r1 = mock.NonCallableMock(name="responder1", spec=["reset"])
                 r2 = mock.NonCallableMock(name="responder2", spec=["reset"])
 
-                r1.reset = asynctest.mock.CoroutineMock(name="reset")
-                r2.reset = asynctest.mock.CoroutineMock(name="reset")
+                r1.reset = pytest.helpers.AsyncMock(name="reset")
+                r2.reset = pytest.helpers.AsyncMock(name="reset")
 
                 with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
                     await device.reset(zero=True)
@@ -531,7 +530,7 @@ describe "FakeDevice":
                     called.append("power_on")
                     fut.set_result(None)
 
-                power_on = asynctest.mock.CoroutineMock(name="power_on", side_effect=power_on)
+                power_on = pytest.helpers.AsyncMock(name="power_on", side_effect=power_on)
 
                 r1 = mock.NonCallableMock(name="responder1", spec=[])
                 r2 = mock.NonCallableMock(name="responder2", spec=["shutdown"])
@@ -540,13 +539,13 @@ describe "FakeDevice":
                     assert d is device
                     called.append("shutdown")
 
-                r2.shutdown = asynctest.mock.CoroutineMock(name="shutdown", side_effect=shut)
+                r2.shutdown = pytest.helpers.AsyncMock(name="shutdown", side_effect=shut)
 
                 async def pre_reboot(d):
                     assert d is device
                     called.append("pre_reboot")
 
-                pre_reboot = asynctest.mock.CoroutineMock(name="pre_reboot", side_effect=pre_reboot)
+                pre_reboot = pytest.helpers.AsyncMock(name="pre_reboot", side_effect=pre_reboot)
 
                 with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
                     with mock.patch.object(FakeDevice, "power_on", power_on):
@@ -570,7 +569,7 @@ describe "FakeDevice":
                     called.append("power_on")
                     assert False, "Shouldn't be called"
 
-                power_on = asynctest.mock.CoroutineMock(name="power_on", side_effect=power_on)
+                power_on = pytest.helpers.AsyncMock(name="power_on", side_effect=power_on)
 
                 r1 = mock.NonCallableMock(name="responder1", spec=[])
                 r2 = mock.NonCallableMock(name="responder2", spec=[])
@@ -596,12 +595,12 @@ describe "FakeDevice":
 
                     return func
 
-                finish = asynctest.mock.CoroutineMock(name="finish", side_effect=call("finish"))
-                reset = asynctest.mock.CoroutineMock(name="reset", side_effect=call("reset"))
-                ensure_udp_service = asynctest.mock.CoroutineMock(
+                finish = pytest.helpers.AsyncMock(name="finish", side_effect=call("finish"))
+                reset = pytest.helpers.AsyncMock(name="reset", side_effect=call("reset"))
+                ensure_udp_service = pytest.helpers.AsyncMock(
                     name="ensure_udp_service", side_effect=call("ensure_udp_service")
                 )
-                ensure_memory_service = asynctest.mock.CoroutineMock(
+                ensure_memory_service = pytest.helpers.AsyncMock(
                     name="ensure_memory_service", side_effect=call("ensure_memory_service")
                 )
 
@@ -627,12 +626,12 @@ describe "FakeDevice":
 
                     return func
 
-                finish = asynctest.mock.CoroutineMock(name="finish", side_effect=call("finish"))
-                reset = asynctest.mock.CoroutineMock(name="reset", side_effect=call("reset"))
-                ensure_udp_service = asynctest.mock.CoroutineMock(
+                finish = pytest.helpers.AsyncMock(name="finish", side_effect=call("finish"))
+                reset = pytest.helpers.AsyncMock(name="reset", side_effect=call("reset"))
+                ensure_udp_service = pytest.helpers.AsyncMock(
                     name="ensure_udp_service", side_effect=call("ensure_udp_service")
                 )
-                ensure_memory_service = asynctest.mock.CoroutineMock(
+                ensure_memory_service = pytest.helpers.AsyncMock(
                     name="ensure_memory_service", side_effect=call("ensure_memory_service")
                 )
 
@@ -666,8 +665,8 @@ describe "FakeDevice":
                 s1 = mock.Mock(name="service1", spec=["closer"])
                 s2 = mock.Mock(name="service1", spec=["closer"])
 
-                s1.closer = asynctest.mock.CoroutineMock(name="closer")
-                s2.closer = asynctest.mock.CoroutineMock(name="closer")
+                s1.closer = pytest.helpers.AsyncMock(name="closer")
+                s2.closer = pytest.helpers.AsyncMock(name="closer")
 
                 device.services = [s1, s2]
                 await device.finish()
@@ -683,8 +682,8 @@ describe "FakeDevice":
                 s1 = mock.Mock(name="s1", spec=["add_service"])
                 s2 = mock.Mock(name="s1", spec=["add_service"])
 
-                s1.add_service = asynctest.mock.CoroutineMock(name="add_service")
-                s2.add_service = asynctest.mock.CoroutineMock(name="add_service")
+                s1.add_service = pytest.helpers.AsyncMock(name="add_service")
+                s2.add_service = pytest.helpers.AsyncMock(name="add_service")
 
                 filtered_services = mock.Mock(name="filtered_services", return_value=[s1, s2])
 
@@ -757,8 +756,8 @@ describe "FakeDevice":
                     yield m1
                     yield m2
 
-                got_message = asynctest.MagicMock(name="got_message", side_effect=got_message)
-                received_data = asynctest.mock.CoroutineMock(name="received_data")
+                got_message = pytest.helpers.MagicAsyncMock(name="got_message", side_effect=got_message)
+                received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
                     await device.write("memory", received_data, pkt.tobytes(serial=serial))
@@ -783,8 +782,8 @@ describe "FakeDevice":
                 async def got_message(*args):
                     yield m1
 
-                got_message = asynctest.MagicMock(name="got_message", side_effect=got_message)
-                received_data = asynctest.mock.CoroutineMock(name="received_data")
+                got_message = pytest.helpers.MagicAsyncMock(name="got_message", side_effect=got_message)
+                received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
                     await device.write("udp", received_data, pkt.tobytes(serial=None))
@@ -820,7 +819,7 @@ describe "FakeDevice":
             async it "yields ack and results", serial, device:
                 await device.reset()
 
-                process_reply = asynctest.mock.CoroutineMock(name="process_reply")
+                process_reply = pytest.helpers.AsyncMock(name="process_reply")
 
                 source = mock.Mock(name="source")
                 sequence = mock.Mock(name="sequence")
@@ -831,13 +830,13 @@ describe "FakeDevice":
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")
 
-                ack_for = asynctest.mock.CoroutineMock(name="ack_for", return_value=ack)
+                ack_for = pytest.helpers.AsyncMock(name="ack_for", return_value=ack)
 
                 async def response_for(*args):
                     yield res1
                     yield res2
 
-                response_for = asynctest.MagicMock(name="response_for", side_effect=response_for)
+                response_for = pytest.helpers.MagicAsyncMock(name="response_for", side_effect=response_for)
 
                 got = []
                 message_source = mock.Mock(name="message_source")
@@ -873,7 +872,7 @@ describe "FakeDevice":
                 ack_for = mock.NonCallableMock(name="ack_for")
                 response_for = mock.NonCallableMock(name="response_for ")
 
-                igm = asynctest.mock.CoroutineMock(name="intercept_got_message", return_value=False)
+                igm = pytest.helpers.AsyncMock(name="intercept_got_message", return_value=False)
 
                 got = []
                 message_source = mock.Mock(name="message_source")
@@ -973,8 +972,8 @@ describe "FakeDevice":
                 r3 = mock.Mock(name="r3", spec=[])
                 r4 = mock.Mock(name="r4", spec=["process_reply"])
 
-                r2.process_reply = asynctest.mock.CoroutineMock(name="process_reply")
-                r4.process_reply = asynctest.mock.CoroutineMock(name="process_reply")
+                r2.process_reply = pytest.helpers.AsyncMock(name="process_reply")
+                r4.process_reply = pytest.helpers.AsyncMock(name="process_reply")
 
                 pkt = mock.Mock(name="pkt")
                 request = mock.Mock(name="request")
@@ -1004,7 +1003,7 @@ describe "FakeDevice":
                 s2 = mock.Mock(name="service2", service=Services.UDP)
 
                 s1.closer = mock.NonCallableMock(name="closer")
-                s2.closer = asynctest.mock.CoroutineMock(name="closer")
+                s2.closer = pytest.helpers.AsyncMock(name="closer")
 
                 device.services = [s1, s2]
                 await device.stop_service(Services.UDP)
@@ -1022,7 +1021,7 @@ describe "FakeDevice":
                     assert service is MemoryService
                     info["writer"] = writer
 
-                write = asynctest.mock.CoroutineMock(name="write")
+                write = pytest.helpers.AsyncMock(name="write")
 
                 assert len(device.services) == 0
                 await device.ensure_memory_service()
@@ -1142,7 +1141,7 @@ describe "FakeDevice":
                 await device.start()
 
                 pkt = DeviceMessages.SetLabel(label="hi")
-                extra_make_response = asynctest.MagicMock(name="extra_make_response")
+                extra_make_response = pytest.helpers.MagicAsyncMock(name="extra_make_response")
 
                 def yld(*r, fail=False):
                     async def func(*args):
@@ -1188,14 +1187,14 @@ describe "FakeDevice":
 
                     return func
 
-                r1.respond = asynctest.MagicMock(name="respond", side_effect=yld())
-                r1.reset = asynctest.mock.CoroutineMock(name="reset")
+                r1.respond = pytest.helpers.MagicAsyncMock(name="respond", side_effect=yld())
+                r1.reset = pytest.helpers.AsyncMock(name="reset")
 
-                r2.respond = asynctest.MagicMock(name="respond", side_effect=yld(res))
-                r2.reset = asynctest.mock.CoroutineMock(name="reset")
+                r2.respond = pytest.helpers.MagicAsyncMock(name="respond", side_effect=yld(res))
+                r2.reset = pytest.helpers.AsyncMock(name="reset")
 
                 r3.respond = mock.NonCallableMock(name="respond", spec=[])
-                r3.reset = asynctest.mock.CoroutineMock(name="reset")
+                r3.reset = pytest.helpers.AsyncMock(name="reset")
 
                 device.responders = [r1, r2, r3]
                 await device.start()

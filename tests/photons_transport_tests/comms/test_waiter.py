@@ -10,7 +10,6 @@ from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import asyncio
 import pytest
 import time
@@ -39,7 +38,7 @@ describe "Waiter":
         def V(self):
             class V:
                 stop_fut = asyncio.Future()
-                writer = asynctest.mock.CoroutineMock(name="writer")
+                writer = pytest.helpers.AsyncMock(name="writer")
                 retry_options = RetryOptions()
 
                 @hp.memoized_property
@@ -346,7 +345,7 @@ describe "Waiter":
                 def w():
                     called.append(1)
 
-                writings = asynctest.mock.CoroutineMock(name="writings", side_effect=w)
+                writings = pytest.helpers.AsyncMock(name="writings", side_effect=w)
                 V.waiter.writings = writings
 
                 async def doit():
@@ -470,7 +469,7 @@ describe "Waiter":
                 V.waiter._writings_cb = writings_cb
                 V.waiter.results = [result]
 
-                do_write = asynctest.mock.CoroutineMock(
+                do_write = pytest.helpers.AsyncMock(
                     name="do_write", side_effect=Exception("Expect no write")
                 )
 
@@ -503,7 +502,7 @@ describe "Waiter":
                 V.waiter._writings_cb = writings_cb
                 V.waiter.results = [result]
 
-                do_write = asynctest.mock.CoroutineMock(name="do_write")
+                do_write = pytest.helpers.AsyncMock(name="do_write")
 
                 with mock.patch.object(RetryOptions, "next_time", 9002):
                     with mock.patch.object(V.loop, "call_later", cl):
@@ -517,7 +516,7 @@ describe "Waiter":
             async it "passes on errors from do_write", V:
                 V.waiter.results = []
 
-                do_write = asynctest.mock.CoroutineMock(
+                do_write = pytest.helpers.AsyncMock(
                     name="do_write", side_effect=ValueError("Nope")
                 )
 
@@ -537,7 +536,7 @@ describe "Waiter":
                     fut.cancel()
                     await fut
 
-                do_write = asynctest.mock.CoroutineMock(name="do_write", side_effect=do_write)
+                do_write = pytest.helpers.AsyncMock(name="do_write", side_effect=do_write)
 
                 with mock.patch.object(V.waiter, "do_write", do_write):
                     await V.waiter.writings()
@@ -567,7 +566,7 @@ describe "Waiter":
                     called.append("writer")
                     return result
 
-                writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
+                writer = pytest.helpers.AsyncMock(name="writer", side_effect=writer)
 
                 V.waiter.writer = writer
                 V.waiter._writings_cb = writings_cb
@@ -595,7 +594,7 @@ describe "Waiter":
                     called.append("writer")
                     return result
 
-                writer = asynctest.mock.CoroutineMock(name="writer", side_effect=writer)
+                writer = pytest.helpers.AsyncMock(name="writer", side_effect=writer)
 
                 V.waiter.writer = writer
                 V.waiter._writings_cb = writings_cb

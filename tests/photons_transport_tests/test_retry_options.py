@@ -4,7 +4,6 @@ from photons_transport import RetryOptions, RetryIterator
 
 from contextlib import contextmanager
 from unittest import mock
-import asynctest
 import pytest
 import time
 
@@ -126,7 +125,7 @@ describe "RetryIterator":
                 now.skip(timeout)
                 calls.append(("wait", timeout))
 
-            wait = asynctest.mock.CoroutineMock(name="wait", side_effect=wait)
+            wait = pytest.helpers.AsyncMock(name="wait", side_effect=wait)
 
             iterator = RetryIterator(
                 now.value + end_after, get_now=get_now, get_next_time=get_next_time

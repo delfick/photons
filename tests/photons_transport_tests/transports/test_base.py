@@ -7,7 +7,6 @@ from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import asyncio
 import pytest
 
@@ -123,7 +122,7 @@ describe "Transport":
             assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
         async it "re gets transport if it's no longer active", original_message, V:
-            is_transport_active = asynctest.mock.CoroutineMock(name="is_transport_active")
+            is_transport_active = pytest.helpers.AsyncMock(name="is_transport_active")
             is_transport_active.return_value = False
 
             with mock.patch.object(V.transport, "is_transport_active", is_transport_active):
@@ -183,7 +182,7 @@ describe "Transport":
                 assert True, "No Exception raised"
 
             async it "closes the transport if there is one", transport, V:
-                close_transport = asynctest.mock.CoroutineMock(name="close_transport")
+                close_transport = pytest.helpers.AsyncMock(name="close_transport")
 
                 fut = asyncio.Future()
                 fut.set_result(V.spawned)

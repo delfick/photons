@@ -11,7 +11,6 @@ from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -130,7 +129,7 @@ describe "FoundSerials":
         address = mock.Mock(name="address")
 
         afr = mock.Mock(name="afr")
-        afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices", return_value=found)
+        afr.find_devices = pytest.helpers.AsyncMock(name="find_devices", return_value=found)
 
         broadcast = mock.Mock(name="broadcast")
         find_timeout = mock.Mock(name="find_timeout")
@@ -189,7 +188,7 @@ describe "HardCodedSerials":
 
             afr = mock.Mock(name="afr")
             afr.found = {}
-            afr.find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+            afr.find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
             afr.find_specific_serials.return_value = (found, missing)
 
             ref = HardCodedSerials(serials)
@@ -223,7 +222,7 @@ describe "HardCodedSerials":
 
             afr = mock.Mock(name="afr")
             afr.found = {V.target1: V.info1, V.target2: V.info2}
-            afr.find_specific_serials = asynctest.mock.CoroutineMock(
+            afr.find_specific_serials = pytest.helpers.AsyncMock(
                 name="find_specific_serials", side_effect=AssertionError("Shouldn't be called")
             )
 
@@ -266,7 +265,7 @@ describe "ResolveReferencesFromFile":
         serial2 = "d073d5000002"
 
         resolver = mock.Mock(name="resolver")
-        resolver.find = asynctest.mock.CoroutineMock(name="find")
+        resolver.find = pytest.helpers.AsyncMock(name="find")
         FakeHardCodedSerials = mock.Mock(name="HardCodedSerials", return_value=resolver)
 
         with hp.a_temp_file() as fle:

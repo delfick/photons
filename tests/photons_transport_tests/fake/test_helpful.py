@@ -7,7 +7,7 @@ from photons_messages import DeviceMessages, MultiZoneMessages, Direction
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
+import pytest
 import json
 
 describe "WithDevices":
@@ -17,8 +17,8 @@ describe "WithDevices":
         devices = [device1, device2]
 
         for d in devices:
-            d.start = asynctest.mock.CoroutineMock(name="start")
-            d.finish = asynctest.mock.CoroutineMock(name="finish")
+            d.start = pytest.helpers.AsyncMock(name="start")
+            d.finish = pytest.helpers.AsyncMock(name="finish")
 
         async with WithDevices(devices):
             for d in devices:
@@ -34,8 +34,8 @@ describe "WithDevices":
         devices = [device1, device2]
 
         for d in devices:
-            d.start = asynctest.mock.CoroutineMock(name="start")
-            d.finish = asynctest.mock.CoroutineMock(name="finish")
+            d.start = pytest.helpers.AsyncMock(name="start")
+            d.finish = pytest.helpers.AsyncMock(name="finish")
 
         with assertRaises(ValueError, "NOPE"):
             async with WithDevices(devices):

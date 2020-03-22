@@ -5,7 +5,6 @@ from photons_transport.comms.writer import Writer
 from photons_app import helpers as hp
 
 from unittest import mock
-import asynctest
 import pytest
 
 describe "Writer":
@@ -62,7 +61,7 @@ describe "Writer":
 
         modify_sequence = mock.Mock(name="modify_sequence", side_effect=caller("modify_sequence"))
         register = mock.Mock(name="register", side_effect=caller("register", result))
-        write = asynctest.mock.CoroutineMock(name="write", side_effect=caller("write", b"asdf"))
+        write = pytest.helpers.AsyncMock(name="write", side_effect=caller("write", b"asdf"))
 
         mods = {"modify_sequence": modify_sequence, "register": register, "write": write}
 
@@ -132,8 +131,8 @@ describe "Writer":
 
             t = mock.Mock(name="t")
 
-            V.transport.spawn = asynctest.mock.CoroutineMock(name="spawn", return_value=t)
-            V.transport.write = asynctest.mock.CoroutineMock(name="write")
+            V.transport.spawn = pytest.helpers.AsyncMock(name="spawn", return_value=t)
+            V.transport.write = pytest.helpers.AsyncMock(name="write")
 
             assert await V.writer.write() is bts
 

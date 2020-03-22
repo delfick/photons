@@ -5,7 +5,6 @@ from photons_transport.transports.memory import Memory
 from photons_app import helpers as hp
 
 from unittest import mock
-import asynctest
 import asyncio
 import pytest
 
@@ -14,7 +13,7 @@ describe "Memory":
     @pytest.fixture()
     def V(self):
         class V:
-            writer = asynctest.mock.Mock(name="writer")
+            writer = mock.Mock(name="writer")
             session = mock.Mock(name="session")
             original_message = mock.Mock(name="original_message")
 
@@ -32,8 +31,8 @@ describe "Memory":
             await V.transport.close()
 
     async it "has equality checks", V:
-        writer1 = asynctest.mock.CoroutineMock(name="writer1")
-        writer2 = asynctest.mock.CoroutineMock(name="writer2")
+        writer1 = pytest.helpers.AsyncMock(name="writer1")
+        writer2 = pytest.helpers.AsyncMock(name="writer2")
 
         transport1 = Memory(V.session, writer1)
         transport2 = Memory(V.session, writer1)

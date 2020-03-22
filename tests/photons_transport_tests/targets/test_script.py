@@ -7,7 +7,6 @@ from photons_app import helpers as hp
 
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
 import asyncio
 import pytest
 

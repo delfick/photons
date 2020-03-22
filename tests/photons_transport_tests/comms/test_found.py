@@ -4,7 +4,6 @@ from photons_transport.comms.base import Found
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import asynctest
 import binascii
 import pytest
 
@@ -222,10 +221,10 @@ describe "Found.remove_lost":
             found = Found()
 
             t1 = mock.Mock(name="t1")
-            t1.close = asynctest.mock.CoroutineMock(name="close", side_effect=Exception("NOPE"))
+            t1.close = pytest.helpers.AsyncMock(name="close", side_effect=Exception("NOPE"))
 
             t2 = mock.Mock(name="t2")
-            t2.close = asynctest.mock.CoroutineMock(name="close")
+            t2.close = pytest.helpers.AsyncMock(name="close")
 
             t3 = mock.Mock(name="t3", spec=[])
 

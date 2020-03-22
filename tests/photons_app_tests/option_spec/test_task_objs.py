@@ -9,7 +9,6 @@ from photons_app import helpers as hp
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import asynctest
 import binascii
 import pytest
 
@@ -40,7 +39,7 @@ describe "Task run":
             one = mock.Mock(name="one")
             final = mock.Mock(name="final")
 
-            task_func = asynctest.mock.CoroutineMock(name="task_func", return_value=final)
+            task_func = pytest.helpers.AsyncMock(name="task_func", return_value=final)
             resolve_task_func = mock.Mock(name="resolve_task_func", return_value=task_func)
 
             target = mock.Mock(name="target")
@@ -85,7 +84,7 @@ describe "Task run":
                 called.append("task")
                 return final
 
-            task_func = asynctest.mock.CoroutineMock(name="task_func", side_effect=task_func)
+            task_func = pytest.helpers.AsyncMock(name="task_func", side_effect=task_func)
             resolve_task_func = mock.Mock(name="resolve_task_func", return_value=task_func)
 
             target = mock.Mock(name="target")

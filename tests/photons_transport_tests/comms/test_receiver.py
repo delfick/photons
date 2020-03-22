@@ -7,7 +7,6 @@ from photons_app import helpers as hp
 from photons_messages import LIFXPacket
 
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import random
@@ -103,7 +102,7 @@ describe "Receiver":
                 assert len(V.result.add_packet.mock_calls) == 0
 
             async it "uses message_catcher if can't find the key and that's defined", V:
-                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
+                message_catcher = pytest.helpers.AsyncMock(name="message_catcher")
                 V.receiver.message_catcher = message_catcher
                 await V.receiver.recv(V.packet, V.addr)
                 message_catcher.assert_called_once_with(V.packet)
@@ -111,7 +110,7 @@ describe "Receiver":
             async it "does not use message_catcher if can find the key and that's defined", V:
                 V.register(V.source, V.sequence, V.target)
 
-                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
+                message_catcher = pytest.helpers.AsyncMock(name="message_catcher")
                 V.receiver.message_catcher = message_catcher
                 await V.receiver.recv(V.packet, V.addr)
 
@@ -121,7 +120,7 @@ describe "Receiver":
                 V.result.add_packet.reset_mock()
                 V.register(V.source, V.sequence, V.receiver.blank_target)
 
-                message_catcher = asynctest.mock.CoroutineMock(name="message_catcher")
+                message_catcher = pytest.helpers.AsyncMock(name="message_catcher")
                 V.receiver.message_catcher = message_catcher
                 await V.receiver.recv(V.packet, V.addr)
 

@@ -17,7 +17,6 @@ from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -106,13 +105,13 @@ describe "Communication":
     describe "finish":
         async it "can finish", V:
             t1 = mock.Mock(name="t1")
-            t1.close = asynctest.mock.CoroutineMock(name="close")
+            t1.close = pytest.helpers.AsyncMock(name="close")
 
             t2 = mock.Mock(name="t2")
-            t2.close = asynctest.mock.CoroutineMock(name="close")
+            t2.close = pytest.helpers.AsyncMock(name="close")
 
             t3 = mock.Mock(name="t3")
-            t3.close = asynctest.mock.CoroutineMock(name="close")
+            t3.close = pytest.helpers.AsyncMock(name="close")
 
             found = V.communication.found
             found["d073d5000001"] = {"UDP": t1, "OTH": t2}
@@ -205,10 +204,10 @@ describe "Communication":
 
         async it "closes services and removes from found", V:
             t1 = mock.Mock(name="t1")
-            t1.close = asynctest.mock.CoroutineMock(name="close", side_effect=Exception("NOPE"))
+            t1.close = pytest.helpers.AsyncMock(name="close", side_effect=Exception("NOPE"))
 
             t2 = mock.Mock(name="t2")
-            t2.close = asynctest.mock.CoroutineMock(name="close")
+            t2.close = pytest.helpers.AsyncMock(name="close")
 
             serial = "d073d5000001"
 
@@ -231,7 +230,7 @@ describe "Communication":
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
-            make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
+            make_transport = pytest.helpers.AsyncMock(name="make_transport", return_value=t)
 
             with mock.patch.object(V.communication, "make_transport", make_transport):
                 await V.communication.add_service(serial, service, a=a)
@@ -248,7 +247,7 @@ describe "Communication":
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
-            make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
+            make_transport = pytest.helpers.AsyncMock(name="make_transport", return_value=t)
 
             with mock.patch.object(V.communication, "make_transport", make_transport):
                 await V.communication.add_service(serial, service, a=a)
@@ -260,14 +259,14 @@ describe "Communication":
             serial = "d073d5000001"
             service = mock.Mock(name="service")
             othertransport = mock.Mock(name="othertransport")
-            othertransport.close = asynctest.mock.CoroutineMock(name="close")
+            othertransport.close = pytest.helpers.AsyncMock(name="close")
 
             V.communication.found[serial] = {service: othertransport}
 
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
-            make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
+            make_transport = pytest.helpers.AsyncMock(name="make_transport", return_value=t)
 
             with mock.patch.object(V.communication, "make_transport", make_transport):
                 await V.communication.add_service(serial, service, a=a)
@@ -280,7 +279,7 @@ describe "Communication":
             serial = "d073d5000001"
             service = mock.Mock(name="service")
             othertransport = mock.Mock(name="othertransport")
-            othertransport.close = asynctest.mock.CoroutineMock(
+            othertransport.close = pytest.helpers.AsyncMock(
                 name="close", side_effect=Exception("NOPE")
             )
 
@@ -289,7 +288,7 @@ describe "Communication":
             a = mock.Mock(name="a")
 
             t = mock.Mock(name="transport")
-            make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t)
+            make_transport = pytest.helpers.AsyncMock(name="make_transport", return_value=t)
 
             with mock.patch.object(V.communication, "make_transport", make_transport):
                 await V.communication.add_service(serial, service, a=a)
@@ -314,7 +313,7 @@ describe "Communication":
 
             a = mock.Mock(name="a")
 
-            make_transport = asynctest.mock.CoroutineMock(name="make_transport", return_value=t2)
+            make_transport = pytest.helpers.AsyncMock(name="make_transport", return_value=t2)
 
             with mock.patch.object(V.communication, "make_transport", make_transport):
                 await V.communication.add_service(serial, service, a=a)
@@ -331,7 +330,7 @@ describe "Communication":
 
             found = mock.Mock(name="found")
             missing = mock.Mock(name="missing")
-            find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+            find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
             find_specific_serials.return_value = (found, missing)
 
             with mock.patch.object(V.communication, "find_specific_serials", find_specific_serials):
@@ -350,7 +349,7 @@ describe "Communication":
 
             found = mock.Mock(name="found")
             missing = mock.Mock(name="missing")
-            find_specific_serials = asynctest.mock.CoroutineMock(name="find_specific_serials")
+            find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
             find_specific_serials.return_value = (found, missing)
 
             with mock.patch.object(V.communication, "find_specific_serials", find_specific_serials):
@@ -390,7 +389,7 @@ describe "Communication":
                     for target, info in found.items():
                         f[target] = info
 
-                    _find_specific_serials = asynctest.mock.CoroutineMock(
+                    _find_specific_serials = pytest.helpers.AsyncMock(
                         name="_find_specific_serials"
                     )
                     _find_specific_serials.return_value = f
@@ -486,7 +485,7 @@ describe "Communication":
                     V.communication.found[serial] = services[serial]
                 return set(serials)
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -504,7 +503,7 @@ describe "Communication":
             s1 = mock.Mock(name="s1", spec=[])
             s2 = mock.Mock(name="s2", spec=[])
             s3 = mock.Mock(name="s3", spec=["close"])
-            s3.close = asynctest.mock.CoroutineMock(name="s3")
+            s3.close = pytest.helpers.AsyncMock(name="s3")
 
             found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
@@ -516,7 +515,7 @@ describe "Communication":
                     V.communication.found[serial] = services[serial]
                 return set(serials)
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -548,7 +547,7 @@ describe "Communication":
                     V.communication.found[serial] = services[serial]
                 return set(serials)
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -567,7 +566,7 @@ describe "Communication":
 
         async it "complains if none are found and raise_on_none", V:
             s3 = mock.Mock(name="s3", spec=["close"])
-            s3.close = asynctest.mock.CoroutineMock(name="close")
+            s3.close = pytest.helpers.AsyncMock(name="close")
 
             found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
@@ -575,7 +574,7 @@ describe "Communication":
             async def _do_search(serials, timeout, **kwargs):
                 return set()
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -600,7 +599,7 @@ describe "Communication":
             async def _do_search(serials, timeout, **kwargs):
                 return set()
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -623,7 +622,7 @@ describe "Communication":
             async def _do_search(serials, timeout, **kwargs):
                 return set()
 
-            _do_search = asynctest.mock.CoroutineMock(name="_do_search", side_effect=_do_search)
+            _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
             serials = ["d073d5000001", "d073d5000002"]
@@ -649,8 +648,8 @@ describe "Communication":
 
             transport = mock.Mock(name="transport")
 
-            send = asynctest.mock.CoroutineMock(name="send", return_value=res)
-            make_broadcast_transport = asynctest.mock.CoroutineMock(
+            send = pytest.helpers.AsyncMock(name="send", return_value=res)
+            make_broadcast_transport = pytest.helpers.AsyncMock(
                 name="make_broadcast_transport", return_value=transport
             )
 
@@ -677,7 +676,7 @@ describe "Communication":
             original = mock.Mock(name="original")
             connect_timeout = mock.Mock(name="connect_timeout")
 
-            _transport_for_send = asynctest.mock.CoroutineMock(name="_transport_for_send")
+            _transport_for_send = pytest.helpers.AsyncMock(name="_transport_for_send")
             _transport_for_send.return_value = (transport_out, is_broadcast)
 
             retry_options = mock.Mock(name="retry_options")
@@ -710,7 +709,7 @@ describe "Communication":
                 assert not waiter.cancelled
                 return await get_response_info["ret"]()
 
-            _get_response = asynctest.mock.CoroutineMock(
+            _get_response = pytest.helpers.AsyncMock(
                 name="_get_response", side_effect=_get_response
             )
 
@@ -866,15 +865,15 @@ describe "Communication":
                 @hp.memoized_property
                 def transport(s):
                     transport = mock.Mock(name="transport")
-                    transport.spawn = asynctest.mock.CoroutineMock(name="spawn")
+                    transport.spawn = pytest.helpers.AsyncMock(name="spawn")
                     return transport
 
                 @contextmanager
                 def maker_mocks(s):
-                    make_broadcast_transport = asynctest.mock.CoroutineMock(
+                    make_broadcast_transport = pytest.helpers.AsyncMock(
                         name="make_broadcast_transport", return_value=s.transport
                     )
-                    choose_transport = asynctest.mock.CoroutineMock(
+                    choose_transport = pytest.helpers.AsyncMock(
                         name="choose_transport", return_value=s.transport
                     )
 
@@ -978,7 +977,7 @@ describe "Communication":
                 assert pkt | DeviceMessages.StatePower
                 assert pkt.level == 100
 
-            recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
+            recv = pytest.helpers.AsyncMock(name="recv", side_effect=recv)
 
             with mock.patch.object(V.communication.receiver, "recv", recv):
                 pkt = DeviceMessages.StatePower(level=100, source=1, sequence=1, target=None)
@@ -996,7 +995,7 @@ describe "Communication":
                 assert pkt.pkt_type == 9001
                 assert pkt.payload == b"things"
 
-            recv = asynctest.mock.CoroutineMock(name="recv", side_effect=recv)
+            recv = pytest.helpers.AsyncMock(name="recv", side_effect=recv)
 
             with mock.patch.object(V.communication.receiver, "recv", recv):
                 pkt = LIFXPacket(
@@ -1011,7 +1010,7 @@ describe "Communication":
             allow_zero = mock.Mock(name="allow_zero")
             addr = mock.Mock(name="addr")
 
-            recv = asynctest.mock.CoroutineMock(name="recv")
+            recv = pytest.helpers.AsyncMock(name="recv")
 
             with mock.patch.object(V.communication.receiver, "recv", recv):
                 data = "NOPE"

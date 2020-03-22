@@ -10,7 +10,6 @@ from photons_control.script import FromGenerator
 from photons_messages import DeviceMessages
 
 from unittest import mock
-import asynctest
 import binascii
 import asyncio
 import pytest
@@ -49,10 +48,10 @@ describe "DeviceFinderLoops":
                 @hp.memoized_property
                 def target(s):
                     target = mock.Mock(name="target")
-                    target.args_for_run = asynctest.mock.CoroutineMock(
+                    target.args_for_run = pytest.helpers.AsyncMock(
                         name="args_for_run", return_value=s.afr
                     )
-                    target.close_args_for_run = asynctest.mock.CoroutineMock(
+                    target.close_args_for_run = pytest.helpers.AsyncMock(
                         name="close_args_for_run"
                     )
                     return target
@@ -102,11 +101,11 @@ describe "DeviceFinderLoops":
                     assert q is quickstart
                     called.append(2)
 
-                finding_loop = asynctest.mock.CoroutineMock(
+                finding_loop = pytest.helpers.AsyncMock(
                     name="finding_loop", side_effect=findings
                 )
                 ensure_interpreting = mock.Mock(name="ensure_interpreting")
-                raw_search_loop = asynctest.mock.CoroutineMock(
+                raw_search_loop = pytest.helpers.AsyncMock(
                     name="raw_search_loop", side_effect=raw_search_loop
                 )
 
@@ -174,7 +173,7 @@ describe "DeviceFinderLoops":
                     await asyncio.sleep(0.1)
                     called.append(1)
 
-                interpret_loop = asynctest.mock.CoroutineMock(
+                interpret_loop = pytest.helpers.AsyncMock(
                     name="interpret_loop", side_effect=interpreting
                 )
 
@@ -198,7 +197,7 @@ describe "DeviceFinderLoops":
                     ]
                     assert m.pipeline_spread == 0.2
 
-                send_to_device = asynctest.mock.CoroutineMock(
+                send_to_device = pytest.helpers.AsyncMock(
                     name="send_to_device", side_effect=send_to_device
                 )
 
@@ -218,9 +217,9 @@ describe "DeviceFinderLoops":
                 msg2 = mock.Mock(name="msg2")
 
                 _msgs_from_filter = mock.Mock(name="_msgs_from_filter", return_value=[msg1, msg2])
-                send_to_device = asynctest.mock.CoroutineMock(name="send_to_device")
-                _update_found = asynctest.mock.CoroutineMock(name="_update_found")
-                found_from_filter = asynctest.mock.CoroutineMock(
+                send_to_device = pytest.helpers.AsyncMock(name="send_to_device")
+                _update_found = pytest.helpers.AsyncMock(name="_update_found")
+                found_from_filter = pytest.helpers.AsyncMock(
                     name="found_from_filter", return_value=res
                 )
 
@@ -262,15 +261,15 @@ describe "DeviceFinderLoops":
                 async def _update_found(ref, find_timeout):
                     refs.append((2, ref))
 
-                send_to_device = asynctest.mock.CoroutineMock(
+                send_to_device = pytest.helpers.AsyncMock(
                     name="send_to_device", side_effect=send_to_device
                 )
-                _update_found = asynctest.mock.CoroutineMock(
+                _update_found = pytest.helpers.AsyncMock(
                     name="_update_found", side_effect=_update_found
                 )
 
                 res = mock.Mock(name="res")
-                found_from_filter = asynctest.mock.CoroutineMock(
+                found_from_filter = pytest.helpers.AsyncMock(
                     name="found_from_filter", return_value=res
                 )
 
@@ -332,7 +331,7 @@ describe "DeviceFinderLoops":
                 find_timeout = mock.Mock(name="find_timeout")
 
                 reference = mock.Mock(name="reference")
-                reference.find = asynctest.mock.CoroutineMock(name="find", return_value=(found, []))
+                reference.find = pytest.helpers.AsyncMock(name="find", return_value=(found, []))
 
                 update_found = mock.Mock(name="update_found")
                 with mock.patch.object(V.loops.store, "update_found", update_found):
@@ -364,7 +363,7 @@ describe "DeviceFinderLoops":
                     else:
                         return res
 
-                V.afr.find_devices = asynctest.mock.CoroutineMock(
+                V.afr.find_devices = pytest.helpers.AsyncMock(
                     name="find_devices", side_effect=find_devices
                 )
 
@@ -383,7 +382,7 @@ describe "DeviceFinderLoops":
             async it "uses a Repeater", V:
                 called = []
 
-                V.afr.find_devices = asynctest.mock.CoroutineMock(name="find_devices")
+                V.afr.find_devices = pytest.helpers.AsyncMock(name="find_devices")
                 V.afr.find_devices.return_value = {
                     binascii.unhexlify("d073d5000001"): (set(), None)
                 }
@@ -401,7 +400,7 @@ describe "DeviceFinderLoops":
                     assert pipeline.pipeline_short_circuit_on_error == True
                     called.append(1)
 
-                send_to_device = asynctest.mock.CoroutineMock(
+                send_to_device = pytest.helpers.AsyncMock(
                     name="send_to_device", side_effect=send_to_device
                 )
 

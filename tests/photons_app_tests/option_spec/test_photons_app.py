@@ -7,9 +7,9 @@ from photons_app.errors import BadOption
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta
 from unittest import mock
-import asynctest
 import platform
 import asyncio
+import pytest
 
 describe "PhotonsApp":
 
@@ -54,17 +54,17 @@ describe "PhotonsApp":
 
                 return wrapped
 
-            cleaner1 = asynctest.mock.CoroutineMock(name="cleaner1", side_effect=call(1))
-            cleaner2 = asynctest.mock.CoroutineMock(name="cleaner2", side_effect=call(2))
-            cleaner3 = asynctest.mock.CoroutineMock(name="cleaner3", side_effect=call(3))
+            cleaner1 = pytest.helpers.AsyncMock(name="cleaner1", side_effect=call(1))
+            cleaner2 = pytest.helpers.AsyncMock(name="cleaner2", side_effect=call(2))
+            cleaner3 = pytest.helpers.AsyncMock(name="cleaner3", side_effect=call(3))
 
             target1 = mock.Mock(name="target1")
-            target1.finish = asynctest.mock.CoroutineMock(
+            target1.finish = pytest.helpers.AsyncMock(
                 name="target1.finish", side_effect=call(4)
             )
 
             target2 = mock.Mock(name="target2")
-            target2.finish = asynctest.mock.CoroutineMock(
+            target2.finish = pytest.helpers.AsyncMock(
                 name="target2.finish", side_effect=call(5)
             )
 
