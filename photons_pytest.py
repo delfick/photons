@@ -119,7 +119,9 @@ def FakeTime():
     return FakeTime
 
 
-def pytest_configure():
+def pytest_configure(config):
+    config.addinivalue_line("markers", "focus: mark test to run")
+
     if not hasattr(pytest, "helpers"):
         return
 
