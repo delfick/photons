@@ -2,6 +2,7 @@
 
 from photons_app import helpers as hp
 
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import os
 
@@ -38,6 +39,41 @@ describe "a_temp_file":
             fle.close()
             os.remove(fle.name)
         assert not os.path.exists(fle.name)
+
+describe "just_log_exceptions":
+    it "logs exceptions":
+        log = mock.Mock(name="log")
+
+        error = ValueError("NOPE")
+        with hp.just_log_exceptions(log):
+            raise error
+
+        log.error.assert_called_once_with("Unexpected error", exc_info=(ValueError, error, mock.ANY))
+
+    it "can be given a different message":
+        log = mock.Mock(name="log")
+
+        error = ValueError("NOPE")
+        with hp.just_log_exceptions(log, message="a different message"):
+            raise error
+
+        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
+
+    it "can reraise particular errors":
+        log = mock.Mock(name="log")
+
+        error = ValueError("NOPE")
+        with hp.just_log_exceptions(log, message="a different message", reraise=[TypeError]):
+            raise error
+
+        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
+        log.error.reset_mock()
+
+        with assertRaises(TypeError, "wat"):
+            with hp.just_log_exceptions(log, message="a different message", reraise=[TypeError]):
+                raise TypeError("wat")
+
+        log.assert_not_called()
 
 describe "nested_dict_retrieve":
     it "returns us the dflt if we can't find the key":

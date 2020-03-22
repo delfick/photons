@@ -31,6 +31,37 @@ class Nope:
     pass
 
 
+@contextmanager
+def just_log_exceptions(log, *, reraise=None, message="Unexpected error"):
+    """
+    A context manager that will catch all exceptions and just call::
+
+        log.error(message, exc_info=sys.exc_info())
+
+    Any class in reraise that matches the error will result in re raising the error
+
+    For example:
+
+    .. code-block:: python
+
+        import logging
+        import asyncio
+
+        log = logging.getLogger("my_example")
+
+        message = "That's not meant to happen"
+
+        with just_log_exceptions(log, reraise=[asyncio.CancelledError], message=message):
+            await do_something()
+    """
+    try:
+        yield
+    except Exception as error:
+        if reraise and any(isinstance(error, r) for r in reraise):
+            raise
+        log.error(message, exc_info=sys.exc_info())
+
+
 def add_error(catcher, error):
     """
     Adds an error to an error_catcher.
