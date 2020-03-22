@@ -59,7 +59,7 @@ describe "Pipeline":
             start = loop_time()
             async for pkt, _, _ in runner.target.script(msgs).run_with(runner.serials):
                 got[pkt.serial].append(pkt)
-        assert loop_time() - start < 0.2
+        assert loop_time() - start < 0.3
 
         assert all(serial in got for serial in runner.serials), got
 
@@ -72,7 +72,7 @@ describe "Pipeline":
         diffs = list(
             chain.from_iterable([t - start for t in ts] for serial, ts in got_times.items())
         )
-        assert all(diff < 0.1 for diff in diffs), diffs
+        assert all(diff < 0.2 for diff in diffs), diffs
 
     async it "waits on replies before sending next if we have a pipeline", runner:
         got_times = defaultdict(list)
