@@ -35,21 +35,26 @@ describe "Waiter":
     describe "Usage":
 
         @pytest.fixture()
-        def V(self):
+        async def V(self):
             class V:
                 stop_fut = asyncio.Future()
                 writer = pytest.helpers.AsyncMock(name="writer")
                 retry_options = RetryOptions()
 
-                @hp.memoized_property
-                def waiter(s):
-                    return Waiter(s.stop_fut, s.writer, s.retry_options)
+                async def __aenter__(s):
+                    s.waiter = Waiter(s.stop_fut, s.writer, s.retry_options)
+                    return s
+
+                async def __aexit__(s, exc_type, exc, tb):
+                    if hasattr(s, "waiter"):
+                        await s.waiter.finish()
 
                 @hp.memoized_property
                 def loop(s):
                     return asyncio.get_event_loop()
 
-            return V()
+            async with V() as v:
+                yield v
 
         @pytest.fixture(autouse=True)
         async def cleanup(self, V):
@@ -342,8 +347,11 @@ describe "Waiter":
             async it "starts a writings", V:
                 called = []
 
+                called_fut = hp.ResettableFuture()
+
                 def w():
                     called.append(1)
+                    called_fut.set_result(True)
 
                 writings = pytest.helpers.AsyncMock(name="writings", side_effect=w)
                 V.waiter.writings = writings
@@ -352,7 +360,8 @@ describe "Waiter":
                     return await V.waiter
 
                 t = V.loop.create_task(doit())
-                await asyncio.sleep(0)
+                await called_fut
+                called_fut.reset()
                 assert called == [1]
                 res = mock.Mock(name="res")
                 V.waiter.final_future.set_result(res)
@@ -360,7 +369,7 @@ describe "Waiter":
 
                 assert called == [1]
                 V.waiter._writings_cb()
-                await asyncio.sleep(0)
+                await called_fut
                 assert called == [1, 1]
 
                 # Awaiting again doesn't call writings

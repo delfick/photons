@@ -133,6 +133,9 @@ class Waiter(object):
         away, otherwise we tell the result object to call _writigs_cb when it's
         done
         """
+        if self.final_future.done():
+            return
+
         result = await self.writer()
         self.results.append(result)
 
