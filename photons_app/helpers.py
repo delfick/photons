@@ -31,6 +31,68 @@ class Nope:
     pass
 
 
+class TaskHolder:
+    """
+    An object for managing asynchronous coroutines.
+
+    Usage looks like:
+
+    .. code-block:: python
+
+        final_future = asyncio.Future()
+
+        async def something():
+            await asyncio.sleep(5)
+
+        with TaskHolder(final_future) as ts:
+            ts.add(something())
+            ts.add(something())
+
+    Once the context manager is exited you may still run ts.add and the context
+    manager will stay alive until all coroutines have finished.
+
+    If you complete final_future before all the tasks have completed then the
+    tasks will be cancelled and properly waited on so their finally blocks run
+    before the context manager finishes.
+
+    ts.add will also return the task object that is made from the coroutine.
+
+    ts.add also takes a ``silent=False`` parameter, that when True will not log
+    any errors that happen. Otherwise errors will be logged.
+    """
+
+    def __init__(self, final_future):
+        self.ts = []
+        self.final_future = final_future
+
+    def add(self, coro, silent=False):
+        t = async_as_background(coro, silent=silent)
+        self.ts.append(t)
+        self.ts = [t for t in self.ts if not t.done()]
+        return t
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.finish()
+
+    async def finish(self):
+        while any(not t.done() for t in self.ts):
+            for t in self.ts:
+                if self.final_future.done():
+                    t.cancel()
+
+            if self.ts:
+                return_when = (
+                    asyncio.ALL_COMPLETED if self.final_future.done() else asyncio.FIRST_COMPLETED
+                )
+                await asyncio.wait([self.final_future, *self.ts], return_when=return_when)
+
+        if self.ts:
+            await asyncio.wait(self.ts)
+
+
 @contextmanager
 def just_log_exceptions(log, *, reraise=None, message="Unexpected error"):
     """

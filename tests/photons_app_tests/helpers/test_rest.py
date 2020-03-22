@@ -4,6 +4,7 @@ from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+import asyncio
 import os
 
 describe "add_error":
@@ -74,6 +75,105 @@ describe "just_log_exceptions":
                 raise TypeError("wat")
 
         log.assert_not_called()
+
+describe "TaskHolder":
+    it "takes in a final future":
+        final_future = asyncio.Future()
+        holder = hp.TaskHolder(final_future)
+        assert holder.ts == []
+        assert holder.final_future is final_future
+
+    async it "can take in tasks":
+        called = []
+
+        async def wait(amount):
+            try:
+                await asyncio.sleep(amount)
+            finally:
+                called.append(amount)
+
+        final_future = asyncio.Future()
+        async with hp.TaskHolder(final_future) as ts:
+            ts.add(wait(0.05))
+            ts.add(wait(0.01))
+
+        assert called == [0.01, 0.05]
+
+    async it "exits if we finish all tasks before the manager is left":
+        called = []
+
+        async def wait(amount):
+            try:
+                await asyncio.sleep(amount)
+            finally:
+                called.append(amount)
+
+        final_future = asyncio.Future()
+        async with hp.TaskHolder(final_future) as ts:
+            await ts.add(wait(0.05))
+            await ts.add(wait(0.01))
+            assert called == [0.05, 0.01]
+
+        assert called == [0.05, 0.01]
+
+    async it "can wait for more tasks if they are added when the manager has left":
+        called = []
+
+        async def wait(ts, amount):
+            if amount == 0.01:
+                ts.add(wait(ts, 0.06))
+            try:
+                await asyncio.sleep(amount)
+            finally:
+                called.append(amount)
+
+        final_future = asyncio.Future()
+        async with hp.TaskHolder(final_future) as ts:
+            ts.add(wait(ts, 0.05))
+            ts.add(wait(ts, 0.01))
+
+        assert called == [0.01, 0.05, 0.06]
+
+    async it "does not fail if a task raises an exception":
+        called = []
+
+        async def wait(ts, amount):
+            if amount == 0.01:
+                ts.add(wait(ts, 0.06))
+            try:
+                if amount == 0.06:
+                    raise TypeError("WAT")
+                await asyncio.sleep(amount)
+            finally:
+                called.append(amount)
+
+        final_future = asyncio.Future()
+        async with hp.TaskHolder(final_future) as ts:
+            ts.add(wait(ts, 0.05))
+            ts.add(wait(ts, 0.01))
+
+        assert called == [0.06, 0.01, 0.05]
+
+    async it "stops waiting tasks if final_future is stopped":
+        called = []
+
+        async def wait(ts, amount):
+            try:
+                await asyncio.sleep(amount)
+                if amount == 0.05:
+                    final_future.set_result(True)
+            except asyncio.CancelledError:
+                called.append(("CANCELLED", amount))
+            finally:
+                called.append(("FINISHED", amount))
+
+        final_future = asyncio.Future()
+        async with hp.TaskHolder(final_future) as ts:
+            ts.add(wait(ts, 5))
+            ts.add(wait(ts, 0.05))
+
+        assert called == [('FINISHED', 0.05), ('CANCELLED', 5), ('FINISHED', 5)]
+
 
 describe "nested_dict_retrieve":
     it "returns us the dflt if we can't find the key":
