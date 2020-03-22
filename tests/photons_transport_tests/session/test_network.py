@@ -108,9 +108,7 @@ describe "NetworkSession":
 
     describe "choose_transport":
         async it "complains if we can't determined need transport", V:
-            determine_needed_transport = pytest.helpers.AsyncMock(
-                name="determine_needed_transport"
-            )
+            determine_needed_transport = pytest.helpers.AsyncMock(name="determine_needed_transport")
             determine_needed_transport.return_value = []
 
             packet = mock.Mock(name="packet", protocol=9001, pkt_type=89)
@@ -128,9 +126,7 @@ describe "NetworkSession":
 
         async it "returns the desired service or complains if can't be found", V:
             need = [Services.UDP]
-            determine_needed_transport = pytest.helpers.AsyncMock(
-                name="determine_needed_transport"
-            )
+            determine_needed_transport = pytest.helpers.AsyncMock(name="determine_needed_transport")
             determine_needed_transport.return_value = need
 
             udpservice = mock.Mock(name="udpservice")
@@ -166,7 +162,9 @@ describe "NetworkSession":
                 )
 
                 script = mock.Mock(name="script", spec=["run_with"])
-                script.run_with = pytest.helpers.MagicAsyncMock(name="run_with", side_effect=run_with)
+                script.run_with = pytest.helpers.MagicAsyncMock(
+                    name="run_with", side_effect=run_with
+                )
 
                 V.transport_target.script.return_value = script
 

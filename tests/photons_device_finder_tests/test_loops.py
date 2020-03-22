@@ -51,9 +51,7 @@ describe "DeviceFinderLoops":
                     target.args_for_run = pytest.helpers.AsyncMock(
                         name="args_for_run", return_value=s.afr
                     )
-                    target.close_args_for_run = pytest.helpers.AsyncMock(
-                        name="close_args_for_run"
-                    )
+                    target.close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
                     return target
 
                 @hp.memoized_property
@@ -101,9 +99,7 @@ describe "DeviceFinderLoops":
                     assert q is quickstart
                     called.append(2)
 
-                finding_loop = pytest.helpers.AsyncMock(
-                    name="finding_loop", side_effect=findings
-                )
+                finding_loop = pytest.helpers.AsyncMock(name="finding_loop", side_effect=findings)
                 ensure_interpreting = mock.Mock(name="ensure_interpreting")
                 raw_search_loop = pytest.helpers.AsyncMock(
                     name="raw_search_loop", side_effect=raw_search_loop

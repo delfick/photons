@@ -389,9 +389,7 @@ describe "Communication":
                     for target, info in found.items():
                         f[target] = info
 
-                    _find_specific_serials = pytest.helpers.AsyncMock(
-                        name="_find_specific_serials"
-                    )
+                    _find_specific_serials = pytest.helpers.AsyncMock(name="_find_specific_serials")
                     _find_specific_serials.return_value = f
 
                     with mock.patch.object(

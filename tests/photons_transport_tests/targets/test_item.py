@@ -155,9 +155,7 @@ describe "Item":
             @pytest.fixture()
             def V(self, item):
                 class V:
-                    find_specific_serials = pytest.helpers.AsyncMock(
-                        name="find_specific_serials"
-                    )
+                    find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
                     serial1 = "d073d5000000"
                     serial2 = "d073d5000001"
 
@@ -674,9 +672,7 @@ describe "Item":
 
                 found2 = mock.Mock(name="found2")
                 missing2 = mock.Mock(name="missing2")
-                search = pytest.helpers.AsyncMock(
-                    name="search", return_value=(found2, missing2)
-                )
+                search = pytest.helpers.AsyncMock(name="search", return_value=(found2, missing2))
 
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")

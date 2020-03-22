@@ -756,7 +756,9 @@ describe "FakeDevice":
                     yield m1
                     yield m2
 
-                got_message = pytest.helpers.MagicAsyncMock(name="got_message", side_effect=got_message)
+                got_message = pytest.helpers.MagicAsyncMock(
+                    name="got_message", side_effect=got_message
+                )
                 received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
@@ -782,7 +784,9 @@ describe "FakeDevice":
                 async def got_message(*args):
                     yield m1
 
-                got_message = pytest.helpers.MagicAsyncMock(name="got_message", side_effect=got_message)
+                got_message = pytest.helpers.MagicAsyncMock(
+                    name="got_message", side_effect=got_message
+                )
                 received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
@@ -836,7 +840,9 @@ describe "FakeDevice":
                     yield res1
                     yield res2
 
-                response_for = pytest.helpers.MagicAsyncMock(name="response_for", side_effect=response_for)
+                response_for = pytest.helpers.MagicAsyncMock(
+                    name="response_for", side_effect=response_for
+                )
 
                 got = []
                 message_source = mock.Mock(name="message_source")

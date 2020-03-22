@@ -59,14 +59,10 @@ describe "PhotonsApp":
             cleaner3 = pytest.helpers.AsyncMock(name="cleaner3", side_effect=call(3))
 
             target1 = mock.Mock(name="target1")
-            target1.finish = pytest.helpers.AsyncMock(
-                name="target1.finish", side_effect=call(4)
-            )
+            target1.finish = pytest.helpers.AsyncMock(name="target1.finish", side_effect=call(4))
 
             target2 = mock.Mock(name="target2")
-            target2.finish = pytest.helpers.AsyncMock(
-                name="target2.finish", side_effect=call(5)
-            )
+            target2.finish = pytest.helpers.AsyncMock(name="target2.finish", side_effect=call(5))
 
             # And a target with no finish attribute
             target3 = mock.Mock(name="target3", spec=[])

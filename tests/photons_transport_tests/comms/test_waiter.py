@@ -525,9 +525,7 @@ describe "Waiter":
             async it "passes on errors from do_write", V:
                 V.waiter.results = []
 
-                do_write = pytest.helpers.AsyncMock(
-                    name="do_write", side_effect=ValueError("Nope")
-                )
+                do_write = pytest.helpers.AsyncMock(name="do_write", side_effect=ValueError("Nope"))
 
                 with mock.patch.object(V.waiter, "do_write", do_write):
                     await V.waiter.writings()
