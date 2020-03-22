@@ -96,8 +96,11 @@ def a_temp_dir():
 @pytest.fixture(scope="session")
 def FakeTime():
     class FakeTime:
-        def __init__(self):
+        def __init__(self, mock_sleep=False, mock_async_sleep=False):
             self.time = 0
+            self.patches = []
+            self.mock_sleep = mock_sleep
+            self.mock_async_sleep = mock_async_sleep
 
         def set(self, t):
             self.time = t
@@ -106,15 +109,31 @@ def FakeTime():
             self.time += t
 
         def __enter__(self):
-            self.patch = mock.patch("time.time", self)
-            self.patch.start()
+            self.patches.append(mock.patch("time.time", self))
+
+            if self.mock_sleep:
+                self.patches.append(mock.patch("time.sleep", self.sleep))
+            if self.mock_async_sleep:
+                self.patches.append(mock.patch("asyncio.sleep", self.async_sleep))
+
+            for p in self.patches:
+                p.start()
+
             return self
 
         def __exit__(self, exc_type, exc, tb):
-            self.patch.stop()
+            for p in self.patches:
+                p.stop()
 
         def __call__(self):
             return self.time
+
+        def sleep(self, amount):
+            self.add(amount)
+
+        async def async_sleep(self, amount):
+            self.add(amount)
+            await asyncio.sleep(0.001)
 
     return FakeTime
 
