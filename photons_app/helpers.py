@@ -11,6 +11,7 @@ import tempfile
 import asyncio
 import logging
 import uuid
+import time
 import sys
 import os
 
@@ -29,6 +30,58 @@ class Nope:
     """Used to say there was no value"""
 
     pass
+
+
+class ATicker:
+    def __init__(self, every, final_future=None):
+        self.every = every
+        self.tick_fut = ResettableFuture()
+        self.last_tick = None
+        self.final_future = final_future or asyncio.Future()
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.final_future.done():
+            raise StopAsyncIteration
+
+        if self.last_tick is None:
+            self.last_tick = time.time()
+            return
+
+        self.change_after(self.every)
+        await asyncio.wait([self.tick_fut, self.final_future], return_when=asyncio.FIRST_COMPLETED)
+
+        if self.final_future.done():
+            raise StopAsyncIteration
+
+        self.tick_fut.reset()
+        self.last_tick = time.time()
+
+    def change_after(self, every, *, set_new_every=True):
+        if set_new_every:
+            self.every = every
+
+        current = self.last_tick
+        diff = every - (time.time() - self.last_tick)
+
+        if diff == 0:
+            self.tick_fut.reset()
+            self.tick_fut.set_result(True)
+        else:
+
+            def reset():
+                if self.last_tick == current:
+                    self.tick_fut.reset()
+                    self.tick_fut.set_result(True)
+
+            asyncio.get_event_loop().call_later(diff, reset)
+
+
+async def tick(every, *, final_future=None):
+    async for _ in ATicker(every, final_future=final_future):
+        yield
 
 
 class TaskHolder:
