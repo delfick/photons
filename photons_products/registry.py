@@ -451,7 +451,7 @@ class ProductRegistry:
         family = Family.LCM3
 
         class cap(Capability):
-            zones = Zones.MATRIX
+            zones = Zones.SINGLE
             has_chain = False
             has_color = False
             has_variable_color_temp = True
