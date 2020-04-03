@@ -7,7 +7,7 @@ from delfick_project.logging import setup_logging
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
     await lan_target.script(PowerToggle()).run_with_all(FoundSerials())
 
 

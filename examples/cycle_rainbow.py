@@ -14,7 +14,7 @@ log = logging.getLogger("cycle_rainbow")
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference", required=True)

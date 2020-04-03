@@ -28,6 +28,19 @@ describe "Collector":
         collector.prepare(None, {})
         assert collector.photons_app is collector.configuration["photons_app"]
 
+    it "has a shortcut to resolve a target":
+        collector = Collector()
+        collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
+
+        class Target(dictobj.Spec):
+            pass
+
+        collector.configuration["target_register"].register_type("lan", Target.FieldSpec())
+        collector.configuration["target_register"].add_targets(collector.configuration["targets"])
+
+        lan = collector.configuration["target_register"].resolve("lan")
+        assert collector.resolve_target("lan") is lan
+
     it "has a shortcut to the run helper":
         coro = mock.Mock(name="coro")
         run = mock.Mock(name="run")

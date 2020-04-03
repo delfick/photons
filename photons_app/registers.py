@@ -20,7 +20,13 @@ class Target(dictobj.Spec):
 
     .. code-block:: python
 
-        t = collector.configuration["target_register"].resolve("prod_api")
+        t = collector.configuration["target_register"].resolve("lan")
+
+    Or from the collector:
+
+    .. code-block:: python
+
+        t = collector.resolve_target("lan")
     """
 
     type = dictobj.Field(sb.string_spec, wrapper=sb.required)

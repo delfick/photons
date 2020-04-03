@@ -370,3 +370,6 @@ class Collector(Collector):
     @hp.memoized_property
     def photons_app(self):
         return self.configuration["photons_app"]
+
+    def resolve_target(self, name):
+        return self.configuration["target_register"].resolve(name)

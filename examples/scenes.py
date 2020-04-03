@@ -28,7 +28,7 @@ scenes = [
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     def apply_scene(scene):
         transformer = Transformer()

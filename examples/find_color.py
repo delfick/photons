@@ -8,7 +8,7 @@ import logging
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     msg = LightMessages.GetColor()
     async for pkt, _, _ in lan_target.script(msg).run_with(FoundSerials()):

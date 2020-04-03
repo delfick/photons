@@ -10,7 +10,7 @@ import asyncio
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purple", "pink"]
 

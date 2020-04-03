@@ -59,7 +59,7 @@ async def process_command(lan_target, device_finder, command):
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     readline.parse_and_bind("")
 

@@ -90,7 +90,7 @@ class Animation(Animation):
 
 async def doit(collector):
     # Get the object that can talk to the devices over the lan
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
 
     # reference can be a single d073d5000001 string representing one device
     # Or a list of strings specifying multiple devices

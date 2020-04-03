@@ -8,7 +8,7 @@ from delfick_project.logging import setup_logging
 
 
 async def doit(collector):
-    lan_target = collector.configuration["target_register"].resolve("lan")
+    lan_target = collector.resolve_target("lan")
     color_msg = Parser.color_to_msg("blue")
     on_msg = DeviceMessages.SetPower(level=65535)
     script = lan_target.script([color_msg, on_msg])
