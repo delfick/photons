@@ -87,7 +87,7 @@ describe "Result":
 
             with mock.patch.multiple(V.result, add_ack=add_ack, add_result=add_result):
                 V.pkt.represents_ack = True
-                V.result.add_packet(V.pkt, V.addr, V.original)
+                V.result.add_packet(V.pkt)
 
             add_ack.assert_called_once_with()
             assert len(add_result.mock_calls) == 0
@@ -98,9 +98,9 @@ describe "Result":
 
             with mock.patch.multiple(V.result, add_ack=add_ack, add_result=add_result):
                 V.pkt.represents_ack = False
-                V.result.add_packet(V.pkt, V.addr, V.original)
+                V.result.add_packet(V.pkt)
 
-            add_result.assert_called_once_with((V.pkt, V.addr, V.original))
+            add_result.assert_called_once_with((V.pkt))
             assert len(add_ack.mock_calls) == 0
 
         async it "adds as a result if no represents_ack property on the pkt", V:
@@ -110,9 +110,9 @@ describe "Result":
             add_result = mock.Mock(name="add_result")
 
             with mock.patch.multiple(V.result, add_ack=add_ack, add_result=add_result):
-                V.result.add_packet(pkt, V.addr, V.original)
+                V.result.add_packet(pkt)
 
-            add_result.assert_called_once_with((pkt, V.addr, V.original))
+            add_result.assert_called_once_with(pkt)
             assert len(add_ack.mock_calls) == 0
 
     describe "add_ack":

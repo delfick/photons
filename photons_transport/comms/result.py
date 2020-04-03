@@ -23,12 +23,12 @@ class Result(asyncio.Future):
         if not self.request.ack_required and not self.request.res_required:
             self.set_result([])
 
-    def add_packet(self, pkt, addr, original):
+    def add_packet(self, pkt):
         """Determine if we should call add_ack or add_result"""
         if getattr(pkt, "represents_ack", False):
             self.add_ack()
         else:
-            self.add_result((pkt, addr, original))
+            self.add_result(pkt)
 
     def add_ack(self):
         """

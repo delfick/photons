@@ -158,24 +158,34 @@ class PacketSpecMixin:
                     return True
         return False
 
+    def __iter__(self):
+        yield from ((self, self.Information.remote_addr, self.Information.sender_message))
+
     def __contains__(self, key):
         """Return whether this object has this key in it's fields or groups"""
         return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
 
+    def keys(self):
+        for k in self.Meta.all_names:
+            yield k
+
+        if "payload" in self.Meta.groups and super(dictobj, self).__contains__("payload"):
+            yield "payload"
+
     def actual_items(self):
-        for key in self:
+        for key in self.keys():
             yield key, super().__getitem__(key)
 
     def actual_values(self):
-        for key in self:
+        for key in self.keys():
             yield super().__getitem__(key)
 
     def items(self):
-        for key in self:
+        for key in self.keys():
             yield key, self[key]
 
     def values(self):
-        for key in self:
+        for key in self.keys():
             yield self[key]
 
     def __getitem__(

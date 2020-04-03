@@ -74,4 +74,5 @@ class Receiver(object):
             key = broadcast_key
 
         original = self.results[key][0]
-        self.results[key][1].add_packet(pkt, addr, original)
+        pkt.Information.update(remote_addr=addr, sender_message=original)
+        self.results[key][1].add_packet(pkt)

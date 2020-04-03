@@ -249,7 +249,7 @@ describe "SetZonesPlan":
         assert nw.colors_count == len(expected_new), nw
 
         for i, (c, n) in enumerate(zip(nw.colors, expected_new)):
-            for k in n:
+            for k in n.keys():
                 assert c[k] == pytest.approx(n[k], rel=1e-6)
         assert nw.zone_index == 0
 

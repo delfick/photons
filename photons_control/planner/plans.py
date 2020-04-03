@@ -682,7 +682,7 @@ class FirmwareEffectsPlan(Plan):
             for k, v in self.pkt.payload.as_dict().items():
                 if "reserved" not in k and k not in ("type", "palette_count"):
                     if k == "parameters":
-                        for k2 in v:
+                        for k2 in v.keys():
                             if not k2.startswith("parameter"):
                                 info["options"][k2] = v[k2]
                     elif k == "palette":
