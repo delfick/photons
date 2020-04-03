@@ -75,6 +75,19 @@ class LIFXPacket(dictobj.PacketSpec):
     ]
 
     @property
+    def Key(self):
+        key = self.__dict__.get("Key", None)
+        if key is None:
+            key = (self.protocol, self.pkt_type, repr(self.payload))
+            self.__dict__["Key"] = key
+        return key
+
+    @Key.deleter
+    def Key(self):
+        if "Key" in self.__dict__:
+            del self.__dict__["Key"]
+
+    @property
     def serial(self):
         target = self.target
         if target in (None, sb.NotSpecified):

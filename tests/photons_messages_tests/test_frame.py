@@ -336,6 +336,24 @@ describe "LIFXPacket":
             assert msg.Meta.multi is multi
             assert msg.Payload.Meta.multi is multi
 
+    describe "Key":
+        it "is able to get a memoized Key from the packet":
+            fields = [("one", T.Bool), ("two", T.String)]
+            msg = frame.LIFXPacket.message(52, *fields)("SetAmze")
+
+            pkt1 = msg(one=True, two="hello")
+            pkt2 = msg(one=False, two="there")
+
+            assert pkt1.Key == (1024, 52, '{"one": true, "two": "hello"}')
+            assert pkt2.Key == (1024, 52, '{"one": false, "two": "there"}')
+
+            # For efficiency, the Key is cached, so if you change the payload
+            # The key stays the same, but we can delete the key for it to be recreated
+            pkt1.two = "tree"
+            assert pkt1.Key == (1024, 52, '{"one": true, "two": "hello"}')
+            del pkt1.Key
+            assert pkt1.Key == (1024, 52, '{"one": true, "two": "tree"}')
+
 describe "MultiOptions":
     it "complains if we don't give it two functions":
         for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
