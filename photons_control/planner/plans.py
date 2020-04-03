@@ -45,17 +45,6 @@ class a_plan:
         return item
 
 
-def pktkey(pkt):
-    """
-    Return a key representing this packet
-
-    This key is a tuple that may be used as a dictionary key.
-
-    It consists of the ``(protocol, pkt_type, <string representing the payload>)``
-    """
-    return (pkt.protocol, pkt.pkt_type, repr(pkt.payload))
-
-
 def make_plans(*by_key, **plans):
     """
     Given by_key which is a list of strings and plans which is a dictionary of key to
@@ -276,7 +265,7 @@ class AddressPlan(Plan):
 
     class Instance(Plan.Instance):
         def process(self, pkt):
-            self.address = pkt._with_sender_address
+            self.address = pkt.Information.remote_addr
             return True
 
         async def info(self):

@@ -21,6 +21,14 @@ def fake_time(FakeTime):
         yield t
 
 
+def Information(key):
+    class Information:
+        remote_addr = None
+        sender_message = mock.Mock(name="sender_message", Key=key)
+
+    return Information
+
+
 describe "Session":
     it "has received and filled", session:
         assert hasattr(session, "received")
@@ -66,33 +74,33 @@ describe "Session":
 
         key = str(uuid.uuid4())
         serial = "d073d5000001"
-        pkt1 = mock.Mock(name="pkt1", serial=serial)
-        pkt2 = mock.Mock(name="pkt2", serial=serial)
+        pkt1 = mock.Mock(name="pkt1", serial=serial, Information=Information(key))
+        pkt2 = mock.Mock(name="pkt2", serial=serial, Information=Information(key))
 
         assert session.received == {}
 
         with mock.patch("time.time", t):
-            session.receive(key, pkt1)
+            session.receive(pkt1)
             assert session.received[serial][key] == [(t1, pkt1)]
 
-            session.receive(key, pkt2)
+            session.receive(pkt2)
             assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
 
         serial2 = "d073d5000002"
-        pkt3 = mock.Mock(name="pkt3", serial=serial2)
+        pkt3 = mock.Mock(name="pkt3", serial=serial2, Information=Information(key))
 
         with mock.patch("time.time", t):
             assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
 
-            session.receive(key, pkt3)
+            session.receive(pkt3)
             assert session.received[serial][key] == [(t1, pkt1), (t2, pkt2)]
             assert session.received[serial2][key] == [(t3, pkt3)]
 
-        pkt4 = mock.Mock(name="pkt4", serial=serial)
         key2 = str(uuid.uuid4())
+        pkt4 = mock.Mock(name="pkt4", serial=serial, Information=Information(key2))
 
         with mock.patch("time.time", t):
-            session.receive(key2, pkt4)
+            session.receive(pkt4)
             assert session.received[serial][key2] == [(t4, pkt4)]
 
         assert session.received == {
@@ -163,13 +171,13 @@ describe "Session":
             key2 = str(uuid.uuid4())
             serial = "d073d5000001"
             serial2 = "d073d5000002"
-            pkt1 = mock.Mock(name="pkt1", serial=serial)
+            pkt1 = mock.Mock(name="pkt1", serial=serial, Information=Information(key))
 
             assert not session.has_received(key, serial)
             assert not session.has_received(key, serial2)
             assert not session.has_received(key2, serial2)
 
-            session.receive(key, pkt1)
+            session.receive(pkt1)
 
             assert session.has_received(key, serial)
             assert not session.has_received(key, serial2)
@@ -183,20 +191,20 @@ describe "Session":
             serial = "d073d5000001"
             serial2 = "d073d5000002"
 
-            pkt1 = mock.Mock(name="pkt1", serial=serial)
-            pkt2 = mock.Mock(name="pkt2", serial=serial)
-            pkt3 = mock.Mock(name="pkt3", serial=serial2)
-            pkt4 = mock.Mock(name="pkt4", serial=serial)
-            pkt5 = mock.Mock(name="pkt5", serial=serial2)
+            pkt1 = mock.Mock(name="pkt1", serial=serial, Information=Information(key))
+            pkt2 = mock.Mock(name="pkt2", serial=serial, Information=Information(key))
+            pkt3 = mock.Mock(name="pkt3", serial=serial2, Information=Information(key2))
+            pkt4 = mock.Mock(name="pkt4", serial=serial, Information=Information(key2))
+            pkt5 = mock.Mock(name="pkt5", serial=serial2, Information=Information(key2))
 
             assert list(session.known_packets(serial)) == []
             assert list(session.known_packets(serial2)) == []
 
-            session.receive(key, pkt1)
-            session.receive(key, pkt2)
-            session.receive(key2, pkt3)
-            session.receive(key2, pkt4)
-            session.receive(key2, pkt5)
+            session.receive(pkt1)
+            session.receive(pkt2)
+            session.receive(pkt3)
+            session.receive(pkt4)
+            session.receive(pkt5)
 
             ls = list(session.known_packets(serial))
             assert ls == [pkt1, pkt2, pkt4]
@@ -218,11 +226,15 @@ describe "Session":
                 def add(s, n, l, *, t, k):
                     key = getattr(s, f"key{k}")
 
-                    pkt = mock.Mock(name=f"pkt{n}{l}{k}", serial=getattr(s, f"serial{n}"))
+                    pkt = mock.Mock(
+                        name=f"pkt{n}{l}{k}",
+                        serial=getattr(s, f"serial{n}"),
+                        Information=Information(key),
+                    )
                     setattr(s, f"pkt{n}{l}{k}", pkt)
 
                     fake_time.set(t)
-                    session.receive(key, pkt)
+                    session.receive(pkt)
 
                 @hp.memoized_property
                 def starting_received(s):

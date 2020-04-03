@@ -1,5 +1,4 @@
-from photons_control.planner.plans import pktkey, Skip, NoMessages
-from photons_control.planner.script import WithSender
+from photons_control.planner.plans import Skip, NoMessages
 
 from photons_app.errors import RunErrors, BadRunWithResults
 from photons_app import helpers as hp
@@ -68,7 +67,7 @@ class Planner:
 
     def find_msgs_to_send(self):
         """
-        Yield WithSender items for any messages that we need to send to this
+        Yield items for any messages that we need to send to this
         device. We take into account the refresh on the plans to remove any
         cached results. If there are no cached results after this, then we need
         to send this message to the device.
@@ -79,12 +78,14 @@ class Planner:
 
         for label, info in sorted(self._by_label.items()):
             for message in info.not_done_messages:
-                key = pktkey(message)
+                key = message.Key
                 self.session.refresh_received(key, self.serial, info.instance.refresh)
 
                 if not self.session.has_received(key, self.serial) and key not in sent:
                     sent.add(key)
-                    yield WithSender(message, key, self.serial)
+                    message = message.clone()
+                    message.target = self.serial
+                    yield message
 
     async def completed(self):
         """
@@ -109,9 +110,9 @@ class Planner:
         async for thing in self._process(self.session.known_packets(self.serial)):
             yield thing
 
-    async def add(self, key, pkt):
+    async def add(self, pkt):
         """Add a packet to known packets and process it against all plans"""
-        self.session.receive(key, pkt)
+        self.session.receive(pkt)
         async for thing in self._process([pkt]):
             yield thing
 
@@ -236,13 +237,14 @@ class Session:
         """Return a Planner instance for managing packets and results"""
         return Planner(self, plans, depinfo, serial, error_catcher)
 
-    def receive(self, key, pkt):
+    def receive(self, pkt):
         """
         Cache this reply packet for this key. We use pkt.serial
         for determining what serial this packet came from.
 
         We also record the current time to use later for determining refreshes
         """
+        key = pkt.Information.sender_message.Key
         self.received[pkt.serial][key].append((time.time(), pkt))
 
     def fill(self, plankey, serial, result):
@@ -511,8 +513,8 @@ class Gatherer:
             await queue.put(complete)
 
         if msgs_to_send:
-            async for key, pkt in self.target.script(msgs_to_send).run_with(None, afr, **kwargs):
-                async for complete in planner.add(key, pkt):
+            async for pkt in self.target.script(msgs_to_send).run_with(None, afr, **kwargs):
+                async for complete in planner.add(pkt):
                     await queue.put(complete)
 
         async for complete in planner.ended():

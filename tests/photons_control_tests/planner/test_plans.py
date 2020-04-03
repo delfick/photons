@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_control.planner.plans import a_plan, pktkey, make_plans, Plan
+from photons_control.planner.plans import a_plan, make_plans, Plan
 
 from photons_app.errors import PhotonsAppError
 
@@ -30,29 +30,6 @@ describe "a_plan":
         with mock.patch("photons_control.planner.plans.plan_by_key", d):
             assert a_plan(key2)(Plan2) is Plan2
         assert d == {key: Plan, key2: Plan2}
-
-describe "pktkey":
-    it "returns a tuple of information representing the packet":
-        get_service = DiscoveryMessages.StateService.empty_normalise(
-            source=0, sequence=1, target="d073d5000001", service=Services.UDP, port=56700
-        )
-
-        key = pktkey(get_service)
-        assert key == (1024, 3, '{"port": 56700, "service": "<Services.UDP: 1>"}')
-
-        get_service2 = DiscoveryMessages.StateService.empty_normalise(
-            source=1, sequence=2, target="d073d5000002", service=Services.UDP, port=56700
-        )
-        key = pktkey(get_service)
-        assert key == (1024, 3, '{"port": 56700, "service": "<Services.UDP: 1>"}')
-
-        get_power = DeviceMessages.GetPower()
-        key = pktkey(get_power)
-        assert key == (1024, 20, "{}")
-
-        state_power = DeviceMessages.StatePower(level=0)
-        key = pktkey(state_power)
-        assert key == (1024, 22, '{"level": 0}')
 
 describe "make_plans":
     it "returns empty if given no arguments":
