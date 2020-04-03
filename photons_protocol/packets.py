@@ -42,6 +42,16 @@ import json
 log = logging.getLogger("photons_protocol.packets")
 
 
+class Information:
+    def __init__(self, remote_addr=None, sender_message=None):
+        self.remote_addr = remote_addr
+        self.sender_message = sender_message
+
+    def update(self, *, remote_addr, sender_message):
+        self.remote_addr = remote_addr
+        self.sender_message = sender_message
+
+
 class Initial:
     """Used for the default values on Packet groups"""
 
@@ -83,6 +93,13 @@ class PacketSpecMixin:
     """
     Functionality for our packet.
     """
+
+    @property
+    def Information(self):
+        info = self.__dict__.get("Information", None)
+        if info is None:
+            info = self.__dict__["Information"] = Information()
+        return info
 
     def pack(self, payload=None, parent=None, serial=None, packing_kls=PacketPacking):
         """

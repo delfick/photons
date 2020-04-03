@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.comms.base import Communication, Found
+from photons_transport.comms.base import Communication, Found, FakeAck
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.transports.base import Transport
 from photons_transport.comms.receiver import Receiver
@@ -10,7 +10,7 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import FoundNoDevices, TimedOut
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, protocol_register, LIFXPacket
+from photons_messages import DeviceMessages, protocol_register, LIFXPacket, CoreMessages
 from photons_protocol.messages import Messages
 
 from delfick_project.errors_pytest import assertRaises
@@ -51,6 +51,23 @@ async def cleanup(V):
         V.final_future.cancel()
         await V.communication.finish()
 
+
+describe "FakeAck":
+    it "behaves like an Acknowledgement":
+        addr = ("125.6.78.1", 3456)
+        serial = "d073d5000001"
+
+        ack = FakeAck(2, 20, binascii.unhexlify(serial), serial, addr)
+
+        assert ack.source == 2
+        assert ack.sequence == 20
+        assert binascii.hexlify(ack.target).decode() == serial
+        assert ack.serial == serial
+        assert ack.Information.remote_addr == addr
+
+        assert ack | CoreMessages.Acknowledgement
+
+        assert repr(ack) == "<ACK source: 2, sequence: 20, serial: d073d5000001>"
 
 describe "Communication":
     async it "is formattable", V:

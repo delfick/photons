@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_protocol.packets import dictobj, PacketSpecMixin, Initial, Optional
+from photons_protocol.packets import dictobj, PacketSpecMixin, Initial, Optional, Information
 from photons_protocol.types import Type as T
 
 from photons_app import helpers as hp
@@ -874,3 +874,50 @@ describe "Packet attributes":
 
                 assert p.one == V.for_user
                 assert p.two == binascii.unhexlify("d073d5")
+
+    describe "Information":
+
+        @pytest.fixture
+        def V(self):
+            class V:
+                @hp.memoized_property
+                def P(s):
+                    class P(dictobj.PacketSpec):
+                        fields = [("g", T.String(32))]
+
+                    return P
+
+            return V()
+
+        it "is able to set an Information object that is memoized", V:
+            pkt1 = V.P(g="hello")
+            pkt2 = V.P(g="there")
+
+            sender1 = mock.Mock(name="sender1")
+            sender2 = mock.Mock(name="sender2")
+
+            for pkt in (pkt1, pkt2):
+                assert isinstance(pkt.Information, Information)
+                assert pkt.Information.remote_addr is None
+                assert pkt.Information.sender_message is None
+
+            pkt1.Information.update(remote_addr=("127.0.0.1", 6789), sender_message=sender1)
+            assert pkt1.Information.remote_addr == ("127.0.0.1", 6789)
+            assert pkt1.Information.sender_message is sender1
+
+            # Information is per packet
+            assert pkt2.Information.remote_addr is None
+            assert pkt2.Information.sender_message is None
+
+            pkt2.Information.update(remote_addr=("127.0.2.4", 1234), sender_message=sender2)
+            assert pkt2.Information.remote_addr == ("127.0.2.4", 1234)
+            assert pkt2.Information.sender_message is sender2
+
+            assert pkt1.Information.remote_addr == ("127.0.0.1", 6789)
+            assert pkt1.Information.sender_message is sender1
+
+            for (pkt, dct) in ((pkt1, {"g": "hello"}), (pkt2, {"g": "there"})):
+                assert pkt.as_dict() == dct
+                assert sorted(pkt.keys()) == sorted(dct.keys())
+                assert sorted(pkt.values()) == sorted(dct.values())
+                assert sorted(pkt.items()) == sorted(dct.items())

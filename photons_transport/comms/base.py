@@ -6,6 +6,7 @@ from photons_transport.comms.writer import Writer
 from photons_app.errors import TimedOut, FoundNoDevices
 from photons_app import helpers as hp
 
+from photons_protocol.packets import Information
 from photons_protocol.messages import Messages
 
 import binascii
@@ -21,13 +22,14 @@ log = logging.getLogger("photons_transport.comms")
 class FakeAck:
     represents_ack = True
 
-    __slots__ = ["source", "sequence", "target", "serial"]
+    __slots__ = ["source", "sequence", "target", "serial", "Information"]
 
-    def __init__(self, source, sequence, target, serial):
+    def __init__(self, source, sequence, target, serial, addr):
         self.serial = serial
         self.target = target
         self.source = source
         self.sequence = sequence
+        self.Information = Information(remote_addr=addr)
 
     def __or__(self, kls):
         return kls.Payload.Meta.protocol == 1024 and kls.Payload.represents_ack
@@ -357,7 +359,7 @@ class Communication:
                 sequence = data[23]
 
                 serial = binascii.hexlify(target[:6]).decode()
-                pkt = FakeAck(source, sequence, target, serial)
+                pkt = FakeAck(source, sequence, target, serial, addr)
             else:
                 if PacketKls is None:
                     PacketKls = Packet
