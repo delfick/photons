@@ -54,7 +54,7 @@ describe "App":
             """
             )
 
-            result = collector.configuration["photons_app"].task_specifier()
+            result = collector.photons_app.task_specifier()
             assert result == ("blah", "yeap")
 
         it "doesn't set target if task_specifier doesn't specify target":
@@ -67,7 +67,7 @@ describe "App":
             """
             )
 
-            result = collector.configuration["photons_app"].task_specifier()
+            result = collector.photons_app.task_specifier()
             assert result == (sb.NotSpecified, "blah")
 
         it "sets up logging theme if term_colors is specified":

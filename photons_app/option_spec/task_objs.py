@@ -126,7 +126,7 @@ class Task(dictobj):
         """
         empty = lambda r: r in ("", None, sb.NotSpecified)
 
-        reference = collector.configuration["photons_app"].reference
+        reference = collector.photons_app.reference
         if task_func.needs_reference and empty(reference):
             raise BadOption(
                 "This task requires you specify a reference, please do so!", action=self.action
@@ -162,4 +162,4 @@ class Task(dictobj):
 
     def resolve_artifact(self, collector):
         """Get us the artifact from the photons_app options"""
-        return collector.configuration["photons_app"].artifact
+        return collector.photons_app.artifact

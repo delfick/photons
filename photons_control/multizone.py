@@ -329,7 +329,7 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
     In that example the strip will have the first 10 zones set to red, then 3
     blue zones and then 5 green zones
     """
-    options = collector.configuration["photons_app"].extra_as_json
+    options = collector.photons_app.extra_as_json
 
     if "colors" not in options:
         raise PhotonsAppError(
@@ -359,7 +359,7 @@ async def multizone_effect(collector, target, reference, artifact, **kwargs):
     - speed
     - duration
     """
-    options = collector.configuration["photons_app"].extra_as_json
+    options = collector.photons_app.extra_as_json
 
     if artifact in ("", None, sb.NotSpecified):
         raise PhotonsAppError("Please specify type of effect with --artifact")

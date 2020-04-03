@@ -22,13 +22,19 @@ import os
 
 
 describe "Collector":
+
+    it "has a shortcut to the photons_app":
+        collector = Collector()
+        collector.prepare(None, {})
+        assert collector.photons_app is collector.configuration["photons_app"]
+
     it "has a shortcut to the run helper":
         coro = mock.Mock(name="coro")
         run = mock.Mock(name="run")
         collector = Collector()
         collector.prepare(None, {})
 
-        photons_app = collector.configuration["photons_app"]
+        photons_app = collector.photons_app
         target_register = collector.configuration["target_register"]
 
         with mock.patch("photons_app.collector.run", run):
@@ -67,12 +73,12 @@ describe "Collector":
         assert call[0] == fle.name
         assert call[1].storage.data == [
             (Path(""), {"two": 3}, None),
-            (Path(""), {"photons_app": collector.configuration["photons_app"].as_dict()}, None),
+            (Path(""), {"photons_app": collector.photons_app.as_dict()}, None),
             (Path(""), {"one": 2}, None),
         ]
 
         assert clone2.configuration["photons_app"].artifact == "blah"
-        assert clone2.configuration["photons_app"] is not collector.configuration["photons_app"]
+        assert clone2.configuration["photons_app"] is not collector.photons_app
 
     describe "extra_prepare":
 

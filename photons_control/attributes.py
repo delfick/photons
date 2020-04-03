@@ -123,7 +123,7 @@ async def attr(collector, target, reference, artifact, **kwargs):
     if kls is None:
         raise BadOption("Sorry, couldn't a class for this message", prefix="", want=artifact)
 
-    photons_app = collector.configuration["photons_app"]
+    photons_app = collector.photons_app
 
     extra = photons_app.extra_as_json
 
@@ -153,9 +153,7 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
     if kls is None:
         raise BadOption("Sorry, couldn't a class for this message", prefix="", want=artifact)
 
-    photons_app = collector.configuration["photons_app"]
-
-    extra = photons_app.extra_as_json
+    extra = collector.photons_app.extra_as_json
 
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])
@@ -213,9 +211,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     if getter is None:
         raise BadOption("Sorry, couldn't a class for this message", prefix="get", want=artifact)
 
-    photons_app = collector.configuration["photons_app"]
-
-    extra = photons_app.extra_as_json
+    extra = collector.photons_app.extra_as_json
 
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])
@@ -251,9 +247,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     if setter is None:
         raise BadOption("Sorry, couldn't a class for this message", prefix="set", want=artifact)
 
-    photons_app = collector.configuration["photons_app"]
-
-    extra = photons_app.extra_as_json
+    extra = collector.photons_app.extra_as_json
 
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])

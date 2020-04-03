@@ -366,3 +366,7 @@ class Collector(Collector):
             },
             configuration=configuration,
         )
+
+    @hp.memoized_property
+    def photons_app(self):
+        return self.configuration["photons_app"]

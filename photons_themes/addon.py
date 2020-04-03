@@ -79,7 +79,7 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     And you may also supply ``overrides`` with ``hue``, ``saturation``,
     ``brightness`` and ``kelvin`` to override the specified colors.
     """
-    extra = collector.configuration["photons_app"].extra_as_json
+    extra = collector.photons_app.extra_as_json
     everything = {}
     if "overrides" in extra:
         everything["overrides"] = extra["overrides"]

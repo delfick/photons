@@ -196,7 +196,7 @@ async def transform(collector, target, reference, **kwargs):
         to be on. This defaults to False, which means it will appear to turn on
         with the new color
     """
-    extra = collector.configuration["photons_app"].extra_as_json
+    extra = collector.photons_app.extra_as_json
     extra = sb.dictionary_spec().normalise(Meta.empty(), extra)
 
     transform_options = sb.set_options(transform_options=sb.dictionary_spec()).normalise(
@@ -223,6 +223,6 @@ async def power_toggle(collector, target, reference, **kwargs):
     It takes in a ``duration`` field that is the seconds of the duration. This defaults
     to 1 second.
     """
-    extra = collector.configuration["photons_app"].extra_as_json
+    extra = collector.photons_app.extra_as_json
     msg = PowerToggle(**extra)
     await target.script(msg).run_with_all(reference)

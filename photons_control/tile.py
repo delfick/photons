@@ -159,7 +159,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
     """
     Get the colors of the tiles in your chain
     """
-    options = collector.configuration["photons_app"].extra_as_json
+    options = collector.photons_app.extra_as_json
 
     missing = []
     for field in TileMessages.Get64.Payload.Meta.all_names:
@@ -214,7 +214,7 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
 
     or as ``["red", "hue:100 saturation:1", "blue"]``
     """
-    options = collector.configuration["photons_app"].extra_as_json
+    options = collector.photons_app.extra_as_json
 
     if artifact in ("", None, sb.NotSpecified):
         raise PhotonsAppError("Please specify type of effect with --artifact")
@@ -254,7 +254,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
 
     Where the colors is a grid of 8 rows of 8 ``[h, s, b, k]`` values.
     """  # noqa
-    options = collector.configuration["photons_app"].extra_as_json
+    options = collector.photons_app.extra_as_json
 
     if "colors" in options:
         spec = sb.listof(
@@ -305,7 +305,7 @@ async def set_tile_positions(collector, target, reference, **kwargs):
 
     ``lan:set_tile_positions d073d5f09124 -- '[[0, 0], [-1, 0], [-1, 1]]'``
     """
-    extra = collector.configuration["photons_app"].extra_as_json
+    extra = collector.photons_app.extra_as_json
     positions = sb.listof(sb.listof(sb.float_spec())).normalise(Meta.empty(), extra)
     if any(len(position) != 2 for position in positions):
         raise PhotonsAppError(

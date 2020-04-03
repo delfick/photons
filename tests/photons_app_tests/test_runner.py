@@ -114,7 +114,7 @@ describe "run":
 
         @an_action()
         async def a_test(collector, reference, artifact, **kwargs):
-            photons_app = collector.configuration["photons_app"]
+            photons_app = collector.photons_app
 
             # KeyboardInterrupt is special and requires the graceful future
             # Otherwise the error that we get from the final_future is
@@ -373,7 +373,7 @@ describe "run":
                 s.connect(artifact)
                 s.close()
 
-                await collector.configuration["photons_app"].final_future
+                await collector.photons_app.final_future
             except (asyncio.CancelledError, ApplicationCancelled, UserQuit):
                 with open(reference, 'w') as fle:
                     fle.write(f"Stopped incorrectly {sys.exc_info()}")

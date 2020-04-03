@@ -18,9 +18,7 @@ async def set_color(collector, target, reference, artifact, **kwargs):
 
     The color may be any valid color specifier.
     """
-    overrides = {}
-    if collector.configuration["photons_app"].extra:
-        overrides = collector.configuration["photons_app"].extra_as_json
+    overrides = collector.photons_app.extra_as_json
 
     if artifact in (None, "", sb.NotSpecified):
         raise PhotonsAppError("Please specify a color as artifact")

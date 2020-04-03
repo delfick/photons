@@ -153,10 +153,9 @@ class App(App):
 
         collector = self.setup_collector(args_dict, logging_handler, extra_files)
 
-        photons_app = collector.configuration["photons_app"]
         task_runner = collector.configuration["task_runner"]
 
-        target, task = photons_app.task_specifier()
+        target, task = collector.photons_app.task_specifier()
         collector.run_coro_as_main(task_runner(target, task), catch_delfick_error=False)
 
     def specify_other_args(self, parser, defaults):

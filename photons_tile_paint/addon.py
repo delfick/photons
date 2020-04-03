@@ -67,9 +67,7 @@ class Animator:
 
     def make_action(self):
         async def action(collector, target, reference, **kwargs):
-            photons_app = collector.configuration["photons_app"]
-
-            extra = photons_app.extra_as_json
+            extra = collector.photons_app.extra_as_json
 
             global_options = collector.configuration["animation_options"]
 

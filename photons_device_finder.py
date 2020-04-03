@@ -241,7 +241,7 @@ async def find_with_filter(collector, target, **kwargs):
 
     Not providing options after the ``--`` will find all devices on the network.
     """
-    extra = collector.configuration["photons_app"].extra_as_json
+    extra = collector.photons_app.extra_as_json
     device_finder = DeviceFinder(target)
     try:
         for serial in await device_finder.serials(**extra):

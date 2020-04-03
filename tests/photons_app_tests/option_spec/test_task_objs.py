@@ -241,7 +241,7 @@ describe "Task":
         def reference_setter(self, V):
             def set_reference(reference):
                 photons_app = mock.Mock(name="photons_app", reference=reference)
-                V.collector.configuration["photons_app"] = photons_app
+                V.collector.photons_app = photons_app
 
             return set_reference
 
@@ -354,9 +354,8 @@ describe "Task":
 
     describe "resolve_artfiact":
         it "returns from the photons_app optios":
-            collector = mock.Mock(name="collector")
             artifact = mock.Mock(name="artifact")
             photons_app = mock.Mock(name="photons_app", artifact=artifact)
-            collector.configuration = {"photons_app": photons_app}
+            collector = mock.Mock(name="collector", photons_app=photons_app)
 
             assert Task().resolve_artifact(collector) is artifact
