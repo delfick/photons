@@ -57,7 +57,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msgs).run_with(runner.serials):
+            async for pkt in runner.target.script(msgs).run_with(runner.serials):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.3
 
@@ -95,7 +95,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+            async for pkt in runner.target.script(msg).run_with(runner.serials):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
@@ -134,7 +134,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+            async for pkt in runner.target.script(msg).run_with(runner.serials):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 1
 
@@ -175,7 +175,7 @@ describe "Pipeline":
             reference = FoundSerials()
             await reference.find(afr, timeout=1)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(reference, afr):
+            async for pkt in runner.target.script(msg).run_with(reference, afr):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
@@ -216,7 +216,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials):
+            async for pkt in runner.target.script(msg).run_with(runner.serials):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
@@ -266,7 +266,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(runner.serials, afr):
+            async for pkt in runner.target.script(msg).run_with(runner.serials, afr):
                 got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
@@ -306,7 +306,7 @@ describe "Pipeline":
         async with runner.target.session() as afr:
             await afr.find_specific_serials(runner.serials)
             start = loop_time()
-            async for pkt, _, _ in runner.target.script(msg).run_with(
+            async for pkt in runner.target.script(msg).run_with(
                 runner.serials, error_catcher=errors, message_timeout=0.2
             ):
                 got[pkt.serial].append((pkt, loop_time()))
@@ -350,7 +350,7 @@ describe "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=errors, message_timeout=0.2
         ):
             got[pkt.serial].append(pkt)
@@ -390,7 +390,7 @@ describe "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=errors, message_timeout=0.1
         ):
             got[pkt.serial].append(pkt)
@@ -427,7 +427,7 @@ describe "Pipeline":
 
         got = defaultdict(list)
         try:
-            async for pkt, _, _ in runner.target.script(msg).run_with(
+            async for pkt in runner.target.script(msg).run_with(
                 runner.serials, message_timeout=0.1
             ):
                 got[pkt.serial].append(pkt)

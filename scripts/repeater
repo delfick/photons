@@ -55,7 +55,7 @@ async def repeater(collector, target, reference, **kwargs):
         log.error(e)
 
     async with target.session() as afr:
-        async for pkt, _, _ in target.script(repeater).run_with(
+        async for pkt in target.script(repeater).run_with(
             reference, afr, error_catcher=error_catcher, message_timeout=5
         ):
             print(pkt.serial, repr(pkt.payload))

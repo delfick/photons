@@ -1087,7 +1087,7 @@ describe "FakeDevice":
                     await first_service.add_service(afr.add_service)
                     got = []
                     es = []
-                    async for pkt, _, _ in target.script(echo).run_with(
+                    async for pkt in target.script(echo).run_with(
                         serial, afr, message_timeout=0.05, error_catcher=es
                     ):
                         got.append(pkt)
@@ -1098,10 +1098,10 @@ describe "FakeDevice":
                     await second_service.add_service(afr.add_service)
                     got = []
                     es = []
-                    async for pkt, addr, _ in target.script(echo).run_with(
+                    async for pkt in target.script(echo).run_with(
                         serial, afr, message_timeout=0.05, error_catcher=es
                     ):
-                        assert addr == ("127.0.0.1", port2)
+                        assert pkt.Information.remote_addr == ("127.0.0.1", port2)
                         got.append(pkt)
                     assert es == []
                     assert len(got) == 1

@@ -148,7 +148,7 @@ async def get_device_chain(collector, target, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
-    async for pkt, _, _ in target.script(FromGenerator(gen)).run_with(reference):
+    async for pkt in target.script(FromGenerator(gen)).run_with(reference):
         print(pkt.serial)
         for tile in tiles_from(pkt):
             print("    ", repr(tile))
@@ -175,7 +175,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     msg = TileMessages.Get64.empty_normalise(**options)
 
-    async for pkt, _, _ in target.script(msg).run_with(reference):
+    async for pkt in target.script(msg).run_with(reference):
         if pkt | response_kls:
             got[pkt.serial].append((pkt.tile_index, pkt))
 
@@ -346,7 +346,7 @@ async def get_tile_positions(collector, target, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
-    async for pkt, _, _ in target.script(FromGenerator(gen)).run_with(reference):
+    async for pkt in target.script(FromGenerator(gen)).run_with(reference):
         print(pkt.serial)
         for tile in tiles_from(pkt):
             print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")

@@ -35,7 +35,7 @@ async def tile_serials_from_reference(target, reference, afr):
     """
     serials = []
 
-    async for pkt, _, _ in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
+    async for pkt in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
         if pkt | DeviceMessages.StateVersion:
             if Products[pkt.vendor, pkt.product].cap.has_matrix:
                 serials.append(pkt.serial)

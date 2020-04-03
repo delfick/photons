@@ -207,12 +207,20 @@ describe "NetworkSession":
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
-                yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                s1.Information.update(
+                    remote_addr=("192.168.0.3", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s1
 
                 s3 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=58, target="d073d5000002"
                 )
-                yield (s3, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
+                s3.Information.update(
+                    remote_addr=("192.168.0.4", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s3
 
             assert V.session.found == Found()
 
@@ -262,12 +270,20 @@ describe "NetworkSession":
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
-                yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                s1.Information.update(
+                    remote_addr=("192.168.0.3", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s1
 
                 s3 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=58, target="d073d5000002"
                 )
-                yield (s3, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
+                s3.Information.update(
+                    remote_addr=("192.168.0.4", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s3
 
             assert V.session.found == Found()
             V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
@@ -313,7 +329,11 @@ describe "NetworkSession":
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
-                yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                s1.Information.update(
+                    remote_addr=("192.168.0.3", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s1
 
             assert V.session.found == Found()
 
@@ -343,7 +363,11 @@ describe "NetworkSession":
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
-                yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                s1.Information.update(
+                    remote_addr=("192.168.0.3", 56700),
+                    sender_message=DiscoveryMessages.GetService(),
+                )
+                yield s1
 
             assert V.session.found == Found()
 
@@ -395,19 +419,31 @@ describe "NetworkSession":
                     s1 = DiscoveryMessages.StateService(
                         service=Services.UDP, port=56, target="d073d5000001"
                     )
-                    yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                    s1.Information.update(
+                        remote_addr=("192.168.0.3", 56700),
+                        sender_message=DiscoveryMessages.GetService(),
+                    )
+                    yield s1
 
                 if len(called) > 1:
                     s2 = DiscoveryMessages.StateService(
                         service=Services.UDP, port=58, target="d073d5000002"
                     )
-                    yield (s2, ("192.168.0.4", 56700), DiscoveryMessages.GetService())
+                    s2.Information.update(
+                        remote_addr=("192.168.0.4", 56700),
+                        sender_message=DiscoveryMessages.GetService(),
+                    )
+                    yield s2
 
                 if len(called) > 2:
                     s3 = DiscoveryMessages.StateService(
                         service=Services.UDP, port=59, target="d073d5000003"
                     )
-                    yield (s3, ("192.168.0.5", 56700), DiscoveryMessages.GetService())
+                    s3.Information.update(
+                        remote_addr=("192.168.0.5", 56700),
+                        sender_message=DiscoveryMessages.GetService(),
+                    )
+                    yield s3
 
             assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
@@ -462,7 +498,11 @@ describe "NetworkSession":
                     s1 = DiscoveryMessages.StateService(
                         service=Services.UDP, port=56, target="d073d5000001"
                     )
-                    yield (s1, ("192.168.0.3", 56700), DiscoveryMessages.GetService())
+                    s1.Information.update(
+                        remote_addr=("192.168.0.3", 56700),
+                        sender_message=DiscoveryMessages.GetService(),
+                    )
+                    yield s1
 
             assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]

@@ -25,9 +25,7 @@ def PowerToggle(duration=1, **kwargs):
 
     async def gen(reference, afr, **kwargs):
         get_power = DeviceMessages.GetPower()
-        async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
-            reference, afr, **kwargs
-        ):
+        async for pkt in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
             if pkt | DeviceMessages.StatePower:
                 if pkt.level == 0:
                     yield LightMessages.SetLightPower(
@@ -168,7 +166,7 @@ class Transformer(object):
         async def gen(reference, afr, **kwargs):
             get_color = LightMessages.GetColor(ack_required=False, res_required=True)
 
-            async for pkt, _, _ in afr.transport_target.script(get_color).run_with(
+            async for pkt in afr.transport_target.script(get_color).run_with(
                 reference, afr, **kwargs
             ):
                 if pkt | LightMessages.LightState:

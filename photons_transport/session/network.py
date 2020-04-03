@@ -84,8 +84,9 @@ class NetworkSession(Communication):
         async for time_left, time_till_next in self._search_retry_iterator(timeout):
             kwargs["message_timeout"] = time_till_next
 
-            async for pkt, addr, _ in script.run_with(None, self, **kwargs):
+            async for pkt in script.run_with(None, self, **kwargs):
                 if discovery_options.want(pkt.serial):
+                    addr = pkt.Information.remote_addr
                     found_now.add(pkt.target[:6])
                     await self.add_service(pkt.serial, pkt.service, host=addr[0], port=pkt.port)
 

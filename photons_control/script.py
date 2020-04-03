@@ -240,7 +240,7 @@ class FromGenerator(object):
         async def gen(reference, afr, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            for pkt, _, _ in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+            for pkt in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
                 if pkt | DeviceMessages.StatePower:
                     if pkt.level == 0:
                         yield DeviceMessages.SetPower(level=65535, target=pkt.serial)

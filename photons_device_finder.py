@@ -60,7 +60,7 @@ Or you can use it as a reference in a run_with/run_with_all call:
     await lan_target.script(DeviceMessages.SetPower(level=0)).run_with_all(reference)
 
     reference2 = device_finder.find(hue="0-20", product_identifier=["lifx_color_a19", "lifx_color_br30"])
-    for pkt, _, _ in lan_target.script(DeviceMessages.GetPower()).run_with(reference2):
+    for pkt in lan_target.script(DeviceMessages.GetPower()).run_with(reference2):
         print(pkt)
 
 Note that if you want the device_finder to update it's idea of what devices are
@@ -980,7 +980,7 @@ class DeviceFinderLoops(object):
         afr = await self.args_for_run()
         kwargs = {"error_catcher": error_catcher, "find_timeout": find_timeout}
 
-        async for pkt, _, _ in script.run_with(reference, afr, **kwargs):
+        async for pkt in script.run_with(reference, afr, **kwargs):
             if self.finished.is_set():
                 break
             await self.queue.put(pkt)

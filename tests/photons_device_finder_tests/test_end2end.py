@@ -364,7 +364,7 @@ describe "Device finder":
 
             async with runner.target.session() as afr:
                 found = []
-                async for pkt, _, _ in script.run_with(finder.find(), afr):
+                async for pkt in script.run_with(finder.find(), afr):
                     assert pkt | DeviceMessages.StatePower
                     found.append((pkt.serial, pkt.payload.level))
 
@@ -377,7 +377,7 @@ describe "Device finder":
                 )
 
                 found = []
-                async for pkt, _, _ in script.run_with(finder.find(location_name="four"), afr):
+                async for pkt in script.run_with(finder.find(location_name="four"), afr):
                     assert pkt | DeviceMessages.StatePower
                     found.append((pkt.serial, pkt.payload.level))
 

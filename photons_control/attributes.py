@@ -131,7 +131,7 @@ async def attr(collector, target, reference, artifact, **kwargs):
         extra.update(kwargs["extra_payload_kwargs"])
 
     script = target.script(kls.normalise(Meta.empty(), extra))
-    async for pkt, _, _ in script.run_with(reference, **kwargs):
+    async for pkt in script.run_with(reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
 
@@ -176,7 +176,7 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
                 yield f"{indent}{field}: {pkt.actual(field)}"
 
     script = target.script(kls.normalise(Meta.empty(), extra))
-    async for pkt, _, _ in script.run_with(reference, **kwargs):
+    async for pkt in script.run_with(reference, **kwargs):
         print()
         print(f"""{"=" * 10}: {pkt.serial}""")
         for line in lines(pkt):
@@ -221,7 +221,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
         extra.update(kwargs["extra_payload_kwargs"])
 
     script = target.script(getter.normalise(Meta.empty(), extra))
-    async for pkt, _, _ in script.run_with(reference, **kwargs):
+    async for pkt in script.run_with(reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
 
@@ -259,7 +259,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
         extra.update(kwargs["extra_payload_kwargs"])
 
     script = target.script(setter.normalise(Meta.empty(), extra))
-    async for pkt, _, _ in script.run_with(reference, broadcast=broadcast):
+    async for pkt in script.run_with(reference, broadcast=broadcast):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
 

@@ -74,7 +74,7 @@ describe "FromGenerator":
 
         got = defaultdict(list)
         with light3.offline():
-            async for pkt, _, _ in runner.target.script(msg).run_with(
+            async for pkt in runner.target.script(msg).run_with(
                 runner.serials, error_catcher=errors
             ):
                 got[pkt.serial].append(pkt)
@@ -125,7 +125,7 @@ describe "FromGenerator":
         with light3.offline():
             with light1.no_replies_for(DeviceMessages.SetLabel):
                 with light2.no_replies_for(DeviceMessages.GetPower):
-                    async for pkt, _, _ in runner.target.script(msg).run_with(
+                    async for pkt in runner.target.script(msg).run_with(
                         runner.serials, error_catcher=errors, message_timeout=0.05
                     ):
                         got[pkt.serial].append(pkt)
@@ -166,7 +166,7 @@ describe "FromGenerator":
         }
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(FromGenerator(gen)).run_with(runner.serials):
+        async for pkt in runner.target.script(FromGenerator(gen)).run_with(runner.serials):
             got[pkt.serial].append(pkt)
 
         assert len(runner.devices) > 0
@@ -185,7 +185,7 @@ describe "FromGenerator":
         async def gen(reference, afr, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
+            async for pkt in afr.transport_target.script(get_power).run_with(
                 reference, afr, **kwargs
             ):
                 if pkt | DeviceMessages.StatePower:
@@ -289,7 +289,7 @@ describe "FromGenerator":
                 yield DeviceMessages.SetPower(level=level)
 
             get_power = DeviceMessages.GetPower()
-            async for pkt, _, _ in afr.transport_target.script(get_power).run_with(
+            async for pkt in afr.transport_target.script(get_power).run_with(
                 reference, afr, **kwargs
             ):
                 if pkt.serial == light1.serial:

@@ -50,7 +50,7 @@ describe "Repeater":
                 assert False, f"Got an error: {err}"
 
             got = defaultdict(list)
-            async for pkt, _, _ in runner.target.script(msg).run_with(
+            async for pkt in runner.target.script(msg).run_with(
                 FoundSerials(), error_catcher=no_errors
             ):
                 got[pkt.serial].append(pkt)
@@ -95,7 +95,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=no_errors
         ):
             got[pkt.serial].append((pkt, loop_time()))
@@ -138,7 +138,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=no_errors
         ):
             got[pkt.serial].append((pkt, loop_time()))
@@ -167,7 +167,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=no_errors
         ):
             got[pkt.serial].append((pkt, loop_time()))
@@ -208,7 +208,7 @@ describe "Repeater":
             errors.append(err)
 
         got = defaultdict(list)
-        async for pkt, _, _ in runner.target.script(msg).run_with(
+        async for pkt in runner.target.script(msg).run_with(
             runner.serials, error_catcher=got_error, message_timeout=0.1
         ):
             got[pkt.serial].append(pkt)

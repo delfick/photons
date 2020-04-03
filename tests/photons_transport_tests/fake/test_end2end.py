@@ -24,7 +24,7 @@ describe "Fake device":
             script = target.script(DiscoveryMessages.GetService())
 
             got = defaultdict(list)
-            async for pkt, _, _ in script.run_with(device.serial, afr):
+            async for pkt in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
             assert dict(got) == {"d073d5000001": [{"service": Services.UDP, "port": device_port}]}
@@ -36,7 +36,7 @@ describe "Fake device":
             script = lantarget.script(DeviceMessages.EchoRequest(echoing=b"hi"))
 
             got = defaultdict(list)
-            async for pkt, _, _ in script.run_with(device.serial, afr):
+            async for pkt in script.run_with(device.serial, afr):
                 got[pkt.serial].append(pkt.payload.as_dict())
 
             assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}
@@ -53,7 +53,34 @@ describe "Fake device":
             script = target.script(DeviceMessages.EchoRequest(echoing=b"hi"))
 
             got = defaultdict(list)
-            async for pkt, _, _ in script.run_with(device.serial, afr):
+            async for pkt in script.run_with(device.serial, afr):
+                got[pkt.serial].append(pkt.payload.as_dict())
+
+            assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}
+
+    async it "run_with_works with old api":
+        device = FakeDevice("d073d5000001", [], use_sockets=False)
+
+        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
+        target = MemoryTarget.create(options, {"devices": device})
+
+        await device.start()
+
+        async with target.session() as afr:
+            script = target.script(DeviceMessages.EchoRequest(echoing=b"hi"))
+
+            got = defaultdict(list)
+            async for pkt, remote_addr, original in script.run_with(device.serial, afr):
+                assert pkt.Information.remote_addr == remote_addr
+                assert pkt.Information.sender_message == original
+                got[pkt.serial].append(pkt.payload.as_dict())
+
+            assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}
+
+            got = defaultdict(list)
+            for pkt, remote_addr, original in await script.run_with_all(device.serial, afr):
+                assert pkt.Information.remote_addr == remote_addr
+                assert pkt.Information.sender_message == original
                 got[pkt.serial].append(pkt.payload.as_dict())
 
             assert dict(got) == {"d073d5000001": [{"echoing": b"hi" + b"\x00" * 62}]}

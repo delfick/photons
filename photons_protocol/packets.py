@@ -166,11 +166,8 @@ class PacketSpecMixin:
         return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
 
     def keys(self):
-        for k in self.Meta.all_names:
+        for k in dictobj.__iter__(self):
             yield k
-
-        if "payload" in self.Meta.groups and super(dictobj, self).__contains__("payload"):
-            yield "payload"
 
     def actual_items(self):
         for key in self.keys():
