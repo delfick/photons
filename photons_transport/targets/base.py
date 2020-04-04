@@ -11,6 +11,30 @@ import logging
 log = logging.getLogger("photons_transport.targets.base")
 
 
+class Sender:
+    def __init__(self, target, msg, reference, **kwargs):
+        self.msg = msg
+        self.kwargs = kwargs
+        self.target = target
+        self.reference = reference
+        self.script = target.script(msg)
+
+    def __await__(self):
+        return (yield from self.all_packets().__await__())
+
+    async def all_packets(self):
+        async with self.target.session() as sender:
+            return await sender(self.msg, self.reference, **self.kwargs)
+
+    def __aiter__(self):
+        return self.stream_packets()
+
+    async def stream_packets(self):
+        async with self.target.session() as sender:
+            async for pkt in sender(self.msg, self.reference, **self.kwargs):
+                yield pkt
+
+
 class Target(dictobj.Spec):
     protocol_register = dictobj.Field(sb.overridden("{protocol_register}"), formatted=True)
     final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True)
@@ -27,6 +51,9 @@ class Target(dictobj.Spec):
         options = options if options is not None else configuration
         meta = Meta(configuration, []).at("options")
         return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, options)
+
+    def send(self, msg, reference=None, **kwargs):
+        return Sender(self, msg, reference, **kwargs)
 
     def script(self, raw):
         """Return us a ScriptRunner for the given `raw` against this `target`"""

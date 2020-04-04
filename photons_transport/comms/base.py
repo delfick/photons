@@ -3,7 +3,7 @@ from photons_transport.comms.receiver import Receiver
 from photons_transport.comms.waiter import Waiter
 from photons_transport.comms.writer import Writer
 
-from photons_app.errors import TimedOut, FoundNoDevices
+from photons_app.errors import TimedOut, FoundNoDevices, RunErrors, BadRunWithResults
 from photons_app import helpers as hp
 
 from photons_protocol.packets import Information
@@ -142,6 +142,43 @@ class NoLimit:
         return False
 
 
+class Sender:
+    def __init__(self, afr, msg, reference, **kwargs):
+        self.afr = afr
+        self.msg = msg
+        self.kwargs = kwargs
+        self.reference = reference
+
+        if "afr" in self.kwargs:
+            self.kwargs.pop("afr")
+
+        self.script = self.afr.transport_target.script(msg)
+
+    def __await__(self):
+        return (yield from self.all_packets().__await__())
+
+    async def all_packets(self):
+        results = []
+        try:
+            async for pkt in self:
+                results.append(pkt)
+        except asyncio.CancelledError:
+            raise
+        except RunErrors as error:
+            raise BadRunWithResults(results=results, _errors=error.errors)
+        except Exception as error:
+            raise BadRunWithResults(results=results, _errors=[error])
+        else:
+            return results
+
+    def __aiter__(self):
+        return self.stream_packets()
+
+    async def stream_packets(self):
+        async for pkt in self.script.run_with(self.reference, self.afr, **self.kwargs):
+            yield pkt
+
+
 class Communication:
     _merged_options_formattable = True
 
@@ -157,6 +194,9 @@ class Communication:
 
     def setup(self):
         pass
+
+    def __call__(self, msg, reference=None, **kwargs):
+        return Sender(self, msg, reference, **kwargs)
 
     async def finish(self):
         self.stop_fut.cancel()
