@@ -4,15 +4,6 @@ import pkg_resources
 extensions = [
     "sphinx.ext.autodoc",
     "photons_messages.sphinx.messages",
-    "photons_app.sphinx.code_for",
-    "photons_app.sphinx.structures",
-    "photons_app.sphinx.docstrings",
-    "photons_app.sphinx.tasks",
-    "photons_app.sphinx.target_fields",
-    "photons_docs.config.ext.photons_errors",
-    "photons_docs.config.ext.photons_app_ext",
-    "photons_docs.config.ext.available_modules",
-    "photons_docs.config.ext.photons_protocol_extra",
 ]
 
 html_theme = "the_theme"

@@ -91,9 +91,6 @@ class Product(metaclass=product_metaclass):
 
     .. attribute:: identifier
         The identifier of the product
-
-    .. attribute:: homekit_ppid
-        The homekit ppid for this device if it has homekit software token
     """
 
     name = NotImplemented
@@ -103,7 +100,6 @@ class Product(metaclass=product_metaclass):
     family = NotImplemented
     friendly = NotImplemented
     identifier = NotImplemented
-    homekit_ppid = None
 
     @property
     def company(self):

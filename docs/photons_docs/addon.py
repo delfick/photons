@@ -7,7 +7,7 @@ from sphinx.util.docutils import docutils_namespace
 from sphinx.cmdline import handle_exception
 from sphinx.application import Sphinx
 
-from delfick_project.norms import dictobj, sb, Meta
+from delfick_project.norms import dictobj, sb
 from delfick_project.addons import addon_hook
 from textwrap import dedent
 import pkg_resources
@@ -105,12 +105,6 @@ async def build_docs(collector, reference, tasks, **kwargs):
     for d in (outdir, doctreedir):
         if not os.path.exists(d):
             os.makedirs(d)
-
-    photons_app_symlink_location = os.path.join(out, "photons_app")
-    if not os.path.exists(photons_app_symlink_location):
-        os.symlink(
-            pkg_resources.resource_filename("photons_app", "docs"), photons_app_symlink_location
-        )
 
     app = None
     try:
