@@ -2,12 +2,11 @@
 
 from photons_app.actions import an_action
 
-from photons_control.planner import Gatherer, Skip, make_plans
+from photons_control.planner import Skip
 from photons_products import Zones
 
 from delfick_project.addons import addon_hook
 import logging
-import json
 
 log = logging.getLogger("info")
 
@@ -39,57 +38,57 @@ async def info(collector, target, reference, **kwargs):
     def error(e):
         log.error(e)
 
-    g = Gatherer(target)
-    plans = make_plans("state", "address", "capability", "zones", "firmware")
-    async for serial, complete, info in g.gather_per_serial(
-        plans, reference, error_catcher=error, find_timeout=30
-    ):
-        infos = []
+    async with target.session() as sender:
+        plans = sender.make_plans("state", "address", "capability", "zones", "firmware")
 
-        for key, val in sorted(info.items()):
-            if val is Skip:
-                continue
+        async for serial, complete, info in sender.gatherer.gather_per_serial(
+            plans, reference, error_catcher=error, find_timeout=30
+        ):
+            infos = []
 
-            if key == "capability":
-                specs = [
-                    ("name", val["product"].name),
-                    ("identifier", val["product"].identifier),
-                    ("family", val["product"].family.value),
-                ]
-                for k, v in val["cap"].items():
-                    if k.startswith("has") and v:
-                        specs.append(k[4:])
-                    else:
-                        if isinstance(v, Zones):
-                            v = v.name
-                        if v:
-                            specs.append((k, v))
-                val = make_list(specs)
+            for key, val in sorted(info.items()):
+                if val is Skip:
+                    continue
 
-            elif key == "zones":
-                vl = []
-                for zi, color in val:
-                    vl.append(f"      Zone {zi}: {repr(color)}")
-                val = "\n{}".format("\n".join(vl))
+                if key == "capability":
+                    specs = [
+                        ("name", val["product"].name),
+                        ("identifier", val["product"].identifier),
+                        ("family", val["product"].family.value),
+                    ]
+                    for k, v in val["cap"].items():
+                        if k.startswith("has") and v:
+                            specs.append(k[4:])
+                        else:
+                            if isinstance(v, Zones):
+                                v = v.name
+                            if v:
+                                specs.append((k, v))
+                    val = make_list(specs)
 
-            elif key == "address":
-                val = make_list(zip(("ip", "port"), val))
+                elif key == "zones":
+                    vl = []
+                    for zi, color in val:
+                        vl.append(f"      Zone {zi}: {repr(color)}")
+                    val = "\n{}".format("\n".join(vl))
 
-            else:
-                val = make_list(sorted(val.items()))
+                elif key == "address":
+                    val = make_list(zip(("ip", "port"), val))
 
-            if key == "capability":
-                key = "product"
+                else:
+                    val = make_list(sorted(val.items()))
 
-            infos.append(f"{key}: {val}")
+                if key == "capability":
+                    key = "product"
 
-        info_string = "\n    {0}".format("\n    ".join(infos))
-        print(f"{serial}: {info_string}\n")
+                infos.append(f"{key}: {val}")
+
+            info_string = "\n    {0}".format("\n    ".join(infos))
+            print(f"{serial}: {info_string}\n")
 
 
 if __name__ == "__main__":
     from photons_app.executor import main
     import sys
-    import os
 
     main(["lan:info"] + sys.argv[1:])

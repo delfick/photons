@@ -245,6 +245,7 @@ class MemoryDevicesRunner:
 
     async def per_test(self):
         await self.reset_devices()
+        del self.sender.gatherer
 
     @property
     def serials(self):

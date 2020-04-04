@@ -9,13 +9,12 @@ Usage is via the Gatherer class:
 
 .. code-block:: python
 
-    from photons_control.planner import Gatherer, make_plans
+    async with target.session() as sender:
+        plans = sender.make_plans("power", "label")
 
-    g = Gatherer(target)
-    plans = make_plans("power", "label")
-
-    async for serial, label, info in g.gather(reference):
-        ...
+        # sender.gatherer is just a Gatherer(sender) that is cached on the sender
+        async for serial, label, info in sender.gatherer.gather(reference):
+            ...
 
 .. autoclass:: photons_control.planner.gatherer.Gatherer
 

@@ -15,35 +15,29 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessages
-from photons_control.planner import Gatherer, make_plans, Skip, Plan, NoMessages
+from photons_control.planner import Skip, Plan, NoMessages
 from photons_control.planner.plans import CapabilityPlan
 from photons_control.script import FromGenerator
 
 from delfick_project.norms import sb
 
 
-async def find_multizone(target, reference, sender, gatherer=None, **kwargs):
+async def find_multizone(reference, sender, **kwargs):
     """
     Yield (serial, capability) for all multizone products found in this reference
     """
-    if gatherer is None:
-        gatherer = Gatherer(target)
-
-    plans = make_plans("capability")
-    async for serial, _, info in gatherer.gather(plans, reference, sender, **kwargs):
+    plans = sender.make_plans("capability")
+    async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
         if info["cap"].has_multizone:
             yield serial, info["cap"]
 
 
-async def zones_from_reference(target, reference, sender, gatherer=None, **kwargs):
+async def zones_from_reference(reference, sender, **kwargs):
     """
     Yield (serial, [(zone, color), ...]) for each multizone device that is found
     """
-    if gatherer is None:
-        gatherer = Gatherer(target)
-
-    plans = make_plans("zones")
-    async for serial, _, info in gatherer.gather(plans, reference, sender, **kwargs):
+    plans = sender.make_plans("zones")
+    async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
         if info is not Skip:
             yield serial, info
 
@@ -75,13 +69,12 @@ class SetZonesPlan(Plan):
 
     .. code-block:: python
 
-        from photons_control.planner import Gatherer, Skip
+        from photons_control.planner import Skip
 
-        gatherer = Gatherer(target)
         plans = {"set_zones": SetZonesPlan(colors)}
 
         async with target.session() as sender:
-            async for serial, _, messages in g.gather(plans, reference, sender):
+            async for serial, _, messages in sender.gatherer.gather(plans, reference):
                 if messages is not Skip:
                     await sender(messages, serial)
 
@@ -183,7 +176,7 @@ class SetZonesPlan(Plan):
                 return msgs
 
 
-def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
+def SetZones(colors, power_on=True, reference=None, **options):
     """
     Set colors on all found multizone devices. Uses SetZonesPlan to generate the
     messages to set the zones on the device and so keyword arguments to this
@@ -196,9 +189,6 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
         msg = SetZones([["red", 10], ["blue", 10]], zone_index=1, duration=1)
         await target.send(msg, reference)
 
-    You may also pass in a Gatherer instance to SetZones if you already have
-    one of those.
-
     By default the devices will be powered on. If you don't want this to happen
     then pass in power_on=False
 
@@ -206,15 +196,10 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     """
 
     async def gen(ref, sender, **kwargs):
-        plans = {"set_zones": SetZonesPlan(colors, **options)}
-
-        g = gatherer
-        if g is None:
-            g = Gatherer(sender.transport_target)
-
         r = ref if reference is None else reference
 
-        async for serial, _, messages in g.gather(plans, r, sender, **kwargs):
+        plans = {"set_zones": SetZonesPlan(colors, **options)}
+        async for serial, _, messages in sender.gatherer.gather(plans, r, **kwargs):
             if messages is not Skip:
                 if power_on:
                     yield LightMessages.SetLightPower(
@@ -230,9 +215,7 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     return FromGenerator(gen)
 
 
-def SetZonesEffect(
-    effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options
-):
+def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, **options):
     """
     Set an effect on your strips
 
@@ -277,15 +260,10 @@ def SetZonesEffect(
     set_effect = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(**options)
 
     async def gen(ref, sender, **kwargs):
-        plans = make_plans("capability")
-
-        g = gatherer
-        if g is None:
-            g = Gatherer(sender.transport_target)
-
         r = ref if reference is None else reference
 
-        async for serial, _, info in g.gather(plans, r, sender, **kwargs):
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, r, **kwargs):
             if info["cap"].has_multizone:
                 if power_on:
                     yield LightMessages.SetLightPower(
@@ -309,7 +287,7 @@ async def get_zones(collector, target, reference, artifact, **kwargs):
     Get the zones colors from a light strip
     """
     async with target.session() as sender:
-        async for serial, zones in zones_from_reference(target, reference, sender):
+        async for serial, zones in zones_from_reference(reference, sender):
             print(serial)
             for zone, color in zones:
                 print("\tZone {0}: {1}".format(zone, repr(color)))

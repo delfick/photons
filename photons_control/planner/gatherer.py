@@ -1,13 +1,13 @@
 from photons_control.planner.plans import Skip, NoMessages
 
-from photons_app.errors import RunErrors, BadRunWithResults
+from photons_app.errors import RunErrors, BadRunWithResults, ProgrammerError
 from photons_app import helpers as hp
 
 from photons_transport.errors import FailedToFindDevice
+from photons_transport.targets.base import Target
 from photons_control.script import find_serials
 from photons_transport import catch_errors
 
-from delfick_project.norms import sb
 from collections import defaultdict
 import asyncio
 import time
@@ -333,23 +333,15 @@ class Gatherer:
 
         from photons_control.planner import Gatherer, make_plans
 
-        g = Gatherer(target)
-        plans = make_plans("label", "power")
+        async with target.session() as sender:
+            g = Gatherer(sender)
+            plans = make_plans("label", "power")
 
-        async for serial, label, info in g.gather(plans, ["d073d5000001", "d073d5000002"]):
-            # label will be "label" or "power"
-            # serial will be the serial of the device
-            # info will be the information associated with that plan
-            # Information is sent to you as it is received.
-
-    If you already have a sender, you can provide it when gathering information:
-
-    .. code-block:: python
-
-        async for serial, label, info in g.gather(plans, ["d073d5000001", "d073d5000002"], sender):
-            ...
-
-    If you don't supply a sender, one will be created and cleaned up for you.
+            async for serial, label, info in g.gather(plans, ["d073d5000001", "d073d5000002"]):
+                # label will be "label" or "power"
+                # serial will be the serial of the device
+                # info will be the information associated with that plan
+                # Information is sent to you as it is received.
 
     If you supply limit as a number to any gather method, then it will be
     converted into a semaphore for you that is shared by all sender calls.
@@ -391,8 +383,14 @@ class Gatherer:
     by calling gatherer.clear_cache()
     """
 
-    def __init__(self, target):
-        self.target = target
+    Skip = Skip
+
+    def __init__(self, sender):
+        if isinstance(sender, Target):
+            raise ProgrammerError(
+                "The Gatherer no longer takes in target instances. Please pass in a target.session result instead"
+            )
+        self.sender = sender
 
     @hp.memoized_property
     def session(self):
@@ -403,14 +401,14 @@ class Gatherer:
         if hasattr(self, "_session"):
             del self.session
 
-    async def gather(self, plans, reference, sender=sb.NotSpecified, error_catcher=None, **kwargs):
+    async def gather(self, plans, reference, error_catcher=None, **kwargs):
         """
         Yield (serial, label, info) information as we get it
         """
         if not plans:
             return
 
-        async def gathering(serials, sender, kwargs):
+        async def gathering(serials, kwargs):
             class Done:
                 pass
 
@@ -418,9 +416,7 @@ class Gatherer:
             queue = asyncio.Queue()
 
             for serial in serials:
-                ts.append(
-                    hp.async_as_background(self._follow(plans, serial, sender, queue, **kwargs))
-                )
+                ts.append(hp.async_as_background(self._follow(plans, serial, queue, **kwargs)))
 
             def on_finish(res):
                 hp.async_as_background(queue.put(Done))
@@ -437,30 +433,25 @@ class Gatherer:
                     break
                 yield nxt
 
-        from photons_transport.targets.script import SenderWrapper
-
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
-            async with SenderWrapper(self.target, sender, kwargs) as sender:
-                serials, missing = await find_serials(
-                    reference, sender, timeout=kwargs.get("find_timeout", 20)
-                )
+            serials, missing = await find_serials(
+                reference, self.sender, timeout=kwargs.get("find_timeout", 20)
+            )
 
-                for serial in missing:
-                    hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
+            for serial in missing:
+                hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
 
-                async for item in gathering(serials, sender, kwargs):
-                    yield item
+            async for item in gathering(serials, kwargs):
+                yield item
 
-    async def gather_all(self, plans, reference, sender=sb.NotSpecified, **kwargs):
+    async def gather_all(self, plans, reference, **kwargs):
         """Return {serial: (completed, info)} dictionary with all information"""
         results = defaultdict(dict)
 
         try:
-            async for serial, completed, info in self.gather_per_serial(
-                plans, reference, sender, **kwargs
-            ):
+            async for serial, completed, info in self.gather_per_serial(plans, reference, **kwargs):
                 results[serial] = (completed, info)
         except asyncio.CancelledError:
             raise
@@ -471,7 +462,7 @@ class Gatherer:
         else:
             return results
 
-    async def gather_per_serial(self, plans, reference, sender=sb.NotSpecified, **kwargs):
+    async def gather_per_serial(self, plans, reference, **kwargs):
         """yield (serial, completed, info) with all information for each serial"""
         done = set()
         wanted = set(plans)
@@ -479,7 +470,7 @@ class Gatherer:
         result = defaultdict(dict)
 
         try:
-            async for serial, label, info in self.gather(plans, reference, sender, **kwargs):
+            async for serial, label, info in self.gather(plans, reference, **kwargs):
                 result[serial][label] = info
 
                 if set(result[serial]) == wanted:
@@ -491,7 +482,7 @@ class Gatherer:
                 if serial not in done:
                     yield serial, False, info
 
-    async def _follow(self, plans, serial, sender, queue, **kwargs):
+    async def _follow(self, plans, serial, queue, **kwargs):
         """
         * get dependency information
         * Determine messages to be sent to devices
@@ -500,7 +491,7 @@ class Gatherer:
         * Complete any plans that are finished after no more messages and yield
           completed results.
         """
-        depinfo = await self._deps(plans, serial, sender, **kwargs)
+        depinfo = await self._deps(plans, serial, **kwargs)
         planner = self.session.planner(plans, depinfo, serial, kwargs["error_catcher"])
 
         msgs_to_send = list(planner.find_msgs_to_send())
@@ -513,14 +504,14 @@ class Gatherer:
             await queue.put(complete)
 
         if msgs_to_send:
-            async for pkt in sender(msgs_to_send, **kwargs):
+            async for pkt in self.sender(msgs_to_send, **kwargs):
                 async for complete in planner.add(pkt):
                     await queue.put(complete)
 
         async for complete in planner.ended():
             await queue.put(complete)
 
-    async def _deps(self, plans, serial, sender, **kwargs):
+    async def _deps(self, plans, serial, **kwargs):
         """
         Determine if any of the plans have dependent plans and get that information
         and return {plan: {label: information}} so that it may be used by
@@ -540,7 +531,7 @@ class Gatherer:
                 depinfo[plan] = None
 
         if depplan:
-            g = await self.gather_all(depplan, serial, sender, **kwargs)
+            g = await self.gather_all(depplan, serial, **kwargs)
             if serial in g:
                 completed, i = g[serial]
                 if completed:

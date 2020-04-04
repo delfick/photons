@@ -6,7 +6,6 @@ from photons_tile_paint.animation import Animation, TileStateGetter
 from photons_themes.coords import user_coords_to_pixel_coords
 from photons_messages import LightMessages, DeviceMessages
 from photons_control.script import FromGeneratorPerSerial
-from photons_control.planner import make_plans, Gatherer
 from photons_tile_paint.options import AnimationOptions
 from photons_themes.theme import ThemeColor as Color
 from photons_tile_paint.addon import Animator
@@ -139,9 +138,9 @@ def Flicker(
         # Find the original brightness
         # And whether light is on or off
         # Devices that are off will not have the effect run against them
-        plans = make_plans("capability", "power", "colors", "chain")
-        gathered = await Gatherer(sender.transport_target).gather_all(
-            plans, reference, sender, **{**kwargs, "message_timeout": 5}
+        plans = sender.make_plans("capability", "power", "colors", "chain")
+        gathered = await sender.gatherer.gather_all(
+            plans, reference, **{**kwargs, "message_timeout": 5}
         )
 
         chain = None

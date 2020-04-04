@@ -214,13 +214,11 @@ class PacketPlan(Plan):
 
     .. code-block:: python
 
-        from photons_control.planner import make_plans, Gatherer, PacketPlan
+        from photons_control.planner import PacketPlan
         from photons_messages import LightMessages
 
-        plans = make_plans(infrared=PacketPlan(LightMessages.GetInfrared(), LightMessages.StateInfrared))
-        gatherer = Gatherer(target)
-
-        async for serial, label, info in gatherer.gather(plans):
+        plans = sender.make_plans(infrared=PacketPlan(LightMessages.GetInfrared(), LightMessages.StateInfrared))
+        async for serial, label, info in sender.gatherer.gather(plans):
             if label == "infrared":
                 # info will be a StateInfrared packet
     """

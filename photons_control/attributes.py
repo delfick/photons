@@ -3,7 +3,7 @@
 
 .. autofunction:: make_colors
 """
-from photons_control.planner import Gatherer, Skip, make_plans
+from photons_control.planner import Skip
 
 from photons_app.errors import BadOption, PhotonsAppError
 from photons_app.actions import an_action
@@ -259,18 +259,20 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
 
 @an_action(needs_target=True, special_reference=True)
 async def get_effects(collector, target, reference, **kwargs):
-    plans = make_plans("firmware_effects")
-    async for serial, _, info in Gatherer(target).gather(plans, reference):
-        if info is Skip:
-            continue
+    async with target.session() as sender:
+        plans = sender.make_plans("firmware_effects")
 
-        print(f"{serial}: {info['type']}")
-        for field, value in info["options"].items():
-            if field == "palette":
-                if value:
-                    print("\tpalette:")
-                    for c in value:
-                        print(f"\t\t{repr(c)}")
-            else:
-                print(f"\t{field}: {value}")
-        print()
+        async for serial, _, info in sender.gatherer.gather(plans, reference):
+            if info is Skip:
+                continue
+
+            print(f"{serial}: {info['type']}")
+            for field, value in info["options"].items():
+                if field == "palette":
+                    if value:
+                        print("\tpalette:")
+                        for c in value:
+                            print(f"\t\t{repr(c)}")
+                else:
+                    print(f"\t{field}: {value}")
+            print()

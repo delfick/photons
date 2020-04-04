@@ -190,6 +190,8 @@ class Communication:
         self.receiver = Receiver()
         self.received_data_tasks = []
 
+        self.make_plans = __import__("photons_control.planner").planner.make_plans
+
         self.setup()
 
     def setup(self):
@@ -197,6 +199,10 @@ class Communication:
 
     def __call__(self, msg, reference=None, **kwargs):
         return Sender(self, msg, reference, **kwargs)
+
+    @hp.memoized_property
+    def gatherer(self):
+        return __import__("photons_control.planner").planner.Gatherer(self)
 
     async def finish(self):
         self.stop_fut.cancel()

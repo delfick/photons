@@ -2,7 +2,6 @@
 
 from photons_control.tile import SetTileEffect, default_tile_palette
 from photons_control import test_helpers as chp
-from photons_control.planner import Gatherer
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_transport.fake import FakeDevice

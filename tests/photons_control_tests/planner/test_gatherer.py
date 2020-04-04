@@ -108,7 +108,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return i[s.serial]
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -134,7 +134,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return i[s.serial]
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -171,7 +171,7 @@ describe "Gatherer":
                         else:
                             return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -201,7 +201,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -223,7 +223,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -256,7 +256,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -283,7 +283,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans("label", "power", other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -322,7 +322,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -346,7 +346,7 @@ describe "Gatherer":
                     async def info(s):
                         called.append(("info", s.serial))
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans("label", "power", other=NeverFinishedPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -382,7 +382,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(simple=SimplePlan())
 
             found = []
@@ -425,7 +425,7 @@ describe "Gatherer":
                             raise error
                         return self.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(label=ErrorPlan())
 
             found = []
@@ -489,7 +489,7 @@ describe "Gatherer":
                         called.append(("info.looker", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
 
             found = []
@@ -615,7 +615,7 @@ describe "Gatherer":
                         called.append(("info.looker", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
             error_catcher = []
             kwargs = {"message_timeout": 0.1, "error_catcher": error_catcher}
@@ -722,7 +722,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, light1.serial))
             assert got == {light1.serial: (True, {"label": "bob"})}
@@ -773,7 +773,7 @@ describe "Gatherer":
                             called.append(("info.label", s.serial))
                             return s.label
 
-                gatherer = Gatherer(runner.target)
+                gatherer = Gatherer(runner.sender)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 assert got == {light1.serial: (True, {"label": "bob"})}
@@ -840,7 +840,7 @@ describe "Gatherer":
                             called.append(("info.label", s.serial))
                             return s.label
 
-                gatherer = Gatherer(runner.target)
+                gatherer = Gatherer(runner.sender)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, two_lights))
                 assert got == {
@@ -956,7 +956,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
             assert got == {
@@ -1048,7 +1048,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
             assert got == {
@@ -1146,7 +1146,7 @@ describe "Gatherer":
                         called.append(("info.info", s.serial))
                         return {"power": s.deps["p"], "info": s.i}
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(info=InfoPlan())
             got = dict(await gatherer.gather_all(plans, runner.serials))
 
@@ -1230,7 +1230,7 @@ describe "Gatherer":
                         called.append(("info.plan3", s.serial))
                         return (s.level, s.deps["p"])
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(plan3=Plan3())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1305,7 +1305,7 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1373,7 +1373,7 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans(plan1=Plan1(), plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1441,7 +1441,7 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.target)
+            gatherer = Gatherer(runner.sender)
             plans = make_plans("presence", plan2=Plan2())
             errors = []
             with light3.no_replies_for(DeviceMessages.GetLabel):

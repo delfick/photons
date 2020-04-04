@@ -1,10 +1,8 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import DeviceMessages, TileMessages
-from photons_control.planner import Gatherer, make_plans
 from photons_control.script import FromGenerator
 
 from delfick_project.addons import addon_hook
@@ -66,14 +64,13 @@ async def tiles(collector, target, reference, **kwargs):
 
     ``tiles match:group_name=kitchen``
     """
-    gatherer = Gatherer(target)
-    plans = make_plans("capability", "chain")
 
     def e(error):
         log.error(error)
 
     async def gen(reference, sender, **kwargs):
-        async for serial, _, info in gatherer.gather_per_serial(plans, reference, sender, **kwargs):
+        plans = sender.make_plans("capability", "chain")
+        async for serial, _, info in sender.gatherer.gather_per_serial(plans, reference, **kwargs):
             if "chain" not in info:
                 continue
 

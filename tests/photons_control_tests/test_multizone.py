@@ -7,7 +7,7 @@ from photons_control.multizone import (
     SetZones,
     SetZonesEffect,
 )
-from photons_control.planner import Gatherer, Skip, NoMessages
+from photons_control.planner import Skip, NoMessages
 from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
@@ -412,7 +412,7 @@ describe "Multizone helpers":
 
         async it "yields serials and capability", runner:
             got = {}
-            async for serial, cap in find_multizone(runner.target, runner.serials, runner.sender):
+            async for serial, cap in find_multizone(runner.serials, runner.sender):
                 assert serial not in got
                 got[serial] = cap.has_extended_multizone
 
@@ -422,8 +422,8 @@ describe "Multizone helpers":
                 striplcm2extended.serial: True,
             }
 
-        async it "resends messages each time if we don't give a gatherer", runner:
-            async for serial, cap in find_multizone(runner.target, runner.serials, runner.sender):
+        async it "resends messages each time if we reset the gatherer", runner:
+            async for serial, cap in find_multizone(runner.serials, runner.sender):
                 pass
 
             want = {
@@ -432,7 +432,8 @@ describe "Multizone helpers":
             }
             self.compare_received(want)
 
-            async for serial, cap in find_multizone(runner.target, runner.serials, runner.sender):
+            del runner.sender.gatherer
+            async for serial, cap in find_multizone(runner.serials, runner.sender):
                 pass
 
             want = {
@@ -441,12 +442,8 @@ describe "Multizone helpers":
             }
             self.compare_received(want)
 
-        async it "has cache if we provide a gatherer", runner:
-            gatherer = Gatherer(runner.target)
-
-            async for serial, cap in find_multizone(
-                runner.target, runner.serials, runner.sender, gatherer=gatherer
-            ):
+        async it "uses cached gatherer on the sender", runner:
+            async for serial, cap in find_multizone(runner.serials, runner.sender):
                 pass
 
             want = {
@@ -455,9 +452,7 @@ describe "Multizone helpers":
             }
             self.compare_received(want)
 
-            async for serial, cap in find_multizone(
-                runner.target, runner.serials, runner.sender, gatherer=gatherer
-            ):
+            async for serial, cap in find_multizone(runner.serials, runner.sender):
                 pass
 
             want = {device: [] for device in lights}
@@ -467,9 +462,7 @@ describe "Multizone helpers":
 
         async it "yield zones", runner:
             got = {}
-            async for serial, zones in zones_from_reference(
-                runner.target, runner.serials, runner.sender
-            ):
+            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
                 assert serial not in got
                 got[serial] = zones
 
@@ -479,10 +472,8 @@ describe "Multizone helpers":
                 striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
             }
 
-        async it "resends messages if no gatherer is provided", runner:
-            async for serial, zones in zones_from_reference(
-                runner.target, runner.serials, runner.sender
-            ):
+        async it "resends messages if no gatherer is reset between runs", runner:
+            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
                 pass
 
             want = {
@@ -496,18 +487,14 @@ describe "Multizone helpers":
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
-            async for serial, zones in zones_from_reference(
-                runner.target, runner.serials, runner.sender
-            ):
+            del runner.sender.gatherer
+            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
                 pass
 
             self.compare_received(want)
 
-        async it "caches messages if gatherer is provided", runner:
-            gatherer = Gatherer(runner.target)
-            async for serial, zones in zones_from_reference(
-                runner.target, runner.serials, runner.sender, gatherer=gatherer
-            ):
+        async it "uses cached gatherer on the sender", runner:
+            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
                 pass
 
             want = {
@@ -521,9 +508,7 @@ describe "Multizone helpers":
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
-            async for serial, zones in zones_from_reference(
-                runner.target, runner.serials, runner.sender, gatherer=gatherer
-            ):
+            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
                 pass
 
             self.compare_received({device: [] for device in lights})
@@ -661,13 +646,11 @@ describe "Multizone helpers":
                 for msg in device.received:
                     assert msg.duration == 5
 
-        async it "can reuse a gatherer", runner:
-            gatherer = Gatherer(runner.target)
-
+        async it "uses cached gatherer on the sender", runner:
             for device in strips:
                 device.attrs.zones = [zeroColor] * 16
 
-            msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
+            msg = SetZones([["green", 7], ["yellow", 5]])
             got = await runner.sender(msg, runner.serials)
             assert got == []
 
@@ -698,7 +681,7 @@ describe "Multizone helpers":
                 }
             )
 
-            msg = SetZones([["green", 7], ["yellow", 5]], gatherer=gatherer)
+            msg = SetZones([["green", 7], ["yellow", 5]])
             got = await runner.sender(msg, [s.serial for s in strips])
             assert got == []
 
@@ -871,79 +854,6 @@ describe "Multizone helpers":
                         LightMessages.SetLightPower(level=65535, duration=1),
                         MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
                             duration=5, type=MultiZoneEffectType.MOVE
-                        ),
-                    ],
-                }
-            )
-
-        async it "can be passed in a gatherer", runner:
-            gatherer = Gatherer(runner.target)
-
-            msg = SetZonesEffect("move", gatherer=gatherer)
-            got = await runner.sender(msg, runner.serials)
-            assert got == []
-
-            for strip in strips:
-                assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
-
-            self.compare_received(
-                {
-                    light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
-                    light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
-                    striplcm1: [
-                        DeviceMessages.GetHostFirmware(),
-                        DeviceMessages.GetVersion(),
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
-                    ],
-                    striplcm2noextended: [
-                        DeviceMessages.GetHostFirmware(),
-                        DeviceMessages.GetVersion(),
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
-                    ],
-                    striplcm2extended: [
-                        DeviceMessages.GetHostFirmware(),
-                        DeviceMessages.GetVersion(),
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
-                    ],
-                }
-            )
-
-            msg = SetZonesEffect("off", gatherer=gatherer)
-            got = await runner.sender(msg, runner.serials)
-            assert got == []
-
-            for strip in strips:
-                assert strip.attrs.zones_effect is MultiZoneEffectType.OFF
-
-            self.compare_received(
-                {
-                    light1: [],
-                    light2: [],
-                    striplcm1: [
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.OFF
-                        ),
-                    ],
-                    striplcm2noextended: [
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.OFF
-                        ),
-                    ],
-                    striplcm2extended: [
-                        LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.OFF
                         ),
                     ],
                 }

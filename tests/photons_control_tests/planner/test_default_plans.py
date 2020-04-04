@@ -1,10 +1,11 @@
 # coding: spec
 
-from photons_control.planner import Gatherer, make_plans, Skip, PacketPlan
+from photons_control.planner import Skip, PacketPlan
 from photons_control import test_helpers as chp
 
 from photons_app.test_helpers import assert_payloads_equals, print_packet_difference
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
+from photons_app.special import FoundSerials
 
 from photons_messages import (
     DeviceMessages,
@@ -123,7 +124,6 @@ async def reset_runner(runner):
 describe "Default Plans":
 
     async def gather(self, runner, reference, *by_label, **kwargs):
-        gatherer = Gatherer(runner.target)
         plan_args = []
         plan_kwargs = {}
         for thing in by_label:
@@ -131,8 +131,8 @@ describe "Default Plans":
                 plan_args.append(thing)
             else:
                 plan_kwargs.update(thing)
-        plans = make_plans(*plan_args, **plan_kwargs)
-        return dict(await gatherer.gather_all(plans, reference, **kwargs))
+        plans = runner.sender.make_plans(*plan_args, **plan_kwargs)
+        return dict(await runner.sender.gatherer.gather_all(plans, reference, **kwargs))
 
     describe "PacketPlan":
 
@@ -183,8 +183,33 @@ describe "Default Plans":
                     light2.serial: (False, {"presence": True}),
                 }
 
-        async it "does not fire for offline devices", runner:
+        async it "fires for offline devices that have already been discovered", runner:
             errors = []
+            _, serials = await FoundSerials().find(runner.sender, timeout=1)
+            assert all(serial in serials for serial in two_lights)
+
+            with light2.offline():
+                got = await self.gather(
+                    runner,
+                    two_lights,
+                    "presence",
+                    "label",
+                    error_catcher=errors,
+                    message_timeout=0.1,
+                    find_timeout=0.1,
+                )
+
+                assert got == {
+                    light1.serial: (True, {"presence": True, "label": "bob"}),
+                    light2.serial: (False, {"presence": True}),
+                }
+
+        async it "does not fire for devices that don't exist", runner:
+            errors = []
+
+            for serial in two_lights:
+                await runner.sender.forget(serial)
+
             with light2.offline():
                 got = await self.gather(
                     runner,

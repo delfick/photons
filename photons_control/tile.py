@@ -6,7 +6,6 @@
 .. autofunction:: SetTileEffect
 """
 from photons_control.orientation import nearest_orientation
-from photons_control.planner import Gatherer, make_plans
 from photons_control.attributes import make_colors
 from photons_control.script import FromGenerator
 
@@ -47,9 +46,7 @@ def orientations_from(pkt):
     return orientations
 
 
-def SetTileEffect(
-    effect, gatherer=None, power_on=True, power_on_duration=1, reference=None, **options
-):
+def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **options):
     """
     Set an effect on your tiles
 
@@ -107,15 +104,10 @@ def SetTileEffect(
     set_effect = TileMessages.SetTileEffect.empty_normalise(**options)
 
     async def gen(ref, sender, **kwargs):
-        plans = make_plans("capability")
-
-        g = gatherer
-        if g is None:
-            g = Gatherer(sender.transport_target)
-
         r = ref if reference is None else reference
 
-        async for serial, _, info in g.gather(plans, r, sender, **kwargs):
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, r, **kwargs):
             if info["cap"].has_matrix:
                 if power_on:
                     yield LightMessages.SetLightPower(
@@ -140,10 +132,8 @@ async def get_device_chain(collector, target, reference, **kwargs):
     """
 
     async def gen(reference, sender, **kwargs):
-        plans = make_plans("capability")
-        g = Gatherer(sender.transport_target)
-
-        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
@@ -312,10 +302,8 @@ async def set_tile_positions(collector, target, reference, **kwargs):
         )
 
     async def gen(reference, sender, **kwargs):
-        plans = make_plans("capability")
-        g = Gatherer(sender.transport_target)
-
-        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
             if info["cap"].has_matrix:
                 for i, (user_x, user_y) in enumerate(positions):
                     yield TileMessages.SetUserPosition(
@@ -338,10 +326,8 @@ async def get_tile_positions(collector, target, reference, **kwargs):
     """
 
     async def gen(reference, sender, **kwargs):
-        plans = make_plans("capability")
-        g = Gatherer(sender.transport_target)
-
-        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 

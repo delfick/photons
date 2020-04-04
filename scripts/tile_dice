@@ -5,11 +5,9 @@ from photons_app.actions import an_action
 
 from photons_tile_paint.animation import (
     coords_for_horizontal_line,
-    tile_serials_from_reference,
     put_characters_on_canvas,
     canvas_to_msgs,
 )
-from photons_control.planner import Gatherer, make_plans
 from photons_themes.theme import ThemeColor as Color
 from photons_control.script import FromGenerator
 from photons_tile_paint.font.dice import dice
@@ -43,8 +41,6 @@ async def tile_dice(collector, target, reference, **kwargs):
 
     ``tile_dice d073d5000001,d073d5000002 -- '{"ignore_orientation": true}'
     """
-    extra = collector.configuration["photons_app"].extra_as_json
-
     canvas = Canvas()
 
     def default_color_func(i, j):
@@ -59,18 +55,15 @@ async def tile_dice(collector, target, reference, **kwargs):
     color = Color(100, 1, 1, 3500)
     put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
 
-    plans = make_plans("chain", "capability")
-    gatherer = Gatherer(target)
-
     def e(error):
         log.error(error)
 
     found = []
 
     async def gen(reference, sender, **kwargs):
-        async for serial, _, info in gatherer.gather_per_serial(
-            plans, reference, sender, **kwargs
-        ):
+        plans = sender.make_plans("chain", "capability")
+
+        async for serial, _, info in sender.gatherer.gather_per_serial(plans, reference, **kwargs):
             if "chain" not in info:
                 continue
 

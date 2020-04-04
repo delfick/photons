@@ -3,7 +3,6 @@ from photons_app import helpers as hp
 
 from photons_control.script import FromGeneratorPerSerial
 from photons_messages import LightMessages, TileMessages
-from photons_control.planner import Gatherer, make_plans
 from photons_themes.appliers import types as appliers
 from photons_control.multizone import SetZonesPlan
 from photons_control.attributes import make_colors
@@ -89,19 +88,15 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
 
     options = Options.FieldSpec().normalise(Meta(everything, []), extra)
 
-    gatherer = Gatherer(target)
-
     def errors(e):
         log.error(e)
 
-    await target.send(
-        ApplyTheme.script(options, gatherer=gatherer), reference, error_catcher=errors
-    )
+    await target.send(ApplyTheme.script(options), reference, error_catcher=errors)
 
 
 class ApplyTheme:
     @classmethod
-    def script(kls, options, gatherer=None):
+    def script(kls, options):
         aps = appliers[options.theme]
 
         theme = Theme()
@@ -109,34 +104,34 @@ class ApplyTheme:
             theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
         async def gen(reference, sender, **kwargs):
-            g = gatherer
-            if g is None:
-                g = Gatherer(sender.transport_target)
-
-            instance = kls(g, reference, sender, kwargs, aps, theme, options)
+            instance = kls(reference, sender, kwargs, aps, theme, options)
 
             # Turn on the device
             yield LightMessages.SetLightPower(level=65535, duration=options.duration)
 
             # Yield messages to turn on the theme for this device
-            async for serial, _, info in instance.gather(make_plans("capability")):
+            plans = sender.make_plans("capability")
+            async for serial, _, info in sender.gatherer.gather(plans, reference):
                 async for m in instance.apply(info["cap"]):
                     yield m
 
         # Use gen per device to apply the theme
         return FromGeneratorPerSerial(gen)
 
-    def __init__(self, gatherer, serial, sender, kwargs, aps, theme, options):
+    def __init__(self, serial, sender, kwargs, aps, theme, options):
         self.aps = aps
         self.theme = theme
         self.sender = sender
         self.kwargs = kwargs
         self.serial = serial
         self.options = options
-        self.gatherer = gatherer
+
+    @property
+    def make_plans(self):
+        return self.sender.make_plans
 
     async def gather(self, plans):
-        async for info in self.gatherer.gather(plans, self.serial, self.sender, **self.kwargs):
+        async for info in self.sender.gatherer.gather(plans, self.serial, **self.kwargs):
             yield info
 
     async def apply(self, cap):
@@ -162,7 +157,7 @@ class ApplyTheme:
         colors = []
 
         length = 82
-        async for _, _, zones in self.gather(make_plans("zones")):
+        async for _, _, zones in self.gather(self.make_plans("zones")):
             length = len(zones)
 
         for (start_index, end_index), hsbk in self.aps["1d"](length).apply_theme(self.theme):
@@ -177,7 +172,7 @@ class ApplyTheme:
 
     async def tile_msgs(self):
         coords_and_sizes = None
-        async for _, _, info in self.gather(make_plans("chain")):
+        async for _, _, info in self.gather(self.make_plans("chain")):
             reorient = info["reorient"]
             coords_and_sizes = info["coords_and_sizes"]
 
