@@ -424,13 +424,13 @@ class MemoryTargetRunner:
     async def start(self):
         for device in self.devices:
             await device.start()
-        self.sender = await self.target.args_for_run()
+        self.sender = await self.target.make_sender()
 
     async def __aexit__(self, typ, exc, tb):
         await self.close()
 
     async def close(self):
-        await self.target.close_args_for_run(self.sender)
+        await self.target.close_sender(self.sender)
         for device in self.target.devices:
             await device.finish()
 

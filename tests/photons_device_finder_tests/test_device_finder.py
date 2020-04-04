@@ -80,14 +80,14 @@ describe "DeviceFinder":
                 await finder.finish()
                 finish.assert_called_once_with()
 
-        describe "args_for_run":
+        describe "make_sender":
             async it "proxies to loops", finder, loops:
                 sender = mock.Mock(name="sender")
-                args_for_run = pytest.helpers.AsyncMock(name="finish", return_value=sender)
-                loops.args_for_run = args_for_run
+                make_sender = pytest.helpers.AsyncMock(name="finish", return_value=sender)
+                loops.make_sender = make_sender
 
-                assert await finder.args_for_run() is sender
-                args_for_run.assert_called_once_with()
+                assert await finder.make_sender() is sender
+                make_sender.assert_called_once_with()
 
         describe "find":
             async it "proxies _find", finder:
@@ -111,15 +111,15 @@ describe "DeviceFinder":
                 )
 
                 sender = mock.Mock(name="sender")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
+                make_sender = pytest.helpers.AsyncMock(name="make_sender", return_value=sender)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
                 kwargs = {"one": "two", "three": "four"}
-                with mock.patch.multiple(finder, _find=_find, args_for_run=args_for_run):
+                with mock.patch.multiple(finder, _find=_find, make_sender=make_sender):
                     assert (await finder.serials(**kwargs)) is serials
 
-                args_for_run.assert_called_once_with()
+                make_sender.assert_called_once_with()
                 _find.assert_called_once_with(kwargs)
                 reference.find.assert_called_once_with(sender, timeout=5)
 
@@ -139,15 +139,15 @@ describe "DeviceFinder":
                 )
 
                 sender = mock.Mock(name="sender")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
+                make_sender = pytest.helpers.AsyncMock(name="make_sender", return_value=sender)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
                 kwargs = {"one": "two", "three": "four"}
-                with mock.patch.multiple(finder, _find=_find, args_for_run=args_for_run):
+                with mock.patch.multiple(finder, _find=_find, make_sender=make_sender):
                     assert (await finder.info_for(**kwargs)) is info
 
-                args_for_run.assert_called_once_with()
+                make_sender.assert_called_once_with()
                 _find.assert_called_once_with(kwargs, for_info=True)
                 reference.find.assert_called_once_with(sender, timeout=5)
                 store.info_for.assert_called_once_with(["d1", "d2"])

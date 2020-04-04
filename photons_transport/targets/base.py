@@ -77,22 +77,28 @@ class Target(dictobj.Spec):
 
         class Session:
             async def __aenter__(s):
-                session = info["session"] = await self.args_for_run()
+                session = info["session"] = await self.make_sender()
                 return session
 
             async def __aexit__(s, exc_type, exc, tb):
                 if "session" in info:
-                    await self.close_args_for_run(info["session"])
+                    await self.close_sender(info["session"])
 
         return Session()
 
-    async def args_for_run(self):
-        """Create an instance of args_for_run. This is designed to be shared amongst many `script`"""
+    async def make_sender(self):
+        """Create an instance of the sender. This is designed to be shared."""
         return self.session_kls(self)
 
-    async def close_args_for_run(self, args_for_run):
-        """Close an args_for_run"""
-        await args_for_run.finish()
+    # backwards compatibility
+    args_for_run = make_sender
+
+    async def close_sender(self, sender):
+        """Close a sender"""
+        await sender.finish()
+
+    # backwards compatibility
+    close_args_for_run = close_sender
 
     def simplify(self, script_part):
         """

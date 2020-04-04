@@ -919,11 +919,11 @@ class DeviceFinderLoops(object):
         self.service_search_interval = service_search_interval
         self.information_search_interval = information_search_interval
 
-    async def args_for_run(self):
+    async def make_sender(self):
         """Return a session object. Multiple calls to this will return the same object"""
         if not hasattr(self, "session_fut"):
             self.session_fut = asyncio.Future()
-            t = hp.async_as_background(self.target.args_for_run())
+            t = hp.async_as_background(self.target.make_sender())
 
             def transfer(res):
                 if res.cancelled():
@@ -940,7 +940,7 @@ class DeviceFinderLoops(object):
         return await self.session_fut
 
     async def start(self, quickstart=False):
-        await self.args_for_run()
+        await self.make_sender()
         self.findings = hp.async_as_background(self.finding_loop())
         self.ensure_interpreting()
         self.service_search = hp.async_as_background(self.raw_search_loop(quickstart))
@@ -958,7 +958,7 @@ class DeviceFinderLoops(object):
 
         if hasattr(self, "session_fut"):
             if self.session_fut.done() and not self.session_fut.cancel():
-                await self.target.close_args_for_run(self.session_fut.result())
+                await self.target.close_sender(self.session_fut.result())
             self.session_fut.cancel()
 
         self.store.finish()
@@ -978,7 +978,7 @@ class DeviceFinderLoops(object):
         def error_catcher(e):
             log.debug(hp.lc("Error getting information for a device", error=e))
 
-        sender = await self.args_for_run()
+        sender = await self.make_sender()
         kwargs = {"error_catcher": error_catcher, "find_timeout": find_timeout}
 
         async for pkt in sender(msg, reference, **kwargs):
@@ -1027,7 +1027,7 @@ class DeviceFinderLoops(object):
 
     async def _update_found(self, special_reference, find_timeout):
         """Update our idea of found from the provided special reference"""
-        sender = await self.args_for_run()
+        sender = await self.make_sender()
         found, _ = await special_reference.find(sender, timeout=find_timeout)
         self.store.update_found(found)
 
@@ -1046,7 +1046,7 @@ class DeviceFinderLoops(object):
                 break
 
             try:
-                sender = await self.args_for_run()
+                sender = await self.make_sender()
                 found = await sender.find_devices(ignore_lost=True)
                 query_new_devices = quickstart or not first
                 self.store.update_found(found, query_new_devices=query_new_devices)
@@ -1126,7 +1126,7 @@ class DeviceFinder(object):
 
     .. automethod:: photons_device_finder.DeviceFinder.finish
 
-    .. automethod:: photons_device_finder.DeviceFinder.args_for_run
+    .. automethod:: photons_device_finder.DeviceFinder.make_sender
     """
 
     _merged_options_formattable = True
@@ -1157,13 +1157,16 @@ class DeviceFinder(object):
         await self.loops.start(quickstart=quickstart)
         self.daemon = True
 
-    async def args_for_run(self):
+    async def make_sender(self):
         """
-        Return an args_for_run object from our target
+        Return an make_sender object from our target
 
         Multiple calls to this will return the same object
         """
-        return await self.loops.args_for_run()
+        return await self.loops.make_sender()
+
+    # backwards compatibility
+    args_for_run = make_sender
 
     async def finish(self):
         """Stop the background tasks"""
@@ -1184,7 +1187,7 @@ class DeviceFinder(object):
         the filter created from the passed in kwargs.
         """
         reference = self._find(kwargs)
-        sender = await self.args_for_run()
+        sender = await self.make_sender()
         _, serials = await reference.find(sender, timeout=5)
         return serials
 
@@ -1194,7 +1197,7 @@ class DeviceFinder(object):
         that match the filter created from the passed in kwargs.
         """
         reference = self._find(kwargs, for_info=True)
-        sender = await self.args_for_run()
+        sender = await self.make_sender()
         _, serials = await reference.find(sender, timeout=5)
         return self.loops.store.info_for(serials)
 

@@ -48,10 +48,10 @@ describe "DeviceFinderLoops":
                 @hp.memoized_property
                 def target(s):
                     target = mock.Mock(name="target")
-                    target.args_for_run = pytest.helpers.AsyncMock(
-                        name="args_for_run", return_value=s.sender
+                    target.make_sender = pytest.helpers.AsyncMock(
+                        name="make_sender", return_value=s.sender
                     )
-                    target.close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
+                    target.close_sender = pytest.helpers.AsyncMock(name="close_sender")
                     return target
 
                 @hp.memoized_property
@@ -60,24 +60,24 @@ describe "DeviceFinderLoops":
 
             return V()
 
-        describe "args_for_run":
-            async it "gets args_for_run from the target", V:
-                assert (await V.loops.args_for_run()) is V.sender
-                V.target.args_for_run.assert_called_once_with()
+        describe "make_sender":
+            async it "gets sender from the target", V:
+                assert (await V.loops.make_sender()) is V.sender
+                V.target.make_sender.assert_called_once_with()
 
             async it "only does it once", V:
                 called = []
 
-                async def args_for_run():
+                async def make_sender():
                     called.append(1)
                     await asyncio.sleep(0.3)
                     return V.sender
 
-                V.target.args_for_run.side_effect = args_for_run
+                V.target.make_sender.side_effect = make_sender
 
-                fut1 = hp.async_as_background(V.loops.args_for_run())
-                fut2 = hp.async_as_background(V.loops.args_for_run())
-                fut3 = hp.async_as_background(V.loops.args_for_run())
+                fut1 = hp.async_as_background(V.loops.make_sender())
+                fut2 = hp.async_as_background(V.loops.make_sender())
+                fut3 = hp.async_as_background(V.loops.make_sender())
 
                 assert (await fut1) is V.sender
                 assert (await fut2) is V.sender
@@ -115,7 +115,7 @@ describe "DeviceFinderLoops":
                     assert called == []
 
                 ensure_interpreting.assert_called_once_with()
-                V.target.args_for_run.assert_called_once_with()
+                V.target.make_sender.assert_called_once_with()
 
                 await V.loops.findings
                 await V.loops.service_search
@@ -159,7 +159,7 @@ describe "DeviceFinderLoops":
 
                 await V.loops.finish()
 
-                V.target.close_args_for_run.assert_called_once_with(V.sender)
+                V.target.close_sender.assert_called_once_with(V.sender)
 
         describe "ensure_interpreting":
             async it "sets interpreting to a task of the interpret_loop", V:

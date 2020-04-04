@@ -403,9 +403,7 @@ class Gatherer:
         if hasattr(self, "_session"):
             del self.session
 
-    async def gather(
-        self, plans, reference, args_for_run=sb.NotSpecified, error_catcher=None, **kwargs
-    ):
+    async def gather(self, plans, reference, sender=sb.NotSpecified, error_catcher=None, **kwargs):
         """
         Yield (serial, label, info) information as we get it
         """
@@ -444,7 +442,7 @@ class Gatherer:
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
-            async with SenderWrapper(self.target, args_for_run, kwargs) as sender:
+            async with SenderWrapper(self.target, sender, kwargs) as sender:
                 serials, missing = await find_serials(
                     reference, sender, timeout=kwargs.get("find_timeout", 20)
                 )
@@ -455,13 +453,13 @@ class Gatherer:
                 async for item in gathering(serials, sender, kwargs):
                     yield item
 
-    async def gather_all(self, plans, reference, args_for_run=sb.NotSpecified, **kwargs):
+    async def gather_all(self, plans, reference, sender=sb.NotSpecified, **kwargs):
         """Return {serial: (completed, info)} dictionary with all information"""
         results = defaultdict(dict)
 
         try:
             async for serial, completed, info in self.gather_per_serial(
-                plans, reference, args_for_run, **kwargs
+                plans, reference, sender, **kwargs
             ):
                 results[serial] = (completed, info)
         except asyncio.CancelledError:
@@ -473,7 +471,7 @@ class Gatherer:
         else:
             return results
 
-    async def gather_per_serial(self, plans, reference, args_for_run=sb.NotSpecified, **kwargs):
+    async def gather_per_serial(self, plans, reference, sender=sb.NotSpecified, **kwargs):
         """yield (serial, completed, info) with all information for each serial"""
         done = set()
         wanted = set(plans)
@@ -481,7 +479,7 @@ class Gatherer:
         result = defaultdict(dict)
 
         try:
-            async for serial, label, info in self.gather(plans, reference, args_for_run, **kwargs):
+            async for serial, label, info in self.gather(plans, reference, sender, **kwargs):
                 result[serial][label] = info
 
                 if set(result[serial]) == wanted:

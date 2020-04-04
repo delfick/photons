@@ -147,42 +147,40 @@ describe "Target":
                     items.append(thing)
                 assert items == [item1, item2]
 
-        describe "args_for_run":
+        describe "make_sender":
             async it "creates the session", target:
                 session = mock.Mock(name="session")
                 target.session_kls = mock.Mock(name="session_kls", return_value=session)
 
-                ret = await target.args_for_run()
+                ret = await target.make_sender()
                 assert ret is session
 
                 target.session_kls.assert_called_once_with(target)
 
-        describe "close_args_for_run":
-            async it "just calls finish on the args_for_run", target:
-                args_for_run = mock.Mock(name="args_for_run")
-                args_for_run.finish = pytest.helpers.AsyncMock(name="finish")
-                await target.close_args_for_run(args_for_run)
-                args_for_run.finish.assert_called_once_with()
+        describe "close_sender":
+            async it "just calls finish on the sender", target:
+                sender = mock.Mock(name="sender")
+                sender.finish = pytest.helpers.AsyncMock(name="finish")
+                await target.close_sender(sender)
+                sender.finish.assert_called_once_with()
 
         describe "session":
-            async it "creates and closes an args_for_run", target:
+            async it "creates and closes a sender", target:
                 sender = mock.Mock(name="sender")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
-                close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
+                make_sender = pytest.helpers.AsyncMock(name="sender", return_value=sender)
+                close_sender = pytest.helpers.AsyncMock(name="close_sender")
 
-                args_for_run_patch = mock.patch.object(target, "args_for_run", args_for_run)
-                close_args_for_run_patch = mock.patch.object(
-                    target, "close_args_for_run", close_args_for_run
-                )
+                make_sender_patch = mock.patch.object(target, "make_sender", make_sender)
+                close_sender_patch = mock.patch.object(target, "close_sender", close_sender)
 
-                with args_for_run_patch, close_args_for_run_patch:
+                with make_sender_patch, close_sender_patch:
                     async with target.session() as a:
                         assert a is sender
-                        args_for_run.assert_called_once_with()
-                        assert len(close_args_for_run.mock_calls) == 0
+                        make_sender.assert_called_once_with()
+                        assert len(close_sender.mock_calls) == 0
 
-                    args_for_run.assert_called_once_with()
-                    close_args_for_run.assert_called_once_with(sender)
+                    make_sender.assert_called_once_with()
+                    close_sender.assert_called_once_with(sender)
 
         describe "simplify":
 

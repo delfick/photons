@@ -12,7 +12,7 @@ import time
 log = logging.getLogger("photons_control.script")
 
 
-async def find_serials(reference, args_for_run, timeout):
+async def find_serials(reference, sender, timeout):
     """
     Return (serials, missing) for all the serials that can be found in the
     provided reference
@@ -33,7 +33,7 @@ async def find_serials(reference, args_for_run, timeout):
                 reference = reference.split(",")
             reference = HardCodedSerials(reference)
 
-    found, serials = await reference.find(args_for_run, timeout=timeout)
+    found, serials = await reference.find(sender, timeout=timeout)
     missing = reference.missing(found)
     return serials, missing
 
@@ -90,7 +90,7 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
         the next message.
     """
 
-    async def gen(reference, args_for_run, **kwargs):
+    async def gen(reference, sender, **kwargs):
         for i, child in enumerate(children):
             if i > 0:
                 await asyncio.sleep(spread)
@@ -167,7 +167,7 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
         Repeater will stop.
     """
 
-    async def gen(reference, args_for_run, **kwargs):
+    async def gen(reference, sender, **kwargs):
         while True:
             start = time.time()
             f = yield msg
@@ -214,9 +214,9 @@ def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     does not exist
     """
 
-    async def gen(reference, args_for_run, **kwargs):
+    async def gen(reference, sender, **kwargs):
         serials, missing = await find_serials(
-            reference, args_for_run, timeout=kwargs.get("find_timeout", 20)
+            reference, sender, timeout=kwargs.get("find_timeout", 20)
         )
         for serial in missing:
             yield FailedToFindDevice(serial=serial)
@@ -284,8 +284,8 @@ class FromGenerator(object):
             self.reference_override = reference_override
             self.error_catcher_override = catcher_override
 
-        async def run(self, reference, args_for_run, **kwargs):
-            runner = self.runner_kls(self, reference, args_for_run, kwargs)
+        async def run(self, reference, sender, **kwargs):
+            runner = self.runner_kls(self, reference, sender, kwargs)
 
             error_catcher = kwargs.get("error_catcher")
             if self.error_catcher_override:
@@ -313,12 +313,12 @@ class FromGenerator(object):
         class Done:
             pass
 
-        def __init__(self, item, reference, args_for_run, kwargs):
+        def __init__(self, item, reference, sender, kwargs):
             self.item = item
             self.kwargs = kwargs
             self.stop_fut = asyncio.Future()
             self.reference = reference
-            self.args_for_run = args_for_run
+            self.sender = sender
 
             self.ts = []
             self.queue = asyncio.Queue()
@@ -400,7 +400,7 @@ class FromGenerator(object):
                         hp.add_error(self.error_catcher, exc)
 
         async def getter(self):
-            gen = self.item.generator(self.generator_reference, self.args_for_run, **self.kwargs)
+            gen = self.item.generator(self.generator_reference, self.sender, **self.kwargs)
             complete = None
 
             while True:
@@ -440,7 +440,7 @@ class FromGenerator(object):
             kwargs["error_catcher"] = pass_on_error
 
             try:
-                async for info in item.run(self.run_reference, self.args_for_run, **kwargs):
+                async for info in item.run(self.run_reference, self.sender, **kwargs):
                     await self.queue.put(info)
             finally:
                 if not f.done():

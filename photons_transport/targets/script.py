@@ -5,15 +5,15 @@ import asyncio
 
 
 class SenderWrapper:
-    def __init__(self, target, args_for_run, kwargs=None):
+    def __init__(self, target, sender, kwargs=None):
         self.kwargs = kwargs
         self.target = target
-        self.args_for_run = args_for_run
-        self.owns_sender = self.args_for_run is sb.NotSpecified
+        self.sender = sender
+        self.owns_sender = self.sender is sb.NotSpecified
 
     async def __aenter__(self):
         if self.owns_sender:
-            self.args_for_run = await self.target.args_for_run()
+            self.sender = await self.target.make_sender()
 
         if self.kwargs is not None:
             if "limit" not in self.kwargs:
@@ -22,11 +22,11 @@ class SenderWrapper:
             if self.kwargs["limit"] is not None and not hasattr(self.kwargs["limit"], "acquire"):
                 self.kwargs["limit"] = asyncio.Semaphore(self.kwargs["limit"])
 
-        return self.args_for_run
+        return self.sender
 
     async def __aexit__(self, exc_type, exc, tb):
         if self.owns_sender:
-            await self.target.close_args_for_run(self.args_for_run)
+            await self.target.close_sender(self.sender)
 
 
 class ScriptRunner:
@@ -61,11 +61,11 @@ class ScriptRunner:
     # backwards compatibility
     run_with_all = run_all
 
-    async def run(self, reference, args_for_run=sb.NotSpecified, **kwargs):
+    async def run(self, reference, sender=sb.NotSpecified, **kwargs):
         if self.script is None:
             return
 
-        async with SenderWrapper(self.target, args_for_run, kwargs) as sender:
+        async with SenderWrapper(self.target, sender, kwargs) as sender:
             async for thing in self.script.run(reference, sender, **kwargs):
                 yield thing
 
