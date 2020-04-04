@@ -74,8 +74,6 @@ class NetworkSession(Communication):
             target=None, tagged=True, addressable=True, res_required=True, ack_required=False
         )
 
-        script = self.transport_target.script(get_service)
-
         kwargs["no_retry"] = True
         kwargs["broadcast"] = kwargs.get("broadcast", True) or True
         kwargs["accept_found"] = True
@@ -84,7 +82,7 @@ class NetworkSession(Communication):
         async for time_left, time_till_next in self._search_retry_iterator(timeout):
             kwargs["message_timeout"] = time_till_next
 
-            async for pkt in script.run_with(None, self, **kwargs):
+            async for pkt in self(get_service, **kwargs):
                 if discovery_options.want(pkt.serial):
                     addr = pkt.Information.remote_addr
                     found_now.add(pkt.target[:6])

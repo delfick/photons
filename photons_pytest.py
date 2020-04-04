@@ -228,6 +228,7 @@ class MemoryDevicesRunner:
             await device.start()
 
         self.afr = await self.target.args_for_run()
+        self.sender = self.afr
         return self
 
     async def __aexit__(self, typ, exc, tb):

@@ -54,11 +54,10 @@ describe "Pipeline":
         ]
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msgs).run_with(runner.serials):
-                got[pkt.serial].append(pkt)
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(msgs, runner.serials):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.3
 
         assert all(serial in got for serial in runner.serials), got
@@ -92,11 +91,10 @@ describe "Pipeline":
         )
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(runner.serials):
-                got[pkt.serial].append(pkt)
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(msg, runner.serials):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
         assert all(serial in got for serial in runner.serials), got
@@ -131,11 +129,10 @@ describe "Pipeline":
         )
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(runner.serials):
-                got[pkt.serial].append(pkt)
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(msg, runner.serials):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 1
 
         assert all(serial in got for serial in runner.serials), got
@@ -171,12 +168,11 @@ describe "Pipeline":
         )
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            reference = FoundSerials()
-            await reference.find(afr, timeout=1)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(reference, afr):
-                got[pkt.serial].append(pkt)
+        reference = FoundSerials()
+        await reference.find(runner.sender, timeout=1)
+        start = loop_time()
+        async for pkt in runner.sender(msg, reference):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
         assert all(serial in got for serial in runner.serials), got
@@ -213,11 +209,10 @@ describe "Pipeline":
         )
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(runner.serials):
-                got[pkt.serial].append(pkt)
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(msg, runner.serials):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
         assert all(serial in got for serial in runner.serials), got
@@ -263,11 +258,10 @@ describe "Pipeline":
         )
 
         got = defaultdict(list)
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(runner.serials, afr):
-                got[pkt.serial].append(pkt)
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(msg, runner.serials):
+            got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.4
 
         assert all(serial in got for serial in runner.serials), got
@@ -303,13 +297,12 @@ describe "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        async with runner.target.session() as afr:
-            await afr.find_specific_serials(runner.serials)
-            start = loop_time()
-            async for pkt in runner.target.script(msg).run_with(
-                runner.serials, error_catcher=errors, message_timeout=0.2
-            ):
-                got[pkt.serial].append((pkt, loop_time()))
+        await runner.sender.find_specific_serials(runner.serials)
+        start = loop_time()
+        async for pkt in runner.sender(
+            msg, runner.serials, error_catcher=errors, message_timeout=0.2
+        ):
+            got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
         assert len(errors) == 1
@@ -350,8 +343,8 @@ describe "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=errors, message_timeout=0.2
+        async for pkt in runner.sender(
+            msg, runner.serials, error_catcher=errors, message_timeout=0.2
         ):
             got[pkt.serial].append(pkt)
 
@@ -390,8 +383,8 @@ describe "Pipeline":
 
         got = defaultdict(list)
         errors = []
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=errors, message_timeout=0.1
+        async for pkt in runner.sender(
+            msg, runner.serials, error_catcher=errors, message_timeout=0.1
         ):
             got[pkt.serial].append(pkt)
 
@@ -427,9 +420,7 @@ describe "Pipeline":
 
         got = defaultdict(list)
         try:
-            async for pkt in runner.target.script(msg).run_with(
-                runner.serials, message_timeout=0.1
-            ):
+            async for pkt in runner.sender(msg, runner.serials, message_timeout=0.1):
                 got[pkt.serial].append(pkt)
         except RunErrors as errors:
             assert len(errors.errors) == 2

@@ -46,7 +46,7 @@ describe "FromGenerator":
 
     async def assertScript(self, runner, gen, *, generator_kwargs=None, expected, **kwargs):
         msg = FromGenerator(gen, **(generator_kwargs or {}))
-        await runner.target.script(msg).run_with_all(runner.serials, **kwargs)
+        await runner.sender(msg, runner.serials, **kwargs)
 
         assert len(runner.devices) > 0
 
@@ -58,7 +58,7 @@ describe "FromGenerator":
 
     async it "is able to do a FromGenerator per serial", runner:
 
-        async def gen(serial, afr, **kwargs):
+        async def gen(serial, sender, **kwargs):
             assert serial in (light1.serial, light2.serial)
             yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
 
@@ -74,9 +74,7 @@ describe "FromGenerator":
 
         got = defaultdict(list)
         with light3.offline():
-            async for pkt in runner.target.script(msg).run_with(
-                runner.serials, error_catcher=errors
-            ):
+            async for pkt in runner.sender(msg, runner.serials, error_catcher=errors):
                 got[pkt.serial].append(pkt)
 
         assert len(runner.devices) > 0
@@ -108,7 +106,7 @@ describe "FromGenerator":
 
             return error
 
-        async def gen(serial, afr, **kwargs):
+        async def gen(serial, sender, **kwargs):
             yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
 
         msg = FromGeneratorPerSerial(gen, error_catcher_override=error_catcher_override)
@@ -125,8 +123,8 @@ describe "FromGenerator":
         with light3.offline():
             with light1.no_replies_for(DeviceMessages.SetLabel):
                 with light2.no_replies_for(DeviceMessages.GetPower):
-                    async for pkt in runner.target.script(msg).run_with(
-                        runner.serials, error_catcher=errors, message_timeout=0.05
+                    async for pkt in runner.sender(
+                        msg, runner.serials, error_catcher=errors, message_timeout=0.05
                     ):
                         got[pkt.serial].append(pkt)
 
@@ -154,7 +152,7 @@ describe "FromGenerator":
 
     async it "Can get results", runner:
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
             yield DeviceMessages.GetPower(target=light3.serial)
@@ -166,7 +164,7 @@ describe "FromGenerator":
         }
 
         got = defaultdict(list)
-        async for pkt in runner.target.script(FromGenerator(gen)).run_with(runner.serials):
+        async for pkt in runner.target.send(FromGenerator(gen), runner.serials):
             got[pkt.serial].append(pkt)
 
         assert len(runner.devices) > 0
@@ -182,12 +180,10 @@ describe "FromGenerator":
 
     async it "Sends all the messages that are yielded", runner:
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            async for pkt in afr.transport_target.script(get_power).run_with(
-                reference, afr, **kwargs
-            ):
+            async for pkt in runner.sender(get_power, reference, **kwargs):
                 if pkt | DeviceMessages.StatePower:
                     if pkt.level == 0:
                         yield DeviceMessages.SetPower(level=65535, target=pkt.serial)
@@ -205,7 +201,7 @@ describe "FromGenerator":
     async it "does not ignore exception in generator", runner:
         error = Exception("NOPE")
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             raise error
             yield DeviceMessages.GetPower()
 
@@ -221,7 +217,7 @@ describe "FromGenerator":
 
         error = Exception("NOPE")
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             raise error
             yield DeviceMessages.GetPower()
 
@@ -231,7 +227,7 @@ describe "FromGenerator":
 
     async it "it can know if the message was sent successfully", runner:
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
             assert await t
 
@@ -253,7 +249,7 @@ describe "FromGenerator":
 
         light1.set_intercept_got_message(waiter)
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
             assert not (await t)
 
@@ -278,9 +274,9 @@ describe "FromGenerator":
 
     async it "it can have a serial override", runner:
 
-        async def gen(reference, afr, **kwargs):
-            async def inner_gen(level, reference, afr2, **kwargs2):
-                assert afr is afr2
+        async def gen(reference, sender, **kwargs):
+            async def inner_gen(level, reference, sender2, **kwargs2):
+                assert sender is sender2
                 del kwargs2["error_catcher"]
                 kwargs1 = dict(kwargs)
                 del kwargs1["error_catcher"]
@@ -289,9 +285,7 @@ describe "FromGenerator":
                 yield DeviceMessages.SetPower(level=level)
 
             get_power = DeviceMessages.GetPower()
-            async for pkt in afr.transport_target.script(get_power).run_with(
-                reference, afr, **kwargs
-            ):
+            async for pkt in sender(get_power, reference, **kwargs):
                 if pkt.serial == light1.serial:
                     level = 1
                 elif pkt.serial == light2.serial:
@@ -324,7 +318,7 @@ describe "FromGenerator":
         light2.set_intercept_got_message(waiter)
         light3.set_intercept_got_message(waiter)
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
             yield DeviceMessages.GetPower(target=light3.serial)
@@ -357,7 +351,7 @@ describe "FromGenerator":
         light2.set_intercept_got_message(waiter)
         light3.set_intercept_got_message(waiter)
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             assert await (yield DeviceMessages.GetPower(target=light1.serial))
             assert not await (yield DeviceMessages.GetPower(target=light2.serial))
             assert await (yield DeviceMessages.GetPower(target=light3.serial))
@@ -383,7 +377,7 @@ describe "FromGenerator":
 
     async it "can provide errors", runner:
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             yield FailedToFindDevice(serial=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
             yield DeviceMessages.GetPower(target=light3.serial)

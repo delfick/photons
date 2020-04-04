@@ -104,7 +104,7 @@ describe "App":
 
     describe "mainline":
 
-        def run_with(self, argv):
+        def using_argv(self, argv):
             original_mainline = mock.Mock(name="original_mainline")
 
             with mock.patch.object(DelfickApp, "mainline", original_mainline):
@@ -115,15 +115,15 @@ describe "App":
             return call_list[0]
 
         it "adds --silent to the argv if there are no options":
-            used_args = self.run_with([])
+            used_args = self.using_argv([])
             assert used_args == ["--silent"]
 
         it "adds --silent if the task is list_tasks or help":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
-                used_args = self.run_with([attempt])
+                used_args = self.using_argv([attempt])
                 assert used_args == [attempt, "--silent"]
 
         it "adds --silent before any --":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
-                used_args = self.run_with([attempt, "--", "other"])
+                used_args = self.using_argv([attempt, "--", "other"])
                 assert used_args == [attempt, "--silent", "--", "other"]

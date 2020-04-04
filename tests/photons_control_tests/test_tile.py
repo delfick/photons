@@ -82,7 +82,7 @@ describe "Tile helpers":
 
         async it "can power on devices and set tile effect", runner:
             msg = SetTileEffect("flame")
-            got = await runner.target.script(msg).run_with_all(runner.serials)
+            got = await runner.sender(msg, runner.serials)
             assert got == []
 
             for tile in tiles:
@@ -118,7 +118,7 @@ describe "Tile helpers":
             msg = SetTileEffect(
                 "flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"]
             )
-            got = await runner.target.script(msg).run_with_all(runner.serials)
+            got = await runner.sender(msg, runner.serials)
             assert got == []
 
             for tile in tiles:
@@ -161,7 +161,7 @@ describe "Tile helpers":
 
         async it "can choose not to turn on devices", runner:
             msg = SetTileEffect("morph", power_on=False)
-            got = await runner.target.script(msg).run_with_all(runner.serials)
+            got = await runner.sender(msg, runner.serials)
             assert got == []
 
             for tile in tiles:
@@ -194,7 +194,7 @@ describe "Tile helpers":
         async it "can target particular devices", runner:
             msg = SetTileEffect("morph", reference=tile1.serial)
             msg2 = SetTileEffect("flame", power_on=False, reference=tile2.serial)
-            got = await runner.target.script([msg, msg2]).run_with_all(None)
+            got = await runner.sender([msg, msg2])
             assert got == []
 
             assert tile1.attrs.matrix_effect is TileEffectType.MORPH

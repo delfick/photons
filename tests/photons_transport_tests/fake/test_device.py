@@ -1083,24 +1083,20 @@ describe "FakeDevice":
                 echo = DeviceMessages.EchoRequest(echoing=b"hello")
                 await device.reset()
 
-                async with target.session() as afr:
-                    await first_service.add_service(afr.add_service)
+                async with target.session() as sender:
+                    await first_service.add_service(sender.add_service)
                     got = []
                     es = []
-                    async for pkt in target.script(echo).run_with(
-                        serial, afr, message_timeout=0.05, error_catcher=es
-                    ):
+                    async for pkt in sender(echo, serial, message_timeout=0.05, error_catcher=es):
                         got.append(pkt)
                     assert len(got) == 0
                     assert es == [TimedOut("Waiting for reply to a packet", serial=serial)]
 
-                    await afr.forget(serial)
-                    await second_service.add_service(afr.add_service)
+                    await sender.forget(serial)
+                    await second_service.add_service(sender.add_service)
                     got = []
                     es = []
-                    async for pkt in target.script(echo).run_with(
-                        serial, afr, message_timeout=0.05, error_catcher=es
-                    ):
+                    async for pkt in sender(echo, serial, message_timeout=0.05, error_catcher=es):
                         assert pkt.Information.remote_addr == ("127.0.0.1", port2)
                         got.append(pkt)
                     assert es == []

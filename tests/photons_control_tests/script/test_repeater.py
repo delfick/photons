@@ -50,9 +50,7 @@ describe "Repeater":
                 assert False, f"Got an error: {err}"
 
             got = defaultdict(list)
-            async for pkt in runner.target.script(msg).run_with(
-                FoundSerials(), error_catcher=no_errors
-            ):
+            async for pkt in runner.sender(msg, FoundSerials(), error_catcher=no_errors):
                 got[pkt.serial].append(pkt)
                 if all(len(pkts) >= 6 for pkts in got.values()):
                     break
@@ -95,9 +93,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=no_errors
-        ):
+        async for pkt in runner.sender(msg, runner.serials, error_catcher=no_errors):
             got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 6 for pkts in got.values()):
                 break
@@ -138,9 +134,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=no_errors
-        ):
+        async for pkt in runner.sender(msg, runner.serials, error_catcher=no_errors):
             got[pkt.serial].append((pkt, loop_time()))
             if all(len(pkts) >= 7 for pkts in got.values()):
                 break
@@ -167,9 +161,7 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=no_errors
-        ):
+        async for pkt in runner.sender(msg, runner.serials, error_catcher=no_errors):
             got[pkt.serial].append((pkt, loop_time()))
 
         assert all(serial in got for serial in runner.serials), got
@@ -208,8 +200,8 @@ describe "Repeater":
             errors.append(err)
 
         got = defaultdict(list)
-        async for pkt in runner.target.script(msg).run_with(
-            runner.serials, error_catcher=got_error, message_timeout=0.1
+        async for pkt in runner.sender(
+            msg, runner.serials, error_catcher=got_error, message_timeout=0.1
         ):
             got[pkt.serial].append(pkt)
 

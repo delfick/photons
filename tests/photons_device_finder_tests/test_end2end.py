@@ -120,31 +120,28 @@ describe "Device finder":
             device.received.pop()
 
     async it "can find all serials", runner:
-        async with runner.target.session() as afr:
-            finder = DeviceFinder(runner.target)
-            try:
-                serials = await finder.serials()
-                assert sorted(serials) == sorted([device1.serial, device2.serial, device3.serial])
-            finally:
-                await finder.finish()
+        finder = DeviceFinder(runner.target)
+        try:
+            serials = await finder.serials()
+            assert sorted(serials) == sorted([device1.serial, device2.serial, device3.serial])
+        finally:
+            await finder.finish()
 
     async it "can find a particular serial", runner:
-        async with runner.target.session() as afr:
-            finder = DeviceFinder(runner.target)
-            try:
-                serials = await finder.serials(serial=[device1.serial])
-                assert sorted(serials) == sorted([device1.serial])
-            finally:
-                await finder.finish()
+        finder = DeviceFinder(runner.target)
+        try:
+            serials = await finder.serials(serial=[device1.serial])
+            assert sorted(serials) == sorted([device1.serial])
+        finally:
+            await finder.finish()
 
     async it "can find with the device finder wrap", runner:
         wrap = DeviceFinderWrap(Filter.from_kwargs(), runner.target)
         try:
-            async with runner.target.session() as afr:
-                found, serials = await wrap.find(afr, timeout=5)
-                want = sorted([d.serial for d in runner.devices])
-                assert sorted(found.serials) == want
-                assert sorted(serials) == want
+            found, serials = await wrap.find(runner.sender, timeout=5)
+            want = sorted([d.serial for d in runner.devices])
+            assert sorted(found.serials) == want
+            assert sorted(serials) == want
         finally:
             await wrap.finish()
 
@@ -360,31 +357,30 @@ describe "Device finder":
             self.expect_received(device2)
             self.expect_received(device3)
 
-            script = runner.target.script(DeviceMessages.GetPower())
+            msg = DeviceMessages.GetPower()
 
-            async with runner.target.session() as afr:
-                found = []
-                async for pkt in script.run_with(finder.find(), afr):
-                    assert pkt | DeviceMessages.StatePower
-                    found.append((pkt.serial, pkt.payload.level))
+            found = []
+            async for pkt in runner.sender(msg, finder.find()):
+                assert pkt | DeviceMessages.StatePower
+                found.append((pkt.serial, pkt.payload.level))
 
-                self.expect_received(device1, DeviceMessages.GetPower)
-                self.expect_received(device2, DeviceMessages.GetPower)
-                self.expect_received(device3, DeviceMessages.GetPower)
+            self.expect_received(device1, DeviceMessages.GetPower)
+            self.expect_received(device2, DeviceMessages.GetPower)
+            self.expect_received(device3, DeviceMessages.GetPower)
 
-                assert sorted(found) == sorted(
-                    [(device1.serial, 65535), (device2.serial, 0), (device3.serial, 65535)]
-                )
+            assert sorted(found) == sorted(
+                [(device1.serial, 65535), (device2.serial, 0), (device3.serial, 65535)]
+            )
 
-                found = []
-                async for pkt in script.run_with(finder.find(location_name="four"), afr):
-                    assert pkt | DeviceMessages.StatePower
-                    found.append((pkt.serial, pkt.payload.level))
+            found = []
+            async for pkt in runner.sender(msg, finder.find(location_name="four")):
+                assert pkt | DeviceMessages.StatePower
+                found.append((pkt.serial, pkt.payload.level))
 
-                assert sorted(found) == sorted([(device1.serial, 65535), (device3.serial, 65535)])
+            assert sorted(found) == sorted([(device1.serial, 65535), (device3.serial, 65535)])
 
-                self.expect_received(device1, DeviceMessages.GetPower)
-                self.expect_received(device3, DeviceMessages.GetPower)
+            self.expect_received(device1, DeviceMessages.GetPower)
+            self.expect_received(device3, DeviceMessages.GetPower)
 
-                serials = await finder.serials(product_identifier="*color*", force_refresh=True)
-                assert sorted(serials) == sorted([device1.serial, device2.serial])
+            serials = await finder.serials(product_identifier="*color*", force_refresh=True)
+            assert sorted(serials) == sorted([device1.serial, device2.serial])

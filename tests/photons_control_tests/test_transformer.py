@@ -90,7 +90,7 @@ def generate_options(color, exclude=None):
 describe "PowerToggle":
 
     async def run_and_compare(self, runner, msg, *, expected):
-        await runner.target.script(msg).run_with_all(runner.serials)
+        await runner.sender(msg, runner.serials)
 
         assert len(runner.devices) > 0
 
@@ -135,7 +135,7 @@ describe "Transformer":
         msg = Transformer.using(
             state, keep_brightness=keep_brightness, transition_color=transition_color
         )
-        await runner.target.script(msg).run_with_all(runner.serials)
+        await runner.sender(msg, runner.serials)
 
         assert len(runner.devices) > 0
 
