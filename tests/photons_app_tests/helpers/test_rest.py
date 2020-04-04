@@ -49,7 +49,9 @@ describe "just_log_exceptions":
         with hp.just_log_exceptions(log):
             raise error
 
-        log.error.assert_called_once_with("Unexpected error", exc_info=(ValueError, error, mock.ANY))
+        log.error.assert_called_once_with(
+            "Unexpected error", exc_info=(ValueError, error, mock.ANY)
+        )
 
     it "can be given a different message":
         log = mock.Mock(name="log")
@@ -58,7 +60,9 @@ describe "just_log_exceptions":
         with hp.just_log_exceptions(log, message="a different message"):
             raise error
 
-        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
+        log.error.assert_called_once_with(
+            "a different message", exc_info=(ValueError, error, mock.ANY)
+        )
 
     it "can reraise particular errors":
         log = mock.Mock(name="log")
@@ -67,7 +71,9 @@ describe "just_log_exceptions":
         with hp.just_log_exceptions(log, message="a different message", reraise=[TypeError]):
             raise error
 
-        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
+        log.error.assert_called_once_with(
+            "a different message", exc_info=(ValueError, error, mock.ANY)
+        )
         log.error.reset_mock()
 
         with assertRaises(TypeError, "wat"):
@@ -172,7 +178,7 @@ describe "TaskHolder":
             ts.add(wait(ts, 5))
             ts.add(wait(ts, 0.05))
 
-        assert called == [('FINISHED', 0.05), ('CANCELLED', 5), ('FINISHED', 5)]
+        assert called == [("FINISHED", 0.05), ("CANCELLED", 5), ("FINISHED", 5)]
 
 
 describe "nested_dict_retrieve":
