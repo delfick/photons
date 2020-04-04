@@ -1,4 +1,3 @@
-import sphinx_rtd_theme
 import pkg_resources
 
 extensions = [
@@ -6,11 +5,16 @@ extensions = [
     "photons_messages.sphinx.messages",
 ]
 
-html_theme = "the_theme"
-html_theme_path = [
-    pkg_resources.resource_filename("photons_docs", "config/templates"),
-    sphinx_rtd_theme.get_html_theme_path(),
-]
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["static"]
+html_css_files = ["extra.css"]
+
+html_theme_options = {
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+}
+
 html_static_path = [pkg_resources.resource_filename("photons_docs", "config/static")]
 
 exclude_patterns = ["_build/**", "venv/**"]

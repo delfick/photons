@@ -11,7 +11,9 @@ setup(
 
     , install_requires =
       [ "Sphinx==2.4.4"
-      , "sphinx_rtd_theme==0.4.3"
+      # , "sphinx_rtd_theme==0.4.4"
+      , "sphinx_rtd_theme @ git+ssh://git@github.com/readthedocs/sphinx_rtd_theme@master#egg=sphinx_rtd_theme"
+      , "tornado==6.0.4"
       ]
 
     , entry_points =

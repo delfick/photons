@@ -7,16 +7,24 @@ from sphinx.util.docutils import docutils_namespace
 from sphinx.cmdline import handle_exception
 from sphinx.application import Sphinx
 
-from delfick_project.norms import dictobj, sb
+from tornado.web import StaticFileHandler, Application
 from delfick_project.addons import addon_hook
+from delfick_project.norms import dictobj, sb
+from tornado.httpserver import HTTPServer
 from textwrap import dedent
 import pkg_resources
+import webbrowser
 import logging
+import asyncio
+import socket
 import shutil
+import time
 import sys
 import os
 
-log = logging.getLogger("photons_docs.addon")
+log = logging.getLogger("photons_docs")
+
+this_dir = os.path.abspath(os.path.dirname(__file__))
 
 __shortdesc__ = "Entry point for creating documentation"
 
@@ -31,6 +39,20 @@ def __lifx__(collector, *args, **kwargs):
     collector.register_converters(
         {"documentation": DocOptions.FieldSpec(formatter=MergedOptionStringFormatter)}
     )
+
+
+def port_connected(port):
+    """
+    Return whether something is listening on this port
+    """
+    s = socket.socket()
+    s.settimeout(5)
+    try:
+        s.connect(("127.0.0.1", port))
+        s.close()
+        return True
+    except Exception:
+        return False
 
 
 @an_action()
@@ -132,4 +154,42 @@ async def build_docs(collector, reference, tasks, **kwargs):
     except (Exception, KeyboardInterrupt) as exc:
         opts = type("opts", (object,), {"pdb": False, "verbosity": verbosity, "traceback": True})
         handle_exception(app, opts, exc, sys.stderr)
-        raise PhotonsAppError("Failed to run sphinx")
+        sys.exit(1)
+
+
+@an_action(label="Docs")
+async def view_docs(collector, reference, tasks, **kwargs):
+    """
+    View the built docs in your webbrowser.
+
+    This will start serving the built documentation under http://127.0.0.1:4202
+    and open your webbrowser to this address
+    """
+    directory = os.path.join(collector.configuration["documentation"].out, "result")
+    http_server = HTTPServer(
+        Application(
+            [(r"/(.*)", StaticFileHandler, {"path": directory, "default_filename": "index.html"})]
+        )
+    )
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("0.0.0.0", 0))
+        port = s.getsockname()[1]
+
+    photons_app = collector.configuration["photons_app"]
+    with photons_app.using_graceful_future() as final_future:
+        http_server.listen(port, "127.0.0.1")
+
+        start = time.time()
+        while not port_connected(port) and time.time() - start < 3:
+            await asyncio.sleep(0.1)
+
+        if not port_connected(port):
+            raise PhotonsAppError("Failed to start the server")
+
+        try:
+            log.info(f"Running server on http://127.0.0.1:{port}")
+            webbrowser.open(f"http://127.0.0.1:{port}")
+            await final_future
+        finally:
+            http_server.stop()
