@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.targets.script import AFRWrapper, ScriptRunner
+from photons_transport.targets.script import SenderWrapper, ScriptRunner
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app import helpers as hp
@@ -19,14 +19,14 @@ class Sem:
         return isinstance(other, asyncio.Semaphore) and other._value == self.limit
 
 
-describe "AFRWrapper":
+describe "SenderWrapper":
 
     @pytest.fixture()
     def V(self):
         class V:
             called = []
 
-            afr = mock.Mock(name="afr")
+            sender = mock.Mock(name="sender")
 
             res1 = mock.Mock(name="res1")
             res2 = mock.Mock(name="res2")
@@ -46,7 +46,7 @@ describe "AFRWrapper":
                 class FakeTarget:
                     async def args_for_run(fs, *args, **kwargs):
                         s.called.append(("args_for_run", args, kwargs))
-                        return s.afr
+                        return s.sender
 
                     async def close_args_for_run(fs, *args, **kwargs):
                         s.called.append(("close_args_for_run", args, kwargs))
@@ -62,8 +62,8 @@ describe "AFRWrapper":
         kwargs = {"b": a, "limit": None}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
-            assert afr is args_for_run
+        async with SenderWrapper(V.target, args_for_run, kwargs) as sender:
+            assert sender is args_for_run
 
         assert kwargs == {"b": a, "limit": None}
         assert V.called == []
@@ -73,8 +73,8 @@ describe "AFRWrapper":
         kwargs = {"b": a, "limit": 50}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
-            assert afr is args_for_run
+        async with SenderWrapper(V.target, args_for_run, kwargs) as sender:
+            assert sender is args_for_run
 
         assert kwargs == {"b": a, "limit": Sem(50)}
         assert V.called == []
@@ -85,8 +85,8 @@ describe "AFRWrapper":
         kwargs = {"b": a, "limit": limit}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
-            assert afr is args_for_run
+        async with SenderWrapper(V.target, args_for_run, kwargs) as sender:
+            assert sender is args_for_run
 
         assert kwargs == {"b": a, "limit": limit}
         assert V.called == []
@@ -97,25 +97,25 @@ describe "AFRWrapper":
         kwargs = {"b": a, "limit": limit}
         args_for_run = mock.NonCallableMock(name="args_for_run")
 
-        async with AFRWrapper(V.target, args_for_run, kwargs) as afr:
-            assert afr is args_for_run
+        async with SenderWrapper(V.target, args_for_run, kwargs) as sender:
+            assert sender is args_for_run
 
         assert kwargs == {"b": a, "limit": limit}
         assert V.called == []
 
-    async it "creates and closes the afr if none provided", V:
+    async it "creates and closes the sender if none provided", V:
         a = mock.Mock(name="a")
         limit = asyncio.Semaphore(1)
         kwargs = {"b": a}
 
-        async with AFRWrapper(V.target, sb.NotSpecified, kwargs) as afr:
-            assert afr is V.afr
+        async with SenderWrapper(V.target, sb.NotSpecified, kwargs) as sender:
+            assert sender is V.sender
             V.called.append(("middle", kwargs))
 
         assert V.called == [
             ("args_for_run", (), {}),
             ("middle", {"b": a, "limit": Sem(30)}),
-            ("close_args_for_run", (V.afr,), {}),
+            ("close_args_for_run", (V.sender,), {}),
         ]
 
 describe "ScriptRunner":
@@ -123,9 +123,9 @@ describe "ScriptRunner":
     @pytest.fixture()
     def V(self):
         class V:
-            afr = mock.Mock(name="afr")
             res1 = mock.Mock(name="res1")
             res2 = mock.Mock(name="res2")
+            sender = mock.Mock(name="sender")
             called = []
             target = mock.Mock(name="target", spec=[])
 
@@ -148,7 +148,7 @@ describe "ScriptRunner":
                 class FakeTarget:
                     async def args_for_run(fs, *args, **kwargs):
                         s.called.append(("args_for_run", args, kwargs))
-                        return s.afr
+                        return s.sender
 
                     async def close_args_for_run(fs, *args, **kwargs):
                         s.called.append(("close_args_for_run", args, kwargs))
@@ -204,8 +204,8 @@ describe "ScriptRunner":
             assert found == [V.res1, V.res2]
             assert V.called == [
                 ("args_for_run", (), {}),
-                ("run_with", (reference, V.afr), {"b": a, "limit": Sem(30)}),
-                ("close_args_for_run", (V.afr,), {}),
+                ("run_with", (reference, V.sender), {"b": a, "limit": Sem(30)}),
+                ("close_args_for_run", (V.sender,), {}),
             ]
 
     describe "run_with_all":
@@ -246,6 +246,6 @@ describe "ScriptRunner":
 
             assert V.called == [
                 ("args_for_run", (), {}),
-                ("run_with", (reference, V.afr), {"b": a, "limit": Sem(30)}),
-                ("close_args_for_run", (V.afr,), {}),
+                ("run_with", (reference, V.sender), {"b": a, "limit": Sem(30)}),
+                ("close_args_for_run", (V.sender,), {}),
             ]

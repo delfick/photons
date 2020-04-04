@@ -176,7 +176,7 @@ see d073d5000003 and target_two will see all devices on the network.
 Programmatically telling photons where a device is
 --------------------------------------------------
 
-You can tell photons where a device is uses ``afr.add_service``, for example:
+You can tell photons where a device is uses ``sender.add_service``, for example:
 
 .. code-block:: python
 
@@ -190,14 +190,14 @@ You can tell photons where a device is uses ``afr.add_service``, for example:
    async def doit(collector):
       lan_target = collector.configuration["target_register"].resolve("lan")
 
-      async with lan_target.session() as afr:
+      async with lan_target.session() as sender:
          # Use add_service to tell photons where this device is
          # The run_with mechanism will know that it already has this serial when we
          # send messages to it, and so it won't try to do any discovery
-         await afr.add_service("d073d533137a", Services.UDP, host="192.168.0.18", port=56700)
+         await sender.add_service("d073d533137a", Services.UDP, host="192.168.0.18", port=56700)
 
          msg = LightMessages.GetColor()
-         async for pkt, _, _ in lan_target.script(msg).run_with("d073d533137a"):
+         async for pkt in sender(msg, "d073d533137a"):
                print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
 

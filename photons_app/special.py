@@ -7,7 +7,7 @@ import asyncio
 
 class SpecialReference:
     """
-    Subclasses of this implement an await ``find_serials(afr, *, timeout, broadcast=True)``
+    Subclasses of this implement an await ``find_serials(sender, *, timeout, broadcast=True)``
     that returns the serials to send messages to
 
     find must be an async function that returns ``(found, serials)``
@@ -29,7 +29,7 @@ class SpecialReference:
         self.found = hp.ResettableFuture()
         self.finding = hp.ResettableFuture()
 
-    async def find_serials(self, afr, *, timeout, broadcast=True):
+    async def find_serials(self, sender, *, timeout, broadcast=True):
         """Must be implemented by the subclass, return ``found`` from this function"""
         raise NotImplementedError()
 
@@ -46,9 +46,9 @@ class SpecialReference:
         if missing:
             raise DevicesNotFound(missing=missing)
 
-    async def find(self, afr, *, timeout, broadcast=True):
+    async def find(self, sender, *, timeout, broadcast=True):
         """
-        calls ``await self.find_serials(afr, timeout=timeout, broadcast=broadcast)``, then determines
+        calls ``await self.find_serials(sender, timeout=timeout, broadcast=broadcast)``, then determines
         the list of serials from the result and memoizes ``(found, serials)``
 
         So that we only call it once regardless how many times find is called.
@@ -59,7 +59,7 @@ class SpecialReference:
 
         self.finding.set_result(True)
         t = asyncio.get_event_loop().create_task(
-            self.find_serials(afr, timeout=timeout, broadcast=broadcast)
+            self.find_serials(sender, timeout=timeout, broadcast=broadcast)
         )
 
         def transfer(res):
@@ -91,8 +91,8 @@ class FoundSerials(SpecialReference):
     to all the devices found on the network
     """
 
-    async def find_serials(self, afr, *, timeout, broadcast=True):
-        return await afr.find_devices(timeout=timeout, broadcast=broadcast, raise_on_none=True)
+    async def find_serials(self, sender, *, timeout, broadcast=True):
+        return await sender.find_devices(timeout=timeout, broadcast=broadcast, raise_on_none=True)
 
 
 class HardCodedSerials(SpecialReference):
@@ -118,11 +118,11 @@ class HardCodedSerials(SpecialReference):
 
         super(HardCodedSerials, self).__init__()
 
-    async def find_serials(self, afr, *, timeout, broadcast=True):
-        found = getattr(afr, "found", {})
+    async def find_serials(self, sender, *, timeout, broadcast=True):
+        found = getattr(sender, "found", {})
 
         if not all(target in found for target in self.targets):
-            found, _ = await afr.find_specific_serials(
+            found, _ = await sender.find_specific_serials(
                 self.serials, broadcast=broadcast, raise_on_none=False, timeout=timeout
             )
 
@@ -153,8 +153,8 @@ class ResolveReferencesFromFile(SpecialReference):
         self.serials = serials
         self.reference = HardCodedSerials(serials)
 
-    async def find(self, afr, *, timeout, broadcast=True):
-        return await self.reference.find(afr, timeout=timeout, broadcast=broadcast)
+    async def find(self, sender, *, timeout, broadcast=True):
+        return await self.reference.find(sender, timeout=timeout, broadcast=broadcast)
 
     def missing(self, found):
         """Hook for saying if anything is missing from found"""

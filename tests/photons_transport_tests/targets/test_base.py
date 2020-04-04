@@ -166,8 +166,8 @@ describe "Target":
 
         describe "session":
             async it "creates and closes an args_for_run", target:
-                afr = mock.Mock(name="afr")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
+                sender = mock.Mock(name="sender")
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
                 close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
 
                 args_for_run_patch = mock.patch.object(target, "args_for_run", args_for_run)
@@ -177,12 +177,12 @@ describe "Target":
 
                 with args_for_run_patch, close_args_for_run_patch:
                     async with target.session() as a:
-                        assert a is afr
+                        assert a is sender
                         args_for_run.assert_called_once_with()
                         assert len(close_args_for_run.mock_calls) == 0
 
                     args_for_run.assert_called_once_with()
-                    close_args_for_run.assert_called_once_with(afr)
+                    close_args_for_run.assert_called_once_with(sender)
 
         describe "simplify":
 

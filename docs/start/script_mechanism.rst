@@ -76,13 +76,13 @@ to only 3 messages being sent at any one time, you could say:
 
 .. code-block:: python
 
-    await target.script(msg).run_with_all(reference, afr, limit=3)
+    await sender(msg, reference, limit=3)
 
 You may also specify no limit by passing in limit as None:
 
 .. code-block:: python
 
-    await target.script(msg).run_with_all(reference, afr, limit=None)
+    await sender(msg, reference, limit=None)
 
 Or you may share a limit between multiple run_with calls by sharing an
 asyncio.Semaphore object. This makes sense if you're doing multiple run_withs
@@ -96,7 +96,7 @@ at the same time:
 
     async def send(limit):
         msg = ...
-        await target.script(msg).run_with_all(reference, afr, limit=limit)
+        await sender(msg, reference, limit=limit)
 
     limit = asyncio.Semaphore(20)
 
@@ -106,65 +106,3 @@ at the same time:
         ]
 
     await asyncio.wait(ts)
-
-The AFR
--------
-
-This mechanism has the idea of the ``afr`` object (args for run) which is where
-we essentially store a context for the run. For our lan target it's main function
-is storing the ip addresses of our serials.
-
-When you do a ``run_with`` without specifying the ``afr``, it will essentially do:
-
-.. code-block:: python
-
-    try:
-        afr = await target.args_for_run()
-        await script.run_with_all([serial], afr)
-    finally:
-        await target.close_args_for_run(afr)
-
-You can create an ``afr`` and pass it in yourself by running ``args_for_run`` and
-``close_args_for_run`` yourself, or you can use the ``session()`` context manager
-on the target.
-
-.. code-block:: python
-    
-    async with target.session() as afr:
-        script.run_with([serial1, serial2], afr)
-        script2.run_with([serial2], afr)
-
-This will mean that multiple ``run_with`` don't have to search for the devices
-on every run.
-
-run_with vs run_with_all
-------------------------
-
-The ``run_with`` function on a lan target is an async iterator and so you call
-it like so:
-
-.. code-block:: python
-    
-    async for pkt, addr, original in script.run_with(references):
-        ...
-
-Note that this will raise any errors after giving back any results we got from
-the call.
-
-If you don't care about the replies or you want all the replies in one go, then
-you can use ``run_with_all`` which is equivalent to the following:
-
-.. code-block:: python
-
-    async def run_with_all(*args, **kwargs):
-        """Do a run_with but don't complete till all messages have completed"""
-        results = []
-        try:
-            async for info in script.run_with(*args, **kwargs):
-                results.append(info)
-        except RunErrors as error:
-            raise BadRunWithResults(results=results, _errors=error.errors)
-        except Exception as error:
-            raise BadRunWithResults(results=results, _errors=[error])
-        else:
-            return results

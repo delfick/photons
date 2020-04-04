@@ -106,16 +106,16 @@ def SetTileEffect(
 
     set_effect = TileMessages.SetTileEffect.empty_normalise(**options)
 
-    async def gen(ref, afr, **kwargs):
+    async def gen(ref, sender, **kwargs):
         plans = make_plans("capability")
 
         g = gatherer
         if g is None:
-            g = Gatherer(afr.transport_target)
+            g = Gatherer(sender.transport_target)
 
         r = ref if reference is None else reference
 
-        async for serial, _, info in g.gather(plans, r, afr, **kwargs):
+        async for serial, _, info in g.gather(plans, r, sender, **kwargs):
             if info["cap"].has_matrix:
                 if power_on:
                     yield LightMessages.SetLightPower(
@@ -139,11 +139,11 @@ async def get_device_chain(collector, target, reference, **kwargs):
     Get the devices in your chain
     """
 
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         plans = make_plans("capability")
-        g = Gatherer(afr.transport_target)
+        g = Gatherer(sender.transport_target)
 
-        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
@@ -311,11 +311,11 @@ async def set_tile_positions(collector, target, reference, **kwargs):
             "Please enter positions as a list of two item lists of user_x, user_y"
         )
 
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         plans = make_plans("capability")
-        g = Gatherer(afr.transport_target)
+        g = Gatherer(sender.transport_target)
 
-        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
             if info["cap"].has_matrix:
                 for i, (user_x, user_y) in enumerate(positions):
                     yield TileMessages.SetUserPosition(
@@ -337,11 +337,11 @@ async def get_tile_positions(collector, target, reference, **kwargs):
     ``lan:get_tile_positions d073d5f09124``
     """
 
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         plans = make_plans("capability")
-        g = Gatherer(afr.transport_target)
+        g = Gatherer(sender.transport_target)
 
-        async for serial, _, info in g.gather(plans, reference, afr, **kwargs):
+        async for serial, _, info in g.gather(plans, reference, sender, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 

@@ -46,8 +46,8 @@ async def find_devices(collector, target, reference, artifact, **kwargs):
     if artifact not in (None, "", sb.NotSpecified):
         broadcast = artifact
 
-    async with target.session() as afr:
-        _, serials = await reference.find(afr, timeout=20, broadcast=broadcast)
+    async with target.session() as sender:
+        _, serials = await reference.find(sender, timeout=20, broadcast=broadcast)
         for serial in serials:
             print(serial)
 
@@ -67,8 +67,8 @@ async def find_ips(collector, target, reference, artifact, **kwargs):
     if artifact not in (None, "", sb.NotSpecified):
         broadcast = artifact
 
-    async with target.session() as afr:
-        found, serials = await reference.find(afr, timeout=20, broadcast=broadcast)
+    async with target.session() as sender:
+        found, serials = await reference.find(sender, timeout=20, broadcast=broadcast)
         for serial in serials:
             services = found[binascii.unhexlify(serial)]
             if Services.UDP in services:

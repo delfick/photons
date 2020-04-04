@@ -81,14 +81,14 @@ class Found:
     def __bool__(self):
         return bool(self.found)
 
-    def borrow(self, other_found, afr):
+    def borrow(self, other_found, session):
         if isinstance(other_found, Found):
             for target in other_found:
                 if target not in self:
                     self[target] = {}
                 for service, transport in other_found[target].items():
                     if service not in self[target]:
-                        self[target][service] = transport.clone_for(afr)
+                        self[target][service] = transport.clone_for(session)
 
     async def remove_lost(self, found_now):
         found_now = [self.cleanse_serial(serial) for serial in found_now]
@@ -143,16 +143,16 @@ class NoLimit:
 
 
 class Sender:
-    def __init__(self, afr, msg, reference, **kwargs):
-        self.afr = afr
+    def __init__(self, session, msg, reference, **kwargs):
         self.msg = msg
         self.kwargs = kwargs
+        self.session = session
         self.reference = reference
 
-        if "afr" in self.kwargs:
-            self.kwargs.pop("afr")
+        if "session" in self.kwargs:
+            self.kwargs.pop("session")
 
-        self.script = self.afr.transport_target.script(msg)
+        self.script = self.session.transport_target.script(msg)
 
     def __await__(self):
         return (yield from self.all_packets().__await__())
@@ -175,7 +175,7 @@ class Sender:
         return self.stream_packets()
 
     async def stream_packets(self):
-        async for pkt in self.script.run_with(self.reference, self.afr, **self.kwargs):
+        async for pkt in self.script.run_with(self.reference, self.session, **self.kwargs):
             yield pkt
 
 

@@ -4,15 +4,15 @@ from delfick_project.norms import sb
 import asyncio
 
 
-class AFRWrapper:
+class SenderWrapper:
     def __init__(self, target, args_for_run, kwargs=None):
         self.kwargs = kwargs
         self.target = target
         self.args_for_run = args_for_run
-        self.owns_afr = self.args_for_run is sb.NotSpecified
+        self.owns_sender = self.args_for_run is sb.NotSpecified
 
     async def __aenter__(self):
-        if self.owns_afr:
+        if self.owns_sender:
             self.args_for_run = await self.target.args_for_run()
 
         if self.kwargs is not None:
@@ -25,7 +25,7 @@ class AFRWrapper:
         return self.args_for_run
 
     async def __aexit__(self, exc_type, exc, tb):
-        if self.owns_afr:
+        if self.owns_sender:
             await self.target.close_args_for_run(self.args_for_run)
 
 
@@ -35,7 +35,7 @@ class ScriptRunner:
 
     The ``script`` is an object with a ``run_with`` method on it.
 
-    This helper will create the ``afr`` if none is passed in and clean it up if
+    This helper will create the ``sender`` if none is passed in and clean it up if
     we created it.
     """
 
@@ -62,6 +62,6 @@ class ScriptRunner:
         if self.script is None:
             return
 
-        async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
-            async for thing in self.script.run_with(reference, afr, **kwargs):
+        async with SenderWrapper(self.target, args_for_run, kwargs) as sender:
+            async for thing in self.script.run_with(reference, sender, **kwargs):
                 yield thing

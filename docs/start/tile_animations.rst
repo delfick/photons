@@ -323,11 +323,11 @@ assuming you already have a lan target object:
     # Cancel this final_future when you want to stop the animation
     final_future = asyncio.Future()
 
-    async with target.session() as afr:
+    async with target.session() as sender:
         options = {"text": "hello there"}
         reference = "d073d5000001"
         global_options = GlobalOptions.create()
-        await Animations.tile_marquee.animate(target, afr, final_future, reference, options
+        await Animations.tile_marquee.animate(target, sender, final_future, reference, options
             , global_options = global_options
             )
 
@@ -358,11 +358,11 @@ You can also pause if it if you pass in an asyncio.Condition and acquire it:
        pauser.release()
     hp.async_as_background(pause_for_a_while())
 
-    async with target.session() as afr:
+    async with target.session() as sender:
         options = {"text": "hello there"}
         reference = "d073d5000001"
         global_options = GlobalOptions.create()
-        await Animations.tile_marquee.animate(target, afr, final_future, reference, options
+        await Animations.tile_marquee.animate(target, sender, final_future, reference, options
             , pauser = pauser
             , global_options = global_options
             )

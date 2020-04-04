@@ -33,7 +33,7 @@ describe "Sending messages":
         return V()
 
     describe "send api":
-        async it "works with the afr as sender api", V:
+        async it "works with the sender as sender api", V:
             async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
 
@@ -55,7 +55,7 @@ describe "Sending messages":
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "afr as sender also works as a synchronous api", V:
+        async it "sender also works as a synchronous api", V:
             async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
 
@@ -78,25 +78,27 @@ describe "Sending messages":
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
     describe "run_with api":
-        async it "works with the run_with api with afr", V:
-            async with V.target.session() as afr:
+        async it "works with the run_with api with sender", V:
+            async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 script = V.target.script(original)
 
                 got = defaultdict(list)
-                async for pkt in script.run_with(V.device.serial, afr):
+                async for pkt in script.run_with(V.device.serial, sender):
                     assert pkt.Information.remote_addr == ("127.0.0.1", V.device_port)
                     assert pkt.Information.sender_message is original
                     got[pkt.serial].append(pkt.payload.as_dict())
 
                 assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-            async with V.target.session() as afr:
+            async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 script = V.target.script(original)
 
                 got = defaultdict(list)
-                async for pkt, remote_addr, sender_message in script.run_with(V.device.serial, afr):
+                async for pkt, remote_addr, sender_message in script.run_with(
+                    V.device.serial, sender
+                ):
                     assert pkt.Information.remote_addr == remote_addr
                     assert pkt.Information.sender_message is sender_message
                     assert sender_message is original
@@ -104,7 +106,7 @@ describe "Sending messages":
 
                 assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with run_with api without afr", V:
+        async it "works with run_with api without sender", V:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
 
@@ -123,26 +125,26 @@ describe "Sending messages":
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with the run_with_all api with afr", V:
-            async with V.target.session() as afr:
+        async it "works with the run_with_all api with sender", V:
+            async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 script = V.target.script(original)
 
                 got = defaultdict(list)
-                for pkt in await script.run_with_all(V.device.serial, afr):
+                for pkt in await script.run_with_all(V.device.serial, sender):
                     assert pkt.Information.remote_addr == ("127.0.0.1", V.device_port)
                     assert pkt.Information.sender_message is original
                     got[pkt.serial].append(pkt.payload.as_dict())
 
                 assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-            async with V.target.session() as afr:
+            async with V.target.session() as sender:
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 script = V.target.script(original)
 
                 got = defaultdict(list)
                 for pkt, remote_addr, sender_message in await script.run_with_all(
-                    V.device.serial, afr
+                    V.device.serial, sender
                 ):
                     assert pkt.Information.remote_addr == remote_addr
                     assert pkt.Information.sender_message is sender_message
@@ -151,7 +153,7 @@ describe "Sending messages":
 
                 assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with run_with_all api without afr", V:
+        async it "works with run_with_all api without sender", V:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
 

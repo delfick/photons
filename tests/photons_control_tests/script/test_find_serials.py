@@ -29,29 +29,32 @@ async def reset_runner(runner):
 describe "Repeater":
 
     async it "can find all serials", runner:
-        async with runner.target.session() as afr:
+        async with runner.target.session() as sender:
             for ref in ("", "_", None, sb.NotSpecified, FoundSerials()):
-                assert await find_serials(ref, afr, timeout=1) == (runner.serials, [])
+                assert await find_serials(ref, sender, timeout=1) == (runner.serials, [])
 
     async it "can find a specific serial", runner:
-        async with runner.target.session() as afr:
-            assert await find_serials(light1.serial, afr, timeout=1) == ([light1.serial], [])
+        async with runner.target.session() as sender:
+            assert await find_serials(light1.serial, sender, timeout=1) == ([light1.serial], [])
 
-        async with runner.target.session() as afr:
+        async with runner.target.session() as sender:
             with light1.offline():
-                assert await find_serials(light1.serial, afr, timeout=0.5) == ([], [light1.serial])
+                assert await find_serials(light1.serial, sender, timeout=0.5) == (
+                    [],
+                    [light1.serial],
+                )
 
     async it "can find a number of serials", runner:
         for ref in (f"{light1.serial},{light2.serial}", [light1.serial, light2.serial]):
-            async with runner.target.session() as afr:
-                assert await find_serials(ref, afr, timeout=1) == (
+            async with runner.target.session() as sender:
+                assert await find_serials(ref, sender, timeout=1) == (
                     [light1.serial, light2.serial],
                     [],
                 )
 
             with light1.offline():
-                async with runner.target.session() as afr:
-                    assert await find_serials(ref, afr, timeout=0.5) == (
+                async with runner.target.session() as sender:
+                    assert await find_serials(ref, sender, timeout=0.5) == (
                         [light2.serial],
                         [light1.serial],
                     )

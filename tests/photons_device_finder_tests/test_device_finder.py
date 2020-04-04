@@ -82,11 +82,11 @@ describe "DeviceFinder":
 
         describe "args_for_run":
             async it "proxies to loops", finder, loops:
-                afr = mock.Mock(name="afr")
-                args_for_run = pytest.helpers.AsyncMock(name="finish", return_value=afr)
+                sender = mock.Mock(name="sender")
+                args_for_run = pytest.helpers.AsyncMock(name="finish", return_value=sender)
                 loops.args_for_run = args_for_run
 
-                assert await finder.args_for_run() is afr
+                assert await finder.args_for_run() is sender
                 args_for_run.assert_called_once_with()
 
         describe "find":
@@ -110,8 +110,8 @@ describe "DeviceFinder":
                     name="find", return_value=(found, serials)
                 )
 
-                afr = mock.Mock(name="afr")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
+                sender = mock.Mock(name="sender")
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
@@ -121,7 +121,7 @@ describe "DeviceFinder":
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs)
-                reference.find.assert_called_once_with(afr, timeout=5)
+                reference.find.assert_called_once_with(sender, timeout=5)
 
         describe "info_for":
             async it "gets info from the store given found from our special reference", loops, finder:
@@ -138,8 +138,8 @@ describe "DeviceFinder":
                     name="find", return_value=(found, serials)
                 )
 
-                afr = mock.Mock(name="afr")
-                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=afr)
+                sender = mock.Mock(name="sender")
+                args_for_run = pytest.helpers.AsyncMock(name="args_for_run", return_value=sender)
 
                 _find = mock.Mock(name="_find", return_value=reference)
 
@@ -149,7 +149,7 @@ describe "DeviceFinder":
 
                 args_for_run.assert_called_once_with()
                 _find.assert_called_once_with(kwargs, for_info=True)
-                reference.find.assert_called_once_with(afr, timeout=5)
+                reference.find.assert_called_once_with(sender, timeout=5)
                 store.info_for.assert_called_once_with(["d1", "d2"])
 
         describe "private _find":
@@ -221,7 +221,7 @@ describe "DeviceFinder":
             async it "does a refresh_from_filter if force_refresh", loops, finder, found, serials:
                 finder.daemon = True
 
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 filtr = mock.Mock(name="filtr", force_refresh=True)
                 loops.refresh_from_filter = pytest.helpers.AsyncMock(
                     name="refresh_from_filter", return_value=found
@@ -230,7 +230,7 @@ describe "DeviceFinder":
                 reference = finder._reference(filtr)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await reference.find(afr, timeout=1)
+                f, s = await reference.find(sender, timeout=1)
                 assert f == found
                 assert sorted(s) == sorted(serials)
                 loops.refresh_from_filter.assert_called_once_with(
@@ -240,7 +240,7 @@ describe "DeviceFinder":
             async it "does a refresh_from_filter if not a daemon", loops, finder, found, serials:
                 assert not finder.daemon
 
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
                 loops.refresh_from_filter = pytest.helpers.AsyncMock(
                     name="refresh_from_filter", return_value=found
@@ -249,7 +249,7 @@ describe "DeviceFinder":
                 reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await reference.find(afr, timeout=2)
+                f, s = await reference.find(sender, timeout=2)
                 assert f == found
                 assert sorted(s) == sorted(serials)
                 loops.refresh_from_filter.assert_called_once_with(
@@ -259,7 +259,7 @@ describe "DeviceFinder":
             async it "does just a found_from_filter if a daemon and not force_refresh", loops, finder, found, serials:
                 finder.daemon = True
 
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 store = mock.Mock(name="store")
@@ -271,7 +271,7 @@ describe "DeviceFinder":
                 reference = finder._reference(filtr, for_info=True)
                 assert isinstance(reference, SpecialReference)
 
-                f, s = await reference.find(afr, timeout=3)
+                f, s = await reference.find(sender, timeout=3)
                 assert f == found
                 assert sorted(s) == sorted(serials)
 
@@ -283,7 +283,7 @@ describe "DeviceFinder":
             async it "raises FondNoDevices if there are no devices to be found", loops, finder:
                 finder.daemon = True
 
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 store = mock.Mock(name="store")
@@ -296,7 +296,7 @@ describe "DeviceFinder":
                 assert isinstance(reference, SpecialReference)
 
                 with assertRaises(FoundNoDevices):
-                    await reference.find(afr, timeout=3)
+                    await reference.find(sender, timeout=3)
 
                 assert len(loops.refresh_from_filter.mock_calls) == 0
                 store.found_from_filter.assert_called_once_with(
@@ -304,7 +304,7 @@ describe "DeviceFinder":
                 )
 
             async it "raises FoundNoDevices if we go via refresh_from_filter", loops, finder:
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 filtr = mock.Mock(name="filtr", force_refresh=False)
 
                 loops.refresh_from_filter = pytest.helpers.AsyncMock(
@@ -315,7 +315,7 @@ describe "DeviceFinder":
                 assert isinstance(reference, SpecialReference)
 
                 with assertRaises(FoundNoDevices):
-                    await reference.find(afr, timeout=4)
+                    await reference.find(sender, timeout=4)
 
                 loops.refresh_from_filter.assert_called_once_with(
                     filtr, for_info=True, find_timeout=4

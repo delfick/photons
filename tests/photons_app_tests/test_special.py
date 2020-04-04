@@ -39,7 +39,7 @@ describe "SpecialReference":
         @pytest.fixture()
         def V(self):
             class V:
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 broadcast = mock.Mock(name="broadcast")
                 find_timeout = mock.Mock(name="find_timeout")
 
@@ -48,26 +48,26 @@ describe "SpecialReference":
         async it "transfers cancellation from find_serials", V:
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, *, timeout, broadcast=True):
+                async def find_serials(s, sender, *, timeout, broadcast=True):
                     f = asyncio.Future()
                     f.cancel()
                     return await f
 
             ref = Finder()
             with assertRaises(asyncio.CancelledError):
-                await ref.find(V.afr, timeout=V.find_timeout)
+                await ref.find(V.sender, timeout=V.find_timeout)
 
         async it "transfers exceptions from find_serials", V:
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, *, timeout, broadcast=True):
+                async def find_serials(s, sender, *, timeout, broadcast=True):
                     f = asyncio.Future()
                     f.set_exception(PhotonsAppError("FIND SERIALS BAD"))
                     return await f
 
             ref = Finder()
             with assertRaises(PhotonsAppError, "FIND SERIALS BAD"):
-                await ref.find(V.afr, timeout=V.find_timeout)
+                await ref.find(V.sender, timeout=V.find_timeout)
 
         async it "transfers result from find_serials", V:
             serial1 = "d073d5000001"
@@ -80,11 +80,11 @@ describe "SpecialReference":
             services2 = mock.Mock(name="services2")
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, *, timeout, broadcast=True):
+                async def find_serials(s, sender, *, timeout, broadcast=True):
                     return {target1: services1, target2: services2}
 
             ref = Finder()
-            found, serials = await ref.find(V.afr, timeout=V.find_timeout)
+            found, serials = await ref.find(V.sender, timeout=V.find_timeout)
             assert found == {target1: services1, target2: services2}
             assert serials == [serial1, serial2]
 
@@ -96,19 +96,19 @@ describe "SpecialReference":
             called = []
 
             class Finder(SpecialReference):
-                async def find_serials(s, afr, *, timeout, broadcast=True):
+                async def find_serials(s, sender, *, timeout, broadcast=True):
                     await asyncio.sleep(0.2)
                     called.append(1)
                     return {target: services}
 
             ref = Finder()
             futs = []
-            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
-            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.sender, timeout=V.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.sender, timeout=V.find_timeout)))
             await asyncio.sleep(0.05)
-            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.sender, timeout=V.find_timeout)))
             await asyncio.sleep(0.2)
-            futs.append(hp.async_as_background(ref.find(V.afr, timeout=V.find_timeout)))
+            futs.append(hp.async_as_background(ref.find(V.sender, timeout=V.find_timeout)))
 
             for t in futs:
                 found, serials = await t
@@ -118,27 +118,27 @@ describe "SpecialReference":
             assert called == [1]
 
             ref.reset()
-            found, serials = await ref.find(V.afr, timeout=V.find_timeout)
+            found, serials = await ref.find(V.sender, timeout=V.find_timeout)
             assert found == {target: services}
             assert serials == [serial]
             assert called == [1, 1]
 
 describe "FoundSerials":
-    async it "calls afr.find_devices with broadcast":
+    async it "calls sender.find_devices with broadcast":
         found = mock.Mock(name="found")
         address = mock.Mock(name="address")
 
-        afr = mock.Mock(name="afr")
-        afr.find_devices = pytest.helpers.AsyncMock(name="find_devices", return_value=found)
+        sender = mock.Mock(name="sender")
+        sender.find_devices = pytest.helpers.AsyncMock(name="find_devices", return_value=found)
 
         broadcast = mock.Mock(name="broadcast")
         find_timeout = mock.Mock(name="find_timeout")
 
         ref = FoundSerials()
-        res = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+        res = await ref.find_serials(sender, broadcast=broadcast, timeout=find_timeout)
 
         assert res == found
-        afr.find_devices.assert_called_once_with(
+        sender.find_devices.assert_called_once_with(
             broadcast=broadcast, raise_on_none=True, timeout=find_timeout
         )
 
@@ -186,17 +186,17 @@ describe "HardCodedSerials":
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
-            afr = mock.Mock(name="afr")
-            afr.found = {}
-            afr.find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
-            afr.find_specific_serials.return_value = (found, missing)
+            sender = mock.Mock(name="sender")
+            sender.found = {}
+            sender.find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials")
+            sender.find_specific_serials.return_value = (found, missing)
 
             ref = HardCodedSerials(serials)
-            f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+            f = await ref.find_serials(sender, broadcast=broadcast, timeout=find_timeout)
 
             assert f == expected
 
-            afr.find_specific_serials.assert_called_once_with(
+            sender.find_specific_serials.assert_called_once_with(
                 serials, broadcast=broadcast, raise_on_none=False, timeout=find_timeout
             )
 
@@ -216,18 +216,18 @@ describe "HardCodedSerials":
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "doesn't call to find_specific_serials if the serials are already on the afr", V:
+        async it "doesn't call to find_specific_serials if the serials are already on the sender", V:
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
-            afr = mock.Mock(name="afr")
-            afr.found = {V.target1: V.info1, V.target2: V.info2}
-            afr.find_specific_serials = pytest.helpers.AsyncMock(
+            sender = mock.Mock(name="sender")
+            sender.found = {V.target1: V.info1, V.target2: V.info2}
+            sender.find_specific_serials = pytest.helpers.AsyncMock(
                 name="find_specific_serials", side_effect=AssertionError("Shouldn't be called")
             )
 
             ref = HardCodedSerials([V.serial1])
-            f = await ref.find_serials(afr, broadcast=broadcast, timeout=find_timeout)
+            f = await ref.find_serials(sender, broadcast=broadcast, timeout=find_timeout)
 
             assert f == {V.target1: V.info1}
             assert ref.missing(f) == []
@@ -283,12 +283,12 @@ describe "ResolveReferencesFromFile":
         r.reset()
         resolver.reset.assert_called_once_with()
 
-        afr = mock.Mock(name="afr")
+        sender = mock.Mock(name="sender")
         broadcast = mock.Mock(name="broadcast")
         find_timeout = mock.Mock(name="find_timeout")
         assert len(resolver.find.mock_calls) == 0
 
         res = mock.Mock(name="res")
         resolver.find.return_value = res
-        assert (await r.find(afr, timeout=find_timeout)) is res
-        resolver.find.assert_called_once_with(afr, broadcast=True, timeout=find_timeout)
+        assert (await r.find(sender, timeout=find_timeout)) is res
+        resolver.find.assert_called_once_with(sender, broadcast=True, timeout=find_timeout)

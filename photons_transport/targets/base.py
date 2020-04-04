@@ -77,12 +77,12 @@ class Target(dictobj.Spec):
 
         class Session:
             async def __aenter__(s):
-                afr = info["afr"] = await self.args_for_run()
-                return afr
+                session = info["session"] = await self.args_for_run()
+                return session
 
             async def __aexit__(s, exc_type, exc, tb):
-                if "afr" in info:
-                    await self.close_args_for_run(info["afr"])
+                if "session" in info:
+                    await self.close_args_for_run(info["session"])
 
         return Session()
 

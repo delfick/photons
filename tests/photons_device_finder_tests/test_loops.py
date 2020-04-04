@@ -43,13 +43,13 @@ describe "DeviceFinderLoops":
         @pytest.fixture()
         def V(self):
             class V:
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
 
                 @hp.memoized_property
                 def target(s):
                     target = mock.Mock(name="target")
                     target.args_for_run = pytest.helpers.AsyncMock(
-                        name="args_for_run", return_value=s.afr
+                        name="args_for_run", return_value=s.sender
                     )
                     target.close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
                     return target
@@ -62,7 +62,7 @@ describe "DeviceFinderLoops":
 
         describe "args_for_run":
             async it "gets args_for_run from the target", V:
-                assert (await V.loops.args_for_run()) is V.afr
+                assert (await V.loops.args_for_run()) is V.sender
                 V.target.args_for_run.assert_called_once_with()
 
             async it "only does it once", V:
@@ -71,7 +71,7 @@ describe "DeviceFinderLoops":
                 async def args_for_run():
                     called.append(1)
                     await asyncio.sleep(0.3)
-                    return V.afr
+                    return V.sender
 
                 V.target.args_for_run.side_effect = args_for_run
 
@@ -79,14 +79,14 @@ describe "DeviceFinderLoops":
                 fut2 = hp.async_as_background(V.loops.args_for_run())
                 fut3 = hp.async_as_background(V.loops.args_for_run())
 
-                assert (await fut1) is V.afr
-                assert (await fut2) is V.afr
-                assert (await fut3) is V.afr
+                assert (await fut1) is V.sender
+                assert (await fut2) is V.sender
+                assert (await fut3) is V.sender
 
                 assert called == [1]
 
         describe "start":
-            async it "makes sure we have an afr and starts the loops", V:
+            async it "makes sure we have an sender and starts the loops", V:
                 called = []
                 quickstart = mock.Mock(name="quickstart")
 
@@ -146,20 +146,20 @@ describe "DeviceFinderLoops":
                 assert service_search.cancelled()
                 store.finish.assert_called_once_with()
 
-            async it "cancels the afr_fut if it isn't done yet", V:
-                afr_fut = asyncio.Future()
-                V.loops.afr_fut = afr_fut
+            async it "cancels the session_fut if it isn't done yet", V:
+                session_fut = asyncio.Future()
+                V.loops.session_fut = session_fut
                 await V.loops.finish()
-                assert afr_fut.cancelled()
+                assert session_fut.cancelled()
 
-            async it "closes the afr if afr_fut is done", V:
-                afr_fut = asyncio.Future()
-                afr_fut.set_result(V.afr)
-                V.loops.afr_fut = afr_fut
+            async it "closes the sender if session_fut is done", V:
+                session_fut = asyncio.Future()
+                session_fut.set_result(V.sender)
+                V.loops.session_fut = session_fut
 
                 await V.loops.finish()
 
-                V.target.close_args_for_run.assert_called_once_with(V.afr)
+                V.target.close_args_for_run.assert_called_once_with(V.sender)
 
         describe "ensure_interpreting":
             async it "sets interpreting to a task of the interpret_loop", V:
@@ -333,7 +333,7 @@ describe "DeviceFinderLoops":
                 with mock.patch.object(V.loops.store, "update_found", update_found):
                     await V.loops._update_found(reference, find_timeout)
 
-                reference.find.assert_called_once_with(V.afr, timeout=find_timeout)
+                reference.find.assert_called_once_with(V.sender, timeout=find_timeout)
                 update_found.assert_called_once_with(found)
 
         describe "raw_search_loop":
@@ -359,7 +359,7 @@ describe "DeviceFinderLoops":
                     else:
                         return res
 
-                V.afr.find_devices = pytest.helpers.AsyncMock(
+                V.sender.find_devices = pytest.helpers.AsyncMock(
                     name="find_devices", side_effect=find_devices
                 )
 
@@ -367,7 +367,7 @@ describe "DeviceFinderLoops":
                 with mock.patch.object(V.loops.store, "update_found", update_found):
                     await V.loops.raw_search_loop()
 
-                assert len(V.afr.find_devices.mock_calls) == 5
+                assert len(V.sender.find_devices.mock_calls) == 5
                 assert update_found.mock_calls == [
                     mock.call(found1, query_new_devices=False),
                     mock.call(found2, query_new_devices=True),
@@ -378,8 +378,8 @@ describe "DeviceFinderLoops":
             async it "uses a Repeater", V:
                 called = []
 
-                V.afr.find_devices = pytest.helpers.AsyncMock(name="find_devices")
-                V.afr.find_devices.return_value = {
+                V.sender.find_devices = pytest.helpers.AsyncMock(name="find_devices")
+                V.sender.find_devices.return_value = {
                     binascii.unhexlify("d073d5000001"): (set(), None)
                 }
 
@@ -387,7 +387,7 @@ describe "DeviceFinderLoops":
                     assert isinstance(ref, FoundSerials)
                     assert isinstance(msg, FromGenerator)
 
-                    gen = msg.generator(ref, V.afr)
+                    gen = msg.generator(ref, V.sender)
                     pipeline = await gen.asend(None)
                     expected = [e.value.msg.as_dict() for e in InfoPoints]
                     got = [m.as_dict() for m in pipeline.pipeline_children]

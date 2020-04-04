@@ -30,7 +30,7 @@ class Item(object):
         if type(self.parts) is not list:
             self.parts = [self.parts]
 
-    async def run_with(self, reference, afr, **kwargs):
+    async def run_with(self, reference, sender, **kwargs):
         """
         Entry point to this item, the idea is you create a `script` with the
         target and call `run_with` on the script, which ends up calling this
@@ -109,12 +109,12 @@ class Item(object):
             find_timeout = kwargs.get("find_timeout", 20)
 
             found, serials, missing = await self._find(
-                kwargs.get("found"), reference, afr, broadcast, find_timeout
+                kwargs.get("found"), reference, sender, broadcast, find_timeout
             )
 
             # Work out what and where to send
             # All the packets from here have targets on them
-            packets = self.make_packets(afr, serials)
+            packets = self.make_packets(sender, serials)
 
             # Short cut if nothing to actually send
             if not packets:
@@ -125,7 +125,7 @@ class Item(object):
                 accept_found = kwargs.get("accept_found") or broadcast
 
                 found, missing = await self.search(
-                    afr, found, accept_found, packets, broadcast, find_timeout, kwargs
+                    sender, found, accept_found, packets, broadcast, find_timeout, kwargs
                 )
 
             # Complain if we care about having all wanted devices
@@ -133,10 +133,10 @@ class Item(object):
                 raise DevicesNotFound(missing=missing)
 
             # Write the messages and get results
-            async for thing in self.write_messages(afr, packets, kwargs):
+            async for thing in self.write_messages(sender, packets, kwargs):
                 yield thing
 
-    async def _find(self, found, reference, afr, broadcast, timeout):
+    async def _find(self, found, reference, sender, broadcast, timeout):
         """
         Turn our reference into serials and a found object and list of missing serials
 
@@ -147,7 +147,7 @@ class Item(object):
         missing = None
 
         if isinstance(reference, SpecialReference):
-            found, serials = await reference.find(afr, broadcast=broadcast, timeout=timeout)
+            found, serials = await reference.find(sender, broadcast=broadcast, timeout=timeout)
             missing = reference.missing(found)
             serials.extend(missing)
 
@@ -155,7 +155,7 @@ class Item(object):
             serials = [serials]
 
         if found is None:
-            found = afr.found
+            found = sender.found
 
         return found, serials, missing
 
@@ -168,7 +168,7 @@ class Item(object):
         """
         return [(p, p) if p.is_dynamic else (p, p.simplify()) for p in self.parts]
 
-    def make_packets(self, afr, serials):
+    def make_packets(self, sender, serials):
         """
         Create and fill in the packets from our parts
 
@@ -187,21 +187,21 @@ class Item(object):
                     clone.update(
                         dict(
                             target=serial,
-                            source=choose_source(clone, afr.source),
-                            sequence=afr.seq(serial),
+                            source=choose_source(clone, sender.source),
+                            sequence=sender.seq(serial),
                         )
                     )
                     packets.append((original, clone))
             else:
                 clone = p.clone()
                 clone.update(
-                    dict(source=choose_source(clone, afr.source), sequence=afr.seq(p.serial))
+                    dict(source=choose_source(clone, sender.source), sequence=sender.seq(p.serial))
                 )
                 packets.append((original, clone))
 
         return packets
 
-    async def search(self, afr, found, accept_found, packets, broadcast, find_timeout, kwargs):
+    async def search(self, sender, found, accept_found, packets, broadcast, find_timeout, kwargs):
         """Search for the devices we want to send to"""
         serials = list(set([p.serial for _, p in packets if p.target is not None]))
 
@@ -213,9 +213,9 @@ class Item(object):
         kw["timeout"] = find_timeout
         kw["broadcast"] = broadcast
         kw["raise_on_none"] = False
-        return await afr.find_specific_serials(serials, **kw)
+        return await sender.find_specific_serials(serials, **kw)
 
-    async def write_messages(self, afr, packets, kwargs):
+    async def write_messages(self, sender, packets, kwargs):
         """Send all our packets and collect all the results"""
         fs = []
         queue = asyncio.Queue()
@@ -233,7 +233,7 @@ class Item(object):
                 hp.async_as_background(queue.put(Done))
 
         for original, packet in packets:
-            coro = self.do_send(afr, original, packet, queue, kwargs)
+            coro = self.do_send(sender, original, packet, queue, kwargs)
             f = hp.async_as_background(coro, silent=True)
             f.add_done_callback(partial(on_done, packet))
             fs.append(f)
@@ -250,8 +250,8 @@ class Item(object):
             for f in fs:
                 f.cancel()
 
-    async def do_send(self, afr, original, packet, queue, kwargs):
-        res = await afr.send_single(
+    async def do_send(self, sender, original, packet, queue, kwargs):
+        res = await sender.send_single(
             original,
             packet,
             timeout=kwargs.get("message_timeout", 10),

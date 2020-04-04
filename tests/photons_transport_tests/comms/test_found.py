@@ -195,17 +195,17 @@ describe "Found":
         otherfound = Found()
         otherfound["d073d5000002"] = {"OTH": t5}
 
-        afr = mock.Mock(name="afr")
-        otherfound.borrow(found, afr)
+        sender = mock.Mock(name="sender")
+        otherfound.borrow(found, sender)
 
         assert otherfound.serials == ["d073d5000001", "d073d5000002"]
         assert otherfound["d073d5000001"] == {"UDP": t1clone, "THI": t2clone}
 
         assert otherfound["d073d5000002"] == {"MEM": t3clone, "OTH": t5}
 
-        t1.clone_for.assert_called_once_with(afr)
-        t2.clone_for.assert_called_once_with(afr)
-        t3.clone_for.assert_called_once_with(afr)
+        t1.clone_for.assert_called_once_with(sender)
+        t2.clone_for.assert_called_once_with(sender)
+        t3.clone_for.assert_called_once_with(sender)
 
 describe "Found.remove_lost":
 

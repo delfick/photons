@@ -55,10 +55,10 @@ class Animator:
         self.animationkls = animationkls
 
     async def animate(
-        self, target, afr, final_future, reference, options, global_options=None, **kwargs
+        self, target, sender, final_future, reference, options, global_options=None, **kwargs
     ):
         options = self.optionskls.FieldSpec().normalise(Meta.empty(), options)
-        return await self.animationkls(target, afr, options, global_options).animate(
+        return await self.animationkls(target, sender, options, global_options).animate(
             reference, final_future, **kwargs
         )
 
@@ -72,8 +72,10 @@ class Animator:
             global_options = collector.configuration["animation_options"]
 
             with collector.photons_app.using_graceful_future() as final_future:
-                async with target.session() as afr:
-                    await self.animate(target, afr, final_future, reference, extra, global_options)
+                async with target.session() as sender:
+                    await self.animate(
+                        target, sender, final_future, reference, extra, global_options
+                    )
 
         action.__name__ = self.name
         action.__doc__ = self.__doc__

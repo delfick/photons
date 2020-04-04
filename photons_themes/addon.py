@@ -108,12 +108,12 @@ class ApplyTheme:
         for color in options.colors:
             theme.add_hsbk(color.hue, color.saturation, color.brightness, color.kelvin)
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             g = gatherer
             if g is None:
-                g = Gatherer(afr.transport_target)
+                g = Gatherer(sender.transport_target)
 
-            instance = kls(g, reference, afr, kwargs, aps, theme, options)
+            instance = kls(g, reference, sender, kwargs, aps, theme, options)
 
             # Turn on the device
             yield LightMessages.SetLightPower(level=65535, duration=options.duration)
@@ -126,17 +126,17 @@ class ApplyTheme:
         # Use gen per device to apply the theme
         return FromGeneratorPerSerial(gen)
 
-    def __init__(self, gatherer, serial, afr, kwargs, aps, theme, options):
-        self.afr = afr
+    def __init__(self, gatherer, serial, sender, kwargs, aps, theme, options):
         self.aps = aps
         self.theme = theme
+        self.sender = sender
         self.kwargs = kwargs
         self.serial = serial
         self.options = options
         self.gatherer = gatherer
 
     async def gather(self, plans):
-        async for info in self.gatherer.gather(plans, self.serial, self.afr, **self.kwargs):
+        async for info in self.gatherer.gather(plans, self.serial, self.sender, **self.kwargs):
             yield info
 
     async def apply(self, cap):

@@ -111,9 +111,9 @@ describe "Item":
                 part3 = mock.Mock(name="part3", serial=serial)
                 part3.clone.return_value = c5
 
-                afr = mock.Mock(name="afr")
+                sender = mock.Mock(name="sender")
                 source = mock.Mock(name="source")
-                afr.source = source
+                sender.source = source
 
                 seqs = {s1: 0, s2: 0, serial: 0}
 
@@ -121,7 +121,7 @@ describe "Item":
                     seqs[t] += 1
                     return seqs[t]
 
-                afr.seq.side_effect = seq_maker
+                sender.seq.side_effect = seq_maker
 
                 item = Item([part1, part2, part3])
                 simplify_parts = mock.Mock(
@@ -130,7 +130,7 @@ describe "Item":
                 )
 
                 with mock.patch.object(item, "simplify_parts", simplify_parts):
-                    packets = item.make_packets(afr, serials)
+                    packets = item.make_packets(sender, serials)
 
                 assert packets == [
                     (original1, c1),
@@ -173,10 +173,10 @@ describe "Item":
                         return binascii.unhexlify(s.serial2)[:6]
 
                     @hp.memoized_property
-                    def afr(s):
-                        afr = mock.Mock(name="afr")
-                        afr.find_specific_serials = s.find_specific_serials
-                        return afr
+                    def sender(s):
+                        sender = mock.Mock(name="sender")
+                        sender.find_specific_serials = s.find_specific_serials
+                        return sender
 
                     @hp.memoized_property
                     def packets(s):
@@ -210,7 +210,7 @@ describe "Item":
 
                     async def search(s, found, accept_found, find_timeout=1):
                         return await item.search(
-                            s.afr,
+                            s.sender,
                             found,
                             accept_found,
                             s.packets,
@@ -333,7 +333,7 @@ describe "Item":
 
                     results = [mock.Mock(name=f"res{i}") for i in range(10)]
 
-                    afr = mock.Mock(name="afr", spec=["send_single"])
+                    sender = mock.Mock(name="sender", spec=["send_single"])
 
                     error_catcher = []
 
@@ -387,16 +387,16 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send_single.side_effect = send_single
+                V.sender.send_single.side_effect = send_single
 
                 res = []
-                async for r in item.write_messages(V.afr, V.packets, V.kwargs):
+                async for r in item.write_messages(V.sender, V.packets, V.kwargs):
                     res.append(r)
                 assert V.error_catcher == []
 
                 assert res == [V.results[i] for i in (1, 2, 7, 5, 6, 3, 4)]
 
-                assert V.afr.send_single.mock_calls == [
+                assert V.sender.send_single.mock_calls == [
                     mock.call(
                         V.o1,
                         V.p1,
@@ -450,7 +450,7 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send_single.side_effect = send_single
+                V.sender.send_single.side_effect = send_single
 
                 mt = mock.Mock(name="message_timeout")
                 limit = mock.Mock(name="limit")
@@ -468,13 +468,13 @@ describe "Item":
                 }
 
                 res = []
-                async for r in item.write_messages(V.afr, V.packets, kwargs):
+                async for r in item.write_messages(V.sender, V.packets, kwargs):
                     res.append(r)
                 assert V.error_catcher == []
 
                 assert res == [V.results[i] for i in (1, 2, 3, 4, 5, 6)]
 
-                assert V.afr.send_single.mock_calls == [
+                assert V.sender.send_single.mock_calls == [
                     mock.call(
                         V.o1,
                         V.p1,
@@ -528,7 +528,7 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send_single.side_effect = send_single
+                V.sender.send_single.side_effect = send_single
 
                 class IS:
                     def __init__(s, want):
@@ -538,7 +538,7 @@ describe "Item":
                         return isinstance(other, type(s.want)) and repr(s.want) == repr(other)
 
                 res = []
-                async for r in item.write_messages(V.afr, V.packets, V.kwargs):
+                async for r in item.write_messages(V.sender, V.packets, V.kwargs):
                     res.append(r)
                 assert V.error_catcher == [
                     TimedOut("Message was cancelled", serial=V.p1.serial),
@@ -557,24 +557,24 @@ describe "Item":
                     timeout = mock.Mock(name="timeout")
 
                     @hp.memoized_property
-                    def afr(s):
-                        return mock.Mock(name="afr", found=s.found, spec=["found"])
+                    def sender(s):
+                        return mock.Mock(name="sender", found=s.found, spec=["found"])
 
                 return V()
 
             async it "returns serials as a list", item, V:
-                f, s, m = await item._find(None, "d073d5000000", V.afr, V.broadcast, V.timeout)
+                f, s, m = await item._find(None, "d073d5000000", V.sender, V.broadcast, V.timeout)
                 assert f is V.found
                 assert s == ["d073d5000000"]
                 assert m is None
 
-                f, s, m = await item._find(None, ["d073d5000000"], V.afr, V.broadcast, V.timeout)
+                f, s, m = await item._find(None, ["d073d5000000"], V.sender, V.broadcast, V.timeout)
                 assert f is V.found
                 assert s == ["d073d5000000"]
                 assert m is None
 
                 f, s, m = await item._find(
-                    None, ["d073d5000000", "d073d5000001"], V.afr, V.broadcast, V.timeout
+                    None, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout
                 )
                 assert f is V.found
                 assert s == ["d073d5000000", "d073d5000001"]
@@ -583,7 +583,7 @@ describe "Item":
             async it "returns the provided found if one was given", item, V:
                 found = mock.Mock(name="found")
                 f, s, m = await item._find(
-                    found, ["d073d5000000", "d073d5000001"], V.afr, V.broadcast, V.timeout
+                    found, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout
                 )
                 assert f is found
                 assert s == ["d073d5000000", "d073d5000001"]
@@ -603,13 +603,13 @@ describe "Item":
                         called.append(("missing", f))
                         return []
 
-                f, s, m = await item._find(None, Ref(), V.afr, V.broadcast, V.timeout)
+                f, s, m = await item._find(None, Ref(), V.sender, V.broadcast, V.timeout)
                 assert f is found
                 assert s == ss
                 assert m == []
 
                 assert called == [
-                    ("find", (V.afr,), {"broadcast": V.broadcast, "timeout": V.timeout},),
+                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout},),
                     ("missing", found),
                 ]
 
@@ -627,13 +627,13 @@ describe "Item":
                         called.append(("missing", f))
                         return ["d073d5000001"]
 
-                f, s, m = await item._find(None, Ref(), V.afr, V.broadcast, V.timeout)
+                f, s, m = await item._find(None, Ref(), V.sender, V.broadcast, V.timeout)
                 assert f is found
                 assert s == ["d073d5000000", "d073d5000001"]
                 assert m == ["d073d5000001"]
 
                 assert called == [
-                    ("find", (V.afr,), {"broadcast": V.broadcast, "timeout": V.timeout},),
+                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout},),
                     ("missing", found),
                 ]
 
@@ -646,15 +646,15 @@ describe "Item":
                     found = Found()
 
                     @hp.memoized_property
-                    def afr(s):
-                        afr = mock.Mock(
-                            name="afr",
+                    def sender(s):
+                        sender = mock.Mock(
+                            name="sender",
                             source=s.source,
                             found=s.found,
                             spec=["source", "seq", "found"],
                         )
-                        afr.seq.return_value = 1
-                        return afr
+                        sender.seq.return_value = 1
+                        return sender
 
                 return V()
 
@@ -696,18 +696,18 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(reference, V.afr, a=a):
+                    async for r in item.run_with(reference, V.sender, a=a):
                         res.append(r)
 
                 assert res == [res1, res2]
 
-                _find.assert_called_once_with(None, reference, V.afr, False, 20)
-                make_packets.assert_called_once_with(V.afr, serials)
+                _find.assert_called_once_with(None, reference, V.sender, False, 20)
+                make_packets.assert_called_once_with(V.sender, serials)
                 search.assert_called_once_with(
-                    V.afr, found, False, packets, False, 20, {"a": a, "error_catcher": mock.ANY}
+                    V.sender, found, False, packets, False, 20, {"a": a, "error_catcher": mock.ANY}
                 )
                 write_messages.assert_called_once_with(
-                    V.afr, packets, {"a": a, "error_catcher": mock.ANY}
+                    V.sender, packets, {"a": a, "error_catcher": mock.ANY}
                 )
 
             async it "shortcuts if no packets to send", item, V:
@@ -735,13 +735,13 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(reference, V.afr, a=a):
+                    async for r in item.run_with(reference, V.sender, a=a):
                         res.append(r)
 
                 assert res == []
 
-                _find.assert_called_once_with(None, reference, V.afr, False, 20)
-                make_packets.assert_called_once_with(V.afr, serials)
+                _find.assert_called_once_with(None, reference, V.sender, False, 20)
+                make_packets.assert_called_once_with(V.sender, serials)
                 assert len(search.mock_calls) == 0
                 assert len(write_messages.mock_calls) == 0
 
@@ -756,7 +756,7 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(None, V.afr, broadcast=True):
+                    async for r in item.run_with(None, V.sender, broadcast=True):
                         res.append(r)
 
                 assert res == []
@@ -769,7 +769,7 @@ describe "Item":
 
                 assert len(search.mock_calls) == 0
                 write_messages.assert_called_once_with(
-                    V.afr, packets, {"broadcast": True, "error_catcher": mock.ANY}
+                    V.sender, packets, {"broadcast": True, "error_catcher": mock.ANY}
                 )
 
             async it "complains if we haven't found all our serials", item, V:
@@ -784,19 +784,19 @@ describe "Item":
                         return ["d073d5000001"]
 
                 with assertRaises(DevicesNotFound, missing=["d073d5000001"]):
-                    async for _ in item.run_with(Ref(), V.afr, require_all_devices=True):
+                    async for _ in item.run_with(Ref(), V.sender, require_all_devices=True):
                         pass
 
                 es = []
                 async for _ in item.run_with(
-                    Ref(), V.afr, require_all_devices=True, error_catcher=es
+                    Ref(), V.sender, require_all_devices=True, error_catcher=es
                 ):
                     pass
                 assert es == [DevicesNotFound(missing=["d073d5000001"])]
 
                 es = mock.Mock(name="es")
                 async for _ in item.run_with(
-                    Ref(), V.afr, require_all_devices=True, error_catcher=es
+                    Ref(), V.sender, require_all_devices=True, error_catcher=es
                 ):
                     pass
                 es.assert_called_once_with(DevicesNotFound(missing=["d073d5000001"]))
@@ -806,7 +806,7 @@ describe "Item":
                 res2 = mock.Mock(name="res2")
                 error = PhotonsAppError("wat")
 
-                async def write_messages(afr, packets, kwargs):
+                async def write_messages(sender, packets, kwargs):
                     yield res1
                     hp.add_error(kwargs["error_catcher"], error)
                     yield res2
@@ -818,7 +818,7 @@ describe "Item":
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []
                     with assertRaises(PhotonsAppError, "wat"):
-                        async for r in item.run_with(None, V.afr, broadcast=True):
+                        async for r in item.run_with(None, V.sender, broadcast=True):
                             res.append(r)
 
                 assert res == [res1, res2]
@@ -826,7 +826,7 @@ describe "Item":
                 res = []
                 es = []
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.afr, broadcast=True, error_catcher=es):
+                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es == [error]
@@ -835,7 +835,7 @@ describe "Item":
                 res = []
                 es = mock.Mock(name="es")
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.afr, broadcast=True, error_catcher=es):
+                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 es.assert_called_once_with(error)
@@ -847,7 +847,7 @@ describe "Item":
                 error1 = PhotonsAppError("wat")
                 error2 = PhotonsAppError("nup")
 
-                async def write_messages(afr, packets, kwargs):
+                async def write_messages(sender, packets, kwargs):
                     yield res1
                     hp.add_error(kwargs["error_catcher"], error1)
                     yield res2
@@ -860,7 +860,7 @@ describe "Item":
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []
                     with assertRaises(RunErrors, _errors=[error1, error2]):
-                        async for r in item.run_with(None, V.afr, broadcast=True):
+                        async for r in item.run_with(None, V.sender, broadcast=True):
                             res.append(r)
 
                 assert res == [res1, res2]
@@ -868,7 +868,7 @@ describe "Item":
                 res = []
                 es = []
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.afr, broadcast=True, error_catcher=es):
+                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es == [error1, error2]
@@ -877,7 +877,7 @@ describe "Item":
                 res = []
                 es = mock.Mock(name="es")
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.afr, broadcast=True, error_catcher=es):
+                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es.mock_calls == [mock.call(error1), mock.call(error2)]

@@ -227,13 +227,12 @@ class MemoryDevicesRunner:
         for device in self.devices:
             await device.start()
 
-        self.afr = await self.target.args_for_run()
-        self.sender = self.afr
+        self.sender = await self.target.args_for_run()
         return self
 
     async def __aexit__(self, typ, exc, tb):
-        if hasattr(self, "afr"):
-            await self.target.close_args_for_run(self.afr)
+        if hasattr(self, "sender"):
+            await self.target.close_args_for_run(self.sender)
 
         for device in self.target.devices:
             await device.finish()

@@ -36,7 +36,7 @@ async def doit(collector):
     def apply_scene(scene):
         transformer = Transformer()
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             for state in scene.values():
                 if "power" in state:
                     yield transformer.power_message(state)
@@ -52,7 +52,7 @@ async def doit(collector):
         max_duration = max([options.get("duration", 1) for options in scene.values()])
         scripts.append((max_duration, apply_scene(scene)))
 
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         while True:
             for max_duration, script in scripts:
                 start = time.time()

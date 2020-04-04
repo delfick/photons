@@ -439,12 +439,12 @@ class Gatherer:
                     break
                 yield nxt
 
-        from photons_transport.targets.script import AFRWrapper
+        from photons_transport.targets.script import SenderWrapper
 
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
-            async with AFRWrapper(self.target, args_for_run, kwargs) as sender:
+            async with SenderWrapper(self.target, args_for_run, kwargs) as sender:
                 serials, missing = await find_serials(
                     reference, sender, timeout=kwargs.get("find_timeout", 20)
                 )
