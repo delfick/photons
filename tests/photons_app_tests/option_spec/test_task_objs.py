@@ -4,6 +4,7 @@ from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
 from photons_app.errors import BadTask, BadTarget, BadOption
 from photons_app.registers import ReferenceResolerRegister
 from photons_app.option_spec.task_objs import Task
+from photons_app.collector import Collector
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
@@ -19,9 +20,7 @@ def V():
         tasks = mock.Mock(name="tasks")
         target = mock.Mock(name="target")
         task_func = mock.Mock(name="task_func")
-        collector = mock.Mock(name="collector", configuration={})
         reference = mock.Mock(name="reference")
-        target_register = mock.Mock(name="target_register")
         available_actions = mock.Mock(name="available_actions")
 
         action = mock.Mock(name="action")
@@ -29,6 +28,16 @@ def V():
         @hp.memoized_property
         def task(s):
             return Task(action=s.action)
+
+        @hp.memoized_property
+        def collector(s):
+            collector = Collector()
+            collector.prepare(None, {})
+            return collector
+
+        @hp.memoized_property
+        def target_register(self):
+            return collector.configuration["target_register"]
 
     return V()
 
@@ -327,7 +336,7 @@ describe "Task":
                 reference = "my_resolver:blah:and,stuff"
                 reference_setter(reference)
                 resolved = V.task.resolve_reference(V.collector, task_func, V.target)
-                assert type(resolved) == HardCodedSerials
+                assert type(resolved) == HardCodedSerials, resolved
                 assert resolved.targets == wanted
                 resolver.assert_called_once_with("blah:and,stuff", V.target)
 
@@ -337,7 +346,13 @@ describe "Task":
         def V(self, V):
             class V(V.__class__):
                 def __init__(s):
-                    s.collector.configuration = {"target_register": s.target_register}
+                    s.target_register = mock.Mock(name="target_register")
+                    s.collector.configuration["target_register"] = s.target_register
+                    s.collector.configuration.converters._converters = [
+                        conv
+                        for conv in s.collector.configuration.converters
+                        if conv.convert_path != ("target_register",)
+                    ]
 
             return V()
 

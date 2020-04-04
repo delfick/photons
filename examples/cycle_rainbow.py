@@ -1,4 +1,3 @@
-from photons_app.special import HardCodedSerials, FoundSerials
 from photons_app.executor import library_setup
 
 from photons_control.script import Pipeline, Repeater
@@ -21,10 +20,7 @@ async def doit(collector):
     parser.add_argument("--brightness", type=float, default=1)
     args = parser.parse_args()
 
-    if args.reference == "_":
-        reference = FoundSerials()
-    else:
-        reference = HardCodedSerials(args.reference.split(","))
+    reference = collector.reference_object(lan_target, args.reference)
 
     async with lan_target.session() as afr:
         power_on = DeviceMessages.SetPower(level=65535)

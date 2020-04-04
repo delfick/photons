@@ -3,8 +3,13 @@ Collection objects for various information.
 
 These allow addons to be able to register more functionality.
 """
+from photons_app.special import (
+    ResolveReferencesFromFile,
+    SpecialReference,
+    HardCodedSerials,
+    FoundSerials,
+)
 from photons_app.errors import TargetNotFound, ResolverNotFound
-from photons_app.special import ResolveReferencesFromFile
 
 from delfick_project.norms import sb, dictobj, Meta
 
@@ -253,3 +258,25 @@ class ReferenceResolerRegister(object):
         if typ not in self.resolvers:
             raise ResolverNotFound(wanted=typ, available=list(self.resolvers))
         return self.resolvers[typ](options, target)
+
+    def reference_object(self, target, reference=sb.NotSpecified):
+        """
+        * NotSpecified, "", None or _ are seen as all serials on the network
+        * ``typ:options`` is given resolved using our resolvers
+        * otherwise we return a HardCodedSerials with the provided reference
+        """
+        if isinstance(reference, SpecialReference):
+            return reference
+
+        if reference in ("", "_", None, sb.NotSpecified):
+            return FoundSerials()
+
+        if type(reference) is str:
+            if ":" in reference:
+                typ, options = reference.split(":", 1)
+                reference = self.resolve(typ, options, target)
+
+        if isinstance(reference, SpecialReference):
+            return reference
+
+        return HardCodedSerials(reference)

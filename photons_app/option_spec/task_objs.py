@@ -4,8 +4,8 @@ We have here the object representing a task.
 Tasks contain a reference to the functionality it provides (in ``photons_app.actions``)
 """
 
-from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
 from photons_app.errors import BadOption, BadTarget, BadTask
+from photons_app.special import SpecialReference
 
 from delfick_project.norms import sb, dictobj
 
@@ -117,12 +117,9 @@ class Task(dictobj):
         """
         If the task func needs a reference and none is specified then complain
 
-        if we have special_reference turned on then:
-        * Empty or _ is seen as all serials on the network
-        * ``typ:options`` is given to the reference_resolver_register
-        * otherwise we return a HardCodedSerials with the provided reference
+        If the task wants a special_reference then we return one of those
 
-        Otherwise we just return whatever reference is
+        Otherwise we return reference as is.
         """
         empty = lambda r: r in ("", None, sb.NotSpecified)
 
@@ -133,18 +130,7 @@ class Task(dictobj):
             )
 
         if task_func.special_reference:
-            if empty(reference) or reference == "_":
-                reference = FoundSerials()
-
-            if type(reference) is str:
-                if ":" in reference:
-                    typ, options = reference.split(":", 1)
-                    reference = collector.configuration["reference_resolver_register"].resolve(
-                        typ, options, target
-                    )
-
-            if not isinstance(reference, SpecialReference):
-                return HardCodedSerials(reference)
+            return collector.reference_object(target, reference)
 
         return reference
 

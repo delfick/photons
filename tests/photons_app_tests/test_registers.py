@@ -7,6 +7,7 @@ from photons_app.registers import (
     MessagesRegister,
     ReferenceResolerRegister,
 )
+from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import TargetNotFound, ResolverNotFound
 
@@ -14,8 +15,9 @@ from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import dictobj, sb, Meta
 from unittest import mock
-import pytest
+import binascii
 import pickle
+import pytest
 
 
 @pytest.fixture()
@@ -354,3 +356,59 @@ describe "ReferenceResolerRegister":
             register.add(typ, resolver)
             assert register.resolve(typ, "blah", target) is ret
             resolver.assert_called_once_with("blah", target)
+
+    describe "getting a reference object":
+
+        @pytest.fixture
+        def target(self):
+            return mock.Mock(name="target")
+
+        it "returns SpecialReference objects as is", target, register:
+
+            class Reference(SpecialReference):
+                pass
+
+            ref = Reference()
+            assert register.reference_object(target, ref) is ref
+
+        it "returns a FoundSerials instruction if no reference is specified", target, register:
+            for r in ("", None, sb.NotSpecified):
+                references = register.reference_object(target, r)
+                assert isinstance(references, FoundSerials), references
+
+            assert isinstance(register.reference_object(target), FoundSerials)
+
+        it "returns a FoundSerials for an underscore", target, register:
+            references = register.reference_object(target, "_")
+            assert isinstance(references, FoundSerials), references
+
+        it "returns the resolved reference if of type typ:options", target, register:
+            ret = HardCodedSerials(["d073d5000001", "d073d5000002"])
+            resolver = mock.Mock(name="resolver", return_value=ret)
+            register.add("my_resolver", resolver)
+
+            reference = "my_resolver:blah:and,stuff"
+            resolved = register.reference_object(target, reference)
+            assert resolved is ret
+
+        it "returns a SpecialReference if our resolver returns not a special reference", target, register:
+            ret = "d073d5000001,d073d5000002"
+            wanted = [binascii.unhexlify(ref) for ref in ret.split(",")]
+
+            for reference in (ret, ret.split(",")):
+                resolver = mock.Mock(name="resolver", return_value=reference)
+
+                register.add("my_resolver", resolver)
+
+                reference = "my_resolver:blah:and,stuff"
+                resolved = register.reference_object(target, reference)
+                assert type(resolved) == HardCodedSerials, resolved
+                assert resolved.targets == wanted
+
+        it "returns hard coded serials otherwise", target, register:
+            serials = ["d073d5000001", "d073d5000002"]
+            targets = [binascii.unhexlify(s) for s in serials]
+            for ref in (serials, ",".join(serials)):
+                reference = register.reference_object(target, ref)
+                assert isinstance(reference, HardCodedSerials)
+                assert reference.targets == targets
