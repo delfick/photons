@@ -282,9 +282,9 @@ class Communication:
     async def broadcast(self, packet, broadcast, **kwargs):
         kwargs["transport"] = await self.make_broadcast_transport(broadcast)
         kwargs["is_broadcast"] = True
-        return await self.send(packet, **kwargs)
+        return await self.send_single(packet, **kwargs)
 
-    async def send(
+    async def send_single(
         self,
         original,
         packet,

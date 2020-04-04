@@ -333,8 +333,7 @@ describe "Item":
 
                     results = [mock.Mock(name=f"res{i}") for i in range(10)]
 
-                    afr = mock.Mock(name="afr", spec=["send"])
-                    send = pytest.helpers.AsyncMock(name="send")
+                    afr = mock.Mock(name="afr", spec=["send_single"])
 
                     error_catcher = []
 
@@ -373,7 +372,7 @@ describe "Item":
 
             async it "sends the packets and gets the replies", item, V:
 
-                async def send(original, packet, **kwargs):
+                async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
                         await asyncio.sleep(0.01)
@@ -388,7 +387,7 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send.side_effect = send
+                V.afr.send_single.side_effect = send_single
 
                 res = []
                 async for r in item.write_messages(V.afr, V.packets, V.kwargs):
@@ -397,7 +396,7 @@ describe "Item":
 
                 assert res == [V.results[i] for i in (1, 2, 7, 5, 6, 3, 4)]
 
-                assert V.afr.send.mock_calls == [
+                assert V.afr.send_single.mock_calls == [
                     mock.call(
                         V.o1,
                         V.p1,
@@ -438,7 +437,7 @@ describe "Item":
 
             async it "gets arguments for send from kwargs", item, V:
 
-                async def send(original, packet, **kwargs):
+                async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
                         return [V.results[1], V.results[2]]
@@ -451,7 +450,7 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send.side_effect = send
+                V.afr.send_single.side_effect = send_single
 
                 mt = mock.Mock(name="message_timeout")
                 limit = mock.Mock(name="limit")
@@ -475,7 +474,7 @@ describe "Item":
 
                 assert res == [V.results[i] for i in (1, 2, 3, 4, 5, 6)]
 
-                assert V.afr.send.mock_calls == [
+                assert V.afr.send_single.mock_calls == [
                     mock.call(
                         V.o1,
                         V.p1,
@@ -516,7 +515,7 @@ describe "Item":
 
             async it "records errors", item, V:
 
-                async def send(original, packet, **kwargs):
+                async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
                         return [V.results[0]]
@@ -529,7 +528,7 @@ describe "Item":
                     else:
                         assert False, f"Unknown packet {original}"
 
-                V.afr.send.side_effect = send
+                V.afr.send_single.side_effect = send_single
 
                 class IS:
                     def __init__(s, want):

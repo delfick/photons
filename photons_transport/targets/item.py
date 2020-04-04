@@ -251,7 +251,7 @@ class Item(object):
                 f.cancel()
 
     async def do_send(self, afr, original, packet, queue, kwargs):
-        res = await afr.send(
+        res = await afr.send_single(
             original,
             packet,
             timeout=kwargs.get("message_timeout", 10),

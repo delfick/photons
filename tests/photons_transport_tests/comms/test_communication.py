@@ -663,19 +663,21 @@ describe "Communication":
 
             transport = mock.Mock(name="transport")
 
-            send = pytest.helpers.AsyncMock(name="send", return_value=res)
+            send_single = pytest.helpers.AsyncMock(name="send_single", return_value=res)
             make_broadcast_transport = pytest.helpers.AsyncMock(
                 name="make_broadcast_transport", return_value=transport
             )
 
-            mod = {"send": send, "make_broadcast_transport": make_broadcast_transport}
+            mod = {"send_single": send_single, "make_broadcast_transport": make_broadcast_transport}
             with mock.patch.multiple(V.communication, **mod):
                 assert await V.communication.broadcast(packet, broadcast, a=a) is res
 
             make_broadcast_transport.assert_awaited_once_with(broadcast)
-            send.assert_awaited_once_with(packet, is_broadcast=True, transport=transport, a=a)
+            send_single.assert_awaited_once_with(
+                packet, is_broadcast=True, transport=transport, a=a
+            )
 
-    describe "send":
+    describe "send_single":
 
         async it "sends", V:
             transport_in = mock.Mock(name="transport_in")
@@ -746,7 +748,7 @@ describe "Communication":
                     "broadcast": broadcast,
                     "connect_timeout": connect_timeout,
                 }
-                assert await V.communication.send(original, packet, **kwargs) is res
+                assert await V.communication.send_single(original, packet, **kwargs) is res
 
                 _transport_for_send.assert_called_once_with(
                     transport_in, packet, original, broadcast, connect_timeout
@@ -777,7 +779,7 @@ describe "Communication":
                 get_response_info["ret"] = raise_error
                 assert not waiter.cancelled
                 with assertRaises(ValueError, "NOPE"):
-                    await V.communication.send(original, packet, **kwargs)
+                    await V.communication.send_single(original, packet, **kwargs)
                 assert waiter.cancelled
 
                 # Make sure waiter is cancelled if _get_response gets cancelled
@@ -791,7 +793,7 @@ describe "Communication":
                 get_response_info["ret"] = cancel
                 assert not waiter.cancelled
                 with assertRaises(asyncio.CancelledError):
-                    await V.communication.send(original, packet, **kwargs)
+                    await V.communication.send_single(original, packet, **kwargs)
                 assert waiter.cancelled
 
         async it "works without so much mocks", V:
@@ -850,7 +852,7 @@ describe "Communication":
             packet = original.clone()
             packet.update(source=1, sequence=1, target=serial)
 
-            res = await comms.send(original, packet, timeout=2)
+            res = await comms.send_single(original, packet, timeout=2)
             assert len(res) == 1
             pkt, addr, orig = res[0]
             assert pkt | DeviceMessages.EchoResponse
