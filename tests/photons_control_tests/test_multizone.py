@@ -11,7 +11,7 @@ from photons_control.planner import Skip, NoMessages
 from photons_control import test_helpers as chp
 
 from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
-from photons_colour import Parser
+from photons_control.colour import ColourParser
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
 from photons_products.registry import Capability
@@ -228,7 +228,7 @@ describe "SetZonesPlan":
                 assert v == pytest.approx(o[k])
 
         def hsbk(*args, **kwargs):
-            h, s, b, k = Parser.hsbk(*args, **kwargs)
+            h, s, b, k = ColourParser.hsbk(*args, **kwargs)
             return chp.Color(h, s, b, k)
 
         colorRed = hsbk("red", overrides={"brightness": 1.0, "kelvin": 3500})

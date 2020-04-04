@@ -8,7 +8,7 @@ from photons_control.planner import Skip
 from photons_app.errors import BadOption, PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_colour import Parser
+from photons_control.colour import ColourParser
 
 from delfick_project.norms import sb, Meta
 import sys
@@ -18,7 +18,7 @@ def make_color(specifier):
     """
     Return {"hue", "saturation", "brightness", "kelvin"} dictionary for this specifier.
 
-    If it's a string, use photons_colour.Parser.hsbk
+    If it's a string, use photons_control.colour.ColourParser.hsbk
 
     If it's a list, then take h, s, b, k from the list and default to 0, 0, 1, 3500
     The list can be 0 to 4 items long
@@ -27,7 +27,7 @@ def make_color(specifier):
     values default to 0, 0, 1, 3500
     """
     if isinstance(specifier, str):
-        h, s, b, k = Parser.hsbk(specifier)
+        h, s, b, k = ColourParser.hsbk(specifier)
         if b is None:
             b = 1
 

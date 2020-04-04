@@ -7,7 +7,7 @@ from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
 from photons_messages import LightMessages, DeviceMessages
-from photons_colour import Parser
+from photons_control.colour import ColourParser
 
 from delfick_project.norms import sb, Meta
 
@@ -58,7 +58,7 @@ class Transformer(object):
     to brightness 0 on the new color and on, and then the brightness will be
     changed to match the end result.
 
-    For the color options we use ``photons_colour.Parser`` to create the
+    For the color options we use ``photons_control.colour.ColourParser`` to create the
     ``SetWaveformOptional`` message that is needed to change the device. This
     means that we support an ``effect`` option for setting different waveforms.
 
@@ -112,7 +112,7 @@ class Transformer(object):
             return LightMessages.SetLightPower.empty_normalise(**s)
 
     def color_message(self, state, keep_brightness):
-        msg = Parser.color_to_msg(state.get("color", None), overrides=state)
+        msg = ColourParser.msg(state.get("color", None), overrides=state)
         msg.res_required = False
         if keep_brightness:
             msg.brightness = 0

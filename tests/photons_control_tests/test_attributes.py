@@ -2,7 +2,7 @@
 
 from photons_control.attributes import make_colors
 
-from photons_colour import Parser
+from photons_control.colour import ColourParser
 
 import pytest
 
@@ -32,7 +32,7 @@ describe "make_colors":
     it "can make colors", colors:
 
         def hsbk(*args, **kwargs):
-            h, s, b, k = Parser.hsbk(*args, **kwargs)
+            h, s, b, k = ColourParser.hsbk(*args, **kwargs)
             return {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
 
         colorRed = hsbk("red", overrides={"brightness": 1.0, "kelvin": 3500})

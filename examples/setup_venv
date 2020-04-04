@@ -18,6 +18,7 @@ def remove(name):
             os.remove(location)
 
 # Make sure old modules don't cause problems
+remove("photons_colour.pyc")
 remove("photons_attributes.pyc")
 remove("photons_device_messages.pyc")
 remove("photons_multizone.pyc")

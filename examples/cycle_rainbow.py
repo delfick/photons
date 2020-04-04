@@ -1,8 +1,8 @@
 from photons_app.executor import library_setup
 
 from photons_control.script import Pipeline, Repeater
+from photons_control.colour import ColourParser
 from photons_messages import DeviceMessages
-from photons_colour import Parser
 
 from delfick_project.logging import setup_logging
 import argparse
@@ -27,7 +27,7 @@ async def doit(collector):
     spread = 1
     color_names = ["blue", "red", "orange", "yellow", "cyan", "green", "blue", "purple", "pink"]
     color_msgs = [
-        Parser.color_to_msg(
+        ColourParser.msg(
             name,
             overrides={"res_required": False, "duration": spread, "brightness": args.brightness,},
         )

@@ -6,9 +6,9 @@ from photons_messages import LightMessages, TileMessages
 from photons_themes.appliers import types as appliers
 from photons_control.multizone import SetZonesPlan
 from photons_control.attributes import make_colors
+from photons_control.colour import ColourParser
 from photons_messages.fields import Color
 from photons_themes.theme import Theme
-from photons_colour import Parser
 
 from delfick_project.norms import sb, dictobj, Meta
 from delfick_project.addons import addon_hook
@@ -19,7 +19,6 @@ import logging
     extras=[
         ("lifx.photons", "products"),
         ("lifx.photons", "messages"),
-        ("lifx.photons", "colour"),
         ("lifx.photons", "control"),
     ]
 )
@@ -214,4 +213,4 @@ class ApplyTheme:
         s = "kelvin:{} hue:{} saturation:{} brightness:{}".format(
             color.kelvin, color.hue, color.saturation, color.brightness
         )
-        yield Parser.color_to_msg(s, overrides={"duration": self.options.duration})
+        yield ColourParser.msg(s, overrides={"duration": self.options.duration})

@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_colour import Effects, Waveform, NoSuchEffect
+from photons_control.colour import Effects, Waveform, NoSuchEffect
 
 from photons_messages import LightMessages
 

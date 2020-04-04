@@ -1,7 +1,7 @@
 from photons_app.executor import library_setup
 
 from photons_device_finder import DeviceFinder, Filter
-from photons_colour import Parser
+from photons_control.colour import ColourParser
 
 from delfick_project.logging import setup_logging
 from textwrap import dedent
@@ -39,7 +39,7 @@ async def process_command(lan_target, device_finder, command):
     elif command.startswith("set_"):
         color = command[4:]
         sender = await device_finder.make_sender()
-        await sender(Parser.color_to_msg(color), device_finder.find(filtr=filtr))
+        await sender(ColourParser.msg(color), device_finder.find(filtr=filtr))
         info = ""
     else:
         print(

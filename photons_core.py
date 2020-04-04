@@ -10,7 +10,6 @@ wanted = [
     "transport",
     "control",
     "messages",
-    "colour",
     "themes",
     "device_finder",
     "products",

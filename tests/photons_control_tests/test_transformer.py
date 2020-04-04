@@ -4,9 +4,9 @@ from photons_control import test_helpers as chp
 
 from photons_control.transform import Transformer, PowerToggle
 from photons_messages import DeviceMessages, LightMessages
+from photons_control.colour import ColourParser
 from photons_transport.fake import FakeDevice
 from photons_control.script import Pipeline
-from photons_colour import Parser
 
 from delfick_project.norms import dictobj
 import itertools
@@ -168,10 +168,10 @@ describe "Transformer":
         expected = {device: [msg] for device in runner.devices}
         await self.transform(runner, {"power": "on", "duration": 20}, expected=expected)
 
-    async it "just uses Parser.color_to_msg", runner:
+    async it "just uses ColourParser.msg", runner:
         for color in (random.choice(["red", "blue", "green", "yellow"]), None):
             for state in generate_options(color, exclude=["power"]):
-                want = Parser.color_to_msg(color, overrides=state)
+                want = ColourParser.msg(color, overrides=state)
                 want.res_required = False
 
                 await runner.reset_devices()
@@ -179,7 +179,7 @@ describe "Transformer":
                 await self.transform(runner, state, expected=expected)
 
     async it "can ignore brightness", runner:
-        want = Parser.color_to_msg("hue:200 saturation:1")
+        want = ColourParser.msg("hue:200 saturation:1")
         want.res_required = False
 
         expected = {device: [want] for device in runner.devices}
@@ -192,14 +192,14 @@ describe "Transformer":
 
     async it "sets color with duration", runner:
         state = {"color": "blue", "duration": 10}
-        want = Parser.color_to_msg("blue", overrides={"duration": 10})
+        want = ColourParser.msg("blue", overrides={"duration": 10})
         expected = {device: [want] for device in runner.devices}
         await self.transform(runner, state, expected=expected, keep_brightness=True)
 
     async it "sets power off even if light already off", runner:
         state = {"color": "blue", "power": "off", "duration": 10}
         power = LightMessages.SetLightPower(level=0, duration=10)
-        set_color = Parser.color_to_msg("blue", overrides={"duration": 10})
+        set_color = ColourParser.msg("blue", overrides={"duration": 10})
         expected = {device: [power, set_color] for device in runner.devices}
         await self.transform(runner, state, expected=expected)
 
@@ -224,14 +224,14 @@ describe "Transformer":
             expected = {
                 light1: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    ColourParser.msg("blue", overrides={"brightness": 0}),
                     DeviceMessages.SetPower(level=65535),
-                    Parser.color_to_msg(
+                    ColourParser.msg(
                         "blue", overrides={"brightness": light1.attrs.color.brightness}
                     ),
                 ],
-                light2: [LightMessages.GetColor(), Parser.color_to_msg("blue")],
-                light3: [LightMessages.GetColor(), Parser.color_to_msg("blue")],
+                light2: [LightMessages.GetColor(), ColourParser.msg("blue")],
+                light3: [LightMessages.GetColor(), ColourParser.msg("blue")],
             }
             await self.transform(runner, state, expected=expected)
 
@@ -240,17 +240,17 @@ describe "Transformer":
             expected = {
                 light1: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    ColourParser.msg("blue", overrides={"brightness": 0}),
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                    ColourParser.msg("blue", overrides={"brightness": 0.3, "duration": 10}),
                 ],
                 light2: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                    ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
                 light3: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                    ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
             }
             await self.transform(runner, state, expected=expected)
@@ -260,17 +260,17 @@ describe "Transformer":
             expected = {
                 light1: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    ColourParser.msg("blue", overrides={"brightness": 0}),
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                    ColourParser.msg("blue", overrides={"brightness": 0.3, "duration": 10}),
                 ],
                 light2: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                    ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
                 light3: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue brightness:0.3", overrides={"duration": 10}),
+                    ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
             }
             await self.transform(runner, state, expected=expected)
@@ -280,20 +280,20 @@ describe "Transformer":
             expected = {
                 light1: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    ColourParser.msg("blue", overrides={"brightness": 0}),
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    Parser.color_to_msg(
+                    ColourParser.msg(
                         "blue",
                         overrides={"brightness": light1.attrs.color.brightness, "duration": 10},
                     ),
                 ],
                 light2: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                    ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
                 light3: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                    ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
             }
             await self.transform(runner, state, expected=expected, keep_brightness=True)
@@ -303,27 +303,27 @@ describe "Transformer":
             expected = {
                 light1: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0}),
+                    ColourParser.msg("blue", overrides={"brightness": 0}),
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    Parser.color_to_msg(
+                    ColourParser.msg(
                         "blue",
                         overrides={"brightness": light1.attrs.color.brightness, "duration": 10},
                     ),
                 ],
                 light2: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                    ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
                 light3: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"duration": 10}),
+                    ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
             }
             await self.transform(runner, state, expected=expected, keep_brightness=True)
 
         async it "can retain previous color when powering on", runner:
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
-            light1_reset = Parser.color_to_msg("blue", overrides={"brightness": 0})
+            light1_reset = ColourParser.msg("blue", overrides={"brightness": 0})
             light1_reset.set_hue = 0
             light1_reset.set_saturation = 0
             light1_reset.set_kelvin = 0
@@ -332,15 +332,15 @@ describe "Transformer":
                     LightMessages.GetColor(),
                     light1_reset,
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    Parser.color_to_msg("blue ", overrides={"brightness": 0.3, "duration": 10},),
+                    ColourParser.msg("blue ", overrides={"brightness": 0.3, "duration": 10},),
                 ],
                 light2: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                    ColourParser.msg("blue", overrides={"brightness": 0.3, "duration": 10}),
                 ],
                 light3: [
                     LightMessages.GetColor(),
-                    Parser.color_to_msg("blue", overrides={"brightness": 0.3, "duration": 10}),
+                    ColourParser.msg("blue", overrides={"brightness": 0.3, "duration": 10}),
                 ],
             }
             await self.transform(runner, state, expected=expected, transition_color=True)
