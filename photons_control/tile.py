@@ -74,13 +74,12 @@ def SetTileEffect(
     .. code-block:: python
 
         msg = SetTileEffect("MORPH", palette=["red", "blue", "green"])
-        await target.script(msg).run_with_all(reference)
+        await target.send(msg, reference)
 
     By default the devices will be powered on. If you don't want this to happen
     then pass in power_on=False
 
-    If you want to target a particular device or devices, pass in reference as a
-    run_with reference.
+    If you want to target a particular device or devices, pass in reference.
     """
     typ = effect
     if type(effect) is str:
@@ -148,7 +147,7 @@ async def get_device_chain(collector, target, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
-    async for pkt in target.script(FromGenerator(gen)).run_with(reference):
+    async for pkt in target.send(FromGenerator(gen), reference):
         print(pkt.serial)
         for tile in tiles_from(pkt):
             print("    ", repr(tile))
@@ -175,7 +174,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
 
     msg = TileMessages.Get64.empty_normalise(**options)
 
-    async for pkt in target.script(msg).run_with(reference):
+    async for pkt in target.send(msg, reference):
         if pkt | response_kls:
             got[pkt.serial].append((pkt.tile_index, pkt))
 
@@ -219,7 +218,7 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
     if artifact in ("", None, sb.NotSpecified):
         raise PhotonsAppError("Please specify type of effect with --artifact")
 
-    await target.script(SetTileEffect(artifact, **options)).run_with_all(reference)
+    await target.send(SetTileEffect(artifact, **options), reference)
 
 
 class list_spec(sb.Spec):
@@ -295,7 +294,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
 
     options["res_required"] = False
     msg = TileMessages.Set64.empty_normalise(**options)
-    await target.script(msg).run_with_all(reference)
+    await target.send(msg, reference)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -327,7 +326,7 @@ async def set_tile_positions(collector, target, reference, **kwargs):
                         target=serial,
                     )
 
-    await target.script(FromGenerator(gen)).run_with_all(reference)
+    await target.send(FromGenerator(gen), reference)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -346,7 +345,7 @@ async def get_tile_positions(collector, target, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
-    async for pkt in target.script(FromGenerator(gen)).run_with(reference):
+    async for pkt in target.send(FromGenerator(gen), reference):
         print(pkt.serial)
         for tile in tiles_from(pkt):
             print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")

@@ -94,8 +94,8 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     def errors(e):
         log.error(e)
 
-    await target.script(ApplyTheme.script(options, gatherer=gatherer)).run_with_all(
-        reference, error_catcher=errors
+    await target.send(
+        ApplyTheme.script(options, gatherer=gatherer), reference, error_catcher=errors
     )
 
 

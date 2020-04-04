@@ -24,4 +24,4 @@ async def set_color(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Please specify a color as artifact")
 
     msg = Parser.color_to_msg(artifact, overrides)
-    await target.script(msg).run_with_all(reference)
+    await target.send(msg, reference)

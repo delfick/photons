@@ -20,12 +20,12 @@ def PowerToggle(duration=1, **kwargs):
 
     .. code-block:: python
 
-        await target.script(PowerToggle()).run_with_all(["d073d5000001", "d073d5000001"])
+        await target.send(PowerToggle(), ["d073d5000001", "d073d5000001"])
     """
 
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         get_power = DeviceMessages.GetPower()
-        async for pkt in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+        async for pkt in sender(get_power, reference, **kwargs):
             if pkt | DeviceMessages.StatePower:
                 if pkt.level == 0:
                     yield LightMessages.SetLightPower(
@@ -47,7 +47,7 @@ class Transformer(object):
     .. code-block:: python
 
         msg = Transformer.using({"power": "on", "color": "red"}, keep_brightness=False)
-        async for info in target.script(msg).run_with(references):
+        async for info in target.send(msg, references):
             ...
 
     If there are no color related attributes specified then we just generate a
@@ -163,12 +163,10 @@ class Transformer(object):
 
             return Pipeline(*pipeline, synchronized=True)
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             get_color = LightMessages.GetColor(ack_required=False, res_required=True)
 
-            async for pkt in afr.transport_target.script(get_color).run_with(
-                reference, afr, **kwargs
-            ):
+            async for pkt in sender(get_color, reference, **kwargs):
                 if pkt | LightMessages.LightState:
                     yield receiver(pkt.serial, pkt.payload)
 
@@ -210,7 +208,7 @@ async def transform(collector, target, reference, **kwargs):
             'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
         )
 
-    await target.script(msg).run_with_all(reference)
+    await target.send(msg, reference)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -225,4 +223,4 @@ async def power_toggle(collector, target, reference, **kwargs):
     """
     extra = collector.photons_app.extra_as_json
     msg = PowerToggle(**extra)
-    await target.script(msg).run_with_all(reference)
+    await target.send(msg, reference)

@@ -342,17 +342,17 @@ class Gatherer:
             # info will be the information associated with that plan
             # Information is sent to you as it is received.
 
-    If you already have an afr, you can provide it when gathering information:
+    If you already have a sender, you can provide it when gathering information:
 
     .. code-block:: python
 
-        async for serial, label, info in g.gather(plans, ["d073d5000001", "d073d5000002"], afr):
+        async for serial, label, info in g.gather(plans, ["d073d5000001", "d073d5000002"], sender):
             ...
 
-    If you don't supply an afr, one will be created and cleaned up for you.
+    If you don't supply a sender, one will be created and cleaned up for you.
 
     If you supply limit as a number to any gather method, then it will be
-    converted into a semaphore for you that is shared by all run_with calls.
+    converted into a semaphore for you that is shared by all sender calls.
 
     There are three methods on this for gathering information:
 
@@ -364,7 +364,7 @@ class Gatherer:
     * gather_per_serial - yield (serial, completed, info) for each device where
       completed and info is the same as for gather_all, but per device.
 
-    All these methods take in the same arguments as run_with, but with an extra
+    All these methods take in the same arguments as sender, but with an extra
     positional argument before reference which is a dictionary of labels to plan
     instances. You may use the make_plans function to create this dictionary of
     plans.
@@ -412,7 +412,7 @@ class Gatherer:
         if not plans:
             return
 
-        async def gathering(serials, afr, kwargs):
+        async def gathering(serials, sender, kwargs):
             class Done:
                 pass
 
@@ -420,7 +420,9 @@ class Gatherer:
             queue = asyncio.Queue()
 
             for serial in serials:
-                ts.append(hp.async_as_background(self._follow(plans, serial, afr, queue, **kwargs)))
+                ts.append(
+                    hp.async_as_background(self._follow(plans, serial, sender, queue, **kwargs))
+                )
 
             def on_finish(res):
                 hp.async_as_background(queue.put(Done))
@@ -442,15 +444,15 @@ class Gatherer:
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
-            async with AFRWrapper(self.target, args_for_run, kwargs) as afr:
+            async with AFRWrapper(self.target, args_for_run, kwargs) as sender:
                 serials, missing = await find_serials(
-                    reference, afr, timeout=kwargs.get("find_timeout", 20)
+                    reference, sender, timeout=kwargs.get("find_timeout", 20)
                 )
 
                 for serial in missing:
                     hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
 
-                async for item in gathering(serials, afr, kwargs):
+                async for item in gathering(serials, sender, kwargs):
                     yield item
 
     async def gather_all(self, plans, reference, args_for_run=sb.NotSpecified, **kwargs):
@@ -491,7 +493,7 @@ class Gatherer:
                 if serial not in done:
                     yield serial, False, info
 
-    async def _follow(self, plans, serial, afr, queue, **kwargs):
+    async def _follow(self, plans, serial, sender, queue, **kwargs):
         """
         * get dependency information
         * Determine messages to be sent to devices
@@ -500,7 +502,7 @@ class Gatherer:
         * Complete any plans that are finished after no more messages and yield
           completed results.
         """
-        depinfo = await self._deps(plans, serial, afr, **kwargs)
+        depinfo = await self._deps(plans, serial, sender, **kwargs)
         planner = self.session.planner(plans, depinfo, serial, kwargs["error_catcher"])
 
         msgs_to_send = list(planner.find_msgs_to_send())
@@ -513,14 +515,14 @@ class Gatherer:
             await queue.put(complete)
 
         if msgs_to_send:
-            async for pkt in self.target.script(msgs_to_send).run_with(None, afr, **kwargs):
+            async for pkt in sender(msgs_to_send, **kwargs):
                 async for complete in planner.add(pkt):
                     await queue.put(complete)
 
         async for complete in planner.ended():
             await queue.put(complete)
 
-    async def _deps(self, plans, serial, afr, **kwargs):
+    async def _deps(self, plans, serial, sender, **kwargs):
         """
         Determine if any of the plans have dependent plans and get that information
         and return {plan: {label: information}} so that it may be used by
@@ -540,7 +542,7 @@ class Gatherer:
                 depinfo[plan] = None
 
         if depplan:
-            g = await self.gather_all(depplan, serial, afr, **kwargs)
+            g = await self.gather_all(depplan, serial, sender, **kwargs)
             if serial in g:
                 completed, i = g[serial]
                 if completed:

@@ -53,22 +53,22 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
         reference1 = "d073d500000"
         reference2 = "d073d500001"
 
-        async with target.session() as afr:
-            async for result in target.script(Pipeline(msg1, msg2)).run_with([reference1, reference2], afr):
+        async with target.session() as sender:
+            async for result in sender(Pipeline(msg1, msg2), [reference1, reference2]):
                 ....
 
     Is equivalent to:
 
     .. code-block:: python
 
-        async with target.session() as afr:
-            async for result in target.script(msg1).run_with([reference1], afr):
+        async with target.session() as sender:
+            async for result in sender(msg1, [reference1]):
                 ...
-            async for result in target.script(msg2).run_with([reference1], afr):
+            async for result in sender(msg2, [reference1]):
                 ...
-            async for result in target.script(msg1).run_with([reference2], afr):
+            async for result in sender(msg1, [reference2]):
                 ...
-            async for result in target.script(msg2).run_with([reference2], afr):
+            async for result in sender(msg2, [reference2]):
                 ...
 
     This also takes in the following keyword arguments:
@@ -128,20 +128,20 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
         def error_catcher(e):
             print(e)
 
-        async with target.session() as afr:
+        async with target.session() as sender:
             pipeline = Pipeline(msg1, msg2, spread=1)
             repeater = Repeater(pipeline, min_loop_time=20)
-            async for result in target.script(repeater).run_with(reference, afr, error_catcher=error_catcher):
+            async for result in sender(repeater, reference, error_catcher=error_catcher):
                 ....
 
     Is equivalent to:
 
     .. code-block:: python
 
-        async with target.session() as afr:
+        async with target.session() as sender:
             while True:
                 start = time.time()
-                async for result in target.script(pipeline).run_with(reference, afr):
+                async for result in sender(pipeline, reference):
                     ...
                 await asyncio.sleep(20 - (time.time() - start))
 
@@ -208,7 +208,7 @@ Repeater.Stop = Stop
 def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     """
     Same as a FromGenerator except it will call your inner_gen per serial in
-    the reference given to run_with.
+    the reference given to the send api.
 
     This handles resolving the reference into serials and complaining if a serial
     does not exist
@@ -237,10 +237,10 @@ class FromGenerator(object):
 
     .. code-block:: python
 
-        async def gen(reference, afr, **kwargs):
+        async def gen(reference, sender, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            for pkt in afr.transport_target.script(get_power).run_with(reference, afr, **kwargs):
+            for pkt in sender(get_power, reference, **kwargs):
                 if pkt | DeviceMessages.StatePower:
                     if pkt.level == 0:
                         yield DeviceMessages.SetPower(level=65535, target=pkt.serial)
@@ -248,13 +248,13 @@ class FromGenerator(object):
                         yield DeviceMessages.SetPower(level=0, target=pkt.serial)
 
         msg = FromGenerator(gen)
-        await target.script(msg).run_with_all("d073d5000001")
+        await target.send(msg, "d073d5000001")
 
     Note that all messages you yield from the generator must already have target
     set on them.
 
-    The generator function receives the reference supplied to the run_with as well
-    as the afr object and any keyword arguments that were passed into run_with.
+    The generator function receives the reference supplied to the send api as well
+    as the sender object and any keyword arguments that were used.
 
     All messages that are yielded from the generator are sent in parallel
 

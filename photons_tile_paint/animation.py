@@ -29,13 +29,13 @@ coords_for_horizontal_line = user_coords_to_pixel_coords(
 )
 
 
-async def tile_serials_from_reference(target, reference, afr):
+async def tile_serials_from_reference(reference, sender):
     """
     Given a reference, return all the serials that has a ``has_matrix`` capability
     """
     serials = []
 
-    async for pkt in target.script(DeviceMessages.GetVersion()).run_with(reference, afr):
+    async for pkt in sender(DeviceMessages.GetVersion(), reference):
         if pkt | DeviceMessages.StateVersion:
             if Products[pkt.vendor, pkt.product].cap.has_matrix:
                 serials.append(pkt.serial)
@@ -119,8 +119,8 @@ class TileStateGetter:
                 canvas.set_all_points_for_tile(user_x, user_y, width, height, get_color)
             return canvas
 
-    def __init__(self, target, afr, serials, background_option, coords=None):
-        self.afr = afr
+    def __init__(self, target, sender, serials, background_option, coords=None):
+        self.sender = sender
         self.target = target
         self.coords = coords
         self.serials = serials
@@ -148,7 +148,7 @@ class TileStateGetter:
         gatherer = Gatherer(self.target)
 
         async for serial, name, info in gatherer.gather(
-            make_plans(*plans), self.serials, self.afr, error_catcher=e
+            make_plans(*plans), self.serials, self.sender, error_catcher=e
         ):
             if name == "colors":
                 self.info_by_serial[serial].colors = list(enumerate(info))
@@ -180,8 +180,8 @@ class AnimateTask:
     send messages as efficiently as possible
     """
 
-    def __init__(self, afr):
-        self.afr = afr
+    def __init__(self, sender):
+        self.sender = sender
         self.transports = {}
         self.last_spawn = None
 
@@ -198,7 +198,7 @@ class AnimateTask:
 
     async def get_transport(self, serial):
         if serial not in self.transports:
-            transport = self.afr.found[serial][Services.UDP]
+            transport = self.sender.found[serial][Services.UDP]
             self.transports[serial] = (transport, await transport.spawn(None, timeout=1))
         return self.transports[serial]
 
@@ -223,7 +223,7 @@ class FastNetworkAnimateTask(AnimateTask):
     async def make_messages(self, msgs):
         for msg in msgs:
             serial = msg.serial
-            msg.update(dict(source=self.afr.source, sequence=self.afr.seq(serial)))
+            msg.update(dict(source=self.sender.source, sequence=self.sender.seq(serial)))
             transport, t = await self.get_transport(serial)
             yield transport, t, msg
 
@@ -244,8 +244,8 @@ class NoisyNetworkAnimateTask(AnimateTask):
     frames.
     """
 
-    def __init__(self, afr, *, inflight_limit, wait_timeout):
-        super().__init__(afr)
+    def __init__(self, sender, *, inflight_limit, wait_timeout):
+        super().__init__(sender)
         self.tasks = []
         self.wait_timeout = wait_timeout
         self.inflight_limit = inflight_limit
@@ -269,13 +269,13 @@ class NoisyNetworkAnimateTask(AnimateTask):
         for msg in msgs:
             serial = msg.serial
             transport, t = await self.get_transport(serial)
-            msg.update(dict(source=self.afr.source, sequence=self.afr.seq(serial)))
+            msg.update(dict(source=self.sender.source, sequence=self.sender.seq(serial)))
 
             if serial not in group:
                 msg.ack_required = True
-                retry_options = self.afr.retry_options_for(msg, t)
+                retry_options = self.sender.retry_options_for(msg, t)
                 result = Result(msg, False, retry_options)
-                self.afr.receiver.register(msg, result, msg)
+                self.sender.receiver.register(msg, result, msg)
                 group[serial] = (time.time(), result)
 
             ms.insert(0, (transport, t, msg))
@@ -302,8 +302,8 @@ class Animation:
     message_timeout = 0.3
     random_orientations = False
 
-    def __init__(self, target, afr, options, global_options=None):
-        self.afr = afr
+    def __init__(self, target, sender, options, global_options=None):
+        self.sender = sender
         self.target = target
         self.options = options
 
@@ -342,17 +342,15 @@ class Animation:
             inflight_limit = self.global_options.inflight_limit
             log.info(hp.lc("Using noisy_network code", inflight_limit=inflight_limit))
             task = NoisyNetworkAnimateTask(
-                self.afr, wait_timeout=self.message_timeout, inflight_limit=inflight_limit
+                self.sender, wait_timeout=self.message_timeout, inflight_limit=inflight_limit
             )
         else:
-            task = FastNetworkAnimateTask(self.afr)
+            task = FastNetworkAnimateTask(self.sender)
 
         try:
             async for msgs in self.generate_messages(reference, final_future, pauser):
                 if self.retries:
-                    await self.target.script(msgs).run_with_all(
-                        None, self.afr, message_timeout=self.every, error_catcher=error
-                    )
+                    await self.sender(msgs, message_timeout=self.every, error_catcher=error)
                 else:
                     await task.add(msgs)
         finally:
@@ -362,9 +360,9 @@ class Animation:
         if pauser is None:
             pauser = asyncio.Condition()
 
-        serials = await tile_serials_from_reference(self.target, reference, self.afr)
+        serials = await tile_serials_from_reference(reference, self.sender)
         state = TileStateGetter(
-            self.target, self.afr, serials, self.options.background, coords=self.coords
+            self.target, self.sender, serials, self.options.background, coords=self.coords
         )
         await state.fill(random_orientations=self.random_orientations)
 
@@ -377,9 +375,7 @@ class Animation:
 
         log.info("Starting!")
 
-        await self.target.script(LightMessages.SetLightPower(level=65535, duration=1)).run_with_all(
-            serials, self.afr
-        )
+        await self.sender(LightMessages.SetLightPower(level=65535, duration=1), serials)
 
         combined_coords = []
         for info in by_serial.values():

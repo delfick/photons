@@ -80,14 +80,14 @@ class SetZonesPlan(Plan):
         gatherer = Gatherer(target)
         plans = {"set_zones": SetZonesPlan(colors)}
 
-        async with target.session() as afr:
+        async with target.session() as sender:
             async for serial, _, messages in g.gather(plans, reference, afr):
                 if messages is not Skip:
-                    await target.script(messages).run_with_all(serial, afr)
+                    await sender(messages, serial)
 
     Note that this example code will do one strip at a time, if you want to
     change all strips at the same time, just use the SetZones msg in a normal
-    run_with script.
+    sender.
     """
 
     dependant_info = {"c": CapabilityPlan()}
@@ -194,7 +194,7 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     .. code-block:: python
 
         msg = SetZones([["red", 10], ["blue", 10]], zone_index=1, duration=1)
-        await target.script(msg).run_with_all(reference)
+        await target.send(msg, reference)
 
     You may also pass in a Gatherer instance to SetZones if you already have
     one of those.
@@ -202,8 +202,7 @@ def SetZones(colors, gatherer=None, power_on=True, reference=None, **options):
     By default the devices will be powered on. If you don't want this to happen
     then pass in power_on=False
 
-    If you want to target a particular device or devices, pass in reference as a
-    run_with reference.
+    If you want to target a particular device or devices, pass in a reference.
     """
 
     async def gen(ref, afr, **kwargs):
@@ -255,13 +254,12 @@ def SetZonesEffect(
     .. code-block:: python
 
         msg = SetZonesEffect("MOVE", speed=1)
-        await target.script(msg).run_with_all(reference)
+        await target.send(msg, reference)
 
     By default the devices will be powered on. If you don't want this to happen
     then pass in power_on=False
 
-    If you want to target a particular device or devices, pass in reference as a
-    run_with reference.
+    If you want to target a particular device or devices, pass in reference.
     """
     typ = effect
     if type(effect) is str:
@@ -336,7 +334,7 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
             """Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`"""
         )
 
-    await target.script(SetZones(**options)).run_with_all(reference)
+    await target.send(SetZones(**options), reference)
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -364,4 +362,4 @@ async def multizone_effect(collector, target, reference, artifact, **kwargs):
     if artifact in ("", None, sb.NotSpecified):
         raise PhotonsAppError("Please specify type of effect with --artifact")
 
-    await target.script(SetZonesEffect(artifact, **options)).run_with_all(reference)
+    await target.send(SetZonesEffect(artifact, **options), reference)

@@ -50,18 +50,20 @@ The idea is that you can query the device_finder for information.
     #      }
     # }
 
-Or you can use it as a reference in a run_with/run_with_all call:
+Or you can use it as a reference in a sender call:
 
 .. code-block:: python
 
     device_finder = DeviceFinder(lan_target)
 
     reference = device_finder.find(group_name="one")
-    await lan_target.script(DeviceMessages.SetPower(level=0)).run_with_all(reference)
+    await lan_target.send(DeviceMessages.SetPower(level=0), reference)
 
     reference2 = device_finder.find(hue="0-20", product_identifier=["lifx_color_a19", "lifx_color_br30"])
-    for pkt in lan_target.script(DeviceMessages.GetPower()).run_with(reference2):
-        print(pkt)
+
+    async with lan_target.session() as sender:
+        for pkt in sender(DeviceMessages.GetPower(), reference2):
+            print(pkt)
 
 Note that if you want the device_finder to update it's idea of what devices are
 on the network and what properties those devices have, then you must await on
@@ -972,15 +974,14 @@ class DeviceFinderLoops(object):
 
         Also, put all response packets onto the self.queue.
         """
-        script = self.target.script(msg)
 
         def error_catcher(e):
             log.debug(hp.lc("Error getting information for a device", error=e))
 
-        afr = await self.args_for_run()
+        sender = await self.args_for_run()
         kwargs = {"error_catcher": error_catcher, "find_timeout": find_timeout}
 
-        async for pkt in script.run_with(reference, afr, **kwargs):
+        async for pkt in sender(msg, reference, **kwargs):
             if self.finished.is_set():
                 break
             await self.queue.put(pkt)
@@ -1026,8 +1027,8 @@ class DeviceFinderLoops(object):
 
     async def _update_found(self, special_reference, find_timeout):
         """Update our idea of found from the provided special reference"""
-        afr = await self.args_for_run()
-        found, _ = await special_reference.find(afr, timeout=find_timeout)
+        sender = await self.args_for_run()
+        found, _ = await special_reference.find(sender, timeout=find_timeout)
         self.store.update_found(found)
 
     async def raw_search_loop(self, quickstart=False):
@@ -1045,8 +1046,8 @@ class DeviceFinderLoops(object):
                 break
 
             try:
-                afr = await self.args_for_run()
-                found = await afr.find_devices(ignore_lost=True)
+                sender = await self.args_for_run()
+                found = await sender.find_devices(ignore_lost=True)
                 query_new_devices = quickstart or not first
                 self.store.update_found(found, query_new_devices=query_new_devices)
                 first = False
@@ -1170,7 +1171,7 @@ class DeviceFinder(object):
 
     def find(self, **kwargs):
         """
-        Return a SpecialReference object that may be used with run_with/run_with_all
+        Return a SpecialReference object that may be used with the send api
 
         It will tell the script to send messages to the devices it can find that
         match the filter we create from the passed in kwargs.
@@ -1183,8 +1184,8 @@ class DeviceFinder(object):
         the filter created from the passed in kwargs.
         """
         reference = self._find(kwargs)
-        afr = await self.args_for_run()
-        _, serials = await reference.find(afr, timeout=5)
+        sender = await self.args_for_run()
+        _, serials = await reference.find(sender, timeout=5)
         return serials
 
     async def info_for(self, **kwargs):
@@ -1193,8 +1194,8 @@ class DeviceFinder(object):
         that match the filter created from the passed in kwargs.
         """
         reference = self._find(kwargs, for_info=True)
-        afr = await self.args_for_run()
-        _, serials = await reference.find(afr, timeout=5)
+        sender = await self.args_for_run()
+        _, serials = await reference.find(sender, timeout=5)
         return self.loops.store.info_for(serials)
 
     def _find(self, kwargs, for_info=False):
@@ -1219,7 +1220,7 @@ class DeviceFinder(object):
         """Return a SpecialReference instance that uses the provided filtr"""
 
         class Reference(SpecialReference):
-            async def find_serials(s, afr, *, timeout, broadcast=True):
+            async def find_serials(s, sender, *, timeout, broadcast=True):
                 if filtr.force_refresh or not self.daemon:
                     found = await self.loops.refresh_from_filter(
                         filtr, for_info=for_info, find_timeout=timeout
@@ -1232,8 +1233,8 @@ class DeviceFinder(object):
                 if not found:
                     raise FoundNoDevices()
 
-                if hasattr(afr, "found") and hasattr(afr.found, "borrow"):
-                    afr.found.borrow(found, afr)
+                if hasattr(sender, "found") and hasattr(sender.found, "borrow"):
+                    sender.found.borrow(found, sender)
 
                 return found
 
@@ -1258,8 +1259,8 @@ class DeviceFinderWrap(SpecialReference):
         self.finder = DeviceFinder(target)
         self.reference = self.finder.find(filtr=filtr)
 
-    async def find(self, afr, *, timeout, broadcast=True):
-        return await self.reference.find(afr, timeout=timeout, broadcast=broadcast)
+    async def find(self, sender, *, timeout, broadcast=True):
+        return await self.reference.find(sender, timeout=timeout, broadcast=broadcast)
 
     def reset(self):
         self.reference.reset()
