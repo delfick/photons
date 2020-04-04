@@ -1,12 +1,15 @@
-Unlike the examples in the ``scripts`` folder, these files use the ``library_setup``
-helper to setup the photons framework.
+Examples
+========
 
-These examples assume you're executing them in an environment that already has
-``lifx-photons-core`` installed.
+To run these scripts first run ``./setup_venv``
 
-For example, run ``./setup_venv`` in this directory and then
-``source .lifx/bin/activate`` before running say ``python make_rainbow.py``
+Then just run the scripts.
 
-Note that if you're on windows ``./setup_venv`` won't work. In that environment
-you'll have to make your own virtualenv and ``pip install photons-core`` in it, 
-or ``pip install -e .`` from the ``photons-core`` directory.
+For example, to cycle a rainbow over your lights::
+
+    $ ./cycle_rainbow.py
+
+Unless you're on windows, in which case ``./setup_venv`` won't work. On windows
+make you're own virtualenv and ``pip install photons-core`` in it, or
+``pip install -e .`` from the ``photons-core`` directory and then run the scripts
+with ``python``. i.e. ``python find``.

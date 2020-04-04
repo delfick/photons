@@ -1,3 +1,5 @@
+#!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
+
 from photons_tile_paint.animation import Animation, Finish
 from photons_tile_paint.options import AnimationOptions
 from photons_themes.theme import ThemeColor as Color
