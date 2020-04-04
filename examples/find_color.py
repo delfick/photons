@@ -11,7 +11,7 @@ async def doit(collector):
     lan_target = collector.resolve_target("lan")
 
     msg = LightMessages.GetColor()
-    async for pkt, _, _ in lan_target.script(msg).run_with(FoundSerials()):
+    async for pkt in lan_target.send(msg, FoundSerials()):
         hsbk = " ".join(
             "{0}={1}".format(key, pkt.payload[key])
             for key in ("hue", "saturation", "brightness", "kelvin")

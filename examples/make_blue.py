@@ -11,8 +11,7 @@ async def doit(collector):
     lan_target = collector.resolve_target("lan")
     color_msg = Parser.color_to_msg("blue")
     on_msg = DeviceMessages.SetPower(level=65535)
-    script = lan_target.script([color_msg, on_msg])
-    await script.run_with_all(FoundSerials())
+    await lan_target.send([color_msg, on_msg], FoundSerials())
 
 
 if __name__ == "__main__":

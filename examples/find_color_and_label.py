@@ -14,7 +14,7 @@ async def doit(collector):
     getter = [DeviceMessages.GetLabel(), LightMessages.GetColor()]
 
     info = defaultdict(dict)
-    async for pkt, _, _ in lan_target.script(getter).run_with(FoundSerials()):
+    async for pkt in lan_target.send(getter, FoundSerials()):
         if pkt | DeviceMessages.StateLabel:
             info[pkt.serial]["label"] = pkt.label
         elif pkt | LightMessages.LightState:

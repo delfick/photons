@@ -44,60 +44,58 @@ async def tile_dice(collector, target, reference, **kwargs):
     ``tile_dice d073d5000001,d073d5000002 -- '{"ignore_orientation": true}'
     """
     extra = collector.configuration["photons_app"].extra_as_json
-    ignore_orientation = extra.get("ignore_orientation", False)
 
-    async with target.session() as afr:
-        canvas = Canvas()
+    canvas = Canvas()
 
-        def default_color_func(i, j):
-            if j == -3:
-                return Color(0, 1, 0.4, 3500)
-            return Color(0, 0, 0, 3500)
+    def default_color_func(i, j):
+        if j == -3:
+            return Color(0, 1, 0.4, 3500)
+        return Color(0, 0, 0, 3500)
 
-        canvas.set_default_color_func(default_color_func)
+    canvas.set_default_color_func(default_color_func)
 
-        numbers = ["1", "2", "3", "4", "5"]
-        characters = [dice[n] for n in numbers]
-        color = Color(100, 1, 1, 3500)
-        put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
+    numbers = ["1", "2", "3", "4", "5"]
+    characters = [dice[n] for n in numbers]
+    color = Color(100, 1, 1, 3500)
+    put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
 
-        plans = make_plans("chain", "capability")
-        gatherer = Gatherer(target)
+    plans = make_plans("chain", "capability")
+    gatherer = Gatherer(target)
 
-        def e(error):
-            log.error(error)
+    def e(error):
+        log.error(error)
 
-        found = []
+    found = []
 
-        async def gen(reference, afr, **kwargs):
-            async for serial, _, info in gatherer.gather_per_serial(
-                plans, reference, afr, **kwargs
-            ):
-                if "chain" not in info:
-                    continue
+    async def gen(reference, sender, **kwargs):
+        async for serial, _, info in gatherer.gather_per_serial(
+            plans, reference, sender, **kwargs
+        ):
+            if "chain" not in info:
+                continue
 
-                if not info["capability"]["cap"].has_matrix:
-                    continue
+            if not info["capability"]["cap"].has_matrix:
+                continue
 
-                yield DeviceMessages.SetPower(level=65535, res_required=False, target=serial)
+            yield DeviceMessages.SetPower(level=65535, res_required=False, target=serial)
 
-                found.append(serial)
-                msgs = canvas_to_msgs(
-                    canvas,
-                    coords_for_horizontal_line,
-                    duration=1,
-                    acks=True,
-                    reorient=info["chain"]["reorient"],
-                )
+            found.append(serial)
+            msgs = canvas_to_msgs(
+                canvas,
+                coords_for_horizontal_line,
+                duration=1,
+                acks=True,
+                reorient=info["chain"]["reorient"],
+            )
 
-                for msg in msgs:
-                    msg.target = serial
-                    yield msg
+            for msg in msgs:
+                msg.target = serial
+                yield msg
 
-        await target.script(FromGenerator(gen)).run_with_all(reference, error_catcher=e)
+    await target.send(FromGenerator(gen), reference, error_catcher=e)
 
-        if not found:
-            raise PhotonsAppError("Didn't find any tiles")
+    if not found:
+        raise PhotonsAppError("Didn't find any tiles")
 
 
 if __name__ == "__main__":

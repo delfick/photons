@@ -71,7 +71,7 @@ class Animator:
 
             global_options = collector.configuration["animation_options"]
 
-            with photons_app.using_graceful_future() as final_future:
+            with collector.photons_app.using_graceful_future() as final_future:
                 async with target.session() as afr:
                     await self.animate(target, afr, final_future, reference, extra, global_options)
 

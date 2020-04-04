@@ -54,11 +54,10 @@ async def repeater(collector, target, reference, **kwargs):
     def error_catcher(e):
         log.error(e)
 
-    async with target.session() as afr:
-        async for pkt in target.script(repeater).run_with(
-            reference, afr, error_catcher=error_catcher, message_timeout=5
-        ):
-            print(pkt.serial, repr(pkt.payload))
+    async for pkt in target.send(
+        repeater, reference, error_catcher=error_catcher, message_timeout=5
+    ):
+        print(pkt.serial, repr(pkt.payload))
 
 
 if __name__ == "__main__":

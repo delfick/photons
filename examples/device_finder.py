@@ -38,10 +38,8 @@ async def process_command(lan_target, device_finder, command):
         info = await device_finder.info_for(filtr=filtr)
     elif command.startswith("set_"):
         color = command[4:]
-        afr = await device_finder.args_for_run()
-        await lan_target.script(Parser.color_to_msg(color)).run_with_all(
-            device_finder.find(filtr=filtr), afr
-        )
+        sender = await device_finder.args_for_run()
+        await sender(Parser.color_to_msg(color), device_finder.find(filtr=filtr))
         info = ""
     else:
         print(

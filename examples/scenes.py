@@ -30,6 +30,9 @@ scenes = [
 async def doit(collector):
     lan_target = collector.resolve_target("lan")
 
+    def e(error):
+        log.error(error)
+
     def apply_scene(scene):
         transformer = Transformer()
 
@@ -49,25 +52,18 @@ async def doit(collector):
         max_duration = max([options.get("duration", 1) for options in scene.values()])
         scripts.append((max_duration, apply_scene(scene)))
 
-    def apply_scenes():
-        async def gen(reference, afr, **kwargs):
-            while True:
-                for max_duration, script in scripts:
-                    start = time.time()
-                    r = yield script
-                    await r
-                    diff = max_duration - (time.time() - start)
-                    await asyncio.sleep(diff)
+    async def gen(reference, afr, **kwargs):
+        while True:
+            for max_duration, script in scripts:
+                start = time.time()
+                r = yield script
+                await r
+                diff = max_duration - (time.time() - start)
+                await asyncio.sleep(diff)
 
-        return FromGenerator(gen)
+    apply_scenes = FromGenerator(gen)
 
-    async with lan_target.session() as afr:
-
-        def e(error):
-            log.error(error)
-
-        kwargs = {"message_timeout": 1, "error_catcher": e, "find_timeout": 10}
-        await lan_target.script(apply_scenes()).run_with_all(None, afr, **kwargs)
+    await lan_target.send(apply_scenes, message_timeout=1, error_catcher=e, find_timeout=10)
 
 
 if __name__ == "__main__":

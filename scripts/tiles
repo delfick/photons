@@ -72,8 +72,8 @@ async def tiles(collector, target, reference, **kwargs):
     def e(error):
         log.error(error)
 
-    async def gen(reference, afr, **kwargs):
-        async for serial, _, info in gatherer.gather_per_serial(plans, reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
+        async for serial, _, info in gatherer.gather_per_serial(plans, reference, sender, **kwargs):
             if "chain" not in info:
                 continue
 
@@ -86,7 +86,7 @@ async def tiles(collector, target, reference, **kwargs):
                 msg.target = serial
                 yield msg
 
-    await target.script(FromGenerator(gen)).run_with_all(reference, error_catcher=e)
+    await target.send(FromGenerator(gen), reference, error_catcher=e)
 
 
 if __name__ == "__main__":

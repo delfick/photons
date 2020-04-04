@@ -2,15 +2,14 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_messages import LightMessages, DeviceMessages, TileMessages
 from photons_tile_paint.animation import Animation, TileStateGetter
 from photons_themes.coords import user_coords_to_pixel_coords
+from photons_messages import LightMessages, DeviceMessages
 from photons_control.script import FromGeneratorPerSerial
 from photons_control.planner import make_plans, Gatherer
 from photons_tile_paint.options import AnimationOptions
 from photons_themes.theme import ThemeColor as Color
 from photons_tile_paint.addon import Animator
-from photons_control.tile import tiles_from
 from photons_themes.canvas import Canvas
 
 from delfick_project.norms import sb, dictobj, Meta, BadSpecValue
@@ -108,7 +107,7 @@ class FlickerAnimation(Animation):
 def Flicker(
     gap=0.25, candle_color=False, max_brightness_drop=0.35, power_on=True, start_brightness=None
 ):
-    async def gen(reference, afr, **kwargs):
+    async def gen(reference, sender, **kwargs):
         """
         1. Get current brightness. This is our anchor point. All brightness
            changes will be relative to this amount.
@@ -141,8 +140,8 @@ def Flicker(
         # And whether light is on or off
         # Devices that are off will not have the effect run against them
         plans = make_plans("capability", "power", "colors", "chain")
-        gathered = await Gatherer(afr.transport_target).gather_all(
-            plans, reference, afr, **{**kwargs, "message_timeout": 5}
+        gathered = await Gatherer(sender.transport_target).gather_all(
+            plans, reference, sender, **{**kwargs, "message_timeout": 5}
         )
 
         chain = None
@@ -200,7 +199,11 @@ def Flicker(
                 "max_brightness_drop": max_brightness_drop,
             }
             await animation.animate(
-                afr.transport_target, afr, afr.transport_target.final_future, reference, options
+                sender.transport_target,
+                sender,
+                sender.transport_target.final_future,
+                reference,
+                options,
             )
             return
 
@@ -298,9 +301,7 @@ async def flicker(collector, target, reference, **kwargs):
         log.debug(hp.lc("Failed to send a message", error=error))
 
     # Start our Flicker script against the devices specified on the command line.
-    await target.script(Flicker(**kwargs)).run_with_all(
-        reference, message_timeout=kwargs["gap"], error_catcher=e
-    )
+    await target.send(Flicker(**kwargs), reference, message_timeout=kwargs["gap"], error_catcher=e)
 
 
 if __name__ == "__main__":

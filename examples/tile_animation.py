@@ -112,8 +112,8 @@ async def doit(collector):
 
     try:
         # Run the animation
-        async with lan_target.session() as afr:
-            await animation.animate(lan_target, afr, final_future, reference, options)
+        async with lan_target.session() as sender:
+            await animation.animate(lan_target, sender, final_future, reference, options)
     except Finish:
         pass
 

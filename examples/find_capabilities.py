@@ -11,7 +11,7 @@ import logging
 async def doit(collector):
     lan_target = collector.resolve_target("lan")
 
-    async for pkt, _, _ in lan_target.script(DeviceMessages.GetVersion()).run_with(FoundSerials()):
+    async for pkt in lan_target.send(DeviceMessages.GetVersion(), FoundSerials()):
         if pkt | DeviceMessages.StateVersion:
             product = Products[pkt.vendor, pkt.product]
             print(f"{pkt.serial}: {product.as_dict()}")

@@ -23,7 +23,7 @@ async def doit(collector):
         for name in color_names
     ]
 
-    async with lan_target.session() as afr:
+    async with lan_target.session() as sender:
         # By using a pipeline we can introduce a wait time between successful sending of colors
         colors = Pipeline(*color_msgs, spread=spread, synchronized=True)
 
@@ -33,7 +33,7 @@ async def doit(collector):
         pipeline = Pipeline([power_on, get_color], colors, synchronized=True)
 
         original_colors = {}
-        async for pkt, _, _ in lan_target.script(pipeline).run_with(FoundSerials(), afr):
+        async for pkt in sender(pipeline, FoundSerials()):
             # We set res_required on the colors to False on line 20
             # Which means only the ``get_color`` messages will return a LightState
             # We use this to record what the color of the light was before the rainbow
@@ -49,14 +49,13 @@ async def doit(collector):
             msg2 = DeviceMessages.SetPower(level=level)
 
             # By setting the target directly on the message we don't have to
-            # provide the references to the run_with_all call
+            # provide the references to the sender
             for msg in (msg1, msg2):
                 msg.target = target
                 msg.res_required = False
                 msgs.append(msg)
 
-        # We share the afr we got from target.session() so that we don't have to search for the ips of the lights again
-        await lan_target.script(msgs).run_with_all(None, afr)
+        await sender(msgs)
 
 
 if __name__ == "__main__":
