@@ -637,7 +637,7 @@ describe "Item":
                     ("missing", found),
                 ]
 
-        describe "run_with":
+        describe "run":
 
             @pytest.fixture()
             def V(self):
@@ -696,7 +696,7 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(reference, V.sender, a=a):
+                    async for r in item.run(reference, V.sender, a=a):
                         res.append(r)
 
                 assert res == [res1, res2]
@@ -735,7 +735,7 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(reference, V.sender, a=a):
+                    async for r in item.run(reference, V.sender, a=a):
                         res.append(r)
 
                 assert res == []
@@ -756,7 +756,7 @@ describe "Item":
 
                 res = []
                 with mock.patch.multiple(item, **mod):
-                    async for r in item.run_with(None, V.sender, broadcast=True):
+                    async for r in item.run(None, V.sender, broadcast=True):
                         res.append(r)
 
                 assert res == []
@@ -784,18 +784,18 @@ describe "Item":
                         return ["d073d5000001"]
 
                 with assertRaises(DevicesNotFound, missing=["d073d5000001"]):
-                    async for _ in item.run_with(Ref(), V.sender, require_all_devices=True):
+                    async for _ in item.run(Ref(), V.sender, require_all_devices=True):
                         pass
 
                 es = []
-                async for _ in item.run_with(
+                async for _ in item.run(
                     Ref(), V.sender, require_all_devices=True, error_catcher=es
                 ):
                     pass
                 assert es == [DevicesNotFound(missing=["d073d5000001"])]
 
                 es = mock.Mock(name="es")
-                async for _ in item.run_with(
+                async for _ in item.run(
                     Ref(), V.sender, require_all_devices=True, error_catcher=es
                 ):
                     pass
@@ -818,7 +818,7 @@ describe "Item":
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []
                     with assertRaises(PhotonsAppError, "wat"):
-                        async for r in item.run_with(None, V.sender, broadcast=True):
+                        async for r in item.run(None, V.sender, broadcast=True):
                             res.append(r)
 
                 assert res == [res1, res2]
@@ -826,7 +826,7 @@ describe "Item":
                 res = []
                 es = []
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
+                    async for r in item.run(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es == [error]
@@ -835,7 +835,7 @@ describe "Item":
                 res = []
                 es = mock.Mock(name="es")
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
+                    async for r in item.run(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 es.assert_called_once_with(error)
@@ -860,7 +860,7 @@ describe "Item":
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []
                     with assertRaises(RunErrors, _errors=[error1, error2]):
-                        async for r in item.run_with(None, V.sender, broadcast=True):
+                        async for r in item.run(None, V.sender, broadcast=True):
                             res.append(r)
 
                 assert res == [res1, res2]
@@ -868,7 +868,7 @@ describe "Item":
                 res = []
                 es = []
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
+                    async for r in item.run(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es == [error1, error2]
@@ -877,7 +877,7 @@ describe "Item":
                 res = []
                 es = mock.Mock(name="es")
                 with mock.patch.object(item, "write_messages", write_messages):
-                    async for r in item.run_with(None, V.sender, broadcast=True, error_catcher=es):
+                    async for r in item.run(None, V.sender, broadcast=True, error_catcher=es):
                         res.append(r)
 
                 assert es.mock_calls == [mock.call(error1), mock.call(error2)]

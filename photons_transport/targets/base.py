@@ -100,15 +100,15 @@ class Target(dictobj.Spec):
 
         For each item that is found:
 
-        * Use as is if it already has a run_with method on it
+        * Use as is if it already has a run method on it
         * Use item.simplified(self.simplify) if it has a simplified method
         * Otherwise, provide to self.item_kls
 
         For each leaf child that is found, we gather messages into groups of
-        messages without a ``run_with`` method and yield ``self.item_kls(group)``.
+        messages without a ``run`` method and yield ``self.item_kls(group)``.
 
         For example, let's say we have ``[p1, p2, m1, p3]`` where ``m1`` has
-        a ``run_with`` method on it and the others don't, we'll yield:
+        a ``run`` method on it and the others don't, we'll yield:
 
         * ``self.item_kls([p1, p2])``
         * ``m1``
@@ -119,7 +119,7 @@ class Target(dictobj.Spec):
 
         final = []
         for p in script_part:
-            if hasattr(p, "run_with"):
+            if hasattr(p, "run"):
                 final.append(p)
             elif hasattr(p, "simplified"):
                 final.append(p.simplified(self.simplify))
@@ -129,7 +129,7 @@ class Target(dictobj.Spec):
 
         buf = []
         for p in final:
-            if not hasattr(p, "run_with"):
+            if not hasattr(p, "run"):
                 buf.append(p)
             else:
                 if buf:

@@ -34,8 +34,8 @@ describe "SenderWrapper":
             @hp.memoized_property
             def script(s):
                 class FakeScript:
-                    async def run_with(fs, *args, **kwargs):
-                        s.called.append(("run_with", args, kwargs))
+                    async def run(fs, *args, **kwargs):
+                        s.called.append(("run", args, kwargs))
                         yield s.res1
                         yield s.res2
 
@@ -132,8 +132,8 @@ describe "ScriptRunner":
             @hp.memoized_property
             def script(s):
                 class FakeScript:
-                    async def run_with(fs, *args, **kwargs):
-                        s.called.append(("run_with", args, kwargs))
+                    async def run(fs, *args, **kwargs):
+                        s.called.append(("run", args, kwargs))
                         yield s.res1
                         yield s.res2
 
@@ -166,18 +166,18 @@ describe "ScriptRunner":
         assert runner.script is script
         assert runner.target is target
 
-    describe "run_with":
+    describe "run":
         async it "does nothing if no script":
             runner = ScriptRunner(None, mock.NonCallableMock(name="target"))
             reference = mock.Mock(name="reference")
 
             got = []
-            async for info in runner.run_with(reference):
+            async for info in runner.run(reference):
                 got.append(info)
 
             assert got == []
 
-        async it "calls run_with on the script", V:
+        async it "calls run on the script", V:
             assert V.called == []
 
             a = mock.Mock(name="a")
@@ -185,11 +185,11 @@ describe "ScriptRunner":
             args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
 
             found = []
-            async for info in V.runner.run_with(reference, args_for_run=args_for_run, b=a):
+            async for info in V.runner.run(reference, args_for_run=args_for_run, b=a):
                 found.append(info)
 
             assert found == [V.res1, V.res2]
-            assert V.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            assert V.called == [("run", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
         async it "can create an args_for_run", V:
             a = mock.Mock(name="a")
@@ -198,35 +198,35 @@ describe "ScriptRunner":
             V.runner.target = V.FakeTarget()
 
             found = []
-            async for info in V.runner.run_with(reference, b=a):
+            async for info in V.runner.run(reference, b=a):
                 found.append(info)
 
             assert found == [V.res1, V.res2]
             assert V.called == [
                 ("args_for_run", (), {}),
-                ("run_with", (reference, V.sender), {"b": a, "limit": Sem(30)}),
+                ("run", (reference, V.sender), {"b": a, "limit": Sem(30)}),
                 ("close_args_for_run", (V.sender,), {}),
             ]
 
-    describe "run_with_all":
-        async it "calls run_with on the script", V:
+    describe "run_all":
+        async it "calls run on the script", V:
             assert V.called == []
 
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
             args_for_run = mock.NonCallableMock(name="args_for_run", spec=[])
 
-            found = await V.runner.run_with_all(reference, args_for_run=args_for_run, b=a)
+            found = await V.runner.run_all(reference, args_for_run=args_for_run, b=a)
 
             assert found == [V.res1, V.res2]
-            assert V.called == [("run_with", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
+            assert V.called == [("run", (reference, args_for_run), {"b": a, "limit": Sem(30)})]
 
         async it "raises BadRunWithResults if we have risen exceptions", V:
             error1 = PhotonsAppError("failure")
 
             class FakeScript:
-                async def run_with(s, *args, **kwargs):
-                    V.called.append(("run_with", args, kwargs))
+                async def run(s, *args, **kwargs):
+                    V.called.append(("run", args, kwargs))
                     yield V.res1
                     raise error1
 
@@ -238,7 +238,7 @@ describe "ScriptRunner":
             reference = mock.Mock(name="reference")
 
             try:
-                await runner.run_with_all(reference, b=a)
+                await runner.run_all(reference, b=a)
                 assert False, "Expected error"
             except BadRunWithResults as error:
                 assert error.kwargs["results"] == [V.res1]
@@ -246,6 +246,6 @@ describe "ScriptRunner":
 
             assert V.called == [
                 ("args_for_run", (), {}),
-                ("run_with", (reference, V.sender), {"b": a, "limit": Sem(30)}),
+                ("run", (reference, V.sender), {"b": a, "limit": Sem(30)}),
                 ("close_args_for_run", (V.sender,), {}),
             ]

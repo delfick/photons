@@ -14,7 +14,7 @@ class LanTarget(Target):
     """
     Knows how to talk to a device over the local network. It's one configuration
     option is default_broadcast which says what address to broadcast discovery
-    if broadcast is given to run_with calls as True.
+    if broadcast is given to run calls as True.
     """
 
     default_broadcast = dictobj.Field(sb.defaulted(sb.string_spec(), "255.255.255.255"))

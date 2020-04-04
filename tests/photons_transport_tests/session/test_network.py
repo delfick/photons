@@ -150,7 +150,7 @@ describe "NetworkSession":
         @pytest.fixture()
         def mocks(self, V):
             @contextmanager
-            def mocks(timeout, run_with):
+            def mocks(timeout, run):
                 async def iterator(timeout):
                     yield 10, 1
                     yield 9, 2
@@ -161,10 +161,8 @@ describe "NetworkSession":
                     name="_search_retry_iterator", side_effect=iterator
                 )
 
-                script = mock.Mock(name="script", spec=["run_with"])
-                script.run_with = pytest.helpers.MagicAsyncMock(
-                    name="run_with", side_effect=run_with
-                )
+                script = mock.Mock(name="script", spec=["run"])
+                script.run = pytest.helpers.MagicAsyncMock(name="run", side_effect=run)
 
                 V.transport_target.script.return_value = script
 
@@ -203,7 +201,7 @@ describe "NetworkSession":
 
         async it "finds", V, mocks:
 
-            async def run_with(*args, **kwargs):
+            async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
@@ -225,7 +223,7 @@ describe "NetworkSession":
             assert V.session.found == Found()
 
             a = mock.Mock(name="a")
-            with mocks(20, run_with) as script:
+            with mocks(20, run) as script:
                 fn = await V.session._do_search(["d073d5000001", "d073d5000002"], 20, a=a)
 
             kwargs = {
@@ -236,7 +234,7 @@ describe "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, V.session, **kwargs)
+            script.run.assert_called_once_with(None, V.session, **kwargs)
 
             V.transport_target.script.assert_called_once_with(
                 DiscoveryMessages.GetService(
@@ -266,7 +264,7 @@ describe "NetworkSession":
 
         async it "can filter serials", V, mocks:
 
-            async def run_with(*args, **kwargs):
+            async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
@@ -291,7 +289,7 @@ describe "NetworkSession":
             )
 
             a = mock.Mock(name="a")
-            with mocks(20, run_with) as script:
+            with mocks(20, run) as script:
                 fn = await V.session._do_search(None, 20, a=a)
 
             kwargs = {
@@ -302,7 +300,7 @@ describe "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, V.session, **kwargs)
+            script.run.assert_called_once_with(None, V.session, **kwargs)
 
             V.transport_target.script.assert_called_once_with(
                 DiscoveryMessages.GetService(
@@ -325,7 +323,7 @@ describe "NetworkSession":
 
         async it "stops after first search if serials is None and we found serials", V, mocks:
 
-            async def run_with(*args, **kwargs):
+            async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
                     service=Services.UDP, port=56, target="d073d5000001"
                 )
@@ -337,7 +335,7 @@ describe "NetworkSession":
 
             assert V.session.found == Found()
 
-            with mocks(30, run_with) as script:
+            with mocks(30, run) as script:
                 fn = await V.session._do_search(None, 30, broadcast="172.16.0.255")
 
             kwargs = {
@@ -347,7 +345,7 @@ describe "NetworkSession":
                 "error_catcher": [],
                 "message_timeout": 1,
             }
-            script.run_with.assert_called_once_with(None, V.session, **kwargs)
+            script.run.assert_called_once_with(None, V.session, **kwargs)
 
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
@@ -355,8 +353,8 @@ describe "NetworkSession":
         async it "keeps trying till we find devices if serials is None", V, mocks:
             called = []
 
-            async def run_with(*args, **kwargs):
-                called.append("run_with")
+            async def run(*args, **kwargs):
+                called.append("run")
                 if len(called) != 3:
                     return
 
@@ -371,7 +369,7 @@ describe "NetworkSession":
 
             assert V.session.found == Found()
 
-            with mocks(40, run_with) as script:
+            with mocks(40, run) as script:
                 fn = await V.session._do_search(None, 40, broadcast=False)
 
             call1 = mock.call(
@@ -404,7 +402,7 @@ describe "NetworkSession":
                 message_timeout=3,
             )
 
-            assert script.run_with.mock_calls == [call1, call2, call3]
+            assert script.run.mock_calls == [call1, call2, call3]
 
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
@@ -412,8 +410,8 @@ describe "NetworkSession":
         async it "keeps trying till we have all serials if serials is not None", V, mocks:
             called = []
 
-            async def run_with(*args, **kwargs):
-                called.append("run_with")
+            async def run(*args, **kwargs):
+                called.append("run")
 
                 if len(called) > 0:
                     s1 = DiscoveryMessages.StateService(
@@ -448,10 +446,10 @@ describe "NetworkSession":
             assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
 
-            with mocks(10, run_with) as script:
+            with mocks(10, run) as script:
                 fn = await V.session._do_search(serials, 10, broadcast=True)
 
-            assert called == ["run_with", "run_with", "run_with"]
+            assert called == ["run", "run", "run"]
 
             call1 = mock.call(
                 None,
@@ -483,7 +481,7 @@ describe "NetworkSession":
                 message_timeout=3,
             )
 
-            assert script.run_with.mock_calls == [call1, call2, call3]
+            assert script.run.mock_calls == [call1, call2, call3]
 
             assert sorted(fn) == sorted([binascii.unhexlify(s) for s in serials])
             assert V.session.found.serials == serials
@@ -491,8 +489,8 @@ describe "NetworkSession":
         async it "keeps trying till it's out of retries", V, mocks:
             called = []
 
-            async def run_with(*args, **kwargs):
-                called.append("run_with")
+            async def run(*args, **kwargs):
+                called.append("run")
 
                 if len(called) > 0:
                     s1 = DiscoveryMessages.StateService(
@@ -507,10 +505,10 @@ describe "NetworkSession":
             assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
 
-            with mocks(10, run_with) as script:
+            with mocks(10, run) as script:
                 fn = await V.session._do_search(serials, 10, broadcast=True)
 
-            assert called == ["run_with"] * 4
+            assert called == ["run"] * 4
 
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]

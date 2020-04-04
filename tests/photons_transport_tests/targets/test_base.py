@@ -195,8 +195,8 @@ describe "Target":
                 with mock.patch.object(target, "item_kls", item_kls):
                     yield
 
-            async it "uses part as is if it already has a run_with on it", target:
-                part = mock.Mock(name="part", spec=["run_with"])
+            async it "uses part as is if it already has a run on it", target:
+                part = mock.Mock(name="part", spec=["run"])
                 assert list(target.simplify(part)) == [part]
 
             async it "simplifies items that have a simplified method", item_kls, target:
@@ -218,7 +218,7 @@ describe "Target":
                 part13 = mock.Mock(name="part13", spec=[])
 
                 part2 = mock.Mock(name="part2", spec=["simplified"])
-                part2simplified = mock.Mock(name="part2simplified", spec=["run_with"])
+                part2simplified = mock.Mock(name="part2simplified", spec=["run"])
                 part2.simplified.return_value = part2simplified
 
                 part31 = mock.Mock(name="part31", spec=[])
@@ -247,7 +247,7 @@ describe "Target":
                     mock.call([part31, part32]),
                 ]
 
-            async it "doesn't separate simplified items if they don't have a run_with method", item_kls, target:
+            async it "doesn't separate simplified items if they don't have a run method", item_kls, target:
                 part11 = mock.Mock(name="part11", spec=[])
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])

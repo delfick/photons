@@ -33,7 +33,7 @@ class ScriptRunner:
     """
     Create an runner for our script.
 
-    The ``script`` is an object with a ``run_with`` method on it.
+    The ``script`` is an object with a ``run`` method on it.
 
     This helper will create the ``sender`` if none is passed in and clean it up if
     we created it.
@@ -43,11 +43,11 @@ class ScriptRunner:
         self.script = script
         self.target = target
 
-    async def run_with_all(self, *args, **kwargs):
-        """Do a run_with but don't complete till all messages have completed"""
+    async def run_all(self, *args, **kwargs):
+        """Do a run but don't complete till all messages have completed"""
         results = []
         try:
-            async for info in self.run_with(*args, **kwargs):
+            async for info in self.run(*args, **kwargs):
                 results.append(info)
         except asyncio.CancelledError:
             raise
@@ -58,10 +58,16 @@ class ScriptRunner:
         else:
             return results
 
-    async def run_with(self, reference, args_for_run=sb.NotSpecified, **kwargs):
+    # backwards compatibility
+    run_with_all = run_all
+
+    async def run(self, reference, args_for_run=sb.NotSpecified, **kwargs):
         if self.script is None:
             return
 
         async with SenderWrapper(self.target, args_for_run, kwargs) as sender:
-            async for thing in self.script.run_with(reference, sender, **kwargs):
+            async for thing in self.script.run(reference, sender, **kwargs):
                 yield thing
+
+    # backwards compatibility
+    run_with = run

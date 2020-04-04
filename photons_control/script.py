@@ -284,14 +284,12 @@ class FromGenerator(object):
             self.reference_override = reference_override
             self.error_catcher_override = catcher_override
 
-        async def run_with(self, reference, args_for_run, **kwargs):
+        async def run(self, reference, args_for_run, **kwargs):
             runner = self.runner_kls(self, reference, args_for_run, kwargs)
 
             error_catcher = kwargs.get("error_catcher")
             if self.error_catcher_override:
-                error_catcher = self.error_catcher_override(
-                    runner.run_with_reference, error_catcher
-                )
+                error_catcher = self.error_catcher_override(runner.run_reference, error_catcher)
 
             do_raise = error_catcher is None
             if do_raise:
@@ -336,7 +334,7 @@ class FromGenerator(object):
             return self.item.reference_override
 
         @property
-        def run_with_reference(self):
+        def run_reference(self):
             if self.item.reference_override is True:
                 return self.reference
             elif self.item.reference_override is not None:
@@ -442,9 +440,7 @@ class FromGenerator(object):
             kwargs["error_catcher"] = pass_on_error
 
             try:
-                async for info in item.run_with(
-                    self.run_with_reference, self.args_for_run, **kwargs
-                ):
+                async for info in item.run(self.run_reference, self.args_for_run, **kwargs):
                     await self.queue.put(info)
             finally:
                 if not f.done():

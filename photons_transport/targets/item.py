@@ -30,10 +30,10 @@ class Item(object):
         if type(self.parts) is not list:
             self.parts = [self.parts]
 
-    async def run_with(self, reference, sender, **kwargs):
+    async def run(self, reference, sender, **kwargs):
         """
         Entry point to this item, the idea is you create a `script` with the
-        target and call `run_with` on the script, which ends up calling this
+        target and call `run` on the script, which ends up calling this
 
         This is an async generator that yields the results from sending packets to the devices
         it is responsible for finding devices and gathering all the responses.
@@ -93,14 +93,12 @@ class Item(object):
 
             For example, an ``asyncio.Semaphore(30)``
 
-            Note that if you saying ``target.script(msgs).run_with(....)`` then limit will be set
+            Note that if you saying ``target.script(msgs).run(....)`` then limit will be set
             to a semaphore with max 30 by default. You may specify just a number and it will turn it
             into a semaphore.
         """
         if "timeout" in kwargs:
-            log.warning(
-                hp.lc("Please use message_timeout instead of timeout when calling run_with")
-            )
+            log.warning(hp.lc("Please use message_timeout instead of timeout when calling run"))
 
         with catch_errors(kwargs.get("error_catcher")) as error_catcher:
             kwargs["error_catcher"] = error_catcher

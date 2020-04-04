@@ -175,7 +175,7 @@ class Sender:
         return self.stream_packets()
 
     async def stream_packets(self):
-        async for pkt in self.script.run_with(self.reference, self.session, **self.kwargs):
+        async for pkt in self.script.run(self.reference, self.session, **self.kwargs):
             yield pkt
 
 
