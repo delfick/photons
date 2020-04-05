@@ -1,4 +1,4 @@
-.. sendapi_root:
+.. _sendapi_root:
 
 Sending and Receiving messages
 ==============================
