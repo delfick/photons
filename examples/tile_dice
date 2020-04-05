@@ -15,6 +15,9 @@ from photons_messages import DeviceMessages
 from photons_themes.canvas import Canvas
 
 from delfick_project.addons import addon_hook
+import logging
+
+log = logging.getLogger("tile_dice")
 
 
 @addon_hook(
@@ -92,7 +95,4 @@ async def tile_dice(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    from photons_app.executor import main
-    import sys
-
-    main(["lan:tile_dice"] + sys.argv[1:])
+    __import__("photons_core").run_script("lan:tile_dice {@:1:}")

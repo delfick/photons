@@ -61,7 +61,4 @@ async def repeater(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    from photons_app.executor import main
-    import sys
-
-    main(["lan:repeater"] + sys.argv[1:])
+    __import__("photons_core").run_script("lan:repeater {@:1:}")

@@ -112,7 +112,11 @@ def modified_env(**env):
     previous = {key: os.environ.get(key, sb.NotSpecified) for key in env}
     try:
         for key, val in env.items():
-            os.environ[key] = val
+            if val is None:
+                if key in os.environ:
+                    del os.environ[key]
+            else:
+                os.environ[key] = val
         yield
     finally:
         for key, val in previous.items():
