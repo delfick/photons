@@ -29,7 +29,7 @@ source_suffix = ".rst"
 
 pygments_style = "pastie"
 
-copyright = u"2018, Stephen Moore"
+copyright = u"Stephen Moore"
 project = u"Photons"
 
 version = "0.1"
