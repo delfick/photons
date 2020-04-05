@@ -2,3 +2,8 @@
 
 Tile Animations
 ===============
+
+.. toctree::
+    :hidden:
+
+    commands

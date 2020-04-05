@@ -13,6 +13,7 @@ html_theme_options = {
     "collapse_navigation": False,
     "sticky_navigation": True,
     "navigation_depth": 4,
+    "titles_only": True,
 }
 
 html_static_path = [pkg_resources.resource_filename("photons_docs", "config/static")]
