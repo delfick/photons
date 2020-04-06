@@ -20,7 +20,7 @@ import sys
 
 
 def library_setup(
-    config_filename=None, photons_modules=True, extra_files=None, photons_app_options=None
+    config_filename="lifx.yml", photons_modules=True, extra_files=None, photons_app_options=None
 ):
     """
     Get us a setup photons Collector instance.
