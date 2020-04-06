@@ -48,6 +48,8 @@ the logging. You can do this with the following (best placed in
 .. note:: The logs will be the default theme until after configuration has been
     loaded.
 
+.. _configuration_targets:
+
 Targets
 -------
 
