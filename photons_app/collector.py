@@ -141,6 +141,15 @@ class Collector(Collector):
                 raise
             sys.exit(1)
 
+    async def stop_photons_app(self):
+        """
+        Perform Photons cleanup 
+        """
+        targets = self.configuration["target_register"].used_targets
+        await self.photons_app.cleanup(targets)
+        self.photons_app.final_future.cancel()
+        self.photons_app.graceful_final_future.cancel()
+
     def extra_prepare(self, configuration, args_dict):
         """
         Called before the configuration.converters are activated

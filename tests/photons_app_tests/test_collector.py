@@ -17,6 +17,7 @@ from textwrap import dedent
 from unittest import mock
 import pkg_resources
 import asyncio
+import pytest
 import uuid
 import os
 
@@ -723,3 +724,44 @@ describe "Collector":
             assert type(target_register) == TargetRegister
             assert type(protocol_register) == ProtocolRegister
             assert type(reference_resolver_register) == ReferenceResolerRegister
+
+    describe "stop_photons_app":
+        async it "cleans up photons":
+            collector = Collector()
+            collector.prepare(None, {})
+
+            cleaners = collector.photons_app.cleaners
+            final_future = collector.photons_app.final_future
+
+            called = []
+
+            async def clean1():
+                called.append("clean1")
+
+            async def clean2():
+                called.append("clean2")
+
+            cleaners.append(clean1)
+            cleaners.append(clean2)
+
+            await collector.stop_photons_app()
+
+            assert called == ["clean1", "clean2"]
+            assert final_future.cancelled()
+
+        async it "cleans up targets":
+            collector = Collector()
+            collector.prepare(
+                None, {}, extra_files=[{"photons_app": {"addons": {"lifx.photons": ["transport"]}}}]
+            )
+            collector.configuration["target_register"].add_targets(
+                collector.configuration["targets"]
+            )
+            target = collector.resolve_target("lan")
+
+            finish = pytest.helpers.AsyncMock(name="finish")
+
+            with mock.patch.object(target, "finish", finish, create=True):
+                await collector.stop_photons_app()
+
+            finish.assert_called_once_with()
