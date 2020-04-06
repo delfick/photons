@@ -101,7 +101,7 @@ class PhotonsApp(dictobj.Spec):
         return CM()
 
     @contextmanager
-    def using_graceful_future(self, on_done=None):
+    def using_graceful_future(self):
         """
         This context manager is used so that a server may shut down before
         the real final_future is stopped.
