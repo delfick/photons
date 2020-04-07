@@ -146,6 +146,236 @@ class TaskHolder:
             await asyncio.wait(self.ts)
 
 
+class ResultStreamer:
+    """
+    An async generator you can add tasks to and results will be streamed as they
+    become available.
+
+    To use this, you first create a streamer and give it a ``final_future`` and
+    ``error_catcher``. If the ``final_future`` is cancelled, then the streamer
+    will stop and any tasks it knows about will be cancelled.
+
+    The ``error_catcher`` is a standard Photons error_catcher. If it's a list
+    then exceptions will be added to it. If it's a function then it will be
+    called with exceptions. Otherwise it is ignored. Note that if you don't
+    specify ``exceptions_only_to_error_catcher=True`` then result objects will
+    be given to the ``error_catcher`` rather than the exceptions themselves.
+
+    Once you have a streamer you add tasks, coroutines or async generators
+    to the streamer. Once you have no more of these to add to the streamer then
+    you call ``streamer.no_more_work()`` so that when all remaining tasks have
+    finished, the streamer will stop iterating results.
+
+    The streamer will yield ``ResultStreamer.Result`` objects that contain
+    the ``value`` from the task, a ``context`` object that you give to the
+    streamer when you register a task and a ``successful`` boolean that is False
+    when the result was from an exception.
+
+    When you register a task/coroutine/generator you may specify an ``on_done``
+    callback which will be called when it finishes. For tasks and coroutines
+    this is called with the result from that task. For async generators it
+    is either called with an exception Result if the generator did not exit
+    successfully, or a success Result with a ``ResultStreamer.GeneratorComplete``
+    instance.
+
+    When you add an async generator, you may specify an ``on_each`` function
+    that will be called for each value that is yielded from the generator.
+
+    You may add tasks, coroutines and async generators while you are taking
+    results from the streamer.
+
+    For example:
+
+    .. code-block:: python
+
+        final_future = asyncio.Future()
+
+        def error_catcher(error_result):
+            print(error_result)
+
+        streamer = ResultStreamer(final_future, error_catcher=error_catcher)
+
+        async def coro_function():
+            await something
+            await streamer.add_generator(generator2, context=SomeContext())
+            return 20
+
+        async def coro_function2():
+            return 42
+
+        async def generator():
+            for i in range(3):
+                yield i
+                await something_else
+            await streamer.add_coroutine(coro_function2())
+
+        await streamer.add_coroutine(coro_function(), context=20)
+        await streamer.add_generator(coro_function())
+
+        async with streamer:
+            async for result in streamer:
+                print(result.value, result.context, result.successful)
+
+    If you don't want to use the ``async with streamer`` then you must call
+    ``await streamer.finish()`` when you are done with the streamer to ensure
+    everything is cleaned up.
+    """
+
+    class GeneratorComplete:
+        pass
+
+    class Result:
+        def __init__(self, value, context, successful):
+            self.value = value
+            self.context = context
+            self.successful = successful
+
+        def __eq__(self, other):
+            return (
+                isinstance(other, self.__class__)
+                and other.value == self.value
+                and other.context == self.context
+                and other.successful == self.successful
+            )
+
+        def __repr__(self):
+            status = "success" if self.successful else "failed"
+            return f"<Result {status}: {self.value}: {self.context}>"
+
+    def __init__(self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False):
+        self.final_future = ChildOfFuture(final_future)
+        self.error_catcher = error_catcher
+        self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
+
+        self.ts = []
+        self.generators = []
+
+        self.queue = asyncio.Queue()
+        self.stop_on_completion = False
+
+    async def add_generator(self, gen, *, context=None, on_each=None, on_done=None):
+        async def run():
+            async for result in gen:
+                result = self.Result(result, context, True)
+                self.queue.put_nowait(result)
+                if on_each:
+                    on_each(result)
+            return self.GeneratorComplete
+
+        task = await self.add_coroutine(run(), context=context, on_done=on_done)
+
+        if self.final_future.done():
+            task.cancel()
+            await asyncio.wait([task])
+            await asyncio.wait([gen.aclose()])
+            return task
+
+        self.generators.append((task, gen))
+        return task
+
+    async def add_coroutine(self, coro, *, context=None, on_done=None):
+        return await self.add_task(
+            async_as_background(coro, silent=bool(self.error_catcher)),
+            context=context,
+            on_done=on_done,
+        )
+
+    async def add_task(self, task, *, context=None, on_done=None):
+        if self.final_future.done():
+            task.cancel()
+            await asyncio.wait([task])
+            return task
+
+        def add_to_queue(res):
+            successful = False
+
+            if res.cancelled():
+                exc = asyncio.CancelledError()
+                value = asyncio.CancelledError()
+            else:
+                exc = res.exception()
+                if exc:
+                    value = exc
+                else:
+                    value = res.result()
+                    successful = True
+
+            result = self.Result(value, context, successful)
+
+            if value is not self.GeneratorComplete:
+                if not successful:
+                    v = value if self.exceptions_only_to_error_catcher else result
+                    add_error(self.error_catcher, v)
+
+                self.queue.put_nowait(result)
+
+            if on_done:
+                on_done(result)
+
+        task.add_done_callback(add_to_queue)
+        self.ts.append(task)
+        return task
+
+    def no_more_work(self):
+        self.stop_on_completion = True
+
+    async def retrieve(self):
+        while True:
+            nxt = async_as_background(self.queue.get())
+            await asyncio.wait([nxt, self.final_future], return_when=asyncio.FIRST_COMPLETED)
+
+            if self.final_future.done():
+                nxt.cancel()
+                return
+
+            yield (await nxt)
+
+            self.ts = [t for t in self.ts if not t.done()]
+            if self.stop_on_completion and not self.ts and self.queue.empty():
+                return
+
+            # Cleanup any finished generators
+            new_gens = []
+            for t, g in self.generators:
+                if t.done():
+                    await asyncio.wait([t])
+                    await asyncio.wait([g.aclose()])
+                else:
+                    new_gens.append((t, g))
+            self.generators = new_gens
+
+    async def finish(self):
+        self.final_future.cancel()
+
+        wait_for = []
+        second_after = []
+
+        for t in self.ts:
+            t.cancel()
+            wait_for.append(t)
+
+        for t, g in self.generators:
+            t.cancel()
+            wait_for.append(t)
+            second_after.append(lambda: g.aclose())
+
+        if wait_for:
+            await asyncio.wait(wait_for)
+        if second_after:
+            await asyncio.wait([l() for l in second_after])
+
+        self.queue.put_nowait(None)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.finish()
+
+    def __aiter__(self):
+        return self.retrieve()
+
+
 @contextmanager
 def just_log_exceptions(log, *, reraise=None, message="Unexpected error"):
     """

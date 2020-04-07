@@ -138,11 +138,162 @@ def FakeTime():
     return FakeTime
 
 
+class FutureDominoes:
+    """
+    A helper to start a domino of futures.
+
+    For example:
+
+    .. code-block:: python
+
+        async def run():
+            futs = FutureDominoes(expected=8)
+
+            called = []
+
+            async def one():
+                await futs[1]
+                called.append("first")
+                await futs[2]
+                called.append("second")
+                await futs[5]
+                called.append("fifth")
+                await futs[7]
+                called.append("seventh")
+
+            async def two():
+                await futs[3]
+                called.append("third")
+
+                start = 4
+                while start <= 6:
+                    await futs[start]
+                    called.append(("gen", start))
+                    yield ("genresult", start)
+                    start += 2
+
+            async def three():
+                await futs[8]
+                called.append("final")
+
+            loop = asyncio.get_event_loop()
+            loop.create_task(three())
+            loop.create_task(one())
+
+            async def run_two():
+                async for r in two():
+                    called.append(r)
+
+            loop.create_task(run_two())
+
+            futs.start()
+            await futs
+
+            assert called == [
+                "first",
+                "second",
+                "third",
+                ("gen", 4),
+                ("genresult", 4),
+                "fifth",
+                ("gen", 6),
+                ("genresult", 6),
+                "seventh",
+                "final",
+            ]
+    """
+
+    def __init__(self, *, before_next_domino=None, expected):
+        self.futs = {}
+        self.upto = 1
+        self.expected = int(expected)
+        self.before_next_domino = before_next_domino
+
+        hp = __import__("photons_app.helpers").helpers
+        self.finished = hp.ResettableFuture()
+
+    class F:
+        def __init__(self, num, done_callback):
+            self.num = num
+            self.fut = asyncio.Future()
+            self.ready_fut = asyncio.Future()
+            self.done_callback = done_callback
+
+            hp = __import__("photons_app.helpers").helpers
+
+            self.combined_fut = asyncio.Future()
+            self.fut.add_done_callback(hp.transfer_result(self.combined_fut))
+            self.ready_fut.add_done_callback(hp.transfer_result(self.combined_fut))
+
+        def done(self):
+            return self.fut.done()
+
+        def ready_to_resolve(self):
+            if not self.ready_fut.done():
+                self.ready_fut.set_result(True)
+
+        def resolve(self):
+            if not self.fut.done():
+                self.fut.set_result(True)
+
+        def __await__(self):
+            try:
+                yield from self.combined_fut
+            except asyncio.CancelledError:
+                pass
+            self.done_callback()
+
+    def make(self, num):
+        if num > self.expected:
+            exc = Exception(f"Only expected up to {self.expected} dominoes")
+            self.finished.reset()
+            self.finished.set_exception(exc)
+            raise exc
+
+        if num in self.futs:
+            return self.futs[num]
+
+        print(f"Making domino {num}")
+
+        def fire_next():
+            if self.before_next_domino:
+                self.before_next_domino(num)
+
+            if num + 1 > self.expected:
+                print("Finished knocking over dominoes")
+                if not self.finished.done():
+                    self.finished.set_result(True)
+            else:
+
+                def resolve_next():
+                    self[num + 1].ready_to_resolve()
+                    self.upto = num + 1
+
+                asyncio.get_event_loop().call_later(0.005, resolve_next)
+
+        fut = self.futs[num] = self.F(num, fire_next)
+
+        return fut
+
+    def start(self):
+        self[1].resolve()
+
+    def __getitem__(self, num):
+        return self.make(num)
+
+    def __await__(self):
+        if not self[1].done():
+            raise Exception("The dominoes were never started")
+        yield from self.finished
+
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "focus: mark test to run")
 
     if not hasattr(pytest, "helpers"):
         return
+
+    pytest.helpers.register(FutureDominoes)
 
     @pytest.helpers.register
     def assert_regex(regex, value):
