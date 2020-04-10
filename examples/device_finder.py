@@ -1,12 +1,14 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
 from photons_app.executor import library_setup
+from photons_app.errors import UserQuit
 
-from photons_device_finder import DeviceFinder, Filter
+from photons_control.device_finder import DeviceFinderDaemon, Filter
 from photons_control.colour import ColourParser
 
 from delfick_project.logging import setup_logging
 from textwrap import dedent
+import threading
 import readline
 import asyncio
 import logging
@@ -22,7 +24,7 @@ def write_prompt():
     sys.stdout.flush()
 
 
-async def process_command(lan_target, device_finder, command):
+async def process_command(daemon, command):
     if " " not in command:
         options = ""
     else:
@@ -30,19 +32,25 @@ async def process_command(lan_target, device_finder, command):
 
     if command.endswith("_json"):
         command = command[: command.rfind("_")]
-        filtr = Filter.from_json_str(options)
+        fltr = Filter.from_json_str(options)
     else:
-        filtr = Filter.from_key_value_str(options)
+        fltr = Filter.from_key_value_str(options)
 
     if command.startswith("serials"):
-        info = await device_finder.serials(filtr=filtr)
+        async for device in daemon.serials(fltr):
+            print(device.serial)
     elif command.startswith("info"):
-        info = await device_finder.info_for(filtr=filtr)
+        async for device in daemon.info(fltr):
+            print(device.serial)
+            print(
+                "\n".join(
+                    f"  {line}"
+                    for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")
+                )
+            )
     elif command.startswith("set_"):
-        color = command[4:]
-        sender = await device_finder.make_sender()
-        await sender(ColourParser.msg(color), device_finder.find(filtr=filtr))
-        info = ""
+        msg = ColourParser.msg(command[4:])
+        await daemon.sender(msg, daemon.reference(fltr))
     else:
         print(
             dedent(
@@ -53,54 +61,55 @@ async def process_command(lan_target, device_finder, command):
         """
             )
         )
-        return
-
-    print(json.dumps(info, indent=4, sort_keys=True))
 
 
 async def doit(collector):
     lan_target = collector.resolve_target("lan")
+    final_future = collector.photons_app.final_future
+    async with lan_target.session() as sender:
+        async with DeviceFinderDaemon(sender, final_future=final_future) as daemon:
+            await daemon.start()
+            await run_prompt(daemon, final_future, collector.photons_app.loop)
 
+
+async def run_prompt(daemon, final_future, loop):
     readline.parse_and_bind("")
-
-    final = asyncio.Future()
-    loop = asyncio.get_event_loop()
-
-    device_finder = DeviceFinder(lan_target)
-    await device_finder.start()
 
     def get_command(done):
         try:
             nxt = input()
         except Exception as error:
-            loop.call_soon_threadsafe(done.set_result, None)
-            loop.call_soon_threadsafe(final.set_exception, error)
+            if isinstance(error, (EOFError, KeyboardInterrupt)):
+                error = UserQuit()
+            if not final_future.done():
+                final_future.set_exception(error)
+
+        if final_future.done():
             return
 
         loop.call_soon_threadsafe(done.set_result, nxt.strip())
 
-    try:
-        while True:
-            done = asyncio.Future()
-            write_prompt()
-            await loop.run_in_executor(None, get_command, done)
+    while True:
+        write_prompt()
 
-            nxt = await done
-            if nxt:
-                try:
-                    await process_command(lan_target, device_finder, nxt)
-                except asyncio.CancelledError:
-                    raise
-                except:
-                    log.exception("Unepected error")
+        done = asyncio.Future()
 
-            if final.done():
-                try:
-                    await final
-                except EOFError:
-                    break
-    finally:
-        await device_finder.finish()
+        thread = threading.Thread(target=get_command, args=(done,))
+        thread.daemon = True
+        thread.start()
+
+        nxt = await done
+
+        if nxt:
+            try:
+                await process_command(daemon, nxt)
+            except asyncio.CancelledError:
+                raise
+            except:
+                log.exception("Unexpected error")
+
+        if final_future.done():
+            return
 
 
 if __name__ == "__main__":
