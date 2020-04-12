@@ -20,11 +20,19 @@ describe "default_responders":
         assert device.attrs.color == chp.Color(0, 1, 1, 3500)
         assert device.attrs.power == 0
 
+        assert device.attrs.group_uuid == ""
+        assert device.attrs.group_label == ""
+        assert device.attrs.group_updated_at == 0
+
+        assert device.attrs.location_uuid == ""
+        assert device.attrs.location_label == ""
+        assert device.attrs.location_updated_at == 0
+
         assert not any(isinstance(r, chp.ZonesResponder) for r in device.responders)
         assert not any(isinstance(r, chp.MatrixResponder) for r in device.responders)
         assert not any(isinstance(r, chp.InfraredResponder) for r in device.responders)
 
-        for expect in (chp.ProductResponder, chp.LightStateResponder):
+        for expect in (chp.ProductResponder, chp.LightStateResponder, chp.GroupingResponder):
             assert any(isinstance(r, expect) for r in device.responders)
 
     async it "can be infrared":

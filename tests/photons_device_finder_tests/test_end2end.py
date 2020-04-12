@@ -39,53 +39,54 @@ class CollectionResponder(Responder):
             )
 
 
+def responders(product, *, group, location, **kwargs):
+    responders = [
+        r
+        for r in chp.default_responders(product, **kwargs)
+        if not isinstance(r, chp.GroupingResponder)
+    ]
+    responders.append(CollectionResponder(group=group, location=location))
+    return responders
+
+
 device1 = FakeDevice(
     "d073d5000001",
-    chp.default_responders(
+    responders(
         Products.LCMV4_BR30_COLOR,
         color=chp.Color(120, 0.4, 0.3, 3500),
         firmware=chp.Firmware(1, 22, 0),
         label="kitchen",
         power=65535,
-    )
-    + [
-        CollectionResponder(
-            group=Collection("1234", "one", 1), location=Collection("7890", "one", 1)
-        )
-    ],
+        group=Collection("1234", "one", 1),
+        location=Collection("7890", "one", 1),
+    ),
 )
 
 device2 = FakeDevice(
     "d073d5000002",
-    chp.default_responders(
+    responders(
         Products.LCMV4_A19_COLOR,
         color=chp.Color(120, 0.4, 0.3, 3500),
         label="bathroom",
         firmware=chp.Firmware(1, 22, 0),
         power=0,
-    )
-    + [
-        CollectionResponder(
-            group=Collection("1234", "two", 2), location=Collection("1234", "two", 2)
-        )
-    ],
+        group=Collection("1234", "two", 2),
+        location=Collection("1234", "two", 2),
+    ),
 )
 
 device3 = FakeDevice(
     "d073d5000003",
-    chp.default_responders(
+    responders(
         Products.LCM2_A19_PLUS,
         color=chp.Color(120, 0.4, 0.3, 3500),
         label="hallway",
         firmware=chp.Firmware(1, 22, 0),
         infrared=65535,
         power=65535,
-    )
-    + [
-        CollectionResponder(
-            group=Collection("4567", "three", 1), location=Collection("7890", "four", 4)
-        )
-    ],
+        group=Collection("4567", "three", 1),
+        location=Collection("7890", "four", 4),
+    ),
 )
 
 

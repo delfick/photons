@@ -320,6 +320,50 @@ class ZonesResponder(Responder):
                 yield res
 
 
+class GroupingResponder(Responder):
+    _fields = [
+        ("group_uuid", lambda: ""),
+        ("group_label", lambda: ""),
+        ("group_updated_at", lambda: 0),
+        ("location_uuid", lambda: ""),
+        ("location_label", lambda: ""),
+        ("location_updated_at", lambda: 0),
+    ]
+
+    async def respond(self, device, pkt, source):
+        if pkt | DeviceMessages.GetGroup:
+            yield self.make_group_state(device)
+
+        elif pkt | DeviceMessages.SetGroup:
+            device.attrs.group_uuid = pkt.group
+            device.attrs.group_label = pkt.label
+            device.attrs.group_updated_at = pkt.updated_at
+            yield self.make_group_state(device)
+
+        elif pkt | DeviceMessages.GetLocation:
+            yield self.make_location_state(device)
+
+        elif pkt | DeviceMessages.SetLocation:
+            device.attrs.location_uuid = pkt.location
+            device.attrs.location_label = pkt.label
+            device.attrs.location_updated_at = pkt.updated_at
+            yield self.make_location_state(device)
+
+    def make_group_state(self, device):
+        return DeviceMessages.StateGroup(
+            group=device.attrs.group_uuid,
+            label=device.attrs.group_label,
+            updated_at=device.attrs.group_updated_at,
+        )
+
+    def make_location_state(self, device):
+        return DeviceMessages.StateLocation(
+            location=device.attrs.location_uuid,
+            label=device.attrs.location_label,
+            updated_at=device.attrs.location_updated_at,
+        )
+
+
 class Firmware(dictobj):
     fields = ["major", "minor", "build", ("install", 0)]
 
@@ -370,11 +414,28 @@ def default_responders(
     chain_length=5,
     matrix_width=8,
     matrix_height=8,
+    group_uuid="",
+    group_label="",
+    group_updated_at=0,
+    location_uuid="",
+    location_label="",
+    location_updated_at=0,
     **kwargs,
 ):
     product_responder = ProductResponder.from_product(product, firmware)
 
-    responders = [product_responder, LightStateResponder(power=power, color=color, label=label)]
+    responders = [
+        product_responder,
+        LightStateResponder(power=power, color=color, label=label),
+        GroupingResponder(
+            group_uuid=group_uuid,
+            group_label=group_label,
+            group_updated_at=group_updated_at,
+            location_uuid=location_uuid,
+            location_label=location_label,
+            location_updated_at=location_updated_at,
+        ),
+    ]
 
     cap = product.cap(firmware_major=firmware.major, firmware_minor=firmware.minor)
 

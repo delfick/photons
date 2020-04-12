@@ -57,7 +57,7 @@ class Device:
                     if e | TileMessages.StateTileEffect and g | TileMessages.StateTileEffect:
                         e.instanceid = g.instanceid
                     if g != e:
-                        dfferent = print_packet_difference(g, e, ignore_unspecified_expected=True)
+                        print_packet_difference(g, e, ignore_unspecified_expected=True)
 
                     # Make sure message can be packed
                     g.source = 1
@@ -678,3 +678,62 @@ describe "Responders":
                     DeviceMessages.GetWifiFirmware(),
                     [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
                 )
+
+    describe "GroupingResponder":
+
+        @pytest.fixture()
+        async def device(self):
+            device = Device(
+                chp.GroupingResponder(
+                    group_label="gl",
+                    group_uuid="abcd",
+                    group_updated_at=1,
+                    location_label="ll",
+                    location_uuid="efef",
+                    location_updated_at=2,
+                )
+            )
+            async with device:
+                device.assertAttrs(
+                    group_label="gl",
+                    group_uuid="abcd",
+                    group_updated_at=1,
+                    location_label="ll",
+                    location_uuid="efef",
+                    location_updated_at=2,
+                )
+                yield device
+
+        async it "responds to group", device:
+            getter = DeviceMessages.GetGroup()
+            state = DeviceMessages.StateGroup(group="abcd", label="gl", updated_at=1)
+            await device.assertResponse(getter, [state])
+
+            setter = DeviceMessages.SetGroup.empty_normalise(
+                group="dcba", label="gl2", updated_at=3
+            )
+            state = DeviceMessages.StateGroup(group=setter.group, label="gl2", updated_at=3)
+            await device.assertResponse(
+                setter, [state], group_label="gl2", group_uuid=setter.group, group_updated_at=3
+            )
+            await device.assertResponse(getter, [state])
+
+        async it "responds to location", device:
+            getter = DeviceMessages.GetLocation()
+            state = DeviceMessages.StateLocation(location="efef", label="ll", updated_at=2)
+            await device.assertResponse(getter, [state])
+
+            setter = DeviceMessages.SetLocation.empty_normalise(
+                location="fefe", label="ll2", updated_at=6
+            )
+            state = DeviceMessages.StateLocation(
+                location=setter.location, label="ll2", updated_at=6
+            )
+            await device.assertResponse(
+                setter,
+                [state],
+                location_label="ll2",
+                location_uuid=setter.location,
+                location_updated_at=6,
+            )
+            await device.assertResponse(getter, [state])
