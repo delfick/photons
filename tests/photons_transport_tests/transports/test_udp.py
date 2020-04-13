@@ -6,7 +6,6 @@ from photons_app import helpers as hp
 
 from unittest import mock
 import asyncio
-import socket
 import pytest
 
 
@@ -73,7 +72,7 @@ describe "UDP":
         assert V.transport.lc.context == {"serial": V.serial}
 
         transport = UDP(V.session, V.host, V.port)
-        assert transport.serial == None
+        assert transport.serial is None
 
     async it "can be cloned", V:
         transport = UDP(V.session, V.host, V.port, serial=V.serial)

@@ -1,13 +1,11 @@
 # coding: spec
 
-from photons_transport.comms.waiter import Waiter
 from photons_transport.targets.item import Item
 from photons_transport.comms.base import Found
 
 from photons_app.errors import (
     PhotonsAppError,
     TimedOut,
-    BadRunWithResults,
     DevicesNotFound,
     RunErrors,
 )
@@ -750,9 +748,6 @@ describe "Item":
                 write_messages = pytest.helpers.MagicAsyncMock(name="write_messages")
 
                 mod = {"search": search, "write_messages": write_messages}
-
-                a = mock.Mock(name="a")
-                reference = mock.Mock(name="reference")
 
                 res = []
                 with mock.patch.multiple(item, **mod):

@@ -105,7 +105,6 @@ describe "SenderWrapper":
 
     async it "creates and closes the sender if none provided", V:
         a = mock.Mock(name="a")
-        limit = asyncio.Semaphore(1)
         kwargs = {"b": a}
 
         async with SenderWrapper(V.target, sb.NotSpecified, kwargs) as sender:

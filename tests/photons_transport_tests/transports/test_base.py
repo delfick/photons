@@ -2,7 +2,6 @@
 
 from photons_transport.transports.base import Transport
 
-from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises

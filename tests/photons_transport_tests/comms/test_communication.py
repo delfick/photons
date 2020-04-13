@@ -362,7 +362,6 @@ describe "Communication":
 
         async it "has defaults for ignore_lost and raise_on_none", V:
             a = mock.Mock(name="a")
-            broadcast = mock.Mock(name="broadcast")
 
             found = mock.Mock(name="found")
             missing = mock.Mock(name="missing")
@@ -592,7 +591,6 @@ describe "Communication":
             _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
-            serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
             with assertRaises(FoundNoDevices):
@@ -640,7 +638,6 @@ describe "Communication":
             _do_search = pytest.helpers.AsyncMock(name="_do_search", side_effect=_do_search)
 
             a = mock.Mock(name="a")
-            serials = ["d073d5000001", "d073d5000002"]
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):

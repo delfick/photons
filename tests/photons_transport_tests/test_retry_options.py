@@ -84,7 +84,7 @@ describe "RetryIterator":
 
         start = time.time()
         await iterator.wait(-1)
-        assert time.time() - start < 0.001
+        assert time.time() - start < 0.002
 
         start = time.time()
         await iterator.wait(0.1)

@@ -113,8 +113,6 @@ describe "Waiter":
                 request = mock.Mock(name="request", ack_required=False, res_required=True)
                 request.Meta.multi = None
 
-                result = Result(request, False, V.retry_options)
-
                 async def writer():
                     raise ValueError("Nope")
 
@@ -126,8 +124,6 @@ describe "Waiter":
             async it "propagates cancellation from cancelled writer", V:
                 request = mock.Mock(name="request", ack_required=False, res_required=True)
                 request.Meta.multi = None
-
-                result = Result(request, False, V.retry_options)
 
                 async def writer():
                     fut = asyncio.Future()

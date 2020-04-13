@@ -2,7 +2,7 @@
 
 from photons_transport.fake import WithDevices, pktkeys
 
-from photons_messages import DeviceMessages, MultiZoneMessages, Direction
+from photons_messages import DeviceMessages, MultiZoneMessages
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb

@@ -12,7 +12,6 @@ from photons_messages import protocol_register
 from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
-import binascii
 import asyncio
 import pytest
 

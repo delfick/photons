@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.fake import Responder, Attrs, ServicesResponder, EchoResponder, FakeDevice
+from photons_transport.fake import Responder, Attrs, ServicesResponder, FakeDevice
 from photons_transport.session.memory import MemoryService
 
 from photons_messages import Services, DiscoveryMessages, DeviceMessages
@@ -123,7 +123,7 @@ describe "default responders":
 
         async it "puts limited_services on the device", device, responder:
             await responder.reset(device)
-            assert device.attrs.limited_services == None
+            assert device.attrs.limited_services is None
 
         async it "has a contextmanager for changing limited services", device, responder:
             await responder.reset(device)

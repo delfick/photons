@@ -80,7 +80,7 @@ describe "Memory":
             elif bts is request2:
                 receiver(reply3, "fake")
             else:
-                assert False, f"unexpected request: {request}"
+                assert False, f"unexpected request: {bts}"
 
         def receive(message, addr):
             received.append(message)

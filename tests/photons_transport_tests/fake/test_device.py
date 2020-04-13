@@ -28,7 +28,6 @@ from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import asyncio
 import pytest
-import time
 
 describe "FakeDevice":
     it "has a repr":
@@ -62,7 +61,7 @@ describe "FakeDevice":
 
             assert device.reboots == []
             assert device.services == []
-            assert device.pre_reboot == None
+            assert device.pre_reboot is None
             assert device.time_rebooting == 1
 
         async it "can be given different values for protocol_register, port and use_sockets":
@@ -83,7 +82,7 @@ describe "FakeDevice":
                 def setup(s):
                     called.append(("setup", s.attrs.online))
 
-            device = Device("d073d5001337", [])
+            Device("d073d5001337", [])
             assert called == [("setup", False)]
 
     describe "Usage":
@@ -188,7 +187,7 @@ describe "FakeDevice":
             with mock.patch.object(FakeDevice, "all_responders", [r1, r2]):
                 await device.power_on()
 
-            assert device.attrs.online == True
+            assert device.attrs.online is True
 
             r2.restart.assert_called_once_with(device)
 
@@ -504,7 +503,7 @@ describe "FakeDevice":
                 r1.reset.assert_called_once_with(device, zero=False)
                 r2.reset.assert_called_once_with(device, zero=False)
 
-                assert device.attrs.online == True
+                assert device.attrs.online is True
 
             async it "can reset to zero", device:
                 r1 = mock.NonCallableMock(name="responder1", spec=["reset"])
@@ -553,7 +552,7 @@ describe "FakeDevice":
                             await device.reboot()
 
                 assert len(power_on.mock_calls) == 0
-                assert device.attrs.online == False
+                assert device.attrs.online is False
                 pre_reboot.assert_awaited_once_with(device)
                 r2.shutdown.assert_called_once_with(device)
 
@@ -582,7 +581,7 @@ describe "FakeDevice":
                 await asyncio.sleep(0.1)
 
                 assert len(power_on.mock_calls) == 0
-                assert device.attrs.online == False
+                assert device.attrs.online is False
                 assert called == []
 
         describe "start":
@@ -792,7 +791,7 @@ describe "FakeDevice":
                 with mock.patch.object(device, "got_message", got_message):
                     await device.write("udp", received_data, pkt.tobytes(serial=None))
 
-                assert received_data.mock_calls == [mock.call(m1b, (f"127.0.0.1", port))]
+                assert received_data.mock_calls == [mock.call(m1b, ("127.0.0.1", port))]
 
             async it "does nothing if the serial is incorrect", serial, device:
                 device.use_sockets = False
@@ -934,7 +933,7 @@ describe "FakeDevice":
                 await device.start()
 
                 fut = device.wait_for("udp", DeviceMessages.SetLabel)
-                fut2 = device.wait_for("udp", DeviceMessages.SetGroup)
+                device.wait_for("udp", DeviceMessages.SetGroup)
                 assert device.waiters == {
                     ("udp", DeviceMessages.SetGroup): mock.ANY,
                     ("udp", DeviceMessages.SetLabel): mock.ANY,
@@ -1055,7 +1054,7 @@ describe "FakeDevice":
                 assert state_service.port == 56700
 
                 assert service.address("memory") == (f"fake://{serial}/memory", 56700)
-                assert service.address("udp") == None
+                assert service.address("udp") is None
 
         describe "ensure_udp_service":
 
@@ -1137,7 +1136,7 @@ describe "FakeDevice":
                 await device.start()
                 pkt = DeviceMessages.SetLabel(label="hi")
                 res = await device.make_response(pkt, "memory")
-                assert res == None
+                assert res is None
 
             async it "uses extra_make_response if we didn't find a responder", device:
                 await device.start()
@@ -1157,7 +1156,7 @@ describe "FakeDevice":
                 with mock.patch.object(device, "extra_make_response", extra_make_response):
                     extra_make_response.side_effect = yld()
                     res = await device.make_response(pkt, "memory")
-                    assert res == None
+                    assert res is None
                     extra_make_response.assert_called_once_with(pkt, "memory")
                     extra_make_response.reset_mock()
 
@@ -1298,7 +1297,6 @@ describe "FakeDevice":
             async it "complains if the messages are different", device:
                 p1 = DeviceMessages.GetPower()
                 p2 = DeviceMessages.SetLabel(label="hi")
-                p3 = DeviceMessages.SetLabel(label="other")
 
                 device.received = [p1, p2]
 

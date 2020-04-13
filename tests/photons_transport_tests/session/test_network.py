@@ -4,16 +4,11 @@ from photons_transport.session.discovery_options import NoDiscoveryOptions, NoEn
 from photons_transport.errors import NoDesiredService, UnknownService, InvalidBroadcast
 from photons_transport.session.network import NetworkSession, UDPRetryOptions
 from photons_transport.transports.udp import UDP
-from photons_transport.targets import LanTarget
 from photons_transport.comms.base import Found
-from photons_transport.fake import FakeDevice
 
-from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
-from photons_messages import Services, DeviceMessages, DiscoveryMessages, protocol_register
-from photons_control import test_helpers as chp
-from photons_products import Products
+from photons_messages import Services, DeviceMessages, DiscoveryMessages
 
 from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
@@ -505,7 +500,7 @@ describe "NetworkSession":
             assert V.session.found == Found()
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
 
-            with mocks(10, run) as script:
+            with mocks(10, run):
                 fn = await V.session._do_search(serials, 10, broadcast=True)
 
             assert called == ["run"] * 4

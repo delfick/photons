@@ -430,9 +430,6 @@ describe "Result":
                     return other.num == s.num
 
             PacketOne = Packet(1, 10)
-            PacketTwo = Packet(2, 20)
-
-            multi = MultiOptions(lambda req: PacketTwo, lambda req, res: res.count)
 
             result = Result(V.request, False, RetryOptions())
             result.results = [(PacketOne, None, None), (PacketOne, None, None)]

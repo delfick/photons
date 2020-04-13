@@ -236,7 +236,7 @@ describe "serial_filter_spec":
         with modified_env(SERIAL_FILTER="null"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = spec.normalise(meta, v)
-                assert res == None
+                assert res is None
 
     it "returns sb.NotSpecified as sb.NotSpecified", meta, spec:
         assert spec.normalise(meta, sb.NotSpecified) is sb.NotSpecified
@@ -373,18 +373,18 @@ describe "NoDiscoveryOptions":
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
-            assert options.serial_filter == None
-            assert options.hardcoded_discovery == None
+            assert options.serial_filter is None
+            assert options.hardcoded_discovery is None
 
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
-        assert options.serial_filter == None
-        assert options.hardcoded_discovery == None
+        assert options.serial_filter is None
+        assert options.hardcoded_discovery is None
 
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise(
             serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
         )
-        assert options.serial_filter == None
-        assert options.hardcoded_discovery == None
+        assert options.serial_filter is None
+        assert options.hardcoded_discovery is None
 
     it "says no hardcoded_discovery":
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
@@ -465,7 +465,7 @@ describe "discovery_options_spec":
             meta.everything["discovery_options"] = options
 
             res = spec.normalise(meta, {"hardcoded_discovery": None})
-            assert res.hardcoded_discovery == None
+            assert res.hardcoded_discovery is None
 
             res = spec.normalise(meta, {"hardcoded_discovery": {"d073d5000002": "192.168.0.2"}})
             assert res.hardcoded_discovery == {
@@ -496,7 +496,7 @@ describe "discovery_options_spec":
         meta.everything["discovery_options"] = options
 
         res = spec.normalise(meta, {"hardcoded_discovery": None})
-        assert res.hardcoded_discovery == None
+        assert res.hardcoded_discovery is None
 
         res = spec.normalise(meta, {"hardcoded_discovery": {"d073d5000002": "192.168.0.2"}})
         assert res.hardcoded_discovery == {
