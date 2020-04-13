@@ -17,7 +17,7 @@ describe "Collection":
         assert collection.typ == typ
         assert collection.uuid == cuuid
         assert collection.name == name
-        assert collection.newest_timestamp == None
+        assert collection.newest_timestamp is None
 
     describe "add_name":
         it "adds new name if we don't have a timestamp yet":
@@ -29,7 +29,7 @@ describe "Collection":
             collection = Collection.FieldSpec().empty_normalise(typ=typ, uuid=cuuid)
 
             assert collection.name == ""
-            assert collection.newest_timestamp == None
+            assert collection.newest_timestamp is None
 
             collection.add_name(timestamp, name)
 
@@ -46,7 +46,7 @@ describe "Collection":
             collection = Collection.FieldSpec().empty_normalise(typ=typ, uuid=cuuid)
 
             assert collection.name == ""
-            assert collection.newest_timestamp == None
+            assert collection.newest_timestamp is None
 
             collection.add_name(1, name)
 

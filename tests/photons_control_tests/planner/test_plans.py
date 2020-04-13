@@ -4,11 +4,8 @@ from photons_control.planner.plans import a_plan, make_plans, Plan
 
 from photons_app.errors import PhotonsAppError
 
-from photons_messages import DeviceMessages, DiscoveryMessages, Services
-
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import pytest
 import uuid
 
 describe "a_plan":
@@ -71,9 +68,9 @@ describe "Plan":
         plan = Plan()
         instance = plan.Instance("d073d5001337", plan, {})
 
-        assert plan.messages == None
-        assert instance.messages == None
-        assert plan.dependant_info == None
+        assert plan.messages is None
+        assert instance.messages is None
+        assert plan.dependant_info is None
 
     it "has default refresh which can be overridden":
         assert Plan().refresh == 10
@@ -110,5 +107,5 @@ describe "Plan":
         deps = mock.Mock(name="deps")
         serial = mock.Mock(name="serial")
 
-        instance = plan.Instance(serial, plan, deps)
+        plan.Instance(serial, plan, deps)
         assert called == [(serial, plan, deps)]

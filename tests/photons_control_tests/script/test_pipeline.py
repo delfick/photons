@@ -3,7 +3,7 @@
 from photons_control import test_helpers as chp
 from photons_control.script import Pipeline
 
-from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
+from photons_app.errors import RunErrors, TimedOut
 from photons_app.special import FoundSerials
 
 from photons_messages import DeviceMessages, LightMessages
@@ -298,7 +298,6 @@ describe "Pipeline":
         got = defaultdict(list)
         errors = []
         await runner.sender.find_specific_serials(runner.serials)
-        start = loop_time()
         async for pkt in runner.sender(
             msg, runner.serials, error_catcher=errors, message_timeout=0.2
         ):

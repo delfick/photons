@@ -3,9 +3,9 @@
 from photons_control.planner import Gatherer, make_plans, Plan, NoMessages, Skip
 from photons_control import test_helpers as chp
 
-from photons_app.errors import PhotonsAppError, TimedOut, BadRunWithResults
+from photons_app.errors import TimedOut, BadRunWithResults
 
-from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages
+from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
@@ -13,7 +13,6 @@ from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
 from unittest import mock
 import pytest
-import uuid
 
 light1 = FakeDevice(
     "d073d5000001",

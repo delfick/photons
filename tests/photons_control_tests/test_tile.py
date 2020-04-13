@@ -3,7 +3,7 @@
 from photons_control.tile import SetTileEffect, default_tile_palette
 from photons_control import test_helpers as chp
 
-from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
+from photons_app.errors import PhotonsAppError
 from photons_transport.fake import FakeDevice
 
 from photons_messages import DeviceMessages, LightMessages, TileMessages, TileEffectType
@@ -11,7 +11,6 @@ from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
 import pytest
-import uuid
 
 
 def convert(c):

@@ -10,8 +10,8 @@ from photons_control.multizone import (
 from photons_control.planner import Skip, NoMessages
 from photons_control import test_helpers as chp
 
-from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_control.colour import ColourParser
+from photons_app.errors import PhotonsAppError
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
 from photons_products.registry import Capability
@@ -20,7 +20,6 @@ from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
 import pytest
-import uuid
 
 
 zeroColor = chp.Color(0, 0, 0, 3500)

@@ -6,11 +6,8 @@ from photons_control.transform import Transformer, PowerToggle
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.colour import ColourParser
 from photons_transport.fake import FakeDevice
-from photons_control.script import Pipeline
 
-from delfick_project.norms import dictobj
 import itertools
-import asyncio
 import random
 import pytest
 

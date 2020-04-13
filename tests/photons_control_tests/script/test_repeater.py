@@ -61,7 +61,7 @@ describe "Repeater":
                 got_power = False
                 got_light = False
                 if len(pkts) < 6:
-                    assert False, ("Expected at least 6 replies", pkts, serial)
+                    assert False, ("Expected at least 6 replies", pkts, runner.serial)
 
                 while pkts:
                     nxt = pkts.pop()
@@ -102,7 +102,7 @@ describe "Repeater":
 
         for pkts in got.values():
             if len(pkts) < 6:
-                assert False, ("Expected at least 6 replies", pkts, serial)
+                assert False, ("Expected at least 6 replies", pkts, runner.serial)
 
             first = pkts.pop(0)[1]
             current = pkts.pop(0)[1]

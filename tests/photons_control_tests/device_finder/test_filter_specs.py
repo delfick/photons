@@ -10,32 +10,32 @@ describe "boolean":
         spec = boolean()
         meta = Meta.empty()
 
-        assert spec.normalise(meta, 0) == False
-        assert spec.normalise(meta, [0]) == False
+        assert spec.normalise(meta, 0) is False
+        assert spec.normalise(meta, [0]) is False
         for i in (1, 20, 100):
-            assert spec.normalise(meta, i) == True
-            assert spec.normalise(meta, [i]) == True
+            assert spec.normalise(meta, i) is True
+            assert spec.normalise(meta, [i]) is True
 
     it "transforms a str into boolean":
         spec = boolean()
         meta = Meta.empty()
 
         for s in ("no", "false", "No", "NO", "False", "FALSE"):
-            assert spec.normalise(meta, s) == False
-            assert spec.normalise(meta, [s]) == False
+            assert spec.normalise(meta, s) is False
+            assert spec.normalise(meta, [s]) is False
 
         for s in ("yes", "true", "True", "TRUE", "YES"):
-            assert spec.normalise(meta, s) == True
-            assert spec.normalise(meta, [s]) == True
+            assert spec.normalise(meta, s) is True
+            assert spec.normalise(meta, [s]) is True
 
     it "passes through booleans":
         spec = boolean()
         meta = Meta.empty()
 
-        assert spec.normalise(meta, False) == False
-        assert spec.normalise(meta, [False]) == False
-        assert spec.normalise(meta, True) == True
-        assert spec.normalise(meta, [True]) == True
+        assert spec.normalise(meta, False) is False
+        assert spec.normalise(meta, [False]) is False
+        assert spec.normalise(meta, True) is True
+        assert spec.normalise(meta, [True]) is True
 
     it "complains about anything else":
 

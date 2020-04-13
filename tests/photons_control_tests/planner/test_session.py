@@ -4,7 +4,6 @@ from photons_control.planner.gatherer import Session, Planner
 
 from photons_app import helpers as hp
 
-from contextlib import contextmanager
 from unittest import mock
 import pytest
 import uuid

@@ -13,7 +13,7 @@ describe "Filter":
         def assertFltrMatches(self, filtr, expect):
             for field in Filter.fields:
                 if field in ("refresh_info", "refresh_discovery") and field not in expect:
-                    assert filtr[field] == False
+                    assert filtr[field] is False
                 elif field in expect:
                     assert filtr[field] == expect[field]
                 else:
@@ -74,7 +74,6 @@ describe "Filter":
 
         describe "from_url_str":
             it "treats url_str as a dictionary":
-                filtr = mock.Mock(name="filtr")
                 s = "label=kitchen&location_name=kitchen%20lights&location_name=two&hue=20-50&hue=0.6-0.9&refresh_discovery=true"
                 expect = {
                     "label": ["kitchen"],

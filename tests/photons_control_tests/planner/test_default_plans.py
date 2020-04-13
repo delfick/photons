@@ -4,7 +4,6 @@ from photons_control.planner import Skip, PacketPlan
 from photons_control import test_helpers as chp
 
 from photons_app.test_helpers import assert_payloads_equals, print_packet_difference
-from photons_app.errors import PhotonsAppError, RunErrors, TimedOut
 from photons_app.special import FoundSerials
 
 from photons_messages import (
@@ -22,8 +21,6 @@ from photons_products import Products
 
 from unittest import mock
 import pytest
-import uuid
-import json
 
 
 class Partial:
@@ -39,7 +36,7 @@ class Partial:
         return True
 
     def __repr__(s):
-        if self.equal:
+        if s.equal:
             return repr(s.equal)
         else:
             return f"<DIFFERENT: {repr(s.item)}>"

@@ -312,7 +312,7 @@ describe "FromGenerator":
             if pkt | DeviceMessages.GetPower:
                 got.append(loop_time())
             else:
-                assert false, "unknown message"
+                assert False, "unknown message"
 
         light1.set_intercept_got_message(waiter)
         light2.set_intercept_got_message(waiter)
@@ -345,7 +345,7 @@ describe "FromGenerator":
                 if pkt.serial == light2.serial:
                     return False
             else:
-                assert false, "unknown message"
+                assert False, "unknown message"
 
         light1.set_intercept_got_message(waiter)
         light2.set_intercept_got_message(waiter)
