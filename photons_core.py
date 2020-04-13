@@ -56,7 +56,7 @@ class CommandSplitter(MergedOptionStringFormatter):
     will be stripped in the result.
 
     .. code-block:: python
-        
+
         command = 'lan:transform {@:1:} -- '{"power": "off"}''
         result = CommandSplitter({"argv": ["my_script", "match:cap=kitchen", "--silent"]}, command).split()
         assert result == ["lan:transform", "match:cap=kitchen", "--silent", "--", '{"power": "off"}']

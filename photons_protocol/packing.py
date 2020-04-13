@@ -171,7 +171,7 @@ class PacketPacking(object):
 
                 if len(val) != number:
                     raise BadConversion(
-                        f"Expected correct number of items", name=name, found=len(val), want=number
+                        "Expected correct number of items", name=name, found=len(val), want=number
                     )
 
                 for v in val:

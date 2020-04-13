@@ -58,8 +58,8 @@ class ShowMessagesDirective(Directive):
                     template.extend(
                         [
                             "",
-                            "``{1}.{2}.{3}``".format(
-                                num, "photons_messages", kls.__name__, msg.__name__
+                            "``{0}.{1}.{2}``".format(
+                                "photons_messages", kls.__name__, msg.__name__
                             ),
                             "",
                         ]

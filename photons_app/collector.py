@@ -143,7 +143,7 @@ class Collector(Collector):
 
     async def stop_photons_app(self):
         """
-        Perform Photons cleanup 
+        Perform Photons cleanup
         """
         targets = self.configuration["target_register"].used_targets
         await self.photons_app.cleanup(targets)

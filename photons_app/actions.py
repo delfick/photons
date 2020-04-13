@@ -198,8 +198,8 @@ async def list_tasks(
                             result.append(("", ""))
                         desc = dedent(func.__doc__ or "").strip().split("\n")[0]
                         full_desc = func.__doc__ or ""
-                        base_str = "    {1} :: {2}{3}".format(
-                            " ", label, key, " " * (max_length - len(key))
+                        base_str = "    {0} :: {1}{2}".format(
+                            label, key, " " * (max_length - len(key))
                         )
 
                         if specific_task is not sb.NotSpecified:

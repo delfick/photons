@@ -113,7 +113,7 @@ Once you have a ``DeviceFinder`` object you then use it like any other
     from photons_control.device_finder import DeviceFinder
     from photons_messages import DeviceMessages
 
-    
+
     async with target.session() as sender:
         # Turn off the lights with label kitchen
         reference = DeviceFinder.from_kwargs(label="kitchen")
