@@ -2,4 +2,4 @@
 
 from venvstarter import ignite
 
-ignite(__file__, "pylama", deps=["pylama==7.5.5"], min_python_version=3.6)
+ignite(__file__, "noy_pylama", deps=["pylama==7.7.1", "noseOfYeti==2.0.1"], min_python_version=3.6)
