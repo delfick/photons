@@ -9,7 +9,6 @@ from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
 from textwrap import dedent
 from unittest import mock
-import uuid
 
 describe "App":
     describe "setup_collector":

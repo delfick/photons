@@ -4,7 +4,6 @@ from photons_app import helpers as hp
 
 from unittest import mock
 import asyncio
-import pytest
 import time
 
 

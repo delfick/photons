@@ -162,7 +162,7 @@ describe "run":
 
         self.assertRunnerBehaviour(
             script,
-            f"USERQUIT<class 'KeyboardInterrupt'>",
+            "USERQUIT<class 'KeyboardInterrupt'>",
             expected_stdout,
             expected_stderr,
             sig=signal.SIGINT,
@@ -413,7 +413,7 @@ describe "run":
 
         self.assertRunnerBehaviour(
             script,
-            f"STOPPED<class 'photons_app.errors.ApplicationStopped'>",
+            "STOPPED<class 'photons_app.errors.ApplicationStopped'>",
             expected_stdout,
             expected_stderr,
             sig=signal.SIGTERM,
@@ -421,9 +421,6 @@ describe "run":
 
     it "runs the collector and runs cleanup when that's done":
         info = {"cleaned": False, "ran": False}
-
-        loop = asyncio.new_event_loop()
-        final_future = asyncio.Future(loop=loop)
 
         target_register = mock.Mock(name="target_register")
 
@@ -443,9 +440,6 @@ describe "run":
 
     it "cleans up even if runner raise an exception":
         info = {"cleaned": False, "ran": False}
-
-        loop = asyncio.new_event_loop()
-        final_future = asyncio.Future(loop=loop)
 
         target_register = mock.Mock(name="target_register")
 
@@ -613,7 +607,7 @@ describe "run":
             fut.set_result(None)
 
             transfer_result(fut, final_future)
-            assert final_future.result() == None
+            assert final_future.result() is None
 
         it "doesn't fail if the final_future already has an exception when the task finishes":
             final_future = asyncio.Future()

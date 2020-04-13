@@ -7,7 +7,6 @@ from photons_app.errors import BadOption
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta
 from unittest import mock
-import platform
 import asyncio
 import pytest
 

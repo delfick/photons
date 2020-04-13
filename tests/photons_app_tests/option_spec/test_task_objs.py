@@ -35,10 +35,6 @@ def V():
             collector.prepare(None, {})
             return collector
 
-        @hp.memoized_property
-        def target_register(self):
-            return collector.configuration["target_register"]
-
     return V()
 
 
@@ -282,7 +278,6 @@ describe "Task":
                 reference_setter(reference)
                 assert V.task.resolve_reference(V.collector, task_func) is reference
 
-            task_func2 = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
             reference_setter("what")
             assert V.task.resolve_reference(V.collector, task_func) == "what"
 

@@ -138,7 +138,6 @@ describe "ResultStreamer":
             on_done.assert_called_once_with(hp.ResultStreamer.Result(error, ctx, False))
 
         async it "can give a success to on_one", V:
-            error = TypeError("WAT")
             on_done = mock.Mock(name="on_done")
             ctx = mock.NonCallableMock(name="context", spec=[])
 
@@ -679,9 +678,9 @@ describe "Using ResultStreamer":
         async def add_gen1():
             async def gen1():
                 await futs[2]
-                yield f"r_g1_1"
+                yield "r_g1_1"
                 await futs[6]
-                yield f"r_g1_last"
+                yield "r_g1_last"
 
             XS.g1 = CTX.Gen("gen1", 2)
             await streamer.add_generator(gen1(), context=XS.g1, on_done=make_on_done(3))
@@ -930,7 +929,7 @@ describe "Using ResultStreamer":
                     traceback.print_tb(r.value.__traceback__, file=sys.stdout)
 
                 if not result.successful and not r.successful:
-                    if type(result.value) == type(r.value):
+                    if isinstance(result.value, r.value.__class__):
                         r.value = repr(r.value)
                         result.value = repr(result.value)
 

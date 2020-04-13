@@ -3,11 +3,10 @@
 from photons_app.registers import Target, TargetRegister, ProtocolRegister, ReferenceResolerRegister
 from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.errors import BadYaml, BadConfiguration
-from photons_app.option_spec.task_objs import Task
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 
-from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
+from delfick_project.norms import dictobj, sb, BadSpecValue
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.option_merge.path import Path
@@ -15,7 +14,6 @@ from delfick_project.addons import Register
 from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
-import pkg_resources
 import asyncio
 import pytest
 import uuid
@@ -695,7 +693,6 @@ describe "Collector":
 
     describe "extra_configuration_collection":
         it "registers converters for serveral things":
-            f = asyncio.Future()
             configuration = MergedOptions.using(
                 {"targets": {"one": {"type": "special", "options": {1: 2}}}}
             )

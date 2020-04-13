@@ -236,7 +236,7 @@ describe "memoized_property":
         assert thing.blah is None
         assert called == [1]
 
-        assert thing._blah == None
+        assert thing._blah is None
         assert thing.blah is None
         assert called == [1]
 
@@ -254,7 +254,7 @@ describe "memoized_property":
         assert thing.blah is False
         assert called == [1]
 
-        assert thing._blah == False
+        assert thing._blah is False
         assert thing.blah is False
         assert called == [1]
 

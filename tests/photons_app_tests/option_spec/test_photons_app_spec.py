@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec, PhotonsApp
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.registers import TargetRegister
 from photons_app.registers import Target
 from photons_app import helpers as hp
@@ -62,7 +61,7 @@ describe "PhotonsAppSpec":
             )
             assert isinstance(res, PhotonsApp)
             assert res.task_specifier() == ("blah", "things")
-            assert res.debug == True
+            assert res.debug is True
 
     describe "target_register_spec":
         it "gets us a TargetRegister", V:

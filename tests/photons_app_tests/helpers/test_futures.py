@@ -155,10 +155,10 @@ describe "ResettableFuture":
             assert not fut.done()
             fut.set_result(True)
             assert fut.done()
-            assert fut.result() == True
+            assert fut.result() is True
             assert not fut.cancelled()
-            assert fut.exception() == None
-            assert await fut == True
+            assert fut.exception() is None
+            assert await fut is True
 
             fut2 = hp.ResettableFuture()
             error = PhotonsAppError("lol")
@@ -324,7 +324,7 @@ describe "ChildOfFuture":
             V.cof.set_result(True)
             assert V.cof.done()
             assert not V.orig_fut.done()
-            assert await V.cof == True
+            assert await V.cof is True
 
     describe "Getting  result":
         async it "cancels the future if original is done", V:
@@ -750,11 +750,6 @@ describe "ChildOfFuture":
             async with waiting_for(error):
                 V.cof.set_exception(error)
 
-        async it "returns result from orig_fut if that goes first", waiting_for, V:
-            error = PhotonsAppError("yeap")
-            async with waiting_for(error):
-                V.orig_fut.set_exception(error)
-
 describe "fut_has_callback":
     async it "says no if fut has no callbacks":
 
@@ -817,7 +812,6 @@ describe "async_with_timeout":
 
         async def func():
             await asyncio.sleep(2)
-            return val
 
         start = time.time()
         with assertRaises(asyncio.CancelledError):
@@ -830,9 +824,8 @@ describe "async_with_timeout":
         async def func():
             try:
                 await asyncio.sleep(2)
-            except asyncio.CancelledError as error:
+            except asyncio.CancelledError:
                 assert False, "Expected it to just raise the error rather than cancelling first"
-            return val
 
         start = time.time()
         with assertRaises(PhotonsAppError, "Blah"):
@@ -864,33 +857,33 @@ describe "silent_reporter":
     async it "does nothing if the future was cancelled":
         fut = asyncio.Future()
         fut.cancel()
-        assert hp.silent_reporter(fut) == None
+        assert hp.silent_reporter(fut) is None
 
     async it "does nothing if the future has an exception":
         fut = asyncio.Future()
         fut.set_exception(Exception("wat"))
-        assert hp.silent_reporter(fut) == None
+        assert hp.silent_reporter(fut) is None
 
     async it "returns true if we have a result":
         fut = asyncio.Future()
         fut.set_result(mock.Mock(name="result"))
-        assert hp.silent_reporter(fut) == True
+        assert hp.silent_reporter(fut) is True
 
 describe "reporter":
     async it "does nothing if the future was cancelled":
         fut = asyncio.Future()
         fut.cancel()
-        assert hp.reporter(fut) == None
+        assert hp.reporter(fut) is None
 
     async it "does nothing if the future has an exception":
         fut = asyncio.Future()
         fut.set_exception(Exception("wat"))
-        assert hp.reporter(fut) == None
+        assert hp.reporter(fut) is None
 
     async it "returns true if we have a result":
         fut = asyncio.Future()
         fut.set_result(mock.Mock(name="result"))
-        assert hp.reporter(fut) == True
+        assert hp.reporter(fut) is True
 
 describe "transfer_result":
     async it "works as a done_callback", loop:
@@ -1001,7 +994,6 @@ describe "noncancelled_results_from_futs":
 
         error1 = PhotonsAppError("wat", one=1)
         error2 = PhotonsAppError("wat", one=1)
-        result2 = mock.Mock(name="result2")
 
         fut2.set_exception(error1)
         fut3.cancel()
@@ -1049,7 +1041,7 @@ describe "find_and_apply_result":
 
     async it "cancels futures if final_future is cancelled", V:
         V.final_fut.cancel()
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
 
         assert V.fut1.cancelled()
         assert V.fut2.cancelled()
@@ -1061,7 +1053,7 @@ describe "find_and_apply_result":
     async it "sets exceptions on futures if final_future has an exception", V:
         error = ValueError("NOPE")
         V.final_fut.set_exception(error)
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
 
         for f in V.available_futs:
             assert f.exception() is error
@@ -1074,7 +1066,7 @@ describe "find_and_apply_result":
 
         err2 = ValueError("NOPE")
         V.final_fut.set_exception(err2)
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
 
         assert V.available_futs[0].exception() is err1
         assert V.available_futs[1].cancelled()
@@ -1085,7 +1077,7 @@ describe "find_and_apply_result":
         error1 = Exception("wat")
         V.fut2.set_exception(error1)
 
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
 
         assert V.fut1.exception() is error1
         assert V.fut2.exception() is error1
@@ -1103,7 +1095,7 @@ describe "find_and_apply_result":
 
         V.fut4.cancel()
 
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
 
         assert V.fut1.exception() is error2
         assert V.fut2.exception() is error1
@@ -1116,7 +1108,7 @@ describe "find_and_apply_result":
         result = mock.Mock(name="result")
         V.fut1.set_result(result)
 
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
 
         assert V.fut1.result() is result
         assert V.fut2.result() is result
@@ -1130,7 +1122,7 @@ describe "find_and_apply_result":
         V.fut1.set_result(result)
         V.fut2.cancel()
 
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
 
         assert V.fut1.result() is result
         assert V.fut2.cancelled()
@@ -1144,16 +1136,16 @@ describe "find_and_apply_result":
         V.fut1.set_result(result)
         V.final_fut.cancel()
 
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
         assert V.final_fut.cancelled()
 
     async it "cancels final_fut if any of our futs are cancelled", V:
         V.fut1.cancel()
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == True
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
         assert V.final_fut.cancelled()
 
     async it "does nothing if none of the futures are done", V:
-        assert hp.find_and_apply_result(V.final_fut, V.available_futs) == False
+        assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
         for f in V.available_futs:
             assert not f.done()
         assert not V.final_fut.done()

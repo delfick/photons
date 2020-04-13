@@ -29,13 +29,13 @@ describe "Target":
     it "takes in things":
         target = Target.FieldSpec().empty_normalise(type="thing", optional=True, options={"one": 2})
         assert target.type == "thing"
-        assert target.optional == True
+        assert target.optional is True
         assert target.options == {"one": 2}
 
     it "has defaults":
         target = Target.FieldSpec().empty_normalise(type="thing")
         assert target.type == "thing"
-        assert target.optional == False
+        assert target.optional is False
         assert target.options == {}
 
 describe "MessageRegister":
@@ -69,7 +69,7 @@ describe "MessageRegister":
 
 describe "ProtocolRegister":
     it "can be formatted":
-        assert ProtocolRegister._merged_options_formattable == True
+        assert ProtocolRegister._merged_options_formattable is True
 
     it "has a dictionary of protocol_classes":
         register = ProtocolRegister()
@@ -110,7 +110,7 @@ describe "ProtocolRegister":
 
         assert register.get(protocol) == register.protocol_classes[protocol]
 
-        assert register.get(protocol2) == None
+        assert register.get(protocol2) is None
 
         dflt = mock.Mock(name="dflt")
         assert register.get(protocol2, dflt) is dflt
@@ -131,7 +131,7 @@ describe "ProtocolRegister":
 
 describe "TargetRegister":
     it "can be formatted":
-        assert TargetRegister._merged_options_formattable == True
+        assert TargetRegister._merged_options_formattable is True
 
     it "has some things on it", collector:
         register = TargetRegister(collector)
@@ -193,11 +193,11 @@ describe "TargetRegister":
 
         assert register.type_for("target1") == "type1"
         assert register.type_for("target2") == "type2"
-        assert register.type_for("target3") == None
+        assert register.type_for("target3") is None
 
     it "says the type for sb.NotSpecified is None", collector:
         register = TargetRegister(collector)
-        assert register.type_for(sb.NotSpecified) == None
+        assert register.type_for(sb.NotSpecified) is None
 
     it "can get description of a target", collector:
         desc = mock.Mock(name="desc")

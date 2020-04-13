@@ -6,7 +6,7 @@ from photons_app.special import (
     HardCodedSerials,
     ResolveReferencesFromFile,
 )
-from photons_app.errors import PhotonsAppError, DevicesNotFound
+from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
@@ -126,7 +126,6 @@ describe "SpecialReference":
 describe "FoundSerials":
     async it "calls sender.find_devices with broadcast":
         found = mock.Mock(name="found")
-        address = mock.Mock(name="address")
 
         sender = mock.Mock(name="sender")
         sender.find_devices = pytest.helpers.AsyncMock(name="find_devices", return_value=found)
@@ -284,7 +283,6 @@ describe "ResolveReferencesFromFile":
         resolver.reset.assert_called_once_with()
 
         sender = mock.Mock(name="sender")
-        broadcast = mock.Mock(name="broadcast")
         find_timeout = mock.Mock(name="find_timeout")
         assert len(resolver.find.mock_calls) == 0
 

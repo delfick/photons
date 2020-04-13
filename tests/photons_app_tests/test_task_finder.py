@@ -1,13 +1,11 @@
 # coding: spec
 
-from photons_app.errors import ProgrammerError, BadTask
-from photons_app.option_spec.task_objs import Task
 from photons_app.task_finder import TaskFinder
 from photons_app.actions import all_tasks
+from photons_app.errors import BadTask
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
 from unittest import mock
 import pytest
 
