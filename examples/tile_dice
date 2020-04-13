@@ -26,7 +26,6 @@ log = logging.getLogger("tile_dice")
         ("lifx.photons", "themes"),
         ("lifx.photons", "control"),
         ("lifx.photons", "tile_paint"),
-        ("lifx.photons", "device_finder"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):

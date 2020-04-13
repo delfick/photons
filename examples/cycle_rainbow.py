@@ -22,7 +22,7 @@ async def doit(collector):
     parser.add_argument("--brightness", type=float, default=1)
     args = parser.parse_args()
 
-    reference = collector.reference_object(lan_target, args.reference)
+    reference = collector.reference_object(args.reference)
 
     power_on = DeviceMessages.SetPower(level=65535)
 

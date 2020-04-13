@@ -249,17 +249,17 @@ class ReferenceResolerRegister(object):
     _merged_options_formattable = True
 
     def __init__(self):
-        self.resolvers = {"file": lambda filename, _: ResolveReferencesFromFile(filename)}
+        self.resolvers = {"file": lambda filename: ResolveReferencesFromFile(filename)}
 
     def add(self, typ, resolver):
         self.resolvers[typ] = resolver
 
-    def resolve(self, typ, options, target):
+    def resolve(self, typ, options):
         if typ not in self.resolvers:
             raise ResolverNotFound(wanted=typ, available=list(self.resolvers))
-        return self.resolvers[typ](options, target)
+        return self.resolvers[typ](options)
 
-    def reference_object(self, target, reference=sb.NotSpecified):
+    def reference_object(self, reference=sb.NotSpecified):
         """
         * NotSpecified, "", None or _ are seen as all serials on the network
         * ``typ:options`` is given resolved using our resolvers
@@ -274,7 +274,7 @@ class ReferenceResolerRegister(object):
         if type(reference) is str:
             if ":" in reference:
                 typ, options = reference.split(":", 1)
-                reference = self.resolve(typ, options, target)
+                reference = self.resolve(typ, options)
 
         if isinstance(reference, SpecialReference):
             return reference

@@ -263,7 +263,7 @@ describe "Task":
                     action=V.action,
                 ):
                     reference_setter(reference)
-                    V.task.resolve_reference(V.collector, task_func, V.target)
+                    V.task.resolve_reference(V.collector, task_func)
 
         it "complains if we need a reference and none is given even if special_reference is True", V, reference_setter:
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
@@ -274,23 +274,23 @@ describe "Task":
                     action=V.action,
                 ):
                     reference_setter(reference)
-                    V.task.resolve_reference(V.collector, task_func, V.target)
+                    V.task.resolve_reference(V.collector, task_func)
 
         it "returns reference as is", V, reference_setter:
             task_func = mock.Mock(name="task_func", needs_reference=False, special_reference=False)
             for reference in ("", None, sb.NotSpecified, "what"):
                 reference_setter(reference)
-                assert V.task.resolve_reference(V.collector, task_func, V.target) is reference
+                assert V.task.resolve_reference(V.collector, task_func) is reference
 
             task_func2 = mock.Mock(name="task_func", needs_reference=True, special_reference=False)
             reference_setter("what")
-            assert V.task.resolve_reference(V.collector, task_func, V.target) == "what"
+            assert V.task.resolve_reference(V.collector, task_func) == "what"
 
         it "returns the reference as a SpecialReference if special_reference is True", V, reference_setter:
             task_func = mock.Mock(name="task_func", needs_reference=True, special_reference=True)
             reference = "d073d5000001,d073d5000002"
             reference_setter(reference)
-            resolved = V.task.resolve_reference(V.collector, task_func, V.target)
+            resolved = V.task.resolve_reference(V.collector, task_func)
             wanted = [binascii.unhexlify(ref) for ref in reference.split(",")]
 
             assert resolved.targets == wanted
@@ -300,7 +300,7 @@ describe "Task":
             task_func = mock.Mock(name="task_func", needs_reference=False, special_reference=True)
             for r in ("", "_", None, sb.NotSpecified):
                 reference_setter(r)
-                references = V.task.resolve_reference(V.collector, task_func, V.target)
+                references = V.task.resolve_reference(V.collector, task_func)
                 assert isinstance(references, FoundSerials), references
 
         it "returns the resolved reference if of type typ:options", V, reference_setter:
@@ -315,9 +315,9 @@ describe "Task":
 
             reference = "my_resolver:blah:and,stuff"
             reference_setter(reference)
-            resolved = V.task.resolve_reference(V.collector, task_func, V.target)
+            resolved = V.task.resolve_reference(V.collector, task_func)
             assert resolved is ret
-            resolver.assert_called_once_with("blah:and,stuff", V.target)
+            resolver.assert_called_once_with("blah:and,stuff")
 
         it "returns a SpecialReference if our resolver returns not a special reference", V, reference_setter:
             ret = "d073d5000001,d073d5000002"
@@ -335,10 +335,10 @@ describe "Task":
 
                 reference = "my_resolver:blah:and,stuff"
                 reference_setter(reference)
-                resolved = V.task.resolve_reference(V.collector, task_func, V.target)
+                resolved = V.task.resolve_reference(V.collector, task_func)
                 assert type(resolved) == HardCodedSerials, resolved
                 assert resolved.targets == wanted
-                resolver.assert_called_once_with("blah:and,stuff", V.target)
+                resolver.assert_called_once_with("blah:and,stuff")
 
     describe "resolve_target":
 

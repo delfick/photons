@@ -383,5 +383,5 @@ class Collector(Collector):
     def resolve_target(self, name):
         return self.configuration["target_register"].resolve(name)
 
-    def reference_object(self, target, reference):
-        return self.configuration["reference_resolver_register"].reference_object(target, reference)
+    def reference_object(self, reference):
+        return self.configuration["reference_resolver_register"].reference_object(reference)

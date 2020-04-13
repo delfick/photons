@@ -17,7 +17,6 @@ wanted = [
     "control",
     "messages",
     "themes",
-    "device_finder",
     "products",
 ]
 

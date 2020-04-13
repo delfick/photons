@@ -7,6 +7,7 @@ from delfick_project.norms import sb
 import binascii
 
 # Get us our actions
+from photons_control.device_finder import DeviceFinder
 import photons_control.attributes  # noqa
 import photons_control.multizone  # noqa
 import photons_control.transform  # noqa
@@ -19,6 +20,14 @@ __shortdesc__ = "Tasks and code for control of the devices"
 @addon_hook(extras=[("lifx.photons", "messages"), ("lifx.photons", "products")])
 def __lifx__(collector, *args, **kwargs):
     pass
+
+
+@addon_hook(post_register=True)
+def __lifx_post__(collector, **kwargs):
+    def resolve(s):
+        return DeviceFinder.from_url_str(s)
+
+    collector.configuration["reference_resolver_register"].add("match", resolve)
 
 
 @an_action(needs_target=True, special_reference=True)

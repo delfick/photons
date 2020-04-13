@@ -36,7 +36,7 @@ class Task(dictobj):
 
         target = self.resolve_target(collector, target)
         artifact = self.resolve_artifact(collector)
-        reference = self.resolve_reference(collector, task_func, target)
+        reference = self.resolve_reference(collector, task_func)
 
         try:
             return await task_func(
@@ -113,7 +113,7 @@ class Task(dictobj):
 
         return task_func
 
-    def resolve_reference(self, collector, task_func, target):
+    def resolve_reference(self, collector, task_func):
         """
         If the task func needs a reference and none is specified then complain
 
@@ -130,7 +130,7 @@ class Task(dictobj):
             )
 
         if task_func.special_reference:
-            return collector.reference_object(target, reference)
+            return collector.reference_object(reference)
 
         return reference
 

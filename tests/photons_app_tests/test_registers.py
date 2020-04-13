@@ -326,7 +326,7 @@ describe "ReferenceResolerRegister":
             with mock.patch(
                 "photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile
             ):
-                r = register.resolve("file", filename, mock.Mock(name="target"))
+                r = register.resolve("file", filename)
 
             assert r is resolver
             FakeResolveReferencesFromFile.assert_called_once_with(filename)
@@ -346,52 +346,47 @@ describe "ReferenceResolerRegister":
         it "complains if the typ isn't registered", register:
             typ = mock.Mock(name="typ")
             with assertRaises(ResolverNotFound, wanted=typ):
-                register.resolve(typ, "blah", mock.Mock(name="target"))
+                register.resolve(typ, "blah")
 
         it "uses registered resolver", register:
             ret = mock.Mock(name="ret")
             typ = mock.Mock(name="typ")
-            target = mock.Mock(name="target")
             resolver = mock.Mock(name="resolver", return_value=ret)
             register.add(typ, resolver)
-            assert register.resolve(typ, "blah", target) is ret
-            resolver.assert_called_once_with("blah", target)
+            assert register.resolve(typ, "blah") is ret
+            resolver.assert_called_once_with("blah")
 
     describe "getting a reference object":
 
-        @pytest.fixture
-        def target(self):
-            return mock.Mock(name="target")
-
-        it "returns SpecialReference objects as is", target, register:
+        it "returns SpecialReference objects as is", register:
 
             class Reference(SpecialReference):
                 pass
 
             ref = Reference()
-            assert register.reference_object(target, ref) is ref
+            assert register.reference_object(ref) is ref
 
-        it "returns a FoundSerials instruction if no reference is specified", target, register:
+        it "returns a FoundSerials instruction if no reference is specified", register:
             for r in ("", None, sb.NotSpecified):
-                references = register.reference_object(target, r)
+                references = register.reference_object(r)
                 assert isinstance(references, FoundSerials), references
 
-            assert isinstance(register.reference_object(target), FoundSerials)
+            assert isinstance(register.reference_object("_"), FoundSerials)
 
-        it "returns a FoundSerials for an underscore", target, register:
-            references = register.reference_object(target, "_")
+        it "returns a FoundSerials for an underscore", register:
+            references = register.reference_object("_")
             assert isinstance(references, FoundSerials), references
 
-        it "returns the resolved reference if of type typ:options", target, register:
+        it "returns the resolved reference if of type typ:options", register:
             ret = HardCodedSerials(["d073d5000001", "d073d5000002"])
             resolver = mock.Mock(name="resolver", return_value=ret)
             register.add("my_resolver", resolver)
 
             reference = "my_resolver:blah:and,stuff"
-            resolved = register.reference_object(target, reference)
+            resolved = register.reference_object(reference)
             assert resolved is ret
 
-        it "returns a SpecialReference if our resolver returns not a special reference", target, register:
+        it "returns a SpecialReference if our resolver returns not a special reference", register:
             ret = "d073d5000001,d073d5000002"
             wanted = [binascii.unhexlify(ref) for ref in ret.split(",")]
 
@@ -401,14 +396,14 @@ describe "ReferenceResolerRegister":
                 register.add("my_resolver", resolver)
 
                 reference = "my_resolver:blah:and,stuff"
-                resolved = register.reference_object(target, reference)
+                resolved = register.reference_object(reference)
                 assert type(resolved) == HardCodedSerials, resolved
                 assert resolved.targets == wanted
 
-        it "returns hard coded serials otherwise", target, register:
+        it "returns hard coded serials otherwise", register:
             serials = ["d073d5000001", "d073d5000002"]
             targets = [binascii.unhexlify(s) for s in serials]
             for ref in (serials, ",".join(serials)):
-                reference = register.reference_object(target, ref)
+                reference = register.reference_object(ref)
                 assert isinstance(reference, HardCodedSerials)
                 assert reference.targets == targets

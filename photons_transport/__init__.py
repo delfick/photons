@@ -33,11 +33,14 @@ with retry logic.
 """
 
 from photons_transport.retry_options import RetryOptions, RetryIterator
-from photons_app.errors import RunErrors
+from photons_app.errors import RunErrors, PhotonsAppError
 from photons_app import helpers as hp
 
 from contextlib import contextmanager
+import logging
 import asyncio
+
+log = logging.getLogger("photons_transport")
 
 RetryOptions = RetryOptions
 RetryIterator = RetryIterator
@@ -53,6 +56,8 @@ def catch_errors(error_catcher=None):
     except asyncio.CancelledError:
         raise
     except Exception as error:
+        if not isinstance(error, PhotonsAppError):
+            log.exception(error)
         hp.add_error(error_catcher, error)
 
     if not do_raise:

@@ -15,7 +15,6 @@ log = logging.getLogger("info")
     extras=[
         ("lifx.photons", "transport"),
         ("lifx.photons", "control"),
-        ("lifx.photons", "device_finder"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):

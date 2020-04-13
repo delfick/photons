@@ -17,7 +17,6 @@ log = logging.getLogger("repeater")
         ("lifx.photons", "control"),
         ("lifx.photons", "transport"),
         ("lifx.photons", "messages"),
-        ("lifx.photons", "device_finder"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):
