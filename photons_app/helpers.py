@@ -119,10 +119,12 @@ class TaskHolder:
         self.final_future = final_future
 
     def add(self, coro, silent=False):
-        t = async_as_background(coro, silent=silent)
-        self.ts.append(t)
+        return self.add_task(async_as_background(coro, silent=silent))
+
+    def add_task(self, task, silent=False):
+        self.ts.append(task)
         self.ts = [t for t in self.ts if not t.done()]
-        return t
+        return task
 
     async def __aenter__(self):
         return self
