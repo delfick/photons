@@ -3,7 +3,6 @@
 from photons_messages import Services, DiscoveryMessages, protocol_register
 
 from photons_app.test_helpers import print_packet_difference
-from photons_app.registers import ProtocolRegister
 
 import binascii
 

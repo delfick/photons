@@ -25,10 +25,10 @@ describe "Vendor":
         assert T.BLAH.vid == 1
         assert T.BLAH.name == "BLAH"
 
-        class O:
+        class OO:
             OTHER = T.BLAH
 
-        assert O.OTHER.name == "BLAH"
+        assert OO.OTHER.name == "BLAH"
 
     it "has a repr":
         v = Vendor(2)

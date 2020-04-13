@@ -41,8 +41,6 @@ describe "color_weighting":
 
 describe "shuffling a point":
     it "moves the point within a box of 3 pixels either side":
-        canvas = Canvas()
-
         equald = 0
 
         for _ in range(5000):
@@ -82,7 +80,6 @@ describe "Canvas":
         assert canvas[(1, 1)] is white
 
     it "can get a point when we have a color func":
-        color = ThemeColor(0, 1, 1, 3500)
         canvas = Canvas()
         canvas.set_color_func(lambda i, j: ThemeColor(i + j, 1, 1, 3500))
         assert canvas[(1, 1)] == ThemeColor(2, 1, 1, 3500)
@@ -94,7 +91,6 @@ describe "Canvas":
         assert canvas[(1, 1)] == ThemeColor(2, 1, 1, 3500)
 
     it "can get a point when we have a default color func":
-        color = ThemeColor(0, 1, 1, 3500)
         canvas = Canvas()
         canvas.set_default_color_func(lambda i, j: ThemeColor(i + j, 1, 1, 3500))
         assert canvas[(1, 1)] == ThemeColor(2, 1, 1, 3500)
@@ -166,7 +162,6 @@ describe "Canvas":
             assert canvas.get((1, 1)) == ThemeColor(100, 1, 1, 3400)
 
         it "uses the color_func if one is set":
-            color = ThemeColor(0, 1, 1, 3500)
             canvas = Canvas()
             canvas.set_color_func(lambda i, j: ThemeColor(i + j, 1, 1, 3500))
             assert canvas.get((1, 1)) == ThemeColor(2, 1, 1, 3500)

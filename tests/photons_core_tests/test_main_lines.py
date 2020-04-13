@@ -3,7 +3,6 @@
 from photons_core import run_script, run_cli, CommandSplitter
 
 from photons_app.test_helpers import modified_env
-from photons_app.errors import ProgrammerError
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
@@ -151,7 +150,7 @@ describe "main lines":
     it "run_script can skip going through the splitter", V:
         run_cli(["one", "two"])
         V.CommandSplitter.assert_not_called()
-        V.main.assert_called_once_with(["one", "two"], default_activate_all_modules=False)
+        V.main.assert_called_once_with(["one", "two"], default_activate_all_modules=True)
 
     it "run_cli can be given argv", V:
         run_cli("lan:stuff", argv=["one", "two"])
@@ -159,13 +158,6 @@ describe "main lines":
             {"argv": ["my_script", "one", "two"]}, "lan:stuff"
         )
         V.main.assert_called_once_with(V.split, default_activate_all_modules=True)
-
-    it "run_script can skip going through the splitter", V:
-        run_script("lan:stuff", argv=["one", "two"])
-        V.CommandSplitter.assert_called_once_with(
-            {"argv": ["my_script", "one", "two"]}, "lan:stuff"
-        )
-        V.main.assert_called_once_with(V.split, default_activate_all_modules=False)
 
     it "run_cli formats correctly", fake_main:
         with modified_env(LAN_TARGET="well"):

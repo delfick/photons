@@ -84,12 +84,12 @@ describe "Capability":
             BadSpecValue, "Expected tuple to be of a particular length", got=3, expected=2
         ):
 
-            class cap(registry.Capability):
+            class cap2(registry.Capability):
                 min_extended_fw = (1, 2, 1)
 
         with assertRaises(BadSpecValue, "Expected a tuple", got=list):
 
-            class cap(registry.Capability):
+            class cap3(registry.Capability):
                 min_extended_fw = [1, 2]
 
     it "understands correct min_extended_fw":
@@ -99,15 +99,15 @@ describe "Capability":
 
         assert cap.min_extended_fw == (1, 2)
 
-        class cap(registry.Capability):
+        class cap2(registry.Capability):
             min_extended_fw = None
 
-        assert cap.min_extended_fw is None
+        assert cap2.min_extended_fw is None
 
-        class cap(registry.Capability):
+        class cap3(registry.Capability):
             pass
 
-        assert cap.min_extended_fw is None
+        assert cap3.min_extended_fw is None
 
     it "has has_matrix":
         product = mock.Mock(name="product")

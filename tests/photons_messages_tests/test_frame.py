@@ -10,7 +10,7 @@ from photons_app.errors import ProgrammerError
 from photons_messages import frame
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
+from delfick_project.norms import sb
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock
@@ -49,35 +49,35 @@ describe "LIFXPacket":
         assert packet.protocol == 1024
 
     it "defaults res_required to True", packet:
-        assert packet.res_required == True
+        assert packet.res_required is True
 
     it "defaults ack_required to True", packet:
-        assert packet.ack_required == True
+        assert packet.ack_required is True
 
     it "defaults addressable to True", packet:
-        assert packet.addressable == True
+        assert packet.addressable is True
 
     it "ensures addressable is True if target is set to empty", emptybt, packet:
         for target in (None, b"\x00" * 8, emptybt):
             packet.addressable = False
             packet.target = target
-            assert packet.addressable == True
+            assert packet.addressable is True
 
     it "defaults tagged to False", packet:
-        assert packet.tagged == False
+        assert packet.tagged is False
 
     it "ensures tagged is True if target is set to empty", emptybt, packet:
         for target in (None, "0000000000000000", b"\x00" * 8, emptybt):
             packet.tagged = False
             packet.target = target
-            assert packet.tagged == True
+            assert packet.tagged is True
 
     it "ensures tagged is False if target is set to not empty", packet:
         packet.target = None
-        assert packet.tagged == True
+        assert packet.tagged is True
 
         packet.target = "d073d5000001"
-        assert packet.tagged == False
+        assert packet.tagged is False
 
     it "defaults pkt_type to Payload.message_type":
         msg = frame.LIFXPacket.message
@@ -166,7 +166,7 @@ describe "LIFXPacket":
         assert found == expected
 
     it "is a parent_packet":
-        assert frame.LIFXPacket.parent_packet == True
+        assert frame.LIFXPacket.parent_packet is True
 
     it "has protocol of 1024":
         assert frame.LIFXPacket.Meta.protocol == 1024
@@ -201,11 +201,11 @@ describe "LIFXPacket":
             assert payloadtwo.pkt_type == 33
             assert payloadtwo.protocol == 1024
 
-            assert payloadone | Two == False
-            assert payloadone | One == True
+            assert payloadone | Two is False
+            assert payloadone | One is True
 
-            assert payloadtwo | Two == True
-            assert payloadtwo | One == False
+            assert payloadtwo | Two is True
+            assert payloadtwo | One is False
 
         it "can get the values from the packet data if already defined":
 
@@ -232,11 +232,11 @@ describe "LIFXPacket":
             with mock.patch.object(
                 frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")
             ):
-                assert payloadone | Two == False
-                assert payloadone | One == True
+                assert payloadone | Two is False
+                assert payloadone | One is True
 
-                assert payloadtwo | Two == True
-                assert payloadtwo | One == False
+                assert payloadtwo | Two is True
+                assert payloadtwo | One is False
 
     describe "serial":
         it "returns None if target isn't specified":
@@ -285,15 +285,15 @@ describe "LIFXPacket":
         it "represents_ack if message_type is 45":
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(45, *fields)("Name")
-            assert msg.Payload.represents_ack == True
+            assert msg.Payload.represents_ack is True
 
             msg = frame.LIFXPacket.message(46, *fields)("Name")
-            assert msg.Payload.represents_ack == False
+            assert msg.Payload.represents_ack is False
 
         it "has a _lifx_packet_message property":
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)
-            assert msg._lifx_packet_message == True
+            assert msg._lifx_packet_message is True
 
         it "sets Payload.Meta.protocol to 1024":
             fields = [("one", T.Bool), ("two", T.String)]
@@ -303,7 +303,7 @@ describe "LIFXPacket":
         it "has parent_packet set to False":
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
-            assert msg.parent_packet == False
+            assert msg.parent_packet is False
 
         it "has Meta.parent set to LIFXPacket":
             fields = [("one", T.Bool), ("two", T.String)]
@@ -322,9 +322,9 @@ describe "LIFXPacket":
             assert msg2.Payload.Meta.protocol == 1024
             assert msg2.__name__ == "Thing"
             assert msg2.Payload.__name__ == "ThingPayload"
-            assert msg2.parent_packet == False
+            assert msg2.parent_packet is False
             assert msg2.Meta.parent == frame.LIFXPacket
-            assert using._lifx_packet_message == True
+            assert using._lifx_packet_message is True
 
         it "sets multi on Meta":
             msg = frame.LIFXPacket.message(52)("One")

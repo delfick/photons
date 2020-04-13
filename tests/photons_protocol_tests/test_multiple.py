@@ -57,7 +57,7 @@ describe "The multiple modifier":
         thing = Thing(one=True, two=[1], three=[{"four": 4}, {"four": 10}])
 
         def test_thing(thing):
-            assert thing.one == True
+            assert thing.one == 1
             assert thing.two == [1, 0]
             assert thing.three == [Other(four=4), Other(four=10)]
 

@@ -2,7 +2,6 @@
 
 from photons_themes.appliers.base import TileApplier, TileApplierPattern
 from photons_themes.theme import ThemeColor, Theme
-from photons_themes.canvas import Canvas
 
 from contextlib import contextmanager
 from unittest import mock

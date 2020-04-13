@@ -23,8 +23,8 @@ describe "Capability":
         cap = base.Capability(product)
 
         assert cap.product is product
-        assert cap.firmware_major is 0
-        assert cap.firmware_minor is 0
+        assert cap.firmware_major == 0
+        assert cap.firmware_minor == 0
 
     it "can create a clone with new firmware info":
         product = mock.Mock(name="product")
@@ -38,8 +38,8 @@ describe "Capability":
         assert clone.firmware_minor is firmware_minor
 
         assert cap.product is product
-        assert cap.firmware_major is 0
-        assert cap.firmware_minor is 0
+        assert cap.firmware_major == 0
+        assert cap.firmware_minor == 0
 
     it "has a repr":
         product = mock.Mock(name="product")
