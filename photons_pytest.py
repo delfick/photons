@@ -101,6 +101,8 @@ def FakeTime():
             self.patches = []
             self.mock_sleep = mock_sleep
             self.mock_async_sleep = mock_async_sleep
+            self.original_time = time.time
+            self.original_async_sleep = asyncio.sleep
 
         def set(self, t):
             self.time = t
@@ -133,7 +135,7 @@ def FakeTime():
 
         async def async_sleep(self, amount):
             self.add(amount)
-            await asyncio.sleep(0.001)
+            await self.original_async_sleep(0.001)
 
     return FakeTime
 
