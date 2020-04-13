@@ -456,12 +456,6 @@ class FakeDevice:
             )
         )
 
-        for key, fut in list(self.waiters.items()):
-            s, kls = key
-            if s == source and pkt | kls:
-                fut.set_result(pkt)
-                del self.waiters[key]
-
         if self.intercept_got_message:
             if await self.intercept_got_message(pkt, source) is False:
                 return
@@ -483,6 +477,12 @@ class FakeDevice:
                 await self.process_reply(res, source, pkt)
         except IgnoreMessage:
             pass
+
+        for key, fut in list(self.waiters.items()):
+            s, kls = key
+            if s == source and pkt | kls:
+                del self.waiters[key]
+                fut.set_result(pkt)
 
     async def process_reply(self, pkt, source, request):
         for responder in self.all_responders:
