@@ -10,12 +10,10 @@ from photons_app.errors import ProgrammerError
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb, Meta
 from bitarray import bitarray
-from textwrap import dedent
 from unittest import mock
 from enum import Enum
 import binascii
 import pytest
-import json
 import uuid
 
 
@@ -57,7 +55,6 @@ describe "transform_spec":
         do_transform = mock.Mock(name="do_transform", return_value=transformed)
 
         pkt = mock.Mock(name="pkt")
-        unpacking = mock.Mock(name="unpacking")
         normalised = mock.Mock(name="normalised")
 
         spec = mock.Mock(name="spec")
@@ -74,7 +71,6 @@ describe "transform_spec":
         do_transform = mock.Mock(name="do_transform", return_value=transformed)
 
         pkt = mock.Mock(name="pkt")
-        unpacking = mock.Mock(name="unpacking")
         normalised = mock.Mock(name="normalised")
 
         spec = mock.Mock(name="spec")
@@ -91,7 +87,6 @@ describe "transform_spec":
         do_transform = mock.Mock(name="do_transform", return_value=transformed)
 
         pkt = mock.Mock(name="pkt")
-        unpacking = mock.Mock(name="unpacking")
         normalised = mock.Mock(name="normalised")
 
         spec = mock.Mock(name="spec")
@@ -245,7 +240,7 @@ describe "version_number_spec":
 
     it "defaults unpacking":
         spec = types.version_number_spec()
-        assert spec.unpacking == False
+        assert spec.unpacking is False
 
     describe "normalise":
         it "can go back and forward between string and integer", meta:
@@ -305,8 +300,8 @@ describe "integer_spec":
 
     it "defaults unpacking and allow_float":
         spec = types.integer_spec(mock.Mock(name="pkt"), None, None)
-        assert spec.unpacking == False
-        assert spec.allow_float == False
+        assert spec.unpacking is False
+        assert spec.allow_float is False
 
     describe "normalise":
         it "returns as is if not enum and not bitmask and allow_float and is a float", meta, pkt:
@@ -786,12 +781,12 @@ describe "boolean_as_int_spec":
             types.boolean_as_int_spec().normalise(Meta.empty(), sb.NotSpecified)
 
     it "returns as is if the value is 0 or 1":
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), 0) is 0
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), 1) is 1
+        assert types.boolean_as_int_spec().normalise(Meta.empty(), 0) == 0
+        assert types.boolean_as_int_spec().normalise(Meta.empty(), 1) == 1
 
     it "returns as 0 or 1 if True or False":
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), False) is 0
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), True) is 1
+        assert types.boolean_as_int_spec().normalise(Meta.empty(), False) == 0
+        assert types.boolean_as_int_spec().normalise(Meta.empty(), True) == 1
 
     it "complains if not boolean, 0 or 1":
         for val in (None, [], [1], {}, {1: 2}, "asdf", b"asdf", lambda: 1):

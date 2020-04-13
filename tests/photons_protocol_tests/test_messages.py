@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_protocol.messages import Messages
-from photons_protocol.types import Type as T
 
 from unittest import mock
 

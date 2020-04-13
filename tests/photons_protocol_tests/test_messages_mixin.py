@@ -148,11 +148,11 @@ describe "PacketTypeExtractor":
 
             protocol, pkt_type = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
             assert protocol == 234
-            assert pkt_type == None
+            assert pkt_type is None
 
             protocol, pkt_type = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
             assert protocol == 234
-            assert pkt_type == None
+            assert pkt_type is None
 
         it "successfully gets protocol and pkt_type for 1024":
             pkt = LIFXPacket.empty_normalise(

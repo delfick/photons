@@ -770,7 +770,6 @@ describe "PacketSpecMixin":
             val = {"one": one, "two": two}
 
             normalised = mock.Mock(name="normalised")
-            meta = mock.Mock(name="meta")
 
             initd_spec = mock.Mock(name="initd_spec")
             initd_spec.normalise.return_value = normalised

@@ -367,7 +367,7 @@ describe "Type":
             res = mock.Mock(name="res")
             overrider = mock.Mock(name="overrider")
             overridden = mock.Mock(name="overridden", return_value=res)
-            with V.mocked_spec() as spec:
+            with V.mocked_spec():
                 with mock.patch("photons_protocol.types.overridden", overridden):
                     assert (
                         V.t.override(overrider).spec(V.pkt, V.unpacking, transform=V.transform)
@@ -682,8 +682,6 @@ describe "Type":
             return V()
 
         it "creates version_number_spec if we have _version_number set", V:
-            em = mock.Mock(name="em")
-
             with V.mocked_version_number_spec() as (version_number_spec, spec):
                 assert V.t.version_number().make_integer_spec(V.pkt, V.unpacking) is spec
 

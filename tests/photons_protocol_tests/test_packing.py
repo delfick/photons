@@ -99,10 +99,10 @@ describe "BitarraySlice":
             slce.size_bits = 1
 
             slce.val = bitarray("0")
-            assert slce.unpackd == False
+            assert slce.unpackd is False
 
             slce.val = bitarray("1")
-            assert slce.unpackd == True
+            assert slce.unpackd is True
 
         it "pads left if original_size is greater than actual val and we have left_cut", slce:
             slce.typ = T.Int8.S(6, left=True)

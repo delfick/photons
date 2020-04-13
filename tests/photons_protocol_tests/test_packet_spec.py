@@ -26,7 +26,7 @@ describe "PacketSpecMetaKls":
             ProgrammerError, r"Can't override attributes with fields\talready_attributes=\['one'\]"
         ):
 
-            class Together(dictobj.PacketSpec):
+            class Together2(dictobj.PacketSpec):
                 fields = [("one", T.Bool)]
 
                 def one(self):
@@ -47,7 +47,7 @@ describe "PacketSpecMetaKls":
 
         with assertRaises(ProgrammerError, r"Duplicated names!\t\['one', 'one'\]"):
 
-            class Together(metaclass=PacketSpecMetaKls):
+            class Together2(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("one", T.Bool)]
 
     it "complains if we have fields as a dictionary":
@@ -70,7 +70,7 @@ describe "PacketSpecMetaKls":
 
         with assertRaises(ProgrammerError, f"{msg}\tcreating=Child"):
 
-            class Child(metaclass=PacketSpecMetaKls):
+            class Child2(metaclass=PacketSpecMetaKls):
                 pass
 
     it "sets the defaults for groups to Initial and sb.NotSpecified for normal fields":
