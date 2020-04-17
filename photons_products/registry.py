@@ -112,6 +112,7 @@ class Capability(Capability, metaclass=capability_metaclass):
         """Yield (attr, value) for all the relevant capabilities"""
         attrs = [
             "zones",
+            "has_ir",
             "has_color",
             "has_chain",
             "has_matrix",
