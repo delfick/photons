@@ -3,7 +3,9 @@ import pkg_resources
 extensions = [
     "sphinx.ext.autodoc",
     "photons_messages.sphinx.messages",
+    "photons_docs.config.ext.plans",
     "photons_docs.config.ext.products",
+    "photons_docs.config.ext.packets",
 ]
 
 html_theme = "sphinx_rtd_theme"

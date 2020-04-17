@@ -6,7 +6,7 @@
     commandline/index.rst
     scripts/index.rst
     configuration/index.rst
-    sendapi/index.rst
+    interacting/index.rst
     collector/index.rst
     products/index.rst
     animations/index.rst

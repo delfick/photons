@@ -42,7 +42,7 @@ There's a few things to take in here:
 
 * The :ref:`collector <collector_root>` is the entry point to everything that
   has been registered by the Photons modules.
-* The ``target`` is the object you use to :ref:`send messages <sendapi_root>`
+* The ``target`` is the object you use to :ref:`send messages <interacting_root>`
   with.
 * The ``artifact``, while not used in the above example, is that last argument
   given to the command line.

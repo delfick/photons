@@ -2,3 +2,17 @@ h2 {
   background: rgba(26, 255, 0, 0.12);
   padding: 3px;
 }
+
+h3 {
+  position: relative;
+}
+
+h3:before{
+  top: 2px;
+  left: -17px;
+  width: 11px;
+  height: 26px;
+  content: "";
+  position: absolute;
+  background-color: #8d8dff;
+}
