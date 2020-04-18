@@ -178,9 +178,9 @@ class SetZonesPlan(Plan):
 
 def SetZones(colors, power_on=True, reference=None, **options):
     """
-    Set colors on all found multizone devices. Uses SetZonesPlan to generate the
-    messages to set the zones on the device and so keyword arguments to this
-    messages are passed directly to the plan.
+    Set colors on all found multizone devices. This will use the extended
+    multizone messages if they are supported by the device to increase
+    reliability and speed of appliation.
 
     Usage looks like:
 
@@ -193,6 +193,20 @@ def SetZones(colors, power_on=True, reference=None, **options):
     then pass in power_on=False
 
     If you want to target a particular device or devices, pass in a reference.
+
+    The options to this helper include:
+
+    colors - [[color_specifier, length], …]
+        For example, ``[[“red”, 1], [“blue”, 3], [“hue:100 saturation:0.5”, 5]]``
+
+    zone_index - default 0
+        An integer representing where on the strip to start the colors
+
+    duration - default 1
+        Application duration
+
+    overrides - default None
+        A dictionary containing hue, saturation, brightness and kelvin for overriding colors with
     """
 
     async def gen(ref, sender, **kwargs):
@@ -228,9 +242,10 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
         A moving animation
 
     Options include:
-    - offset
-    - speed
-    - duration
+
+    * offset
+    * speed
+    * duration
 
     Usage looks like:
 
@@ -240,7 +255,7 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
         await target.send(msg, reference)
 
     By default the devices will be powered on. If you don't want this to happen
-    then pass in power_on=False
+    then pass in ``power_on=False``
 
     If you want to target a particular device or devices, pass in reference.
     """

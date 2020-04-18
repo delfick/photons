@@ -62,11 +62,11 @@ class Transformer(object):
     ``SetWaveformOptional`` message that is needed to change the device. This
     means that we support an ``effect`` option for setting different waveforms.
 
-    If keep_brightness is True then we do not change the brightness of the device
-    despite any brightness options in the color options.
+    If ``keep_brightness=True`` then we do not change the brightness of the
+    device despite any brightness options in the color options.
 
-    If transition_color is True then we do not change the color of the device prior to
-    turning it on, so that it transitions with the brightness.
+    If ``transition_color=True`` then we do not change the color of the device
+    prior to turning it on, so that it transitions with the brightness.
     """
 
     @classmethod

@@ -145,8 +145,8 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
                     ...
                 await asyncio.sleep(20 - (time.time() - start))
 
-    Note that if references is a photons_app.special.SpecialReference then we
-    call reset on it after every loop.
+    Note that if references is a ``photons_app.special.SpecialReference`` then
+    we call reset on it after every loop.
 
     Also it is highly recommended that error_catcher is a callable that takes
     each error as they happen.
@@ -250,16 +250,61 @@ class FromGenerator(object):
         msg = FromGenerator(gen)
         await target.send(msg, "d073d5000001")
 
-    Note that all messages you yield from the generator must already have target
-    set on them.
+    The reference your generator will receive will either be the reference from
+    the :ref:`sender <sender_interface>` API or the ``reference_override``
+    you supply to the ``FromGenerator``. If ``reference_override`` is ``True``
+    then you'll get the reference from the ``sender``.
 
-    The generator function receives the reference supplied to the send api as well
-    as the sender object and any keyword arguments that were used.
+    If you don't specify ``reference_override`` then the messages you yield
+    must have an explicit target, otherwise they won't go anyway (unless you
+    supplied ``broadcast=True`` to the ``sender``).
 
-    All messages that are yielded from the generator are sent in parallel
+    If you say ``reference_override=True`` then messages that don't have an
+    explicit ``target`` will go to the ``reference`` given to you.
 
-    The return value from yield will be a future that resolves to True if the
-    message(s) were sent without error, and False if they were sent with error.
+    Finally, if ``reference_override`` is anything else, that's the reference
+    your generator will get and also the default reference the yielded message
+    will go to.
+
+    The ``**kwargs`` your generator gets is passed down to you through the
+    :ref:`sender <sender_interface>` API. For example:
+
+    .. code-block:: python
+
+        from photons_control.script import FromGenerator
+        from photons_messages import DeviceMessages
+
+
+        async def my_action(target, reference):
+            errors = []
+
+            async def gen(reference, sender, **kwargs):
+                assert kwargs ==  {"message_timeout": 10, "error_catcher": errors}
+                yield DeviceMessages.SetPower(level=0)
+
+            msg = FromGenerator(gen, reference_override=True)
+            await target.send(msg, "d073d5000001", message_timeout=10, error_catcher=errors)
+
+    The return value from yield will be a future that resolves to ``True`` if the
+    message(s) were sent without error, and ``False`` if they were sent with error.
+
+    .. code-block:: python
+
+        async def gen(reference, sender, **kwargs):
+            f = yield [
+                DeviceMessages.SetPower(level=65535),
+                LightMessages.SetInfrared(brightness=65535)
+            ]
+
+            result = await f
+            # result will be True if both of those messages were sent and got
+            # a reply. If either timed out, then result will be False
+
+    If you want to gather information before yielding messages to send, then
+    you can use the ``sender`` like you normally would. The benefit of yielding
+    messages instead of using the ``sender`` is that all the messages will
+    be sent in parallel to your devices and you can control the flow of those
+    messages based on the future that yielding returns.
     """
 
     def __init__(self, generator, *, reference_override=None, error_catcher_override=None):

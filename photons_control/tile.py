@@ -63,9 +63,10 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
         A Morph effect
 
     Options include:
-    - speed
-    - duration
-    - palette
+
+    * speed
+    * duration
+    * palette
 
     Usage looks like:
 
@@ -75,7 +76,7 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
         await target.send(msg, reference)
 
     By default the devices will be powered on. If you don't want this to happen
-    then pass in power_on=False
+    then pass in ``power_on=False``.
 
     If you want to target a particular device or devices, pass in reference.
     """

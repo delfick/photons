@@ -93,6 +93,18 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
 
 
 class ApplyTheme:
+    """
+    Apply a theme to your devices.
+
+    Usage looks like:
+
+    .. code-block:: python
+
+        options = {"colors": [<color>, <color>, ...]}
+        msg = ApplyTheme.script(options)
+        await target.send(msg)
+    """
+
     @classmethod
     def script(kls, options):
         aps = appliers[options.theme]
