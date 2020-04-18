@@ -217,7 +217,9 @@ class PacketPlan(Plan):
         from photons_control.planner import PacketPlan
         from photons_messages import LightMessages
 
-        plans = sender.make_plans(infrared=PacketPlan(LightMessages.GetInfrared(), LightMessages.StateInfrared))
+        plans = sender.make_plans(
+            infrared=PacketPlan(LightMessages.GetInfrared(), LightMessages.StateInfrared)
+        )
         async for serial, label, info in sender.gatherer.gather(plans):
             if label == "infrared":
                 # info will be a StateInfrared packet
@@ -244,8 +246,10 @@ class PacketPlan(Plan):
 @a_plan("presence")
 class PresencePlan(Plan):
     """
-    Just return True. To be used with other plans to make sure that this
-    serial is returned by gather if no other plans return results
+    Just return ``True``.
+
+    This can be used with other plans to make sure that this serial is returned
+    by gather if no other plans return results
     """
 
     messages = NoMessages
@@ -291,7 +295,16 @@ class LabelPlan(Plan):
 
 @a_plan("state")
 class StatePlan(Plan):
-    """Return LightState.as_dict() for this device"""
+    """
+    Return in a dictionary:
+
+    * hue
+    * saturation
+    * brightness
+    * kelvin
+    * label
+    * power
+    """
 
     messages = [LightMessages.GetColor()]
     default_refresh = 1
@@ -314,7 +327,12 @@ class StatePlan(Plan):
 
 @a_plan("power")
 class PowerPlan(Plan):
-    """Return ``{"level": 0 - 65535, "on": True | False}`` for this device."""
+    """
+    Return in a dictionary:
+
+    * level: The current power level on the device
+    * on: ``False`` if the level is 0, otherwise ``True``
+    """
 
     messages = [DeviceMessages.GetPower()]
     default_refresh = 1
@@ -333,9 +351,10 @@ class PowerPlan(Plan):
 @a_plan("zones")
 class ZonesPlan(Plan):
     """
-    Return ``[(index, hsbk), ...]`` for this device.
+    Return a list of ``[(index, hsbk), ...]`` for this device.
 
-    Will take into account if the device supports extended multizone or not
+    This plan will take into account if the device supports extended multizone
+    or not
     """
 
     default_refresh = 1
@@ -385,13 +404,15 @@ class ZonesPlan(Plan):
 @a_plan("colors")
 class ColorsPlan(Plan):
     """
-    Return `[[hsbk, ...]]` for all the items in the chain of the device.
+    Return ``[[hsbk, ...]]`` for all the items in the chain of the device.
 
-    So for a bulb you'll get `[[<hsbk>]]`.
+    So for a bulb you'll get ``[[<hsbk>]]``.
 
-    For a Strip or candle you'll get `[[<hsbk>, <hsbk>, ...]]`
+    For a Strip or candle you'll get ``[[<hsbk>, <hsbk>, ...]]``
 
-    And for a tile you'll get `[[<hsbk>, <hsbk>, ...], [<hsbk>, <hsbk>, ...]]`
+    And for a tile you'll get ``[[<hsbk>, <hsbk>, ...], [<hsbk>, <hsbk>, ...]]``
+
+    Where ``<hsbk>`` is a :ref:`photons_messages.fields.color` object.
     """
 
     default_refresh = 1
@@ -445,15 +466,35 @@ class ColorsPlan(Plan):
 @a_plan("chain")
 class ChainPlan(Plan):
     """
-    Return ```
-      {
-        "chain": <Tile objects>,
-        "orientations": {<index>: <orientation>},
-        "reorient": def(index, colors): <reorientated_colors>,
-        "reverse_orient": def(index, colors): <colors made RightSideUp>,
-        "coords_and_sizes": [((x, y), (width, height)) for each Tile object],
-      }
-    ```
+    This plan will return chain information about the device in a dictionary
+    containing:
+
+    chain
+        A list of :ref:`photons_messages.fields.Tile` objects.
+
+    width
+        The maximum width of the chain items.
+
+    orientation
+        A dictionary of chain index to orientation.
+
+    reorient
+        A function that takes in chain index and list of colors. It will return
+        those colors but reoriented to appear upright on the device.
+
+    reverse_orient
+        A function that takes in the chain index and a list of colors. It is
+        used to take the colors from the device and rotate them to appear
+        upright in your program
+
+    coords_and_sizes
+        A list of ``((x, y), (width, height))`` for each item in the chain.
+        This is taken from the :ref:`TilemEssages.StateDeviceChain` packet.
+
+    random_orientations
+        These are used if you give ``randomize=True`` to ``orient`` or
+        ``reverse_orient``. You can change this list by using
+        ``__import__("random").shuffle(random_orientations)``
 
     For strips and bulbs we will return a single chain item that is orientated
     right side up. For strips, the width of this single item is the number of
@@ -590,7 +631,13 @@ class CapabilityPlan(Plan):
 
 @a_plan("firmware")
 class FirmwarePlan(Plan):
-    """Return StateHostFirmware.as_dict() for this device"""
+    """
+    Return in a dictoinary
+
+    * build - The build timestamp of this firmware
+    * version_major - the major component of the firmware version
+    * version_minor - the minor component of the firmware version
+    """
 
     messages = [DeviceMessages.GetHostFirmware()]
 
@@ -610,7 +657,12 @@ class FirmwarePlan(Plan):
 
 @a_plan("version")
 class VersionPlan(Plan):
-    """Return StateVersion.as_dict() for this device"""
+    """
+    Return in a dictionary:
+
+    * vendor: The vendor id of the device.
+    * product: The product id of the device.
+    """
 
     messages = [DeviceMessages.GetVersion()]
 

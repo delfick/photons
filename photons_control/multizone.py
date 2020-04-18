@@ -48,22 +48,24 @@ class SetZonesPlan(Plan):
 
     Takes in:
 
-    colors - [[color_specifier, length], ...]
-        For example, [["red", 1], ["blue", 3], ["hue:100 saturation:0.5", 5]]
+    colors - ``[[color_specifier, length], ...]``
+        For example, ``[["red", 1], ["blue", 3], ["hue:100 saturation:0.5", 5]]``
+        will set one zone to red, followed by 3 zones to blue, followed by
+        5 zones to half saturation green.
 
     zone_index - default 0
-        An integer representing where on the strip to start the colors
+        An integer representing where on the device to start the colors
 
     duration - default 1
-        Application duration
+        Time it takes to apply.
 
     overrides - default None
         A dictionary containing hue, saturation, brightness and kelvin for
         overriding colors with
 
-    For devices that aren't a multizone, info will be Skip, otherwise it'll be
-    appropriate messages respective to the device supporting extended multizone
-    or not.
+    For devices that don't have multizone capabilities, the ``info`` will be
+    a ``Skip`` otherwise, you'll get the  appropriate messages to then send
+    to the device to apply the change.
 
     Usage is:
 
@@ -74,13 +76,13 @@ class SetZonesPlan(Plan):
         plans = {"set_zones": SetZonesPlan(colors)}
 
         async with target.session() as sender:
-            async for serial, _, messages in sender.gatherer.gather(plans, reference):
-                if messages is not Skip:
+            async for serial, name, messages in sender.gatherer.gather(plans, reference):
+                if name == "set_zones" and messages is not Skip:
                     await sender(messages, serial)
 
-    Note that this example code will do one strip at a time, if you want to
-    change all strips at the same time, just use the SetZones msg in a normal
-    sender.
+    Note that this example code will do one device at a time, If you want to
+    change multiple devices at the same time then use
+    :class:`photons_control.multizone.SetZones` message instead.
     """
 
     dependant_info = {"c": CapabilityPlan()}
@@ -200,7 +202,7 @@ def SetZones(colors, power_on=True, reference=None, **options):
         For example, ``[[“red”, 1], [“blue”, 3], [“hue:100 saturation:0.5”, 5]]``
 
     zone_index - default 0
-        An integer representing where on the strip to start the colors
+        An integer representing where on the device to start the colors
 
     duration - default 1
         Application duration
@@ -231,7 +233,7 @@ def SetZones(colors, power_on=True, reference=None, **options):
 
 def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, **options):
     """
-    Set an effect on your strips
+    Set an effect on your multizone devices
 
     Where effect is one of the available effect types:
 
@@ -299,7 +301,7 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
 @an_action(needs_target=True, special_reference=True)
 async def get_zones(collector, target, reference, artifact, **kwargs):
     """
-    Get the zones colors from a light strip
+    Get the zones colors from a multizone device
     """
     async with target.session() as sender:
         async for serial, zones in zones_from_reference(reference, sender):
@@ -311,13 +313,13 @@ async def get_zones(collector, target, reference, artifact, **kwargs):
 @an_action(needs_target=True, special_reference=True)
 async def set_zones(collector, target, reference, artifact, **kwargs):
     """
-    Set the zones colors on a light strip
+    Set the zones colors on a multizone device
 
     Usage looks like::
 
         lifx lan:set_zones d073d5000001 -- '{"colors": [["red", 10], ["blue", 3], ["green", 5]]}'
 
-    In that example the strip will have the first 10 zones set to red, then 3
+    In that example the device will have the first 10 zones set to red, then 3
     blue zones and then 5 green zones
     """
     options = collector.photons_app.extra_as_json
@@ -333,7 +335,7 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
 @an_action(needs_target=True, special_reference=True)
 async def multizone_effect(collector, target, reference, artifact, **kwargs):
     """
-    Set an animation on your strip!
+    Set an animation on your multizone device
 
     ``lan:multizone_effect d073d5000001 <type> -- '{<options>}'``
 

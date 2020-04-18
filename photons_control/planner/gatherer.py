@@ -403,7 +403,13 @@ class Gatherer:
 
     async def gather(self, plans, reference, error_catcher=None, **kwargs):
         """
-        Yield (serial, label, info) information as we get it
+        This is an async generator that yields tuples of
+        ``(serial, label, info)`` where ``serial`` is the serial of the device,
+        ``label`` is the label of the plan, and ``info`` is the result of
+        executing that plan.
+
+        The error handling of this function is the same as the async generator
+        behaviour in :ref:`sender <sender_interface>` API.
         """
         if not plans:
             return
@@ -447,7 +453,16 @@ class Gatherer:
                 yield item
 
     async def gather_all(self, plans, reference, **kwargs):
-        """Return {serial: (completed, info)} dictionary with all information"""
+        """
+        This is a coroutine that returns a single dictionary that looks like
+        ``{serial: (completed, info)}``.
+
+        The error handling of this function is the same as the synchronous
+        behaviour in :ref:`sender <sender_interface>` API.
+
+        This is a shortcut for getting all ``(serial, completed, info)``
+        information from the ``gather_per_serial`` method.
+        """
         results = defaultdict(dict)
 
         try:
@@ -463,7 +478,17 @@ class Gatherer:
             return results
 
     async def gather_per_serial(self, plans, reference, **kwargs):
-        """yield (serial, completed, info) with all information for each serial"""
+        """
+        This is an async generator that yields tuples of
+        ``(serial, complete, info)`` where ``serial`` is the serial of the
+        device, ``complete`` is a boolean that indicates if all the plans
+        resolved for this device; and ``info`` is the result from all the plans.
+
+        ``info`` will look like ``{<label>: <result of plan>}``
+
+        The error handling of this function is the same as the async generator
+        behaviour in :ref:`sender <sender_interface>` API.
+        """
         done = set()
         wanted = set(plans)
 
