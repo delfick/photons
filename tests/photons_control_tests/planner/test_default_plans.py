@@ -226,21 +226,11 @@ describe "Default Plans":
     describe "AddressPlan":
 
         async it "gets the address", runner:
-            got = await self.gather(runner, two_lights, "label", "address")
-            assert got == {
-                light1.serial: (
-                    True,
-                    {"label": "bob", "address": (f"fake://{light1.serial}/memory", 56700)},
-                ),
-                light2.serial: (
-                    True,
-                    {"label": "sam", "address": (f"fake://{light2.serial}/memory", 56700)},
-                ),
-            }
-
-        async it "requires atleast one other plan", runner:
             got = await self.gather(runner, two_lights, "address")
-            assert got == {}
+            assert got == {
+                light1.serial: (True, {"address": (f"fake://{light1.serial}/memory", 56700)}),
+                light2.serial: (True, {"address": (f"fake://{light2.serial}/memory", 56700)}),
+            }
 
     describe "LabelPlan":
 

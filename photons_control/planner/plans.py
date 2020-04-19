@@ -257,9 +257,11 @@ class PresencePlan(Plan):
 
 @a_plan("address")
 class AddressPlan(Plan):
-    """Return the (ip, port) for this device"""
+    """
+    Return the ``(ip, port)`` for this device
+    """
 
-    messages = []
+    messages = [DeviceMessages.EchoRequest(echoing=b"get_remote_addr")]
 
     class Instance(Plan.Instance):
         def process(self, pkt):
