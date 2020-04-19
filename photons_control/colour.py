@@ -85,15 +85,16 @@ class InvalidColor(PhotonsAppError):
 
 def make_hsbk(specifier):
     """
-    Return {"hue", "saturation", "brightness", "kelvin"} dictionary for this specifier.
+    Return ``{"hue", "saturation", "brightness", "kelvin"}`` dictionary for
+    this specifier.
 
-    If it's a string, use photons_control.colour.ColourParser.hsbk
+    If it's a string, use :meth:`photons_control.colour.ColourParser.hsbk`
 
-    If it's a list, then take h, s, b, k from the list and default to 0, 0, 1, 3500
-    The list can be 0 to 4 items long
+    If it's a list, then take ``h, s, b, k`` from the list and default to
+    ``0, 0, 1, 3500``, the list can be 0 to 4 items long.
 
-    If it's a dictionary, get hue, saturation, brightness, kelvin from it
-    values default to 0, 0, 1, 3500
+    If it's a dictionary, get ``hue``, ``saturation``, ``brightness``, ``kelvin``
+    from it and default them to ``0, 0, 1, 3500``.
     """
     if isinstance(specifier, str):
         h, s, b, k = ColourParser.hsbk(specifier)
@@ -127,12 +128,12 @@ def make_hsbk(specifier):
 
 def make_hsbks(colors, overrides=None):
     """
-    yield [{"hue", "saturation", "brightness", "kelvin"}, ...] colors for these colors and overrides
+    Colors must be an array of ``[[specifier, length], ...]`` and this function
+    will yield
+    ``{"hue": <hue>, "saturation": <saturation>, "brightness": <brightness>, "kelvin": <kelvin}``
+    such that we get a flat list of these ``hsbk`` values.
 
-    Colors must be an array of [[specifier, length], ...]
-
-    We use make_hsbk with each specifier and apply overrides to the result and then
-    yield length amount of the resulting dictionary for each specifier.
+    We use :func:`photons_control.colour.make_hsbk` with each specifier.
     """
     for color in colors:
         if not isinstance(color, list) or len(color) != 2:
@@ -160,21 +161,43 @@ def split_color_string(color_string):
 
 class ColourParser(object):
     """
-    Class for converting valid colour specifiers into the options for a
-    ``SetWaveformOptional`` device command.
+    This knows how to convert valid colour specifiers into a
+    :ref:`LightMessages.SetWaveformOptional` you can send to a device.
 
-    .. note:: http://colorizer.org/ and http://colormine.org/ are amazing!
+    A valid colour specifier is a combination of any of the following
+    components:
 
-    The valid colour names are:
+    A valid colour name
+        .. show_list:: photons_control.colour.ColourParser
+            named_colors
 
-    .. show_list:: photons_control.colour.ColourParser
-        named_colors
+    random_colour
+        The string ``"random"`` will randomly choose hsbk values
 
-    And valid colour specifiers are as follows:
+    kelvin
+        ``"kelvin:3500"`` will set kelvin to 3500.
 
-    .. show_regexes:: photons_control.colour.regexes
+    brightness
+        ``"brightness:0.5"`` will set the device to half brightness.
 
-    This class also has some classmethods for your use:
+    saturation
+        ``"saturation:0.5"`` will set the device to half saturation.
+        0 saturation is white, and 1 saturation is colour.
+
+    hue
+        ``"hue:200"`` will set the device to a hue value of 200, which in this
+        case is a blue.
+
+    hex
+        ``"hex:#00aabb"`` or ``#00aabb`` will turn that hex value into the
+        appropriate hsbk values. In this case ``#00aabb`` transforms into a
+        a light blue.
+
+    rgb
+        ``"rgb:200,100,120"`` will take ``red``, ``green``, ``blue`` values and
+        convert them. In this example, it's a light red.
+
+    You can use the following classmethods:
 
     .. automethod:: photons_control.colour.ColourParser.hsbk
 
@@ -198,7 +221,15 @@ class ColourParser(object):
         """
         Return ``(h, s, b, k)`` given a list of colour components
 
-        Take into account hue, saturation, brightness and kelvin keys in overrides if provided
+        Take into account hue, saturation, brightness and kelvin keys in
+        overrides if provided.
+
+        .. code-block:: python
+
+            from photons_control.colour import ColourParser
+
+
+            h, s, b, k = ColourParser.hsbk("green")
         """
         h, s, b, k = kls().parse_color_string(components)
         if overrides:
@@ -213,6 +244,15 @@ class ColourParser(object):
         """
         Create a ``SetWaveformOptional`` message that may be used to change the
         state of a device to what has been specified.
+
+        .. code-block:: python
+
+            from photons_control.colour import ColourParser
+
+
+            async def my_action(target, reference):
+                msg = ColourParser.msg("green")
+                await target.send(msg, reference)
         """
         h, s, b, k = kls.hsbk(components, overrides)
 
@@ -449,7 +489,40 @@ def effect(func):
 
 
 class Effects(object):
-    """Class for making options related to special waveform effects"""
+    """
+    This has the logic used by the ``ColourParser`` to create waveform effects
+    on your devices.
+
+    You use them by giving the ``effect`` option when you use the ``ColourParser``
+    and any of the extra options used by the effect.
+
+    For example:
+
+    .. code-block:: python
+
+        from photons_control.colour import ColourParser
+
+
+        async def my_action(target, reference):
+            msg = ColourParser.msg("red", {"effect": "pulse", "cycles": 2})
+            await target.send(msg, refernece)
+
+    or from the command line::
+
+        lifx lan:transform -- '{"color": "red", "effect": "pulse", "cycles": 2}'
+
+    .. automethod:: pulse
+
+    .. automethod:: sine
+
+    .. automethod:: half_sine
+
+    .. automethod:: triangle
+
+    .. automethod:: saw
+
+    .. automethod:: breathe
+    """
 
     @classmethod
     def make(kls, effect=None, **kwargs):
@@ -530,6 +603,7 @@ class Effects(object):
     def breathe(
         self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
     ):
+        """Options to make the light(s) transition to `color` and back in a smooth sine wave"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
         return dict(

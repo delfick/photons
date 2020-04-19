@@ -5,9 +5,10 @@
     philosophy.rst
     commandline/index.rst
     scripts/index.rst
+    collector/index.rst
     configuration/index.rst
     interacting/index.rst
-    collector/index.rst
+    useful_helpers/index.rst
     products/index.rst
     animations/index.rst
     changelog.rst
