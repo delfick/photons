@@ -135,3 +135,8 @@ a default. For example:
 .. code-block:: python
 
     __import__("photons_core").run_script("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
+
+The an_action decorator
+-----------------------
+
+.. autoclass:: photons_app.actions.an_action

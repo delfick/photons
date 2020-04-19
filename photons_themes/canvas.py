@@ -2,9 +2,6 @@
 The canvas is class for storing the 2d grid of colours for tiles. The canvas is
 usually the colours across multiple tiles and then the TileApplier is able to
 extract each tile from the canvas
-
-.. autoclass:: photons_themes.canvas.Canvas
-    :members:
 """
 from photons_themes.theme import ThemeColor
 

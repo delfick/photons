@@ -1,14 +1,3 @@
-"""
-.. autofunction:: photons_control.multizone.zones_from_reference
-
-.. autofunction:: photons_control.multizone.find_multizone
-
-.. autofunction:: photons_control.multizone.SetZonesPlan
-
-.. autofunction:: photons_control.multizone.SetZones
-
-.. autofunction:: photons_control.multizone.SetZonesEffect
-"""
 from photons_control.colour import make_hsbks
 
 from photons_app.errors import PhotonsAppError

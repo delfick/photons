@@ -57,12 +57,10 @@ class LIFXPacket(dictobj.PacketSpec):
 
     It can be used to generate payload messages for this protocol.
 
-    .. note:: This is the ``parent_packet`` for this protocol. This means
-        any message can be represented with this class using a payload as
-        ``bytes``. Specific message classes will represent the payload as a
-        dictionary of data.
-
-    .. automethod:: photons_messages.frame.LIFXPacket.message
+    This is the ``parent_packet`` for this protocol. This means
+    any message can be represented with this class using a payload as
+    ``bytes``. Specific message classes will represent the payload as a
+    dictionary of data.
     """
 
     parent_packet = True

@@ -14,8 +14,6 @@ import photons_control.transform  # noqa
 import photons_control.payloads  # noqa
 import photons_control.tile  # noqa
 
-__shortdesc__ = "Tasks and code for control of the devices"
-
 
 @addon_hook(extras=[("lifx.photons", "messages"), ("lifx.photons", "products")])
 def __lifx__(collector, *args, **kwargs):

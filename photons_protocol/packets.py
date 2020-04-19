@@ -21,11 +21,6 @@ Usage looks like:
 
 where the ``*_type`` objects have information related to the type for that
 field. See ``photons_protocol.types`` for builtin types.
-
-.. autoclass:: photons_protocol.packets.PacketSpecMetaKls
-
-.. autoclass:: photons_protocol.packets.PacketSpecMixin
-    :members:
 """
 from photons_protocol.packing import PacketPacking, val_to_bitarray
 from photons_protocol.types import Optional, Type as T

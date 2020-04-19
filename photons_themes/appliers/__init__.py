@@ -9,15 +9,11 @@ is for lights with a single color, ``1d`` is for strips and ``2d`` are for tiles
 
 The ``0d`` is always ``LightApplier``
 
-.. autoclass:: photons_themes.appliers.single.LightApplier
-
 SPLOTCH applier
 +++++++++++++++
 
 The applier uses ``LightApplier`` for ``0d`` and ``1d`` and ``2d`` come
 from the ``splotch`` module.
-
-.. automodule:: photons_themes.appliers.splotch
 
 STRIPE appliers
 +++++++++++++++
@@ -25,11 +21,8 @@ STRIPE appliers
 All the STRIPE appliers use ``LightApplier`` and ``StripApplierSplotch`` for
 ``0d`` and ``1d`` respectively.
 
-
 There is ``VERTICAL_STRIPE``, ``HORIZONTAL_STRIPE``, ``DOWN_DIAGONAL_STRIPE``
 and ``UP_DIAGONAL_STRIPE`` appliers.
-
-.. automodule:: photons_themes.appliers.stripes
 """
 from photons_themes.appliers.stripes import (
     TileApplierDownDiagnoalStripe,

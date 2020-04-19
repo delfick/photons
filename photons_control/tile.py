@@ -1,10 +1,3 @@
-"""
-.. autofunction:: photons_control.tile.tiles_from
-
-.. autofunction:: photons_control.tile.orientations_from
-
-.. autofunction:: SetTileEffect
-"""
 from photons_control.orientation import nearest_orientation
 from photons_control.planner import Skip, Plan, plans
 from photons_control.script import FromGenerator

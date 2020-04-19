@@ -1,9 +1,5 @@
 """
 The appliers here are for randomly distributing the theme to the device.
-
-.. autoclass:: photons_themes.appliers.splotch.StripApplierSplotch
-
-.. autoclass:: photons_themes.appliers.splotch.TileApplierSplotch
 """
 from photons_themes.collections import ZoneColors, TileColors
 from photons_themes.appliers.base import TileApplier
@@ -17,8 +13,6 @@ class StripApplierSplotch:
         applier = StripApplier(num_zones)
         for (start_index, end_index), color in applier.apply_theme(theme):
             ...
-
-    .. automethod:: apply_theme
     """
 
     def __init__(self, number_zones):

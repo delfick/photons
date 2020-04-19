@@ -1,8 +1,3 @@
-"""
-.. autofunction:: make_color
-
-.. autofunction:: make_colors
-"""
 from photons_control.planner import Skip
 
 from photons_app.actions import an_action

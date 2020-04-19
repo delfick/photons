@@ -33,9 +33,6 @@ from photons_tile_paint.balls import TileBallsAnimation
 from photons_tile_paint.balls import TileBallsOptions
 
 
-__shortdesc__ = "Utilities for painting on the tiles"
-
-
 @addon_hook(
     extras=[
         ("lifx.photons", "messages"),

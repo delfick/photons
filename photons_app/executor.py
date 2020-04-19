@@ -2,13 +2,7 @@
 This is where the mainline sits and is responsible for setting up the logging,
 the argument parsing and for starting up the App.
 
-.. autoclass:: photons_app.executor.App
-
 This class is extended in Photons Apps to provide custom startup functionalities.
-
-Delfick App and Photons Executor provide the following commandline arguments:
-
-.. photons_app_cli_args::
 """
 
 from photons_app.collector import Collector

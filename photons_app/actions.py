@@ -1,30 +1,3 @@
-"""
-.. glossary::
-
-    action
-        A python callable that defines some specific functionality. It takes in
-        ``(collector, loop, target, reference, artifact, tasks, **kwargs)``.
-
-        loop
-            asycnio event loop instance
-
-        target
-            The target instance as referenced by the user on the commandline.
-
-        reference
-            The reference string from the commandline
-
-        artifact
-            The artifact string from the commandline
-
-        tasks
-            A dictionary of all the tasks that have been defined
-
-We define actions by using the ``an_action`` decorator.
-
-.. autoclass:: photons_app.actions.an_action
-"""
-
 from photons_app.option_spec.task_specifier import task_specifier_spec
 from photons_app.option_spec.task_objs import Task
 from photons_app.errors import PhotonsAppError
@@ -41,7 +14,7 @@ all_tasks = {}
 available_actions = {}
 
 
-class an_action(object):
+class an_action:
     """
     Records a task in the ``available_actions`` dictionary
 

@@ -45,10 +45,6 @@ class TileApplierPattern(TileApplier):
         Note that if you have ``((user_x, user_y), (width, height))`` values from
         asking a tile for it's device chain, then use the ``from_user_coords``
         classmethod to create a TileApplier from that data.
-
-    .. automethod:: from_user_coords
-
-    .. automethod:: apply_theme
     """
 
     def color_func_generator(self, theme, canvas):

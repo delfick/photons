@@ -1,12 +1,3 @@
-"""
-We have classes for storing the final colours for multi color devices.
-
-.. autoclass:: photons_themes.collections.ZoneColors
-    :members:
-
-.. autoclass:: photons_themes.collections.TileColors
-    :members:
-"""
 from photons_themes.theme import ThemeColor
 
 

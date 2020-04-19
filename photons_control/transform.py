@@ -1,6 +1,3 @@
-"""
-.. autoclass:: photons_control.transform.Transformer
-"""
 from photons_control.script import FromGenerator, Pipeline
 
 from photons_app.errors import PhotonsAppError

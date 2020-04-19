@@ -25,8 +25,6 @@ def __lifx__(collector, *args, **kwargs):
     pass
 
 
-__shortdesc__ = "Determine how to apply themes to devices"
-
 log = logging.getLogger("photons_themes")
 
 default_colors = [

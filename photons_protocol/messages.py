@@ -7,11 +7,6 @@ of ``photons_protocol.messages.Messages``.
 
 This class is a combination of a mixin class for functionality and a meta class
 for defining ``by_type`` on the class.
-
-.. autoclass:: photons_protocol.messages.MessagesMeta
-
-.. autoclass:: photons_protocol.messages.MessagesMixin
-    :members:
 """
 from photons_protocol.types import Type, MultiOptions
 from photons_protocol.errors import BadConversion

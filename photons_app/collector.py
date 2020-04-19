@@ -1,10 +1,3 @@
-"""
-The collector is responsible for collecting configuration and photons_app
-modules.
-
-.. autoclass:: photons_app.collector.Collector
-"""
-
 from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
@@ -86,18 +79,6 @@ class Collector(Collector):
     """
     This is based off the delfick project
     `Collector <https://delfick-project.readthedocs.io/en/latest/api/option_merge/api/collector.html>`_
-
-    It overrides the following:
-
-    .. automethod:: photons_app.collector.Collector.run_coro_as_main
-
-    .. automethod:: photons_app.collector.Collector.extra_prepare
-
-    .. automethod:: photons_app.collector.Collector.extra_configuration_collection
-
-    .. automethod:: photons_app.collector.Collector.extra_prepare_after_activation
-
-    .. automethod:: photons_app.collector.Collector.add_configuration
     """
 
     _merged_options_formattable = True

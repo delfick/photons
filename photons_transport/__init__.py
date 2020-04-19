@@ -1,35 +1,9 @@
-__doc__ = """
+"""
 This module is responsible for determining how to get bytes to and from devices.
 
 It contains targets which know how to communicate with devices in a particular
 way. You use these targets to create one or more sessions, which each have one
 or more connections to your devices that it uses to send a receive messages.
-
-Target
-------
-
-.. automodule:: photons_transport.targets
-    :members:
-
-Session
--------
-
-.. automodule:: photons_transport.session
-
-Transports
-----------
-
-.. automodule:: photons_transport.transports
-
-Retry options
--------------
-
-This module also provides a ``RetryOptions`` and ``RetryIterator`` for working
-with retry logic.
-
-.. autoclass:: photons_transport.RetryOptions
-
-.. autoclass:: photons_transport.RetryIterator
 """
 
 from photons_transport.retry_options import RetryOptions, RetryIterator

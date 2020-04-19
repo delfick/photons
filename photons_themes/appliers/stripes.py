@@ -1,15 +1,5 @@
 """
 These appliers generate colors for each point using a function
-
-.. autoclass:: photons_themes.appliers.stripes.TileApplierVerticalStripe
-
-.. autoclass:: photons_themes.appliers.stripes.TileApplierHorizontalStripe
-
-.. autoclass:: photons_themes.appliers.stripes.TileApplierDownDiagnoalStripe
-
-.. autoclass:: photons_themes.appliers.stripes.TileApplierUpDiagnoalStripe
-
-.. autoclass:: photons_themes.appliers.stripes.TileApplierSquareStripe
 """
 from photons_themes.appliers.base import TileApplierPattern
 

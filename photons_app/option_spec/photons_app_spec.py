@@ -187,8 +187,6 @@ class PhotonsAppSpec(object):
     def photons_app_spec(self):
         """
         Get us an instance of PhotonsApp:
-
-        .. autoclass:: photons_app.option_spec.photons_app_spec.PhotonsApp
         """
         return PhotonsApp.FieldSpec(formatter=MergedOptionStringFormatter)
 
@@ -196,8 +194,6 @@ class PhotonsAppSpec(object):
     def target_register_spec(self):
         """
         Make a TargetRegister object
-
-        .. autoclass:: photons_app.option_spec.photons_app_spec.TargetRegister
         """
         return sb.create_spec(
             TargetRegister,
@@ -210,8 +206,6 @@ class PhotonsAppSpec(object):
     def reference_resolver_register_spec(self):
         """
         Make a ReferenceResolerRegister object
-
-        .. autoclass:: photons_app.option_spec.photons_app_spec.ReferenceResolerRegister
         """
         return sb.create_spec(ReferenceResolerRegister)
 
@@ -219,8 +213,6 @@ class PhotonsAppSpec(object):
     def targets_spec(self):
         """
         Get us a dictionary of target name to Target object
-
-        .. autoclass:: photons_app.option_spec.photons_app_spec.Target
         """
         return sb.dictof(
             self.target_name_spec, Target.FieldSpec(formatter=MergedOptionStringFormatter)

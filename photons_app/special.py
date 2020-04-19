@@ -13,16 +13,6 @@ class SpecialReference:
     find must be an async function that returns ``(found, serials)``
     where serials is ``["d073d500001", "d073d500002", ...]``
     and found is ``{target: {(service, (ip, port)), ...}, ...}``
-
-    .. automethod:: photons_app.special.SpecialReference.find
-
-    .. automethod:: photons_app.special.SpecialReference.reset
-
-    .. automethod:: photons_app.special.SpecialReference.find_serials
-
-    .. automethod:: photons_app.special.SpecialReference.missing
-
-    .. automethod:: photons_app.special.SpecialReference.raise_on_missing
     """
 
     def __init__(self):

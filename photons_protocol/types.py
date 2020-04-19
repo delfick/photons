@@ -1,14 +1,5 @@
 """
 Here we create classes that represent the individual fields in the LIFX packets
-
-By default we have the following types:
-
-.. photons_protocol_types::
-
-Each type is an instance of:
-
-.. autoclass:: photons_protocol.types.Type
-    :members:
 """
 
 from photons_protocol.errors import BadSpecValue, BadConversion
@@ -222,31 +213,14 @@ class Type(object):
 
         We support:
 
-        int
-            An integer which can also be an enum or bitmask
-
-            .. autofunction:: photons_protocol.types.integer_spec
-
-        bool
-            .. autofunction:: photons_protocol.types.boolean
-
-        float
-            .. autofunction:: photons_protocol.types.float_spec
-
-        str
-            .. autofunction:: photons_protocol.types.bytes_as_string_spec
-
-        bytes
-            .. autofunction:: photons_protocol.types.bytes_spec
-
-        (bool, int)
-            .. autofunction:: photons_protocol.types.boolean_as_int_spec
-
-        (list, str, ",")
-            .. autofunction:: photons_protocol.types.csv_spec
-
-        json
-            Converts the value into a json compatible object
+        * int
+        * bool
+        * float
+        * str
+        * bytes
+        * ``(bool, int)``
+        * ``(list, str, ",")``
+        * json
         """
         spec = self._maybe_transform_spec(
             pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform
@@ -657,8 +631,6 @@ class integer_spec(sb.Spec):
     Normalise an integer
 
     Take into account whether we have ``enum`` or ``bitmask`` and ``allow_float``
-
-    .. automethod:: photons_protocol.types.integer_spec.normalise_filled
     """
 
     def setup(
@@ -984,8 +956,6 @@ class defaulted(sb.Spec):
 class boolean(sb.Spec):
     """
     Normalise a value into a boolean
-
-    .. automethod:: photons_protocol.types.boolean.normalise_filled
     """
 
     def normalise_empty(self, meta):
@@ -1009,10 +979,6 @@ class boolean(sb.Spec):
 class boolean_as_int_spec(sb.Spec):
     """
     Normalise a boolean value into an integer
-
-    .. automethod:: photons_protocol.types.boolean_as_int_spec.normalise_empty
-
-    .. automethod:: photons_protocol.types.boolean_as_int_spec.normalise_filled
     """
 
     def normalise_empty(self, meta):
@@ -1037,8 +1003,6 @@ class boolean_as_int_spec(sb.Spec):
 class csv_spec(sb.Spec):
     """
     Normalise csv in and out of being a list of string or bytes
-
-    .. automethod:: photons_protocol.types.csv_spec.normalise_filled
     """
 
     def __init__(self, pkt, size_bits, unpacking=False):
@@ -1080,8 +1044,6 @@ class bytes_spec(sb.Spec):
     in either case.
 
     For good measure we just always convert string and bytes to bitarray
-
-    .. automethod:: photons_protocol.types.bytes_spec.normalise_filled
     """
 
     def __init__(self, pkt, size_bits):
@@ -1148,8 +1110,6 @@ class bytes_spec(sb.Spec):
 class bytes_as_string_spec(sb.Spec):
     """
     Look for the null byte and use that to create a str
-
-    .. automethod:: photons_protocol.types.bytes_as_string_spec.normalise_filled
     """
 
     def __init__(self, pkt, size_bits, unpacking=False):
@@ -1196,8 +1156,6 @@ class bytes_as_string_spec(sb.Spec):
 class float_spec(sb.Spec):
     """
     Make sure we can convert value into a float
-
-    .. automethod:: photons_protocol.types.float_spec.normalise_filled
     """
 
     def normalise_filled(self, meta, val):

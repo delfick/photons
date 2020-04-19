@@ -13,17 +13,6 @@ import re
 
 log = logging.getLogger("photons_control.colour")
 
-__shortdesc__ = "Colour conversion functionality"
-
-__doc__ = """
-This module knows about colour.
-
-.. autoclass:: photons_control.colour.Effects
-    :members:
-
-.. autoclass:: photons_control.colour.ColourParser
-"""
-
 regexes = {
     "whitespace": re.compile(r"\s+"),
     "10_random_component": re.compile(r"random"),

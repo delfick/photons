@@ -1,9 +1,3 @@
-"""
-This module contains the definition of the LIFX binary protocol messages.
-
-This includes the frame of the packet that is common to all messages.
-"""
-
 # Get the parent packet
 from photons_messages.frame import LIFXPacket
 

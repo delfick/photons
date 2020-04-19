@@ -1,12 +1,6 @@
 """
-A theme is just a collection of colors and the job of the appliers is to choose
+A theme is a collection of colors and the job of the appliers is to choose
 how those colors are displayed on the device.
-
-.. autoclass:: photons_themes.theme.Theme
-    :members:
-
-.. autoclass:: photons_themes.theme.ThemeColor
-    :members:
 """
 import random
 import math

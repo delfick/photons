@@ -10,8 +10,6 @@ class LightApplier:
 
         applier = LightApplier()
         color = applier.apply_theme(theme)
-
-    .. automethod:: apply_theme
     """
 
     def apply_theme(self, theme):

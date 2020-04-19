@@ -5,8 +5,6 @@ from photons_app.formatter import MergedOptionStringFormatter
 
 from delfick_project.addons import addon_hook
 
-__shortdesc__ = "The logic for communicating with devices"
-
 
 @addon_hook()
 def __lifx__(collector, *args, **kwargs):
