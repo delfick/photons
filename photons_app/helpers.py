@@ -1,5 +1,3 @@
-"""Some useful, common helper functionalities"""
-
 from photons_app.errors import PhotonsAppError
 
 from delfick_project.logging import lc
@@ -33,7 +31,60 @@ class Nope:
 
 
 class ATicker:
-    def __init__(self, every, final_future=None):
+    """
+    This object gives you an async generator that yields every ``every``
+    seconds, taking into account how long it takes for your code to finish
+    for the next yield.
+
+    For example:
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+        import time
+
+
+        start = time.time()
+        timing = []
+
+        async for _ in hp.ATicker(10):
+            timing.append(time.time() - start)
+            asyncio.sleep(8)
+            if len(timing) >= 5:
+                break
+
+        assert timing == [0, 10, 20, 30, 40]
+
+    You can use the shortcut :func:`tick` to create one of these, but if you
+    do create this yourself, you can change the ``every`` value while you're
+    iterating.
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+
+        ticker = hp.ATicker(10)
+
+        done = 0
+
+        async for _ in ticker:
+            done += 1
+            if done == 3:
+                # This will mean the next tick will be 20 seconds after the last
+                # tick and future ticks will be 20 seconds apart
+                ticker.change_after(20)
+            elif done == 5:
+                # This will mean the next tick will be 40 seconds after the last
+                # tick, but ticks after that will go back to 20 seconds apart.
+                ticker.change_after(40, set_new_every=False)
+
+    The ``ATicker`` also takes in an optional ``final_future``, which when
+    cancelled will stop the ticker.
+    """
+
+    def __init__(self, every, *, final_future=None):
         self.every = every
         self.tick_fut = ResettableFuture()
         self.last_tick = None
@@ -80,6 +131,23 @@ class ATicker:
 
 
 async def tick(every, *, final_future=None):
+    """
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+
+        async for _ in hp.tick(every):
+            yield
+
+        # Is a nicer way of saying
+
+        async for _ in hp.ATicker(every):
+            yield
+
+    If you want control of the ticker during the iteration, then use
+    :class:`ATicker` directly.
+    """
     async for _ in ATicker(every, final_future=final_future):
         yield
 
@@ -92,36 +160,69 @@ class TaskHolder:
 
     .. code-block:: python
 
+        from photons_app import helpers as hp
+
+
         final_future = asyncio.Future()
 
         async def something():
             await asyncio.sleep(5)
 
-        with TaskHolder(final_future) as ts:
+        with hp.TaskHolder(final_future) as ts:
             ts.add(something())
             ts.add(something())
 
-    Once the context manager is exited you may still run ts.add and the context
-    manager will stay alive until all coroutines have finished.
+    If you don't want to use the context manager, you can say:
 
-    If you complete final_future before all the tasks have completed then the
-    tasks will be cancelled and properly waited on so their finally blocks run
-    before the context manager finishes.
+    .. code-block:: python
 
-    ts.add will also return the task object that is made from the coroutine.
+        from photons_app import helpers as hp
 
-    ts.add also takes a ``silent=False`` parameter, that when True will not log
-    any errors that happen. Otherwise errors will be logged.
+
+        final_future = asyncio.Future()
+
+        async def something():
+            await asyncio.sleep(5)
+
+        ts = hp.TaskHolder(final_future)
+
+        try:
+            ts.add(something())
+            ts.add(something())
+        finally:
+            await ts.finish()
+
+    Once your block in the context manager is done the context manager won't
+    exit until all coroutines have finished. During this time you may still
+    use ``ts.add`` or ``ts.add_task`` on the holder.
+
+    If the ``final_future`` is cancelled before all the tasks have completed
+    then the tasks will be cancelled and properly waited on so their finally
+    blocks run before the context manager finishes.
+
+    ``ts.add`` will also return the task object that is made from the coroutine.
+
+    ``ts.add`` also takes a ``silent=False`` parameter, that when True will
+    not log any errors that happen. Otherwise errors will be logged.
+
+    If you already have a task object, you can give it to the holder with
+    ``ts.add_task(my_task)``.
+
+    .. automethod:: add
+
+    .. automethod:: add_task
+
+    .. automethod:: finish
     """
 
     def __init__(self, final_future):
         self.ts = []
         self.final_future = final_future
 
-    def add(self, coro, silent=False):
+    def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
 
-    def add_task(self, task, silent=False):
+    def add_task(self, task):
         self.ts.append(task)
         self.ts = [t for t in self.ts if not t.done()]
         return task
@@ -221,12 +322,31 @@ class ResultStreamer:
     If you don't want to use the ``async with streamer`` then you must call
     ``await streamer.finish()`` when you are done with the streamer to ensure
     everything is cleaned up.
+
+    .. autoclass:: photons_app.helpers.ResultStreamer.Result
+
+    .. automethod:: add_generator
+
+    .. automethod:: add_coroutine
+
+    .. automethod:: add_task
+
+    .. automethod:: no_more_work
+
+    .. automethod:: finish
     """
 
     class GeneratorComplete:
         pass
 
     class Result:
+        """
+        The object that the streamer will yield. This contains the ``value``
+        being yielded, the ``context`` associated with the coroutine/generator
+        this value comes from; and a ``successful`` boolean that says if this
+        was an error.
+        """
+
         def __init__(self, value, context, successful):
             self.value = value
             self.context = context
@@ -489,6 +609,10 @@ def nested_dict_retrieve(data, keys, dflt):
 
 
 def fut_has_callback(fut, callback):
+    """
+    Look at the callbacks on the future and return ``True`` if any of them
+    are the provided ``callback``.
+    """
     if not fut._callbacks:
         return False
 
@@ -505,9 +629,13 @@ def fut_has_callback(fut, callback):
 def async_as_normal(func):
     """
     Return a function that creates a task on the provided loop using the
-    provided func and add reporter as a done callback
+    provided func and add :func:`reporter` as a done callback. The task
+    that is created is returned to you when you call the result.
 
     .. code-block:: python
+
+        from photons_app import helpers as hp
+
 
         # Define my async function
         async def my_func(a, b):
@@ -517,7 +645,7 @@ def async_as_normal(func):
         func = hp.async_as_normal(my_func)
 
         # start the async job
-        func(1, b=6)
+        task = func(1, b=6)
     """
 
     @wraps(func)
@@ -532,10 +660,16 @@ def async_as_normal(func):
 
 def async_as_background(coroutine, silent=False):
     """
-    Create a task with reporter as a done callback using provided loop and
-    coroutine and return the new task.
+    Create a task with :func:`reporter` as a done callback and return the created
+    task. If ``silent=True`` then use :func:`silent_reporter`.
+
+    This is useful because if a task exits with an exception, but nothing ever
+    retrieves that exception then Python will print annoying warnings about this.
 
     .. code-block:: python
+
+        from photons_app import helpers as hp
+
 
         async def my_func():
             await something()
@@ -553,11 +687,24 @@ def async_as_background(coroutine, silent=False):
 
 async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=False):
     """
-    Run a coroutine as a task until it's complete or times out
+    Run a coroutine as a task until it's complete or times out.
 
-    If time runs out the task is cancelled
+    If time runs out the task is cancelled.
 
-    If timeout_error is defined, that is raised instead of asyncio.CancelledError on timeout
+    If timeout_error is defined, that is raised instead of asyncio.CancelledError
+    on timeout.
+
+    .. code-block:: python
+
+        from photons_app.helpers import hp
+
+        import asyncio
+
+
+        async def my_coroutine():
+            await asyncio.sleep(120)
+
+        await hp.async_with_timeout(my_coroutine(), timeout=20)
     """
     f = asyncio.Future()
     t = async_as_background(coroutine, silent=silent)
@@ -595,7 +742,10 @@ class memoized_property(object):
 
     .. code-block:: python
 
-        class MyClass(object):
+        from photons_app import helpers as hp
+
+
+        class MyClass:
             @hp.memoized_property
             def thing(self):
                 return expensive_operation()
@@ -607,6 +757,14 @@ class memoized_property(object):
 
         # And we get the result again but minus the expensive operation
         print(obj.thing)
+
+        # We can set our own value
+        object.thing = "overridden"
+        assert object.thing == "overridden"
+
+        # And we can delete what is cached
+        del object.thing
+        assert object.thing == "<result from calling expensive_operation() again>"
     """
 
     class Empty:
@@ -645,12 +803,13 @@ def silent_reporter(res):
         t = loop.create_task(coroutine())
         t.add_done_callback(hp.silent_reporter)
 
-    This means that exceptions are *not* logged to the terminal and you won't
+    This means that exceptions are **not** logged to the terminal and you won't
     get warnings about tasks not being looked at when they finish.
 
-    This method will return True if there was no exception and None otherwise.
+    This method will return ``True`` if there was no exception and ``None``
+    otherwise.
 
-    It also handles and silences CancelledError.
+    It also handles and silences ``asyncio.CancelledError``.
     """
     if not res.cancelled():
         exc = res.exception()
@@ -673,9 +832,10 @@ def reporter(res):
     This means that exceptions are logged to the terminal and you won't
     get warnings about tasks not being looked at when they finish.
 
-    This method will return True if there was no exception and None otherwise.
+    This method will return ``True`` if there was no exception and ``None``
+    otherwise.
 
-    It also handles and silences CancelledError.
+    It also handles and silences ``asyncio.CancelledError``.
     """
     if not res.cancelled():
         exc = res.exception()
@@ -689,9 +849,27 @@ def reporter(res):
 
 def transfer_result(fut, errors_only=False):
     """
-    Return a done_callback that transfers the result/errors/cancellation to fut
+    Return a ``done_callback`` that transfers the result, errors or cancellation
+    to the provided future.
 
-    If errors_only is True then it will not transfer a result to fut
+    If errors_only is ``True`` then it will not transfer a successful result
+    to the provided future.
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+        import asyncio
+
+
+        async def my_coroutine():
+            return 2
+
+        fut = asyncio.Future()
+        task = hp.async_as_background(my_coroutine())
+        task.add_done_callback(hp.transfer_result(fut))
+
+        assert (await fut) == 2
     """
 
     def transfer(res):
@@ -1096,7 +1274,10 @@ class ThreadToAsyncQueue(object):
 
     .. code-block:: python
 
-        class MyQueue(ThreadToAsyncQueue):
+        from photons_app import helpers as hp
+
+
+        class MyQueue(hp.ThreadToAsyncQueue):
             def create_args(self, thread_number, existing):
                 '''
                 This is called once when the queue is started
@@ -1117,15 +1298,14 @@ class ThreadToAsyncQueue(object):
 
         def onerror(exc):
             '''
-            This function is passed into __init__ when you create the queue
-            it is called on unexpected errors.
-            the return of this function is ignored
+            This is called on unexpected errors. The return of this function 
+            is ignored
             '''
             pass
 
         # If stop_fut is cancelled or has a result, then the queue will stop
         # But the thread will continue until queue.finish() is called
-        queue = ThreadToAsyncQueue(stop_fut, 10, onerror)
+        queue = MyQueue(stop_fut, 10, onerror)
         await queue.start()
 
         def action(my_thread_thing):
@@ -1134,6 +1314,18 @@ class ThreadToAsyncQueue(object):
 
         await queue.request(action)
         await queue.finish()
+
+    .. automethod:: setup
+
+    .. automethod:: create_args
+
+    .. automethod:: wrap_request
+
+    .. automethod:: request
+
+    .. automethod:: start()
+
+    .. automethod:: finish
     """
 
     def __init__(self, stop_fut, num_threads, onerror, *args, **kwargs):
@@ -1148,7 +1340,10 @@ class ThreadToAsyncQueue(object):
         self.setup(*args, **kwargs)
 
     def setup(self, *args, **kwargs):
-        """Hook for extra setup"""
+        """
+        Hook for extra setup and takes in the extra unused positional and
+        keyword arguments from instantiating this class.
+        """
 
     async def finish(self):
         """Signal to the tasks to stop at the next available moment"""
@@ -1167,7 +1362,32 @@ class ThreadToAsyncQueue(object):
         return asyncio.gather(*ready)
 
     def request(self, func):
-        """Make a request and get back a future representing the result of that request"""
+        """
+        Make a request and get back a future representing the result of that
+        request.
+
+        The ``func`` provided will be called in one of our threads and provided
+        the ``args`` provided by :meth:`create_args`.
+
+        .. code-block:: python
+
+            from photons_app import helpers as hp
+
+
+            class MyQueue(hp.ThreadToAsyncQueue):
+                def create_args(self, thread_number, existing):
+                    return ("a", "b")
+
+            queue = MyQueue(...)
+            await queue.start()
+
+            def action(letter1, letter2):
+                assert letter1 == "a"
+                assert letter1 == "b"
+                return "c"
+
+            assert (await queue.request(action)) == "c"
+        """
         key = str(uuid.uuid1())
         fut = asyncio.Future()
         self.futures[key] = fut
@@ -1279,7 +1499,21 @@ class ThreadToAsyncQueue(object):
                     self.onerror(exc_info)
 
     def wrap_request(self, proc, args):
-        """Return a function that will perform the work"""
+        """
+        Hook to return a function that will perform the work
+
+        This takes in the ``proc``, which is the function you give to
+        :meth:`request` and the ``args`` returned from :meth:`create_args`.
+
+        By default this says:
+
+        .. code-block:: python
+
+            def wrapped():
+                return proc(*args)
+
+            return wrapped
+        """
 
         def wrapped():
             return proc(*args)
