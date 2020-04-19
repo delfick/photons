@@ -1,12 +1,11 @@
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
+from photons_control.colour import ColourParser, make_hsbks
 from photons_control.script import FromGeneratorPerSerial
 from photons_messages import LightMessages, TileMessages
 from photons_themes.appliers import types as appliers
 from photons_control.multizone import SetZonesPlan
-from photons_control.attributes import make_colors
-from photons_control.colour import ColourParser
 from photons_messages.fields import Color
 from photons_themes.theme import Theme
 
@@ -45,7 +44,7 @@ class colors_spec(sb.Spec):
     def normalise_filled(self, meta, val):
         overrides = meta.everything.get("overrides", {})
         return [
-            Color(**color) for i, color in enumerate(make_colors([[c, 1] for c in val], overrides))
+            Color(**color) for i, color in enumerate(make_hsbks([[c, 1] for c in val], overrides))
         ]
 
 

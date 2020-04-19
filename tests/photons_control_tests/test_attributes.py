@@ -1,12 +1,10 @@
 # coding: spec
 
-from photons_control.attributes import make_colors
-
-from photons_control.colour import ColourParser
+from photons_control.colour import ColourParser, make_hsbks
 
 import pytest
 
-describe "make_colors":
+describe "make_hsbks":
 
     @pytest.fixture()
     def colors(self):
@@ -49,26 +47,26 @@ describe "make_colors":
             expected.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0})
             expected.append({"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 9000})
 
-        assert list(make_colors(colors)) == expected
+        assert list(make_hsbks(colors)) == expected
 
     it "can overrides hue", colors:
-        colors = list(make_colors(colors, overrides={"hue": 1}))
+        colors = list(make_hsbks(colors, overrides={"hue": 1}))
         for c in colors:
             assert c["hue"] == 1
 
     it "can overrides saturation", colors:
-        colors = list(make_colors(colors, overrides={"saturation": 0.3}))
+        colors = list(make_hsbks(colors, overrides={"saturation": 0.3}))
         for c in colors:
             assert c["saturation"] == 0.3
 
     it "can overrides brightness", colors:
-        colors = list(make_colors(colors, overrides={"brightness": 0.6}))
+        colors = list(make_hsbks(colors, overrides={"brightness": 0.6}))
 
         for c in colors:
             assert c["brightness"] == 0.6
 
     it "can overrides kelvin", colors:
-        colors = list(make_colors(colors, overrides={"kelvin": 8000}))
+        colors = list(make_hsbks(colors, overrides={"kelvin": 8000}))
 
         for c in colors:
             assert c["kelvin"] == 8000

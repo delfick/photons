@@ -9,7 +9,7 @@
 
 .. autofunction:: photons_control.multizone.SetZonesEffect
 """
-from photons_control.attributes import make_colors
+from photons_control.colour import make_hsbks
 
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
@@ -86,11 +86,11 @@ class SetZonesPlan(Plan):
     dependant_info = {"c": CapabilityPlan()}
 
     def setup(self, colors, zone_index=0, duration=1, overrides=None, **kwargs):
-        colors = self.make_colors(colors, overrides)
-        self.set_color_old = self.make_color_old_messages(zone_index, colors, duration)
-        self.set_color_new = self.make_color_new_messages(zone_index, colors, duration)
+        colors = self.make_hsbks(colors, overrides)
+        self.set_color_old = self.make_hsbk_old_messages(zone_index, colors, duration)
+        self.set_color_new = self.make_hsbk_new_messages(zone_index, colors, duration)
 
-    def make_color_old_messages(self, zone_index, colors, duration):
+    def make_hsbk_old_messages(self, zone_index, colors, duration):
         set_color_old = []
 
         end = zone_index
@@ -134,7 +134,7 @@ class SetZonesPlan(Plan):
 
         return set_color_old
 
-    def make_color_new_messages(self, zone_index, colors, duration):
+    def make_hsbk_new_messages(self, zone_index, colors, duration):
         return MultiZoneMessages.SetExtendedColorZones(
             duration=duration,
             colors_count=len(colors),
@@ -144,8 +144,8 @@ class SetZonesPlan(Plan):
             res_required=False,
         )
 
-    def make_colors(self, colors, overrides):
-        results = list(make_colors(colors, overrides))
+    def make_hsbks(self, colors, overrides):
+        results = list(make_hsbks(colors, overrides))
 
         if len(results) > 82:
             raise PhotonsAppError("colors can only go up to 82 colors", got=len(results))

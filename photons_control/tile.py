@@ -6,8 +6,8 @@
 .. autofunction:: SetTileEffect
 """
 from photons_control.orientation import nearest_orientation
-from photons_control.attributes import make_colors
 from photons_control.script import FromGenerator
+from photons_control.colour import make_hsbks
 
 from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
@@ -98,7 +98,7 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
     if len(options["palette"]) > 16:
         raise PhotonsAppError("Palette can only be up to 16 colors", got=len(options["palette"]))
 
-    options["palette"] = list(make_colors([c, 1] for c in options["palette"]))
+    options["palette"] = list(make_hsbks([c, 1] for c in options["palette"]))
     options["palette_count"] = len(options["palette"])
 
     set_effect = TileMessages.SetTileEffect.empty_normalise(**options)

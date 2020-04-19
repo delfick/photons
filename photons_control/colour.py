@@ -83,6 +83,74 @@ class InvalidColor(PhotonsAppError):
     pass
 
 
+def make_hsbk(specifier):
+    """
+    Return {"hue", "saturation", "brightness", "kelvin"} dictionary for this specifier.
+
+    If it's a string, use photons_control.colour.ColourParser.hsbk
+
+    If it's a list, then take h, s, b, k from the list and default to 0, 0, 1, 3500
+    The list can be 0 to 4 items long
+
+    If it's a dictionary, get hue, saturation, brightness, kelvin from it
+    values default to 0, 0, 1, 3500
+    """
+    if isinstance(specifier, str):
+        h, s, b, k = ColourParser.hsbk(specifier)
+        if b is None:
+            b = 1
+
+    elif isinstance(specifier, (list, tuple)):
+        h, s, b, k = 0, 0, 1, 3500
+        if len(specifier) > 0:
+            h = specifier[0]
+        if len(specifier) > 1:
+            s = specifier[1]
+        if len(specifier) > 2:
+            b = specifier[2]
+        if len(specifier) > 3:
+            k = specifier[3]
+
+    elif isinstance(specifier, dict):
+        h = specifier.get("hue", 0)
+        s = specifier.get("saturation", 0)
+        b = specifier.get("brightness", 1)
+        k = specifier.get("kelvin", 3500)
+
+    return {
+        "hue": h or 0,
+        "saturation": s or 0,
+        "brightness": b if b is not None else 1,
+        "kelvin": k if k is not None else 3500,
+    }
+
+
+def make_hsbks(colors, overrides=None):
+    """
+    yield [{"hue", "saturation", "brightness", "kelvin"}, ...] colors for these colors and overrides
+
+    Colors must be an array of [[specifier, length], ...]
+
+    We use make_hsbk with each specifier and apply overrides to the result and then
+    yield length amount of the resulting dictionary for each specifier.
+    """
+    for color in colors:
+        if not isinstance(color, list) or len(color) != 2:
+            raise PhotonsAppError("Each color must be [color, length]")
+
+        color, length = color
+
+        result = make_hsbk(color)
+
+        if overrides:
+            for k in result:
+                if k in overrides:
+                    result[k] = overrides[k]
+
+        for _ in range(length):
+            yield result
+
+
 def split_color_string(color_string):
     """Split a ``color_string`` by whitespace into a list of it's ``components``. """
     if not color_string:
