@@ -4,7 +4,86 @@ ChangeLog
 =========
 
 0.3.0 - TBD
-    * Many changes.
+    This release is the biggest change to the programmatic interface since the
+    internal version of this library at LIFX was created nearly 4 years ago.
+
+    The main change being renaming the ``afr`` object and replacing the
+    ``run_with`` API.
+
+    .. code-block:: python
+
+        # before
+        async with target.session() as afr:
+            async for pkt, _, _ in target.script(DeviceMessages.SetPower()).run_with(reference, afr):
+                print(pkt)
+
+            results = in target.script(DeviceMessages.SetPower()).run_with_all(reference, afr):
+            pkts = [pkt for pkt, _, _ in results]
+
+        # after
+        async with target.session() as sender:
+            async for pkt in sender(DeviceMessages.SetPower(), reference)
+                print(pkt)
+
+            pkts = await sender(DeviceMessages.SetPower(), reference)
+
+    Also creating the gatherer is much simpler now:
+
+    .. code-block:: python
+
+        # before
+        from photons_control.planner import Gatherer, make_plans
+
+        async with target.session() as afr:
+            gatherer = Gatherer(target)
+            plans = make_plans("capability")
+
+            async for serial, label, info in gatherer.gather(plans, reference, afr):
+                print(serial, label, info)
+
+        # after
+        async with target.session() as sender:
+            plans = sender.make_plans("capability")
+
+            async for serial, label, info in sender.gatherer.gather(plans, reference):
+                print(serial, label, info)
+
+    I have also simplified the DeviceFinder such that the Special Reference and
+    Daemon it provides are two different things rather than on the same object.
+    This also makes it easier to create a DeviceFinder special reference as it
+    doesn't need a ``target`` and the Daemon only requires a ``sender``.
+
+    I have simplified creating scripts by introducing ``photons_core.run_cli``
+    and ``photons_core.run_script``:
+
+    .. code-block:: python
+
+        # before
+        if __name__ == "__main__":
+            from photons_app.executor import main
+            import sys
+
+            main(["lan:my_task"] + sys.argv[1:])
+
+        # after
+        if __name__ == "__main__":
+            __import__("photons_core").run_cli("lan:my_task {@:1:}")
+
+    The ``collector`` now has shortcuts for resolving a string into a target
+    and a string into a Special Reference.
+
+    The example scripts in the source code is now all under the ``examples``
+    directory rather than spread across ``examples`` and ``scripts``.
+
+    I've moved ``photons_colour`` and colour related helpers in
+    ``photons_control.attributes`` into ``photons_control.colour``.
+
+    I've introduced some additional helpers in ``photons_app.helpers`` for
+    working with asyncio tasks and also the ability to stream results from
+    multiple coroutines and async generators.
+
+    And most importantly, I've rewritten the documentation from scratch to
+    make it more clear and useful.
 
 0.25.0 - 8 March 2020
     * Added photons_control.planner.PacketPlan for making a plan that sends
