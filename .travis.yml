@@ -13,8 +13,7 @@ env:
 
 install:
   - pip install pip --upgrade
-  - pip install -e .
-  - pip install -e '.[tests]'
+  - cd modules && pip install -e ".[tests]"
 
 script:
   - ./test.sh

@@ -2,6 +2,7 @@
 
 __shortdesc__ = "Helpers for writing tests for photons in pytest"
 
+
 from textwrap import dedent
 from unittest import mock
 import tempfile

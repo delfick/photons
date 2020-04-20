@@ -7,6 +7,8 @@ packages = []
 py_modules = []
 photons_entry_points = []
 
+readme_location = os.path.join(os.path.dirname(__file__), "README.rst")
+
 # __file__ can sometimes be "" instead of what we want
 # in that case we assume we're already in this directory
 this_dir = os.path.dirname(__file__) or "."
@@ -70,7 +72,7 @@ setup(
     , author = "Stephen Moore"
     , author_email = "delfick755@gmail.com"
     , description = "The core modules of the photons framework"
-    , long_description = open("README.rst").read()
+    , long_description = open(readme_location).read()
     , license = "MIT"
     , keywords = "lifx photons"
     )

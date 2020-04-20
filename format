@@ -4,5 +4,4 @@ cd $(git rev-parse --show-toplevel)
 
 ./tools/black/setup_venv
 
-./tools/black/.black/bin/black .
-./tools/black/.black/bin/noy_black $(find tests -name '*.py')
+./tools/black/.black/bin/noy_black .

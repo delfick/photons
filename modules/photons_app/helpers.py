@@ -1295,7 +1295,7 @@ class ThreadToAsyncQueue(object):
 
         def onerror(exc):
             '''
-            This is called on unexpected errors. The return of this function 
+            This is called on unexpected errors. The return of this function
             is ignored
             '''
             pass

@@ -1,16 +1,14 @@
 [tool.black]
 line-length = 100
-include = '(\.py$|scripts/(info|repeater|tile_dice|tiles)$)'
+include = '\.py$'
 exclude = '''
 /(
      \.git
    | \.tox
-   | scripts/\.lifx
    | examples/\.lifx
 
    | dist
-   | docs
-   | tests
+   | docs/res
    | tools
 )/
 '''

@@ -6,8 +6,8 @@ docs/.photons-docs/
 docs/gh-pages/
 scripts/.lifx/
 scripts/secrets.yml
-.tox/
+modules/.tox/
 examples/.lifx/
-dist/
-pip-wheel-metadata/
-build/
+modules/dist/
+modules/pip-wheel-metadata/
+modules/build/
