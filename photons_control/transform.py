@@ -55,9 +55,11 @@ class Transformer(object):
     to brightness 0 on the new color and on, and then the brightness will be
     changed to match the end result.
 
-    For the color options we use ``photons_control.colour.ColourParser`` to create the
-    ``SetWaveformOptional`` message that is needed to change the device. This
-    means that we support an ``effect`` option for setting different waveforms.
+    For the color options we use
+    :class:`ColourParser <photons_control.colour.ColourParser>` to create the
+    :ref:`SetWaveformOptional <LightMessages.SetWaveformOptional>` message that
+    is needed to change the device. This means that we support an ``effect``
+    option for setting different waveforms.
 
     If ``keep_brightness=True`` then we do not change the brightness of the
     device despite any brightness options in the color options.

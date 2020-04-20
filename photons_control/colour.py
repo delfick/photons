@@ -151,7 +151,8 @@ def split_color_string(color_string):
 class ColourParser(object):
     """
     This knows how to convert valid colour specifiers into a
-    :ref:`LightMessages.SetWaveformOptional` you can send to a device.
+    :ref:`SetWaveformOptional <LightMessages.SetWaveformOptional>` you can
+    send to a device.
 
     A valid colour specifier is a combination of any of the following
     components:
@@ -231,8 +232,9 @@ class ColourParser(object):
     @classmethod
     def msg(kls, components, overrides=None):
         """
-        Create a ``SetWaveformOptional`` message that may be used to change the
-        state of a device to what has been specified.
+        Create a :ref:`SetWaveformOptional <LightMessages.SetWaveformOptional>`
+        message that may be used to change the state of a device to what has
+        been specified.
 
         .. code-block:: python
 

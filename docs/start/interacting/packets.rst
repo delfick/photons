@@ -6,7 +6,7 @@ LIFX Binary Protocol
 To interact with LIFX devices you create packets and send those. A packet is
 a string of bytes that contains header and payload information. In Photons you
 create these using the objects listed below. For example
-``DeviceMessages.SetPower`` can be made by saying:
+:ref:`DeviceMessages.SetPower` can be made by saying:
 
 .. code-block:: python
 
@@ -69,7 +69,8 @@ And you can change values the same way:
     msg["level"] = 0
     msg.level = 0
 
-Some fields have transformations. For example ``duration`` on a ``LightSetPower``
+Some fields have transformations. For example ``duration`` on a
+:ref:`LightSetPower <LightMessages.SetLightPower>`
 is measured in milliseconds on the device, but I find it easier to specify it
 in seconds instead. And so Photons will take the value you provide and times it
 by ``1000`` to make it milliseconds. The value on the object is actually stored

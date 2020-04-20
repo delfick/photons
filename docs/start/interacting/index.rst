@@ -4,10 +4,9 @@ Interacting with LIFX devices
 =============================
 
 To interact with a LIFX device, you send it packets and potentially receive
-replies that you can look at. To do this you need a ``target`` object that knows
-how to send :ref:`packets <packets>`, some packets or message
-:ref:`objects <special_message_objects>` to send; and a ``reference`` that says
-what devices on your network to send those packets to. 
+replies that you can look at. To do this you need a ``target`` object, some
+:ref:`packets <packets>`, or message :ref:`objects <special_message_objects>`
+to send; and a ``reference`` that says what devices on your network to send to.
 
 Photons comes with one ``target`` type, which is the ``LanTarget``. This knows
 how to send packets using UDP over the LAN. You can see how to get access to
@@ -24,6 +23,7 @@ For example, to tell devices to turn off you can say:
 .. code-block:: python
 
     from photons_messages import DeviceMessages
+
 
     async def my_action(target, reference):
         async with target.session() as sender:

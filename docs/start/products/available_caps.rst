@@ -17,7 +17,7 @@ has_ir
     Does this device output infrared light (the LIFX+ range)
 
 has_color
-    Does this device support different colours? If this is False, then the
+    Does this device support different colours? If this is ``False``, then the
     device only supports shades of white.
 
 has_chain
@@ -53,7 +53,7 @@ has_multizone
     A shortcut for saying ``cap.zones is Zones.LINEAR``
 
 has_extended_multizone
-    Some LIFX devices (second gen Strip and all Beam produts) support an
+    Some LIFX devices (second gen Strip and all Beam products) support an
     ``extended multizone`` API that is more efficient than the original
     multizone API the first generation Strips support. This is only available
     for second generation strips after a certain firmware version, so as long
@@ -70,7 +70,7 @@ The ``cap.product`` object (the object from ``Products[vendor, product]``) also
 has some useful attributes on it.
 
 vendor
-    This is likely ``photons_produts.VendorRegistry.LIFX``
+    This is likely ``photons_products.VendorRegistry.LIFX``
 
 pid
     The ``product_id`` for this device.

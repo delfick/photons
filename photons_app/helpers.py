@@ -271,8 +271,8 @@ class ResultStreamer:
 
     The streamer will yield ``ResultStreamer.Result`` objects that contain
     the ``value`` from the task, a ``context`` object that you give to the
-    streamer when you register a task and a ``successful`` boolean that is False
-    when the result was from an exception.
+    streamer when you register a task and a ``successful`` boolean that is
+    ``False`` when the result was from an exception.
 
     When you register a task/coroutine/generator you may specify an ``on_done``
     callback which will be called when it finishes. For tasks and coroutines
@@ -291,12 +291,15 @@ class ResultStreamer:
 
     .. code-block:: python
 
+        from photons_app import helpers as hp
+
+
         final_future = asyncio.Future()
 
         def error_catcher(error_result):
             print(error_result)
 
-        streamer = ResultStreamer(final_future, error_catcher=error_catcher)
+        streamer = hp.ResultStreamer(final_future, error_catcher=error_catcher)
 
         async def coro_function():
             await something
@@ -320,8 +323,8 @@ class ResultStreamer:
                 print(result.value, result.context, result.successful)
 
     If you don't want to use the ``async with streamer`` then you must call
-    ``await streamer.finish()`` when you are done with the streamer to ensure
-    everything is cleaned up.
+    ``await streamer.finish()`` when you are done to ensure everything is
+    cleaned up.
 
     .. autoclass:: photons_app.helpers.ResultStreamer.Result
 
@@ -533,9 +536,8 @@ def add_error(catcher, error):
     """
     Adds an error to an error_catcher.
 
-    This means if it's callable we call it with the error
-
-    and if it's a list or set we add the error to it.
+    This means if it's callable we call it with the error and if it's a ``list``
+    or ``set`` we add the error to it.
     """
     if callable(catcher):
         catcher(error)
@@ -1279,11 +1281,6 @@ class ThreadToAsyncQueue(object):
 
         class MyQueue(hp.ThreadToAsyncQueue):
             def create_args(self, thread_number, existing):
-                '''
-                This is called once when the queue is started
-
-                and then subsequently before every request.
-                '''
                 if existing:
                     # Assuming you have a way of seeing if you should refresh the args
                     # Then this gives you an opportunity to do any shutdown logic for
@@ -1464,11 +1461,11 @@ class ThreadToAsyncQueue(object):
         """
         Hook to return extra args to give to functions when the are requested
 
-        This is called once when the queue is started
+        This is called once when the queue is started and then subsequently
+        before every request.
 
-        and then subsequently before every request.
-
-        It must return None or a tuple of arguments to pass into request functions
+        It must return ``None`` or a tuple of arguments to pass into request
+        functions.
         """
 
     def _listener(self, thread_number, impl, args):

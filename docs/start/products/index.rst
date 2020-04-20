@@ -7,10 +7,10 @@ Different LIFX devices have a range of capabilities. For example, our LIFX+
 range have the ability to output Infrared light, and the Tile has a 2d matrix
 of zones.
 
-You can query devices for their ``product id`` to work out what kind of device
+You can query devices for their product id to work out what kind of device
 it is and use that to then determine what you can do with the device. This is
-done with the ``DeviceMessages.GetVersion`` message, which gives you a
-``vendor`` and ``product``. The ``vendor`` is always ``1`` to specify
+done with the :ref:`GetVersion <DeviceMessages.GetVersion>` message, which gives
+you a ``vendor`` and ``product``. The ``vendor`` is always ``1`` to specify
 the device is a ``LIFX`` device. There may be additional ``vendor`` values
 in the future.
 
@@ -25,6 +25,7 @@ You can get this object by doing something like:
     from photons_messages import DeviceMessages
     from photons_products import Products
 
+
     async def my_script(sender, reference):
         async for pkt in sender(DeviceMessages.GetVersion(), reference):
             if pkt | DeviceMessages.StateVersion:
@@ -33,8 +34,10 @@ You can get this object by doing something like:
                 print(f"device {pkt.serial} {have} infrared ability")
 
 Some capabilities are dependent on the firmware version, which you can get
-with the ``DeviceMessages.GetHostFirmware`` message. If you have a ``StateVersion``
-and ``StateHostFirmware`` message then you can do something like:
+with the :ref:`GetHostFirmware <DeviceMessages.GetHostFirmware>` message.
+If you have a :ref:`StateVersion <DeviceMessages.StateVersion>` and
+:ref:`StateHostFirmware <DeviceMessages.StateHostFirmware>` message then you
+can do something like:
 
 .. code-block:: python
 
@@ -83,7 +86,7 @@ and ``StateHostFirmware`` message then you can do something like:
 
 The problem with this script is you have to wait for all the devices to return
 values before you get any results. If you want to print the information as
-devices return information, you can use the gatherer:
+devices return information, you can use the :ref:`gatherer <gatherer_interface>`:
 
 .. code-block:: python
 

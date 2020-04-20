@@ -26,13 +26,13 @@ target to be specified for example.
 
 It's possible for photons to know about multiple targets but in most cases you'll
 only ever use the ``lan`` target, which by default is a target that talks to
-your devices of your local network and uses the broadcast address of
+your devices over the local network and uses the broadcast address of
 ``255.255.255.255`` to find your devices. You can change the default broadcast
 address or create other targets with different broadcast addresses using the
 :ref:`configuration <configuration_root>`
 
 You can find all available commands by saying ``lifx help`` and information
-about a specific task by saying ``lifx help transform``.
+about a specific task by saying something like ``lifx help transform``.
 
 Running CLI commands on windows
 -------------------------------
@@ -41,13 +41,13 @@ Running these commands from the Windows command prompt is a little tricky
 because many of them specify options with a json string. Escaping this in the
 window command prompt is annoying because you have to say this::
     
-    $ lifx lan:transform -- "{\"power\": \"on\", \"color\": \"hue:120 saturation:0.5\"}"
+    $ lifx lan:transform -- "{\"power\": \"on\"}"
 
 Instead it's useful to write a python script that looks like:
 
 .. code-block:: python
 
-    __import__("photons_core").run_cli('lan:transform -- {"power": "on", "color": "hue:120 saturation:0.5"}')
+    __import__("photons_core").run_cli('lan:transform -- {"power": "on"}')
 
 and then from the command line::
 

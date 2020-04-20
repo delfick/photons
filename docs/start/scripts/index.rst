@@ -3,10 +3,10 @@
 Writing Scripts
 ===============
 
-A Photons script is much like any other script, but you need to instantiate 
+A Photons script is much like any Python script, but you need to instantiate
 Photons. There are two methods of doing this. One is to use the
 :ref:`library_setup <library_setup>` function, and the other is to register an
-action like the ones shown in the section on
+:ref:`action <photons_action>` like the ones shown in the section on
 :ref:`CLI commands <common_cli_commands>` and then using the Photons mainline
 to run them.
 

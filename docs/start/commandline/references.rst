@@ -7,10 +7,12 @@ References in photons can be a single ``serial``, a list of ``serials`` or a
 ``special`` reference which defines how to find these ``serials``
 
 A ``serial`` is a hex number that looks like ``d073d5xxxxxx`` and is the MAC
-address of the device. Whilst it's unnecessary, you can find these serials
-printed on your device. For example it might be ``d073d5123456``. When we
-discover devices we get an IP address associated with each serial and we use
-that to know where to send messages to.
+address of the device. For example it might be ``d073d5123456``. Whilst it
+shouldn't be necessary to take down your lights, you can find these serials
+printed on the side.
+
+When we discover devices we get an IP address associated with each serial and
+we use that to know where to send messages to.
 
 So, for example::
 
@@ -82,29 +84,33 @@ product_id
     product id of 55.
 
 product_identifier
-    A string identifying the product type of the device. You can find these over
-    at :ref:`The product registry <products_root>`.
+    The identifier of the type of device. You can find these strings in the
+    :ref:`products <products>` page.
 
 cap
     A list of strings of capabilities this device has.
 
-    Capabilities include ``ir``, ``color``, ``chain``, ``matrix``, ``multizone``, ``variable_color_temp``
-    and ``not_ir``, ``not_color``, ``not_chain``, ``not_matrix``, ``not_multizone``, ``not_variable_color_temp``
+    * ``ir`` and ``not_ir``
+    * ``color`` and ``not_color``
+    * ``chain`` and ``not_chain``
+    * ``matrix`` and ``not_matrix``
+    * ``multizone`` and ``not_multizone``
+    * ``variable_color_temp`` and ``not_variable_color_temp``
 
 You can specify multiple specifiers like::
 
-    match:cap=matrix&saturation=1
+    "match:cap=matrix&saturation=1"
 
 If you are setting a label and it has special characters in it, you need to
 url encode the value. For example say I have a device with the label of
 "Kitchen bench", then I'd have to address it by saying::
 
-    match:label=Kitchen%20bench
+    "match:label=Kitchen%20bench"
 
 You can specify multiple values with an ``&`` and multiple of the same specifier
 For example if I want to do something with my tiles and my strips::
 
-    match:cap=chain&cap=multizone
+    "match:cap=chain&cap=multizone"
 
 So if you ``&`` different specifiers they are a logical ``AND`` and an ``&`` with
 multiple of the same specifier is a logical ``OR`` within that specifier.

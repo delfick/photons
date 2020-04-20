@@ -3,16 +3,14 @@
 The approach taken by Photons
 =============================
 
-Unlike most LIFX libraries, Photons doesn't think in terms of device objects as
-such, and instead operates entirely around sending and receiving messages.
+Unlike most LIFX libraries, Photons thinks in terms of sending and receiving
+packets onto the network, rather than providing objects that represent specific
+devices
 
-This framework takes the opinion on not trusting the "known" state of a device
-and so makes little effort to hold onto that data in a device object.
-
-Photons focuses on providing a convenient API for working with messages, the
-ability to address one or more devices at a time; and makes deciding what
-messages to send as easy as possible.
+Photons provides a convenient API for working with multiple devices at the same
+time and makes it easy to be efficient in getting and setting information on your
+devices.
 
 Photons makes discovery, retries, inflight limits, handling multiple replies,
-and error handling as transparent as possible to get out of your way in telling
-devices to do something.
+and error handling as transparent as possible to get out of your way while you
+achieve your goals.

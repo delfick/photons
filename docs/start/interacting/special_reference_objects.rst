@@ -18,6 +18,7 @@ You can also target devices by setting the serial directly on the packets:
 
     from photons_messages import DeviceMessages, LightMessages
 
+
     async def my_action(target):
         # Get color for d073d5000001
         get_color = LightMessages.GetColor(target="d073d5000001")
@@ -30,6 +31,7 @@ You can also target devices by setting the serial directly on the packets:
             async with pkt in sender([get_color, get_power1, get_power2]):
                 if pkt | LightMessages.LightState:
                     assert pkt.serial == "d073d5000001"
+
                 elif pkt | DeviceMessages.StatePower:
                     assert pkt.serial in ("d073d5000002", "d073d5000003")
 

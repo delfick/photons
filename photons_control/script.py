@@ -82,12 +82,12 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
         This will only effect sending messages to the device that had an error
 
     synchronized
-        If this is set to False then each bulb gets it's own coroutine and so
-        messages will go at different times depending on how slow/fast each bulb
-        is.
+        If this is set to ``False`` then each bulb gets it's own coroutine and
+        so messages will go at different times depending on how slow/fast each
+        bulb is.
 
-        If this is set to True then we wait on the slowest bulb before going to
-        the next message.
+        If this is set to ``True`` then we wait on the slowest bulb before going
+        to the next message.
     """
 
     async def gen(reference, sender, **kwargs):
@@ -145,8 +145,9 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
                     ...
                 await asyncio.sleep(20 - (time.time() - start))
 
-    Note that if references is a ``photons_app.special.SpecialReference`` then
-    we call reset on it after every loop.
+    Note that if references is a
+    :ref:`SpecialReference <special_reference_objects>` then we call reset on
+    it after every loop.
 
     Also it is highly recommended that error_catcher is a callable that takes
     each error as they happen.

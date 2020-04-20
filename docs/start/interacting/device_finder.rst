@@ -36,7 +36,7 @@ You can create a ``Filter`` using a number of different formats:
 
 .. code-block:: python
 
-    from photons_control.device_finder import FIlter
+    from photons_control.device_finder import Filter
 
 
     fltr = Filter.from_json_str('{"refresh_info": true, "firmware_version": "1.22"}')
@@ -173,7 +173,7 @@ answer enough questions:
             # that it already asked for
             finder = Finder(sender)
 
-            reference = DeviceFInder.from_kwargs(cap=["matrix"], group_name=["attic"], finder=finder)
+            reference = DeviceFinder.from_kwargs(cap=["matrix"], group_name=["attic"], finder=finder)
 
             async for device in reference.serials(sender):
                 print(device.serial)
@@ -195,6 +195,7 @@ You can start a daemon that you can use to query the network continuously.
 .. code-block:: python
 
     from photons_control.device_finder import DeviceFinderDaemon, Filter
+
 
     # These points of information have their own default refresh numbers
     # But you can override them like this.
@@ -243,7 +244,7 @@ forget_after - default 30
 final_future - defaults to the final_future on the sender
     A future that when cancelled will shut down the daemon.
 
-search_interface - default 20
+search_interval - default 20
     The number of seconds between each discovery
 
 time_between_queries - optional

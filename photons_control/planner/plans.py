@@ -104,27 +104,36 @@ class Plan:
 
     There are some properties on the Plan itself:
 
-    * messages - Default None - a list of messages to send to the device.
-      If you want to choose based on the device itself, then define messages on
-      the Instance where you have access to the deps and serial.
-    * dependant_info - Default None - An optional dictionary of key to Plan class
-      that is used to get dependency information for this plan. For example if
-      you say ``dependant_info = {"c": CapabilityPlan()}`` then the plan will
-      only be executed once we have information from the CapabilityPlan and the
-      Instance will have ``self.deps = {"c": <info from capability plan>}`` for
-      use.
-    * default_refresh - Default 10 - Either True if you never want to re-use
-      results from this plan. False if you never want to remove the results from
-      this plan, or an integer representing the number of seconds before the
-      cache expires. If the cache expires then the messages defined by this plan
-      are resent to the device. Note that this is overridden if you specify
-      refresh when you instantiate the plan.
-    * setup - Method - Called by __init__ with all positional and keyword
-      arguments used to instantiate the plan except refresh. Note that before
-      setup is called, self.refresh will be set on the class as either the
-      refresh keyword argument if provided or the default_refresh on the plan
-    * Instance - Class - The logic for processing packets from the device and
-      getting the final information for the plan.
+    messages - Default None
+        a list of messages to send to the device.  If you want to choose based
+        on the device itself, then define messages on the Instance where you
+        have access to the deps and serial.
+
+    dependant_info - Default None
+        An optional dictionary of key to Plan class that is used to get
+        dependency information for this plan. For example if you say
+        ``dependant_info = {"c": CapabilityPlan()}`` then the plan will only
+        be executed once we have information from the CapabilityPlan and the
+        Instance will have ``self.deps = {"c": <info from capability plan>}``
+        for use.
+
+    default_refresh - Default 10
+        Either ``True`` if you never want to re-use results from this plan.
+        ``False`` if you never want to remove the results from this plan, or an
+        integer representing the number of seconds before the cache expires.
+        If the cache expires then the messages defined by this plan are re-sent
+        to the device. Note that this is overridden if you specify refresh when
+        you instantiate the plan.
+
+    setup - Method
+        Called by ``__init__`` with all positional and keyword arguments used to
+        instantiate the plan except refresh. Note that before setup is called,
+        self.refresh will be set on the class as either the refresh keyword
+        argument if provided, or the default_refresh on the plan
+
+    Instance - Class - Should inherit ``photons_control.planner.plans.Plan.Instance``
+        The logic for processing packets from the device and getting the final
+        information for the plan.
 
     The Instance class will be instantiated per device that the planner is
     looking at. It is also possible to define messages on the Instance. If you
@@ -138,30 +147,42 @@ class Plan:
     * self.serial -- the serial for this device
     * Anything else on the instance defined in the setup hook
 
-    The Instance has the following hooks and properties:
+    The ``Instance`` has the following hooks and properties:
 
-    * messages - Default None - A list of messages to send to the device. If this
-      is not defined, then messages on the parent is used. If this is Skip then
-      the plan is not executed for this device.
-    * finished_after_no_more_messages - default False - This plan should be
-      considered done if it already isn't considered done and we don't have any
-      more messages from devices.
-    * setup - Method - Any setup specific to this device. You have self.deps,
-      self.parent and self.serial at this point.
-    * refresh - property - Defaults to self.parent.refresh - The refresh for this
-      instance of data.
-    * key - Method, defaults to self.parent.__class__ - A key used to represent
-      this plan, so that future executions of this plan can reuse the final
-      information for this serial without sending more messages.
-    * process - Method - does nothing by default, it is used to process all messages
-      that the device sends back, not just replies to the messages asked for by
-      the plan. You must return True from this method when you have received
-      enough information. Once we return True then info will be called to get
-      the final result for this plan. Note that if the messages on this plan is
-      the NoMessages class then this method will never be called. By  default
-      this method raises NotImplementedError.
-    * info - Async method - Must be overridden - This is called when the plan is
-      considered done for this device and returns whatever information you want.
+    Messages - Default None
+        A list of messages to send to the device. If this is not defined, then
+        messages on the parent is used. If this is ``Skip`` then the plan is
+        not executed for this device.
+
+    finished_after_no_more_messages - default ``False``
+        This plan should be considered done if it already isn't considered
+        done and we don't have any more messages from devices.
+
+    setup - Method
+        Any setup specific to this device. You have ``self.deps``,
+        ``self.parent`` and ``self.serial`` at this point.
+
+    refresh - property
+        Defaults to ``self.parent.refresh`` and is the refresh for this
+        instance.
+
+    key - Method
+        Defaults to ``self.parent.__class__`` and is used to represent this
+        plan, so that future executions of this plan can reuse the final
+        information for this serial without sending more messages.
+
+    process - Method
+        Does nothing by default and is used to process all messages that the
+        device sends back, not just replies to the messages asked for by the
+        plan. You must return ``True`` from this method when you have received
+        enough information. Once we return ``True`` then the ``info`` method
+        will be called to get the final result for this plan. Note that if the
+        messages on this plan is the ``NoMessages`` class then this method will
+        never be called.
+
+    info - Async method - Must be overridden
+        This is called when the plan is considered done for this device and
+        returns whatever information you want.
     """
 
     messages = None
@@ -606,7 +627,7 @@ class CapabilityPlan(Plan):
     Where capability is from the product and has the firmware of the device set
     on it
 
-    And product is from photons_products.Products for the vid/pid pair of the device
+    And product is from the Photons :ref:`registry <products_root>`.
     """
 
     messages = [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
@@ -632,7 +653,7 @@ class CapabilityPlan(Plan):
 @a_plan("firmware")
 class FirmwarePlan(Plan):
     """
-    Return in a dictoinary
+    Return in a dictionary
 
     * build - The build timestamp of this firmware
     * version_major - the major component of the firmware version
@@ -682,7 +703,7 @@ class FirmwareEffectsPlan(Plan):
     Return ``{"type": <enum>, "options": {...}}``` for each device where strips
     return multizone effect data and tiles return tile effect data.
 
-    Returns Skip for devices that don't have firmware effects
+    Returns ``Skip`` for devices that don't have firmware effects
     """
 
     default_refresh = 1

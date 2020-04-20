@@ -19,6 +19,7 @@ resolved, then you can say this:
 
     from photons_app.errors import ApplicationCancelled, ApplicationStopped
 
+
     with collector.photons_app.using_graceful_future() as final_future:
         try:
             await start_my_server_in_the_background()

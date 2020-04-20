@@ -16,6 +16,7 @@ So for example, the ``power_toggle`` command looks like:
 
     from photons_control.transform import PowerToggle
 
+
     @an_action(needs_target=True, special_reference=True)
     async def power_toggle(collector, target, reference, artifact, **kwargs):
         """
@@ -32,7 +33,7 @@ So for example, the ``power_toggle`` command looks like:
 
 There's a few things to take in here:
 
-* ``an_action`` takes in a few arguments
+* :ref:`an_action <an_action>` takes in a few arguments
 
   * ``needs_reference=True`` would mean that we complain if the ``<reference>``
     argument is not specified
@@ -64,21 +65,25 @@ Photons mainline telling it to run your action:
 
     from delfick_project.addons import addon_hook
 
-    @addon_hook(extras=[("lifx.photons", "control")])
+
+    @addon_hook(extras=[("lifx.photons", "control"), ("lifx.photons", "transport")])
     def __lifx__(collector, *args, **kwargs):
         pass
+
 
     @an_action(needs_target=True, special_reference=True)
     async def display_label(collector, target, reference, **kwargs):
         async for pkt in target.send(DeviceMessages.GetLabel(), reference):
             print(f"{pkt.serial}: {pkt.label}")
 
+
     if __name__ == "__main__":
         __import__("photons_core").run_script('lan:display_label {@:1:}')
 
-The ``addon_hook`` says this script only depends on the ``control`` module.
-and when we run it like a script we will run our ``display_label`` action using
-the ``lan`` target with any other arguments specified on the command line.
+The ``addon_hook`` says this script depends on the ``control`` and ``transport``
+modules and when we run it like a script we will run our ``display_label``
+action using the ``lan`` target with any other arguments specified on the
+command line.
 
 So for example::
 
@@ -94,10 +99,12 @@ use ``run_cli`` instead:
 
     from photons_messages import DeviceMessages
 
+
     @an_action(needs_target=True, special_reference=True)
     async def display_label(collector, target, reference, **kwargs):
         async for pkt in target.send(DeviceMessages.GetLabel(), reference):
             print(f"{pkt.serial}: {pkt.label}")
+
 
     if __name__ == "__main__":
         __import__("photons_core").run_cli('lan:display_label {@:1:}')
@@ -135,6 +142,8 @@ a default. For example:
 .. code-block:: python
 
     __import__("photons_core").run_script("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
+
+.. _an_action:
 
 The an_action decorator
 -----------------------

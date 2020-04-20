@@ -171,7 +171,7 @@ def SetZones(colors, power_on=True, reference=None, **options):
     """
     Set colors on all found multizone devices. This will use the extended
     multizone messages if they are supported by the device to increase
-    reliability and speed of appliation.
+    reliability and speed of application.
 
     Usage looks like:
 

@@ -17,17 +17,20 @@ For example, an object that toggles the power of lights:
     from photons_messages import DeviceMessages, LightMessages
     from photons_control.script import FromGenerator
 
+
     async def toggle(reference, sender, **kwargs):
         get_power = DeviceMessages.GetPower()
+
         async for pkt in sender(get_power, reference, **kwargs):
             if pkt | DeviceMessages.StatePower:
                 if pkt.level == 0:
                     yield LightMessages.SetLightPower(
-                        level=65535, res_required=False, duration=duration, target=pkt.serial
+                        level=65535, res_required=False, target=pkt.serial
                     )
+
                 else:
                     yield LightMessages.SetLightPower(
-                        level=0, res_required=False, duration=duration, target=pkt.serial
+                        level=0, res_required=False, target=pkt.serial
                     )
 
 
@@ -36,10 +39,11 @@ For example, an object that toggles the power of lights:
             ToggleLights = FromGenerator(toggle)
             await sender(ToggleLights, reference)
 
-Here we're using the ``FromGenerator`` helper to turn an async generator into
-a message object. What this means is that every message that is yielded from
-will be sent to devices. See :ref:`below <FromGenerator>` for more details
-about how this mechanism works.
+Here we're using the
+:class:`FromGenerator <photons_control.script.FromGenerator>` helper to turn an
+async generator into a message object. What this means is that every message
+that is yielded from will be sent to devices. See :ref:`below <FromGenerator>`
+for more details about how this mechanism works.
 
 There exists a few message objects you can use straight away. For example, if
 I wanted to repeatedly send certain messages forever I could do something like:
@@ -48,6 +52,7 @@ I wanted to repeatedly send certain messages forever I could do something like:
 
     from photons_messages import DeviceMessages
     from photons_control.script import Repeater
+
 
     async def my_action(target, reference):
         get_power = DeviceMessages.GetPower()
@@ -62,6 +67,7 @@ I wanted to repeatedly send certain messages forever I could do something like:
             if pkt | DeviceMessages.StatePower:
                 power_state = "off" if pkt.level == 0 else "on"
                 print(f"{pkt.serial} is {power_state}")
+
             elif pkt | DeviceMessages.StateGroup:
                 print(f"{pkt.serial} is in the {pkt.label} group")
 
@@ -77,6 +83,7 @@ lights forever, I can use our ``ToggleLights`` msg above with the ``Repeater``:
 .. code-block:: python
 
     from photons_control.script import Repeater, FromGenerator
+
 
     async def toggle(reference, sender, **kwargs):
         ....
@@ -95,6 +102,7 @@ You can even do this without making your own toggle function!
 
     from photons_control.transform import PowerToggle
     from photons_control.script import Repeater
+
 
     async def my_action(target, reference):
         def errors(e):
@@ -127,10 +135,12 @@ Existing message objects
 Making your own message objects
 -------------------------------
 
-To make your own message objects you use the ``FromGenerator`` helper mentioned
-above, or the related helper ``FromGeneratorPerSerial``.
+To make your own message objects you use the
+:class:`FromGenerater <photons_control.script.FromGenerator>` helper mentioned
+above, or the related helper ``photons_control.script.FromGeneratorPerSerial``.
 
-``FromGeneratorPerSerial`` works exactly like ``FromGenerator`` except that the
+``FromGeneratorPerSerial`` works exactly like
+:class:`FromGenerater <photons_control.script.FromGenerator>` except that the
 ``reference`` passed in will be each individual serial and the messages you
 yield will automatically be told to send to that serial.
 

@@ -68,5 +68,6 @@ the following command line options for configuration where the logs end up:
 
 If you start your script using the ``library_setup`` method then when you call
 ``setup_logging`` you'll have the options available to you from that
-function which you can find the
-`documentation <https://delfick-project.readthedocs.io/en/latest/api/logging.html>`_
+function which you can find in the documentation for the
+`setup_logging <https://delfick-project.readthedocs.io/en/latest/api/logging.html>`_
+function.

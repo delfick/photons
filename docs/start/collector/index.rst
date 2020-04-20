@@ -29,7 +29,7 @@ photons_app
     extra
         The string that appears after a ``--``. So say you run
         ``lifx lan:transform -- '{"power": "off"}'`` then ``photons_app.extra``
-        will be the string ``'{"power": "off"}```
+        will be the string ``'{"power": "off"}'``
 
     extra_as_json
         A dictionary that is created by ``json.loads(self.extra)``. So in the
@@ -94,7 +94,8 @@ By default you have available:
         from photons_transport.targets import LanTarget
         from photons_messages import protocol_register
 
-        final_future = <an asyncio.Future that stops sessions from the target when canceled>
+
+        final_future = "<an asyncio.Future that stops sessions from the target when canceled>"
 
         my_target = LanTarget.create(
             {"final_future": final_future, "protocol_register": protocol_register},
@@ -102,7 +103,8 @@ By default you have available:
         )
 
 ``configuration["reference_resolver_register"]``
-    This object knows how to create a Special reference object from a reference,
+    This object knows how to create a
+    :ref:`Special reference <special_reference_objects>` object from a reference,
     ``configuration["reference_resolver_register"].reference_object("d03d75000001")``
     or you can use the shortcut on the collector as mentioned above,
     ``collector.reference_object("d073d5000001")``

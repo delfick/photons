@@ -39,12 +39,12 @@ get_attr and set_attr
     and will construct a message to send and print all the replies.
 
     So for ``get_attr`` if you specify ``color`` as the message, we will send
-    a ``GetColor`` to the device. Or if you say ``device_chain`` we will send
-    a ``GetDeviceChain`` message to the device.
+    a :ref:`LightMessages.GetColor` to the device. Or if you say ``device_chain``
+    we will send a :ref:`TileMessages.GetDeviceChain` message to the device.
 
     The ``set_attr`` command does the same but prefixes the message name with
     ``Set`` instead of ``Get``. So a ``lifx lan:set_attr <reference> waveform_optional``
-    will send a ``SetWaveformOptional`` to the device.
+    will send a :ref:`LightMessages.SetWaveformOptional` to the device.
 
     Not all commands have defaults for their fields and so for these you must
     specify what values to use. For example::
@@ -55,28 +55,9 @@ attr
     This is the same as ``get_attr`` and ``set_attr`` but without the prefixing
     of the message name.
 
-get_effects
-    Return the currently running firmware effects on your devices. This only
-    applies to the Tile, Candle, Strip and Beam devices as we don't have a
-    message that tells us if a Waveform is running on the device.
-
-multizone_effect and tile_effect
-    Start a firmware effect on your devices.
-
-    So for strip and Beams you can say::
-
-        $ lifx lan:multizone_effect _  move
-        $ lifx lan:multizone_effect _ off
-
-    And for the Tile and candle::
-
-        $ lifx lan:tile_effect _ morph
-        $ lifx lan:tile_effect _ flame
-        $ lifx lan:tile_effect _ off
-
 unpack
-    LIFX binary messages are just a string of bytes. You can represent these
-    as a hex value. For example a GetLabel in hex may look like:
+    LIFX binary messages are a string of bytes. You can represent these as a hex
+    value. For example a :ref:`DeviceMessages.GetLabel` in hex may look like:
 
     .. code-block:: text
 
@@ -117,11 +98,16 @@ pack
         $ lifx pack -- '{"frame_address": {"ack_required": true, "res_required": true, "reserved2": "000000000000", "reserved3": "00", "sequence": 1, "target": "d073d52293220000"}, "frame_header": {"addressable": true, "protocol": 1024, "reserved1": "00", "size": 36, "source": 1003468291, "tagged": false}, "protocol_header": {"pkt_type": 23, "reserved4": "0000000000000000", "reserved5": "0000"}}'
         2400001403b6cf3bd073d522932200000000000000000301000000000000000017000000
 
-    You can be a little less verbose, for example constructing a SetLabel can
-    look like::
+    You can be a little less verbose, for example constructing a
+    :ref:`DeviceMessages.SetLabel` can look like::
 
         $ lifx pack -- '{"protocol": 1024, "pkt_type": 24, "source": 1, "sequence": 1, "target": "d073d5229322", "label": "basement"}'
         4400001401000000d073d522932200000000000000000301000000000000000018000000626173656d656e74000000000000000000000000000000000000000000000000
+
+get_effects
+    Return the currently running firmware effects on your devices. This only
+    applies to the Tile, Candle, Strip and Beam devices as we don't have a
+    message that tells us if a Waveform is running on the device.
 
 tile_effect
     Start an effect on your Tile or Colour Candle::

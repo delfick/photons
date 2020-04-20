@@ -20,28 +20,35 @@ For example:
 
     from photons_control.planner import Skip
 
+
     async def my_action(target, reference):
         async with target.session() as sender:
             plans = sender.make_plans("capability", "firmware_effects")
+
             async for serial, name, info in sender.gatherer.gather(plans, reference):
                 if name == "capability":
                     print(f"{serial} is a {info['cap'].product.name}")
+
                 elif name == "firmware_effects":
                     if info is Skip:
                         print(f"{serial} doesn't support firmware effects")
                     else:
                         print(f"{serial} is running the effect: {info['type']}")
 
-In this example each device will get one ``GetVersion``, ``GetHostFirmware``
-and for those that support firmware effects, either a ``GetMultizoneEffect``
-or ``GetTileEffect`` and all the information from those is presented to you
-in a useful way. Note that both the ``"capability"`` and ``"firmware_effects"``
-functions require version information, but the gatherer makes it so we only
-ask the device for this information once.
+In this example each device will get one
+:ref:`GetVersion <DeviceMessages.GetVersion>`,
+:ref:`GetHostFirmware <DeviceMessages.GetHostFirmware>` and for those that
+support firmware effects, either a
+:ref:`GetMultizoneEffect <MultizoneMessages.GetMultizoneEffect>` or
+:ref:`GetTileEffect <TileMessages.GetTileEffect>` and all the information from
+those is presented to you in a useful way. Note that both the ``"capability"``
+and ``"firmware_effects"`` plans require version information, but the gatherer
+makes it so we only ask the device for this information once.
 
-By using ``gather`` we will get each plan result as they come in. The gatherer
-also gives you ``gather_per_serial`` and ``gather_all`` as explained
-:ref:`below <gather_methods>`.
+By using :ref:`gather <gatherer.gather>` we will get each plan result as they
+come in. The gatherer also gives you
+:ref:`gather_per_serial <gatherer.gather_per_serial>` and
+:ref:`gather_all <gatherer.gather_all>`.
 
 All the ``gather`` methods take in ``plans``, ``reference`` and ``**kwargs``
 where ``kwargs`` are the same keyword arguments you would give the
@@ -56,9 +63,15 @@ There are three methods on the ``sender.gatherer`` that you would use:
 
 .. py:class:: photons_control.planner.gatherer.Gatherer
 
+    .. _gatherer.gather:
+
     .. automethod:: gather
 
+    .. _gatherer.gather_per_serial:
+
     .. automethod:: gather_per_serial
+
+    .. _gatherer.gather_all:
 
     .. automethod:: gather_all
 
@@ -81,6 +94,7 @@ Is the same as saying:
 .. code-block:: python
 
     from photons_control.planner.plans import CapabilityPlan, StatePlan
+
 
     plans = sender.make_plans(capability=CapabilityPlan(), state=StatePlan, other=MyOtherPlan())
 

@@ -32,7 +32,8 @@ The following are the keyword arguments available to you:
 broadcast (default False)
     Whether we are broadcasting these packets or just uni-casting directly
     to each device. If this is set to a string, then that will be used as an
-    IP address to broadcast to. i.e. ``"192.168.0.255"``.  
+    IP address to broadcast to (e.g. ``"192.168.0.255"``).
+
 find_timeout (default 20) - (seconds)
     Timeout for finding devices that have not already been discovered.
 
@@ -145,9 +146,11 @@ Receiving Packets
 -----------------
 
 The LIFX protocol has triplets of messages. A ``Get`` a ``Set`` and a ``State``.
-For example ``GetPower``, ``SetPower`` and ``StatePower``. Some messages only
-have a ``Get`` and a ``State`` and there's only one message that breaks the
-rule (``EchoRequest`` and ``EchoResponse``).
+For example :ref:`GetPower <DeviceMessages.GetPower>`,
+:ref:`SetPower <DeviceMessages.SetPower>` and
+:ref:`StatePower <DeviceMessages.StatePower>`. Some messages only have a ``Get``
+and a ``State`` and there's only one message that breaks the rule
+(``EchoRequest`` and ``EchoResponse``).
 
 The ``Get`` will ask the information to give you it's current state and the
 device will give back a ``State`` response. A ``Set`` will tell the device to
@@ -169,11 +172,12 @@ retries.
 The ``State`` packet from a ``Get`` packet will always be the current state of
 the device.
 
-Some packets like ``GetService`` or ``SetColorZones`` can potentially return
-multiple packets in reply. Photons knows about these packets and will determine
-when the device has returned all the packets for you. Photons will not return
-any of the packets until all of them have been received in case it needs to
-retry the original packet.
+Some packets like ``GetService`` or
+:ref:`SetColorZones <MultizoneMessages.SetColorZones>`
+can potentially return multiple packets in reply. Photons knows about these
+packets and will determine when the device has returned all the packets for you.
+Photons will not return any of the packets until all of them have been received
+in case it needs to retry the original packet.
 
 When you send a message you can either wait for all the packets to return to
 you and get back a list of responses, or you can asynchronously stream the
@@ -194,8 +198,9 @@ replies as they are received:
                 print(pkt)
 
 When you get back packets it's a good idea to check the packet is what you
-expect before you access anything on it. So say we send a ``GetPower`` and
-a ``GetLabel`` then we can do the following:
+expect before you access anything on it. So say we send a
+:ref:`GetPower <DeviceMessages.GetPower>` and a
+:ref:`GetLabel <DeviceMessages.GetLabel>` then we can do the following:
 
 .. code-block:: python
 
@@ -204,15 +209,19 @@ a ``GetLabel`` then we can do the following:
 
     async def my_action(target):
         async with target.session() as sender:
-            async for pkt in sender([DeviceMessages.GetPower(), DeviceMessages.GetLabel()], reference):
+            get_power = DeviceMessages.GetPower()
+            get_label = DeviceMessages.GetLabel()
+
+            async for pkt in sender([get_power, get_label], reference):
                 if pkt | DeviceMessages.StatePower:
                     print(f"Device {pkt.serial} has power level of {pkt.level}")
                 elif pkt | DeviceMessages.StateLabel:
                     print(f("Device {pkt.serial} has a label of {pkt.label}")
 
-.. note:: If you want power and label, it's better to send a single ``GetColor``
-    as that returns a ``LightState`` message that has hsbk, power and label on
-    it. You can also use the ``"state"`` plan on the
+.. note:: If you want power and label, it's better to send a single
+    :ref:`GetColor <LightMessages.GetColor>` as that returns a
+    :ref:`LightState <LightMessages.LightState>` message that has hsbk, power
+    and label on it. You can also use the :ref:`plan_state` plan on the
     :ref:`gatherer <gatherer_interface>`.
 
 When you receive ``pkt`` replies, there is some meta information on them you can
@@ -254,7 +263,7 @@ information so future sending will already know where the lights are:
 
     # If the sender doesn't already know the ips of these devices, it'll
     # discover them first for you.
-    await sender(DeviceMessages.GetPower(), ["d073d5000001", "d073d5000002"[)
+    await sender(DeviceMessages.GetPower(), ["d073d5000001", "d073d5000002"])
 
 If you have a :ref:`special reference <special_reference_objects>` then you
 can use use this to get back the ``found`` information (this holds onto a map
@@ -283,7 +292,7 @@ This is useful if you use ``FoundSerials`` or the ``DeviceFinder``. For example:
 
     from photons_control.device_finder import DeviceFinder
 
-    
+
     async def my_action(target):
         reference = DeviceFinder.from_options(group_name="kitchen")
 
