@@ -6,6 +6,7 @@
 .. autofunction:: SetTileEffect
 """
 from photons_control.orientation import nearest_orientation
+from photons_control.planner import Skip, Plan, plans
 from photons_control.script import FromGenerator
 from photons_control.colour import make_hsbks
 
@@ -15,7 +16,7 @@ from photons_app.actions import an_action
 from photons_messages import TileMessages, TileEffectType, LightMessages
 
 from delfick_project.norms import BadSpecValue, sb, Meta
-from collections import defaultdict
+from delfick_project.option_merge import MergedOptions
 import logging
 
 log = logging.getLogger(name="photons_control.tiles")
@@ -106,8 +107,8 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
     async def gen(ref, sender, **kwargs):
         r = ref if reference is None else reference
 
-        plans = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(plans, r, **kwargs):
+        ps = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(ps, r, **kwargs):
             if info["cap"].has_matrix:
                 if power_on:
                     yield LightMessages.SetLightPower(
@@ -132,8 +133,8 @@ async def get_device_chain(collector, target, reference, **kwargs):
     """
 
     async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+        ps = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
@@ -148,33 +149,58 @@ async def get_chain_state(collector, target, reference, **kwargs):
     """
     Get the colors of the tiles in your chain
     """
-    options = collector.photons_app.extra_as_json
 
-    missing = []
-    for field in TileMessages.Get64.Payload.Meta.all_names:
-        if field not in options and field not in ("reserved6",):
-            missing.append(field)
+    class ChainStatePlan(Plan):
+        dependant_info = {"c": plans.CapabilityPlan(), "chain": plans.ChainPlan()}
 
-    if missing:
-        raise PhotonsAppError("Missing options for the GetTileState message", missing=missing)
+        class Instance(Plan.Instance):
+            finished_after_no_more_messages = True
 
-    response_kls = TileMessages.State64
+            def setup(self):
+                self.got = []
 
-    got = defaultdict(list)
+            @property
+            def messages(self):
+                if self.deps["c"]["cap"].has_chain:
+                    length = len(self.deps["chain"]["chain"])
+                    width = self.deps["chain"]["width"]
+                    options = MergedOptions.using(
+                        {
+                            "target": serial,
+                            "tile_index": 0,
+                            "length": length,
+                            "x": 0,
+                            "y": 0,
+                            "width": width,
+                        },
+                        collector.photons_app.extra_as_json,
+                    )
 
-    msg = TileMessages.Get64.empty_normalise(**options)
+                    return [TileMessages.Get64.empty_normalise(**options.as_dict())]
+                return Skip
 
-    async for pkt in target.send(msg, reference):
-        if pkt | response_kls:
-            got[pkt.serial].append((pkt.tile_index, pkt))
+            def process(self, pkt):
+                if pkt | TileMessages.State64:
+                    self.got.append((pkt.tile_index, pkt))
 
-    for serial, states in got.items():
-        print(serial)
-        for i, state in sorted(states):
-            print("    Tile {0}".format(i))
-            for index, color in enumerate(pkt.colors):
-                print("        color {0:<2d}".format(index), repr(color))
-            print("")
+                if len(self.got) == len(self.deps["chain"]["chain"]):
+                    return True
+
+            async def info(self):
+                return [(i, p.colors) for i, p in sorted(self.got)]
+
+    async with target.session() as sender:
+        ps = sender.make_plans(state=ChainStatePlan())
+        async for serial, complete, info in sender.gatherer.gather_per_serial(ps, reference):
+            if not complete or info["state"] is Skip:
+                continue
+
+            print(serial)
+            for i, colors in info["state"]:
+                print("    Tile {0}".format(i))
+                for index, color in enumerate(colors):
+                    print("        color {0:<2d}".format(index), repr(color))
+                print("")
 
 
 @an_action(needs_target=True, special_reference=True)
@@ -302,8 +328,8 @@ async def set_tile_positions(collector, target, reference, **kwargs):
         )
 
     async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+        ps = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
             if info["cap"].has_matrix:
                 for i, (user_x, user_y) in enumerate(positions):
                     yield TileMessages.SetUserPosition(
@@ -326,8 +352,8 @@ async def get_tile_positions(collector, target, reference, **kwargs):
     """
 
     async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+        ps = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
             if info["cap"].has_matrix:
                 yield TileMessages.GetDeviceChain(target=serial)
 
