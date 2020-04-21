@@ -87,3 +87,8 @@ look like:
     if __name__ == "__main__":
         collector = library_setup()
         collector.run_coro_as_main(get_label(collector))
+
+.. note:: ``run_coro_as_main`` is similar to the
+    `asyncio.run <https://docs.python.org/3/library/asyncio-task.html#asyncio.run>`_
+    function in the standard library but does some extra work to ensure your
+    program is shut down cleanly.

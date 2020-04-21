@@ -6,8 +6,9 @@ Common commands from the cli
 You can find a full list of built in commands by saying ``lifx help`` but
 the most commons ones are as follows.
 
-.. note:: The <reference> in all these commands is explained in
-    :ref:`the cli references section <cli_references>`
+.. note:: The ``<reference>`` in all these commands is explained in
+    :ref:`the cli references section <cli_references>` and lets you say which
+    devices will be targetted by the command.
 
 find_devices and find_ips
     Find the devices on your network::
@@ -34,26 +35,22 @@ transform
         $ lifx lan:transform match:group_name=kitchen -- '{"color": "red", "brightness": 1, "power": "on"}'
         $ lifx lan:transform match:group_name=kitchen -- '{"color": "blue", "brightness": 0.5, "effect": "SINE", "cycles": 3, "period": 1}'
 
-get_attr and set_attr
-    This command looks like ``lifx lan:get_attr <reference> <message> -- '{options}'``
-    and will construct a message to send and print all the replies.
+attr
+    This command looks like ``lifx lan:attr <reference> <message> -- '{options}'``
+    and will let you get and set attributes on your device.
 
-    So for ``get_attr`` if you specify ``color`` as the message, we will send
-    a :ref:`LightMessages.GetColor` to the device. Or if you say ``device_chain``
-    we will send a :ref:`TileMessages.GetDeviceChain` message to the device.
+    For example, if you wanted to get the color on all your devices then you
+    would say::
 
-    The ``set_attr`` command does the same but prefixes the message name with
-    ``Set`` instead of ``Get``. So a ``lifx lan:set_attr <reference> waveform_optional``
-    will send a :ref:`LightMessages.SetWaveformOptional` to the device.
+        $ lifx lan:attr _ GetColor
 
     Not all commands have defaults for their fields and so for these you must
     specify what values to use. For example::
 
-        $ lifx lan:set_attr match:label=den power -- '{"level": 0}'
+        $ lifx lan:attr match:label=den SetPower -- '{"level": 0}'
 
-attr
-    This is the same as ``get_attr`` and ``set_attr`` but without the prefixing
-    of the message name.
+    You can find a full list of what you send on the page about
+    :ref:`packets <packets>`
 
 unpack
     LIFX binary messages are a string of bytes. You can represent these as a hex
@@ -110,7 +107,7 @@ get_effects
     message that tells us if a Waveform is running on the device.
 
 tile_effect
-    Start an effect on your Tile or Colour Candle::
+    Start a firmware effect on your Tile or Candle Colour::
 
         $ lifx lan:tile_effect _ morph
 
@@ -120,7 +117,7 @@ tile_effect
     You have ``morph``, ``flame`` and ``off``
 
 multizone_effect
-    Start an effect on your Strip or Beam::
+    Start a firmware effect on your Strip or Beam::
 
         $ lifx lan:multizone_effect _ move
 
@@ -130,8 +127,8 @@ multizone_effect
     You have ``move`` and ``off``.
 
 apply_theme
-    Set a theme on your devices. By default this behaves like the ``exciting``
-    theme in the LIFX mobile apps::
+    Set a theme on your devices. By default this will make your devices very
+    colourful::
 
         # Apply the theme to all devices
         $ lifx lan:apply_theme

@@ -3,12 +3,12 @@
 Registering a Photons action
 ============================
 
-All the Photons commands you can run from the ``lifx`` program is an action
-that has been registered in one of the Photons modules. These actions are
-functions that takes in objects that represent the arguments you gave
+All the Photons CLI commands you can run from the ``lifx`` program are an action
+that has been registered in one of the Photons modules. An action is a
+function that takes in objects that represent the arguments you gave
 on the command line.
 
-So for example, the ``power_toggle`` command looks like:
+So for example, the ``power_toggle`` action looks like:
 
 .. code-block:: python
 
@@ -53,45 +53,8 @@ There's a few things to take in here:
   must be given those names, but you can also not specify them and let the
   ``**kwargs`` consume those you don't use.
 
-To make your own script that uses one of these actions, you create a file,
-register yourself as a Photons module, register the action, and then call the
-Photons mainline telling it to run your action:
-
-.. code-block:: python
-
-    from photons_app.actions import an_action
-
-    from photons_messages import DeviceMessages
-
-    from delfick_project.addons import addon_hook
-
-
-    @addon_hook(extras=[("lifx.photons", "control"), ("lifx.photons", "transport")])
-    def __lifx__(collector, *args, **kwargs):
-        pass
-
-
-    @an_action(needs_target=True, special_reference=True)
-    async def display_label(collector, target, reference, **kwargs):
-        async for pkt in target.send(DeviceMessages.GetLabel(), reference):
-            print(f"{pkt.serial}: {pkt.label}")
-
-
-    if __name__ == "__main__":
-        __import__("photons_core").run_script('lan:display_label {@:1:}')
-
-The ``addon_hook`` says this script depends on the ``control`` and ``transport``
-modules and when we run it like a script we will run our ``display_label``
-action using the ``lan`` target with any other arguments specified on the
-command line.
-
-So for example::
-
-    # The same as running ``lifx lan:display_label --silent``
-    $ python my_script.py --silent
-
-If you want all the modules to be loaded you can skip the ``addon_hook`` and
-use ``run_cli`` instead:
+To make your own script that uses one of these actions, you create a file that
+registers an action and then tells Photons to run that action.
 
 .. code-block:: python
 
@@ -109,22 +72,26 @@ use ``run_cli`` instead:
     if __name__ == "__main__":
         __import__("photons_core").run_cli('lan:display_label {@:1:}')
 
-For now, Photons doesn't have many modules and so there isn't much extra time
-involved in loading them all, but it's good practice to only need the ones you
-care about.
+When we run it like a script we will run our ``display_label`` action using the
+``lan`` target with any other arguments specified on the command line::
 
-run_cli and run_script
-----------------------
+    # The same as running ``lifx lan:display_label --silent``
+    # If display_label was defined in a photons module, rather than it's own file
+    $ python my_script.py --silent
 
-The ``run_cli`` and ``run_script`` functions can either take in a string that
-lets you format in environment variables and ``sys.argv`` values or you can
-pass in a list of arguments yourself.
+
+run_cli
+-------
+
+The ``run_cli`` function can either take in a string that lets you format in
+environment variables and ``sys.argv`` values or you can pass in a list of
+arguments yourself.
 
 For example you can say:
 
 .. code-block:: python
 
-    __import__("photons_core").run_script("{TRANSPORT_TARGET|lan:env}:{@:1} {@:2:}")
+    __import__("photons_core").run_cli("{TRANSPORT_TARGET|lan:env}:{@:1} {@:2:}")
 
 Which is the same as saying:
 
@@ -134,14 +101,14 @@ Which is the same as saying:
     import os
 
     target = os.environ.get("TRANSPORT_TARGET", "lan")
-    __import__("photons_core").run_script([f"{transport}:{sys.argv[1]}"] + sys.argv[2:])
+    __import__("photons_core").run_cli([f"{transport}:{sys.argv[1]}"] + sys.argv[2:])
 
 You can also specify that an environment variable is required by not specifying
 a default. For example:
 
 .. code-block:: python
 
-    __import__("photons_core").run_script("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
+    __import__("photons_core").run_cli("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
 
 .. _an_action:
 

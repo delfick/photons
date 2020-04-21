@@ -50,7 +50,8 @@ serial
     The serial of the device
 
 label
-    The label set on the device
+    The label set on the device, which is the name you see for this light in
+    the LIFX app.
 
 power
     Either "on" or "off" depending on whether the device is on or not.

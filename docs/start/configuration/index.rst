@@ -120,6 +120,42 @@ So if I turn noisy network code on and set the inflight limit to 2, then  when
 it comes to sending the next frame, if we have two frames that haven't been
 acknowledged yet, then we won't send anything for this frame.
 
+A full example
+--------------
+
+An example configuration that has all the options may look like:
+
+.. code-block:: yaml
+
+    ---
+
+    photons_app:
+      extra_files:
+        after:
+          # load a "secrets.yml" that sits next to this file
+          # before this file is read
+          # If there is a secrets.yml to be found 
+          - filename: "{config_root}/secrets.yml"
+            optional: true
+
+    animation_options:
+      noisy_network: true
+      inflight_limit: 2
+
+    targets:
+      home_network:
+        type: lan
+        options:
+          default_broadcast: 192.168.0.255
+
+      work_network:
+        type: lan
+        options:
+          discovery_options:
+            hardcoded_discovery:
+              d073d5000002: 10.0.0.2
+              d073d5000003: 10.0.0.3
+
 .. toctree::
     :hidden:
 

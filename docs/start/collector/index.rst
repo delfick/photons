@@ -109,8 +109,8 @@ By default you have available:
     or you can use the shortcut on the collector as mentioned above,
     ``collector.reference_object("d073d5000001")``
 
-You can add your own objects when you use the :ref:`addon_hook <photons_action>`
-for example:
+You can add your own objects by creating a hook that will be loaded when Photons
+started, and then adding your configuration to the collector.
 
 .. code-block:: python
 
@@ -129,7 +129,7 @@ for example:
         message_timeout = dictobj.Field(sb.integer_spec, default=30)
 
 
-    @addon_hook(extras=[("lifx.photons", "transport"), ("lifx.photons", "control")])
+    @addon_hook()
     def __lifx__(collector, *args, **kwargs):
         collector.register_converters(
             {
@@ -152,7 +152,7 @@ for example:
 
 
     if __name__ == "__main__":
-        __import__("photons_core").run_script("turn_off {@:1:}")
+        __import__("photons_core").run_cli("turn_off {@:1:}")
 
 Here, our Options has two attributes: target and message_timeout. ``target`` is
 a Target object that defaults to the lan target, and message_timeout is an
@@ -188,7 +188,7 @@ You can also make your options mandatory by saying:
 
 .. code-block:: python
 
-    @addon_hook(extras=[("lifx.photons", "transport"), ("lifx.photons", "control")])
+    @addon_hook()
     def __lifx__(collector, *args, **kwargs):
         collector.register_converters(
             {

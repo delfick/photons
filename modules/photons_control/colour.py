@@ -594,7 +594,11 @@ class Effects(object):
     def breathe(
         self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
     ):
-        """Options to make the light(s) transition to `color` and back in a smooth sine wave"""
+        """
+        Options to make the light(s) transition to `color` and back in a smooth sine wave
+
+        Note that is an alias to the ``sine`` effect.
+        """
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
         return dict(
