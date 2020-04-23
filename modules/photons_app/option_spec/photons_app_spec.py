@@ -10,6 +10,7 @@ from photons_app.errors import BadOption, ApplicationStopped
 from photons_app import helpers as hp
 
 from delfick_project.norms import sb, dictobj, va
+from urllib.parse import urlparse, unquote
 from contextlib import contextmanager
 import platform
 import asyncio
@@ -17,6 +18,7 @@ import logging
 import signal
 import json
 import sys
+import os
 
 log = logging.getLogger("photons_app.options_spec.photons_app_spec")
 
@@ -75,10 +77,24 @@ class PhotonsApp(dictobj.Spec):
     @hp.memoized_property
     def extra_as_json(self):
         options = "{}" if self.extra in (None, "", sb.NotSpecified) else self.extra
+
+        location = None
+        if options.startswith("file://"):
+            parsed = urlparse(options)
+            location = os.path.abspath(f"{parsed.netloc}{unquote(parsed.path)}")
+            if not os.path.exists(location):
+                raise BadOption(f"The path {location} does not exist")
+
+            with open(location, "r") as fle:
+                options = fle.read()
+
         try:
             return json.loads(options)
         except (TypeError, ValueError) as error:
-            raise BadOption("The options after -- wasn't valid json", error=error)
+            kwargs = {"error": error}
+            if location:
+                kwargs["read_from"] = location
+            raise BadOption("The options after -- wasn't valid json", **kwargs)
 
     def separate_final_future(self, sleep=0):
         other_future = asyncio.Future()

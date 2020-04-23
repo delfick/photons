@@ -34,6 +34,14 @@ address or create other targets with different broadcast addresses using the
 You can find all available commands by saying ``lifx help`` and information
 about a specific task by saying something like ``lifx help transform``.
 
+.. note:: You can specify the options after the ``--`` by a filename by saying::
+
+        lifx lan:transform -- file:///path/to/my/options.json
+
+    If your options is in the current directory then you would say::
+        
+        lifx lan:transform -- file://options.json
+
 Running CLI commands on windows
 -------------------------------
 

@@ -3,12 +3,14 @@
 from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption
+from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta
 from unittest import mock
 import asyncio
 import pytest
+import os
 
 describe "PhotonsApp":
 
@@ -42,6 +44,36 @@ describe "PhotonsApp":
         it "complains if extra is not valid json":
             with assertRaises(BadOption, "The options after -- wasn't valid json"):
                 self.make_photons_app(extra="{").extra_as_json
+
+        it "can read json from a file":
+            with hp.a_temp_file() as fle:
+                fle.write(b'{"power": "off"}')
+                fle.flush()
+                assert self.make_photons_app(extra=f"file://{fle.name}").extra_as_json == {
+                    "power": "off"
+                }
+
+                path = os.path.relpath(fle.name, os.getcwd())
+                assert not path.startswith("/")
+                assert self.make_photons_app(extra=f"file://{path}").extra_as_json == {
+                    "power": "off"
+                }
+
+            with hp.a_temp_file() as fle:
+                with assertRaises(
+                    BadOption,
+                    "The options after -- wasn't valid json",
+                    read_from=os.path.abspath(fle.name),
+                ):
+                    fle.write(b'"power": "off"}')
+                    fle.flush()
+                    assert self.make_photons_app(extra=f"file://{fle.name}").extra_as_json == {
+                        "power": "off"
+                    }
+
+            path = os.path.join(os.getcwd(), "no_exist_yo.json")
+            with assertRaises(BadOption, f"The path {path} does not exist"):
+                self.make_photons_app(extra="file://no_exist_yo.json").extra_as_json
 
     describe "cleanup":
         it "runs all the cleaners and then calls finish on all the targets":
