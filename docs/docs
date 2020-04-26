@@ -7,11 +7,12 @@ this_dir = os.path.abspath(os.path.dirname(__file__))
 src_dir = os.path.join(this_dir, "..")
 
 docs_version = runpy.run_path(os.path.join(this_dir, "photons_docs", "__init__.py"))["VERSION"]
+photons_version = runpy.run_path(os.path.join(this_dir, "..", "modules", "photons_app", "__init__.py"))["VERSION"]
 
 from venvstarter import ignite
 ignite(__file__, "photons-docs"
     , deps = [
-        f"-e file:{src_dir}/modules#egg=lifx-photons-core"
+        f"-e file:{src_dir}/modules#egg=lifx-photons-core=={photons_version}"
       , f"-e file:{this_dir}#egg=lifx-photons-docs=={docs_version}"
       ]
     , env = {"LIFX_CONFIG": os.environ.get("LIFX_CONFIG", "{venv_parent}/docs.yml")}
