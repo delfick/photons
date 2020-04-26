@@ -13,11 +13,13 @@ __shortdesc__ = "Requiring this module will in turn require all lifx-photons-cor
 
 wanted = [
     "protocol",
-    "transport",
     "control",
     "messages",
-    "themes",
     "products",
+    "protocol",
+    "themes",
+    "tile_paint",
+    "transport",
 ]
 
 
@@ -157,6 +159,7 @@ def run_script(command, *, argv=None, default_activate=None, **kwargs):
         command = CommandSplitter({"argv": argv or sys.argv}, command).split()
 
     return main(command, default_activate=default_activate, **kwargs)
+
 
 def run_cli(command, *, argv=None, **kwargs):
     """
