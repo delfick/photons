@@ -47,10 +47,8 @@ class PhotonsApp(dictobj.Spec):
         lambda: sb.overridden([]),
         help="A list of functions to call when cleaning up at the end of the program",
     )
-    default_activate_all_modules = dictobj.Field(
-        sb.boolean,
-        default=False,
-        help="The collector looks at this to determine if we should default to activating all photons modules",
+    default_activate = dictobj.NullableField(
+        sb.listof(sb.string_spec()), help="A list of photons modules to load by default"
     )
     task_specifier = dictobj.Field(
         sb.delayed(task_specifier_spec()), help="Used to determine chosen task and target"

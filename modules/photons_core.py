@@ -126,7 +126,7 @@ class CommandSplitter(MergedOptionStringFormatter):
             return result or " "
 
 
-def run_script(command, *, argv=None, default_activate_all_modules=False, **kwargs):
+def run_script(command, *, argv=None, default_activate=None, **kwargs):
     """
     Run the photons mainline with arguments as specified by the command.
 
@@ -156,11 +156,10 @@ def run_script(command, *, argv=None, default_activate_all_modules=False, **kwar
     if isinstance(command, str):
         command = CommandSplitter({"argv": argv or sys.argv}, command).split()
 
-    return main(command, default_activate_all_modules=default_activate_all_modules, **kwargs)
-
+    return main(command, default_activate=default_activate, **kwargs)
 
 def run_cli(command, *, argv=None, **kwargs):
     """
     Same as run_script but will default to activating all photons modules
     """
-    return run_script(command, argv=argv, default_activate_all_modules=True, **kwargs)
+    return run_script(command, argv=argv, default_activate=["__all__"], **kwargs)

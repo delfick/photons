@@ -135,29 +135,29 @@ describe "main lines":
     it "run_cli defaults to using sys.argv", V:
         run_cli("command")
         V.CommandSplitter.assert_called_once_with({"argv": V.argv}, "command")
-        V.main.assert_called_once_with(V.split, default_activate_all_modules=True)
+        V.main.assert_called_once_with(V.split, default_activate=["__all__"])
 
     it "run_script defaults to using sys.argv", V:
         run_script("command")
         V.CommandSplitter.assert_called_once_with({"argv": V.argv}, "command")
-        V.main.assert_called_once_with(V.split, default_activate_all_modules=False)
+        V.main.assert_called_once_with(V.split, default_activate=None)
 
     it "run_cli can skip going through the splitter", V:
         run_cli(["one", "two"])
         V.CommandSplitter.assert_not_called()
-        V.main.assert_called_once_with(["one", "two"], default_activate_all_modules=True)
+        V.main.assert_called_once_with(["one", "two"], default_activate=["__all__"])
 
     it "run_script can skip going through the splitter", V:
         run_cli(["one", "two"])
         V.CommandSplitter.assert_not_called()
-        V.main.assert_called_once_with(["one", "two"], default_activate_all_modules=True)
+        V.main.assert_called_once_with(["one", "two"], default_activate=["__all__"])
 
     it "run_cli can be given argv", V:
         run_cli("lan:stuff", argv=["one", "two"])
         V.CommandSplitter.assert_called_once_with(
             {"argv": ["my_script", "one", "two"]}, "lan:stuff"
         )
-        V.main.assert_called_once_with(V.split, default_activate_all_modules=True)
+        V.main.assert_called_once_with(V.split, default_activate=["__all__"])
 
     it "run_cli formats correctly", fake_main:
         with modified_env(LAN_TARGET="well"):
@@ -168,7 +168,7 @@ describe "main lines":
 
         fake_main.assert_called_once_with(
             ["well:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate_all_modules=True,
+            default_activate=["__all__"],
         )
 
     it "run_script formats correctly", fake_main:
@@ -180,7 +180,7 @@ describe "main lines":
 
         fake_main.assert_called_once_with(
             ["well:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate_all_modules=False,
+            default_activate=None,
         )
 
     it "can have defaults for environment", fake_main:
@@ -192,7 +192,7 @@ describe "main lines":
 
         fake_main.assert_called_once_with(
             ["lan:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate_all_modules=False,
+            default_activate=None,
         )
 
     it "can not format json dictionary", fake_main:
@@ -200,5 +200,5 @@ describe "main lines":
             run_cli("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 
         fake_main.assert_called_once_with(
-            ["lan:transform", "--", '{"power": "on"}'], default_activate_all_modules=True,
+            ["lan:transform", "--", '{"power": "on"}'], default_activate=["__all__"],
         )

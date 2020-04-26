@@ -221,8 +221,9 @@ class Collector(Collector):
                 meta = Meta(photons_app, []).at("addons")
                 for namespace, adns in spec.normalise(meta, addons).items():
                     register.add_pairs(*[(namespace, adn) for adn in adns])
-        elif photons_app.get("default_activate_all_modules"):
-            register.add_pairs(("lifx.photons", "__all__"))
+        elif photons_app.get("default_activate"):
+            for comp in photons_app["default_activate"]:
+                register.add_pairs(("lifx.photons", comp))
 
         if __main__ is not None:
             register.add_pairs(("lifx.photons", "__main__"))

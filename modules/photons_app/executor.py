@@ -138,12 +138,12 @@ class App(App):
         extra_args,
         logging_handler,
         extra_files=None,
-        default_activate_all_modules=False,
+        default_activate=None,
     ):
         args_dict["photons_app"]["config"] = args_dict["photons_app"]["config"] or sb.NotSpecified
         args_dict["photons_app"]["extra"] = extra_args
         args_dict["photons_app"]["debug"] = args_dict["debug"] or args_obj.debug
-        args_dict["photons_app"]["default_activate_all_modules"] = default_activate_all_modules
+        args_dict["photons_app"]["default_activate"] = default_activate
 
         collector = self.setup_collector(args_dict, logging_handler, extra_files)
 
@@ -202,7 +202,7 @@ def lifx_main(*args, **kwargs):
     If there is no configuration, or the configuration doesn't specify addons
     then we default to activating all photons modules in the environment.
     """
-    kwargs["default_activate_all_modules"] = True
+    kwargs["default_activate"] = ["core"]
     return main(*args, **kwargs)
 
 
