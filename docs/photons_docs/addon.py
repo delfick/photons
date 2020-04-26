@@ -26,8 +26,6 @@ log = logging.getLogger("photons_docs")
 
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
-__shortdesc__ = "Entry point for creating documentation"
-
 
 class DocOptions(dictobj.Spec):
     out = dictobj.Field(wrapper=sb.required, format_into=sb.string_spec)

@@ -9,7 +9,6 @@ import shlex
 import sys
 import os
 
-__shortdesc__ = "Requiring this module will in turn require all lifx-photons-core modules"
 
 wanted = [
     "protocol",
