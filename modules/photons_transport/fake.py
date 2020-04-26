@@ -473,6 +473,17 @@ class FakeDevice:
                 res.sequence = pkt.sequence
                 res.source = pkt.source
                 res.target = self.serial
+                log.info(
+                    hp.lc(
+                        "Created response",
+                        source=source,
+                        pkt=res.__class__.__name__,
+                        payload=res.payload,
+                        pkt_source=res.source,
+                        pkt_sequence=res.sequence,
+                        serial=self.serial,
+                    )
+                )
                 yield res
                 await self.process_reply(res, source, pkt)
         except IgnoreMessage:
