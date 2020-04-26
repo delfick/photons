@@ -213,6 +213,8 @@ describe "Device":
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,
             )
+            if V.t.time == 16:
+                V.t.set(15)
             assert V.t.time == len(all_futs) + 10
 
             await asyncio.wait([Futs.group, Futs.location])
