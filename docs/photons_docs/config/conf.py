@@ -2,7 +2,6 @@ import pkg_resources
 
 extensions = [
     "sphinx.ext.autodoc",
-    "photons_messages.sphinx.messages",
     "photons_docs.config.ext.plans",
     "photons_docs.config.ext.colour",
     "photons_docs.config.ext.packets",
