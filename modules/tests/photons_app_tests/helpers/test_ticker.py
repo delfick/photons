@@ -64,21 +64,70 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for _ in hp.tick(3):
-                    called.append(time.time())
+                async for i in hp.tick(3):
+                    called.append((i, time.time()))
                     if len(called) == 5:
                         break
 
-        assert called == [0, 3, 6, 9, 12]
+        assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12)]
         assert m.called_times == [3, 3, 3, 3]
+
+    async it "keeps yielding until max_iterations", FakeTime:
+        called = []
+
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for i in hp.tick(3, max_iterations=5):
+                    called.append(i)
+
+        assert called == [1, 2, 3, 4, 5]
+
+    async it "keeps yielding until max_time", FakeTime:
+        called = []
+
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for i in hp.tick(3, max_time=20):
+                    called.append((i, time.time()))
+
+        assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12), (6, 15), (7, 18), (8, 21)]
+
+    async it "keeps yielding until max_time or max_iterations", FakeTime:
+
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                called = []
+
+                async for i in hp.tick(3, max_iterations=5, max_time=20):
+                    called.append((i, time.time()))
+
+                assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12)]
+
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                called = []
+
+                async for i in hp.tick(3, max_iterations=10, max_time=20):
+                    called.append((i, time.time()))
+
+                assert called == [
+                    (1, 0),
+                    (2, 3),
+                    (3, 6),
+                    (4, 9),
+                    (5, 12),
+                    (6, 15),
+                    (7, 18),
+                    (8, 21),
+                ]
 
     async it "keeps yielding such that yields are best effort 'every' apart when tasks go over", FakeTime:
         called = []
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for _ in hp.tick(3):
-                    called.append(time.time())
+                async for i in hp.tick(3):
+                    called.append((i, time.time()))
                     t.add(2)
                     if len(called) == 3:
                         t.add(3)
@@ -89,7 +138,7 @@ describe "tick":
                     if len(called) == 7:
                         break
 
-        assert called == [0, 3, 6, 11, 14, 23, 26]
+        assert called == [(1, 0), (2, 3), (3, 6), (4, 11), (5, 14), (6, 23), (7, 26)]
         assert m.called_times == [1, 1, -2, 1, -6, 1]
 
     async it "stops if final_future stops", FakeTime:

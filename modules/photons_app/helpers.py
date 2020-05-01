@@ -56,6 +56,9 @@ class ATicker:
 
         assert timing == [0, 10, 20, 30, 40]
 
+    The value that is yielded is a number representing which iteration is being
+    executed. This will start at 1 and increment by 1 each iteration.
+
     You can use the shortcut :func:`tick` to create one of these, but if you
     do create this yourself, you can change the ``every`` value while you're
     iterating.
@@ -82,24 +85,42 @@ class ATicker:
 
     The ``ATicker`` also takes in an optional ``final_future``, which when
     cancelled will stop the ticker.
+
+    This will iterate forever unless ``max_iterations`` or ``max_time`` are
+    specified. Specifying ``max_iterations`` will mean the Ticker stops after
+    that many iterations and ``max_time`` will stop the iterating once it's been
+    that many seconds since it started.
     """
 
-    def __init__(self, every, *, final_future=None):
+    def __init__(self, every, *, final_future=None, max_iterations=None, max_time=None):
         self.every = every
         self.tick_fut = ResettableFuture()
+        self.max_time = max_time
         self.last_tick = None
         self.final_future = final_future or asyncio.Future()
+        self.max_iterations = max_iterations
+
+        self.start = time.time()
+        self.iteration = 0
 
     def __aiter__(self):
         return self
 
     async def __anext__(self):
+        self.iteration += 1
+
         if self.final_future.done():
+            raise StopAsyncIteration
+
+        if self.max_iterations is not None and self.iteration > self.max_iterations:
+            raise StopAsyncIteration
+
+        if self.max_time is not None and time.time() - self.start >= self.max_time:
             raise StopAsyncIteration
 
         if self.last_tick is None:
             self.last_tick = time.time()
-            return
+            return self.iteration
 
         self.change_after(self.every)
         await asyncio.wait([self.tick_fut, self.final_future], return_when=asyncio.FIRST_COMPLETED)
@@ -109,6 +130,7 @@ class ATicker:
 
         self.tick_fut.reset()
         self.last_tick = time.time()
+        return self.iteration
 
     def change_after(self, every, *, set_new_every=True):
         if set_new_every:
@@ -130,26 +152,28 @@ class ATicker:
             asyncio.get_event_loop().call_later(diff, reset)
 
 
-async def tick(every, *, final_future=None):
+async def tick(every, *, final_future=None, max_iterations=None, max_time=None):
     """
     .. code-block:: python
 
         from photons_app import helpers as hp
 
 
-        async for _ in hp.tick(every):
-            yield
+        async for i in hp.tick(every):
+            yield i
 
         # Is a nicer way of saying
 
-        async for _ in hp.ATicker(every):
-            yield
+        async for i in hp.ATicker(every):
+            yield i
 
     If you want control of the ticker during the iteration, then use
     :class:`ATicker` directly.
     """
-    async for _ in ATicker(every, final_future=final_future):
-        yield
+    kwargs = {"final_future": final_future, "max_iterations": max_iterations, "max_time": max_time}
+
+    async for i in ATicker(every, **kwargs):
+        yield i
 
 
 class TaskHolder:
