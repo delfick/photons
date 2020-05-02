@@ -3,15 +3,14 @@
 Writing Scripts
 ===============
 
-A Photons script is much like any Python script, but you need to instantiate
-Photons. There are two methods of doing this. One is to use the
-:ref:`library_setup <library_setup>` function, and the other is to register an
-:ref:`action <photons_action>` like the ones shown in the section on
-:ref:`CLI commands <common_cli_commands>`.
+There are two methods of instantiating Photons in a Python script:
 
-Starting Photons will load the necessary code, register functionality that is
-spread across the different "modules" that makes up Photons; and reading in
-configuration.
+* Using the :ref:`library_setup <library_setup>` function, or
+* Registering an :ref:`action <photons_action>` like the tasks shown
+  in the :ref:`CLI commands <common_cli_commands>` section.
+
+Instantiating Photons reads in the configuration and registers all
+the functionality provided by the various modules.
 
 .. toctree::
     :hidden:

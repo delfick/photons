@@ -1,11 +1,10 @@
 .. _library_setup:
 
-Using the library_setup function
-================================
+Using the ``library_setup`` function
+====================================
 
-If you want to integrate Photons with your existing script and/or have control
-over the command line arguments, then you can use the ``library_setup`` function
-to start Photons.
+To integrate Photons with an existing script or to control command-line options,
+use the ``library_setup`` function to instantiate Photons.
 
 For example:
 
@@ -35,15 +34,13 @@ For example:
             loop.run_until_complete(collector.stop_photons_app())
             loop.close()
 
-If you are only doing Photons work in your script, then you can get the
-collector to create the asyncio event loop and do cleanup for you.
+If the script only performs Photons tasks, use the collector to create the
+asyncio event loop and perform cleanup functions:
 
 .. code-block:: python
 
     from photons_app.executor import library_setup
-
     from photons_messages import DeviceMessages
-
 
     async def get_label(collector):
         lan_target = collector.resolve_target("lan")
@@ -52,22 +49,18 @@ collector to create the asyncio event loop and do cleanup for you.
         async for pkt in lan_target.send(DeviceMessages.GetLabel(), reference):
             print(f"{pkt.serial}: {pkt.label}")
 
-
     if __name__ == "__main__":
         collector = library_setup()
         collector.run_coro_as_main(get_label(collector))
 
-An example of using ``argparse`` to specify options on the command line may
-look like:
+Use ``argparse`` to parse command-line arguments:
 
 .. code-block:: python
 
     from photons_app.executor import library_setup
-
     from photons_messages import DeviceMessages
 
     import argparse
-
 
     async def get_label(collector):
         parser = argparse.ArgumentParser()
@@ -83,12 +76,11 @@ look like:
         async for pkt in lan_target.send(DeviceMessages.GetLabel(), reference):
             print(f"{pkt.serial}: {pkt.label}")
 
-
     if __name__ == "__main__":
         collector = library_setup()
         collector.run_coro_as_main(get_label(collector))
 
 .. note:: ``run_coro_as_main`` is similar to the
     `asyncio.run <https://docs.python.org/3/library/asyncio-task.html#asyncio.run>`_
-    function in the standard library but does some extra work to ensure your
-    program is shut down cleanly.
+    function in the Python standard library but does extra work to ensure the
+    event loop is shut down cleanly.

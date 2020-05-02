@@ -3,12 +3,12 @@
 Registering a Photons action
 ============================
 
-All the Photons CLI commands you can run from the ``lifx`` program are an action
-that has been registered in one of the Photons modules. An action is a
-function that takes in objects that represent the arguments you gave
+All the tasks available to the Photons ``lifx`` program are actions that
+are registered in one of the Photons modules. An action is a
+function that takes in objects that represent the arguments provided
 on the command line.
 
-So for example, the ``power_toggle`` action looks like:
+For example, the ``power_toggle`` action is defined as:
 
 .. code-block:: python
 
@@ -31,30 +31,28 @@ So for example, the ``power_toggle`` action looks like:
         msg = PowerToggle(**extra)
         await target.send(msg, reference)
 
-There's a few things to take in here:
+This definition is detailed as follows:
 
 * :ref:`an_action <an_action>` takes in a few arguments
 
-  * ``needs_reference=True`` would mean that we complain if the ``<reference>``
+  * ``needs_reference=True`` means Photons throws an error if the ``<reference>``
     argument is not specified
-  * ``special_reference=True`` will mean the ``reference`` variable given to
-    you is a :ref:`Special Reference <cli_references>`
-  * ``needs_target=True`` says that a ``<target>`` must be specified.
+  * ``special_reference=True`` means the ``reference`` variable provided must
+    be is a :ref:`Special Reference <cli_references>`
+  * ``needs_target=True`` means a ``<target>`` must be specified.
 
-* The :ref:`collector <collector_root>` is the entry point to everything that
-  has been registered by the Photons modules.
-* The ``target`` is the object you use to :ref:`send messages <interacting_root>`
-  with.
-* The ``artifact``, while not used in the above example, is that last argument
-  given to the command line.
-* You can access the json string after the ``--`` on the command line by
-  looking at ``collector.photons_app.extra_as_json``.
-* All the arguments to the action are provided as keyword arguments, so they
-  must be given those names, but you can also not specify them and let the
-  ``**kwargs`` consume those you don't use.
+* The :ref:`collector <collector_root>` is the entry point to all functionality
+  registered by the Photons modules.
+* The ``target`` is the object that :ref:`sends messages <interacting_root>`.
+  The ``artifact`` (which is not used above) is the last argument
+  given on the command line.
+* The JSON options string provided on the command line is available
+  as the ``collector.photons_app.extra_as_json`` attribute.
+* All arguments to an action must be provided as keyword arguments. If
+  you do not specify a keyword, the unused arguments will be consumed by
+  the ``**kwargs`` argument.
 
-To make your own script that uses one of these actions, you create a file that
-registers an action and then tells Photons to run that action.
+Create a script that registers and runs an action:
 
 .. code-block:: python
 
@@ -68,32 +66,28 @@ registers an action and then tells Photons to run that action.
         async for pkt in target.send(DeviceMessages.GetLabel(), reference):
             print(f"{pkt.serial}: {pkt.label}")
 
-
     if __name__ == "__main__":
         __import__("photons_core").run_cli('lan:display_label {@:1:}')
 
-When we run it like a script we will run our ``display_label`` action using the
-``lan`` target with any other arguments specified on the command line::
+The action has the same command-line options available as the ``lifx`` utility,
+including the :ref:`references <cli_references>`::
 
-    # The same as running ``lifx lan:display_label --silent``
-    # If display_label was defined in a photons module, rather than it's own file
-    $ python my_script.py --silent
+    $ python my_script.py match:group_name=kitchen --silent
 
 
 run_cli
 -------
 
-The ``run_cli`` function can either take in a string that lets you format in
-environment variables and ``sys.argv`` values or you can pass in a list of
-arguments yourself.
+The ``run_cli`` function takes either a formatted string of environment
+variables and ``sys.argv`` values or a list of manually specified arguments.
 
-For example you can say:
+For example, this:
 
 .. code-block:: python
 
     __import__("photons_core").run_cli("{TRANSPORT_TARGET|lan:env}:{@:1} {@:2:}")
 
-Which is the same as saying:
+Is the same as this:
 
 .. code-block:: python
 
@@ -103,8 +97,7 @@ Which is the same as saying:
     target = os.environ.get("TRANSPORT_TARGET", "lan")
     __import__("photons_core").run_cli([f"{transport}:{sys.argv[1]}"] + sys.argv[2:])
 
-You can also specify that an environment variable is required by not specifying
-a default. For example:
+An environment variable is mandatory if a default is not provided:
 
 .. code-block:: python
 
@@ -112,7 +105,7 @@ a default. For example:
 
 .. _an_action:
 
-The an_action decorator
------------------------
+The ``an_action`` decorator
+---------------------------
 
 .. autoclass:: photons_app.actions.an_action

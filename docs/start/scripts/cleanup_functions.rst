@@ -3,10 +3,10 @@
 Cleanup Functions
 =================
 
-The ``photons_app`` object on the collector has an array on it called ``cleaners``.
+The ``photons_app`` object on the :ref:`collector <collector_root>` has an
+array of functions called ``cleaners``.
 
-You can add async functions to this array and they will be run as part of
-shutdown.
+Add an async function to this array to include it when Photons shuts down.
 
 For example:
 
@@ -30,5 +30,5 @@ For example:
     if __name__ == "__main__":
         __import__("photons_core").run_cli("lan:run_the_thing {@:1:}")
 
-This is useful if you have many items to setup and you don't want to have a
-bunch of nested context managers or try..finally blocks.
+This is useful if there are many items to setup as it avoids the complexity
+of nested context managers or ``try..finally`` code blocks.

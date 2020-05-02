@@ -1,78 +1,84 @@
 .. _logging:
 
-Logs in Photons
-===============
+Logging with Photons
+====================
 
-Photons has a couple features for working with logs.
+Photons automatically provides colorful console logging for all registered
+:ref:`actions <photons_action>`.
 
-The first one is we have the option to have colourful logs on the commandline.
-
-When you run a Photons :ref:`action <photons_action>` you get colourful logs
-setup for you. If you instead go for using the
-:ref:`library_setup <library_setup>` option then you'll need to do something
-like the following:
+Use the ``setup_logging`` function to enable colorful console logging for
+scripts that instantiate Photons using the :ref:`library_setup <library_setup>`
+method:
 
 .. code-block:: python
-    
+
     from delfick_project.logging import setup_logging
     import logging
-
 
     if __name__ == "__main__":
         setup_logging(level=logging.INFO)
 
-Once you've setup logging you can use the ``photons_app.helpers.lc`` function
-to easily log key value pairs to the command line.
-
-For example:
+Use the ``photons_app.helpers.lc`` function to log key/value pairs to the
+command line:
 
 .. code-block:: python
-    
+
     from photons_app import helpers as hp
 
+    from delfick_project.logging import setup_logging
     import logging
 
+    if __name__ == "__main__":
+        setup_logging(level=logging.INFO)
+        log = logging.getLogger("My Script")
+        log.info(hp.lc("My log", key1="value1", key2="value2"))
 
-    log = getLogger("my_script")
-    log.info(hp.lc("My log", key1="value1", key2="value2"))
+Configuring log destination
+---------------------------
 
-Logging destination
--------------------
+The following command-line options are available for the ``lifx`` command-line
+utility and any script that registers a Photons action.
 
-When you start from a photons action, your script will have available to it
-the following command line options for configuration where the logs end up:
+``--silent``
+    Only log errors to ``stderr``.
 
---silent
-    Only log errors
-
---debug
+``--debug``
     Print debug logs
 
---logging-program LOGGING_PROGRAM
-    When this option is provided and the logs are going to udp, tcp or syslog,
-    then there will be a ``program`` value in the log that is this value.
+``--logging-program LOGGING_PROGRAM``
+    This option adds ``LOGGING_PROGRAM`` in the ``program`` field to logs
+    sent either syslog, UDP or TCP destinations.
 
---tcp-logging-address TCP_LOGGING_ADDRESS
-    The address to use for giving log messages to tcp (i.e. localhost:9001)
+``--tcp-logging-address TCP_LOGGING_ADDRESS:PORT``
+    Send JSON-formatted logs to ``TCP_LOGGING_ADDRESS`` on port ``PORT``
+    using TCP.
 
---udp-logging-address UDP_LOGGING_ADDRESS
-    The address to use for giving log messages to udp (i.e. localhost:9001)
+``--udp-logging-address UDP_LOGGING_ADDRESS``
+    Send JSON-formatted logs to ``UDP_LOGGING_ADDRESS`` on port ``PORT`` using
+    UDP.
 
---syslog-address SYSLOG_ADDRESS
-    The address to use for syslog (i.e. /dev/log)
+``--syslog-address SYSLOG_ADDRESS``
+    Send JSON-formatted logs to the ``SYSLOG_ADDRESS`` file descriptor, e.g.
+    ``/dev/log``.
 
---json-console-logs
-    If we haven't set other logging arguments, this will mean we log json lines to the console
+``--logging-handler-file LOGGING_HANDLER_FILE``
+    Write JSON-formatted logs to ``LOGGING_HANDLER_FILE``, e.g.
+    ``/path/to/photons.log``.
 
---logging-handler-file LOGGING_HANDLER_FILE
-    File to print logs to
+``--json-console-logs``
+    Output JSON-formatted logs to the console. Ignored if another logging method
+    is configured.
 
-For example if you were to run::
+.. note:: Logs are only output to a single destination. The order of precedence
+   is syslog followed by UDP then TCP. The console is only used if no
+   alternative logging destination is provided.
+
+The following example::
 
     $ lifx lan:attr _ GetColor --logging-program myprogram --udp-logging-address localhost:9999
 
-Then a UDP socket listening on ``localhost:9999`` would receive logs that look
-like the following:
+Will send the following JSON-formatted log message to ``localhost`` on port
+``9999`` over UDP:
 
 .. code-block:: json
 
@@ -86,17 +92,16 @@ like the following:
         "serial": "d073d514e733"
     }
 
-.. note:: If you start your script using the ``library_setup`` method then when
-    you call ``setup_logging`` you'll have the options available to you from
-    that function which you can find in the documentation for the
-    `setup_logging <https://delfick-project.readthedocs.io/en/latest/api/logging.html>`_
-    function.
+.. note:: The |setup_logging_func|_ has the same parameters available for
+   scripts that instantiate Photons using the ``library_setup`` method.
 
-When you haven't specified a udp, tcp or syslog output, the logs will go to
-the ``stderr`` on your terminal. Note that this only applies to anything logged
-using Python's ``logging`` module in the standard library.
+.. |setup_logging_func| replace:: ``setup_logging`` function
+.. _setup_logging_func: https://delfick-project.readthedocs.io/en/latest/api/logging.html
 
-Most builtin Photons commands will use the ``print()`` function to print results
-without the extra logging information. This output will go to ``stdout``. This
-means for many commands you can redirect output to a file and that file will
-only receive the useful output from that command.
+When no logging target is configured, logs will be output to ``stderr``. Note
+that this only applies to anything logged using Python's ``logging`` module in
+the standard library.
+
+Most built-in Photons actions that output data use the ``print()`` function to
+print data directly to ``stdout``. This output can be redirected to a file using
+standard shell techniques and will not contain any logging information.

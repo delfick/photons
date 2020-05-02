@@ -1,19 +1,18 @@
 .. _long_running_server:
 
-Making a long running server
-============================
+Creating a long-running server
+==============================
 
-As long as you are using a :ref:`photons action <photons_action>` or using the
-``collector.run_coro_as_main`` function, then you have available to you a
-``graceful_final_future`` that lets you tell Photons that you want to stop
-your script before it shuts everything down.
+Using a registered :ref:`Photons action <photons_action>` or calling the
+``collector.run_coro_as_main`` function provides a ``graceful_final_future``
+that tells Photons to stop the script prior to running any cleanup tasks.
 
-In normal shutdown logic the main task is cancelled before everything is shut
-down but this can mean that resources used by your long running process may be
-closed before you have a chance to gracefully shut down.
+Normal shutdown logic cancels the main task before everything else is shut down
+which can result in resources used by a long-running process being closed before
+the process can gracefully shut down.
 
-So as long as your task will shutdown by itself if the graceful future is
-resolved, then you can say this:
+Ensure the task will shut itself down if the graceful future is resolved, then
+call the task like so:
 
 .. code-block:: python
 

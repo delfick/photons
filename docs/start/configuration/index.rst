@@ -3,16 +3,17 @@
 Photons Configuration files
 ===========================
 
-You can alter Photons settings from a configuration file.
+Photons is configured using one or more configuration files.
 
-By default Photons will look for ``lifx.yml`` in the current directory you
-are running your script from.  You can change where this configuration is by
-setting the ``LIFX_CONFIG`` environment variable to the location of your
-configuration file.
+Photons looks for a ``lifx.yml`` file in the same directory as the script being
+run. The ``LIFX_CONFIG`` environment variable is used to override this location
+with the specific path to a configuration file.
 
-It will also load ``~/.photons_apprc.yml``.
+Photons will combine the ``lifx.yml`` or ``LIFX_CONFIG`` configuration with the
+contents of ``~/.photons_apprc.yml``.
 
-You can load extra files from either of these locations with something like:
+Additional configuration files can be included using the following syntax in
+one of the automatically detected configuration files:
 
 .. code-block:: yaml
 
@@ -26,18 +27,16 @@ You can load extra files from either of these locations with something like:
         before:
           - filename: "/path/to/file/you/want/loaded/before/this/one.yml
 
-All the files that get loaded will be merged together and treated as if they
-were one python dictionary using
-`Option Merge <https://delfick-project.readthedocs.io/en/latest/api/option_merge/index.html>`_
+All configuration files are automatically merged to create a single
+Python dictionary using `Option Merge <https://delfick-project.readthedocs.io/en/latest/api/option_merge/index.html>`_.
 
-There are a few things that can be configured by default.
+The following options can be configured.
 
 Logs colours
 ------------
 
-Depending on your terminal, it may be desirable to change the colours used by
-the logging. You can do this with the following (best placed in
-``~/.photons_apprc.yml``)
+Change the color scheme used by the console log by setting the ``term_colors``
+variable. This is best configured as a per-user setting in ``~/.photons_apprc.yml``
 
 .. code-block:: yaml
 
@@ -45,20 +44,19 @@ the logging. You can do this with the following (best placed in
 
     term_colors: light
 
-.. note:: The logs will be the default theme until after configuration has been
-    loaded.
+.. note:: log theme is set when the configuration is loaded after Photons starts.
 
 .. _configuration_targets:
 
 Targets
 -------
 
-Currently Photons only has one target type, which is the ``lan`` type. If one
-has not been specified, Photons will create a target called ``lan`` that has
-the type of ``lan`` and a default broadcast of ``255.255.255.255`` for
-discovery.
+Photons has a single target type of ``lan`` named ``lan`` by default.
+The default target uses a default broadcast address of ``255.255.255.255``
+for device discovery.
 
-You can override that with something like:
+To make discovery more efficient, the ``lan`` target can be configured with a
+more specific broadcast address.
 
 .. code-block:: yaml
 
@@ -70,7 +68,7 @@ You can override that with something like:
         options:
           default_broadcast: 192.168.1.255
 
-Or create your own:
+A custom target can also be defined:
 
 .. code-block:: yaml
 
@@ -82,21 +80,23 @@ Or create your own:
         options:
           default_broadcast: 192.168.1.255
 
-And then instead of ``lifx lan:transform -- '{"power": "off"}'`` you would
-say ``lifx home_network:transform -- '{"power": "off"}'``
+If a custom target is configured, it can be used instead of the ``lan`` target
+the ``lifx`` utility on the command line, e.g. instead of
+``lifx lan:transform -- '{"power": "off"}'`` it becomes
+``lifx home_network:transform -- '{"power": "off"}'``
 
-Hard coding discovery
----------------------
+Hard-coded discovery
+--------------------
 
 See :ref:`discovery_options`
 
-Tile animations on noisy networks
----------------------------------
+Adjusting animations for busy networks
+--------------------------------------
 
-Tile animations require sending 320 HSBK values every 0.075 seconds to each
-tile set and so on a noisy network this can result in an animation that
-struggles to keep up. To help with this we can tell Photons to take a different
-strategy when it comes to determining when to send messages.
+Tile animations send 320 HSBK values every 0.075 seconds to each tile set. To
+compensate for networks with heavy existing traffic, configure Photons to used
+a different packet strategy to reduce the overall number of packets sent and
+received:
 
 .. code-block:: yaml
 
@@ -106,24 +106,25 @@ strategy when it comes to determining when to send messages.
       noisy_network: true
       inflight_limit: 2
 
-You can override configuration with the following two environment variables:
+This configuration is overriden at runtime by similarly named environment
+variables:
 
-NOISY_NETWORK
-   If this environment variable is defined, then the noisy network code will be
-   used
+``NOISY_NETWORK``
+   If ``true``, Photons uses the noisy network delivery strategy.
 
-ANIMATION_INFLIGHT_MESSAGE_LIMIT
-   This needs to be the max number of unacknowledged frames that can be inflight
-   at any point
+``ANIMATION_INFLIGHT_MESSAGE_LIMIT`` | ``inflight_limit``:
+   Sets the maximum number of unacknowledged animations frames in-flight at
+   any point.
 
-So if I turn noisy network code on and set the inflight limit to 2, then  when
-it comes to sending the next frame, if we have two frames that haven't been
-acknowledged yet, then we won't send anything for this frame.
+In noisy network mode, Photons will limit the number of frames in-flight to the
+value set for ``inflight_limit`` or ``ANIMATION_INFLIGHT_MESSAGE_LIMIT``. In
+this example, if two frames have been sent, Photons will not send another frame
+until it receives an acknowledgement.
 
-A full example
---------------
+Full configuration example
+--------------------------
 
-An example configuration that has all the options may look like:
+An example configuration with all available options looks like this:
 
 .. code-block:: yaml
 
@@ -134,7 +135,7 @@ An example configuration that has all the options may look like:
         after:
           # load a "secrets.yml" that sits next to this file
           # before this file is read
-          # If there is a secrets.yml to be found 
+          # If there is a secrets.yml to be found
           - filename: "{config_root}/secrets.yml"
             optional: true
 

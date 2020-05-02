@@ -1,66 +1,72 @@
 .. _common_cli_commands:
 
-Common commands from the cli
+Common tasks with the CLI
 ============================
 
-You can find a full list of built in commands by saying ``lifx help`` but
-the most commons ones are as follows.
+A full list of available tasks is returned by running ``lifx help``.
 
-.. note:: The ``<reference>`` in all these commands is explained in
-    :ref:`the cli references section <cli_references>` and lets you say which
-    devices will be targetted by the command.
+.. note:: The ``<reference>`` used in these common tasks is explained in
+    :ref:`the CLI reference <cli_references>`. It determines which devices
+    will be affected by the task used.
 
-find_devices and find_ips
-    Find the devices on your network::
+``find_devices`` and ``find_ips``
+        List the serial numbers of all discovered devices on the local network::
 
-        # Just get the serials
         $ lifx lan:find_devices
 
-        # Get the IP addresses of the devices too
+    List the serial numbers and associated IP address of all discovered devices
+
         $ lifx lan:find_ips
 
-transform
-    This command lets you change the power, colour of your device with a duration
-    and optionally with a waveform.
+``transform``
+    This task changes the power and colour of the target devices over an
+    optionally specified duration. It can also perform waveform-based
+    transformations similar to the `Breathe <https://api.developer.lifx.com/docs/breathe-effect>`_
+    and `Pulse <hthttps://api.developer.lifx.com/docs/pulse-effect>`_ effects
+    available via the `LIFX HTTP API <https://api.developer.lifx.com/>`_.
 
-    For example::
+    For example, turn off all the devices on the network ::
 
-        # Turn off all the devices on the network
         $ lifx lan:transform -- '{"power": "off"}'
 
-        # turn on a specific device
+    Turn on a specific device::
+
         $ lifx lan:transform d073d5001337 -- '{"power": "on"}'
 
-        # Start a waveform on a group after first starting them on red
+    Power on a group of devices and set to the color to red and brightness to
+    100% followed by a waveform to cycle between red and blue three times over
+    three seconds at 50% brightness::
+
         $ lifx lan:transform match:group_name=kitchen -- '{"color": "red", "brightness": 1, "power": "on"}'
         $ lifx lan:transform match:group_name=kitchen -- '{"color": "blue", "brightness": 0.5, "effect": "SINE", "cycles": 3, "period": 1}'
 
-attr
-    This command looks like ``lifx lan:attr <reference> <message> -- '{options}'``
-    and will let you get and set attributes on your device.
+``attr``
+    This task gets or sets attributes on a device using a specific packet type.
+    The packet type is specified in the ``<artifact>`` field of the ``lifx``
+    utility syntax, i.e. ``lifx lan:attr <reference> <artifact> -- <options>``.
 
-    For example, if you wanted to get the color on all your devices then you
-    would say::
+    For example, get the color attribute value from all devices::
 
         $ lifx lan:attr _ GetColor
 
-    Not all commands have defaults for their fields and so for these you must
-    specify what values to use. For example::
+    Not all packet types include defaults for the available fields. For those
+    types, a value must be explicity provided in the ``<options>`` field in
+    valid JSON syntax::
 
         $ lifx lan:attr match:label=den SetPower -- '{"level": 0}'
 
-    You can find a full list of what you send on the page about
-    :ref:`packets <packets>`
+    A full list of packet types and values is found on the :ref:`packets <packets>`
+    page.
 
-unpack
-    LIFX binary messages are a string of bytes. You can represent these as a hex
-    value. For example a :ref:`DeviceMessages.GetLabel` in hex may look like:
+``unpack``
+    LIFX binary messages are a string of bytes represented as a hexadecimal
+    value. For example a :ref:`DeviceMessages.GetLabel` in hex look likes:
 
     .. code-block:: text
 
         2400001403b6cf3bd073d522932200000000000000000301000000000000000017000000
 
-    You can get the values from this message by saying::
+    Use the ``unpack`` task to retrieve the values from a LIFX binary message::
 
         $ lifx unpack -- 2400001403b6cf3bd073d522932200000000000000000301000000000000000017000000 | jq
         {
@@ -87,57 +93,65 @@ unpack
           }
         }
 
-pack
-    If you have a dictionary of values you can then pack them into a hex value
-    that represents the message to send to the device. For example to get back
-    our bytes from above::
+    .. note:: **Tip**: Pipe the output of the ``lifx unpack`` task through the
+    ``jq`` utility to convert the JSON into human-readable format.
+
+``pack``
+    This task translates a dictionary of values into a LIFX binary message in
+    hexadecimal format.
+
+    Using the same example as above, the ``pack`` command outputs the hexadecimal
+    representation of the provided JSON::
 
         $ lifx pack -- '{"frame_address": {"ack_required": true, "res_required": true, "reserved2": "000000000000", "reserved3": "00", "sequence": 1, "target": "d073d52293220000"}, "frame_header": {"addressable": true, "protocol": 1024, "reserved1": "00", "size": 36, "source": 1003468291, "tagged": false}, "protocol_header": {"pkt_type": 23, "reserved4": "0000000000000000", "reserved5": "0000"}}'
         2400001403b6cf3bd073d522932200000000000000000301000000000000000017000000
 
-    You can be a little less verbose, for example constructing a
-    :ref:`DeviceMessages.SetLabel` can look like::
+    It is not necessary to provide values for all fields. The ``pack`` command only requires mandatory fields to be
+    specified. For example, constructing a :ref:`DeviceMessages.SetLabel` message::
 
         $ lifx pack -- '{"protocol": 1024, "pkt_type": 24, "source": 1, "sequence": 1, "target": "d073d5229322", "label": "basement"}'
         4400001401000000d073d522932200000000000000000301000000000000000018000000626173656d656e74000000000000000000000000000000000000000000000000
 
-get_effects
-    Return the currently running firmware effects on your devices. This only
-    applies to the Tile, Candle, Strip and Beam devices as we don't have a
-    message that tells us if a Waveform is running on the device.
+``get_effects``
+    Returns the currently running firmware effects on the specified devices.
+    This only applies to devices with firmware effects, i.e. the Tile, Candle,
+    Strip and Beam. Currently active waveforms are not considered an effect.
 
-tile_effect
-    Start a firmware effect on your Tile or Candle Colour::
+``tile_effect``
+    Starts a firmware effect on a Tile or Candle Colour device::
 
         $ lifx lan:tile_effect _ morph
 
-    You may specify other devices in the reference and it'll only apply to
-    devices that support tile firmware effects.
+    In the case of a range of device types being returned by the provided
+    reference, only those with matrix firmware effects will be affected.
 
-    You have ``morph``, ``flame`` and ``off``
+    The available effects are ``morph``, ``flame`` and ``off``.
 
-multizone_effect
-    Start a firmware effect on your Strip or Beam::
+``multizone_effect``
+    Starts a firmware effect on a Z Strip or Beam device::
 
         $ lifx lan:multizone_effect _ move
 
-    You may specify other devices in the reference and it'll only apply to
-    devices that support multizone firmware effects.
+    In the case of a range of device types being returned by the provided
+    reference, only those with multizone firmware effects will be affected.
 
-    You have ``move`` and ``off``.
+    The available effects are ``move`` and ``off``.
 
-apply_theme
-    Set a theme on your devices. By default this will make your devices very
-    colourful::
+``apply_theme``
+    Set a theme on your devices. By default, this applies a seven colour theme
+    at 30% brightness onto the device.
 
-        # Apply the theme to all devices
+    Apply the default theme to all devices::
+
         $ lifx lan:apply_theme
 
-        # apply a theme only using red and blue
+    Apply a theme using only red and blue::
+
         $ lifx lan:apply_theme -- '{"colors": ["red", "blue"]}'
 
-        # apply a theme only using red and blue and a smaller brightness
-        $ lifx lan:apply_theme -- '{"colors": ["red", "blue"], "overrides": {"brightness": 0.1}}'
+    Apply a theme using only red and blue at 100% brightness::
+
+        $ lifx lan:apply_theme -- '{"colors": ["red", "blue"], "overrides": {"brightness": 1}}'
 
 Tile animations
     See :ref:`Tile animation commands <tile_animation_commands>`

@@ -3,63 +3,65 @@
 Photons from the command line
 =============================
 
-You can achieve many tasks from the command line. Usually if you start to need
-multiple of these commands you should create a :ref:`script <scripts_root>` but
-there are many tasks that can be done with just one command in your terminal.
+Photons provides the ``lifx`` command-line utility which can be used
+to perform several tasks. If multiple tasks are required, consider
+creating a :ref:`script <scripts_root>` instead.
 
-You can access these scripts using the ``lifx`` command that will be in your
-``PATH`` when you're in a Python virtualenv with photons installed.
+To access these tasks, ensure the ``lifx`` command is in your ``PATH`` by
+:ref:`activating the virtual environment <activation>` into which Photons is
+installed.
 
-For example, once you've installed Photons you can say::
+A simple example of running a task with the ``lifx`` utility::
 
     $ lifx lan:transform match:label=kitchen -- '{"power": "off"}'
 
-This command will use our ``lan`` target with the ``transform`` task, find your
-light with the label ``kitchen`` and tell it to turn off.
+This command uses the ``lan`` target with the ``transform`` task to find a
+device with the :term:`label` ``kitchen`` and powers it off.
 
-All commands from the ``lifx`` script are formatted like the following::
+The ``lifx`` utility uses the following command-line structure::
 
-    $ lifx <target>:<action> <reference> <artifact> -- <options>
+    $ lifx <target>:<task> <reference> <artifact> -- <options>
 
-Some commands don't need all of these items, like ``unpack`` doesn't require a
-target to be specified for example.
+Some tasks don't need all of these items, like ``unpack`` doesn't require a
+:term:`reference` to be specified for example.
 
-It's possible for photons to know about multiple targets but in most cases you'll
-only ever use the ``lan`` target, which by default is a target that talks to
-your devices over the local network and uses the broadcast address of
-``255.255.255.255`` to find your devices. You can change the default broadcast
-address or create other targets with different broadcast addresses using the
-:ref:`configuration <configuration_root>`
+Photons includes a single ``lan`` target, which is configured to discover
+and communicate with devices on the local network using the default broadcast
+address of 255.255.255.255. It's possible to change the default broadcast
+address used by the ``lan`` target or create new targets by providing a
+custom :ref:`configuration <configuration_root>`.
 
-You can find all available commands by saying ``lifx help`` and information
-about a specific task by saying something like ``lifx help transform``.
+To list all available tasks, run ``lifx help``. To get details about a specific
+task, run ``lifx help <task>``, e.g. ``lifx help transform``.
 
-.. note:: You can specify the options after the ``--`` by a filename by saying::
+.. note:: The ``options`` field must be valid JSON syntax which can be
+   cumbersome to provide directly on the command line. For ease of use, the
+   ``lifx`` utility accepts a `file://` path instead::
 
-        lifx lan:transform -- file:///path/to/my/options.json
+        $ lifx lan:transform -- file:///path/to/my/options.json
 
-    If your options is in the current directory then you would say::
-        
-        lifx lan:transform -- file://options.json
+    If the file is in the current directory::
 
-Running CLI commands on windows
+        $ lifx lan:transform -- file://options.json
+
+Running CLI commands on Windows
 -------------------------------
 
-Running these commands from the Windows command prompt is a little tricky
-because many of them specify options with a json string. Escaping this in the
-window command prompt is annoying because you have to say this::
-    
-    $ lifx lan:transform -- "{\"power\": \"on\"}"
+Running the ``lifx`` utility from the Windows Command Prompt requires the
+JSON syntax to be escaped correctly, which can be challenging::
 
-Instead it's useful to write a python script that looks like:
+    C:\Users\me> lifx lan:transform -- "{\"power\": \"on\"}"
+
+An alternative method which doesn't require escaping JSON is to write
+a simple Python script instead:
 
 .. code-block:: python
 
     __import__("photons_core").run_cli('lan:transform -- {"power": "on"}')
 
-and then from the command line::
+which can be run directly from the command prompt::
 
-    $ python power_on.py
+    C:\Users\me> python power_on.py
 
 .. toctree::
     :hidden:

@@ -3,37 +3,43 @@
 References from the command line
 ================================
 
-References in photons can be a single ``serial``, a list of ``serials`` or a
-``special`` reference which defines how to find these ``serials``
+:term:`References<reference>` in Photons are specified either as a single
+``serial``, a list of ``serials`` or a ``special`` reference which defines how
+to find devices dynamically on the network.
 
-A ``serial`` is a hex number that looks like ``d073d5xxxxxx`` and is the MAC
-address of the device. For example it might be ``d073d5123456``. Whilst it
-shouldn't be necessary to take down your lights, you can find these serials
-printed on the side.
+A ``serial`` is a 12-digit hexadecimal number in the format ``d073d5xxxxxx``,
+e.g. ``d073d5123456`` and is also the :term:`MAC address` of the device. The
+serial number is printed on the base of each bulb.
 
-When we discover devices we get an IP address associated with each serial and
-we use that to know where to send messages to.
+When Photons discovers devices, it associates an IP address with each serial and
+uses that to target packets for each device.
 
-So, for example::
+For example, get the current color of the device with serial ``d073d5001337``::
 
-    # Get the current color of the device with serial d073d5001337
     $ lifx lan:get_attr d073d5001337 color
 
-    # Set the power of these two devices
+Set the power of these two devices::
+
     $ lifx lan:set_attr d073d5000001,d073d500adb8 power -- '{"level": 65535}'
 
-You can also specify a number of ``special`` references like the following::
+Photons provides some special references including ``_`` which is a shortcut
+for all discovered devices on the network and the
+:ref:`match reference <match-reference>`.
 
-    # apply a theme to all devices on the network
-    $ lifx lan:apply_theme _
+Toggle the power on all devices on the network::
 
-    # apply a theme to just strips and beams
-    $ lifx lan:apply_theme match:cap=multizone
+    $ lifx lan:power_toggle _
 
-    # transform a device with the label kitchen
-    $ lifx lan:transform match:label=kitchen -- '{"color": "blue"}'
+Start the `Move` effect on all Z Strips and Beams::
 
-You can also put serials into a file with one line per serial and say::
+    $ lifx lan:multizone_effect match:cap=multizone -- '{"effect": "move"}'
+
+Transform a device with the label ``kitchen`` to blue over 2 seconds::
+
+    $ lifx lan:transform match:label=kitchen -- '{"color": "blue", "duration": 2}'
+
+Photons also accepts a list of serials contained within a file as the
+reference::
 
     $ cat my_serials.txt
     d073d5008988
@@ -41,77 +47,83 @@ You can also put serials into a file with one line per serial and say::
 
     $ lifx lan:apply_theme file:my_serials.txt
 
+.. _match-reference:
+
 The match reference
 -------------------
 
-The match reference has the following options:
+The ``match`` :term:`reference` has the following options:
 
-serial
-    The serial of the device
+.. glossary::
 
-label
-    The label set on the device, which is the name you see for this light in
-    the LIFX app.
+   serial
+      The serial of the device
 
-power
-    Either "on" or "off" depending on whether the device is on or not.
+   label
+      The label of a device is its name as defined in the smart phone app.
 
-group_id
-    The uuid of the group set on this device
+   power
+      Either "on" or "off" depending on whether the device is on or not.
 
-group_name
-    The name of this group. Note that if you have several devices that have
-    the same group, then this will be set to the label of the group
-    with the newest updated_at option.
+   group_id
+      The UUID of the group set on this device.
 
-location_id
-    The uuid of the location set on this device
+   group_name
+      The name of a group. If there are several devices that have the same
+      group_id, this will be set to the label of the group with the newest
+      ``updated_at`` option.
 
-location_name
-    The name of this location. Note that if you have several devices that have
-    the same location_id, then this will be set to the label of the location
-    with the newest updated_at option.
+   location_id
+      The UUID of the location set on this device.
 
-hue, saturation, brightness, kelvin
-    The hsbk values of the device. You can specify a range by saying something
-    like ``10-30``, which would match any device with a hsbk value between 10
-    and 30 (inclusive).
+   location_name
+      The name of a location. If there are several devices that have the same
+      location_id, this will be set to the label of the location with the
+      newest ``updated_at`` option.
 
-firmware_version
-    The version of the HostFirmware as a string of "{major}.{minor}".
+   hue
+   saturation
+   brightness
+   kelvin
+      The HSBK values of the device. You can specify a range by providing the
+      minimum and maximum values seperated by a hypen, e.g. ``10-30``, which
+      would match any device with an HSBK value between 10 and 30 (inclusive).
 
-product_id
-    The product id of the device as an integer. For example LIFX Tiles have the
-    product id of 55.
+   firmware_version
+      The version of the HostFirmware as a string of "{major}.{minor}".
 
-product_identifier
-    The identifier of the type of device. You can find these strings in the
-    :ref:`products <products>` page.
+   product_id
+      The product ID of the device as an integer. For example LIFX Tiles have the
+      product ID of 55.
 
-cap
-    A list of strings of capabilities this device has.
+   product_identifier
+      The identifier of the type of device. A list of available identifer strings
+      is available on the :ref:`products <products>` page.
 
-    * ``ir`` and ``not_ir``
-    * ``color`` and ``not_color``
-    * ``chain`` and ``not_chain``
-    * ``matrix`` and ``not_matrix``
-    * ``multizone`` and ``not_multizone``
-    * ``variable_color_temp`` and ``not_variable_color_temp``
+   cap
+      A list of capability strings, i.e.
 
-You can specify multiple specifiers like::
+         * ``ir`` and ``not_ir``
+         * ``color`` and ``not_color``
+         * ``chain`` and ``not_chain``
+         * ``matrix`` and ``not_matrix``
+         * ``multizone`` and ``not_multizone``
+         * ``variable_color_temp`` and ``not_variable_color_temp``
 
-    "match:cap=matrix&saturation=1"
+      Use the ``&`` operator to combine multiple options or multiple values of
+      the same option::
 
-If you are setting a label and it has special characters in it, you need to
-url encode the value. For example say I have a device with the label of
-"Kitchen bench", then I'd have to address it by saying::
+         # Find matrix devices with a saturation value of 1
+         "match:cap=matrix&saturation=1"
 
-    "match:label=Kitchen%20bench"
+         # Find devices that have either the chain and multizone capabilities
+         "match:cap=chain&cap=multizone"
 
-You can specify multiple values with an ``&`` and multiple of the same specifier
-For example if I want to do something with my tiles and my strips::
+      .. note:: combining different options uses a logical ``AND`` while
+         combining multiple values of the same option uses a logical ``OR``.
 
-    "match:cap=chain&cap=multizone"
+      To match on a label with specicial characters, provide the URL encoded
+      value of the label. For example, to find a device with the label "Kitchen
+      bench" use the following match string::
 
-So if you ``&`` different specifiers they are a logical ``AND`` and an ``&`` with
-multiple of the same specifier is a logical ``OR`` within that specifier.
+         "match:label=Kitchen%20bench"

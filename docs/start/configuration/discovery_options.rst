@@ -3,20 +3,21 @@
 Device Discovery
 ================
 
-LIFX devices are found on the network by broadcasting a GetService message and
-interpreting the StateService messages devices on the network send back.
+Photons discovers LIFX devices by broadcasting a GetService message and
+interpreting the StateService messages received from the network.
 
-However, on networks with a large amount of devices or where broadcast is
-disabled, this method of discovery either doesn't work or is unreliable. For these
-environments, photons can be given hard coded discovery information and serial
-filters.
+This method is unavailable on networks that have broadcasting disabled and
+unreliable on networks with a large amount of devices. To remove the need for
+broadcast delivery, hardcoded discovery is used. To improve the reliability of
+discovery, serial filters can be configured.
 
 .. _discovery_options:
 
 Discovery options
 -----------------
 
-In your configuration, you can say:
+Use the ``hardcoded_discovery`` option to configure specific serial to IP
+address mapping:
 
 .. code-block:: yaml
 
@@ -27,11 +28,14 @@ In your configuration, you can say:
        d073d5000001: "192.168.0.1"
        d073d5000002: "192.168.0.2"
 
-And photons will use those ip addresses for those serials. By specifying
-hardcoded_discovery, photons will not attempt to do broadcast discovery and will
-only know about the serials you have specified.
+This requires static IP address assignment on the network DHCP server so that
+each bulb always gets the same IP address.
 
-You may also specify serial_filter:
+If ``hardcoded_discovery`` is configured, Photons will not do any broadcast
+discovery and will not find any bulbs not specifically configured.
+
+A serial_filter restricts the devices Photons can discover, but still uses
+broadcasting so static IP addresses are not required:
 
 .. code-block:: yaml
 
@@ -42,31 +46,30 @@ You may also specify serial_filter:
        - d073d5001337
        - d073d5001338
 
-In this case, broadcast discovery will be used, but it will only discover those
-two serials and ignore all other devices. This is handy if you want to restrict
-what devices Photons ever interacts with.
+In this case, broadcast discovery is used, but only to discover the specified
+serials. All other devices are ignored.
 
-You can also combine ``serial_filter`` and ``hardcoded_discovery``.
+The ``serial_filter`` and ``hardcoded_discovery`` options can be combined.
 
-You can override what is configured with environment variables. For example,
-regardless of what you have in configuration, if you say something like::
+The ``HARDCODED_DISCOVERY`` environment variable sets or overrides any
+``hardcoded_discovery`` configuration setting. In the following example, Photons
+will only discover a single device with the serial of ``d073d5111111`` if it
+has the IP address of ``192.168.0.1``:
 
    $ export HARDCODED_DISCOVERY='{"d073d5111111": "192.168.0.1"}'
    $ lifx lan:get_attr _ color
 
-With this, Photons will only care about ``d073d5111111`` and assume it's at
-``192.168.0.1``
-
-You may also specify ``SERIAL_FILTER``::
+The ``SERIAL_FILTER`` environment variable sets or overrides any ``serial_filter``
+configuration setting::
 
    $ export SERIAL_FILTER=d073d500001,d073d5111111
    $ lifx lan:get_attr _ color
 
-This will do a broadcast discovery, but only care about ``d073d5000001`` and
-``d073d5111111``.
+Photons will do a broadcast discovery, but only for devices with the serial of
+ ``d073d5000001`` and ``d073d5111111``.
 
-If you want to turn off discovery options via environment variables you may
-specify them as null. For example::
+Disable any discovery options set in a configuration file with an environment
+variable set to null:
 
    $ export HARDCODED_DISCOVERY=null
    $ export SERIAL_FILTER=null
@@ -77,8 +80,7 @@ specify them as null. For example::
 Target options
 --------------
 
-You may also define your own ``lan`` targets that have their own discovery
-options:
+Custom defined ``lan`` targets can have unique discovery options:
 
 .. code-block:: yaml
 
@@ -92,13 +94,13 @@ options:
             hardcoded_discovery:
               d073d5001337: "192.168.0.1"
 
-In this case, ``my_target`` will only ever see ``d073d5001337`` instead of doing
-broadcast discovery.
+In this case, ``my_target`` is restricted to a single device with the serial
+``d073d5001337`` using the IP address ``192.168.0.1``.
 
 .. note:: the ``HARDCODED_DISCOVERY`` and ``SERIAL_FILTER`` environment
-    variables will override even target specific discovery settings.
+    variables are global and will override target-specific discovery settings.
 
-You can add to global discovery_options per target, for example:
+Global discovery options are combined with target-specific discovery options:
 
 .. code-block:: yaml
 
@@ -123,11 +125,11 @@ You can add to global discovery_options per target, for example:
             hardcoded_discovery:
               d073d5000003: 192.168.0.3
 
-In this scenario, ``target_one`` knows about ``d073d5000001`` and
-``d073d5000002``.  Whilst ``target_two`` knows about ``d073d5000001`` and
+In this scenario, ``target_one`` contains ``d073d5000001`` and
+``d073d5000002`` while ``target_two`` contains ``d073d5000001`` and
 ``d073d5000003``.
 
-You may also override serial_filter, for example:
+The global serial_filter is also combined with a target-specific filter:
 
 .. code-block:: yaml
 
@@ -152,7 +154,7 @@ You may also override serial_filter, for example:
           discovery_options:
             serial_filter: null
 
-In this case, all targets will do broadcast discovery, but the default lan target
-will only see ``d073d5000001`` and ``d073d5000002``, whilst the ``target_one`` 
-will only see ``d073d5000003`` and ``target_two`` will see all devices on the
+In this case, all targets use broadcast discovery but the default ``lan`` target
+will only find ``d073d5000001`` and ``d073d5000002``, ``target_one``
+will only find ``d073d5000003`` and ``target_two`` will find all devices on the
 network.

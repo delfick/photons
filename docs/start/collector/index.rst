@@ -3,60 +3,57 @@
 The Collector
 =============
 
-When you start photons you are given a ``collector`` object. This is the entry
-point to photons and is responsible for reading configuration and creating
-everything you need to get you going.
+Photons creates a ``collector`` object when instantiated. The ``collector``
+is responsible for reading configuration and loading all available Photons
+module functionality.
 
-It has a few things on it you'll find useful:
+The ``collector`` has several useful attributes:
 
 configuration
-    This is a dictionary like object that contains all the configuration and
-    objects created by photons. More about this is explained
-    :ref:`below <collector_configuration>`
+    This is a dictionary-like object that contains all the
+    :ref:`configuration <collector_configuration>` objects created by Photons.
 
 ``run_coro_as_main(coro)``
-    Used to run a coroutine as the main photons task. This function will
-    handle setting everything up for you and cleanly shutting things down
-    when the program finishes or is stopped. See :ref:`library_setup`.
+    Runs a co-routine as the main Photons task. Handles initial setup and
+    final cleanup when the co-routine ends or the script is stopped.
+
+    See :ref:`library_setup`.
 
 photons_app
-    This object has many things on it, but the few you'll find most useful is:
+    The ``photons_app`` object contains several useful attributes:
 
     ``using_graceful_future()``
-        A context manager that yields a graceful future. See
-        :ref:`long_running_server` for more information.
+        A context manager that yields a graceful future.
+        :ref:`long_running_server` provides more information.
 
     extra
-        The string that appears after a ``--``. So say you run
-        ``lifx lan:transform -- '{"power": "off"}'`` then ``photons_app.extra``
-        will be the string ``'{"power": "off"}'``
+        The JSON string provided after the ``--`` on the command line.
+        For example, the command ``lifx lan:transform -- '{"power": "off"}'``
+        results in ``photons_app.extra`` containing the string
+        ``'{"power": "off"}'``.
 
     extra_as_json
-        A dictionary that is created by ``json.loads(self.extra)``. So in the
-        example above, ``photons_app.extra_as_json`` will be a python
+        A Python dictionary created from ``json.loads(self.extra)``. Using the
+        example above, ``photons_app.extra_as_json`` is the Python
         dictionary ``{"power": "off"}``.
 
     final_future
         A future that is cancelled when the application needs to shutdown.
 
     cleaners
-        An array you can add async functions to, that will be called when
-        Photons is shut down.
+        An array of async functions called when Photons shuts down.
 
 ``resolve_target(name)``
-    This will return the target with name ``name``.
-    See :ref:`configuration_targets` for information on how to create your
-    own targets that you can resolve with this function.
+    This returns the target with name ``name``.
+    See :ref:`configuration_targets` for information on how to create
+    custom targets that are resolved with this function.
 
 ``reference_object(reference)``
-    This takes in the given :ref:`reference <cli_references>` and returns a
-    Special reference object that can be used to discover devices. You may
-    also supply it an array of serial numbers
-    (i.e. ``["d073d5000001", "d073d5000002"]``) and it'll return an object
-    that will try and find those devices. Or you can give it an existing
-    Special reference object and it'll just give that back to you.
+    This accepts a :ref:`reference <cli_references>` or an array of serial
+    numbers e.g. ``["d073d5000001", "d073d5000002"]`` and it'll return a
+    special reference object that discovers the specified devices.
 
-    See the page on using :ref:`Special Reference <special_reference_objects>`
+    See the page on using :ref:`special reference objects <special_reference_objects>`
     for more information on using these objects.
 
 .. _collector_configuration:
@@ -64,16 +61,14 @@ photons_app
 The configuration object
 ------------------------
 
-Photons has the ability to read :ref:`configuration <configuration_root>` from
-files and the result of that is a
-`merged dictionary <https://delfick-project.readthedocs.io/en/latest/api/option_merge/index.html>`_
-That takes all the different files that were loaded and presents them as if
-you specified all the options in one file.
+Photons reads :ref:`configuration <configuration_root>` from
+files and creates a `merged dictionary <https://delfick-project.readthedocs.io/en/latest/api/option_merge/index.html>`_
+of the combined configuration from all specified files.
 
-This object also has some registered "converters" that are used to transform
-values on the object into useful objects.
+The configuration object includes several registered converters used to
+transform values on the object to make them more useful.
 
-By default you have available:
+By default, the following attributers are available:
 
 ``configuration["photons_app"]``
     This is where ``collector.photons_app`` comes from.
