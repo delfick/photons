@@ -180,6 +180,25 @@ describe "TaskHolder":
 
         assert called == [("FINISHED", 0.05), ("CANCELLED", 5), ("FINISHED", 5)]
 
+    async it "can say how many pending tasks it has":
+        called = []
+        final_future = asyncio.Future()
+
+        async def doit():
+            await asyncio.sleep(1)
+
+        async with hp.TaskHolder(final_future) as ts:
+            assert ts.pending == 0
+            t = ts.add(doit())
+            assert ts.pending == 1
+
+            def process(res):
+                called.append(ts.pending)
+
+            t.add_done_callback(process)
+            t.cancel()
+
+        assert called == [0]
 
 describe "nested_dict_retrieve":
     it "returns us the dflt if we can't find the key":

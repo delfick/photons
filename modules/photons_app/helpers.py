@@ -272,6 +272,10 @@ class TaskHolder:
         if self.ts:
             await asyncio.wait(self.ts)
 
+    @property
+    def pending(self):
+        return sum(1 for t in self.ts if not t.done())
+
 
 class ResultStreamer:
     """
