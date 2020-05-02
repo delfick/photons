@@ -898,6 +898,24 @@ describe "transfer_result":
 
         assert fut.result() == [1, 2]
 
+    async it "can run a process function", loop:
+        fut = asyncio.Future()
+        res = mock.Mock(name="res")
+
+        async def doit():
+            return res
+
+        def process(r, f):
+            assert r.result() is res
+            assert f is fut
+            assert f.result() is res
+
+        t = loop.create_task(doit())
+        t.add_done_callback(hp.transfer_result(fut, process=process))
+        await t
+
+        assert fut.result() is res
+
     describe "errors_only":
         async it "cancels fut if res is cancelled":
             fut = asyncio.Future()

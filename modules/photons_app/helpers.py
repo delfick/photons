@@ -877,7 +877,7 @@ def reporter(res):
             return True
 
 
-def transfer_result(fut, errors_only=False):
+def transfer_result(fut, errors_only=False, process=None):
     """
     Return a ``done_callback`` that transfers the result, errors or cancellation
     to the provided future.
@@ -900,6 +900,10 @@ def transfer_result(fut, errors_only=False):
         task.add_done_callback(hp.transfer_result(fut))
 
         assert (await fut) == 2
+
+    If process is provided, then when the coroutine is done, process will be
+    called with the result of the coroutine and the future that result is being
+    transferred to.
     """
 
     def transfer(res):
@@ -918,6 +922,9 @@ def transfer_result(fut, errors_only=False):
 
         if not errors_only:
             fut.set_result(res.result())
+
+        if process:
+            process(res, fut)
 
     return transfer
 
