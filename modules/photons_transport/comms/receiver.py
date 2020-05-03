@@ -65,7 +65,7 @@ class Receiver(object):
             if self.message_catcher is not NotImplemented and callable(self.message_catcher):
                 await self.message_catcher(pkt)
             else:
-                log.warning(
+                log.debug(
                     hp.lc("Received message but was no future to set", key=key, serial=pkt.serial)
                 )
             return
