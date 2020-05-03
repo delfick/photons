@@ -136,8 +136,11 @@ class ATicker:
         if set_new_every:
             self.every = every
 
+        if self.last_tick is None:
+            self.last_tick = time.time()
+
         current = self.last_tick
-        diff = every - (time.time() - self.last_tick)
+        diff = every - (time.time() - current)
 
         if diff == 0:
             self.tick_fut.reset()
