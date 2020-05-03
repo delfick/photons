@@ -62,7 +62,9 @@ class Socket(Transport):
         close_socket(transport)
 
     async def is_transport_active(self, packet, transport):
-        return getattr(transport, "_sock", None) is not None and not transport.is_closing()
+        if hasattr(transport, "_sock") and transport._sock is None:
+            return False
+        return not transport.is_closing()
 
     def make_socket_protocol(self):
         fut = hp.ResettableFuture()
