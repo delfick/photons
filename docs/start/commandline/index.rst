@@ -57,7 +57,7 @@ a simple Python script instead:
 
 .. code-block:: python
 
-    __import__("photons_core").run_cli('lan:transform -- {"power": "on"}')
+    __import__("photons_core").run('lan:transform -- {"power": "on"}')
 
 which can be run directly from the command prompt::
 

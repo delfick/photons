@@ -82,7 +82,7 @@ can do something like:
 
 
     if __name__ == "__main__":
-        __import__("photons_core").run_cli("lan:has_multizone {@:1:}")
+        __import__("photons_core").run("lan:has_multizone {@:1:}")
 
 The problem with this script is you have to wait for all the devices to return
 values before you get any results. If you want to print the information as
@@ -113,7 +113,7 @@ devices return information, you can use the :ref:`gatherer <gatherer_interface>`
 
 
     if __name__ == "__main__":
-        __import__("photons_core").run_cli("lan:has_multizone {@:1:}")
+        __import__("photons_core").run("lan:has_multizone {@:1:}")
 
 You can see the :ref:`available capabilities <available_caps>` and the
 :ref:`products  <products>` that photons knows about.

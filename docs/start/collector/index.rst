@@ -147,7 +147,7 @@ started, and then adding your configuration to the collector.
 
 
     if __name__ == "__main__":
-        __import__("photons_core").run_cli("turn_off {@:1:}")
+        __import__("photons_core").run("turn_off {@:1:}")
 
 Here, our Options has two attributes: target and message_timeout. ``target`` is
 a Target object that defaults to the lan target, and message_timeout is an

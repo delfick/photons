@@ -53,8 +53,7 @@ ChangeLog
     This also makes it easier to create a DeviceFinder special reference as it
     doesn't need a ``target`` and the Daemon only requires a ``sender``.
 
-    I have simplified creating scripts by introducing ``photons_core.run_cli``
-    and ``photons_core.run_script``:
+    I have simplified creating scripts by introducing ``photons_core.run``.
 
     .. code-block:: python
 
@@ -67,7 +66,7 @@ ChangeLog
 
         # after
         if __name__ == "__main__":
-            __import__("photons_core").run_cli("lan:my_task {@:1:}")
+            __import__("photons_core").run("lan:my_task {@:1:}")
 
     The ``collector`` now has shortcuts for resolving a string into a target
     and a string into a Special Reference.

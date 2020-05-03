@@ -304,4 +304,4 @@ async def flicker(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    __import__("photons_core").run_script("lan:flicker {@:1:}")
+    __import__("photons_core").run("lan:flicker {@:1:}")

@@ -94,7 +94,7 @@ A full list of available tasks is returned by running ``lifx help``.
         }
 
     .. note:: **Tip**: Pipe the output of the ``lifx unpack`` task through the
-    ``jq`` utility to convert the JSON into human-readable format.
+        ``jq`` utility to convert the JSON into human-readable format.
 
 ``pack``
     This task translates a dictionary of values into a LIFX binary message in

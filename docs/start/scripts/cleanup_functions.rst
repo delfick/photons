@@ -28,7 +28,7 @@ For example:
 
 
     if __name__ == "__main__":
-        __import__("photons_core").run_cli("lan:run_the_thing {@:1:}")
+        __import__("photons_core").run("lan:run_the_thing {@:1:}")
 
 This is useful if there are many items to setup as it avoids the complexity
 of nested context managers or ``try..finally`` code blocks.

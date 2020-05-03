@@ -94,4 +94,4 @@ async def tile_dice(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    __import__("photons_core").run_script("lan:tile_dice {@:1:}")
+    __import__("photons_core").run("lan:tile_dice {@:1:}")

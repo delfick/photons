@@ -67,7 +67,7 @@ Create a script that registers and runs an action:
             print(f"{pkt.serial}: {pkt.label}")
 
     if __name__ == "__main__":
-        __import__("photons_core").run_cli('lan:display_label {@:1:}')
+        __import__("photons_core").run('lan:display_label {@:1:}')
 
 The action has the same command-line options available as the ``lifx`` utility,
 including the :ref:`references <cli_references>`::
@@ -75,17 +75,17 @@ including the :ref:`references <cli_references>`::
     $ python my_script.py match:group_name=kitchen --silent
 
 
-run_cli
--------
+photons_core.run
+----------------
 
-The ``run_cli`` function takes either a formatted string of environment
-variables and ``sys.argv`` values or a list of manually specified arguments.
+The ``run`` function takes either a formatted string of environment variables
+and ``sys.argv`` values or a list of manually specified arguments.
 
 For example, this:
 
 .. code-block:: python
 
-    __import__("photons_core").run_cli("{TRANSPORT_TARGET|lan:env}:{@:1} {@:2:}")
+    __import__("photons_core").run("{TRANSPORT_TARGET|lan:env}:{@:1} {@:2:}")
 
 Is the same as this:
 
@@ -95,13 +95,21 @@ Is the same as this:
     import os
 
     target = os.environ.get("TRANSPORT_TARGET", "lan")
-    __import__("photons_core").run_cli([f"{transport}:{sys.argv[1]}"] + sys.argv[2:])
+    __import__("photons_core").run([f"{transport}:{sys.argv[1]}"] + sys.argv[2:])
 
 An environment variable is mandatory if a default is not provided:
 
 .. code-block:: python
 
-    __import__("photons_core").run_cli("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
+    __import__("photons_core").run("{TRANSPORT_TARGET:env}:{@:1} {@:2:}")
+
+By default this will start the core modules, which is likely all that'll ever
+be needed. Run can be given ``default_activate=[]`` to make Photons not load any
+modules. If there are other Photons modules in the environment, they can be
+loaded with ``default_activate=["other_module"]``. Not specifying a
+``default_activate`` is equivalent to ``default_activate=["core"]``. Finally
+if it's desirable to load all Photons modules found in the environment, then
+the special ``__all__`` module can be used.
 
 .. _an_action:
 

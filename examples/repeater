@@ -60,4 +60,4 @@ async def repeater(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    __import__("photons_core").run_script("lan:repeater {@:1:}")
+    __import__("photons_core").run("lan:repeater {@:1:}")

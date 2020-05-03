@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_core import run_script, run_cli, CommandSplitter
+from photons_core import run, CommandSplitter
 
 from photons_app.test_helpers import modified_env
 
@@ -132,73 +132,59 @@ describe "main lines":
 
         return V()
 
-    it "run_cli defaults to using sys.argv", V:
-        run_cli("command")
+    it "run defaults to using sys.argv", V:
+        run("command")
         V.CommandSplitter.assert_called_once_with({"argv": V.argv}, "command")
+        V.main.assert_called_once_with(V.split, default_activate=["core"])
+
+    it "can be given a different default_activate", V:
+        run("command", default_activate=[])
+        V.main.assert_called_once_with(V.split, default_activate=[])
+
+        V.main.reset_mock()
+        run("command", default_activate=["__all__"])
         V.main.assert_called_once_with(V.split, default_activate=["__all__"])
 
-    it "run_script defaults to using sys.argv", V:
-        run_script("command")
-        V.CommandSplitter.assert_called_once_with({"argv": V.argv}, "command")
-        V.main.assert_called_once_with(V.split, default_activate=None)
-
-    it "run_cli can skip going through the splitter", V:
-        run_cli(["one", "two"])
+    it "run can skip going through the splitter", V:
+        run(["one", "two"])
         V.CommandSplitter.assert_not_called()
-        V.main.assert_called_once_with(["one", "two"], default_activate=["__all__"])
+        V.main.assert_called_once_with(["one", "two"], default_activate=["core"])
 
-    it "run_script can skip going through the splitter", V:
-        run_cli(["one", "two"])
-        V.CommandSplitter.assert_not_called()
-        V.main.assert_called_once_with(["one", "two"], default_activate=["__all__"])
-
-    it "run_cli can be given argv", V:
-        run_cli("lan:stuff", argv=["one", "two"])
+    it "run can be given argv", V:
+        run("lan:stuff", argv=["one", "two"])
         V.CommandSplitter.assert_called_once_with(
             {"argv": ["my_script", "one", "two"]}, "lan:stuff"
         )
-        V.main.assert_called_once_with(V.split, default_activate=["__all__"])
+        V.main.assert_called_once_with(V.split, default_activate=["core"])
 
-    it "run_cli formats correctly", fake_main:
+    it "run formats correctly", fake_main:
         with modified_env(LAN_TARGET="well"):
-            run_cli(
+            run(
                 "{LAN_TARGET:env}:get_attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
             )
 
         fake_main.assert_called_once_with(
             ["well:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate=["__all__"],
-        )
-
-    it "run_script formats correctly", fake_main:
-        with modified_env(LAN_TARGET="well"):
-            run_script(
-                "{LAN_TARGET:env}:get_attr {@:1} {@:2:}",
-                argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            )
-
-        fake_main.assert_called_once_with(
-            ["well:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate=None,
+            default_activate=["core"],
         )
 
     it "can have defaults for environment", fake_main:
         with modified_env(LAN_TARGET=None):
-            run_script(
+            run(
                 "{LAN_TARGET|lan:env}:get_attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
             )
 
         fake_main.assert_called_once_with(
             ["lan:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
-            default_activate=None,
+            default_activate=["core"],
         )
 
-    it "can not format json dictionary", fake_main:
+    it "will not format json dictionary", fake_main:
         with modified_env(LAN_TARGET=None):
-            run_cli("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
+            run("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 
         fake_main.assert_called_once_with(
-            ["lan:transform", "--", '{"power": "on"}'], default_activate=["__all__"],
+            ["lan:transform", "--", '{"power": "on"}'], default_activate=["core"],
         )

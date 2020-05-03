@@ -127,16 +127,19 @@ class CommandSplitter(MergedOptionStringFormatter):
             return result or " "
 
 
-def run_script(command, *, argv=None, default_activate=None, **kwargs):
+def run(command, *, argv=None, default_activate=None, **kwargs):
     """
     Run the photons mainline with arguments as specified by the command.
 
-    This will not enable all of photons modules by default. If you want that then
-    use ``run_cli`` instead.
+    This will enable the "core" module and all it's dependencies by default. To
+    load no modules by default use ``default_activate=[]``. If you want only
+    specific modules, then use ``default_activate=["transport"]``. If you want
+    all available photons modules to be activated, use
+    ``default_activate=["__all__"]``.
 
     The command may look something like::
 
-        run_script("{TARGET|lan:env}:{@:1} {@:2:}")
+        run("{TARGET|lan:env}:{@:1} {@:2:}")
 
     Which is the same as saying:
 
@@ -157,11 +160,7 @@ def run_script(command, *, argv=None, default_activate=None, **kwargs):
     if isinstance(command, str):
         command = CommandSplitter({"argv": argv or sys.argv}, command).split()
 
+    if default_activate is None:
+        default_activate = ["core"]
+
     return main(command, default_activate=default_activate, **kwargs)
-
-
-def run_cli(command, *, argv=None, **kwargs):
-    """
-    Same as run_script but will default to activating all photons modules
-    """
-    return run_script(command, argv=argv, default_activate=["__all__"], **kwargs)
