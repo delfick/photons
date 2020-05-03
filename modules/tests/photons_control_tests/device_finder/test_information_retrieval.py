@@ -227,7 +227,7 @@ describe "Device":
             # First location was at t=4
             # We then wait until at least 64
             # 60 is at 12 rounds, and next location after that is after 5
-            assert V.t.time == 69
+            assert V.t.time >= 69
 
             assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
             await asyncio.wait([Futs.color])
@@ -240,7 +240,7 @@ describe "Device":
             # First firmware was at t=2
             # So next refresh after 102
             # So needs a full cycle after that
-            assert V.t.time == 107
+            assert V.t.time >= 107
 
             V.received(
                 LightMessages.GetColor(),
