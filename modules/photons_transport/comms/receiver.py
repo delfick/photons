@@ -65,8 +65,12 @@ class Receiver(object):
             if self.message_catcher is not NotImplemented and callable(self.message_catcher):
                 await self.message_catcher(pkt)
             else:
+                # This usually happens when Photons retries a message
+                # But gets a reply from multiple of these requests
+                # The first one back will unregister the future
+                # And so there's nothing to resolve with this newly received data
                 log.debug(
-                    hp.lc("Received message but was no future to set", key=key, serial=pkt.serial)
+                    hp.lc("Received a message that wasn't expected", key=key, serial=pkt.serial)
                 )
             return
 
