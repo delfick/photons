@@ -202,7 +202,7 @@ def lifx_main(*args, **kwargs):
     If there is no configuration, or the configuration doesn't specify addons
     then we default to activating all photons modules in the environment.
     """
-    kwargs["default_activate"] = ["core"]
+    kwargs["default_activate"] = ["__all__"]
     return main(*args, **kwargs)
 
 
