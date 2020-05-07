@@ -6,6 +6,7 @@ from bitarray import bitarray
 import binascii
 
 emptybt = bitarray("0000000000000000000000000000000000000000000000000000000000000000")
+target_cache = {}
 
 
 def look_at_target(pkt, value):
@@ -90,7 +91,12 @@ class LIFXPacket(dictobj.PacketSpec):
         target = self.target
         if target in (None, sb.NotSpecified):
             return None
-        return binascii.hexlify(target[:6]).decode()
+
+        serial = target_cache.get(target)
+        if serial is None:
+            serial = target_cache[target] = binascii.hexlify(target[:6]).decode()
+
+        return serial
 
     @property
     def represents_ack(self):

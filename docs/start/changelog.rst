@@ -5,7 +5,7 @@ ChangeLog
 
 0.3.0 - TBD
     This release is the biggest change to the programmatic interface since the
-    internal version of this library at LIFX was created nearly 4 years ago.
+    internal version of this library at LIFX was created over 4 years ago.
 
     The main change being renaming the ``afr`` object and replacing the
     ``run_with`` API.
@@ -83,6 +83,19 @@ ChangeLog
 
     And most importantly, I've rewritten the documentation from scratch to
     make it more clear and useful.
+
+    The tile animations have also been rewritten from the ground up. The
+    photons_themes and photons_tile_paint modules have been replaced with the
+    photons_canvas module. ``ApplyTheme`` is now under
+    ``photons_canvas.ApplyTheme``. The programmatic and cli interface to
+    animations is entirely different and explained in the documentation. The
+    animations are now more capable, flexible and look a bit better.
+
+    Two new gatherer plans have been introduced: ``parts`` and
+    ``parts_with_colors``. These return ``photons_canvas.points.containers.Part``
+    objects which represent a single item in a chain. Devices that don't have
+    chains (bulbs and strips) are represented as a single Part. The ``with_colors``
+    plan will also record the current state of the device in the part object.
 
 0.25.0 - 8 March 2020
     * Added photons_control.planner.PacketPlan for making a plan that sends

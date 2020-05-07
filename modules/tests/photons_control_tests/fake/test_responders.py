@@ -491,6 +491,28 @@ describe "Responders":
                         ),
                     ],
                 )
+
+                await device.assertResponse(
+                    MultiZoneMessages.GetColorZones(start_index=0, end_index=13),
+                    [
+                        MultiZoneMessages.StateMultiZone(
+                            zones_count=11, zone_index=0, colors=zones[0:8]
+                        ),
+                        MultiZoneMessages.StateMultiZone(
+                            zones_count=11, zone_index=8, colors=zones[8:10]
+                        ),
+                    ],
+                )
+
+                await device.assertResponse(
+                    MultiZoneMessages.GetColorZones(start_index=0, end_index=0),
+                    [
+                        MultiZoneMessages.StateZone(
+                            zones_count=100, zone_index=0, **zones[0].as_dict()
+                        )
+                    ],
+                )
+
                 await device.assertResponse(
                     MultiZoneMessages.SetColorZones(
                         start_index=7,

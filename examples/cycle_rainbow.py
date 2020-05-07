@@ -31,7 +31,7 @@ async def doit(collector):
     color_msgs = [
         ColourParser.msg(
             name,
-            overrides={"res_required": False, "duration": spread, "brightness": args.brightness,},
+            overrides={"res_required": False, "duration": spread, "brightness": args.brightness},
         )
         for name in color_names
     ]

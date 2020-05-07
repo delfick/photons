@@ -105,7 +105,7 @@ def make_hsbk(specifier):
         "hue": h or 0,
         "saturation": s or 0,
         "brightness": b if b is not None else 1,
-        "kelvin": k if k is not None else 3500,
+        "kelvin": int(k) if k is not None else 3500,
     }
 
 

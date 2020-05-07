@@ -12,6 +12,7 @@ import os
 
 wanted = [
     "control",
+    "canvas",
     "themes",
     "tile_paint",
     "transport",

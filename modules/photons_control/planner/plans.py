@@ -1,13 +1,17 @@
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_canvas.orientation import nearest_orientation, Orientation
+from photons_canvas.points import containers as cont
 from photons_messages.fields import Tile, Color
 from photons_products import Products, Zones
 
 from delfick_project.norms import sb, dictobj
 from collections import defaultdict
 from functools import partial
+from lru import LRU
 import random
+import struct
 
 plan_by_key = {}
 
@@ -436,6 +440,9 @@ class ColorsPlan(Plan):
     Where ``<hsbk>`` is a :ref:`photons_messages.fields.color` object.
     """
 
+    HSBKCache = LRU(3000)
+    colors_struct = struct.Struct("<" + "H" * 64 * 4)
+
     default_refresh = 1
 
     @property
@@ -482,6 +489,123 @@ class ColorsPlan(Plan):
 
         async def info(self):
             return [colors for _, colors in sorted(self.result)]
+
+
+@a_plan("parts")
+class PartsPlan(Plan):
+    """
+    Return a list of photons_canvas Part objects for this device.
+    """
+
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan()}
+
+    class Instance(Plan.Instance):
+        @property
+        def zones(self):
+            return self.deps["c"]["cap"].zones
+
+        @property
+        def messages(self):
+            if self.zones is Zones.MATRIX:
+                return [TileMessages.GetDeviceChain()]
+            elif self.zones is Zones.LINEAR:
+                return [MultiZoneMessages.GetColorZones(start_index=0, end_index=0)]
+            return []
+
+        def process(self, pkt):
+            if self.zones is Zones.SINGLE:
+                item = self.tile_for_single()
+                self.chain = [item]
+                self.orientations = {0: Orientation.RightSideUp}
+                return True
+
+            if pkt | MultiZoneMessages.StateZone:
+                item = self.tile_for_single(pkt.zones_count)
+                self.chain = [item]
+                self.orientations = {0: Orientation.RightSideUp}
+                return True
+
+            if pkt | TileMessages.StateDeviceChain:
+                self.chain = []
+                amount = pkt.tile_devices_count - pkt.start_index
+                for tile in pkt.tile_devices[:amount]:
+                    self.chain.append(tile)
+
+                self.orientations = [
+                    nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
+                    for tile in self.chain
+                ]
+
+                return True
+
+        def tile_for_single(self, width=1):
+            cap = self.deps["c"]["cap"]
+            firmware = self.deps["c"]["firmware"]
+
+            return Tile.empty_normalise(
+                accel_meas_x=0,
+                accel_meas_y=0,
+                accel_meas_z=0,
+                user_x=0,
+                user_y=0,
+                width=width,
+                height=1,
+                device_version_vendor=cap.product.vendor.vid,
+                device_version_product=cap.product.pid,
+                device_version_version=0,
+                firmware_build=firmware.build,
+                firmware_version_minor=firmware.version_minor,
+                firmware_version_major=firmware.version_major,
+            )
+
+        async def info(self):
+            device = cont.Device(self.serial, self.deps["c"]["cap"])
+            parts = []
+
+            for i, t in enumerate(self.chain):
+                parts.append(
+                    cont.Part(
+                        t.user_x, t.user_y, t.width, t.height, i, self.orientations[i], device,
+                    )
+                )
+
+            return parts
+
+
+@a_plan("parts_and_colors")
+class PartsAndColorsPlan(Plan):
+    """
+    Return a list of photons_canvas Part objects for this device.
+
+    Note that each part will have ``original_colors`` set to the current colors
+    on the device.
+    """
+
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"parts": PartsPlan(), "colors": ColorsPlan()}
+
+    class Instance(Plan.Instance):
+        def process(self, pkt):
+            return True
+
+        async def info(self):
+            colors = [
+                [(color.hue, color.saturation, color.brightness, color.kelvin) for color in cs]
+                for cs in self.deps["colors"]
+            ]
+
+            for i, p in enumerate(self.deps["parts"]):
+                p.original_colors = colors[i]
+                p.real_part.original_colors = colors[i]
+
+            return self.deps["parts"]
 
 
 @a_plan("chain")

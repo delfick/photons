@@ -31,8 +31,8 @@ class TileChild(dictobj.Spec):
     accel_meas_x = dictobj.Field(sb.integer_spec, default=0)
     accel_meas_y = dictobj.Field(sb.integer_spec, default=0)
     accel_meas_z = dictobj.Field(sb.integer_spec, default=0)
-    user_x = dictobj.Field(sb.integer_spec, default=0)
-    user_y = dictobj.Field(sb.integer_spec, default=0)
+    user_x = dictobj.Field(sb.float_spec, default=0)
+    user_y = dictobj.Field(sb.float_spec, default=0)
     width = dictobj.Field(sb.integer_spec, default=8)
     height = dictobj.Field(sb.integer_spec, default=8)
     device_version_vendor = dictobj.Field(sb.integer_spec, default=1)
@@ -182,7 +182,7 @@ class MatrixResponder(Responder):
         elif pkt | TileMessages.Set64:
             replies = list(self.make_state_64s(device, pkt))
 
-            for i in range(pkt.tile_index, pkt.length):
+            for i in range(pkt.tile_index, pkt.tile_index + pkt.length):
                 if i < len(device.attrs.chain):
                     chain, colors = device.attrs.chain[i]
                     colors.clear()
@@ -244,11 +244,14 @@ class ZonesResponder(Responder):
             colors=[z.as_dict() for z in device.attrs.zones],
         )
 
-    def multizone_responses(self, device):
+    def multizone_responses(self, device, start_index=0, end_index=255):
         buf = []
         bufs = []
 
         for i, zone in enumerate(device.attrs.zones):
+            if i < start_index or i > end_index:
+                continue
+
             if len(buf) == 8:
                 bufs.append(buf)
                 buf = []
@@ -259,6 +262,12 @@ class ZonesResponder(Responder):
             bufs.append(buf)
 
         for buf in bufs:
+            if len(buf) == 1:
+                yield MultiZoneMessages.StateZone(
+                    zones_count=len(device.attrs.zones), zone_index=buf[0][0], **buf[0][1].as_dict()
+                )
+                continue
+
             yield MultiZoneMessages.StateMultiZone(
                 zones_count=len(device.attrs.zones),
                 zone_index=buf[0][0],
@@ -267,13 +276,6 @@ class ZonesResponder(Responder):
 
     def set_zone(self, device, index, hue, saturation, brightness, kelvin):
         if index >= len(device.attrs.zones):
-            log.warning(
-                hp.lc(
-                    "Setting zone outside range of the device",
-                    number_zones=len(device.attrs.zones),
-                    want=index,
-                )
-            )
             return
 
         device.attrs.zones[index] = Color(hue, saturation, brightness, kelvin)
@@ -290,12 +292,7 @@ class ZonesResponder(Responder):
             yield self.effect_response(device)
 
         elif pkt | MultiZoneMessages.GetColorZones:
-            if pkt.start_index != 0 or pkt.end_index != 255:
-                raise PhotonsAppError(
-                    "Fake device only supports getting all color zones", got=pkt.payload
-                )
-
-            for r in self.multizone_responses(device):
+            for r in self.multizone_responses(device, pkt.start_index, pkt.end_index):
                 yield r
         elif pkt | MultiZoneMessages.SetColorZones:
             res = []

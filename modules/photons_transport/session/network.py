@@ -67,7 +67,7 @@ class NetworkSession(Communication):
         discovery_options = self.transport_target.discovery_options
 
         if discovery_options.has_hardcoded_discovery:
-            log.info("Using hard coded discovery information")
+            log.debug("Using hard coded discovery information")
             return await discovery_options.discover(self.add_service)
 
         get_service = DiscoveryMessages.GetService(

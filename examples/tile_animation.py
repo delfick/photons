@@ -1,121 +1,171 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_tile_paint.animation import Animation, Finish
-from photons_tile_paint.options import AnimationOptions
-from photons_themes.theme import ThemeColor as Color
-from photons_tile_paint.addon import Animator
-from photons_themes.canvas import Canvas
+from photons_canvas.animations import Animation, Finish, AnimationRunner, options
+from photons_canvas import point_helpers as php
 
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
 
 from delfick_project.logging import setup_logging
-import asyncio
+from delfick_project.norms import dictobj, sb
 import logging
 import random
 
 log = logging.getLogger("tile_animation")
 
 
-class Options(AnimationOptions):
-    pass
+class Options(dictobj.Spec):
+    color = dictobj.Field(options.color_range_spec("rainbow"))
+    min_dots_per_tick = dictobj.Field(sb.integer_spec, default=20)
 
 
 class State:
-    def __init__(self, coords):
-        self.color = Color(random.randrange(0, 360), 1, 1, 3500)
-
-        self.wait = 0
-        self.filled = {}
+    def __init__(self, options):
+        self.color = options.color.color
         self.remaining = {}
+        self.min_per_tick = options.min_dots_per_tick
+        if self.min_per_tick <= 0:
+            self.min_per_tick = 1
 
-        for (left, top), (width, height) in coords:
-            for i in range(left, left + width):
-                for j in range(top, top - height, -1):
-                    self.remaining[(i, j)] = True
+    def add_parts(self, parts):
+        for part in parts:
+            for point in part.points:
+                self.remaining[point] = True
 
-    def progress(self):
-        next_selection = random.sample(list(self.remaining), k=min(len(self.remaining), 10))
+    @property
+    def layer(self):
+        next_selection = random.sample(
+            list(self.remaining), k=min(len(self.remaining), self.min_per_tick)
+        )
 
-        for point in next_selection:
-            self.filled[point] = True
-            del self.remaining[point]
+        def layer(point, canvas):
+            if not self.remaining:
+                return php.Color.ZERO
+
+            if point in next_selection:
+                del self.remaining[point]
+                return self.color
+            else:
+                return canvas[point]
+
+        return layer
 
 
 class Animation(Animation):
+    coords_straight = True
+
     def setup(self):
         """This method can be used to do any extra setup for all tiles under the animation"""
 
-    def next_state(self, prev_state, coords):
+    async def process_event(self, event):
         """
-        This is called for each tile set every time we refresh the light
+        This is called for each event related to the running of the animation
 
-        It takes in the previous state and the coords for the tiles
-        we return the state that's passed in the next time this is called
-        which is used in the make_canvas method
+        It takes in and event object which has a number of properties on it
+
+        value
+            A value associated with the event
+
+        canvas
+            The current canvas object used to paint the tiles with
+
+        animation
+            The current animation object
+
+        state
+            The current state associated with your animation. You can set a new
+            state by using ``event.state = new_state``. This new_state will be
+            the event.state for the next event
+
+        is_tick
+            Is this event a TICK event. This is determined by the animation's
+            ``every`` property which is the number of seconds between creating
+            a new canvas to paint on the devices. It defaults to 0.075 seconds.
+
+            This event is special and the only one where the return value of
+            this function is used. If you want a new canvas to be painted onto
+            the devices, you return a Canvas object. Events after this will
+            have the last Canvas that was returned. If you don't want new
+            values to be painted then return None from this event
+
+            This event will only be used if there are one or more devices used
+            by this animation.
+
+        is_error
+            For when some error was encountered. The ``value`` is the exception
+            that was caught.
+
+        is_end
+            When the animation has ended
+
+        is_start
+            When the animation has started
+
+        is_user_event
+            It's possible to create events yourself and this event happens
+            when those are created. It's ``value`` is the event you created.
+
+        is_new_device
+            When a device has been added to the animation. The ``value`` is
+            the parts associated with that device.
+
+        is_sent_messagse
+            When the animation sends messages to the devices. The ``value`` for
+            this event are the Set64 messages that were sent
         """
-        state = prev_state
-        if state is None:
-            state = State(coords)
+        if event.state is None:
+            event.state = State(self.options)
 
-        state.progress()
+        if event.is_new_device:
+            event.state.add_parts(event.value)
 
-        if not state.remaining:
-            self.acks = True
-            state.wait += 1
+        elif event.is_tick:
+            if not event.state.remaining:
+                if event.canvas.is_parts(brightness=0):
+                    raise Finish("Transition complete")
 
-        if state.wait == 2:
-            self.every = 1
-            self.duration = 1
+                self.every = 1
+                self.duration = 1
 
-        if state.wait == 3:
-            raise Finish("Transition complete")
-
-        return state
-
-    def make_canvas(self, state, coords):
-        """
-        This is called for each tile set every time we want to refresh the state
-        photons handles turning the points on the canvas into light on the tiles
-        """
-        canvas = Canvas()
-
-        color = state.color
-        if state.wait > 1:
-            color = Color(0, 0, 0, 3500)
-
-        for point in state.filled:
-            canvas[point] = color
-
-        return canvas
+            return event.state.layer
 
 
 async def doit(collector):
     # Get the object that can talk to the devices over the lan
-    lan_target = collector.resolve_target("lan")
+    lan_target = collector.configuration["target_register"].resolve("lan")
 
     # reference can be a single d073d5000001 string representing one device
     # Or a list of strings specifying multiple devices
     # Or a special reference like we have below
-    # More information on special references can be found at https://delfick.github.io/photons-core/photons_app/special.html#photons-app-special
+    # More information on special references can be found at
+    # https://delfick.github.io/photons-core/photons_app/special.html#photons-app-special
     reference = FoundSerials()
 
-    # Create the animation from our classes defined above
-    animation = Animator(Animation, Options, "Example animation")
+    # Options for our animations
+    # The short form used here is a list of animations to run
+    # We are saying only animation to run.
+    # We provide the Animation class and the Options class associated with that animation
+    # The last argument is options to create the Options object with, here we
+    # we have no non default options.
+    run_options = {"animations": [[(Animation, Options), None]], "animation_limit": 1}
 
-    # final_future is used for cleanup purposes
-    final_future = asyncio.Future()
+    def error(e):
+        log.error(e)
 
-    # Options for our animation
-    # Here we say start the animation with whatever is currently on the tiles
-    # The options has these two options by default https://github.com/delfick/photons-core/blob/master/photons_tile_paint/options.py#L32
-    # See existing animations for an example of adding options, like https://github.com/delfick/photons-core/blob/master/photons_tile_paint/dice.py#L24
-    options = {"background": {"type": "current"}}
+    # And now we run the animation using an AnimationRunner
+    photons_app = collector.configuration["photons_app"]
 
     try:
-        # Run the animation
-        async with lan_target.session() as sender:
-            await animation.animate(lan_target, sender, final_future, reference, options)
+        with photons_app.using_graceful_future() as final_future:
+            async with lan_target.session() as sender:
+                await AnimationRunner(
+                    sender,
+                    reference,
+                    run_options,
+                    final_future=final_future,
+                    message_timeout=1,
+                    error_catcher=error,
+                ).run()
     except Finish:
         pass
 

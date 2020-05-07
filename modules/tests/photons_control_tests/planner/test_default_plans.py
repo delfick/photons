@@ -16,7 +16,10 @@ from photons_messages import (
     Direction,
 )
 from photons_control.orientation import Orientation, reorient
+from photons_canvas.points import containers as cont
 from photons_transport.fake import FakeDevice
+from photons_canvas import orientation as co
+from photons_messages.fields import Color
 from photons_products import Products
 
 from unittest import mock
@@ -493,6 +496,201 @@ describe "Default Plans":
 
                 device.compare_received(expected[device])
 
+    describe "PartsPlan":
+        async it "works for a bulb", runner:
+            got = await self.gather(runner, [light2.serial], "parts")
+            info = got[light2.serial][1]["parts"]
+
+            assert len(info) == 1
+            part = info[0]
+
+            assert part is not part.real_part
+            for p in (part, part.real_part):
+                assert isinstance(p, cont.Part)
+
+                assert p.part_number == 0
+                assert p.device.serial == light2.serial
+                assert p.device.cap == chp.ProductResponder.capability(light2)
+
+                assert p.orientation is co.Orientation.RightSideUp
+                assert p.bounds == ((0, 1), (0, -1), (1, 1))
+
+                assert p.original_colors is None
+
+            with_colors = await self.gather(runner, [light2.serial], "parts_and_colors")
+            info = with_colors[light2.serial][1]["parts_and_colors"]
+
+            assert len(info) == 1
+            pc = info[0]
+
+            c = light2.attrs.color
+            color = (c.hue, c.saturation, c.brightness, c.kelvin)
+
+            assert pc is part
+            assert pc.original_colors == [color]
+            assert pc.real_part.original_colors == [color]
+
+        async it "works for a not extended multizone", runner:
+            for device, colors in ((striplcm1, zones1), (striplcm2noextended, zones2)):
+                got = await self.gather(runner, [device.serial], "parts")
+                info = got[device.serial][1]["parts"]
+
+                assert len(info) == 1
+                part = info[0]
+
+                assert part is not part.real_part
+                for p in (part, part.real_part):
+                    assert isinstance(p, cont.Part)
+
+                    assert p.part_number == 0
+                    assert p.device.serial == device.serial
+                    assert p.device.cap == chp.ProductResponder.capability(device)
+                    assert p.device.cap.has_multizone
+                    assert not p.device.cap.has_extended_multizone
+
+                    assert p.orientation is co.Orientation.RightSideUp
+                    assert p.bounds == (
+                        (0, len(device.attrs.zones)),
+                        (0, -1),
+                        (len(device.attrs.zones), 1),
+                    )
+
+                    assert p.original_colors is None
+
+                with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+                info = with_colors[device.serial][1]["parts_and_colors"]
+
+                assert len(info) == 1
+                pc = info[0]
+
+                colors = [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors]
+
+                assert pc is part
+                assert pc.original_colors == colors
+                assert pc.real_part.original_colors == colors
+
+        async it "works for an extended multizone", runner:
+            device = striplcm2extended
+            colors = zones3
+
+            got = await self.gather(runner, [device.serial], "parts")
+            info = got[device.serial][1]["parts"]
+
+            assert len(info) == 1
+            part = info[0]
+
+            assert part is not part.real_part
+            for p in (part, part.real_part):
+                assert isinstance(p, cont.Part)
+
+                assert p.part_number == 0
+                assert p.device.serial == device.serial
+                assert p.device.cap == chp.ProductResponder.capability(device)
+                assert p.device.cap.has_multizone
+                assert p.device.cap.has_extended_multizone
+
+                assert p.orientation is co.Orientation.RightSideUp
+                assert p.bounds == (
+                    (0, len(device.attrs.zones)),
+                    (0, -1),
+                    (len(device.attrs.zones), 1),
+                )
+
+                assert p.original_colors is None
+
+            with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+            info = with_colors[device.serial][1]["parts_and_colors"]
+
+            assert len(info) == 1
+            pc = info[0]
+
+            colors = [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors]
+            assert pc is part
+            assert pc.original_colors == colors
+            assert pc.real_part.original_colors == colors
+
+        async it "works for a tile set", runner:
+            light1.attrs.chain = []
+            await chp.MatrixResponder().start(light1)
+
+            device = light1
+
+            colors1 = [Color(i, 1, 1, 3500) for i in range(64)]
+            colors2 = [Color(i + 100, 0, 0.4, 8000) for i in range(64)]
+            colors3 = [Color(i + 200, 0.1, 0.9, 7000) for i in range(64)]
+
+            chain = device.attrs.chain
+
+            chain[0][0].accel_meas_x = -10
+            chain[0][0].accel_meas_y = 1
+            chain[0][0].accel_meas_z = 5
+            chain[0][0].user_x = 3
+            chain[0][0].user_y = 5
+
+            chain[2][0].accel_meas_x = 1
+            chain[2][0].accel_meas_y = 5
+            chain[2][0].accel_meas_z = 10
+            chain[2][0].user_x = 10
+            chain[2][0].user_y = 25
+
+            device.attrs.chain = [
+                (chain[0][0], co.reorient(colors1, co.Orientation.RotatedLeft)),
+                (chain[1][0], colors2),
+                (chain[2][0], co.reorient(colors3, co.Orientation.FaceDown)),
+            ]
+
+            got = await self.gather(runner, [device.serial], "parts")
+            info = got[device.serial][1]["parts"]
+
+            assert len(info) == 3
+
+            boundses = [
+                ((24, 32), (40, 32), (8, 8)),
+                ((0, 8), (0, -8), (8, 8)),
+                ((80, 88), (200, 192), (8, 8)),
+            ]
+
+            orientations = [
+                co.Orientation.RotatedLeft,
+                co.Orientation.RightSideUp,
+                co.Orientation.FaceDown,
+            ]
+
+            for i, (part, orientation, bounds) in enumerate(zip(info, orientations, boundses)):
+                assert part is not part.real_part
+                for p in (part, part.real_part):
+                    assert isinstance(p, cont.Part)
+
+                    assert p.part_number == i
+                    assert p.device.serial == device.serial
+                    assert p.device.cap == chp.ProductResponder.capability(device)
+                    assert p.device.cap.has_chain
+
+                    assert p.orientation is orientation
+                    assert p.bounds == bounds
+
+                    assert p.original_colors is None
+
+            with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+            infoc = with_colors[device.serial][1]["parts_and_colors"]
+
+            for i, (pc, colors) in enumerate(zip(infoc, (colors1, colors2, colors3))):
+                colors = [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors]
+
+                assert pc is info[i]
+
+                if pc.original_colors != colors:
+                    print(f"Part {i}")
+                    for j, (g, w) in enumerate(zip(pc.original_colors, colors)):
+                        if g != w:
+                            print(f"\tColor {j}")
+                            print("\t\t", g)
+                            print("\t\t", w)
+                            print()
+
+                assert pc.original_colors == colors
+                assert pc.real_part.original_colors == colors
+
     describe "ChainPlan":
 
         async it "gets chain for a bulb", runner:
@@ -615,6 +813,9 @@ describe "Default Plans":
             assert info["coords_and_sizes"] == [((0.0, 0.0), (info["width"], 1))]
 
         async it "gets chain for tiles", runner:
+            light1.attrs.chain = []
+            await chp.MatrixResponder().start(light1)
+
             chain = light1.attrs.chain
 
             chain[1][0].accel_meas_x = -10

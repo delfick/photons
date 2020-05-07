@@ -1,15 +1,11 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
+
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
-from photons_tile_paint.animation import Animation, TileStateGetter
-from photons_themes.coords import user_coords_to_pixel_coords
+from photons_canvas.animations import AnimationRunner, Animation
 from photons_messages import LightMessages, DeviceMessages
 from photons_control.script import FromGeneratorPerSerial
-from photons_tile_paint.options import AnimationOptions
-from photons_themes.theme import ThemeColor as Color
-from photons_tile_paint.addon import Animator
-from photons_themes.canvas import Canvas
 
 from delfick_project.norms import sb, dictobj, Meta, BadSpecValue
 import logging
@@ -30,13 +26,13 @@ class between_0_and_1(sb.Spec):
         return val
 
 
-def get_random_brightness(original_brightness, max_drop):
+def next_brightness(max_drop):
     """
     Return a new brightness between 0 and 1 that is the original brightness
     minus a percentage that is never more than max_drop
     """
     percentage = 1 - (random.randrange(0, max_drop * 100) / 100)
-    new_brightness = original_brightness * percentage
+    new_brightness = 1 * percentage
     if new_brightness < 0:
         return 0
     elif new_brightness > 1:
@@ -45,38 +41,14 @@ def get_random_brightness(original_brightness, max_drop):
         return new_brightness
 
 
-class FlickerAnimationOptions(AnimationOptions):
+class Options(dictobj.Spec):
     gap = dictobj.Field(sb.float_spec, wrapper=sb.required)
-    colors = dictobj.Field(sb.listof(sb.any_spec()), wrapper=sb.required)
-    coords_and_sizes = dictobj.Field(sb.listof(sb.any_spec()), wrapper=sb.required)
-    original_brightness = dictobj.Field(sb.float_spec, wrapper=sb.required)
+    candle_color = dictobj.Field(sb.boolean, default=False)
     max_brightness_drop = dictobj.Field(sb.float_spec, wrapper=sb.required)
 
-    @hp.memoized_property
-    def original_canvas(self):
-        info = TileStateGetter.Info(
-            user_coords_to_pixel_coords(self.coords_and_sizes), Color(0, 0, 0, 0)
-        )
-        info.colors = self.colors
-        return info.canvas
-
+    @property
     def next_brightness(self):
-        return get_random_brightness(self.original_brightness, self.max_brightness_drop)
-
-    def next_canvas(self, last_canvas):
-        if last_canvas is None:
-            last_canvas = self.original_canvas
-
-        next_brightness = self.next_brightness()
-
-        canvas = Canvas()
-        for pos, color in last_canvas:
-            if color.brightness > 0:
-                c = color.clone()
-                c.brightness = next_brightness
-                canvas[pos] = c
-
-        return canvas
+        return next_brightness(self.max_brightness_drop)
 
 
 class FlickerAnimation(Animation):
@@ -84,15 +56,36 @@ class FlickerAnimation(Animation):
         self.every = self.options.gap
         self.duration = self.options.gap
 
-    def next_state(self, prev_state, coords):
-        return self.options.next_canvas(prev_state)
+    async def process_event(self, event):
+        if event.is_tick:
+            return self.layer
 
-    def make_canvas(self, state, coords):
-        return state
+    @property
+    def layer(self):
+        next_brightness = self.options.next_brightness
+
+        def layer(point, canvas):
+            c = canvas[point]
+            if c is None or c[2] < 0.01:
+                return None
+
+            overrides = {"brightness": next_brightness}
+            if self.options.candle_color:
+                overrides["hue"] = 0
+                overrides["saturation"] = 0
+                overrides["kelvin"] = 2500
+            return canvas.override(point, **overrides)
+
+        return layer
 
 
 def Flicker(
-    gap=0.25, candle_color=False, max_brightness_drop=0.35, power_on=True, start_brightness=None
+    gap=0.5,
+    candle_color=False,
+    max_brightness_drop=0.35,
+    power_on=True,
+    start_brightness=None,
+    animation_final_future=None,
 ):
     async def gen(reference, sender, **kwargs):
         """
@@ -126,34 +119,17 @@ def Flicker(
         # Find the original brightness
         # And whether light is on or off
         # Devices that are off will not have the effect run against them
-        plans = sender.make_plans("capability", "power", "colors", "chain")
+        plans = sender.make_plans("capability", "power")
         gathered = await sender.gatherer.gather_all(
             plans, reference, **{**kwargs, "message_timeout": 5}
         )
 
-        chain = None
-        colors = None
         product = None
-        original_brightness = 1
 
         if reference not in gathered:
             log.warning(hp.lc("Failed to gather original values from device", serial=reference))
         else:
             info = gathered[reference][1]
-
-            if "chain" in info:
-                chain = info["chain"]
-
-            if "colors" in info:
-                bs = []
-                for item in info["colors"]:
-                    bs.extend([c.brightness for c in item if c.brightness > 0])
-
-                colors = list(enumerate(info["colors"]))
-                if not bs:
-                    original_brightness = 0
-                else:
-                    original_brightness = sum(bs) / len(bs)
 
             if "power" in info and not info["power"]["on"]:
                 log.info(hp.lc("Device is turned off, will ignore", serial=reference))
@@ -167,35 +143,41 @@ def Flicker(
         if start_delay > 0:
             await asyncio.sleep(start_delay)
 
+        if product and product.cap.has_matrix:
+            options = {
+                "gap": gap,
+                "candle_color": candle_color,
+                "max_brightness_drop": max_brightness_drop,
+            }
+
+            log.info(
+                hp.lc(
+                    "Starting flicker tile animation for device",
+                    serial=reference,
+                    product=product.name,
+                )
+            )
+
+            await AnimationRunner(
+                sender,
+                reference,
+                run_options=[[(FlickerAnimation, Options), options]],
+                final_future=animation_final_future or sender.stop_fut,
+                **{**kwargs, "message_timeout": 5},
+            ).run()
+
+            return
+
         log.info(
             hp.lc(
                 "Starting flicker for device",
                 serial=reference,
                 product=product.name if product else product,
-                original_brightness=float(f"{original_brightness:0.02f}"),
             )
         )
 
-        if chain and colors and product and product.cap.has_matrix and not candle_color:
-            animation = Animator(FlickerAnimation, FlickerAnimationOptions, "flicker animation")
-            options = {
-                "gap": gap,
-                "colors": colors,
-                "coords_and_sizes": chain["coords_and_sizes"],
-                "original_brightness": original_brightness,
-                "max_brightness_drop": max_brightness_drop,
-            }
-            await animation.animate(
-                sender.transport_target,
-                sender,
-                sender.transport_target.final_future,
-                reference,
-                options,
-            )
-            return
-
         while True:
-            new_brightness = get_random_brightness(original_brightness, max_brightness_drop)
+            new_brightness = next_brightness(max_brightness_drop)
 
             if candle_color:
                 msg = LightMessages.SetColor(
@@ -287,8 +269,18 @@ async def flicker(collector, target, reference, **kwargs):
         """Error catcher that just debug prints errors"""
         log.debug(hp.lc("Failed to send a message", error=error))
 
-    # Start our Flicker script against the devices specified on the command line.
-    await target.send(Flicker(**kwargs), reference, message_timeout=kwargs["gap"], error_catcher=e)
+    with collector.photons_app.using_graceful_future() as final_future:
+        async with hp.TaskHolder(final_future) as ts:
+            ts.add_task(
+                asyncio.ensure_future(
+                    target.send(
+                        Flicker(animation_final_future=final_future, **kwargs),
+                        reference,
+                        message_timeout=kwargs["gap"],
+                        error_catcher=e,
+                    )
+                )
+            )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,87 @@
+#!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
+
+from photons_app.actions import an_action
+
+from photons_canvas import Canvas, point_helpers as php
+from photons_control.script import FromGenerator
+from photons_control.colour import make_hsbk
+from photons_messages import TileMessages
+
+from collections import defaultdict
+import logging
+import sys
+
+log = logging.getLogger("positions")
+
+
+@an_action(needs_target=True, special_reference=True)
+async def print_tile_positions(collector, target, reference, **kwargs):
+    """
+    Print ASCII art of the where your tiles are
+    """
+
+    def e(error):
+        log.error(error)
+
+    chars = {}
+    canvas = Canvas()
+    letters = list("abcdefghijklmnopqrstuvwxyz")
+
+    async def gen(reference, sender, **kwargs):
+        plans = sender.make_plans("parts")
+
+        follower = 0
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+            for part in info:
+                if not part.device.cap.has_chain:
+                    continue
+
+                colors = [
+                    make_hsbk("red brightness:0.1"),
+                    make_hsbk("brightness:0"),
+                    make_hsbk("brightness:0"),
+                ] * follower
+
+                follower += 1
+
+                while len(colors) < 64:
+                    colors.append(make_hsbk("brightness:0"))
+
+                chars[part] = letters.pop(0)
+                canvas.add_parts(part)
+                for msg in part.msgs(
+                    [(c["hue"], c["saturation"], c["brightness"], c["kelvin"]) for c in colors],
+                    acks=True,
+                ):
+                    yield msg
+
+    await target.send(FromGenerator(gen), reference, error_catcher=e)
+
+    skip = {}
+    for row in php.Points.rows(canvas.bounds):
+        for point in row:
+            parts = sorted(canvas.point_to_parts[point])
+            if not parts:
+                sys.stdout.write("  ")
+                continue
+
+            part = parts[0]
+            ch = chars[part]
+
+            if part not in skip:
+                ps = f"{str(part.user_x):6s},{str(part.user_y):6s}"
+                skip[part] = (point[1] - 4, ps)
+
+            r, ps = skip[part]
+            if point[1] == r:
+                if ps:
+                    sys.stdout.write(f"{ch}{ps}{ch} ")
+                    skip[part] = (r, "")
+            else:
+                sys.stdout.write(f"{ch} ")
+
+        sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    __import__("photons_core").run("lan:print_tile_positions {@:1:}")

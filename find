@@ -17,5 +17,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         --ignore-directory docs/gh-pages \
         --ignore-directory docs/lifx_photons_docs.egg-info \
         --ignore-directory examples/.lifx \
-        --ignore-directory generate_photons_messages/.generate_photons_messages
+        --ignore-directory generate_photons_messages/.generate_photons_messages \
+        --ignore-directory apps/tile_arranger/static/node_modules \
+        --ignore-directory apps/tile_arranger/static/dist \
+        --ignore-directory apps/tile_arranger/.lifx 
 )

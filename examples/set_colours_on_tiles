@@ -2,8 +2,9 @@
 
 from photons_app.actions import an_action
 
-from photons_messages import DeviceMessages, TileMessages
 from photons_control.script import FromGenerator
+from photons_messages import DeviceMessages
+from photons_canvas import Canvas
 
 import logging
 import random
@@ -11,67 +12,42 @@ import random
 log = logging.getLogger("info")
 
 
-def make_set_64s(coords_and_sizes):
-    for index, (_, (width, height)) in enumerate(coords_and_sizes):
-        colors = []
-
-        for _ in range(width):
-            for _ in range(height):
-                colors.append(
-                    {
-                        "hue": random.randint(0, 360),
-                        "saturation": 1,
-                        "brightness": 0.2,
-                        "kelvin": 3500,
-                    }
-                )
-
-        yield TileMessages.Set64(
-            x=0,
-            y=0,
-            width=width,
-            length=1,
-            duration=2,
-            colors=colors,
-            tile_index=index,
-            res_required=False,
-        )
-
-
 @an_action(needs_target=True, special_reference=True)
-async def tiles(collector, target, reference, **kwargs):
+async def set_colors(collector, target, reference, **kwargs):
     """
-    Set any tiles we find on the network to specific colors
+    Set any matrix devices we find on the network to specific colors
 
     You can specify only specific devices by giving a matcher. For example:
 
-    ``tiles d073d5000001,d073d5000002``
+    ``set_colours_on_tiles d073d5000001,d073d5000002``
 
     or
 
-    ``tiles match:group_name=kitchen``
+    ``set_colours_on_tiles match:group_name=kitchen``
     """
 
     def e(error):
         log.error(error)
 
-    async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("capability", "chain")
-        async for serial, _, info in sender.gatherer.gather_per_serial(plans, reference, **kwargs):
-            if "chain" not in info:
-                continue
+    def layer(point, canvas):
+        return (random.randint(0, 360), 1, 0.2, 3500)
 
-            if not info["capability"]["cap"].has_matrix:
-                continue
+    canvas = Canvas()
+
+    async def gen(reference, sender, **kwargs):
+        plans = sender.make_plans("parts")
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+            for part in info:
+                if not part.device.cap.has_matrix:
+                    continue
+                canvas.add_parts(part)
 
             yield DeviceMessages.SetPower(level=65535, target=serial, res_required=False)
-
-            for msg in make_set_64s(info["chain"]["coords_and_sizes"]):
-                msg.target = serial
+            for msg in canvas.msgs(layer, acks=True):
                 yield msg
 
     await target.send(FromGenerator(gen), reference, error_catcher=e)
 
 
 if __name__ == "__main__":
-    __import__("photons_core").run("lan:tiles {@:1:}")
+    __import__("photons_core").run("lan:set_colors {@:1:}")

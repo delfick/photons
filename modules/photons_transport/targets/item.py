@@ -164,7 +164,13 @@ class Item(object):
         Unless a packet is dynamically created (has a callable field)
         in which case, we just return packet as is
         """
-        return [(p, p) if p.is_dynamic else (p, p.simplify()) for p in self.parts]
+        ps = []
+        for p in self.parts:
+            if p.is_dynamic:
+                ps.append((p, p))
+            else:
+                ps.append((p, p.simplify()))
+        return ps
 
     def make_packets(self, sender, serials):
         """

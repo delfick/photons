@@ -1,20 +1,12 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 
-from photons_tile_paint.animation import (
-    coords_for_horizontal_line,
-    put_characters_on_canvas,
-    canvas_to_msgs,
-)
-from photons_themes.theme import ThemeColor as Color
+from photons_canvas import Canvas, rearrange, font, point_helpers as php
 from photons_control.script import FromGenerator
-from photons_tile_paint.font.dice import dice
 from photons_messages import DeviceMessages
-from photons_themes.canvas import Canvas
+from photons_canvas.font import dice_8
 
-from delfick_project.addons import addon_hook
 import logging
 
 log = logging.getLogger("tile_dice")
@@ -26,59 +18,43 @@ async def tile_dice(collector, target, reference, **kwargs):
     Display dice on your tiles
 
     ``tile_dice d073d5000001,d073d5000002``
-
-    You can make it ignore the orientation of the tile by saying::
-
-    ``tile_dice d073d5000001,d073d5000002 -- '{"ignore_orientation": true}'
     """
-    canvas = Canvas()
-
-    def default_color_func(i, j):
-        if j == -3:
-            return Color(0, 1, 0.4, 3500)
-        return Color(0, 0, 0, 3500)
-
-    canvas.set_default_color_func(default_color_func)
-
-    numbers = ["1", "2", "3", "4", "5"]
-    characters = [dice[n] for n in numbers]
-    color = Color(100, 1, 1, 3500)
-    put_characters_on_canvas(canvas, characters, coords_for_horizontal_line, color)
 
     def e(error):
         log.error(error)
 
-    found = []
-
     async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("chain", "capability")
-
-        async for serial, _, info in sender.gatherer.gather_per_serial(plans, reference, **kwargs):
-            if "chain" not in info:
+        plans = sender.make_plans("parts")
+        async for serial, _, info in sender.gatherer.gather_per_serial(
+            plans, reference, **kwargs
+        ):
+            parts = info["parts"]
+            if not parts:
                 continue
 
-            if not info["capability"]["cap"].has_matrix:
-                continue
+            device = parts[0].device
 
-            yield DeviceMessages.SetPower(level=65535, res_required=False, target=serial)
+            if device.cap.has_chain:
+                canvas = Canvas()
+                canvas.add_parts(*parts, zero_color=(0, 0, 0, 3500))
+                
+                canvas = rearrange.rearrange(canvas, rearrange.Straight())
+                parts = canvas.parts
 
-            found.append(serial)
-            msgs = canvas_to_msgs(
-                canvas,
-                coords_for_horizontal_line,
-                duration=1,
-                acks=True,
-                reorient=info["chain"]["reorient"],
-            )
+                characters = font.Characters(*[dice_8[n+1] for n in range(len(parts))])
+                characters_layer = characters.layer(0, 0, (0, 0, 1, 3500))
 
-            for msg in msgs:
-                msg.target = serial
-                yield msg
+                def layer(point, canvas):
+                    parts = list(canvas.point_to_parts[point])
+                    if parts:
+                        if point[1] == parts[0].bottom+1:
+                            return (0, 1, 0.2, 3500)
+                    return characters_layer(point, canvas)
+
+                yield DeviceMessages.SetPower(level=65535, target=device.serial)
+                yield list(canvas.msgs(layer, canvas))
 
     await target.send(FromGenerator(gen), reference, error_catcher=e)
-
-    if not found:
-        raise PhotonsAppError("Didn't find any tiles")
 
 
 if __name__ == "__main__":

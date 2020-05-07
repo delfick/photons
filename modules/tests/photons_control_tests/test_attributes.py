@@ -47,7 +47,15 @@ describe "make_hsbks":
             expected.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0})
             expected.append({"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 9000})
 
-        assert list(make_hsbks(colors)) == expected
+        got = list(make_hsbks(colors))
+        for i, (g, e) in enumerate(zip(got, expected)):
+            if g != e:
+                print(i)
+                print(f"\tGOT : {g}")
+                print(f"\tWANT: {e}")
+                print()
+
+        assert got == expected
 
     it "can overrides hue", colors:
         colors = list(make_hsbks(colors, overrides={"hue": 1}))
