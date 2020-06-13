@@ -425,7 +425,7 @@ class multiple_spec(sb.Spec):
         while True:
             i += 1
             v = bts[: self.per_size]
-            info = BitarraySlice("", self.typ, v, self.per_size, type(self.pkt).__name__)
+            info = BitarraySlice("", self.typ, v, self.per_size, type(self.pkt).__name__, self.pkt)
             nxt = self.spec.normalise(meta.indexed_at(i), info.unpackd)
             if kls:
                 nxt = kls.unpack(nxt)
@@ -493,7 +493,7 @@ class multiple_spec(sb.Spec):
             val = []
 
         if not isinstance(val, list):
-            raise BadSpecValue("Expected a list", meta=meta, got=type(val))
+            val = self.unpack(meta, val)
 
         number = self.number
         if len(val) > number:

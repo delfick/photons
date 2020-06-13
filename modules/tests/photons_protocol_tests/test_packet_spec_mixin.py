@@ -512,7 +512,191 @@ describe "PacketSpecMixin":
             assert clone.two == for_user
             assert called == ["pack", "unpack"]
 
+    describe "equality":
+
+        @pytest.fixture()
+        def Packets(self):
+            class G1(dictobj.PacketSpec):
+                fields = [("one", T.Bool), ("two", T.String), ("cb", T.String.allow_callable())]
+
+            class G2(dictobj.PacketSpec):
+                fields = [("typ", T.Int16.default(lambda pkt: pkt.Payload.message_type))]
+
+            class P(dictobj.PacketSpec):
+                parent_packet = True
+
+                fields = [("g1", G1), ("g2", G2), ("payload", "Payload")]
+
+                class Payload(dictobj.PacketSpec):
+                    message_type = 0
+                    fields = []
+
+            class CPayload(dictobj.PacketSpec):
+                message_type = 25
+
+                fields = [("three", T.Int16), ("four", T.Bool), ("cb2", T.Int8.allow_callable())]
+
+            class CPayload2(dictobj.PacketSpec):
+                message_type = 28
+
+                fields = [("three", T.Int16)]
+
+            class CPayload3(dictobj.PacketSpec):
+                message_type = 27
+
+                fields = [("three", T.Int16), ("four", T.Bool), ("cb2", T.Int8.allow_callable())]
+
+            class Child(P):
+                parent_packet = False
+                Payload = CPayload
+
+            Child.Meta.parent = P
+
+            class Child2(P):
+                parent_packet = False
+                Payload = CPayload2
+
+            Child2.Meta.parent = P
+
+            class Child3(P):
+                parent_packet = False
+                Payload = CPayload3
+
+            Child3.Meta.parent = P
+
+            return Child, Child2, Child3
+
+        @pytest.fixture()
+        def Packet(self, Packets):
+            return Packets[0]
+
+        @pytest.fixture()
+        def Packet2(self, Packets):
+            return Packets[1]
+
+        @pytest.fixture()
+        def Packet3(self, Packets):
+            return Packets[1]
+
+        it "can equal objects that define their own __eq__", Packet:
+            pkt = Packet()
+            assert pkt == mock.ANY
+            assert mock.ANY == pkt
+
+        it "can equal dictionaries", Packet:
+            pkt = Packet(
+                one=True, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            )
+            assert not pkt == {}
+            assert pkt == {
+                "g1": {"cb": "things", "one": True, "two": "wat"},
+                "g2": {"typ": 25},
+                "payload": {"cb2": 40, "four": False, "three": 20},
+            }
+
+            assert pkt == {
+                "g1": {"cb": "things", "one": True, "two": "wat"},
+                "g2": {"typ": 25},
+                "cb2": 40,
+                "four": False,
+                "three": 20,
+            }
+
+            assert pkt == {
+                "cb": "things",
+                "one": True,
+                "two": "wat",
+                "typ": 25,
+                "cb2": 40,
+                "four": False,
+                "three": 20,
+            }
+
+            assert not pkt == {
+                "cb": "things",
+                "one": True,
+                "two": "wrong",
+                "typ": 25,
+                "cb2": 40,
+                "four": False,
+                "three": 20,
+            }
+
+        it "can equal other packets", Packet, Packet2, Packet3:
+            pkt1 = Packet(
+                one=True, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            )
+
+            pkt1simple = Packet(
+                one=True, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            ).simplify()
+
+            pkt2 = Packet(
+                one=True, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            )
+
+            assert pkt1 == pkt2
+            assert pkt1 == pkt1simple
+            assert pkt1simple == pkt1
+            assert pkt1simple == pkt2.simplify()
+
+            assert pkt1 == pkt2.pack()
+            assert pkt1 == pkt2.pack().tobytes()
+            assert pkt1simple == pkt2.pack()
+            assert pkt1simple == pkt2.pack().tobytes()
+
+            pkt3 = Packet(
+                one=False, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            )
+            pkt3simple = pkt3.simplify()
+
+            assert pkt1 != pkt3
+            assert pkt1 != pkt3simple
+            assert pkt3simple != pkt3
+            assert pkt1simple != pkt3simple
+
+            assert pkt1 != pkt3.pack()
+            assert pkt1 != pkt3.pack().tobytes()
+            assert pkt1simple != pkt3.pack()
+            assert pkt1simple != pkt3.pack().tobytes()
+
+            different1 = Packet2(one=True, two="wat", cb="things", three=20)
+
+            different2 = Packet3(
+                one=True, two="wat", four=False, three=20, cb2=lambda pkt, serial: 40, cb="things"
+            )
+
+            assert different1 != pkt1
+            assert different1 != pkt1.pack()
+
+            assert different2 != pkt1
+            assert different2 != pkt1.pack()
+
+            assert different1.simplify() != pkt1
+            assert different1.simplify() != pkt1.pack()
+
+            assert different2.simplify() != pkt1.pack()
+            assert different1.simplify() != pkt1simple
+            assert different1.simplify() != pkt1simple.pack()
+            assert different2.simplify() != pkt1simple
+            assert different2.simplify() != pkt1simple.pack()
+
+            assert different1 != pkt1.pack()
+
+            assert pkt1 != different1.simplify()
+            assert pkt1 != different1.simplify().pack()
+
+            assert pkt1 != different2.simplify().tobytes()
+            assert pkt1 != different2.simplify().tobytes().pack()
+
+            assert pkt1simple != different1.simplify()
+            assert pkt1simple != different1.simplify().pack()
+
+            assert pkt1simple != different2.simplify().tobytes()
+            assert pkt1simple != different2.simplify().tobytes().pack()
+
     describe "Simplify":
+
         it "creates a parent with a packed payload and filled in fields":
             val = str(uuid.uuid1())
             cb = mock.Mock(name="cb", return_value=val)

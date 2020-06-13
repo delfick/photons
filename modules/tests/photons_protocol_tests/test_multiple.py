@@ -17,6 +17,11 @@ def ba(val):
     return b
 
 
+def ba16(val):
+    b = ba(val)
+    return b + bitarray("0" * (16 - len(b)))
+
+
 def list_of_dicts(lst):
     """
     Helper to turn a list into dictionaries
@@ -95,9 +100,9 @@ describe "The multiple modifier":
         assert thing.two == [1, 2, 3]
         assert thing.three == ["on", "two", ""]
         assert thing.four == [
-            Other(one=False, five=[ba(b"1"), ba(b"t")]),
-            Other(one=True, five=[ba(b""), ba(b"")]),
-            Other(one=False, five=[ba(b""), ba(b"")]),
+            Other(one=False, five=[ba16(b"1"), ba16(b"t")]),
+            Other(one=True, five=[ba16(b""), ba16(b"")]),
+            Other(one=False, five=[ba16(b""), ba16(b"")]),
         ]
 
         thing = Thing()
@@ -105,9 +110,9 @@ describe "The multiple modifier":
         assert thing.two == [0, 0, 0]
         assert thing.three == ["", "", ""]
         assert thing.four == [
-            Other(one=False, five=[ba(b""), ba(b"")]),
-            Other(one=False, five=[ba(b""), ba(b"")]),
-            Other(one=False, five=[ba(b""), ba(b"")]),
+            Other(one=False, five=[ba16(b""), ba16(b"")]),
+            Other(one=False, five=[ba16(b""), ba16(b"")]),
+            Other(one=False, five=[ba16(b""), ba16(b"")]),
         ]
 
     it "allows replacing items in place":

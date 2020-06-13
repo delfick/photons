@@ -61,7 +61,8 @@ describe "BitarraySlice":
         val = mock.Mock(name="val")
         size_bits = mock.Mock(name="size_bits")
         group = mock.Mock(name="group")
-        return BitarraySlice(name, typ, val, size_bits, group)
+        values = mock.Mock(name="values")
+        return BitarraySlice(name, typ, val, size_bits, group, values)
 
     it "takes in things":
         name = mock.Mock(name="name")
@@ -69,14 +70,16 @@ describe "BitarraySlice":
         val = mock.Mock(name="val")
         size_bits = mock.Mock(name="size_bits")
         group = mock.Mock(name="group")
+        values = mock.Mock(name="values")
 
-        slce = BitarraySlice(name, typ, val, size_bits, group)
+        slce = BitarraySlice(name, typ, val, size_bits, group, values)
 
         assert slce.name is name
         assert slce.typ is typ
         assert slce.val is val
         assert slce.size_bits is size_bits
         assert slce.group is group
+        assert slce.values is values
 
     it "gets fmt from typ.struct_format", slce:
         fmt = str(uuid.uuid1())
@@ -84,6 +87,7 @@ describe "BitarraySlice":
         assert slce.fmt is fmt
 
     describe "unpackd":
+
         it "returns as is if fmt is None", slce:
             bts = b"wat"
             val = bitarray(endian="little")
@@ -91,6 +95,7 @@ describe "BitarraySlice":
 
             slce.val = val
             slce.typ.struct_format = None
+            slce.typ.original_size = 1
 
             assert slce.unpackd == val
 
@@ -295,6 +300,7 @@ describe "FieldInfo":
             assert info.to_bitarray() == expected
 
     describe "struct_format":
+
         it "creates bitarray from unpacking", info:
             fmt = mock.Mock(name="fmt")
             val = mock.Mock(name="val")
@@ -303,13 +309,12 @@ describe "FieldInfo":
             expected = bitarray(endian="little")
             expected.frombytes(bts)
 
-            struct = mock.Mock(name="struct")
-            struct.pack.return_value = bts
+            pack = mock.Mock(name="pack", return_value=bts)
 
-            with mock.patch("photons_protocol.packing.struct", struct):
+            with mock.patch("photons_protocol.packing.pack", pack):
                 assert info.struct_format(fmt, val) == expected
 
-            struct.pack.assert_called_once_with(fmt, val)
+            pack.assert_called_once_with(fmt, val)
 
         it "works", info:
             info.typ = T.Int16
@@ -365,6 +370,7 @@ describe "PacketPacking":
         return V()
 
     describe "fields_in":
+
         it "yields FieldInfo objects", V:
 
             def cb(pkt, serial):
@@ -385,6 +391,7 @@ describe "PacketPacking":
             ]
 
     describe "pkt_from_bitarray":
+
         it "creates a pkt field by field", V:
 
             def cb(pkt, serial):
@@ -417,8 +424,7 @@ describe "PacketPacking":
             __setitem__ = mock.Mock(name="__setitem__", side_effect=do_set)
 
             with mock.patch.object(dictobj, "__setitem__", __setitem__):
-                with mock.patch.object(BitarraySlice, "__setitem__", original__setitem__):
-                    final, i = PacketPacking.pkt_from_bitarray(V.P, packd)
+                final, i = PacketPacking.pkt_from_bitarray(V.P, packd)
 
             assert sorted(final.actual_items()) == (
                 sorted(
