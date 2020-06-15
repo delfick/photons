@@ -3,6 +3,7 @@ from photons_transport.retry_options import RetryOptions
 from photons_transport.comms.base import Communication
 from photons_transport.transports.udp import UDP
 
+from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
 from photons_messages import DiscoveryMessages, Services
@@ -74,10 +75,15 @@ class NetworkSession(Communication):
             target=None, tagged=True, addressable=True, res_required=True, ack_required=False
         )
 
+        def error_catcher(e):
+            if isinstance(e, TimedOut):
+                return
+            log.exception(e)
+
         kwargs["no_retry"] = True
         kwargs["broadcast"] = kwargs.get("broadcast", True) or True
         kwargs["accept_found"] = True
-        kwargs["error_catcher"] = []
+        kwargs["error_catcher"] = error_catcher
 
         async for time_left, time_till_next in self._search_retry_iterator(timeout):
             kwargs["message_timeout"] = time_till_next

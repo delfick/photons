@@ -27,6 +27,12 @@ class Set64Maker:
     that photons can use to create the messages
     """
 
+    @classmethod
+    def maker(kls, **kwargs):
+        if not hasattr(kls, "maker"):
+            kls.maker = Set64Maker()
+        return kls.maker(**kwargs)
+
     class Target:
         """Used to cache the bits for our target"""
 
@@ -251,9 +257,3 @@ class Set64Maker:
 
     def __call__(self, **kwargs):
         return self.Set64(self, **kwargs)
-
-
-# Used to create a message that photons thinks is a valid Set64
-# It is a callable that requires keyword arguments for
-# ack_required, tile_index, width, duration, colors
-set_64_maker = Set64Maker()

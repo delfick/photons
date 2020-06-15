@@ -721,25 +721,19 @@ describe "Multizone helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2noextended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2extended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                 }
             )
@@ -760,7 +754,7 @@ describe "Multizone helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             duration=10, type=MultiZoneEffectType.MOVE, speed=5
                         ),
                     ],
@@ -768,7 +762,7 @@ describe "Multizone helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             duration=10, type=MultiZoneEffectType.MOVE, speed=5
                         ),
                     ],
@@ -776,7 +770,7 @@ describe "Multizone helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             duration=10, type=MultiZoneEffectType.MOVE, speed=5
                         ),
                     ],
@@ -798,27 +792,23 @@ describe "Multizone helpers":
                     striplcm1: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2noextended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2extended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                 }
             )
 
+        @pytest.mark.focus
+        @pytest.mark.async_timeout(1000000)
         async it "can target particular devices", runner:
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
@@ -835,15 +825,13 @@ describe "Multizone helpers":
                     striplcm1: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
-                            type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2noextended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             duration=5, type=MultiZoneEffectType.MOVE
                         ),
                     ],
@@ -851,7 +839,7 @@ describe "Multizone helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             duration=5, type=MultiZoneEffectType.MOVE
                         ),
                     ],

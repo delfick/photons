@@ -11,7 +11,6 @@ for defining ``by_type`` on the class.
 from photons_protocol.types import Type, MultiOptions
 from photons_protocol.errors import BadConversion
 
-from delfick_project.norms import Meta
 from bitarray import bitarray
 from textwrap import dedent
 import binascii
@@ -52,7 +51,7 @@ class PacketTypeExtractor:
         else:
             raise BadConversion("Couldn't work out pkt_type from dictionary", got=data)
 
-        return protocol, pkt_type
+        return protocol, pkt_type, data
 
     @classmethod
     def packet_type_from_bitarray(kls, data):
@@ -75,28 +74,13 @@ class PacketTypeExtractor:
             ptbts = data[256 : 256 + 16].tobytes()
             pkt_type = ptbts[0] + (ptbts[1] << 8)
 
-        return protocol, pkt_type
+        return protocol, pkt_type, data
 
     @classmethod
     def packet_type_from_bytes(kls, data):
-        if len(data) < 4:
-            raise BadConversion("Data is too small to be a LIFX packet", got=len(data))
-
         b = bitarray(endian="little")
-        b.frombytes(data[2:4])
-        protbts = b[:12].tobytes()
-        protocol = protbts[0] + (protbts[1] << 8)
-
-        pkt_type = None
-
-        if protocol == 1024:
-            if len(data) < 36:
-                raise BadConversion(
-                    "Data is too small to be a LIFX packet", need_atleast=36, got=len(data)
-                )
-            pkt_type = data[32] + (data[33] << 8)
-
-        return protocol, pkt_type
+        b.frombytes(data)
+        return kls.packet_type_from_bitarray(b)
 
 
 def sources_for(kls):
@@ -148,11 +132,11 @@ class MessagesMixin:
             unpacked data has a ``pkt_type`` property that is retrieved for this.
 
         Packet
-            The ``parent_packet`` class for the protocol the data represents.
+            The ``parent`` class for the protocol the data represents.
 
             If ``data`` is bytes, get the integer from bits 16 to 28 as protocol.
 
-            Use this number in protocol register to find the ``parent_packet``.
+            Use this number in protocol register to find the ``parent``.
 
         kls
             The payload class representing this protocol and pkt_type.
@@ -166,7 +150,7 @@ class MessagesMixin:
         if isinstance(data, str):
             data = binascii.unhexlify(data)
 
-        protocol, pkt_type = PacketTypeExtractor.packet_type(data)
+        protocol, pkt_type, data = PacketTypeExtractor.packet_type(data)
 
         prot = protocol_register.get(protocol)
         if prot is None:
@@ -212,7 +196,7 @@ class MessagesMixin:
             else:
                 raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
-        return mkls.unpack(data)
+        return mkls.create(data)
 
     @classmethod
     def unpack(kls, data, protocol_register, unknown_ok=False):
@@ -220,16 +204,16 @@ class MessagesMixin:
         Return a fully resolved packet instance from the data and protocol_register.
 
         unknown_ok
-            Whether we return an instance of the parent_packet with unresolved
+            Whether we return an instance of the parent packet with unresolved
             payload if we don't have a payload class, or if we raise an error
         """
         protocol, pkt_type, Packet, PacketKls, data = kls.get_packet_type(data, protocol_register)
 
         if PacketKls:
-            return PacketKls.unpack(data)
+            return PacketKls.create(data)
 
         if unknown_ok:
-            return Packet.unpack(data)
+            return Packet.create(data)
 
         raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
@@ -241,7 +225,7 @@ class MessagesMixin:
         """
         for k in messages_register or [kls]:
             if int(pkt_type) in k.by_type:
-                return k.by_type[int(pkt_type)].Payload.normalise(Meta.empty(), data).pack()
+                return k.by_type[int(pkt_type)].Payload.create(data).pack()
         raise BadConversion("Unknown message type!", pkt_type=pkt_type)
 
     @classmethod
@@ -260,7 +244,7 @@ class MessagesMixin:
                 raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
             PacketKls = Packet
 
-        return PacketKls.normalise(Meta.empty(), data).pack()
+        return PacketKls.create(data).pack()
 
 
 class MessagesMeta(type):
@@ -269,9 +253,6 @@ class MessagesMeta(type):
 
     This is a dictionary of {pkt_type: kls} where we get pkt_type from the
     ``kls.Payload.message_type`` where kls is each message defined on the class.
-
-    As a bonus, this puts ``caller_source`` on the ``Meta`` of each message which
-    is the lines that make up it's definition. This is used for ``photons-docs``.
     """
 
     def __new__(metaname, classname, baseclasses, attrs):
@@ -289,11 +270,6 @@ class MessagesMeta(type):
 
         attrs["by_type"] = by_type
         kls = type.__new__(metaname, classname, baseclasses, attrs)
-
-        for attr, source in sources_for(kls):
-            if attr in attrs:
-                if not hasattr(attrs[attr].Meta, "caller_source"):
-                    attrs[attr].Meta.caller_source = source
 
         return kls
 

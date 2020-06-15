@@ -19,11 +19,12 @@ for filename in os.listdir(this_dir):
         py_modules.append(name)
         photons_entry_points.append("{0} = {1}".format(name[8:], name))
     elif filename.startswith("photons_") and os.path.isdir(filename):
-        packages.extend(
-            [filename] + ["{0}.{1}".format(filename, pkg) for pkg in find_packages(filename)]
-        )
-        if filename != "photons_app":
-            photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
+        if os.path.isfile(os.path.join(filename, "addon.py")):
+            packages.extend(
+                [filename] + ["{0}.{1}".format(filename, pkg) for pkg in find_packages(filename)]
+            )
+            if filename != "photons_app":
+                photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
 
 # fmt: off
 

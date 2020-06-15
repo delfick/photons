@@ -1007,7 +1007,7 @@ describe "Communication":
             def recv(pkt, addr, *, allow_zero):
                 assert isinstance(pkt, LIFXPacket)
                 assert pkt.pkt_type == 9001
-                assert pkt.payload == b"things"
+                assert pkt.payload.tobytes() == b"things"
 
             recv = pytest.helpers.AsyncMock(name="recv", side_effect=recv)
 
@@ -1015,7 +1015,7 @@ describe "Communication":
                 pkt = LIFXPacket(
                     payload=b"things", pkt_type=9001, source=1, sequence=1, target=None
                 )
-                data = pkt.pack().tobytes()
+                data = pkt.tobytes()
                 await V.communication.received_data(data, addr, allow_zero=allow_zero)
 
             recv.assert_called_once_with(mock.ANY, addr, allow_zero=allow_zero)

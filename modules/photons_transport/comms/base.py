@@ -7,12 +7,12 @@ from photons_app.errors import TimedOut, FoundNoDevices, RunErrors, BadRunWithRe
 from photons_app import helpers as hp
 
 from photons_protocol.packets import Information
+from photons_protocol.packer import UnpackCache
 from photons_protocol.messages import Messages
 
 import binascii
 import logging
 import asyncio
-import struct
 import random
 import json
 
@@ -23,6 +23,13 @@ class FakeAck:
     represents_ack = True
 
     __slots__ = ["source", "sequence", "target", "serial", "Information"]
+
+    @classmethod
+    def create(kls, data, addr):
+        source = UnpackCache.convert("<I", data[32:64])
+        target, serial = UnpackCache.serial(data[64:128])
+        sequence = UnpackCache.convert("<b", data[184:192])
+        return kls(source, sequence, target, serial, addr)
 
     def __init__(self, source, sequence, target, serial, addr):
         self.serial = serial
@@ -400,16 +407,11 @@ class Communication:
             )
 
             if protocol == 1024 and pkt_type == 45:
-                source = struct.unpack("<I", data[4:8])[0]
-                target = data[8:16]
-                sequence = data[23]
-
-                serial = binascii.hexlify(target[:6]).decode()
-                pkt = FakeAck(source, sequence, target, serial, addr)
+                pkt = FakeAck.create(data, addr)
             else:
                 if PacketKls is None:
                     PacketKls = Packet
-                pkt = PacketKls.unpack(data)
+                pkt = PacketKls.create(data)
         except Exception as error:
             log.exception(error)
         else:

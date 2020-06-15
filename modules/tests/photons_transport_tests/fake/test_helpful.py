@@ -3,9 +3,9 @@
 from photons_transport.fake import WithDevices, pktkeys
 
 from photons_messages import DeviceMessages, MultiZoneMessages
+from photons_protocol.constants import Unset
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
 from unittest import mock
 import pytest
 import json
@@ -69,7 +69,7 @@ describe "pktkeys":
         ]
 
     it "knows to zero instanceid":
-        msg = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+        msg = MultiZoneMessages.SetMultiZoneEffect.create(
             source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={},
         )
 
@@ -87,17 +87,14 @@ describe "pktkeys":
         from photons_messages.frame import msg
 
         class Messages(Messages):
-            SetExample = msg(9001, ("one", T.Reserved(6)), ("two", T.String(10)))
+            SetExample = msg(9001, ("one", T.Reserved(6)), ("two", T.String(10 * 8)))
 
         msg = Messages.SetExample(source=1, sequence=2, target="d073d512", two="stuff")
-        assert msg.actual("one") == sb.NotSpecified
+        assert msg.actual("one") is Unset
 
         keys = pktkeys([msg])
 
-        assert keys == [(1024, 9001, '{"one": "00", "two": "stuff"}')]
+        assert keys == [(1024, 9001, '{"two": "stuff"}')]
 
-        assert msg.actual("one") == sb.NotSpecified
-        assert (
-            repr(msg.payload)
-            == """{"one": "<class 'delfick_project.norms.spec_base.NotSpecified'>", "two": "stuff"}"""
-        )
+        assert msg.actual("one") is Unset
+        assert repr(msg.payload) == '{"two": "stuff"}'

@@ -1,13 +1,11 @@
 # coding: spec
 
-from photons_app.test_helpers import assert_payloads_equals
-
 from photons_messages import LightMessages, Waveform, protocol_register
 
-from photons_protocol.messages import Messages
-from photons_protocol.types import Optional
+from photons_app.test_helpers import assert_payloads_equals
 
-from delfick_project.norms import sb
+from photons_protocol import Unset, Optional, Messages
+
 import pytest
 
 describe "LightMessages":
@@ -31,11 +29,11 @@ describe "LightMessages":
             },
         )
 
-        assert msg.payload.actual("hue") == 1820
-        assert msg.payload.actual("saturation") == 6553
-        assert msg.payload.actual("brightness") == 32767
-        assert msg.payload.actual("kelvin") == 2500
-        assert msg.payload.actual("duration") == 1000
+        assert msg.payload.fields["hue"].untransformed_val == 1820
+        assert msg.payload.fields["saturation"].untransformed_val == 6553
+        assert msg.payload.fields["brightness"].untransformed_val == 32767
+        assert msg.payload.fields["kelvin"].untransformed_val == 2500
+        assert msg.payload.fields["duration"].untransformed_val == 1000
 
     it "has SetWaveform":
         msg = self.unpack(
@@ -57,15 +55,15 @@ describe "LightMessages":
             },
         )
 
-        assert msg.payload.actual("transient") == 0
-        assert msg.payload.actual("hue") == 18204
-        assert msg.payload.actual("saturation") == 6553
-        assert msg.payload.actual("brightness") == 32767
-        assert msg.payload.actual("kelvin") == 2500
-        assert msg.payload.actual("period") == 2000
-        assert msg.payload.actual("cycles") == 5
-        assert msg.payload.actual("skew_ratio") == 3276
-        assert msg.payload.actual("waveform") == 1
+        assert msg.payload.fields["transient"].untransformed_val == 0
+        assert msg.payload.fields["hue"].untransformed_val == 18204
+        assert msg.payload.fields["saturation"].untransformed_val == 6553
+        assert msg.payload.fields["brightness"].untransformed_val == 32767
+        assert msg.payload.fields["kelvin"].untransformed_val == 2500
+        assert msg.payload.fields["period"].untransformed_val == 2000
+        assert msg.payload.fields["cycles"].untransformed_val == 5
+        assert msg.payload.fields["skew_ratio"].untransformed_val == 3276
+        assert msg.payload.fields["waveform"].untransformed_val == Waveform.SINE
 
     it "has SetWaveformOptional":
         msg = self.unpack(
@@ -91,23 +89,23 @@ describe "LightMessages":
             },
         )
 
-        assert msg.payload.actual("transient") == 0
-        assert msg.payload.actual("hue") == 18204
-        assert msg.payload.actual("saturation") == 0
-        assert msg.payload.actual("brightness") == 32767
-        assert msg.payload.actual("kelvin") == 2500
-        assert msg.payload.actual("period") == 2000
-        assert msg.payload.actual("cycles") == 5
-        assert msg.payload.actual("skew_ratio") == 32767
-        assert msg.payload.actual("waveform") == 1
-        assert msg.payload.actual("set_hue") == 1
-        assert msg.payload.actual("set_saturation") == 0
-        assert msg.payload.actual("set_brightness") == 1
-        assert msg.payload.actual("set_kelvin") == 1
+        assert msg.payload.fields["transient"].untransformed_val == 0
+        assert msg.payload.fields["hue"].untransformed_val == 18204
+        assert msg.payload.fields["saturation"].untransformed_val == 0
+        assert msg.payload.fields["brightness"].untransformed_val == 32767
+        assert msg.payload.fields["kelvin"].untransformed_val == 2500
+        assert msg.payload.fields["period"].untransformed_val == 2000
+        assert msg.payload.fields["cycles"].untransformed_val == 5
+        assert msg.payload.fields["skew_ratio"].untransformed_val == 32767
+        assert msg.payload.fields["waveform"].untransformed_val == Waveform.SINE
+        assert msg.payload.fields["set_hue"].untransformed_val == 1
+        assert msg.payload.fields["set_saturation"].untransformed_val == 0
+        assert msg.payload.fields["set_brightness"].untransformed_val == 1
+        assert msg.payload.fields["set_kelvin"].untransformed_val == 1
 
     it "SetWaveformOptional does not require all hsbk values":
         msg = LightMessages.SetWaveformOptional(hue=100, source=1, sequence=0, target=None)
-        assert msg.actual("brightness") is sb.NotSpecified
+        assert msg.actual("brightness") is Unset
 
         assert msg.set_hue == 1
         assert msg.set_saturation == 0
@@ -124,10 +122,8 @@ describe "LightMessages":
         assert unpackd.set_kelvin == 0
         assert unpackd.kelvin == 0
 
-        msg = LightMessages.SetWaveformOptional.empty_normalise(
-            hue=100, source=1, sequence=0, target=None
-        )
-        assert msg.actual("brightness") is Optional
+        msg = LightMessages.SetWaveformOptional.create(hue=100, source=1, sequence=0, target=None)
+        assert msg.fields["brightness"].untransformed_val is Optional
 
         assert msg.set_hue == 1
         assert msg.set_saturation == 0
@@ -162,12 +158,12 @@ describe "LightMessages":
             },
         )
 
-        assert msg.payload.actual("hue") == 1792
-        assert msg.payload.actual("saturation") == 6553
-        assert msg.payload.actual("brightness") == 32767
-        assert msg.payload.actual("kelvin") == 2500
-        assert msg.payload.actual("power") == 65535
+        assert msg.payload.fields["hue"].untransformed_val == 1792
+        assert msg.payload.fields["saturation"].untransformed_val == 6553
+        assert msg.payload.fields["brightness"].untransformed_val == 32767
+        assert msg.payload.fields["kelvin"].untransformed_val == 2500
+        assert msg.payload.fields["power"].untransformed_val == 65535
         assert (
-            msg.payload.actual("label").tobytes()
+            msg.payload.fields["label"].raw.tobytes()
             == b"den\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         )

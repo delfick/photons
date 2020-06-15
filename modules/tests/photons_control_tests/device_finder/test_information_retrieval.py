@@ -229,7 +229,7 @@ describe "Device":
             # 60 is at 12 rounds, and next location after that is after 5
             assert V.t.time >= 69
 
-            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
+            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() >= 60
             await asyncio.wait([Futs.color])
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,

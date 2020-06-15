@@ -26,11 +26,6 @@ regexes = {
 }
 
 
-@addon_hook(extras=(("lifx.photons", "messages")))
-def __lifx__(collector, *args, **kwargs):
-    pass
-
-
 @an_action(needs_target=True, special_reference=True)
 async def set_color(collector, target, reference, artifact, **kwargs):
     """
@@ -268,7 +263,7 @@ class ColourParser(object):
 
         other_override = Effects.make(**(overrides or {}))
         options = MergedOptions.using(other, other_override, overrides or {}, colour)
-        return LightMessages.SetWaveformOptional.normalise(Meta.empty(), options)
+        return LightMessages.SetWaveformOptional.create(options)
 
     def parse_color_string(self, components):
         if type(components) is str:

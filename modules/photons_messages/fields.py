@@ -2,6 +2,7 @@ from photons_messages import enums
 
 from photons_protocol.packets import dictobj
 from photons_protocol.messages import T
+from photons_protocol import Optional
 
 from delfick_project.norms import sb
 from lru import LRU
@@ -37,12 +38,12 @@ extended_duration_type = T.Uint64.default(0).transform(
     ).allow_float()
 
 scaled_hue = T.Uint16.transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
+      lambda _, v: int(65535 * (0 if v is Optional else float(v)) / 360)
     , lambda _, v: float(v) * 360 / 65535
     ).allow_float()
 
 scaled_to_65535 = T.Uint16.transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
+      lambda _, v: int(65535 * (0 if v is Optional else float(v)))
     , lambda _, v: float(v) / 65535
     ).allow_float()
 
@@ -57,7 +58,7 @@ waveform_period = T.Uint32.default(0).transform(
     ).allow_float()
 
 waveform_skew_ratio = T.Int16.default(0).transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v))) - 32768
+      lambda _, v: int(65535 * (0 if v is Optional else float(v))) - 32768
     , lambda _, v: float(v + 32768) / 65535
     ).allow_float()
 

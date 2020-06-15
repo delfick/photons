@@ -34,6 +34,7 @@ output:
 
       from photons_protocol.packets import dictobj
       from photons_protocol.messages import T
+      from photons_protocol import Optional
 
       from delfick_project.norms import sb
       from lru import LRU
@@ -65,14 +66,9 @@ output:
       from photons_messages.frame import msg
 
       from photons_protocol.messages import T, Messages, MultiOptions
-      from photons_protocol.types import Optional
 
       from delfick_project.norms import sb
       import math
-
-
-      def empty(pkt, attr):
-          return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
 
       def color_zones_response_count(req, res):
@@ -112,7 +108,7 @@ types:
     extras:
       - |
         transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
+              lambda _, v: int(65535 * (0 if v is Optional else float(v)) / 360)
             , lambda _, v: float(v) * 360 / 65535
             )
       - "allow_float()"
@@ -123,7 +119,7 @@ types:
     extras:
       - |
         transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
+              lambda _, v: int(65535 * (0 if v is Optional else float(v)))
             , lambda _, v: float(v) / 65535
             )
       - "allow_float()"
@@ -158,7 +154,7 @@ types:
     extras:
       - |
         transform(
-              lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v))) - 32768
+              lambda _, v: int(65535 * (0 if v is Optional else float(v))) - 32768
             , lambda _, v: float(v + 32768) / 65535
             )
       - "allow_float()"
@@ -291,13 +287,13 @@ changes:
       Waveform:
         default: SAW
       SetHue:
-        default: 'lambda pkt: 0 if empty(pkt, "hue") else 1'
+        default: 'lambda pkt: 1 if pkt.fields["hue"].has_value else 0'
       SetSaturation:
-        default: 'lambda pkt: 0 if empty(pkt, "saturation") else 1'
+        default: 'lambda pkt: 1 if pkt.fields["saturation"].has_value else 0'
       SetBrightness:
-        default: 'lambda pkt: 0 if empty(pkt, "brightness") else 1'
+        default: 'lambda pkt: 1 if pkt.fields["brightness"].has_value else 0'
       SetKelvin:
-        default: 'lambda pkt: 0 if empty(pkt, "kelvin") else 1'
+        default: 'lambda pkt: 1 if pkt.fields["kelvin"].has_value else 0'
 
   LightSetWaveform:
     fields:

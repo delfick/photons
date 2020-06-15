@@ -16,7 +16,6 @@ log = logging.getLogger("repeater")
     extras=[
         ("lifx.photons", "control"),
         ("lifx.photons", "transport"),
-        ("lifx.photons", "messages"),
     ]
 )
 def __lifx__(collector, *args, **kwargs):

@@ -13,7 +13,7 @@ class TileMarqueeOptions(AnimationOptions):
     large_font = dictobj.Field(sb.boolean, default=False)
     speed = dictobj.Field(sb.integer_spec, default=1)
     direction = dictobj.Field(
-        enum_spec(None, MarqueeDirection, unpacking=True), default=MarqueeDirection.LEFT
+        enum_spec(MarqueeDirection, unpacking=True), default=MarqueeDirection.LEFT
     )
 
     @property

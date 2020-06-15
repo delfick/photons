@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_protocol.errors import BadSpecValue, BadConversion
+from photons_protocol.errors import BadConversion
 from photons_protocol.types import Type as T
 from photons_protocol.packets import dictobj
 from photons_protocol import types
@@ -18,8 +18,8 @@ import uuid
 
 
 @pytest.fixture()
-def meta():
-    return Meta.empty()
+def meta(pkt):
+    return Meta({"pkt": pkt}, [])
 
 
 @pytest.fixture()
@@ -35,7 +35,7 @@ describe "callable_spec":
 
         assert types.callable_spec(None).normalise(meta, cb) is cb
 
-    it "uses the spec otherwise":
+    it "uses the spec otherwise", meta:
         normalised = mock.Mock(name="normalised")
 
         spec = mock.Mock(name="spec")
@@ -43,234 +43,13 @@ describe "callable_spec":
 
         s = types.callable_spec(spec)
         val = mock.NonCallableMock(name="val")
-        meta = Meta.empty()
 
         assert s.normalise(meta, val) is normalised
         spec.normalise.assert_called_once_with(meta, val)
 
-describe "transform_spec":
-    it "normalises spec with transformed value", meta:
-        val = mock.Mock(name="val")
-        transformed = mock.Mock(name="transformed")
-        do_transform = mock.Mock(name="do_transform", return_value=transformed)
-
-        pkt = mock.Mock(name="pkt")
-        normalised = mock.Mock(name="normalised")
-
-        spec = mock.Mock(name="spec")
-        spec.normalise.return_value = normalised
-
-        ts = types.transform_spec(pkt, spec, do_transform)
-        assert ts.normalise(meta, val) is normalised
-
-        do_transform.assert_called_once_with(pkt, val)
-        spec.normalise.assert_called_once_with(meta, transformed)
-
-    it "does not call the transform if value is sb.NotSpecified", meta:
-        transformed = mock.Mock(name="transformed")
-        do_transform = mock.Mock(name="do_transform", return_value=transformed)
-
-        pkt = mock.Mock(name="pkt")
-        normalised = mock.Mock(name="normalised")
-
-        spec = mock.Mock(name="spec")
-        spec.normalise.return_value = normalised
-
-        ts = types.transform_spec(pkt, spec, do_transform)
-        assert ts.normalise(meta, sb.NotSpecified) is normalised
-
-        assert len(do_transform.mock_calls) == 0
-        spec.normalise.assert_called_once_with(meta, sb.NotSpecified)
-
-    it "does not call the transform if value is Optional", meta:
-        transformed = mock.Mock(name="transformed")
-        do_transform = mock.Mock(name="do_transform", return_value=transformed)
-
-        pkt = mock.Mock(name="pkt")
-        normalised = mock.Mock(name="normalised")
-
-        spec = mock.Mock(name="spec")
-        spec.normalise.return_value = normalised
-
-        ts = types.transform_spec(pkt, spec, do_transform)
-        assert ts.normalise(meta, types.Optional) is normalised
-
-        assert len(do_transform.mock_calls) == 0
-        spec.normalise.assert_called_once_with(meta, types.Optional)
-
-describe "expand_spec":
-
-    @pytest.fixture()
-    def spec(self):
-        return T.Bytes(20)
-
-    @pytest.fixture()
-    def kls(self):
-        class Kls(dictobj.PacketSpec):
-            fields = [("one", T.Bool), ("two", T.Int8)]
-
-        return Kls
-
-    it "takes in kls, spec and unpacking":
-        kls = mock.Mock(name="kls")
-        spec = mock.Mock(name="spec")
-        unpacking = mock.Mock(name="unpacking")
-
-        s = types.expand_spec(kls, spec, unpacking)
-
-        assert s.kls is kls
-        assert s.spec is spec
-        assert s.unpacking is unpacking
-
-    describe "packing into bytes":
-
-        @pytest.fixture()
-        def subject(self, spec, pkt, kls):
-            spec = spec.spec(pkt, False)
-            return types.expand_spec(kls, spec, False)
-
-        it "returns bitarray value as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=127)
-            b = val.pack()
-            assert len(b) == 9
-
-            b2 = subject.normalise(meta, b)
-            assert len(b2) == 20
-
-            assert b2[:9] == b
-            assert b2[9:20] == bitarray("0" * 11)
-
-        it "returns bytes value as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=127)
-            b = val.pack()
-            assert len(b) == 9
-
-            b2 = subject.normalise(meta, b.tobytes())
-            assert len(b2) == 20
-
-            assert b2[:9] == b
-            assert b2[9:20] == bitarray("0" * 11)
-
-        it "returns a dictionary as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
-            b = val.pack()
-            assert len(b) == 9
-
-            b2 = subject.normalise(meta, {"one": True, "two": 12})
-            assert len(b2) == 20
-
-            assert b2[:9] == b
-            assert b2[9:20] == bitarray("0" * 11)
-
-        it "complains if something other than dictionary, bytes or bitarray is given", meta, subject:
-            for thing in (0, 1, False, True, [], [1], "adsf", None, lambda: True):
-                with assertRaises(
-                    BadSpecValue, "Sorry, dynamic fields only supports a dictionary of values"
-                ):
-                    subject.normalise(meta, thing)
-
-    describe "unpacking from bytes":
-
-        @pytest.fixture()
-        def subject(self, spec, pkt, kls):
-            spec = spec.spec(pkt, True)
-            return types.expand_spec(kls, spec, True)
-
-        it "returns instance of kls if NotSpecified", meta, spec, pkt:
-
-            class Kls(dictobj.PacketSpec):
-                fields = [("one", T.Bool.default(False)), ("two", T.Int8.default(10))]
-
-            spec = spec.spec(pkt, True)
-            subject = types.expand_spec(Kls, spec, True)
-
-            val = Kls.empty_normalise()
-            assert subject.normalise(meta, sb.NotSpecified) == val
-
-        it "returns instance of kls if a dictionary", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
-            assert subject.normalise(meta, {"one": True, "two": 12}) == val
-
-        it "returns as is if already of the kls type", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
-            assert subject.normalise(meta, val) is val
-
-        it "returns as instance of the kls if bitarray", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=6)
-            assert subject.normalise(meta, val.pack()) == val
-
-        it "returns as instance of the kls if bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=120)
-            assert subject.normalise(meta, val.pack().tobytes()) == val
-
-        it "complains if not bitarray, bytes or instance of kls", meta, subject, kls:
-            for thing in (0, 1, False, True, [], [1], None, "adsf", lambda: True):
-                with assertRaises(
-                    BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls,
-                ):
-                    subject.normalise(meta, thing)
-
-describe "optional":
-    it "says NotSpecified is Optional":
-        spec = types.optional(mock.Mock(name="spec"))
-        assert spec.normalise(Meta.empty(), sb.NotSpecified) is types.Optional
-
-    it "normalises Optional as is":
-        spec = types.optional(mock.Mock(name="spec"))
-        assert spec.normalise(Meta.empty(), types.Optional) is types.Optional
-
-    it "normalises anything else using self.spec":
-        res = mock.Mock(name="res")
-        ultimate_spec = mock.Mock(name="ultimate-spec")
-        ultimate_spec.normalise.return_value = res
-
-        meta = Meta.empty()
-
-        spec = types.optional(ultimate_spec)
-        thing = mock.Mock(name="thing")
-        assert spec.normalise(meta, thing) is res
-
-        ultimate_spec.normalise.assert_called_once_with(meta, thing)
-
-describe "version_number_spec":
-    it "takes in many things":
-        unpacking = mock.Mock(name="unpacking")
-        spec = types.version_number_spec(unpacking=unpacking)
-        assert spec.unpacking is unpacking
-
-    it "defaults unpacking":
-        spec = types.version_number_spec()
-        assert spec.unpacking is False
-
-    describe "normalise":
-        it "can go back and forward between string and integer", meta:
-            for (want_int, want_str) in [(65538, "1.2"), (131092, "2.20"), (131272, "2.200")]:
-                unpacker = types.version_number_spec(unpacking=False)
-                as_int = unpacker.normalise(meta, want_str)
-                assert as_int == want_int
-
-                packer = types.version_number_spec(unpacking=True)
-                as_str = packer.normalise(meta, as_int)
-                assert as_str == want_str
-
-        it "complains if val is not a valid version number", meta:
-            for v in ("", "0", "0.wat", "wat.0", "wat"):
-                with assertRaises(BadSpecValue, "Expected version string to match", wanted=v):
-                    types.version_number_spec(unpacking=False).normalise(meta, v)
-
-        it "can pack an integer", meta:
-            assert types.version_number_spec(unpacking=False).normalise(meta, 100) == 100
-
-        it "can unpack an string", meta:
-            assert types.version_number_spec(unpacking=True).normalise(meta, "1.1") == "1.1"
-
-        it "can unpack an incorect string", meta:
-            with assertRaises(BadSpecValue, "Expected string to match", got="1"):
-                types.version_number_spec(unpacking=True).normalise(meta, "1")
 
 describe "integer_spec":
     it "takes in many things":
-        pkt = mock.Mock(name="pkt")
         enum = mock.Mock(name="enum")
         bitmask = mock.Mock(name="bitmask")
         unpacking = mock.Mock(name="unpacking")
@@ -282,8 +61,7 @@ describe "integer_spec":
             kw["allow_float"] = allow_float
             kw["unknown_enum_values"] = unknown_enum_values
 
-            spec = types.integer_spec(pkt, **kw)
-            assert spec.pkt is pkt
+            spec = types.integer_spec(**kw)
             assert spec.enum is kw["enum"]
             assert spec.bitmask is kw["bitmask"]
             assert spec.unpacking is unpacking
@@ -294,35 +72,32 @@ describe "integer_spec":
         with assertRaises(
             ProgrammerError, "Sorry, can't specify enum and bitmask for the same type"
         ):
-            types.integer_spec(
-                mock.Mock(name="pkt"), mock.Mock(name="enum"), mock.Mock(name="bitmask")
-            )
+            types.integer_spec(mock.Mock(name="enum"), mock.Mock(name="bitmask"))
 
     it "defaults unpacking and allow_float":
-        spec = types.integer_spec(mock.Mock(name="pkt"), None, None)
+        spec = types.integer_spec(None, None)
         assert spec.unpacking is False
         assert spec.allow_float is False
 
     describe "normalise":
-        it "returns as is if not enum and not bitmask and allow_float and is a float", meta, pkt:
-            spec = types.integer_spec(pkt, None, None, allow_float=True)
+        it "returns as is if not enum and not bitmask and allow_float and is a float", meta:
+            spec = types.integer_spec(None, None, allow_float=True)
             assert spec.normalise(meta, 1.2) == 1.2
 
-        it "asserts number is integer if no enum or bitmask and not allow_float", meta, pkt:
-            spec = types.integer_spec(pkt, None, None, allow_float=False)
-            with assertRaises(BadSpecValue, "Expected an integer"):
+        it "asserts number is integer if no enum or bitmask and not allow_float", meta:
+            spec = types.integer_spec(None, None, allow_float=False)
+            with assertRaises(BadConversion, "Value must be an integer"):
                 spec.normalise(meta, 1.2)
 
-        it "returns integer if not enum or bitmask", meta, pkt:
-            spec = types.integer_spec(pkt, None, None)
+        it "returns integer if not enum or bitmask", meta:
+            spec = types.integer_spec(None, None)
             assert spec.normalise(meta, 1) == 1
 
-        it "does an enum spec if we have an enum", pkt:
+        it "does an enum spec if we have an enum", meta:
             ret = mock.Mock(name="ret")
             enum = mock.Mock(name="enum")
             unpacking = mock.Mock(name="unpacking")
 
-            meta = Meta.empty()
             val = mock.Mock(name="val")
 
             es = mock.Mock(name="enum_spec()")
@@ -330,41 +105,36 @@ describe "integer_spec":
             enum_spec = mock.Mock(name="enum_spec", return_value=es)
             es.normalise.return_value = ret
             with mock.patch("photons_protocol.types.enum_spec", enum_spec):
-                spec = types.integer_spec(
-                    pkt, enum, None, unpacking=unpacking, unknown_enum_values=uev
-                )
+                spec = types.integer_spec(enum, None, unpacking=unpacking, unknown_enum_values=uev)
                 assert spec.normalise(meta, val) is ret
 
-            enum_spec.assert_called_once_with(pkt, enum, unpacking=unpacking, allow_unknown=uev)
+            enum_spec.assert_called_once_with(enum, unpacking=unpacking, allow_unknown=uev)
             es.normalise.assert_called_once_with(meta, val)
 
-        it "does a bitmask spec if we have a bitmask", pkt:
+        it "does a bitmask spec if we have a bitmask", meta:
             ret = mock.Mock(name="ret")
             bitmask = mock.Mock(name="bitmask")
             unpacking = mock.Mock(name="unpacking")
 
-            meta = Meta.empty()
             val = mock.Mock(name="val")
 
             es = mock.Mock(name="bitmask_spec()")
             bitmask_spec = mock.Mock(name="bitmask_spec", return_value=es)
             es.normalise.return_value = ret
             with mock.patch("photons_protocol.types.bitmask_spec", bitmask_spec):
-                spec = types.integer_spec(pkt, None, bitmask, unpacking=unpacking)
+                spec = types.integer_spec(None, bitmask, unpacking=unpacking)
                 assert spec.normalise(meta, val) is ret
 
-            bitmask_spec.assert_called_once_with(pkt, bitmask, unpacking=unpacking)
+            bitmask_spec.assert_called_once_with(bitmask, unpacking=unpacking)
             es.normalise.assert_called_once_with(meta, val)
 
 describe "bitmask_spec":
     it "takes in some things":
-        pkt = mock.Mock(name="pkt")
         bitmask = mock.Mock(name="bitmask")
         unpacking = mock.Mock(name="unpacking")
 
-        spec = types.bitmask_spec(pkt, bitmask, unpacking=unpacking)
+        spec = types.bitmask_spec(bitmask, unpacking=unpacking)
 
-        assert spec.pkt is pkt
         assert spec.bitmask is bitmask
         assert spec.unpacking is unpacking
 
@@ -381,7 +151,7 @@ describe "bitmask_spec":
 
             return Mask
 
-        it "complains if bitmask is not an Enum", meta, pkt:
+        it "complains if bitmask is not an Enum", meta:
 
             class Kls(object):
                 def __init__(s, pkt):
@@ -392,9 +162,9 @@ describe "bitmask_spec":
 
             for thing in (0, 1, [], [1], {}, {1: 2}, lambda pkt: 1, Kls(1), Kls, None, True, False):
                 with assertRaises(ProgrammerError, "Bitmask is not an enum!"):
-                    types.bitmask_spec(pkt, thing).normalise(meta, mock.Mock(name="val"))
+                    types.bitmask_spec(thing).normalise(meta, mock.Mock(name="val"))
 
-        it "complains if bitmask has a zero value", meta, pkt:
+        it "complains if bitmask has a zero value", meta:
 
             class BM(Enum):
                 ZERO = 0
@@ -405,19 +175,19 @@ describe "bitmask_spec":
                 ProgrammerError,
                 "A bitmask with a zero value item makes no sense: ZERO in <enum 'BM'>",
             ):
-                types.bitmask_spec(pkt, BM).normalise(meta, mock.Mock(name="val"))
+                types.bitmask_spec(BM).normalise(meta, mock.Mock(name="val"))
 
             with assertRaises(
                 ProgrammerError,
                 "A bitmask with a zero value item makes no sense: ZERO in <enum 'BM'>",
             ):
-                types.bitmask_spec(pkt, lambda pkt: BM).normalise(meta, mock.Mock(name="val"))
+                types.bitmask_spec(lambda pkt: BM).normalise(meta, mock.Mock(name="val"))
 
         describe "packing into a number":
 
             @pytest.fixture()
-            def subject(self, bitmask, pkt):
-                return types.bitmask_spec(pkt, bitmask, unpacking=False)
+            def subject(self, bitmask):
+                return types.bitmask_spec(bitmask, unpacking=False)
 
             it "adds value if already part of the bitmask", meta, bitmask, subject:
                 v = [bitmask.ONE, bitmask.THREE]
@@ -472,8 +242,8 @@ describe "bitmask_spec":
         describe "unpacking into a list":
 
             @pytest.fixture()
-            def subject(self, bitmask, pkt):
-                return types.bitmask_spec(pkt, bitmask, unpacking=True)
+            def subject(self, bitmask):
+                return types.bitmask_spec(bitmask, unpacking=True)
 
             it "returns as is if already bitmask items", meta, bitmask, subject:
                 v = [bitmask.ONE, "THREE", "<Mask.FOUR: 16>"]
@@ -521,14 +291,12 @@ describe "bitmask_spec":
 
 describe "enum_spec":
     it "takes in some things":
-        pkt = mock.Mock(name="pkt")
         em = mock.Mock(name="enum")
         unpacking = mock.Mock(name="unpacking")
         allow_unknown = mock.Mock(name="allow_unknown")
 
-        spec = types.enum_spec(pkt, em, unpacking=unpacking, allow_unknown=allow_unknown)
+        spec = types.enum_spec(em, unpacking=unpacking, allow_unknown=allow_unknown)
 
-        assert spec.pkt is pkt
         assert spec.enum is em
         assert spec.unpacking is unpacking
         assert spec.allow_unknown is allow_unknown
@@ -546,7 +314,7 @@ describe "enum_spec":
 
             return Vals
 
-        it "complains if enum is not an Enum", meta, pkt:
+        it "complains if enum is not an Enum", meta:
 
             class Kls(object):
                 def __init__(s, pkt):
@@ -557,21 +325,21 @@ describe "enum_spec":
 
             for thing in (0, 1, [], [1], {}, {1: 2}, lambda pkt: 1, Kls(1), Kls, None, True, False):
                 with assertRaises(ProgrammerError, "Enum is not an enum!"):
-                    types.enum_spec(pkt, thing).normalise(meta, mock.Mock(name="val"))
+                    types.enum_spec(thing).normalise(meta, mock.Mock(name="val"))
                 with assertRaises(ProgrammerError, "Enum is not an enum!"):
-                    types.enum_spec(pkt, thing, allow_unknown=True).normalise(
+                    types.enum_spec(thing, allow_unknown=True).normalise(
                         meta, mock.Mock(name="val")
                     )
 
         describe "packing into a value":
 
             @pytest.fixture()
-            def subject(self, pkt, enum):
-                return types.enum_spec(pkt, enum, unpacking=False)
+            def subject(self, enum):
+                return types.enum_spec(enum, unpacking=False)
 
             @pytest.fixture()
-            def subject_with_unknown(self, pkt, enum):
-                return types.enum_spec(pkt, enum, unpacking=False, allow_unknown=True)
+            def subject_with_unknown(self, enum):
+                return types.enum_spec(enum, unpacking=False, allow_unknown=True)
 
             it "can convert from the name", meta, subject, subject_with_unknown:
                 assert subject.normalise(meta, "ONE") == 1
@@ -618,12 +386,12 @@ describe "enum_spec":
         describe "unpacking into enum member":
 
             @pytest.fixture()
-            def subject(self, pkt, enum):
-                return types.enum_spec(pkt, enum, unpacking=True)
+            def subject(self, enum):
+                return types.enum_spec(enum, unpacking=True)
 
             @pytest.fixture()
-            def subject_with_unknown(self, pkt, enum):
-                return types.enum_spec(pkt, enum, unpacking=True, allow_unknown=True)
+            def subject_with_unknown(self, enum):
+                return types.enum_spec(enum, unpacking=True, allow_unknown=True)
 
             it "returns as is if already a member", meta, subject, enum, subject_with_unknown:
                 assert subject.normalise(meta, enum.TWO) is enum.TWO
@@ -672,21 +440,17 @@ describe "enum_spec":
                 assert subject_with_unknown.normalise(meta, 20) == ue
 
 describe "overridden":
-    it "takes in pkt and default_func":
+    it "takes in default_func":
         default_func = mock.Mock(name="default_func")
-        pkt = mock.Mock(name="pkt")
-        spec = types.overridden(default_func, pkt)
+        spec = types.overridden(default_func)
 
         assert spec.default_func is default_func
-        assert spec.pkt is pkt
 
-    it "uses the default_func with pkt regardless of value":
-        meta = Meta.empty()
+    it "uses the default_func with pkt regardless of value", pkt, meta:
         val = mock.Mock(name="val")
 
         default_func = mock.Mock(name="default_func")
-        pkt = mock.Mock(name="pkt")
-        spec = types.overridden(default_func, pkt)
+        spec = types.overridden(default_func)
 
         ret = mock.Mock(name="ret")
         default_func.return_value = ret
@@ -695,13 +459,11 @@ describe "overridden":
 
         default_func.assert_called_once_with(pkt)
 
-    it "uses the default_func with pkt even with NotSpecified":
-        meta = Meta.empty()
+    it "uses the default_func with pkt even with NotSpecified", pkt, meta:
         val = sb.NotSpecified
 
         default_func = mock.Mock(name="default_func")
-        pkt = mock.Mock(name="pkt")
-        spec = types.overridden(default_func, pkt)
+        spec = types.overridden(default_func)
 
         ret = mock.Mock(name="ret")
         default_func.return_value = ret
@@ -711,24 +473,20 @@ describe "overridden":
         default_func.assert_called_once_with(pkt)
 
 describe "defaulted":
-    it "takes in spec, pkt and default_func":
+    it "takes in spec and default_func":
         default_func = mock.Mock(name="default_func")
         spec = mock.Mock(name="spec")
-        pkt = mock.Mock(name="pkt")
-        subject = types.defaulted(spec, default_func, pkt)
+        subject = types.defaulted(spec, default_func)
 
         assert subject.spec is spec
         assert subject.default_func is default_func
-        assert subject.pkt is pkt
 
-    it "uses the spec with the value if not empty":
-        meta = Meta.empty()
+    it "uses the spec with the value if not empty", meta:
         val = mock.Mock(name="val")
 
         default_func = mock.Mock(name="default_func")
-        pkt = mock.Mock(name="pkt")
         spec = mock.Mock(name="spec")
-        subject = types.defaulted(spec, default_func, pkt)
+        subject = types.defaulted(spec, default_func)
 
         ret = mock.Mock(name="ret")
         spec.normalise.return_value = ret
@@ -737,17 +495,15 @@ describe "defaulted":
 
         spec.normalise.assert_called_once_with(meta, val)
 
-    it "uses the default_func with pkt when NotSpecified":
-        meta = Meta.empty()
+    it "uses the default_func with pkt when NotSpecified", pkt, meta:
         val = sb.NotSpecified
         normalised = mock.Mock(name="normalised")
 
         default_func = mock.Mock(name="default_func")
-        pkt = mock.Mock(name="pkt")
         spec = mock.NonCallableMock(name="spec")
         spec.normalise.return_value = normalised
 
-        subject = types.defaulted(spec, default_func, pkt)
+        subject = types.defaulted(spec, default_func)
 
         defaultvalue = mock.Mock(name="ret")
         default_func.return_value = defaultvalue
@@ -758,57 +514,55 @@ describe "defaulted":
         spec.normalise.assert_called_once_with(meta, defaultvalue)
 
 describe "boolean":
-    it "complains if no value to normalise":
-        with assertRaises(BadSpecValue, "Must specify boolean values"):
-            types.boolean().normalise(Meta.empty(), sb.NotSpecified)
+    it "complains if no value to normalise", meta:
+        with assertRaises(BadConversion, "Must specify boolean values"):
+            types.boolean().normalise(meta, sb.NotSpecified)
 
-    it "returns as is if the value is a boolean":
-        assert types.boolean().normalise(Meta.empty(), False) is False
-        assert types.boolean().normalise(Meta.empty(), True) is True
+    it "returns as is if the value is a boolean", meta:
+        assert types.boolean().normalise(meta, False) is False
+        assert types.boolean().normalise(meta, True) is True
 
-    it "returns as boolean if 0 or 1":
-        assert types.boolean().normalise(Meta.empty(), 0) is False
-        assert types.boolean().normalise(Meta.empty(), 1) is True
+    it "returns as boolean if 0 or 1", meta:
+        assert types.boolean().normalise(meta, 0) is False
+        assert types.boolean().normalise(meta, 1) is True
 
-    it "complains if not boolean, 0 or 1":
+    it "complains if not boolean, 0 or 1", meta:
         for val in (None, [], [1], {}, {1: 2}, "asdf", b"asdf", lambda: 1):
-            with assertRaises(BadSpecValue, "Could not convert value into a boolean", val=val):
-                types.boolean().normalise(Meta.empty(), val)
+            with assertRaises(BadConversion, "Could not convert value into a boolean", val=val):
+                types.boolean().normalise(meta, val)
 
 describe "boolean_as_int_spec":
-    it "complains if no value to normalise":
-        with assertRaises(BadSpecValue, "Must specify boolean values"):
-            types.boolean_as_int_spec().normalise(Meta.empty(), sb.NotSpecified)
+    it "complains if no value to normalise", meta:
+        with assertRaises(BadConversion, "Must specify boolean values"):
+            types.boolean_as_int_spec().normalise(meta, sb.NotSpecified)
 
-    it "returns as is if the value is 0 or 1":
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), 0) == 0
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), 1) == 1
+    it "returns as is if the value is 0 or 1", meta:
+        assert types.boolean_as_int_spec().normalise(meta, 0) == 0
+        assert types.boolean_as_int_spec().normalise(meta, 1) == 1
 
-    it "returns as 0 or 1 if True or False":
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), False) == 0
-        assert types.boolean_as_int_spec().normalise(Meta.empty(), True) == 1
+    it "returns as 0 or 1 if True or False", meta:
+        assert types.boolean_as_int_spec().normalise(meta, False) == 0
+        assert types.boolean_as_int_spec().normalise(meta, True) == 1
 
-    it "complains if not boolean, 0 or 1":
+    it "complains if not boolean, 0 or 1", meta:
         for val in (None, [], [1], {}, {1: 2}, "asdf", b"asdf", lambda: 1):
-            with assertRaises(BadSpecValue, "BoolInts must be True, False, 0 or 1", got=val):
-                types.boolean_as_int_spec().normalise(Meta.empty(), val)
+            with assertRaises(BadConversion, "BoolInts must be True, False, 0 or 1", got=val):
+                types.boolean_as_int_spec().normalise(meta, val)
 
 describe "csv_spec":
-    it "takes in pkt, size_bits and unpacking":
-        pkt = mock.Mock(name="pkt")
+    it "takes in size_bits and unpacking":
         size_bits = mock.Mock(name="size_bits")
         unpacking = mock.Mock(name="unpacking")
-        spec = types.csv_spec(pkt, size_bits, unpacking=unpacking)
+        spec = types.csv_spec(size_bits, unpacking=unpacking)
 
-        assert spec.pkt is pkt
         assert spec.size_bits is size_bits
         assert spec.unpacking is unpacking
 
     describe "packing into bitarray":
 
         @pytest.fixture()
-        def subject(self, pkt):
-            return types.csv_spec(pkt, 200 * 8, unpacking=False)
+        def subject(self):
+            return types.csv_spec(200 * 8, unpacking=False)
 
         @pytest.fixture()
         def val(self):
@@ -859,8 +613,8 @@ describe "csv_spec":
     describe "unpacking into list":
 
         @pytest.fixture()
-        def subject(self, pkt):
-            return types.csv_spec(pkt, 200 * 8, unpacking=True)
+        def subject(self):
+            return types.csv_spec(200 * 8, unpacking=True)
 
         @pytest.fixture()
         def val(self):
@@ -888,60 +642,58 @@ describe "csv_spec":
 
 describe "bytes_spec":
     it "takes in pkt and size_bits":
-        pkt = mock.Mock(name="pkt")
         size_bits = mock.Mock(name="size_bits")
-        spec = types.bytes_spec(pkt, size_bits)
-        assert spec.pkt is pkt
+        spec = types.bytes_spec(size_bits)
         assert spec.size_bits is size_bits
 
     describe "normalising":
-        it "works from the repr of sb.NotSpecified", meta, pkt:
+        it "works from the repr of sb.NotSpecified", meta:
             expected = bitarray("0" * 8)
-            assert types.bytes_spec(pkt, 8).normalise(meta, repr(sb.NotSpecified)) == expected
+            assert types.bytes_spec(8).normalise(meta, repr(sb.NotSpecified)) == expected
 
             expected = bitarray("0" * 8)
             assert (
-                types.bytes_spec(pkt, 8).normalise(meta, repr(sb.NotSpecified).replace("'", ""))
+                types.bytes_spec(8).normalise(meta, repr(sb.NotSpecified).replace("'", ""))
             ) == expected
 
-        it "returns None as the size_bits of bitarray", meta, pkt:
+        it "returns None as the size_bits of bitarray", meta:
             expected = bitarray("0" * 8)
-            assert types.bytes_spec(pkt, 8).normalise(meta, None) == expected
+            assert types.bytes_spec(8).normalise(meta, None) == expected
 
             expected = bitarray("0" * 20)
-            assert types.bytes_spec(pkt, 20).normalise(meta, None) == expected
+            assert types.bytes_spec(20).normalise(meta, None) == expected
 
-        it "returns 0 as the size_bits of bitarray", meta, pkt:
+        it "returns 0 as the size_bits of bitarray", meta:
             expected = bitarray("0" * 8)
-            assert types.bytes_spec(pkt, 8).normalise(meta, 0) == expected
+            assert types.bytes_spec(8).normalise(meta, 0) == expected
 
             expected = bitarray("0" * 20)
-            assert types.bytes_spec(pkt, 20).normalise(meta, 0) == expected
+            assert types.bytes_spec(20).normalise(meta, 0) == expected
 
-        it "expands if not long enough", meta, pkt:
+        it "expands if not long enough", meta:
             val = bitarray("1" * 8)
             expected = bitarray("1" * 8 + "0" * 12)
-            assert types.bytes_spec(pkt, 20).normalise(meta, val) == expected
-            assert types.bytes_spec(pkt, 20).normalise(meta, val.tobytes()) == expected
+            assert types.bytes_spec(20).normalise(meta, val) == expected
+            assert types.bytes_spec(20).normalise(meta, val.tobytes()) == expected
             assert (
-                types.bytes_spec(pkt, 20).normalise(meta, binascii.hexlify(val.tobytes()).decode())
+                types.bytes_spec(20).normalise(meta, binascii.hexlify(val.tobytes()).decode())
             ) == expected
 
-        it "cuts off if too long", meta, pkt:
+        it "cuts off if too long", meta:
             val = bitarray("1" * 24)
             expected = bitarray("1" * 9)
-            assert types.bytes_spec(pkt, 9).normalise(meta, val) == expected
-            assert types.bytes_spec(pkt, 9).normalise(meta, val.tobytes()) == expected
+            assert types.bytes_spec(9).normalise(meta, val) == expected
+            assert types.bytes_spec(9).normalise(meta, val.tobytes()) == expected
             assert (
-                types.bytes_spec(pkt, 9).normalise(meta, binascii.hexlify(val.tobytes()).decode())
+                types.bytes_spec(9).normalise(meta, binascii.hexlify(val.tobytes()).decode())
             ) == expected
 
-        it "returns if just right", meta, pkt:
+        it "returns if just right", meta:
             val = bitarray("1" * 8)
-            assert types.bytes_spec(pkt, 8).normalise(meta, val) == val
-            assert types.bytes_spec(pkt, 8).normalise(meta, val.tobytes()) == val
+            assert types.bytes_spec(8).normalise(meta, val) == val
+            assert types.bytes_spec(8).normalise(meta, val.tobytes()) == val
             assert (
-                types.bytes_spec(pkt, 8).normalise(meta, binascii.hexlify(val.tobytes()).decode())
+                types.bytes_spec(8).normalise(meta, binascii.hexlify(val.tobytes()).decode())
             ) == val
 
         it "gets size_bits by calling it with the pkt if it's a callable", meta, pkt:
@@ -950,27 +702,25 @@ describe "bytes_spec":
             val = bitarray("1" * 8)
             expected = val + bitarray("0" * 3)
 
-            assert types.bytes_spec(pkt, size_bits).normalise(meta, val) == expected
+            assert types.bytes_spec(size_bits).normalise(meta, val) == expected
 
             size_bits.assert_called_with(pkt)
 
 describe "bytes_as_string_spec":
-    it "takes in pkt, size_bits and unpacking":
-        pkt = mock.Mock(name="pkt")
+    it "takes in size_bits and unpacking":
         size_bits = mock.Mock(name="size_bits")
         unpacking = mock.Mock(name="unpacking")
 
-        spec = types.bytes_as_string_spec(pkt, size_bits, unpacking)
+        spec = types.bytes_as_string_spec(size_bits, unpacking)
 
-        assert spec.pkt is pkt
         assert spec.size_bits is size_bits
         assert spec.unpacking is unpacking
 
     describe "unpacking into a string":
 
         @pytest.fixture()
-        def subject(self, pkt):
-            return types.bytes_as_string_spec(pkt, 20 * 8, True)
+        def subject(self):
+            return types.bytes_as_string_spec(20 * 8, True)
 
         it "returns as is if already a string", meta, subject:
             val = "stuff"
@@ -988,8 +738,8 @@ describe "bytes_as_string_spec":
     describe "packing into bytes":
 
         @pytest.fixture()
-        def subject(self, pkt):
-            return types.bytes_as_string_spec(pkt, 20 * 8, False)
+        def subject(self):
+            return types.bytes_as_string_spec(20 * 8, False)
 
         it "encodes string into bytes and pads with zeros", meta, subject:
             s = "asdf"
@@ -1018,7 +768,7 @@ describe "bytes_as_string_spec":
             b.frombytes(s.encode())
             b += bitarray("0" * (11 * 8 - len(b)))
 
-            assert types.bytes_as_string_spec(pkt, size_bits).normalise(meta, s) == b
+            assert types.bytes_as_string_spec(size_bits).normalise(meta, s) == b
 
             size_bits.assert_called_with(pkt)
 
@@ -1030,7 +780,7 @@ describe "float_spec":
 
     it "complains if it's given a boolean", meta, subject:
         for val in (True, False):
-            with assertRaises(BadSpecValue, "Converting a boolean into a float makes no sense"):
+            with assertRaises(BadConversion, "Converting a boolean into a float makes no sense"):
                 subject.normalise(meta, val)
 
     it "converts value into a float", meta, subject:
@@ -1041,5 +791,5 @@ describe "float_spec":
 
     it "complains if it can't convert the value", meta, subject:
         for val in (None, [], [1], {}, {1: 2}, lambda: 1):
-            with assertRaises(BadSpecValue, "Failed to convert value into a float"):
+            with assertRaises(BadConversion, "Failed to convert value into a float"):
                 subject.normalise(meta, val)

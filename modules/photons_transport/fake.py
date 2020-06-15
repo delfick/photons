@@ -5,12 +5,11 @@ from photons_app import helpers as hp
 
 from photons_messages import Services, CoreMessages, DiscoveryMessages, DeviceMessages
 from photons_protocol.messages import Messages
-from photons_protocol.types import Type as T
 
 from contextlib import contextmanager
-from delfick_project.norms import sb
 from collections import defaultdict
 from functools import partial
+from bitarray import bitarray
 import binascii
 import logging
 import asyncio
@@ -27,6 +26,22 @@ class IgnoreMessage(Exception):
 
 class NoSuchResponder(PhotonsAppError):
     desc = "Device didn't have desired responder on it"
+
+
+def payload_repr(pkt, limit=None):
+    try:
+        if isinstance(pkt.payload, bitarray):
+            r = binascii.hexlify(pkt.payload.tobytes()).decode()
+        else:
+            r = repr(pkt.payload)
+    except Exception:
+        r = pkt.__class__.__name__
+
+    if limit:
+        if len(r) > limit:
+            r = f"{r[:limit]}..."
+
+    return r
 
 
 class Attrs:
@@ -92,11 +107,12 @@ def pktkeys(msgs, keep_duplicates=False):
     keys = []
     for msg in msgs:
         clone = msg.payload.clone()
-        if hasattr(clone, "instanceid"):
-            clone.instanceid = 0
-        for name, typ in clone.Meta.field_types:
-            if clone.actual(name) is sb.NotSpecified and isinstance(typ, type(T.Reserved)):
-                clone[name] = None
+        for field in clone.fields:
+            if field.name == "instanceid":
+                field.transformed_val = 0
+
+            if field.is_reserved:
+                field.tranformed_val = None
 
         key = (msg.protocol, msg.pkt_type, repr(clone))
         if key not in keys or keep_duplicates:
@@ -385,7 +401,7 @@ class FakeDevice:
             return
 
         async for msg in self.got_message(pkt, source):
-            await received_data(msg.tobytes(serial=self.serial), addr)
+            await received_data(msg.tobytes(), addr)
 
     async def is_reachable(self, broadcast_address):
         return self.attrs.online
@@ -441,16 +457,12 @@ class FakeDevice:
         return fut
 
     async def got_message(self, pkt, source):
-        payload_repr = repr(pkt.payload)
-        if len(payload_repr) > 300:
-            payload_repr = f"{payload_repr[:300]}..."
-
         log.info(
             hp.lc(
                 "Got packet",
                 source=source,
                 pkt=pkt.__class__.__name__,
-                payload=payload_repr,
+                payload=payload_repr(pkt),
                 pkt_source=pkt.source,
                 serial=self.serial,
             )
@@ -643,17 +655,13 @@ class FakeDevice:
         if extra:
             return extra
 
-        try:
-            payload_repr = repr(pkt.payload)
-        except Exception:
-            payload_repr = pkt.__class__.__name__
-
         log.info(
             hp.lc(
                 "Message wasn't handled",
                 source=source,
                 pkt=pkt.__class__.__name__,
-                payload=payload_repr,
+                pkt_type=pkt.pkt_type,
+                payload=payload_repr(pkt),
                 serial=self.serial,
             )
         )

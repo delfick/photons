@@ -63,7 +63,7 @@ class Writer:
         return result
 
     async def write(self):
-        bts = self.clone.tobytes(self.clone.serial)
+        bts = self.clone.tobytes()
         t = await self.transport.spawn(self.original, timeout=self.connect_timeout)
         await self.transport.write(t, bts, self.original)
         return bts

@@ -1,15 +1,13 @@
-# Get the parent packet
+from photons_protocol.messages import Messages
 from photons_messages.frame import LIFXPacket
 
-# Get the messages
 from photons_messages.messages import *  # noqa
 from photons_messages import messages
 
-# Make the enums available straight from photons_messages
 from photons_messages.enums import *  # noqa
+from photons_messages import enums
 
-# Make this explicitly part of this module
-LIFXPacket = LIFXPacket
+from enum import Enum
 
 
 def make_protocol_register():
@@ -28,3 +26,20 @@ def make_protocol_register():
 
 
 protocol_register = make_protocol_register()
+
+
+def make_all_list():
+    lst = ["protocol_register", "LIFXPacket", "messages"]
+
+    for thing in dir(messages):
+        if isinstance(getattr(messages, thing), Messages):
+            lst.append(thing)
+
+    for thing in dir(enums):
+        if isinstance(getattr(enums, thing), Enum):
+            lst.append(thing)
+
+    return lst
+
+
+__all__ = make_all_list()

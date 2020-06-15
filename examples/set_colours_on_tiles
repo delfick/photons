@@ -15,7 +15,6 @@ log = logging.getLogger("info")
 @addon_hook(
     extras=[
         ("lifx.photons", "transport"),
-        ("lifx.photons", "messages"),
         ("lifx.photons", "control"),
     ]
 )

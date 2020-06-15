@@ -263,7 +263,7 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
 
     options["type"] = typ
     options["res_required"] = False
-    set_effect = MultiZoneMessages.SetMultiZoneEffect.empty_normalise(**options)
+    set_effect = MultiZoneMessages.SetMultiZoneEffect.create(options)
 
     async def gen(ref, sender, **kwargs):
         r = ref if reference is None else reference

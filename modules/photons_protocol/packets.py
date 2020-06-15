@@ -1,41 +1,21 @@
-"""
-To create a packet class we use ``dictobj.PacketSpec`` which is defined here.
+from photons_protocol.constants import Unset, Optional
+from photons_protocol.packet_meta import PacketMeta
+from photons_protocol.encoder import packet_encoder
+from photons_protocol.errors import BadConversion
+from photons_protocol.fields import FieldList
 
-This is reponsble for creating a ``Meta`` class on the class that contains
-information about the different groups and fields on the packet.
+from photons_app.errors import ProgrammerError, PhotonsAppError
 
-It is comprised of a mixin class providing functionality for the packet and a
-meta class for making the ``Meta``.
-
-Usage looks like:
-
-.. code-block:: python
-
-    from delfick_project.norms import dictobj
-
-    class MyPacket(dictobj.PacketSpec):
-        fields = [
-              ("field_one", field_one_type)
-            , ("field_two", field_two_type)
-            ]
-
-where the ``*_type`` objects have information related to the type for that
-field. See ``photons_protocol.types`` for builtin types.
-"""
-from photons_protocol.packing import PacketPacking, val_to_bitarray
-from photons_protocol.types import Optional, Type as T
-
-from photons_app.errors import ProgrammerError
-
-from delfick_project.norms import dictobj, sb, Meta
+from delfick_project.norms import dictobj, Meta
 from bitarray import bitarray
-from functools import partial
 import itertools
-import binascii
 import logging
-import json
 
 log = logging.getLogger("photons_protocol.packets")
+
+
+class InvalidCreation(PhotonsAppError):
+    pass
 
 
 class Information:
@@ -48,47 +28,58 @@ class Information:
         self.sender_message = sender_message
 
 
-class Initial:
-    """Used for the default values on Packet groups"""
-
-
-class packet_spec(sb.Spec):
-    """
-    When you call Packet.spec, you are creating an instance of this.
-
-    This allows us to provide the pkt when making field specs; that has all fields
-    up to the current field set on it.
-    """
-
-    def __init__(self, kls, attrs, name_to_group):
-        self.kls = kls
-        self.attrs = attrs
-        self.name_to_group = name_to_group
-
-    def normalise(self, meta, val):
-        val = sb.dictionary_spec().normalise(meta, val)
-
-        pkt = self.kls()
-        for attr, spec in self.attrs:
-            if callable(spec):
-                spec = spec(pkt, False)
-
-            v = val.get(attr, pkt.actual(attr))
-            if attr not in val and attr in self.name_to_group:
-                g = self.name_to_group[attr]
-                if g in val and attr in val[g]:
-                    v = val[g][attr]
-
-            v = spec.normalise(meta.at(attr), v)
-            dictobj.__setitem__(pkt, attr, v)
-
-        return pkt
-
-
 class PacketSpecMixin:
     """
     Functionality for our packet.
     """
+
+    @classmethod
+    def create(kls, _val=None, **kwargs):
+        val = _val
+
+        if val and kwargs:
+            raise InvalidCreation(
+                "Creating a packet must be done with either a value, or keyword arguments",
+                val=val,
+                kwargs=kwargs,
+            )
+
+        if isinstance(val, dictobj.PacketSpec):
+            if kls == val.Meta.parent:
+                return val.simplify()
+
+            if isinstance(val, kls):
+                return val
+
+            parent = kls.Meta.parent
+            if parent and isinstance(val, parent):
+                return kls.create(val.pack())
+
+            msg = None
+            kwargs = {}
+            for (hn, ht, hd), (gn, gt, gd) in itertools.zip_longest(
+                kls.Meta.fields, val.Meta.fields
+            ):
+                if hd or gd:
+                    msg = "Cannot assert if the two packets are the same because a field is dynamic"
+                    if hd:
+                        kwargs["dynamic_field_have"] = hn
+                    if gd:
+                        kwargs["dynamic_field_got"] = gn
+                    break
+
+                if hn != gn:
+                    msg = "Packet has different fields"
+                    break
+
+                elif ht != gt:
+                    msg = "Packet has different field types"
+                    break
+
+            if msg:
+                raise InvalidCreation(msg, want=kls.__name__, got=type(val).__name__, **kwargs)
+
+        return kls.Meta.spec().normalise(Meta.empty(), val or kwargs)
 
     @property
     def Information(self):
@@ -97,194 +88,30 @@ class PacketSpecMixin:
             info = self.__dict__["Information"] = Information()
         return info
 
-    def pack(self, payload=None, parent=None, serial=None, packing_kls=PacketPacking):
-        """
-        Return us a ``bitarray`` representing this packet.
-        """
-        return packing_kls.pack(self, payload, parent, serial)
-
-    @classmethod
-    def unpack(kls, value, packing_kls=PacketPacking):
-        """
-        Unpack a ``value`` into an instance of this class.
-        """
-        return packing_kls.unpack(kls, value)
-
-    @classmethod
-    def size_bits(kls, values):
-        """Return the number of bits this packet requires. """
-        total = 0
-        for name, typ in kls.Meta.field_types:
-            if callable(typ.size_bits):
-                total += typ.size_bits(values)
-            else:
-                total += typ.size_bits
-        return total
-
-    @classmethod
-    def spec(kls):
-        """
-        Return an ``delfick_project.norms`` specification that creates an instance
-        of this class from a dictionary of values
-
-        If this is a parent_packet with a group having message_type of 0 then that field
-        is added to the spec and requires a T.Bytes
-        """
-        attrs = []
-        for name, typ in kls.Meta.all_field_types:
-            attrs.append((name, typ.spec))
-
-        if getattr(kls, "parent_packet", False):
-            for key, typ in kls.Meta.field_types:
-                if getattr(typ, "message_type", None) == 0:
-                    attrs.append((key, T.Bytes.spec))
-
-        return packet_spec(kls, attrs, kls.Meta.name_to_group)
-
-    def actual(self, key):
-        """Return the actual value at this key, rather than a normalised value"""
-        return self.__getitem__(key, do_spec=False)
-
-    @property
-    def is_dynamic(self):
-        """Says whether any of the field values are created by a function"""
-        for f, t in self.Meta.all_field_types:
-            if t._allow_callable:
-                if callable(self.actual(f)):
-                    return True
-        return False
-
     def __iter__(self):
         yield from ((self, self.Information.remote_addr, self.Information.sender_message))
 
     def __contains__(self, key):
-        """Return whether this object has this key in it's fields or groups"""
-        return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
+        return key in self.fields
 
-    def keys(self):
-        for k in dictobj.__iter__(self):
-            yield k
-
-    def actual_items(self):
-        for key in self.keys():
-            yield key, super().__getitem__(key)
-
-    def actual_values(self):
-        for key in self.keys():
-            yield super().__getitem__(key)
-
-    def items(self):
-        for key in self.keys():
-            yield key, self[key]
-
-    def values(self):
-        for key in self.keys():
-            yield self[key]
-
-    def __getitem__(
-        self,
-        key,
-        do_spec=True,
-        do_transform=True,
-        parent=None,
-        serial=None,
-        allow_bitarray=False,
-        unpacking=True,
-    ):
+    def __getitem__(self, key):
         """
         Dictionary access for a key on the object
 
         This works for groups as well where the values in the fields for that
         group are returned as a dictionary.
-
-        This process will use ``delfick_project.norms`` to ensure the value you get
-        back is normalised. Unless ``do_spec`` is ``False``.
-
-        We will also use the type transform unless ``do_transform`` is ``False``.
-
-        And finally if the do_spec is True and we get back a bitarray and allow_bitarray is False,
-        we will return the result of calling tobytes on that object.
         """
-        M = object.__getattribute__(self, "Meta")
-
-        # If we're requesting one of the groups, then we must assemble from the keys in that group
-        # Unless the group is an empty Payload (message_type of 0 on the type)
-        # In that case, there are no fields, so we return as it is found on the class
-        # (__setitem__ has logic to store this group on the class as is)
-        if key in M.groups:
-            field_types = M.field_types_dict
-            if key in field_types and getattr(field_types[key], "message_type", None) != 0:
-                final = field_types[key]()
-                for k in M.groups[key]:
-                    actual = self.actual(k)
-                    if actual is sb.NotSpecified:
-                        final[k] = self.__getitem__(k, parent=self, serial=serial)
-                    else:
-                        dictobj.__setitem__(final, k, self.actual(k))
-                return final
-
-        try:
-            actual = super(dictobj, self).__getitem__(key)
-        except KeyError:
-            if key not in M.all_names and key not in M.groups:
-                raise
-            actual = sb.NotSpecified
-
-        if key in M.groups and actual is not sb.NotSpecified:
-            # Can only mean we have an empty payload group here
-            b = val_to_bitarray(actual, doing="Converting payload from parent packet")
-            if not allow_bitarray:
-                return b.tobytes()
-            else:
-                return b
-
-        if do_spec and key in M.all_names:
-            typ = M.all_field_types_dict[key]
-            res = object.__getattribute__(self, "getitem_spec")(
-                typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
-            )
-
-            # Make it so if there isn't a list specified, but you access it, we store the list we return
-            # So that if you modify that list, it modifies on the packet
-            if typ and hasattr(typ, "_multiple") and typ._multiple and actual is sb.NotSpecified:
-                dictobj.__setitem__(self, key, res)
-
-            return res
-
-        return actual
-
-    def getitem_spec(
-        self, typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
-    ):
-        """
-        Used by __getitem__ to use the spec on the type to transform the ``actual`` value
-        """
-        if typ._allow_callable:
-            if callable(actual) and actual is not sb.NotSpecified:
-                actual = actual(parent or self, serial)
-
-        spec = typ.spec(self, unpacking, transform=False)
-        res = spec.normalise(Meta.empty().at(key), actual)
-
-        if do_transform and unpacking and res is not sb.NotSpecified and res is not Optional:
-            res = typ.untransform(self, res)
-
-        if type(res) is bitarray and not allow_bitarray:
-            return res.tobytes()
-        else:
-            return res
+        return self.fields[key].transformed_val
 
     def __getattr__(self, key):
         """Object access for keys, this essentially is the same as dictionary access"""
-        if key in object.__getattribute__(self, "Meta").groups:
-            return self[key]
-        if key in object.__getattribute__(self, "Meta").all_names:
+        if key in object.__getattribute__(self, "fields"):
             return self[key]
         return dictobj.__getattr__(self, key)
 
     def __setattr__(self, key, val):
         """Setting values on the object"""
-        if key in self.Meta.groups or key in self.Meta.all_names:
+        if key in self.fields:
             self[key] = val
         else:
             dictobj.__setattr__(self, key, val)
@@ -295,366 +122,140 @@ class PacketSpecMixin:
 
         This will unpack dictionaries if we are setting a dictionary for a group
         field.
-
-        We also see if a field has a transform option and use it if it's there
         """
-        if key in self.Meta.groups:
-            if val is Initial:
-                # Special case because of the logic in dictobj that sets default values on initialization
-                # Should only happen for group fields where it makes no sense
-                return
-
-            self._set_group_item(key, val)
-            return
-
-        # If our type has a transformation, apply it to our value
-        # The assumption is that if there is a transformation,
-        # The value will always be given with the transformation in mind
-        # untransform will be used when extracting the value
-        typ = self.Meta.all_field_types_dict.get(key)
-        if typ and typ._transform is not sb.NotSpecified and val not in (sb.NotSpecified, Optional):
-            val = typ.do_transform(self, val)
-
-        # If we have multiple, then we want to make sure we create actual objects
-        # So that if we modify an object in place, it's updated on the packet
-        if typ and hasattr(typ, "_multiple") and typ._multiple and val is not sb.NotSpecified:
-            val = typ.spec(self, unpacking=True).normalise(Meta.empty().at(key), val)
-
-        # Otherwise we set directly on the packet
-        dictobj.__setitem__(self, key, val)
+        self.fields[key].transformed_val = val
 
     def __eq__(self, other):
-        if isinstance(other, (bytes, bitarray)):
-            want = self.pack(serial=getattr(self, "serial"))
-            if other != want and other != want.tobytes():
-                return False
-            return True
-
-        if not isinstance(other, dict):
-            return other == self
-
-        compared_groups = {}
-        for group in self.Meta.groups:
-            if isinstance(other.get(group), (bytes, bitarray)):
-                want = self.payload
-                if not isinstance(want, (bytes, bitarray)):
-                    want = self.payload.pack(parent=self, serial=getattr(self, "serial", None))
-
-                if other[group] != want and other[group] != want.tobytes():
-                    return False
-
-                compared_groups[group] = True
-
-        for key, typ in self.Meta.all_field_types:
-            group = self.Meta.name_to_group.get(key)
-            if group in compared_groups:
-                continue
-
-            if group is None:
-                if self[key] != other[key]:
-                    return False
-                continue
-
-            if key not in other and not isinstance(other.get(group), dict):
-                return False
-
-            if key not in other:
-                if key not in other[group]:
-                    return False
-
-                if self[key] != other[group][key]:
-                    return False
-
-            elif self[key] != other[key]:
-                return False
-
-        return True
-
-    def _set_group_item(self, key, val):
         """
-        Used by __setitem__ to put a group field onto the packet
-
-        Ensures:
-        * Empty payload group is only filled by str/bytes/bitarray
-        * sb.NotSpecified translates to setting that for all the fields in the group
-        * When val is an instance of the type for this group, we transfer values directly
-        * Non empty payload groups is filled by something with items()
-          so we can then set the values for the fields in the group
+        Equality comparison with other packets, dictionaries or bytes
         """
-        typ = self.Meta.field_types_dict.get(key)
-        if getattr(typ, "message_type", None) == 0:
-            # Message_type of 0 indicates an empty Payload
-            # So we store the whole thing as is on the packet
-            # We also make sure this is a str (hexlified bytes), bytes or bitarray
-            # __getitem__ has the opposite logic to grab this group as is
-            if type(val) not in (bytes, bitarray, str):
-                msg = "Setting non bytes payload on a packet that doesn't know what fields it's payload has"
-                raise ValueError("{0}\tkey={1}\tgot={2}".format(msg, key, repr(val)))
+        if not isinstance(other, self.__class__) and hasattr(other, "__eq__"):
+            if other.__eq__(self) is True:
+                return True
 
-            dictobj.__setitem__(self, key, val)
-            return
+        try:
+            other = self.create(other)
+        except InvalidCreation:
+            return False
+        else:
+            return self.fields == other.fields
 
-        if val is sb.NotSpecified:
-            for field in self.Meta.groups[key]:
-                if field in self:
-                    self[field] = sb.NotSpecified
-            return
+    def get(self, name, dflt):
+        if name not in self:
+            return dflt
+        if not self.fields[name].has_value:
+            return dflt
+        return self.fields[name].transformed_val
 
-        # if we're setting a group from an instance of the group
-        # then just steal the raw values without the transform dance
-        if hasattr(typ, "Meta") and issubclass(type(val), typ):
-            field_types = typ.Meta.field_types_dict
-            for field, v in val.actual_items():
-                if field in field_types:
-                    dictobj.__setitem__(self, field, v)
-            return
+    def groups_and_fields(self):
+        for group in self.fields.groups:
+            yield group.name
+        for field in self.fields.fields:
+            yield field.name
 
-        # We're setting a group, we need to get things from the group via items
-        if not hasattr(val, "items"):
-            msg = "Setting a group on a packet must be done with a value that has an items() method"
-            raise ValueError("{0}\tkey={1}\tgot={2}".format(msg, key, repr(val)))
+    def keys(self):
+        for field in self.fields:
+            yield field.name
 
-        # Set from our value
-        for field, v in val.items():
-            if field in self.Meta.groups[key]:
-                self[field] = v
+    def values(self):
+        for field in self.fields:
+            yield self[field.name]
 
-    def clone(self, overrides=None):
+    def items(self):
+        for field in self.fields:
+            yield field.name, self[field.name]
+
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            self[k] = v
+
+    def simplify(self):
+        """Return a filled out parent packet with the payload as bytes"""
+        return self.Meta.simplify(self)
+
+    def pack(self):
+        result = bitarray(endian="little")
+        for field in self.fields:
+            result += field.raw
+        return result
+
+    def tobytes(self):
+        """Return the bytes that represent this packet"""
+        return self.pack().tobytes()
+
+    def actual(self, key):
+        """Return the actual value at this key, rather than a normalised value"""
+        return self.fields[key].actual
+
+    def clone(self, **overrides):
         """
-        Efficiently create a shallow copy of this packet without going
-        through delfick_project.norms
-
-        The exception is anything in overrides will go through delfick_project.norms
+        Create a clone of this packet
         """
         clone = self.__class__()
 
-        for key, value in self.actual_items():
-            if overrides and key in overrides:
-                clone[key] = overrides[key]
-            else:
-                dictobj.__setitem__(clone, key, value)
+        for field in self.fields:
+            field.transfer_onto(clone.fields[field.name])
+
+        for name, value in overrides.items():
+            clone.fields[name].transformed_val = value
 
         return clone
 
-    def simplify(self, serial=None):
-        """
-        Return us an instance of the ``parent_packet``
-
-        But with the payload as a packed bitarray.
-        """
-        if self.parent_packet:
-            return self
-
-        parent = self.Meta.parent
-        final = parent()
-        last_group_name, _ = parent.Meta.field_types[-1]
-
-        # Set all the keys but those found in the payload
-        # Because we get all_names from the payload, we are ignoring those in the actual payload
-        for key, typ in parent.Meta.all_field_types:
-            value = self.actual(key)
-            if typ._allow_callable or typ._transform and value is sb.NotSpecified:
-                value = self.__getitem__(key, serial=serial, parent=self)
-            dictobj.__setitem__(final, key, value)
-
-        # And set our packed payload
-        final[last_group_name] = self[last_group_name].pack(parent=self, serial=serial)
-
-        return final
-
-    def tobytes(self, serial):
-        """
-        Convert this packet into bytes
-
-        Also, if not already simplified, then we first simplify it with the specified serial
-        """
-        payload = self.actual("payload")
-
-        if type(payload) is str:
-            payload = binascii.unhexlify(payload)
-
-        if type(payload) is bytes:
-            b = bitarray(endian="little")
-            b.frombytes(payload)
-            payload = b
-
-        if type(payload) is bitarray:
-            return self.pack(payload=payload).tobytes()
-        else:
-            return self.simplify(serial).pack().tobytes()
-
-    def as_dict(self, transformed=True):
+    def as_dict(self):
         """Return this packet as a normal python dictionary"""
-        final = {}
-        groups = self.Meta.groups
-        for name in self.Meta.all_names:
-            val = self.__getitem__(name, do_transform=transformed)
-
-            if val is Optional:
-                continue
-
-            if type(val) is list:
-                newval = []
-                for thing in val:
-                    if hasattr(thing, "as_dict"):
-                        newval.append(thing.as_dict())
-                    else:
-                        newval.append(thing)
-                val = newval
-
-            gs = [group for group, names in groups.items() if name in names]
-            if gs:
-                if gs[0] not in final:
-                    final[gs[0]] = {}
-                final[gs[0]][name] = val
-            else:
-                final[name] = val
-
-        if self.Meta.groups and getattr(self, "parent_packet", False):
-            name, typ = self.Meta.field_types[-1]
-            if getattr(typ, "message_type", None) == 0:
-                final[name] = self.__getitem__(name, do_transform=transformed)
-
-        return final
+        dct = {}
+        for field in self.fields:
+            try:
+                dct[field.name] = self[field.name]
+                if dct[field.name] is Optional:
+                    del dct[field.name]
+            except BadConversion:
+                if self.fields[field.name].actual is Unset:
+                    dct[field.name] = Unset
+                else:
+                    raise
+        return dct
 
     def __repr__(self):
         """Return this packet as a jsonified string"""
 
-        def reprer(o):
-            if type(o) is bytes:
-                return binascii.hexlify(o).decode()
-            elif type(o) is bitarray:
-                return binascii.hexlify(o.tobytes()).decode()
-            return repr(o)
+        if isinstance(self.fields, list):
+            return f"<Unprepared packet: {self.__class__.__name__}>"
 
-        return json.dumps(self.as_dict(), sort_keys=True, default=reprer)
+        dct = {}
+        for field in self.fields:
+            if self.Meta.parent and field.name in self.Meta.parent.Meta.fields_dict:
+                continue
 
-    @classmethod
-    def empty_normalise(kls, **kwargs):
-        """Create an instance of this class from keyword arguments"""
-        return kls.normalise(Meta.empty(), kwargs)
+            try:
+                if not field.is_reserved:
+                    dct[field.name] = self[field.name]
+            except BadConversion:
+                pass
 
-    @classmethod
-    def normalise(kls, meta, val):
-        """Create an instance of this class from a dictionary"""
-        return kls.spec().normalise(meta, val)
+        return packet_encoder.encode(dct)
 
 
 class PacketSpecMetaKls(dictobj.Field.metaclass):
     """
     Modify the creation of a class to act as a photons packet.
 
-    * Make sure all the fields don't contain duplicate field names
-    * Create Meta class
-
-      The Meta has the following attributes:
-
-      groups
-        Dictionary of group name to name of fields in that group
-
-      all_names
-        List of all the names of all the fields
-
-      field_types
-        dictionary of field name to field type
-
-      format_types
-        list of all the field types
-
-      all_field_types
-        list of ``(name, type)`` for all the fields
-
-      original_fields
-        The original ``fields`` attribute on the class
-
-    * Replace the ``fields`` attribute with all the fields from the groups
-    * Ensure the class has the ``PacketSpecMixin`` class as a base class
+    This means we have a Meta object and we complain about overriding attributes
     """
 
     def __new__(metaname, classname, baseclasses, attrs):
-        groups = {}
-        all_names = []
-        all_fields = []
-        field_types = []
-        format_types = []
-        name_to_group = {}
-
-        fields = attrs.get("fields")
-        if fields is None:
-            for kls in baseclasses:
-                if hasattr(kls, "Meta") and hasattr(kls.Meta, "original_fields"):
-                    fields = kls.Meta.original_fields
-
-        if fields is None:
-            msg = "PacketSpecMixin expects a fields attribute on the class or a PacketSpec parent"
-            raise ProgrammerError("{0}\tcreating={1}".format(msg, classname))
-
-        if type(fields) is dict:
-            msg = "PacketSpecMixin expect fields to be a list of tuples, not a dictionary"
-            raise ProgrammerError("{0}\tcreating={1}".format(msg, classname))
-
-        for name, typ in fields:
-            if isinstance(typ, str):
-                typ = attrs[typ]
-
-            if hasattr(typ, "Meta"):
-                groups[name] = []
-                for n, _ in typ.Meta.field_types:
-                    groups[name].append(n)
-                    name_to_group[n] = name
-                all_fields.extend(typ.Meta.field_types)
-                all_names.extend(groups[name])
-            else:
-                all_names.append(name)
-                all_fields.append((name, typ))
-            format_types.append(typ)
-            field_types.append((name, typ))
-
-        if len(set(all_names)) != len(all_names):
-            raise ProgrammerError(
-                "Duplicated names!\t{0}".format(
-                    [name for name in all_names if all_names.count(name) > 1]
-                )
-            )
-
-        class MetaRepr(type):
-            def __repr__(self):
-                return "<type {0}.Meta>".format(classname)
-
-        Meta = type.__new__(
-            MetaRepr,
-            "Meta",
-            (),
-            {
-                "multi": None,
-                "groups": groups,
-                "all_names": all_names,
-                "field_types": field_types,
-                "format_types": format_types,
-                "name_to_group": name_to_group,
-                "all_field_types": all_fields,
-                "original_fields": fields,
-                "field_types_dict": dict(field_types),
-                "all_field_types_dict": dict(all_fields),
-            },
-        )
-
-        attrs["Meta"] = Meta
-
-        def dflt(in_group):
-            return Initial if in_group else sb.NotSpecified
-
-        attrs["fields"] = [
-            (name, partial(dflt, name in groups))
-            for name in (list(all_names) + list(groups.keys()))
-        ]
+        Meta = attrs["Meta"] = PacketMeta(classname, baseclasses, attrs)
+        if "fields" in attrs:
+            Meta.original_fields = attrs["fields"]
 
         kls = type.__new__(metaname, classname, baseclasses, attrs)
+        Meta.belongs_to = kls
 
         already_attributes = []
-        for field in all_names:
+        for field in Meta.all_names:
             if hasattr(kls, field):
                 already_attributes.append(field)
+
         if already_attributes:
             raise ProgrammerError(
                 "Can't override attributes with fields\talready_attributes={0}".format(
@@ -667,18 +268,25 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
 
 class NaiveDictobj(dictobj):
     def setup(self, *args, **kwargs):
-        if not kwargs:
-            for (key, dflt), val in itertools.zip_longest(
-                self.fields, args, fillvalue=sb.NotSpecified
-            ):
-                if val is sb.NotSpecified:
-                    val = dflt()
-                setattr(self, key, val)
-            return
+        fields = kwargs.get("fields")
+        if fields is not None:
+            del kwargs["fields"]
+            if args or kwargs:
+                raise InvalidCreation(
+                    "Cannot specify arguments when you create a packet with a fields list",
+                    pkt=self.__class__,
+                )
+            fields = fields.clone(self)
 
-        for key, dflt in self.fields:
-            val = kwargs.get(key, dflt())
-            setattr(self, key, val)
+        lst = None
+        if fields is None:
+            lst = FieldList(self)
+            self.__dict__["fields"] = lst
+        else:
+            self.__dict__["fields"] = fields
+
+        if lst is not None:
+            self.Meta.make_field_infos(self, args, kwargs, fields=lst)
 
 
 dictobj.PacketSpec = type.__new__(

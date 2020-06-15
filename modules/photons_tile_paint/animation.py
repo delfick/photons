@@ -1,5 +1,5 @@
 from photons_tile_paint.options import GlobalOptions
-from photons_tile_paint.set_64 import set_64_maker
+from photons_tile_paint.set_64 import Set64Maker
 
 from photons_app.errors import PhotonsAppError, TimedOut
 from photons_app import helpers as hp
@@ -48,7 +48,7 @@ def canvas_to_msgs(canvas, coords, duration=1, reorient=None, acks=False):
         if reorient:
             colors = reorient(i, colors)
 
-        yield set_64_maker(
+        yield Set64Maker.maker(
             tile_index=i, width=coord[1][0], duration=duration, colors=colors, ack_required=acks
         )
 

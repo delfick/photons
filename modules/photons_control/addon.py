@@ -15,7 +15,7 @@ import photons_control.payloads  # noqa
 import photons_control.tile  # noqa
 
 
-@addon_hook(extras=[("lifx.photons", "messages"), ("lifx.photons", "products")])
+@addon_hook(extras=[("lifx.photons", "products")])
 def __lifx__(collector, *args, **kwargs):
     pass
 

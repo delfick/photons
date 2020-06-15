@@ -731,7 +731,7 @@ describe "FakeDevice":
                 received_data = mock.NonCallableMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
-                    await device.write(source, received_data, pkt.tobytes(serial=serial))
+                    await device.write(source, received_data, pkt.tobytes())
 
                 s1.address.assert_called_once_with(source)
                 s2.address.assert_called_once_with(source)
@@ -761,7 +761,7 @@ describe "FakeDevice":
                 received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
-                    await device.write("memory", received_data, pkt.tobytes(serial=serial))
+                    await device.write("memory", received_data, pkt.tobytes())
 
                 assert received_data.mock_calls == [
                     mock.call(m1b, (f"fake://{serial}/memory", 56700)),
@@ -789,7 +789,7 @@ describe "FakeDevice":
                 received_data = pytest.helpers.AsyncMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
-                    await device.write("udp", received_data, pkt.tobytes(serial=None))
+                    await device.write("udp", received_data, pkt.tobytes())
 
                 assert received_data.mock_calls == [mock.call(m1b, ("127.0.0.1", port))]
 
@@ -803,7 +803,7 @@ describe "FakeDevice":
                 received_data = mock.NonCallableMock(name="received_data")
 
                 with mock.patch.object(device, "got_message", got_message):
-                    await device.write("memory", received_data, pkt.tobytes(serial=serial))
+                    await device.write("memory", received_data, pkt.tobytes())
 
             async it "does nothing if the device is offline", serial, device:
                 device.use_sockets = False
@@ -816,7 +816,7 @@ describe "FakeDevice":
                     received_data = mock.NonCallableMock(name="received_data")
 
                     with mock.patch.object(device, "got_message", got_message):
-                        await device.write("memory", received_data, pkt.tobytes(serial=serial))
+                        await device.write("memory", received_data, pkt.tobytes())
 
         describe "got_message":
             async it "yields ack and results", serial, device:

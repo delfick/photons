@@ -9,7 +9,6 @@ from photons_app.registers import ProtocolRegister
 from photons_messages import LIFXPacket
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import Meta
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock
@@ -88,11 +87,11 @@ describe "PacketTypeExtractor":
     describe "packet_type_from_dict":
         it "can get pkt_type and protocol directory from data":
             data = {"pkt_type": 45, "protocol": 1024}
-            assert PacketTypeExtractor.packet_type_from_dict(data) == (1024, 45)
+            assert PacketTypeExtractor.packet_type_from_dict(data) == (1024, 45, data)
 
         it "can get pkt_type and protocol from groups":
             data = {"protocol_header": {"pkt_type": 45}, "frame_header": {"protocol": 1024}}
-            assert PacketTypeExtractor.packet_type_from_dict(data) == (1024, 45)
+            assert PacketTypeExtractor.packet_type_from_dict(data) == (1024, 45, data)
 
         it "complains if it can't get protocol":
             msg = "Couldn't work out protocol from dictionary"
@@ -126,7 +125,7 @@ describe "PacketTypeExtractor":
             with assertRaises(BadConversion, msg, got=0):
                 PacketTypeExtractor.packet_type_from_bitarray(ba(bts))
 
-            bts = LIFXPacket.empty_normalise(source=1, sequence=1, target=None).pack().tobytes()
+            bts = LIFXPacket.create(source=1, sequence=1, target=None).pack().tobytes()
             PacketTypeExtractor.packet_type_from_bytes(bts)
             PacketTypeExtractor.packet_type_from_bitarray(ba(bts))
 
@@ -136,26 +135,23 @@ describe "PacketTypeExtractor":
                 PacketTypeExtractor.packet_type_from_bitarray(ba(bts[:20]))
 
         it "returns None pkt_type if protocol is unknown":
-            pkt = LIFXPacket.empty_normalise(
-                protocol=234,
-                pkt_type=15,
-                addressable=True,
-                tagged=True,
-                source=1,
-                sequence=1,
-                target=None,
+            pkt = LIFXPacket.create(
+                pkt_type=15, addressable=True, tagged=True, source=1, sequence=1, target=None,
             )
+            pkt.protocol = 234
 
-            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
+            protocol, pkt_type, d = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
             assert protocol == 234
             assert pkt_type is None
+            assert d == pkt.pack()
 
-            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
+            protocol, pkt_type, d = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
             assert protocol == 234
             assert pkt_type is None
+            assert d == pkt.pack()
 
         it "successfully gets protocol and pkt_type for 1024":
-            pkt = LIFXPacket.empty_normalise(
+            pkt = LIFXPacket.create(
                 protocol=1024,
                 pkt_type=78,
                 addressable=True,
@@ -165,13 +161,15 @@ describe "PacketTypeExtractor":
                 target=None,
             )
 
-            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
+            protocol, pkt_type, d = PacketTypeExtractor.packet_type_from_bytes(pkt.pack().tobytes())
             assert protocol == 1024
             assert pkt_type == 78
+            assert d == pkt.pack()
 
-            protocol, pkt_type = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
+            protocol, pkt_type, d = PacketTypeExtractor.packet_type_from_bitarray(pkt.pack())
             assert protocol == 1024
             assert pkt_type == 78
+            assert d == pkt.pack()
 
 describe "sources_for":
     it "can get the source for packets":
@@ -216,7 +214,7 @@ describe "MessagesMixin":
 
         it "can get us information about our data", protocol_register:
             data = mock.Mock(name="data")
-            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78, data))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
@@ -225,7 +223,7 @@ describe "MessagesMixin":
             packet_type.assert_called_once_with(data)
 
             data = mock.Mock(name="data")
-            packet_type = mock.Mock(name="packet_type", return_value=(1024, 99))
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 99, data))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
@@ -235,7 +233,7 @@ describe "MessagesMixin":
 
         it "can get us information about unknown pkt types (known protocol)", protocol_register:
             data = mock.Mock(name="data")
-            packet_type = mock.Mock(name="packet_type", return_value=(1024, 88))
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 88, data))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
@@ -245,7 +243,7 @@ describe "MessagesMixin":
 
         it "complains about unknown protocols", protocol_register:
             data = mock.Mock(name="data")
-            packet_type = mock.Mock(name="packet_type", return_value=(1, 88))
+            packet_type = mock.Mock(name="packet_type", return_value=(1, 88, data))
 
             msg = "Unknown packet protocol"
 
@@ -262,14 +260,14 @@ describe "MessagesMixin":
 
         it "converts str to bytes", protocol_register:
             data = "AA"
-            asbytes = binascii.unhexlify(data)
-            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
+            asbits = ba(binascii.unhexlify(data))
+            packet_type = mock.Mock(name="packet_type", return_value=(1024, 78, asbits))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
-                assert info == (1024, 78, LIFXPacket, M.One, asbytes)
+                assert info == (1024, 78, LIFXPacket, M.One, asbits)
 
-            packet_type.assert_called_once_with(asbytes)
+            packet_type.assert_called_once_with(asbits.tobytes())
 
     describe "unpack":
         it "works", protocol_register:
@@ -287,13 +285,16 @@ describe "MessagesMixin":
             pkt = Messages.unpack(bts, protocol_register, unknown_ok=True)
 
             assert isinstance(pkt, LIFXPacket)
-            assert pkt.payload == binascii.unhexlify("AA")
+
+            b = bitarray(endian="little")
+            b.frombytes(binascii.unhexlify("AA"))
+            assert pkt.payload == b
             assert pkt.pack() == bts
 
         it "unpacks PacketKls if we have one", protocol_register:
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
-            kls.unpack.return_value = res
+            kls.create.return_value = res
 
             data = mock.Mock(name="data")
 
@@ -303,13 +304,13 @@ describe "MessagesMixin":
             with mock.patch.object(Messages, "get_packet_type", get_packet_type):
                 assert Messages.unpack(data, protocol_register) is res
 
-            kls.unpack.assert_called_once_with(data)
+            kls.create.assert_called_once_with(data)
             get_packet_type.assert_called_once_with(data, protocol_register)
 
         it "unpacks Packet if we no PacketKls", protocol_register:
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
-            kls.unpack.return_value = res
+            kls.create.return_value = res
 
             data = mock.Mock(name="data")
 
@@ -319,7 +320,7 @@ describe "MessagesMixin":
             with mock.patch.object(Messages, "get_packet_type", get_packet_type):
                 assert Messages.unpack(data, protocol_register, unknown_ok=True) is res
 
-            kls.unpack.assert_called_once_with(data)
+            kls.create.assert_called_once_with(data)
             get_packet_type.assert_called_once_with(data, protocol_register)
 
         it "complains if unknown and unknown_ok is False", protocol_register:
@@ -360,7 +361,7 @@ describe "MessagesMixin":
                 "sequence": 1,
                 "target": "d073d5000001",
             }
-            bts = M.One.empty_normalise(**data).pack()
+            bts = M.One.create(**data).pack()
             assert Messages.pack(data, protocol_register) == bts
 
         it "works with unknown packet", protocol_register:
@@ -372,7 +373,7 @@ describe "MessagesMixin":
                 "sequence": 1,
                 "target": "d073d5000001",
             }
-            bts = LIFXPacket.empty_normalise(**data).pack()
+            bts = LIFXPacket.create(**data).pack()
             assert Messages.pack(data, protocol_register, unknown_ok=True) == bts
 
         it "works out packet type and packs when you have a PacketKls", protocol_register:
@@ -380,7 +381,7 @@ describe "MessagesMixin":
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")
             pkt.pack.return_value = res
-            kls.normalise.return_value = pkt
+            kls.create.return_value = pkt
 
             data = mock.Mock(name="data")
 
@@ -390,7 +391,7 @@ describe "MessagesMixin":
             with mock.patch.object(Messages, "get_packet_type", get_packet_type):
                 assert Messages.pack(data, protocol_register) is res
 
-            kls.normalise.assert_called_once_with(Meta.empty(), data)
+            kls.create.assert_called_once_with(data)
             pkt.pack.assert_called_once_with()
             get_packet_type.assert_called_once_with(data, protocol_register)
 
@@ -399,7 +400,7 @@ describe "MessagesMixin":
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")
             pkt.pack.return_value = res
-            kls.normalise.return_value = pkt
+            kls.create.return_value = pkt
 
             data = mock.Mock(name="data")
 
@@ -409,7 +410,7 @@ describe "MessagesMixin":
             with mock.patch.object(Messages, "get_packet_type", get_packet_type):
                 assert Messages.pack(data, protocol_register, unknown_ok=True) is res
 
-            kls.normalise.assert_called_once_with(Meta.empty(), data)
+            kls.create.assert_called_once_with(data)
             pkt.pack.assert_called_once_with()
             get_packet_type.assert_called_once_with(data, protocol_register)
 

@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_protocol.types import Type as T, MultiOptions
-from photons_protocol.packing import PacketPacking
 from photons_protocol.messages import Messages
 from photons_protocol.packets import dictobj
 
@@ -10,7 +9,6 @@ from photons_app.errors import ProgrammerError
 from photons_messages import frame
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock
@@ -20,7 +18,7 @@ import pytest
 
 @pytest.fixture()
 def packet():
-    return frame.LIFXPacket.empty_normalise()
+    return frame.LIFXPacket.create()
 
 
 @pytest.fixture()
@@ -137,10 +135,11 @@ describe "LIFXPacket":
 
         p = P(target=None, sequence=1, source=1, one=b"\x00")
 
-        found = {}
-        for info in PacketPacking.fields_in(p, p, None):
-            assert info.name not in found
-            found[info.name] = (info.val, info.to_sized_bitarray())
+        found = {
+            field.name: (field.transformed_val, field.raw)
+            for field in p.fields
+            if not field.is_reserved
+        }
 
         expected = {
             "size": (38, bitarray("0110010000000000")),
@@ -149,24 +148,35 @@ describe "LIFXPacket":
             "tagged": (True, bitarray("1")),
             "source": (1, bitarray("10000000000000000000000000000000")),
             "target": (
-                bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
+                bitarray(
+                    "0000000000000000000000000000000000000000000000000000000000000000"
+                ).tobytes(),
                 bitarray("0000000000000000000000000000000000000000000000000000000000000000"),
             ),
             "res_required": (True, bitarray("1")),
             "ack_required": (True, bitarray("1")),
             "sequence": (1, bitarray("10000000")),
             "pkt_type": (52, bitarray("0010110000000000")),
-            "one": (bitarray("0000000000000000"), bitarray("0000000000000000")),
+            "one": (bitarray("0000000000000000").tobytes(), bitarray("0000000000000000")),
         }
 
-        for k in list(found):
-            if k not in expected:
-                del found[k]
+        assert set(found) == set(expected)
 
-        assert found == expected
+        for (fn, fv), (en, ev) in zip(found.items(), expected.items()):
+            if fn != en:
+                assert False, f"{fn} != {en}: {fv} => {ev}"
+            if fv != ev:
+                print("Found", fn)
+                print("\t", fv)
+                print("===")
+                print("Expected", en)
+                print("\t", ev)
+                assert ev == fv
 
-    it "is a parent_packet":
-        assert frame.LIFXPacket.parent_packet is True
+        assert found and expected
+
+    it "is a parent":
+        assert frame.LIFXPacket.Meta.parent is None
 
     it "has protocol of 1024":
         assert frame.LIFXPacket.Meta.protocol == 1024
@@ -207,42 +217,11 @@ describe "LIFXPacket":
             assert payloadtwo | Two is True
             assert payloadtwo | One is False
 
-        it "can get the values from the packet data if already defined":
-
-            class One(frame.LIFXPacket):
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 32
-
-            One.Payload.Meta.protocol = 1024
-
-            class Two(frame.LIFXPacket):
-                class Payload(dictobj.PacketSpec):
-                    fields = []
-                    message_type = 33
-
-            Two.Payload.Meta.protocol = 1024
-
-            # These values are already there if it's been unpacked from bytes for example
-            # In this case we don't want to go through the __getattr__ mechanism on the packet
-            # Because that is slow!
-            payloadone = One(pkt_type=32, protocol=1024)
-            payloadtwo = Two(pkt_type=33, protocol=1024)
-
-            with mock.patch.object(
-                frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")
-            ):
-                assert payloadone | Two is False
-                assert payloadone | One is True
-
-                assert payloadtwo | Two is True
-                assert payloadtwo | One is False
-
     describe "serial":
         it "returns None if target isn't specified":
             pkt = frame.LIFXPacket()
-            assert pkt.target is sb.NotSpecified
-            assert pkt.serial is None
+            assert not pkt.fields.is_not_empty("target")
+            assert pkt.serial == "000000000000"
 
         it "returns 0s if target is None":
             pkt = frame.LIFXPacket(target=None)
@@ -266,24 +245,28 @@ describe "LIFXPacket":
 
     describe "creating a message":
         it "has the provided name":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.__name__ == "Name"
             assert msg.Payload.__name__ == "NamePayload"
 
         it "has the provided fields on the Payload":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
-            assert msg.Payload.Meta.original_fields == fields
-            assert msg.Meta.original_fields == frame.LIFXPacket.Meta.original_fields
+
+            p = msg(one=True, two="h")
+            for name, _, _ in frame.LIFXPacket.Meta.fields:
+                assert name in p
+            assert "one" in p
+            assert "two" in p
 
         it "has the provided message_type":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Payload.message_type == 52
 
         it "represents_ack if message_type is 45":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(45, *fields)("Name")
             assert msg.Payload.represents_ack is True
 
@@ -291,39 +274,43 @@ describe "LIFXPacket":
             assert msg.Payload.represents_ack is False
 
         it "has a _lifx_packet_message property":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)
             assert msg._lifx_packet_message is True
 
         it "sets Payload.Meta.protocol to 1024":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Payload.Meta.protocol == 1024
 
-        it "has parent_packet set to False":
-            fields = [("one", T.Bool), ("two", T.String)]
+        it "has a parent":
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
-            assert msg.parent_packet is False
+            assert msg.Meta.parent is frame.LIFXPacket
 
         it "has Meta.parent set to LIFXPacket":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Meta.parent == frame.LIFXPacket
 
         it "has a way of creating another packet with the same fields but different message_type":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(4 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)
             using = msg.using(62)
-            msg2 = using("Thing")
 
-            assert msg2.Meta.original_fields == frame.LIFXPacket.Meta.original_fields
-            assert msg2.Payload.Meta.original_fields == fields
-            assert msg2.Payload.message_type == 62
-            assert msg2.Payload.Meta.protocol == 1024
-            assert msg2.__name__ == "Thing"
-            assert msg2.Payload.__name__ == "ThingPayload"
-            assert msg2.parent_packet is False
-            assert msg2.Meta.parent == frame.LIFXPacket
+            m1 = msg("One")
+            m2 = using("Thing")
+
+            assert m1.Meta.fields[:-1] == m2.Meta.fields[:-1]
+            assert m1.Meta.fields[-1] == ("payload", m1.Payload, False)
+            assert m2.Meta.fields[-1] == ("payload", m2.Payload, False)
+            assert m1.Payload.fields == m2.Payload.fields
+
+            assert m2.Payload.message_type == 62
+            assert m2.Payload.Meta.protocol == 1024
+            assert m2.__name__ == "Thing"
+            assert m2.Payload.__name__ == "ThingPayload"
+            assert m2.Meta.parent is frame.LIFXPacket
             assert using._lifx_packet_message is True
 
         it "sets multi on Meta":
@@ -338,7 +325,7 @@ describe "LIFXPacket":
 
     describe "Key":
         it "is able to get a memoized Key from the packet":
-            fields = [("one", T.Bool), ("two", T.String)]
+            fields = [("one", T.Bool), ("two", T.String(6 * 8))]
             msg = frame.LIFXPacket.message(52, *fields)("SetAmze")
 
             pkt1 = msg(one=True, two="hello")

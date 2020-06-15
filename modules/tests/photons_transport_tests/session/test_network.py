@@ -226,7 +226,7 @@ describe "NetworkSession":
                 "no_retry": True,
                 "broadcast": True,
                 "accept_found": True,
-                "error_catcher": [],
+                "error_catcher": mock.ANY,
                 "message_timeout": 1,
             }
             script.run.assert_called_once_with(None, V.session, **kwargs)
@@ -292,7 +292,7 @@ describe "NetworkSession":
                 "no_retry": True,
                 "broadcast": True,
                 "accept_found": True,
-                "error_catcher": [],
+                "error_catcher": mock.ANY,
                 "message_timeout": 1,
             }
             script.run.assert_called_once_with(None, V.session, **kwargs)
@@ -337,7 +337,7 @@ describe "NetworkSession":
                 "no_retry": True,
                 "broadcast": "172.16.0.255",
                 "accept_found": True,
-                "error_catcher": [],
+                "error_catcher": mock.ANY,
                 "message_timeout": 1,
             }
             script.run.assert_called_once_with(None, V.session, **kwargs)
@@ -373,7 +373,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=1,
             )
 
@@ -383,7 +383,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=2,
             )
 
@@ -393,7 +393,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=3,
             )
 
@@ -452,7 +452,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=1,
             )
 
@@ -462,7 +462,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=2,
             )
 
@@ -472,7 +472,7 @@ describe "NetworkSession":
                 no_retry=True,
                 broadcast=True,
                 accept_found=True,
-                error_catcher=[],
+                error_catcher=mock.ANY,
                 message_timeout=3,
             )
 

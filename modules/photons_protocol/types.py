@@ -2,12 +2,14 @@
 Here we create classes that represent the individual fields in the LIFX packets
 """
 
-from photons_protocol.errors import BadSpecValue, BadConversion
+from photons_protocol.errors import BadConversion
+from photons_protocol.constants import Optional
+from photons_protocol.packer import PackCache
 
 from photons_app.errors import ProgrammerError
 from photons_app import helpers as hp
 
-from delfick_project.norms import sb
+from delfick_project.norms import sb, dictobj
 from bitarray import bitarray
 import binascii
 import logging
@@ -16,8 +18,6 @@ import enum
 import re
 
 log = logging.getLogger("photons_protocol.packets.builder")
-
-Optional = type("Optional", (), {})()
 
 
 class UnknownEnum:
@@ -32,10 +32,7 @@ class UnknownEnum:
         return isinstance(other, self.__class__) and other.value == self.value
 
 
-regexes = {
-    "version_number": re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)"),
-    "unknown_enum": re.compile(r"<UNKNOWN: (?P<value>\d+)>"),
-}
+regexes = {"unknown_enum": re.compile(r"<UNKNOWN: (?P<value>\d+)>")}
 
 
 class Type(object):
@@ -62,20 +59,23 @@ class Type(object):
     _dynamic = sb.NotSpecified
     _default = sb.NotSpecified
     _override = sb.NotSpecified
-    _transform = sb.NotSpecified
+    _side_effect = sb.NotSpecified
+    _pack_transform = sb.NotSpecified
     _unpack_transform = sb.NotSpecified
 
     _multiple = False
     _optional = False
     _allow_float = False
     _multiple_kls = False
-    _version_number = False
     _allow_callable = False
     _unknown_enum_values = False
 
     def __init__(self, struct_format, conversion):
         self.conversion = conversion
         self.struct_format = struct_format
+
+        self._pack_spec = None
+        self._unpack_spec = None
 
     def __call__(self, size_bits, left=sb.NotSpecified):
         """
@@ -84,6 +84,14 @@ class Type(object):
         This is a shortcut for calling ``self.S(<size_bits>, left=<left>)``
         """
         return self.S(size_bits, left=left)
+
+    def __eq__(self, other):
+        return (
+            self.struct_format == other.struct_format
+            and self.conversion == other.conversion
+            and self.size_bits == other.size_bits
+            and self._multiple == other._multiple
+        )
 
     def S(self, size_bits, left=sb.NotSpecified):
         """Return a new instance with a different size_bits"""
@@ -96,15 +104,14 @@ class Type(object):
         result._multiple = self._multiple
         result._override = self._override
         result._optional = self._optional
-        result._transform = self._transform
+        result._side_effect = self._side_effect
         result._allow_float = self._allow_float
         result._multiple_kls = self._multiple_kls
-        result._version_number = self._version_number
         result._allow_callable = self._allow_callable
+        result._pack_transform = self._pack_transform
         result._unpack_transform = self._unpack_transform
         result._unknown_enum_values = self._unknown_enum_values
 
-        result.original_size = getattr(self, "original_size", size_bits)
         if left is not sb.NotSpecified:
             result.left_cut = left
         elif hasattr(self, "left_cut"):
@@ -116,16 +123,26 @@ class Type(object):
         """Create a new type"""
         return type(name, (kls,), {})(struct_format, conversion)
 
+    def ensure_specs(self):
+        self.pack_spec
+        self.unpack_spec
+
+    @property
+    def pack_spec(self):
+        if not self._pack_spec:
+            self._pack_spec = self.spec(unpacking=False)
+        return self._pack_spec
+
+    @property
+    def unpack_spec(self):
+        if not self._unpack_spec:
+            self._unpack_spec = self.spec(unpacking=True)
+        return self._unpack_spec
+
     def allow_float(self):
         """Set the _allow_float option"""
         res = self.S(self.size_bits)
         res._allow_float = True
-        return res
-
-    def version_number(self):
-        """Set the _version_number option"""
-        res = self.S(self.size_bits)
-        res._version_number = True
         return res
 
     def enum(self, enum, allow_unknown=False):
@@ -157,11 +174,18 @@ class Type(object):
         """Set a ``pack_func`` and ``unpack_func`` for transforming the value for use"""
         for f in (pack_func, unpack_func):
             if not callable(f):
-                raise ProgrammerError("Sorry, transform can only be given two callables")
+                raise ProgrammerError("transform can only be given two callables")
 
         res = self.S(self.size_bits)
-        res._transform = pack_func
+        res._pack_transform = pack_func
         res._unpack_transform = unpack_func
+        return res
+
+    def side_effect(self, side_effect):
+        if not callable(side_effect):
+            raise ProgrammerError("The side effect can only be a callable")
+        res = self.S(self.size_bits)
+        res._side_effect = side_effect
         return res
 
     def allow_callable(self):
@@ -202,78 +226,29 @@ class Type(object):
             else:
                 setattr(kls, name, kls.t(name, fmt, conversion))
 
-    def spec(self, pkt, unpacking=False, transform=True, multiple=True):
+    def spec(self, unpacking=False):
         """
         Return a delfick_project.norms spec object for normalising values before and
         after packing/unpacking
-
-        This spec has the default and override on the class applied to it
-
-        Where override and default are called with ``pkt`` before being used.
-
-        We support:
-
-        * int
-        * bool
-        * float
-        * str
-        * bytes
-        * ``(bool, int)``
-        * ``(list, str, ",")``
-        * json
         """
-        spec = self._maybe_transform_spec(
-            pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform
-        )
+        spec = self.spec_from_conversion(unpacking)
+
+        if spec is None:
+            raise BadConversion(
+                "Cannot create a specification for this conversion",
+                conversion=self.conversion,
+                type=self.__class__.__name__,
+            )
 
         if self._allow_callable:
             spec = callable_spec(spec)
 
         elif self._override is not sb.NotSpecified:
-            spec = overridden(self._override, pkt)
+            spec = overridden(self._override)
 
-        elif self._default is not sb.NotSpecified:
-            spec = defaulted(spec, self._default, pkt)
+        return spec
 
-        elif self._optional:
-            spec = optional(spec)
-
-        if self._multiple and multiple:
-            return multiple_spec(self, pkt, spec, unpacking)
-        else:
-            return spec
-
-    def _maybe_transform_spec(self, pkt, spec, unpacking, transform=True):
-        """
-        Return a wrapped spec with do_transform
-
-        This happens if we are not unpacking and have a _transform
-        """
-        if transform and not unpacking and self._transform is not sb.NotSpecified:
-            return transform_spec(pkt, spec, self.do_transform)
-        else:
-            return spec
-
-    def _spec(self, pkt, unpacking=False):
-        """
-        Return a delfick_project.norms spec object for normalising values before and
-        after packing/unpacking
-        """
-        spec = self.spec_from_conversion(pkt, unpacking)
-
-        if spec is not None:
-            if self._dynamic is sb.NotSpecified:
-                return spec
-            else:
-                return self.dynamic_wrapper(spec, pkt, unpacking=unpacking)
-
-        raise BadConversion(
-            "Cannot create a specification for this conversion",
-            conversion=self.conversion,
-            type=self.__class__.__name__,
-        )
-
-    def spec_from_conversion(self, pkt, unpacking):
+    def spec_from_conversion(self, unpacking):
         """Get us a specification from our conversion type"""
         conversion = self.conversion
 
@@ -281,26 +256,19 @@ class Type(object):
             return static_conversion_from_spec[conversion]
 
         elif conversion is bytes:
-            return bytes_spec(pkt, self.size_bits)
+            return bytes_spec(self.size_bits, unpacking=unpacking)
 
         elif conversion is int:
-            return self.make_integer_spec(pkt, unpacking)
+            return self.make_integer_spec(unpacking)
 
         elif conversion is str:
-            return bytes_as_string_spec(pkt, self.size_bits, unpacking=unpacking)
+            return bytes_as_string_spec(self.size_bits, unpacking=unpacking)
 
         elif conversion == (list, str, ","):
-            return csv_spec(pkt, self.size_bits, unpacking=unpacking)
+            return csv_spec(self.size_bits, unpacking=unpacking)
 
-    def dynamic_wrapper(self, spec, pkt, unpacking=False):
-        """A wrapper to convert to and from dynamic fields"""
-        from photons_protocol.packets import dictobj
-
-        kls = type("parameters", (dictobj.PacketSpec,), {"fields": list(self._dynamic(pkt))})
-        return expand_spec(kls, spec, unpacking)
-
-    def make_integer_spec(self, pkt, unpacking):
-        """Make an integer spec that respects enum, bitmask and allow_float/version_number"""
+    def make_integer_spec(self, unpacking):
+        """Make an integer spec that respects enum, bitmask and allow_float"""
         enum = None
         if self._enum is not sb.NotSpecified:
             enum = self._enum
@@ -309,11 +277,7 @@ class Type(object):
         if self._bitmask is not sb.NotSpecified:
             bitmask = self._bitmask
 
-        if self._version_number:
-            return version_number_spec(unpacking=unpacking)
-
         return integer_spec(
-            pkt,
             enum,
             bitmask,
             unpacking=unpacking,
@@ -321,19 +285,78 @@ class Type(object):
             unknown_enum_values=self._unknown_enum_values,
         )
 
-    def do_transform(self, pkt, value):
-        """Perform transformation on a value"""
-        if self._transform is sb.NotSpecified:
-            return value
-        else:
-            return self._transform(pkt, value)
+    @property
+    def has_transform(self):
+        return self._pack_transform is not sb.NotSpecified or self._multiple_kls
 
-    def untransform(self, pkt, value):
+    @property
+    def has_default(self):
+        return self._default is not sb.NotSpecified
+
+    def get_default(self, pkt):
+        if self._optional:
+            return Optional
+
+        if self._default is not sb.NotSpecified:
+            if callable(self._default):
+                return self._default(pkt)
+            return self._default
+
+        return sb.NotSpecified
+
+    @property
+    def has_multiple(self):
+        return self._multiple
+
+    @property
+    def is_optional(self):
+        return self._optional
+
+    def total_size_bits(self, pkt):
+        count = self.size_bits
+        if callable(count):
+            count = count(pkt)
+        return count
+
+    @property
+    def multiple_count(self):
+        return self._multiple or 0
+
+    @property
+    def combined(self):
+        if self._multiple_kls:
+            return self._multiple_kls
+        if self._dynamic is not sb.NotSpecified:
+            return lambda pkt: type(
+                "parameters", (dictobj.PacketSpec,), {"fields": list(self._dynamic(pkt))}
+            )
+
+    @property
+    def has_side_effect(self):
+        return self._side_effect is not sb.NotSpecified
+
+    def do_side_effect(self, pkt, value):
+        """Perform a side effect on setting this value"""
+        if self._side_effect is not sb.NotSpecified:
+            self._side_effect(pkt, value)
+
+    def do_pack_transform(self, pkt, value):
+        """Perform transformation on a value"""
+        if self._pack_transform is not sb.NotSpecified:
+            value = self._pack_transform(pkt, value)
+        if self._multiple_kls and not isinstance(value, self._multiple_kls):
+            value = self._multiple_kls.create(value)
+
+        return value
+
+    def do_unpack_transform(self, pkt, value):
         """Perform the reverse transformation on a value"""
-        if self._unpack_transform is sb.NotSpecified:
-            return value
-        else:
-            return self._unpack_transform(pkt, value)
+        if self._unpack_transform is not sb.NotSpecified:
+            value = self._unpack_transform(pkt, value)
+        if self._multiple_kls and not isinstance(value, self._multiple_kls):
+            value = self._multiple_kls.create(value)
+
+        return value
 
 
 class callable_spec(sb.Spec):
@@ -342,27 +365,9 @@ class callable_spec(sb.Spec):
     def __init__(self, spec):
         self.spec = spec
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         if callable(val):
             return val
-        return self.spec.normalise(meta, val)
-
-
-class transform_spec(sb.Spec):
-    """
-    Apply an untransform on some value
-
-    This is only used when we get a spec for unpacking
-    """
-
-    def __init__(self, pkt, spec, do_transform):
-        self.pkt = pkt
-        self.spec = spec
-        self.do_transform = do_transform
-
-    def normalise(self, meta, val):
-        if val not in (sb.NotSpecified, Optional):
-            val = self.do_transform(self.pkt, val)
         return self.spec.normalise(meta, val)
 
 
@@ -389,25 +394,22 @@ class MultipleWrapper(list):
 class multiple_spec(sb.Spec):
     """Understands going to and from bytes and lists of base types"""
 
-    def __init__(self, typ, pkt, spec, unpacking):
+    def __init__(self, typ, spec, unpacking):
         self.typ = typ
-        self.pkt = pkt
         self.kls = typ._multiple_kls
         self.spec = spec
         self.sizer = typ._multiple
         self.per_size = typ.size_bits
         self.unpacking = unpacking
 
-    @property
-    def number(self):
+    def number(self, pkt):
         if callable(self.sizer):
-            return self.sizer(self.pkt)
+            return self.sizer(pkt)
         return self.sizer
 
-    @property
-    def bytes_spec(self):
-        total_size = self.per_size * self.number
-        return bytes_spec(self.pkt, total_size)
+    def bytes_spec(self, pkt):
+        total_size = self.per_size * self.number(pkt)
+        return bytes_spec(total_size)
 
     def normalise(self, meta, val):
         if self.unpacking:
@@ -415,37 +417,17 @@ class multiple_spec(sb.Spec):
         else:
             return self.pack(meta, val)
 
-    def unpack_bytes(self, meta, val, kls, number):
-        from photons_protocol.packing import BitarraySlice
-
-        res = []
-        bts = self.bytes_spec.normalise(meta, val)
-
-        i = -1
-        while True:
-            i += 1
-            v = bts[: self.per_size]
-            info = BitarraySlice("", self.typ, v, self.per_size, type(self.pkt).__name__, self.pkt)
-            nxt = self.spec.normalise(meta.indexed_at(i), info.unpackd)
-            if kls:
-                nxt = kls.unpack(nxt)
-
-            res.append(nxt)
-            bts = bts[self.per_size :]
-            if not bts:
-                break
-
-        return MultipleWrapper(res, kls, number, meta, self.val_to_kls)
-
     def unpack_list(self, meta, val, kls, number):
+        pkt = meta.everything["pkt"]
+
         if len(val) > number:
-            raise BadSpecValue(
+            raise BadConversion(
                 "Expected correct number of items", meta=meta, got=len(val), want=number
             )
 
         kls = self.kls
         if kls and not isinstance(kls, type):
-            kls = kls(self.pkt)
+            kls = kls(pkt)
 
         res = []
         i = -1
@@ -465,45 +447,60 @@ class multiple_spec(sb.Spec):
 
         if isinstance(val, kls):
             return val
-        elif val is sb.NotSpecified or isinstance(val, (bytes, bitarray)):
-            return kls.unpack(self.spec.normalise(meta, val))
         else:
-            val = sb.dictionary_spec().normalise(meta, val)
-            return kls.normalise(meta, val)
+            return kls.create(val)
 
     def unpack(self, meta, val):
         kls = self.kls
+        pkt = meta.everything["pkt"]
+
         if kls and not isinstance(kls, type):
-            kls = kls(self.pkt)
+            kls = kls(pkt)
 
         if val is sb.NotSpecified:
             val = []
 
-        if val is sb.NotSpecified or type(val) in (bytes, bitarray):
-            return self.unpack_bytes(meta, val, kls, self.number)
-        elif isinstance(val, MultipleWrapper):
-            return val.clone(kls, self.number, meta, self.val_to_kls)
-        elif isinstance(val, list):
-            return self.unpack_list(meta, val, kls, self.number)
+        if isinstance(val, MultipleWrapper):
+            return val.clone(kls, self.number(pkt), meta, self.val_to_kls)
+
+        if isinstance(val, bytes):
+            b = bitarray(endian="little")
+            b.frombytes(val)
+            val = b
+
+        if isinstance(val, bitarray):
+            v = []
+            at = 0
+            end = 0
+            while at < len(val):
+                end = at + kls.Meta.size_bits(pkt)
+                v.append(val[at:end])
+                at = end
+            val = v
+
+        if isinstance(val, list):
+            return self.unpack_list(meta, val, kls, self.number(pkt))
         else:
-            raise BadSpecValue("Expected to unpack bytes or list", found=type(val))
+            raise BadConversion("Expected to unpack a list", found=type(val), meta=meta)
 
     def pack(self, meta, val):
+        pkt = meta.everything["pkt"]
+
         if val is sb.NotSpecified:
             val = []
 
         if not isinstance(val, list):
             val = self.unpack(meta, val)
 
-        number = self.number
+        number = self.number(pkt)
         if len(val) > number:
-            raise BadSpecValue(
+            raise BadConversion(
                 "Expected correct number of items", meta=meta, got=len(val), want=number
             )
 
         kls = self.kls
         if kls and not isinstance(kls, type):
-            kls = kls(self.pkt)
+            kls = kls(pkt)
 
         res = []
         i = -1
@@ -524,7 +521,14 @@ class multiple_spec(sb.Spec):
             i += 1
             res.append(self.spec.normalise(meta.indexed_at(i), sb.NotSpecified))
 
-        return res
+        b = bitarray(endian="little")
+        for item in res:
+            if isinstance(item, bitarray):
+                b.extend(item)
+            else:
+                b.extend(PackCache.convert(self.typ.struct_format, item))
+
+        return b
 
 
 class expand_spec(sb.Spec):
@@ -540,90 +544,21 @@ class expand_spec(sb.Spec):
     with the val if it is a dictionary.
     """
 
-    def __init__(self, kls, spec, unpacking):
-        self.kls = kls
+    def __init__(self, make_fields, spec, unpacking):
         self.spec = spec
         self.unpacking = unpacking
+        self.make_fields = make_fields
+
+    def kls(self, pkt):
+        return type("parameters", (dictobj.PacketSpec,), {"fields": list(self.make_fields(pkt))})
 
     def normalise(self, meta, val):
+        kls = self.kls(meta.everything["pkt"])
+
         if self.unpacking:
-            if type(val) in (bitarray, bytes):
-                return self.kls.unpack(self.spec.normalise(meta, val))
-            elif isinstance(val, self.kls):
-                return val
-            elif isinstance(val, dict):
-                return self.kls.empty_normalise(**val)
-            elif val is sb.NotSpecified:
-                return self.kls.empty_normalise()
-            else:
-                raise BadSpecValue(
-                    "Expected to unpack bytes", found=val, transforming_into=self.kls
-                )
+            return kls.create(val)
         else:
-            if type(val) not in (bytes, bitarray):
-                try:
-                    fields = sb.dictionary_spec().normalise(meta, val)
-                except BadSpecValue as error:
-                    raise BadSpecValue(
-                        "Sorry, dynamic fields only supports a dictionary of values", error=error
-                    )
-                else:
-                    val = self.kls.empty_normalise(**fields).pack()
-
-            # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
-            return self.spec.normalise(meta, val)
-
-
-class optional(sb.Spec):
-    """Return Optional if NotSpecified, else use the spec"""
-
-    def __init__(self, spec):
-        self.spec = spec
-
-    def normalise_empty(self, meta):
-        return Optional
-
-    def normalise_filled(self, meta, val):
-        if val is Optional:
-            return val
-        return self.spec.normalise(meta, val)
-
-
-class version_number_spec(sb.Spec):
-    """Normalise a value as a version string"""
-
-    def setup(self, unpacking=False):
-        self.unpacking = unpacking
-
-    def normalise_filled(self, meta, val):
-        """
-        Convert to and from a string into an integer
-        """
-        if self.unpacking:
-            if type(val) is str:
-                if not regexes["version_number"].match(val):
-                    raise BadSpecValue(r"Expected string to match \d+.\d+", got=val, meta=meta)
-                return val
-
-            val = sb.integer_spec().normalise(meta, val)
-            major = val >> 0x10
-            minor = val & 0xFFFF
-            return f"{major}.{minor}"
-        else:
-            if type(val) is int:
-                return val
-
-            val = sb.string_spec().normalise(meta, val)
-            m = regexes["version_number"].match(val)
-            if not m:
-                raise BadSpecValue(
-                    r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta
-                )
-
-            groups = m.groupdict()
-            major = int(groups["major"])
-            minor = int(groups["minor"])
-            return (major << 0x10) + minor
+            return self.spec.normalise(meta, kls.create(val).pack())
 
 
 class integer_spec(sb.Spec):
@@ -633,10 +568,7 @@ class integer_spec(sb.Spec):
     Take into account whether we have ``enum`` or ``bitmask`` and ``allow_float``
     """
 
-    def setup(
-        self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False
-    ):
-        self.pkt = pkt
+    def setup(self, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False):
         self.enum = enum
         self.bitmask = bitmask
         self.unpacking = unpacking
@@ -645,7 +577,7 @@ class integer_spec(sb.Spec):
         if self.enum and self.bitmask:
             raise ProgrammerError("Sorry, can't specify enum and bitmask for the same type")
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         If we don't have an enum or bitmask
 
@@ -661,15 +593,15 @@ class integer_spec(sb.Spec):
         if self.enum is None and self.bitmask is None:
             if self.allow_float and type(val) is float:
                 return val
-            return sb.integer_spec().normalise(meta, val)
+            if not isinstance(val, int):
+                raise BadConversion("Value must be an integer", meta=meta, got=val)
+            return val
 
         if self.enum:
             kwargs = dict(unpacking=self.unpacking, allow_unknown=self.unknown_enum_values)
-            return enum_spec(self.pkt, self.enum, **kwargs).normalise(meta, val)
+            return enum_spec(self.enum, **kwargs).normalise(meta, val)
         else:
-            return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(
-                meta, val
-            )
+            return bitmask_spec(self.bitmask, unpacking=self.unpacking).normalise(meta, val)
 
 
 class bitmask_spec(sb.Spec):
@@ -691,13 +623,13 @@ class bitmask_spec(sb.Spec):
     The bitmask may also be a callable that takes in the whole pkt and must return an Enum
     """
 
-    def setup(self, pkt, bitmask, unpacking=False):
-        self.pkt = pkt
+    def setup(self, bitmask, unpacking=False):
         self.bitmask = bitmask
         self.unpacking = unpacking
 
-    def normalise_filled(self, meta, val):
-        bitmask = self.determine_bitmask()
+    def normalise(self, meta, val):
+        pkt = meta.everything["pkt"]
+        bitmask = self.determine_bitmask(pkt)
 
         if val in (0, False):
             if self.unpacking:
@@ -723,7 +655,7 @@ class bitmask_spec(sb.Spec):
         else:
             return self.pack(bitmask, meta, val)
 
-    def determine_bitmask(self):
+    def determine_bitmask(self, pkt):
         """
         Work out our bitmask value.
 
@@ -735,7 +667,7 @@ class bitmask_spec(sb.Spec):
         """
         bitmask = self.bitmask
         if type(bitmask) is not enum.EnumMeta and callable(self.bitmask):
-            bitmask = bitmask(self.pkt)
+            bitmask = bitmask(pkt)
 
         try:
             if not issubclass(bitmask, enum.Enum):
@@ -782,7 +714,10 @@ class bitmask_spec(sb.Spec):
 
                     if not found:
                         raise BadConversion(
-                            "Can't convert value into value from mask", val=v, wanted=bitmask
+                            "Can't convert value into value from mask",
+                            val=v,
+                            wanted=bitmask,
+                            meta=meta,
                         )
 
         return set(result)
@@ -815,7 +750,9 @@ class bitmask_spec(sb.Spec):
                         break
 
                 if not found:
-                    raise BadConversion("Can't convert value into mask", mask=bitmask, got=v)
+                    raise BadConversion(
+                        "Can't convert value into mask", mask=bitmask, got=v, meta=meta
+                    )
 
         return final
 
@@ -831,14 +768,14 @@ class enum_spec(sb.Spec):
     When not unpacking, we are converting into the value of that member of the enum
     """
 
-    def setup(self, pkt, enum, unpacking=False, allow_unknown=False):
-        self.pkt = pkt
+    def setup(self, enum, unpacking=False, allow_unknown=False):
         self.enum = enum
         self.unpacking = unpacking
         self.allow_unknown = allow_unknown
 
-    def normalise_filled(self, meta, val):
-        em = self.determine_enum()
+    def normalise(self, meta, val):
+        pkt = meta.everything.get("pkt", None)
+        em = self.determine_enum(pkt)
 
         if self.unpacking:
             return self.unpack(em, meta, val)
@@ -906,7 +843,7 @@ class enum_spec(sb.Spec):
                 "Value wasn't a valid enum value", val=val, available=available, meta=meta
             )
 
-    def determine_enum(self):
+    def determine_enum(self, pkt):
         """
         Work out our enum value.
 
@@ -916,7 +853,9 @@ class enum_spec(sb.Spec):
         """
         em = self.enum
         if type(em) is not enum.EnumMeta and callable(em):
-            em = em(self.pkt)
+            if pkt is None:
+                raise ProgrammerError("enum is dynamic based on the packet, but none was provided")
+            em = em(pkt)
 
         try:
             if not issubclass(em, enum.Enum):
@@ -930,26 +869,24 @@ class enum_spec(sb.Spec):
 class overridden(sb.Spec):
     """Normalise any value into an overridden value"""
 
-    def setup(self, default_func, pkt):
-        self.pkt = pkt
+    def setup(self, default_func):
         self.default_func = default_func
 
     def normalise(self, meta, val):
-        return self.default_func(self.pkt)
+        pkt = meta.everything["pkt"]
+        return self.default_func(pkt)
 
 
 class defaulted(sb.Spec):
     """Normalise NotSpecified into a default value"""
 
-    def setup(self, spec, default_func, pkt):
-        self.pkt = pkt
+    def setup(self, spec, default_func):
         self.spec = spec
         self.default_func = default_func
 
-    def normalise_empty(self, meta):
-        return self.spec.normalise(meta, self.default_func(self.pkt))
-
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
+        if val is sb.NotSpecified:
+            val = self.default_func(meta.everything["pkt"])
         return self.spec.normalise(meta, val)
 
 
@@ -958,10 +895,7 @@ class boolean(sb.Spec):
     Normalise a value into a boolean
     """
 
-    def normalise_empty(self, meta):
-        raise BadSpecValue("Must specify boolean values", meta=meta)
-
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         Booleans are returned as is.
 
@@ -969,11 +903,15 @@ class boolean(sb.Spec):
 
         Otherwise an error is raised
         """
+        if val is sb.NotSpecified:
+            raise BadConversion("Must specify boolean values", meta=meta)
+
         if type(val) is bool:
             return val
         if val in (0, 1):
             return bool(val)
-        raise BadSpecValue("Could not convert value into a boolean", val=val, meta=meta)
+
+        raise BadConversion("Could not convert value into a boolean", val=val, meta=meta)
 
 
 class boolean_as_int_spec(sb.Spec):
@@ -981,11 +919,7 @@ class boolean_as_int_spec(sb.Spec):
     Normalise a boolean value into an integer
     """
 
-    def normalise_empty(self, meta):
-        """Must specify boolean values"""
-        raise BadSpecValue("Must specify boolean values", meta=meta)
-
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         Booleans are returned as integer 0 or 1.
 
@@ -993,11 +927,15 @@ class boolean_as_int_spec(sb.Spec):
 
         Otherwise an error is raised
         """
+        if val is sb.NotSpecified:
+            raise BadConversion("Must specify boolean values", meta=meta, got=val)
+
         if type(val) is bool:
             return int(val)
         if val in (0, 1):
             return val
-        raise BadSpecValue("BoolInts must be True, False, 0 or 1", got=val, meta=meta)
+
+        raise BadConversion("BoolInts must be True, False, 0 or 1", got=val, meta=meta)
 
 
 class csv_spec(sb.Spec):
@@ -1005,12 +943,11 @@ class csv_spec(sb.Spec):
     Normalise csv in and out of being a list of string or bytes
     """
 
-    def __init__(self, pkt, size_bits, unpacking=False):
-        self.pkt = pkt
+    def __init__(self, size_bits, unpacking=False):
         self.size_bits = size_bits
         self.unpacking = unpacking
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         When we're unpacking, we are getting csv bytes and turning into a list of strings
 
@@ -1023,58 +960,54 @@ class csv_spec(sb.Spec):
             if type(val) is bitarray:
                 val = val.tobytes()
             if type(val) is bytes:
-                val = bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
-                    meta, val
-                )
+                val = bytes_as_string_spec(self.size_bits, self.unpacking).normalise(meta, val)
             if type(val) is str:
                 return val.split(",")
         else:
             if type(val) is list:
                 val = ",".join(val)
-            return bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
-                meta, val
-            )
+            return bytes_as_string_spec(self.size_bits, self.unpacking).normalise(meta, val)
 
 
 class bytes_spec(sb.Spec):
     """
     Ensure we have the right length of bytes
-
-    This spec has no notion of packing or unpacking because it should be bitarray
-    in either case.
-
-    For good measure we just always convert string and bytes to bitarray
     """
 
-    def __init__(self, pkt, size_bits):
-        self.pkt = pkt
+    def __init__(self, size_bits, unpacking=False):
         self.size_bits = size_bits
+        self.unpacking = unpacking
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         * If we get a string, unhexlify it
         * convert the bytes into a bitarray
         * If we don't have a ``size_bits`` then return as is
         * If we do have size_bits, then either pad with 0s or cut off at the limit
         """
-        if val in (None, 0):
+        pkt = meta.everything["pkt"]
+
+        if val in (None, 0, sb.NotSpecified):
             val = b""
 
         b = self.to_bitarray(meta, val)
 
         size_bits = self.size_bits
         if callable(size_bits):
-            size_bits = self.size_bits(self.pkt)
+            size_bits = self.size_bits(pkt)
 
         if size_bits is NotImplemented:
             return b
 
         if len(b) > size_bits:
-            return b[:size_bits]
+            b = b[:size_bits]
         elif len(b) < size_bits:
-            return b + bitarray("0" * (size_bits - len(b)))
-        else:
-            return b
+            b = b + bitarray("0" * (size_bits - len(b)))
+
+        if self.unpacking:
+            return b.tobytes()
+
+        return b
 
     def to_bitarray(self, meta, val):
         """Return us the val as a bitarray"""
@@ -1112,12 +1045,11 @@ class bytes_as_string_spec(sb.Spec):
     Look for the null byte and use that to create a str
     """
 
-    def __init__(self, pkt, size_bits, unpacking=False):
-        self.pkt = pkt
+    def __init__(self, size_bits, unpacking=False):
         self.size_bits = size_bits
         self.unpacking = unpacking
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         """
         If we're unpacking, then:
 
@@ -1126,6 +1058,9 @@ class bytes_as_string_spec(sb.Spec):
 
         If we're packing, then just use ``bytes_spec``
         """
+        if val is sb.NotSpecified:
+            val = b""
+
         if self.unpacking:
             if type(val) is str:
                 return val
@@ -1144,13 +1079,16 @@ class bytes_as_string_spec(sb.Spec):
                 )
                 return val
             except Exception as error:
-                raise BadSpecValue(
-                    "String before the null byte could not be decoded", val=val, erorr=error
+                raise BadConversion(
+                    "String before the null byte could not be decoded",
+                    val=val,
+                    erorr=error,
+                    meta=meta,
                 )
         else:
             if type(val) is str:
                 val = val.encode()
-            return bytes_spec(self.pkt, self.size_bits).normalise(meta, val)
+            return bytes_spec(self.size_bits).normalise(meta, val)
 
 
 class float_spec(sb.Spec):
@@ -1158,16 +1096,16 @@ class float_spec(sb.Spec):
     Make sure we can convert value into a float
     """
 
-    def normalise_filled(self, meta, val):
+    def normalise(self, meta, val):
         if type(val) is bool:
-            raise BadSpecValue(
+            raise BadConversion(
                 "Converting a boolean into a float makes no sense", got=val, meta=meta
             )
 
         try:
             return float(val)
         except (TypeError, ValueError) as error:
-            raise BadSpecValue(
+            raise BadConversion(
                 "Failed to convert value into a float", got=val, error=error, meta=meta
             )
 

@@ -11,11 +11,8 @@ import os
 
 
 wanted = [
-    "protocol",
     "control",
-    "messages",
     "products",
-    "protocol",
     "themes",
     "tile_paint",
     "transport",

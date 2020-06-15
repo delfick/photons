@@ -12,8 +12,8 @@ describe "DiscoveryMessages":
 
         unpackd = DiscoveryMessages.unpack(hexd, protocol_register=protocol_register)
 
-        expected = DiscoveryMessages.StateService.empty_normalise(
-            **{
+        expected = DiscoveryMessages.StateService.create(
+            {
                 "frame_address": {
                     "ack_required": False,
                     "res_required": True,
@@ -38,4 +38,4 @@ describe "DiscoveryMessages":
         different = print_packet_difference(unpackd, expected)
         assert not different
 
-        assert binascii.hexlify(expected.pack().tobytes()).decode() == hexd
+        assert binascii.hexlify(expected.tobytes()).decode() == hexd

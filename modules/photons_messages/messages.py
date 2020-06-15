@@ -2,14 +2,9 @@ from photons_messages import enums, fields
 from photons_messages.frame import msg
 
 from photons_protocol.messages import T, Messages, MultiOptions
-from photons_protocol.types import Optional
 
 from delfick_project.norms import sb
 import math
-
-
-def empty(pkt, attr):
-    return pkt.actual(attr) in (Optional, sb.NotSpecified)
 
 
 def color_zones_response_count(req, res):
@@ -192,10 +187,10 @@ class LightMessages(Messages):
         , ("cycles", T.Float.default(1))
         , ("skew_ratio", fields.waveform_skew_ratio)
         , ("waveform", T.Uint8.enum(enums.Waveform).default(enums.Waveform.SAW))
-        , ("set_hue", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "hue") else 1))
-        , ("set_saturation", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "saturation") else 1))
-        , ("set_brightness", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "brightness") else 1))
-        , ("set_kelvin", T.BoolInt.default(lambda pkt: 0 if empty(pkt, "kelvin") else 1))
+        , ("set_hue", T.BoolInt.default(lambda pkt: 1 if pkt.fields["hue"].has_value else 0))
+        , ("set_saturation", T.BoolInt.default(lambda pkt: 1 if pkt.fields["saturation"].has_value else 0))
+        , ("set_brightness", T.BoolInt.default(lambda pkt: 1 if pkt.fields["brightness"].has_value else 0))
+        , ("set_kelvin", T.BoolInt.default(lambda pkt: 1 if pkt.fields["kelvin"].has_value else 0))
         )
 
     GetInfrared = msg(120)

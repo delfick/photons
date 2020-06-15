@@ -569,7 +569,7 @@ class ChainPlan(Plan):
             if self.deps["zones"] is not Skip:
                 width = len(self.deps["zones"])
 
-            return Tile.empty_normalise(
+            return Tile.create(
                 accel_meas_x=0,
                 accel_meas_y=0,
                 accel_meas_z=0,

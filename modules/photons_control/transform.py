@@ -103,12 +103,12 @@ class Transformer(object):
             s = dict(state)
             s["level"] = power_level
             s["res_required"] = False
-            return DeviceMessages.SetPower.empty_normalise(**s)
+            return DeviceMessages.SetPower.create(s)
         else:
             s = dict(state)
             s["level"] = power_level
             s["res_required"] = False
-            return LightMessages.SetLightPower.empty_normalise(**s)
+            return LightMessages.SetLightPower.create(s)
 
     def color_message(self, state, keep_brightness):
         msg = ColourParser.msg(state.get("color", None), overrides=state)

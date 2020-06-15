@@ -4,7 +4,6 @@ from photons_app.errors import TimedOut, DevicesNotFound
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from delfick_project.norms import sb
 from functools import partial
 import asyncio
 import logging
@@ -14,14 +13,6 @@ log = logging.getLogger("photons_transport.targets.item")
 
 class Done:
     """Used to specify when we should close a queue"""
-
-
-def choose_source(pkt, source):
-    """Used to decide what we use as source for the packet"""
-    if pkt.actual("source") is not sb.NotSpecified:
-        return pkt.source
-    else:
-        return source
 
 
 class Item(object):
@@ -157,15 +148,6 @@ class Item(object):
 
         return found, serials, missing
 
-    def simplify_parts(self):
-        """
-        Simplify our parts such that their payloads are bitarrays.
-
-        Unless a packet is dynamically created (has a callable field)
-        in which case, we just return packet as is
-        """
-        return [(p, p) if p.is_dynamic else (p, p.simplify()) for p in self.parts]
-
     def make_packets(self, sender, serials):
         """
         Create and fill in the packets from our parts
@@ -174,27 +156,23 @@ class Item(object):
         the part with the target set to the reference, complete with a source and
         sequence
         """
-        # Simplify our parts
-        simplified_parts = self.simplify_parts()
-
         packets = []
-        for original, p in simplified_parts:
-            if p.target is sb.NotSpecified:
+        for original in self.parts:
+            p = original.simplify()
+            if p.pkt_type == 0:
+                __import__("pdb").set_trace()
+                p = original.simplify()
+
+            if not p.fields.is_not_empty("target"):
                 for serial in serials:
-                    clone = p.clone()
-                    clone.update(
-                        dict(
-                            target=serial,
-                            source=choose_source(clone, sender.source),
-                            sequence=sender.seq(serial),
-                        )
-                    )
+                    source = p.fields.get("source", sender.source)
+                    sequence = sender.seq(serial)
+                    clone = p.clone(target=serial, source=source, sequence=sequence)
                     packets.append((original, clone))
             else:
-                clone = p.clone()
-                clone.update(
-                    dict(source=choose_source(clone, sender.source), sequence=sender.seq(p.serial))
-                )
+                source = p.fields.get("source", sender.source)
+                sequence = sender.seq(p.serial)
+                clone = p.clone(source=source, sequence=sequence, target=p.target)
                 packets.append((original, clone))
 
         return packets

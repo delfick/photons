@@ -1,16 +1,13 @@
-from delfick_project.errors import DelfickError, ProgrammerError
-from delfick_project.norms import BadSpec, BadSpecValue
+from photons_app.errors import PhotonsAppError
 
 
-class PhotonsProtocolError(DelfickError):
-    pass
-
-
-# Explicitly make these errors in this context
-BadSpec = BadSpec
-BadSpecValue = BadSpecValue
-ProgrammerError = ProgrammerError
-
-
-class BadConversion(PhotonsProtocolError):
+class BadConversion(PhotonsAppError):
     desc = "Bad conversion"
+
+
+class InvalidField(PhotonsAppError):
+    desc = "Field is invalid"
+
+
+class Conflict(PhotonsAppError):
+    desc = "Conflicting field"

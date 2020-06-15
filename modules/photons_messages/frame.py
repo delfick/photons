@@ -20,7 +20,7 @@ def look_at_target(pkt, value):
 
 class FrameHeader(dictobj.PacketSpec):
     fields = [
-        ("size", T.Uint16.default(lambda pkt: int(pkt.size_bits(pkt) / 8))),
+        ("size", T.Uint16.default(lambda pkt: int(pkt.Meta.size_bits(pkt) / 8))),
         ("protocol", T.Uint16.S(12).default(1024)),
         ("addressable", T.Bool.default(lambda pkt: True)),
         (
@@ -34,7 +34,7 @@ class FrameHeader(dictobj.PacketSpec):
 
 class FrameAddress(dictobj.PacketSpec):
     fields = [
-        ("target", T.Bytes(64).transform(look_at_target, look_at_target)),
+        ("target", T.Bytes(64).side_effect(look_at_target)),
         ("reserved2", T.Reserved(48)),
         ("res_required", T.Bool.default(True)),
         ("ack_required", T.Bool.default(True)),
@@ -57,13 +57,11 @@ class LIFXPacket(dictobj.PacketSpec):
 
     It can be used to generate payload messages for this protocol.
 
-    This is the ``parent_packet`` for this protocol. This means
+    This is the ``parent`` for this protocol. This means
     any message can be represented with this class using a payload as
     ``bytes``. Specific message classes will represent the payload as a
     dictionary of data.
     """
-
-    parent_packet = True
 
     fields = [
         ("frame_header", FrameHeader),
@@ -102,14 +100,10 @@ class LIFXPacket(dictobj.PacketSpec):
         the ``protocol`` and ``message_type`` values on the ``kls.Payload`` and this
         instance and returning whether they are equal.
         """
-        this_protocol = dictobj.__getitem__(self, "protocol")
-        this_protocol = this_protocol if this_protocol is not sb.NotSpecified else self.protocol
-        if this_protocol != kls.Payload.Meta.protocol:
+        if self.protocol != kls.Payload.Meta.protocol:
             return False
 
-        this_pkt_type = dictobj.__getitem__(self, "pkt_type")
-        this_pkt_type = this_pkt_type if this_pkt_type is not sb.NotSpecified else self.pkt_type
-        return this_pkt_type == kls.Payload.message_type
+        return self.pkt_type == kls.Payload.message_type
 
     @classmethod
     def message(kls, message_type, *payload_fields, multi=None):
@@ -197,7 +191,7 @@ class LIFXPacket(dictobj.PacketSpec):
             Payload.Meta.protocol = 1024
             Payload.Meta.multi = multi
 
-            res = type(name, (LIFXPacket,), {"Payload": Payload, "parent_packet": False})
+            res = type(name, (LIFXPacket,), {"Payload": Payload})
             res.Meta.parent = LIFXPacket
             res.Meta.multi = multi
 
