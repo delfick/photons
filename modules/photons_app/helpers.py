@@ -6,6 +6,7 @@ from queue import Queue, Empty
 from functools import wraps
 import threading
 import tempfile
+import secrets
 import asyncio
 import logging
 import uuid
@@ -102,6 +103,7 @@ class ATicker:
 
         self.start = time.time()
         self.iteration = 0
+        self.diff = every
 
     def __aiter__(self):
         return self
@@ -119,40 +121,36 @@ class ATicker:
             raise StopAsyncIteration
 
         if self.last_tick is None:
-            self.last_tick = time.time()
-            return self.iteration
+            self.change_after(self.every, set_new_every=False)
 
-        self.change_after(self.every)
         await asyncio.wait([self.tick_fut, self.final_future], return_when=asyncio.FIRST_COMPLETED)
+        self.tick_fut.reset()
 
         if self.final_future.done():
             raise StopAsyncIteration
 
-        self.tick_fut.reset()
-        self.last_tick = time.time()
+        self.change_after(self.every, set_new_every=False)
         return self.iteration
 
     def change_after(self, every, *, set_new_every=True):
-        if set_new_every:
-            self.every = every
+        now = time.time()
+
+        def reset(current=None):
+            if current is None or self.last_tick[1] == current[1]:
+                self.tick_fut.reset()
+                self.last_tick = (time.time(), secrets.token_urlsafe(16))
+                self.tick_fut.set_result(True)
 
         if self.last_tick is None:
-            self.last_tick = time.time()
+            reset()
+            return
 
-        current = self.last_tick
-        diff = every - (time.time() - current)
+        if set_new_every and every != self.every:
+            self.last_tick = (self.last_tick[0], secrets.token_urlsafe(16))
+            self.every = every
 
-        if diff == 0:
-            self.tick_fut.reset()
-            self.tick_fut.set_result(True)
-        else:
-
-            def reset():
-                if self.last_tick == current:
-                    self.tick_fut.reset()
-                    self.tick_fut.set_result(True)
-
-            asyncio.get_event_loop().call_later(diff, reset)
+        diff = self.diff = every - (now - self.last_tick[0])
+        asyncio.get_event_loop().call_later(diff, reset, self.last_tick)
 
 
 async def tick(every, *, final_future=None, max_iterations=None, max_time=None):
