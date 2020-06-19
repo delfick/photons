@@ -22,7 +22,7 @@ for filename in os.listdir(this_dir):
         packages.extend(
             [filename] + ["{0}.{1}".format(filename, pkg) for pkg in find_packages(filename)]
         )
-        if filename != "photons_app":
+        if filename != "photons_app" and os.path.exists(os.path.join(filename, "addon.py")):
             photons_entry_points.append("{0} = {1}.addon".format(filename[8:], filename))
 
 # fmt: off

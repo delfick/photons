@@ -4,7 +4,6 @@ from photons_app.actions import an_action
 from photons_messages import LightMessages, Waveform
 
 from delfick_project.option_merge import MergedOptions
-from delfick_project.addons import addon_hook
 from delfick_project.norms import sb, Meta
 import colorsys
 import logging
@@ -24,11 +23,6 @@ regexes = {
     "02_rgb_component": re.compile(r"\Argb:(\d+,\d+,\d+)\Z"),
     "01_hsb_component": re.compile(r"\Ahsb:([\d\.]+),([\d\.]+%?),([\d\.]+%?)\Z"),
 }
-
-
-@addon_hook(extras=(("lifx.photons", "messages")))
-def __lifx__(collector, *args, **kwargs):
-    pass
 
 
 @an_action(needs_target=True, special_reference=True)

@@ -1,26 +1,13 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
 from photons_app.actions import an_action
-from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline, Repeater
 
-from delfick_project.addons import addon_hook
 import logging
 
 log = logging.getLogger("repeater")
-
-
-@addon_hook(
-    extras=[
-        ("lifx.photons", "control"),
-        ("lifx.photons", "transport"),
-        ("lifx.photons", "messages"),
-    ]
-)
-def __lifx__(collector, *args, **kwargs):
-    pass
 
 
 @an_action(needs_target=True, special_reference=True)

@@ -12,24 +12,12 @@ from photons_tile_paint.addon import Animator
 from photons_themes.canvas import Canvas
 
 from delfick_project.norms import sb, dictobj, Meta, BadSpecValue
-from delfick_project.addons import addon_hook
 import logging
 import asyncio
 import random
 import time
 
 log = logging.getLogger("flicker")
-
-
-@addon_hook(
-    extras=[
-        ("lifx.photons", "control"),
-        ("lifx.photons", "transport"),
-        ("lifx.photons", "messages"),
-    ]
-)
-def __lifx__(collector, *args, **kwargs):
-    pass
 
 
 class between_0_and_1(sb.Spec):

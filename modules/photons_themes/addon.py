@@ -14,13 +14,7 @@ from delfick_project.addons import addon_hook
 import logging
 
 
-@addon_hook(
-    extras=[
-        ("lifx.photons", "products"),
-        ("lifx.photons", "messages"),
-        ("lifx.photons", "control"),
-    ]
-)
+@addon_hook(extras=[("lifx.photons", "control")])
 def __lifx__(collector, *args, **kwargs):
     pass
 

@@ -33,14 +33,7 @@ from photons_tile_paint.balls import TileBallsAnimation
 from photons_tile_paint.balls import TileBallsOptions
 
 
-@addon_hook(
-    extras=[
-        ("lifx.photons", "messages"),
-        ("lifx.photons", "themes"),
-        ("lifx.photons", "control"),
-        ("lifx.photons", "products"),
-    ]
-)
+@addon_hook(extras=[("lifx.photons", "themes"), ("lifx.photons", "control")])
 def __lifx__(collector, *args, **kwargs):
     collector.register_converters({"animation_options": GlobalOptions.FieldSpec()})
 

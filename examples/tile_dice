@@ -20,18 +20,6 @@ import logging
 log = logging.getLogger("tile_dice")
 
 
-@addon_hook(
-    extras=[
-        ("lifx.photons", "transport"),
-        ("lifx.photons", "themes"),
-        ("lifx.photons", "control"),
-        ("lifx.photons", "tile_paint"),
-    ]
-)
-def __lifx__(collector, *args, **kwargs):
-    pass
-
-
 @an_action(needs_target=True, special_reference=True)
 async def tile_dice(collector, target, reference, **kwargs):
     """

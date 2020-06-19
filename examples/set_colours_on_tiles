@@ -5,22 +5,10 @@ from photons_app.actions import an_action
 from photons_messages import DeviceMessages, TileMessages
 from photons_control.script import FromGenerator
 
-from delfick_project.addons import addon_hook
 import logging
 import random
 
 log = logging.getLogger("info")
-
-
-@addon_hook(
-    extras=[
-        ("lifx.photons", "transport"),
-        ("lifx.photons", "messages"),
-        ("lifx.photons", "control"),
-    ]
-)
-def __lifx__(collector, *args, **kwargs):
-    pass
 
 
 def make_set_64s(coords_and_sizes):

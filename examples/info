@@ -11,16 +11,6 @@ import logging
 log = logging.getLogger("info")
 
 
-@addon_hook(
-    extras=[
-        ("lifx.photons", "transport"),
-        ("lifx.photons", "control"),
-    ]
-)
-def __lifx__(collector, *args, **kwargs):
-    pass
-
-
 def make_list(infos):
     val = ""
     for thing in infos:
@@ -87,4 +77,4 @@ async def info(collector, target, reference, **kwargs):
 
 
 if __name__ == "__main__":
-    __import__("photons_core").run('lan:info {@:1:}')
+    __import__("photons_core").run("lan:info {@:1:}")
