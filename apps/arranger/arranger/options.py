@@ -38,7 +38,7 @@ class Assets(dictobj.Spec):
 
     @property
     def dist(self):
-        if os.environ.get("NODE_ENV", "development") == "development":
+        if os.environ.get("NODE_ENV", "production") == "development":
             return os.path.join(self.src, "dist", "dev")
         else:
             return os.path.join(self.src, "dist", "prod")
