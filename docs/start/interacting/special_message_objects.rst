@@ -128,7 +128,7 @@ Existing message objects
 
 .. autoclass:: photons_control.transform.Transformer
 
-.. autofunction:: photons_themes.addon.ApplyTheme
+.. autoclass:: photons_canvas.theme.ApplyTheme
 
 .. _FromGenerator:
 

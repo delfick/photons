@@ -110,6 +110,33 @@ class Applier:
 
 
 class ApplyTheme:
+    """
+    Apply a theme to your devices.
+
+    Usage looks like:
+
+    .. code-block:: python
+
+        options = {"colors": [<color>, <color>, ...]}
+        await target.send(ApplyTheme.msg(options))
+
+    The options available are:
+
+    colors
+        A list of color specifiers
+
+    duration
+        How long the transition takes. Defaults to 1 second
+
+    power_on
+        Whether to also power on devices. Defaults to true
+
+    overrides
+        A dictionary of ``{"hue": 0-360, "saturation": 0-1, "brightness": 0-1, "kelvin": 2500-9000}``
+
+        Where each property is optional and will override any color set in the theme.
+    """
+
     @classmethod
     def msg(kls, options):
         if not isinstance(options, Options):
