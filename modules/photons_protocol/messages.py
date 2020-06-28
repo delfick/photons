@@ -11,7 +11,6 @@ for defining ``by_type`` on the class.
 from photons_protocol.types import Type, MultiOptions
 from photons_protocol.errors import BadConversion
 
-from delfick_project.norms import Meta
 from bitarray import bitarray
 from textwrap import dedent
 import binascii

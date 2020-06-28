@@ -4,7 +4,7 @@ from photons_app.actions import an_action
 from photons_messages import LightMessages, Waveform
 
 from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import sb, Meta
+from delfick_project.norms import sb
 import colorsys
 import logging
 import random

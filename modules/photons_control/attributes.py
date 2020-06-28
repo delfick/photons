@@ -4,7 +4,7 @@ from photons_app.actions import an_action
 from photons_app.errors import BadOption
 
 
-from delfick_project.norms import sb, Meta
+from delfick_project.norms import sb
 import sys
 
 

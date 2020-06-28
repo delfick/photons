@@ -9,7 +9,6 @@ from photons_app.registers import ProtocolRegister
 from photons_messages import LIFXPacket
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import Meta
 from bitarray import bitarray
 from textwrap import dedent
 from unittest import mock
