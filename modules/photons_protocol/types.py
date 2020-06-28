@@ -428,7 +428,7 @@ class multiple_spec(sb.Spec):
             info = BitarraySlice("", self.typ, v, self.per_size, type(self.pkt).__name__)
             nxt = self.spec.normalise(meta.indexed_at(i), info.unpackd)
             if kls:
-                nxt = kls.unpack(nxt)
+                nxt = kls.create(nxt)
 
             res.append(nxt)
             bts = bts[self.per_size :]
@@ -466,10 +466,12 @@ class multiple_spec(sb.Spec):
         if isinstance(val, kls):
             return val
         elif val is sb.NotSpecified or isinstance(val, (bytes, bitarray)):
-            return kls.unpack(self.spec.normalise(meta, val))
+            if val is sb.NotSpecified:
+                val = b""
+            return kls.create(self.spec.normalise(meta, val))
         else:
             val = sb.dictionary_spec().normalise(meta, val)
-            return kls.normalise(meta, val)
+            return kls.create(val)
 
     def unpack(self, meta, val):
         kls = self.kls
@@ -548,13 +550,13 @@ class expand_spec(sb.Spec):
     def normalise(self, meta, val):
         if self.unpacking:
             if type(val) in (bitarray, bytes):
-                return self.kls.unpack(self.spec.normalise(meta, val))
+                return self.kls.create(self.spec.normalise(meta, val))
             elif isinstance(val, self.kls):
                 return val
             elif isinstance(val, dict):
-                return self.kls.empty_normalise(**val)
+                return self.kls.create(val)
             elif val is sb.NotSpecified:
-                return self.kls.empty_normalise()
+                return self.kls.create()
             else:
                 raise BadSpecValue(
                     "Expected to unpack bytes", found=val, transforming_into=self.kls
@@ -568,7 +570,7 @@ class expand_spec(sb.Spec):
                         "Sorry, dynamic fields only supports a dictionary of values", error=error
                     )
                 else:
-                    val = self.kls.empty_normalise(**fields).pack()
+                    val = self.kls.create(fields).pack()
 
             # The spec is likely a T.Bytes and will ensure we have enough bytes length in the result
             return self.spec.normalise(meta, val)

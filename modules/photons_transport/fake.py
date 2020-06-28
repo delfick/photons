@@ -380,7 +380,7 @@ class FakeDevice:
             hp.lc("RECV", bts=binascii.hexlify(bts).decode(), source=source, serial=self.serial)
         )
 
-        pkt = Messages.unpack(bts, self.protocol_register, unknown_ok=True)
+        pkt = Messages.create(bts, self.protocol_register, unknown_ok=True)
         if pkt.serial not in ("000000000000", self.serial):
             return
 

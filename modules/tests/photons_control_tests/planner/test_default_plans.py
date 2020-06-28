@@ -984,7 +984,7 @@ describe "Default Plans":
         async it "gets firmware effects", runner:
             light1.set_reply(
                 TileMessages.GetTileEffect,
-                TileMessages.StateTileEffect.empty_normalise(
+                TileMessages.StateTileEffect.create(
                     type=TileEffectType.FLAME,
                     speed=10,
                     duration=1,
@@ -995,7 +995,7 @@ describe "Default Plans":
 
             striplcm1.set_reply(
                 MultiZoneMessages.GetMultiZoneEffect,
-                MultiZoneMessages.StateMultiZoneEffect.empty_normalise(
+                MultiZoneMessages.StateMultiZoneEffect.create(
                     type=MultiZoneEffectType.MOVE,
                     speed=5,
                     duration=2,

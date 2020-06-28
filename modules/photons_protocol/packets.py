@@ -25,7 +25,7 @@ field. See ``photons_protocol.types`` for builtin types.
 from photons_protocol.packing import PacketPacking, val_to_bitarray
 from photons_protocol.types import Optional, Type as T
 
-from photons_app.errors import ProgrammerError
+from photons_app.errors import PhotonsAppError, ProgrammerError
 
 from delfick_project.norms import dictobj, sb, Meta
 from bitarray import bitarray
@@ -101,13 +101,6 @@ class PacketSpecMixin:
         Return us a ``bitarray`` representing this packet.
         """
         return packing_kls.pack(self, payload, parent, serial)
-
-    @classmethod
-    def unpack(kls, value, packing_kls=PacketPacking):
-        """
-        Unpack a ``value`` into an instance of this class.
-        """
-        return packing_kls.unpack(kls, value)
 
     @classmethod
     def size_bits(kls, values):
@@ -479,14 +472,23 @@ class PacketSpecMixin:
         return json.dumps(self.as_dict(), sort_keys=True, default=reprer)
 
     @classmethod
-    def empty_normalise(kls, **kwargs):
-        """Create an instance of this class from keyword arguments"""
-        return kls.normalise(Meta.empty(), kwargs)
+    def create(kls, *args, **kwargs):
+        """Create an instance of this class from either a single position argument or keyword arguments"""
+        if (args and kwargs) or (args and len(args) != 1):
+            raise PhotonsAppError(
+                "Creating a packet must be done with one positional argument, or just keyword arguments",
+                args=args,
+                kwargs=kwargs,
+            )
 
-    @classmethod
-    def normalise(kls, meta, val):
-        """Create an instance of this class from a dictionary"""
-        return kls.spec().normalise(meta, val)
+        val = kwargs or sb.NotSpecified
+        if args:
+            val = args[0]
+
+        if isinstance(val, (bitarray, bytes)):
+            return PacketPacking.unpack(kls, val)
+
+        return kls.spec().normalise(Meta.empty(), val)
 
 
 class PacketSpecMetaKls(dictobj.Field.metaclass):

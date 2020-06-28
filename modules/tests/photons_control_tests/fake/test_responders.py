@@ -122,7 +122,7 @@ describe "Responders":
         async it "responds to Color messages", device:
 
             def light_state(label, power, hue, saturation, brightness, kelvin):
-                return LightMessages.LightState.empty_normalise(
+                return LightMessages.LightState.create(
                     label=label,
                     power=power,
                     hue=hue,
@@ -277,7 +277,7 @@ describe "Responders":
             await device.assertResponse(
                 TileMessages.GetTileEffect(),
                 [
-                    TileMessages.StateTileEffect.empty_normalise(
+                    TileMessages.StateTileEffect.create(
                         type=TileEffectType.OFF, palette_count=0, parameters={}
                     )
                 ],
@@ -287,7 +287,7 @@ describe "Responders":
                     type=TileEffectType.FLAME, palette_count=1, palette=[chp.Color(1, 0, 1, 3500)]
                 ),
                 [
-                    TileMessages.StateTileEffect.empty_normalise(
+                    TileMessages.StateTileEffect.create(
                         type=TileEffectType.OFF, palette_count=0, parameters={}, palette=[]
                     )
                 ],
@@ -296,7 +296,7 @@ describe "Responders":
             await device.assertResponse(
                 TileMessages.GetTileEffect(),
                 [
-                    TileMessages.StateTileEffect.empty_normalise(
+                    TileMessages.StateTileEffect.create(
                         type=TileEffectType.FLAME,
                         palette_count=1,
                         parameters={},
@@ -316,7 +316,7 @@ describe "Responders":
 
                 await device.assertResponse(TileMessages.GetTileEffect(), [])
                 await device.assertResponse(
-                    TileMessages.SetTileEffect.empty_normalise(
+                    TileMessages.SetTileEffect.create(
                         type=TileEffectType.FLAME, parameters={}, palette=[chp.Color(0, 0, 0, 3500)]
                     ),
                     [],
@@ -342,7 +342,7 @@ describe "Responders":
 
                 await device.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), [])
                 await device.assertResponse(
-                    MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                    MultiZoneMessages.SetMultiZoneEffect.create(
                         type=MultiZoneEffectType.MOVE, parameters={}
                     ),
                     [],
@@ -377,7 +377,7 @@ describe "Responders":
 
                     await device.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
                     await device.assertResponse(
-                        MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                        MultiZoneMessages.SetMultiZoneEffect.create(
                             type=MultiZoneEffectType.MOVE, parameters={}
                         ),
                         True,
@@ -413,7 +413,7 @@ describe "Responders":
 
                 await device.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
                 await device.assertResponse(
-                    MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                    MultiZoneMessages.SetMultiZoneEffect.create(
                         type=MultiZoneEffectType.MOVE, parameters={}
                     ),
                     True,
@@ -450,7 +450,7 @@ describe "Responders":
                     [MultiZoneMessages.StateMultiZoneEffect(type=MultiZoneEffectType.OFF)],
                 )
                 await device.assertResponse(
-                    MultiZoneMessages.SetMultiZoneEffect.empty_normalise(
+                    MultiZoneMessages.SetMultiZoneEffect.create(
                         type=MultiZoneEffectType.MOVE, parameters={}
                     ),
                     [MultiZoneMessages.StateMultiZoneEffect(type=MultiZoneEffectType.OFF)],
@@ -731,9 +731,7 @@ describe "Responders":
             state = DeviceMessages.StateGroup(group="abcd", label="gl", updated_at=1)
             await device.assertResponse(getter, [state])
 
-            setter = DeviceMessages.SetGroup.empty_normalise(
-                group="dcba", label="gl2", updated_at=3
-            )
+            setter = DeviceMessages.SetGroup.create(group="dcba", label="gl2", updated_at=3)
             state = DeviceMessages.StateGroup(group=setter.group, label="gl2", updated_at=3)
             await device.assertResponse(
                 setter, [state], group_label="gl2", group_uuid=setter.group, group_updated_at=3
@@ -745,9 +743,7 @@ describe "Responders":
             state = DeviceMessages.StateLocation(location="efef", label="ll", updated_at=2)
             await device.assertResponse(getter, [state])
 
-            setter = DeviceMessages.SetLocation.empty_normalise(
-                location="fefe", label="ll2", updated_at=6
-            )
+            setter = DeviceMessages.SetLocation.create(location="fefe", label="ll2", updated_at=6)
             state = DeviceMessages.StateLocation(
                 location=setter.location, label="ll2", updated_at=6
             )

@@ -56,7 +56,7 @@ async def attr(collector, target, reference, artifact, **kwargs):
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])
 
-    msg = kls.normalise(Meta.empty(), extra)
+    msg = kls.create(extra)
     async for pkt in target.send(msg, reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
@@ -99,7 +99,7 @@ async def attr_actual(collector, target, reference, artifact, **kwargs):
             else:
                 yield f"{indent}{field}: {pkt.actual(field)}"
 
-    msg = kls.normalise(Meta.empty(), extra)
+    msg = kls.create(extra)
     async for pkt in target.send(msg, reference, **kwargs):
         print()
         print(f"""{"=" * 10}: {pkt.serial}""")
@@ -142,7 +142,7 @@ async def get_attr(collector, target, reference, artifact, **kwargs):
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])
 
-    msg = getter.normalise(Meta.empty(), extra)
+    msg = getter.create(extra)
     async for pkt in target.send(msg, reference, **kwargs):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 
@@ -178,7 +178,7 @@ async def set_attr(collector, target, reference, artifact, broadcast=False, **kw
     if "extra_payload_kwargs" in kwargs:
         extra.update(kwargs["extra_payload_kwargs"])
 
-    msg = setter.normalise(Meta.empty(), extra)
+    msg = setter.create(extra)
     async for pkt in target.send(msg, reference, broadcast=broadcast):
         print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
 

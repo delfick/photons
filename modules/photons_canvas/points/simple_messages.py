@@ -22,7 +22,7 @@ ColorCache = LRU(0xFFFF)
 
 TargetCache = LRU(1000)
 
-seed_set64 = TileMessages.Set64.empty_normalise(
+seed_set64 = TileMessages.Set64.create(
     source=0,
     sequence=0,
     target="d073d5000000",

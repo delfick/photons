@@ -57,4 +57,4 @@ describe "MessagesMeta":
             pass
 
         assert hasattr(M, "pack")
-        assert hasattr(M, "unpack")
+        assert hasattr(M, "create")

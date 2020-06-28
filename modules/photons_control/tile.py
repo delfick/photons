@@ -96,7 +96,7 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
     options["palette"] = list(make_hsbks([c, 1] for c in options["palette"]))
     options["palette_count"] = len(options["palette"])
 
-    set_effect = TileMessages.SetTileEffect.empty_normalise(**options)
+    set_effect = TileMessages.SetTileEffect.create(**options)
 
     async def gen(ref, sender, **kwargs):
         r = ref if reference is None else reference
@@ -170,7 +170,7 @@ async def get_chain_state(collector, target, reference, **kwargs):
                         collector.photons_app.extra_as_json,
                     )
 
-                    return [TileMessages.Get64.empty_normalise(**options.as_dict())]
+                    return [TileMessages.Get64.create(**options.as_dict())]
                 return Skip
 
             def process(self, pkt):
@@ -303,7 +303,7 @@ async def set_chain_state(collector, target, reference, artifact, **kwargs):
         raise PhotonsAppError("Missing options for the SetTileState message", missing=missing)
 
     options["res_required"] = False
-    msg = TileMessages.Set64.empty_normalise(**options)
+    msg = TileMessages.Set64.create(**options)
     await target.send(msg, reference)
 
 

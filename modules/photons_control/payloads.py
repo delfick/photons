@@ -49,7 +49,7 @@ async def unpack(collector, **kwargs):
     ``unpack -- 310000148205ed33d073d51261e20000000000000000030100000000000000006600000000f4690000ffffac0d00000000``
     """
     bts = binascii.unhexlify(collector.photons_app.extra)
-    pkt = Messages.unpack(bts, collector.configuration["protocol_register"], unknown_ok=True)
+    pkt = Messages.create(bts, collector.configuration["protocol_register"], unknown_ok=True)
     print(repr(pkt))
 
 
@@ -61,5 +61,5 @@ async def unpack_base64(collector, **kwargs):
     ``unpack_base64 -- MQAAFIIF7TPQc9USYeIAAAAAAAAAAAMBAAAAAAAAAABmAAAAAPRpAAD//6wNAAAAAA==``
     """
     bts = base64.b64decode(collector.photons_app.extra)
-    pkt = Messages.unpack(bts, collector.configuration["protocol_register"], unknown_ok=True)
+    pkt = Messages.create(bts, collector.configuration["protocol_register"], unknown_ok=True)
     print(repr(pkt))

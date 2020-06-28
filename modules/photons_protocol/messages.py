@@ -212,10 +212,10 @@ class MessagesMixin:
             else:
                 raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
-        return mkls.unpack(data)
+        return mkls.create(data)
 
     @classmethod
-    def unpack(kls, data, protocol_register, unknown_ok=False):
+    def create(kls, data, protocol_register, unknown_ok=False):
         """
         Return a fully resolved packet instance from the data and protocol_register.
 
@@ -226,10 +226,10 @@ class MessagesMixin:
         protocol, pkt_type, Packet, PacketKls, data = kls.get_packet_type(data, protocol_register)
 
         if PacketKls:
-            return PacketKls.unpack(data)
+            return PacketKls.create(data)
 
         if unknown_ok:
-            return Packet.unpack(data)
+            return Packet.create(data)
 
         raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
 
@@ -241,7 +241,7 @@ class MessagesMixin:
         """
         for k in messages_register or [kls]:
             if int(pkt_type) in k.by_type:
-                return k.by_type[int(pkt_type)].Payload.normalise(Meta.empty(), data).pack()
+                return k.by_type[int(pkt_type)].Payload.create(data).pack()
         raise BadConversion("Unknown message type!", pkt_type=pkt_type)
 
     @classmethod
@@ -260,7 +260,7 @@ class MessagesMixin:
                 raise BadConversion("Unknown message type!", protocol=protocol, pkt_type=pkt_type)
             PacketKls = Packet
 
-        return PacketKls.normalise(Meta.empty(), data).pack()
+        return PacketKls.create(data).pack()
 
 
 class MessagesMeta(type):

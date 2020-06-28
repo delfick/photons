@@ -175,7 +175,7 @@ describe "Device":
             return Collections()
 
         it "can take in a LightState", device, collections:
-            pkt = LightMessages.LightState.empty_normalise(
+            pkt = LightMessages.LightState.create(
                 label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
             )
 
@@ -189,7 +189,7 @@ describe "Device":
             assert device.kelvin == 4500
 
             # And test when power is on
-            pkt = LightMessages.LightState.empty_normalise(
+            pkt = LightMessages.LightState.create(
                 label="kitchen", power=65535, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
             )
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
@@ -197,9 +197,7 @@ describe "Device":
 
         it "can take in StateGroup", device, collections:
             group_uuid = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateGroup.empty_normalise(
-                group=group_uuid, updated_at=1, label="group1"
-            )
+            pkt = DeviceMessages.StateGroup.create(group=group_uuid, updated_at=1, label="group1")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
             assert device.group == collections.collections["group"][group_uuid]
@@ -208,7 +206,7 @@ describe "Device":
 
             group = device.group
 
-            pkt = DeviceMessages.StateGroup.empty_normalise(
+            pkt = DeviceMessages.StateGroup.create(
                 group=group_uuid, updated_at=2, label="group1renamed"
             )
 
@@ -219,9 +217,7 @@ describe "Device":
             assert device.group_name == "group1renamed"
 
             group_uuid2 = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateGroup.empty_normalise(
-                group=group_uuid2, updated_at=2, label="group2"
-            )
+            pkt = DeviceMessages.StateGroup.create(group=group_uuid2, updated_at=2, label="group2")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
             assert device.group == collections.collections["group"][group_uuid2]
@@ -234,7 +230,7 @@ describe "Device":
 
         it "can take in StateLocation", device, collections:
             location_uuid = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateLocation.empty_normalise(
+            pkt = DeviceMessages.StateLocation.create(
                 location=location_uuid, updated_at=1, label="location1"
             )
 
@@ -245,7 +241,7 @@ describe "Device":
 
             location = device.location
 
-            pkt = DeviceMessages.StateLocation.empty_normalise(
+            pkt = DeviceMessages.StateLocation.create(
                 location=location_uuid, updated_at=2, label="location1renamed"
             )
 
@@ -256,7 +252,7 @@ describe "Device":
             assert device.location_name == "location1renamed"
 
             location_uuid2 = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateLocation.empty_normalise(
+            pkt = DeviceMessages.StateLocation.create(
                 location=location_uuid2, updated_at=2, label="location2"
             )
 
@@ -270,14 +266,12 @@ describe "Device":
             assert location_uuid2 in collections.collections["location"]
 
         it "takes in StateHostFirmware", device, collections:
-            pkt = DeviceMessages.StateHostFirmware.empty_normalise(
-                version_major=1, version_minor=20
-            )
+            pkt = DeviceMessages.StateHostFirmware.create(version_major=1, version_minor=20)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.FIRMWARE
             assert device.firmware_version == "1.20"
 
         it "takes in StateVersion", device, collections:
-            pkt = DeviceMessages.StateVersion.empty_normalise(vendor=1, product=22)
+            pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 

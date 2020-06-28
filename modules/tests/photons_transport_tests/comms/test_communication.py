@@ -815,7 +815,7 @@ describe "Communication":
                 async def write(s, transport, bts, original_message):
                     called.append("write")
 
-                    pkt = Messages.unpack(bts, protocol_register=protocol_register)
+                    pkt = Messages.create(bts, protocol_register=protocol_register)
 
                     res = DeviceMessages.EchoResponse(
                         source=pkt.source, sequence=pkt.sequence, target=pkt.target, echoing=b"pong"

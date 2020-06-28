@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture()
 def packet():
-    return frame.LIFXPacket.empty_normalise()
+    return frame.LIFXPacket.create()
 
 
 @pytest.fixture()

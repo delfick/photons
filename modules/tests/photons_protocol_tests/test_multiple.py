@@ -36,10 +36,10 @@ describe "The multiple modifier":
         checker(thing)
 
         bts = thing.pack()
-        thing2 = type(thing).unpack(bts)
+        thing2 = type(thing).create(bts)
         checker(thing2)
 
-        thing3 = type(thing).normalise(Meta.empty(), json.loads(repr(thing)))
+        thing3 = type(thing).create(json.loads(repr(thing)))
         checker(thing3)
 
     it "allows multiple of raw types and structs":
@@ -246,9 +246,7 @@ describe "The multiple modifier":
         with assertRaises(BadSpecValue, "Expected an integer"):
             thing.two[0] = "asdf"
         with assertRaises(
-            BadSpecValue,
-            "BoolInts must be True, False, 0 or 1",
-            meta=Meta.empty().at("four").indexed_at(0).at("one"),
+            BadSpecValue, "BoolInts must be True, False, 0 or 1", meta=Meta.empty().at("one"),
         ):
             thing.four[0] = {"one": "asdf"}
 
@@ -288,9 +286,9 @@ describe "The multiple modifier":
         def check(thing):
             assert thing.one == [E.MEH, E.BLAH, E.ZERO]
             expected = [
-                Other.empty_normalise(other=0, another="wat"),
-                Other.empty_normalise(other=1, another=""),
-                Other.empty_normalise(other=0, another="hello"),
+                Other.create(other=0, another="wat"),
+                Other.create(other=1, another=""),
+                Other.create(other=0, another="hello"),
             ]
             assert thing.two == expected
 
@@ -300,9 +298,9 @@ describe "The multiple modifier":
         def check2(thing):
             assert thing.one == [E.MEH, E.BLAH, E.ZERO]
             expected = [
-                Other.empty_normalise(other=0, another="wat"),
-                Other.empty_normalise(other=0, another="yeap"),
-                Other.empty_normalise(other=0, another="hello"),
+                Other.create(other=0, another="wat"),
+                Other.create(other=0, another="yeap"),
+                Other.create(other=0, another="hello"),
             ]
             assert thing.two == expected
 
@@ -328,9 +326,9 @@ describe "The multiple modifier":
 
         def check(thing):
             expected = [
-                Other.empty_normalise(other=0, another="wat"),
-                Other.empty_normalise(other=1, another=""),
-                Other.empty_normalise(other=0, another="hello"),
+                Other.create(other=0, another="wat"),
+                Other.create(other=1, another=""),
+                Other.create(other=0, another="hello"),
             ]
             assert thing.thing == expected
 

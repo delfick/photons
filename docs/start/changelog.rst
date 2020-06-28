@@ -97,6 +97,13 @@ ChangeLog
     chains (bulbs and strips) are represented as a single Part. The ``with_colors``
     plan will also record the current state of the device in the part object.
 
+    Creating packets has changed slightly. Instead of
+    ``photons_protocol.messages.Messages.unpack``, you have a ``create`` message
+    that takes the same arguments.
+
+    If you have a packet class already, the ``unpack``, ``empty_normalise`` and
+    ``normalise`` methods have been replaced with a single ``create`` method.
+
 0.25.0 - 8 March 2020
     * Added photons_control.planner.PacketPlan for making a plan that sends
       a message and returns a reply.

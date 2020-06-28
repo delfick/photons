@@ -70,25 +70,6 @@ describe "PacketSpecMixin":
 
                 pack.assert_called_once_with(packet, None, None, None)
 
-        describe "unpack":
-            it "uses the provided packing_kls", Packet, V:
-                res = mock.Mock(name="res")
-                V.packing_kls.unpack.return_value = res
-
-                r = Packet.unpack(V.value, packing_kls=V.packing_kls)
-
-                assert r is res
-                V.packing_kls.unpack.assert_called_once_with(Packet, V.value)
-
-            it "has defaults", Packet, V:
-                res = mock.Mock(name="res")
-                unpack = mock.Mock(name="unpack", return_value=res)
-
-                with mock.patch("photons_protocol.packing.PacketPacking.unpack", unpack):
-                    assert Packet.unpack(V.value) is res
-
-                unpack.assert_called_once_with(Packet, V.value)
-
     describe "size_bits":
         it "adds up from Meta.field_types":
             one_typ = mock.Mock(name="one_typ", spec=["size_bits"], size_bits=20)
@@ -699,7 +680,7 @@ describe "PacketSpecMixin":
             class Q(dictobj.PacketSpec):
                 fields = [("things", T.Bytes(16).multiple(3, kls=lambda pkt: P))]
 
-            q = Q.empty_normalise(things=[{"one": 1000}, {"one": 2000}, {"one": 0}])
+            q = Q.create(things=[{"one": 1000}, {"one": 2000}, {"one": 0}])
             assert q.things[0].actual("one") == 1
             assert q.things[1].actual("one") == 2
             assert q.things[2].actual("one") == 0
@@ -738,7 +719,7 @@ describe "PacketSpecMixin":
             assert p.as_dict() == {"one": E.ONE, "two": True}
             assert repr(p) == '{"one": "<E.ONE: 1>", "two": true}'
 
-    describe "normalising":
+    describe "creating":
         it "uses the spec on the kls":
 
             class P(dictobj.PacketSpec):
@@ -746,19 +727,18 @@ describe "PacketSpecMixin":
 
             val = mock.Mock(name="val")
             normalised = mock.Mock(name="normalised")
-            meta = mock.Mock(name="meta")
 
             initd_spec = mock.Mock(name="initd_spec")
             initd_spec.normalise.return_value = normalised
             spec = mock.Mock(name="spec", return_value=initd_spec)
 
             with mock.patch.object(P, "spec", spec):
-                assert P.normalise(meta, val) is normalised
+                assert P.create(val) is normalised
 
             spec.assert_called_once_with()
-            initd_spec.normalise.assert_called_once_with(meta, val)
+            initd_spec.normalise.assert_called_once_with(mock.ANY, val)
 
-        it "allows kwargs val with empty_normalise":
+        it "allows kwargs val with create":
 
             class P(dictobj.PacketSpec):
                 fields = []
@@ -776,7 +756,7 @@ describe "PacketSpecMixin":
             spec = mock.Mock(name="spec", return_value=initd_spec)
 
             with mock.patch.object(P, "spec", spec):
-                assert P.empty_normalise(**val) is normalised
+                assert P.create(**val) is normalised
 
             spec.assert_called_once_with()
             initd_spec.normalise.assert_called_once_with(empty, val)

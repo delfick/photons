@@ -262,7 +262,7 @@ class ColourParser(object):
 
         other_override = Effects.make(**(overrides or {}))
         options = MergedOptions.using(other, other_override, overrides or {}, colour)
-        return LightMessages.SetWaveformOptional.normalise(Meta.empty(), options)
+        return LightMessages.SetWaveformOptional.create(options)
 
     def parse_color_string(self, components):
         if type(components) is str:

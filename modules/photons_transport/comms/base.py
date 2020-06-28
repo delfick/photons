@@ -409,7 +409,7 @@ class Communication:
             else:
                 if PacketKls is None:
                     PacketKls = Packet
-                pkt = PacketKls.unpack(data)
+                pkt = PacketKls.create(data)
         except Exception as error:
             log.exception(error)
         else:

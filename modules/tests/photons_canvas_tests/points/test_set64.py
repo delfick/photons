@@ -12,7 +12,7 @@ import pytest
 
 @pytest.fixture
 def seed():
-    return TileMessages.Set64.empty_normalise(
+    return TileMessages.Set64.create(
         source=0,
         sequence=0,
         target="d073d5000000",
@@ -88,7 +88,7 @@ describe "set64":
             "colors": colors,
         }
 
-        real = TileMessages.Set64.empty_normalise(
+        real = TileMessages.Set64.create(
             **{
                 **kwargs,
                 "colors": [
@@ -133,7 +133,7 @@ describe "set64":
         }
 
         for name, val in changes:
-            real = TileMessages.Set64.empty_normalise(**original)
+            real = TileMessages.Set64.create(**original)
             simple = Set64(**original)
 
             setattr(real, name, val)
@@ -153,7 +153,7 @@ describe "set64":
             assert real.serial == simple.serial == "d073d5001188"
             assert real.target == binascii.unhexlify("d073d5001188") + b"\x00\x00"
 
-        real = TileMessages.Set64.empty_normalise(**original)
+        real = TileMessages.Set64.create(**original)
         simple = Set64(**original)
 
         for name, value in changes + [("target", "d073d5998877")]:

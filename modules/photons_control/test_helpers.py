@@ -91,7 +91,7 @@ class LightStateResponder(Responder):
         return LightMessages.StateLightPower(level=device.attrs.power)
 
     def make_light_response(self, device):
-        return LightMessages.LightState.empty_normalise(
+        return LightMessages.LightState.create(
             label=device.attrs.label, power=device.attrs.power, **device.attrs.color.as_dict()
         )
 
@@ -192,7 +192,7 @@ class MatrixResponder(Responder):
                 yield msg
 
     def make_state_tile_effect(self, device, instanceid=sb.NotSpecified):
-        return TileMessages.StateTileEffect.empty_normalise(
+        return TileMessages.StateTileEffect.create(
             instanceid=instanceid,
             type=device.attrs.matrix_effect,
             palette_count=device.attrs.palette_count,

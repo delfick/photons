@@ -130,7 +130,7 @@ describe "expand_spec":
             return types.expand_spec(kls, spec, False)
 
         it "returns bitarray value as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=127)
+            val = kls.create(one=True, two=127)
             b = val.pack()
             assert len(b) == 9
 
@@ -141,7 +141,7 @@ describe "expand_spec":
             assert b2[9:20] == bitarray("0" * 11)
 
         it "returns bytes value as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=127)
+            val = kls.create(one=True, two=127)
             b = val.pack()
             assert len(b) == 9
 
@@ -152,7 +152,7 @@ describe "expand_spec":
             assert b2[9:20] == bitarray("0" * 11)
 
         it "returns a dictionary as bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
+            val = kls.create(one=True, two=12)
             b = val.pack()
             assert len(b) == 9
 
@@ -184,23 +184,23 @@ describe "expand_spec":
             spec = spec.spec(pkt, True)
             subject = types.expand_spec(Kls, spec, True)
 
-            val = Kls.empty_normalise()
+            val = Kls.create()
             assert subject.normalise(meta, sb.NotSpecified) == val
 
         it "returns instance of kls if a dictionary", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
+            val = kls.create(one=True, two=12)
             assert subject.normalise(meta, {"one": True, "two": 12}) == val
 
         it "returns as is if already of the kls type", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=12)
+            val = kls.create(one=True, two=12)
             assert subject.normalise(meta, val) is val
 
         it "returns as instance of the kls if bitarray", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=6)
+            val = kls.create(one=True, two=6)
             assert subject.normalise(meta, val.pack()) == val
 
         it "returns as instance of the kls if bytes", meta, subject, kls:
-            val = kls.empty_normalise(one=True, two=120)
+            val = kls.create(one=True, two=120)
             assert subject.normalise(meta, val.pack().tobytes()) == val
 
         it "complains if not bitarray, bytes or instance of kls", meta, subject, kls:

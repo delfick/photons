@@ -12,11 +12,11 @@ import pytest
 
 describe "LightMessages":
 
-    def unpack(self, msg):
-        return LightMessages.unpack(msg, protocol_register=protocol_register)
+    def create(self, msg):
+        return LightMessages.create(msg, protocol_register=protocol_register)
 
     it "has Setcolor":
-        msg = self.unpack(
+        msg = self.create(
             "3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000"
         )
         assert msg | LightMessages.SetColor
@@ -38,7 +38,7 @@ describe "LightMessages":
         assert msg.payload.actual("duration") == 1000
 
     it "has SetWaveform":
-        msg = self.unpack(
+        msg = self.create(
             "39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01"
         )
         assert msg | LightMessages.SetWaveform
@@ -68,7 +68,7 @@ describe "LightMessages":
         assert msg.payload.actual("waveform") == 1
 
     it "has SetWaveformOptional":
-        msg = self.unpack(
+        msg = self.create(
             "3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040ff7f0101000101"
         )
         assert msg | LightMessages.SetWaveformOptional
@@ -113,7 +113,7 @@ describe "LightMessages":
         assert msg.set_saturation == 0
         assert msg.set_brightness == 0
         assert msg.set_kelvin == 0
-        unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
+        unpackd = Messages.create(msg.pack(), protocol_register=protocol_register)
 
         assert unpackd.hue == pytest.approx(100, rel=1e-2)
         assert unpackd.set_hue == 1
@@ -124,9 +124,7 @@ describe "LightMessages":
         assert unpackd.set_kelvin == 0
         assert unpackd.kelvin == 0
 
-        msg = LightMessages.SetWaveformOptional.empty_normalise(
-            hue=100, source=1, sequence=0, target=None
-        )
+        msg = LightMessages.SetWaveformOptional.create(hue=100, source=1, sequence=0, target=None)
         assert msg.actual("brightness") is Optional
 
         assert msg.set_hue == 1
@@ -134,7 +132,7 @@ describe "LightMessages":
         assert msg.set_brightness == 0
         assert msg.set_kelvin == 0
 
-        unpackd = Messages.unpack(msg.pack(), protocol_register=protocol_register)
+        unpackd = Messages.create(msg.pack(), protocol_register=protocol_register)
 
         assert unpackd.hue == pytest.approx(100, rel=1e-2)
         assert unpackd.set_hue == 1
@@ -146,7 +144,7 @@ describe "LightMessages":
         assert unpackd.kelvin == 0
 
     it "has LightState":
-        msg = self.unpack(
+        msg = self.create(
             "580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b00000000079919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000"
         )
         assert msg | LightMessages.LightState

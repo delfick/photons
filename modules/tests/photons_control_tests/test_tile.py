@@ -92,7 +92,7 @@ describe "Tile helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.FLAME,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
@@ -102,7 +102,7 @@ describe "Tile helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.FLAME,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
@@ -133,7 +133,7 @@ describe "Tile helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.FLAME,
                             duration=10,
                             speed=5,
@@ -145,7 +145,7 @@ describe "Tile helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.FLAME,
                             duration=10,
                             speed=5,
@@ -170,7 +170,7 @@ describe "Tile helpers":
                     tile1: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.MORPH,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
@@ -179,7 +179,7 @@ describe "Tile helpers":
                     tile2: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.MORPH,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
@@ -203,7 +203,7 @@ describe "Tile helpers":
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.MORPH,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
@@ -212,7 +212,7 @@ describe "Tile helpers":
                     tile2: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
-                        TileMessages.SetTileEffect.empty_normalise(
+                        TileMessages.SetTileEffect.create(
                             type=TileEffectType.FLAME,
                             palette=default_tile_palette,
                             palette_count=len(default_tile_palette),
