@@ -9,5 +9,9 @@ class Options(dictobj.Spec):
 
 @an_animation("skip", Options)
 class Animation(Animation):
+    """
+    This animation does literally nothing. Run it for fun.
+    """
+
     def process_event(self, event):
         raise Finish("Skip")

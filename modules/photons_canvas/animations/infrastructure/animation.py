@@ -15,7 +15,6 @@ class Animation:
     duration = 0
     num_seconds = None
     message_timeout = 0.3
-    skip_background = False
     random_orientations = False
     skip_next_transition = False
 
@@ -29,7 +28,6 @@ class Animation:
         "duration",
         "num_seconds",
         "message_timeout",
-        "skip_background",
         "random_orientations",
         "skip_next_transition",
     ]

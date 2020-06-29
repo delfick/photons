@@ -1,12 +1,8 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_canvas.animations import Animation, Finish, AnimationRunner, options
+from photons_canvas.animations import Animation, Finish, AnimationRunner, options, animation_action
 from photons_canvas import point_helpers as php
 
-from photons_app.executor import library_setup
-from photons_app.special import FoundSerials
-
-from delfick_project.logging import setup_logging
 from delfick_project.norms import dictobj, sb
 import logging
 import random
@@ -39,6 +35,33 @@ class State:
         )
 
         def layer(point, canvas):
+            """
+            We return this function in the ``process_event`` method of the
+            animation on the ``tick`` event, which means photons will use it
+            to determine what colours to send to the tiles for that tick.
+
+            It is called with only the points that are used by the tiles.
+
+            The animation below says to modify the position of the tiles so
+            they are all separate from each other. This means all the points
+            will be independent of each other.
+
+            If that align_parts_straight wasn't specified, then the position on
+            the tiles themselves would be used and it is possible that multiple
+            tiles are using the same point. In this case, the point will be
+            called for each part.
+
+            The canvas provided will be the points that were set in the previous
+            ``tick`` event.
+
+            Each point is a tuple of ``(col, row)`` and a few helper functions
+            exist in the helpers module. For example::
+
+                from photons_canvas import point_helpers as php
+
+                # Return col and row of the point relative to the position of the canvas
+                relative_col, relative_row = php.Points.relative(point, canvas.bounds)
+            """
             if not self.remaining:
                 return php.Color.ZERO
 
@@ -51,8 +74,34 @@ class State:
         return layer
 
 
+# If this file is imported in a photons module, then we can register this
+# animation for use with the ``animate`` action:
+#
+#   from photons_canvas.animations import an_animation
+#
+#   @an_animation("example_dots", Options)
+#   class Animation:
+#       ....
+#
+# and then the animation can be run ``lifx lan:animate example-dots``
+#
+# This file is self contained, so registering it wouldn't make much difference
+
 class Animation(Animation):
-    coords_straight = True
+    """
+    An example animation similar to the built in "dots" animation.
+
+    This animation has two options:
+
+    color - :color_range: - default rainbow
+        A color specifier that says what colour to use when the animation runs
+
+    min_dots_per_tick - integer - default 20
+        The minimum number of dots to turn on per tick. The real "dots" animation
+        will use a percentage of the remaining area on the tiles, but for
+        simplicity this example just has an absolute number
+    """
+    align_parts_straight = True
 
     def setup(self):
         """This method can be used to do any extra setup for all tiles under the animation"""
@@ -130,34 +179,24 @@ class Animation(Animation):
             return event.state.layer
 
 
-async def doit(collector):
-    # Get the object that can talk to the devices over the lan
-    lan_target = collector.configuration["target_register"].resolve("lan")
-
-    # reference can be a single d073d5000001 string representing one device
-    # Or a list of strings specifying multiple devices
-    # Or a special reference like we have below
-    # More information on special references can be found at
-    # https://delfick.github.io/photons-core/photons_app/special.html#photons-app-special
-    reference = FoundSerials()
-
-    # Options for our animations
-    # The short form used here is a list of animations to run
-    # We are saying only animation to run.
+# Note that we use the ``animation_action`` instead of ``photons_app.actions.an_action``
+# like we would elsewhere. This action is special in that if you run this file
+# with the first argument of "help", then the docstring of the Animation class
+# specified will be printed instead of the animation being started.
+@animation_action(Animation, name="example dots")
+async def tile_animation(collector, target, reference, **kwargs):
     # We provide the Animation class and the Options class associated with that animation
     # The last argument is options to create the Options object with, here we
     # we have no non default options.
+    # We could instead specify options, for example ``{"color": "red"}``
     run_options = {"animations": [[(Animation, Options), None]], "animation_limit": 1}
 
     def error(e):
         log.error(e)
 
-    # And now we run the animation using an AnimationRunner
-    photons_app = collector.configuration["photons_app"]
-
     try:
-        with photons_app.using_graceful_future() as final_future:
-            async with lan_target.session() as sender:
+        with collector.photons_app.using_graceful_future() as final_future:
+            async with target.session() as sender:
                 await AnimationRunner(
                     sender,
                     reference,
@@ -171,11 +210,4 @@ async def doit(collector):
 
 
 if __name__ == "__main__":
-    # Setup the logging
-    setup_logging()
-
-    # setup photons and get back the configuration
-    collector = library_setup()
-
-    # Run the animation!
-    collector.run_coro_as_main(doit(collector))
+    __import__("photons_core").run("lan:tile_animation {@:1:}")

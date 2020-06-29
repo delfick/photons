@@ -117,7 +117,35 @@ class State:
 
 @an_animation("twinkles", Options)
 class TwinklesAnimation(Animation):
-    """Random twinkles on the tiles"""
+    """
+    Twinkles on the tile!
+
+    When this animation starts, the panels will fade away at different times
+    to give a smooth transition from whatever is currently on the tile to
+    the twinkles.
+
+    Then the animation will shine dots over all the tiles. This will be pretty.
+
+    Options that are recognised:
+
+    twinkles_color_range - :color_range: - default rainbow
+        The colours to choose from each time a twinkle is born.
+
+    twinkles_max_percent - :range: - default to between 0.1 and 0.3
+        This is a percentage of the total canvas that can have twinkles on it
+
+    twinkles_percent_added_at_once - :range: - default to between 0.01 and 0.02
+        This is the percentage of the total canvas that can have new twinkles
+        added to it in a tick.
+
+    fade_in_speed - :range: - default between 0.1 and 0.2
+        The amount of brightness change per tick when the twinkle is going from
+        starting brightness to full brightness
+
+    fade_out_speed - :range: - default between 0.1 and 0.2
+        The amount of brightness change per tick when the twinkle is going from
+        full brightness to no brightness
+    """
 
     duration = 0.075
     align_parts_separate = True

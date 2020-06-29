@@ -176,7 +176,28 @@ class TileBallsState:
 
 @an_animation("balls", Options)
 class TileBallsAnimation(Animation):
-    """Bouncing balls"""
+    """
+    The balls are trapped in your tiles and they will just keep bouncing around
+    until the animation ends. When one balls hits another, one of them will
+    win this battle and keep going, while the other stops and respawns
+    elsewhere.
+
+    Options are:
+
+    rate - :range: - between 0.9 and 1.3
+        The number of pixels to progress each tick. A lower number makes for
+        a slower ball
+
+    ball_colors - :color_range: - default rainbow
+        The color to choose each time a ball is spawned.
+
+    num_balls - integer - default 5
+        The number of balls that can be in play at any particular time.
+
+    fade_amount - float - default 0.02
+        The amount the brightness changes on the tail of the ball per tick.
+        A smaller number makes for a bigger trail behind the ball.
+    """
 
     async def process_event(self, event):
         if event.state is None:

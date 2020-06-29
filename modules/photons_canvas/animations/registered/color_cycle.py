@@ -232,7 +232,46 @@ class Layer:
 
 @an_animation("color_cycle", Options)
 class TileColorCycleAnimation(Animation):
-    """Cycle through the colours"""
+    """
+    Display pretty colour transitions on the tiles. This animation is a bit
+    special in that it's many animations in one.
+
+    Note that for simplification of the code, there are no options per animation.
+
+    The following are the options:
+
+    changer - the animation to run - default vertical_morph
+        This is the style off the animation
+
+        * vertical_morph
+            The closest to a the MORPH firmware effect I could create.
+            Maths is hard.
+
+        * cycle
+            The entire canvas cycles between colours.
+
+        * cycle_parts
+            Each panel will cycle between colours.
+
+        * wave
+            Such a pretty wave of colours.
+
+        * patches
+            Each panel is split into 4 patches, which will each cycle colours.
+
+    brightness - float - default 0.5
+        The brightness of the colours
+
+    saturation - float - default 1
+        The saturation of the colors
+
+    This is a good set of options for this animation:
+    https://gist.github.com/delfick/22e984ff9587401a255b175f4db6b309
+
+    run with::
+        
+        lifx lan:animate -- file://instructions.json
+    """
 
     Cache = {}
 

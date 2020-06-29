@@ -84,6 +84,11 @@ class State(State):
 
 @an_animation("nyan", Options)
 class NyanAnimation(MarqueeAnimation):
-    """Make nyan go back and forth across your tiles"""
+    """
+    Make a nyan cat like image keep going from left to right across your tiles.
+
+    Tiles are aligned vertically, and so each row of tiles will have a duplicate
+    of the animation.
+    """
 
     make_state = State

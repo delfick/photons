@@ -1,5 +1,6 @@
 from photons_canvas.animations.infrastructure.register import an_animation, Animator
 from photons_canvas.animations.run_options import RunOptions, make_run_options
+from photons_canvas.animations.action import print_help, animation_action
 from photons_canvas.animations.infrastructure.animation import Animation
 from photons_canvas.animations.infrastructure.finish import Finish
 from photons_canvas.animations.infrastructure import register
@@ -28,4 +29,6 @@ __all__ = [
     "options",
     "Animator",
     "make_run_options",
+    "print_help",
+    "animation_action",
 ]

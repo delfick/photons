@@ -1,4 +1,4 @@
-from photons_canvas.animations import register, AnimationRunner
+from photons_canvas.animations import register, AnimationRunner, print_help
 from photons_canvas.theme import ApplyTheme
 
 from photons_app.errors import PhotonsAppError
@@ -51,22 +51,12 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
 @an_action(needs_target=True)
 async def animate(collector, target, reference, artifact, **kwargs):
     if reference == "help":
-        print("Available animations include")
-        for animation in register.available_animations():
-            print(f"* {animation}")
-
-        print()
-        print("You can run a particular animation by saying")
-        print("    lifx lan:animate balls")
-
-        print()
-        print("You can target particular devices by saying")
-        print("    lifx lan:animate balls match:label=wall")
-
-        print()
-        print("You can also provide options")
-        print("""    lifx lan:animate balls -- '{"num_balls": 2}'""")
-        print()
+        if artifact in register.animations:
+            print_help(
+                animation_kls=register.animations[artifact].Animation, animation_name=artifact
+            )
+        else:
+            print_help()
         return
 
     if reference in register.available_animations():

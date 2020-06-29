@@ -201,6 +201,11 @@ class State(State):
 
 @an_animation("pacman", Options)
 class PacmanAnimation(MarqueeAnimation):
-    """Make pacman go back and forth across your tiles"""
+    """
+    Make pacman and his "friends" go back and forth across your tiles
+
+    Tiles are aligned vertically, and so each row of tiles will have a duplicate
+    of the animation.
+    """
 
     make_state = State

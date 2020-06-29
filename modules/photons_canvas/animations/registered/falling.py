@@ -113,6 +113,29 @@ class State:
 
 @an_animation("falling", Options)
 class FallingAnimation(Animation):
+    """
+    Make lines fall from the top of the tiles and wipe out everything below them.
+
+    There will be multiple lines of varying length per column of the canvas with
+    gaps spread throughout.
+
+    The following options are allowed:
+
+    rate - :range: of pixels - default between 0.3 and 0.6
+        This is the number of pixels that are progressed each tick of the
+        animation. This can be less than one and the animation will use tricks
+        to make the progression appear smooth.
+
+        The minimum is 0.01 and there is no maximum.
+
+    line_hues - :color_range: - default rainbow
+        The colours used to give to each line when they are created
+
+    fade_amount - float - default 0.1
+        The amount to fade the lines each tick. A small number will produce a
+        longer line as it fades slower.
+    """
+
     def setup(self):
         self.duration = self.every
 

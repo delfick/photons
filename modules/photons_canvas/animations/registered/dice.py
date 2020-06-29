@@ -9,7 +9,6 @@ import random
 class Options(dictobj.Spec):
     num_iterations = dictobj.Field(sb.integer_spec, default=1)
 
-    roll_time = dictobj.Field(sb.float_spec, default=2)
     dice_color = dictobj.Field(options.color_range_spec("rainbow"))
 
     num_rolls = dictobj.Field(sb.integer_spec, default=20)
@@ -34,7 +33,23 @@ class State:
 
 @an_animation("dice", Options)
 class TileDiceRollAnimation(Animation):
-    """A dice roll"""
+    """
+    Perform a dice roll. Each tile will display a fast sequence of different
+    dice faces (6 sided die) and then one will be chosen and all tiles will
+    display that one number.
+
+    This animation has the following options:
+
+    num_iterations - integer - default 1
+        The number of times a dice roll can happen before this animation gives
+        up and lets the next animation run.
+
+    dice_color - :color_range: - default rainbow
+        The colour to choose for the dice numbers each time a new roll happens.
+
+    num_rolls - integer - default 20
+        The number of times the dice will roll before a value is chosen.
+    """
 
     align_parts_straight = True
 

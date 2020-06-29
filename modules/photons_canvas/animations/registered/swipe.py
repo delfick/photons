@@ -44,6 +44,30 @@ class State:
 
 @an_animation("swipe", Options)
 class Animation(Animation):
+    """
+    Swipe from the right to the left and "erase" existing values as the lines
+    go over them.
+
+    There is one line for each row of the tiles and the positions set on the
+    tiles are used as they are.
+
+    The following options are recognised:
+
+    rate - :range: of pixels - default between 0.2 and 0.4
+        This is the number of pixels that are progressed each tick of the
+        animation. This can be less than one and the animation will use tricks
+        to make the progression appear smooth.
+
+        The minimum is 0.01 and there is no maximum.
+
+    line_hues - :color_range: - default rainbow
+        The colours used to give to each line when they are created
+
+    fade_amount - float - default 0.1
+        The amount to fade the lines each tick. A small number will produce a
+        longer line as it fades slower.
+    """
+
     async def process_event(self, event):
         if not event.state:
             event.state = State(self.options)

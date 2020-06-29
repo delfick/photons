@@ -129,7 +129,43 @@ class State:
 
 @an_animation("time", Options)
 class TileTimeAnimation(Animation):
-    """Print time to the tiles"""
+    """
+    Display the current time on the tiles.
+
+    Tiles are aligned vertically, and so the time will duplicate for each row
+    of tiles in physical space.
+
+    The time will be displayed in the center of the canvas such that the numbers
+    are not broken over more than one tile.
+
+    The format of the time is "HHdMM" where "d" is the divider that shows the
+    progress of the current minute. The more of the tile is highlighted, the
+    further through the current minute we are.
+
+    Every eighth of the minute, a swipe of colour will go from the left to the
+    right behind the numbers.
+
+    The following options are recognised:
+
+    hour24 - boolean - default true
+        Display the time in 24-hour format
+
+    ignore_coordinates - boolean - default false
+        This is useful if you have a single tile set that isn't in a straight
+        line. When this option is true, the animation will pretend the tile
+        is in a straight line.
+
+    progress_times - integer - default 8
+        The number of times we swipe across colour per minute
+
+    number_color_range - :color_range: - default "0.0,0.8,6000"
+        The color to use for the numbers in the time
+
+    progress_color_range - :color_range: - default "0-360,1,0.2,3500"
+        The colour to use for the progress swipes. This will be used to create
+        a new progress colour each minute. A contrasting colour will be created
+        for the divider.
+    """
 
     align_parts_vertically = True
 

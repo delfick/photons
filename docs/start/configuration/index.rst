@@ -90,6 +90,8 @@ Hard-coded discovery
 
 See :ref:`discovery_options`
 
+.. _noisy_networks_config:
+
 Adjusting animations for busy networks
 --------------------------------------
 
@@ -103,23 +105,18 @@ received:
    ---
 
    animation_options:
-      noisy_network: true
-      inflight_limit: 2
+      noisy_network_limit: 2
 
-This configuration is overriden at runtime by similarly named environment
+This configuration is overridden at runtime by similarly named environment
 variables:
 
-``NOISY_NETWORK``
-   If ``true``, Photons uses the noisy network delivery strategy.
-
-``ANIMATION_INFLIGHT_MESSAGE_LIMIT`` | ``inflight_limit``:
+``NOISY_NETWORK_LIMIT``
    Sets the maximum number of unacknowledged animations frames in-flight at
    any point.
 
 In noisy network mode, Photons will limit the number of frames in-flight to the
-value set for ``inflight_limit`` or ``ANIMATION_INFLIGHT_MESSAGE_LIMIT``. In
-this example, if two frames have been sent, Photons will not send another frame
-until it receives an acknowledgement.
+value set. In this example, if two frames have been sent, Photons will not send
+another frame until it receives an acknowledgement.
 
 Full configuration example
 --------------------------

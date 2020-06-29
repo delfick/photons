@@ -142,17 +142,14 @@ class RunOptions(dictobj.Spec):
         sb.integer_spec(),
         default=0,
         help="""
-        This is the number of animations to run before we stop running new
+        This is the number of animations to run before stop running new
         animations.
-
-        This only matters if you have more than one "feature" animation and does
-        not apply to transition animations.
 
         It defaults to no limit
     """,
     )
 
-    feature_chooser = dictobj.Field(
+    animation_chooser = dictobj.Field(
         sb.string_choice_spec(["random", "cycle"]),
         default="cycle",
         help="""
@@ -190,6 +187,9 @@ class RunOptions(dictobj.Spec):
 
         run_between
             Run transitions between feature animations
+
+        animations
+            Same option as in the ``animations`` option of the root options.
     """,
     )
 
@@ -232,7 +232,7 @@ class RunOptions(dictobj.Spec):
             make_animation, background = a.resolve()
             transitions.append((make_animation, background))
 
-        features = iter(Chooser(self.feature_chooser, features))
+        features = iter(Chooser(self.animation_chooser, features))
         transitions = iter(Chooser(self.transition_chooser, transitions))
 
         def itr():

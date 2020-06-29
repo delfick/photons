@@ -118,7 +118,33 @@ class State:
 
 @an_animation("marquee", Options)
 class MarqueeAnimation(Animation):
-    """Print scrolling text to the tiles"""
+    """
+    Scrolling text over the tiles.
+
+    Tiles are aligned vertically, and so each row of tiles will have a duplicate
+    of the animation.
+
+    The following options are recognised:
+
+    text - string - default "LIFX is awesome!"
+        The text to animate
+
+    speed - :range: pixels to move per tick - default to 1
+        The smaller the number, the slower the movement
+
+    text_color - :color_range: - default to rainbow
+        The colour to choose for each iteration.
+
+    num_iterations - integer - default -1 (no limit)
+        The number of times the text goes across the tiles before the animation
+        ends.
+
+    direction - "LEFT" or "RIGHT" - default LEFT
+        Whether to move "LEFT" or to move "RIGHT"
+
+    switch_directions - boolean - default False
+        Whether to change direction when the text finishes an iteration.
+    """
 
     switch_directions = False
     align_parts_vertically = True

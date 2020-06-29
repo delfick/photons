@@ -38,6 +38,19 @@ class State:
 
 @an_animation("dots", Options)
 class Animation(Animation):
+    """
+    Slowly fill up the canvas with dots until the whole canvas is full of the
+    new colour and then fade to black.
+
+    The positions on the tiles are ignored and tiles are treated as if they
+    are all separate to each other.
+
+    This animation has a single option:
+
+    color_range - :color_range: - default rainbow
+        The colour to choose for the dots in this animation.
+    """
+
     align_parts_straight = True
 
     async def process_event(self, event):
