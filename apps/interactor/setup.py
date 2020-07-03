@@ -1,13 +1,13 @@
-from arranger import VERSION
+from interactor import VERSION
 
 from setuptools import setup, find_packages
 
 # fmt: off
 
 setup(
-      name = "lifx-photons-arranger"
+      name = "lifx-photons-interactor"
     , version = VERSION
-    , packages = find_packages(include="arranger.*", exclude=["tests*"])
+    , packages = find_packages(include="interactor.*", exclude=["tests*"])
     , include_package_data = True
 
     , python_requires = ">= 3.6"
@@ -15,20 +15,22 @@ setup(
     , install_requires =
       [ "lifx-photons-core>=0.26.0"
       , "tornado>=5.1.1"
+      , "SQLAlchemy==1.3.3"
+      , "alembic==1.3.2"
       , "whirlwind-web>=0.9.0"
       ]
 
     , entry_points =
-      { "lifx.photons": ["arranger = arranger.addon"]
+      { "lifx.photons": ["interactor = interactor.addon"]
       }
 
     # metadata for upload to PyPI
-    , url = "http://github.com/delfick/photons-core"
+    , url = "http://github.com/delfick/photons/apps/interactor"
     , author = "Stephen Moore"
     , author_email = "github@delfick.com"
-    , description = "A web interface for changing the user co-ordinates of LIFX tiles"
+    , description = "A server for interacting with LIFX lights over the LAN"
     , license = "MIT"
-    , keywords = "lifx photons arranger"
+    , keywords = "lifx photons"
     , long_description = open("README.rst").read()
     )
 

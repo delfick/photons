@@ -1,0 +1,6 @@
+[submodule "tools/black/black"]
+	path = tools/black/black
+	url = https://github.com/psf/black.git
+[submodule "tools/black/noy_black"]
+	path = tools/black/noy_black
+	url = https://github.com/delfick/noy_black.git

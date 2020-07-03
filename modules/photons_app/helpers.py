@@ -402,6 +402,7 @@ class ResultStreamer:
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
         self.ts = []
+        self.waiting = 0
         self.generators = []
 
         self.queue = asyncio.Queue()
@@ -441,6 +442,7 @@ class ResultStreamer:
             return task
 
         def add_to_queue(res):
+            self.waiting -= 1
             successful = False
 
             if res.cancelled():
@@ -468,6 +470,7 @@ class ResultStreamer:
 
         task.add_done_callback(add_to_queue)
         self.ts.append(task)
+        self.waiting += 1
         return task
 
     def no_more_work(self):
@@ -485,7 +488,7 @@ class ResultStreamer:
             yield (await nxt)
 
             self.ts = [t for t in self.ts if not t.done()]
-            if self.stop_on_completion and not self.ts and self.queue.empty():
+            if self.stop_on_completion and not self.waiting and self.queue.empty():
                 return
 
             # Cleanup any finished generators

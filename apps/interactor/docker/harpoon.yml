@@ -1,0 +1,48 @@
+---
+
+context:
+  use_gitignore: true
+
+image_index: delfick/
+
+images:
+  lifx-photons-interactor:
+    context:
+      parent_dir: "{config_root}/.."
+
+    commands:
+      - FROM python:3.8.1-slim
+
+      - - RUN
+        - apt-get update
+          && apt-get install gcc -y
+          && rm -rf /var/lib/apt/lists/*
+
+      - RUN pip install venvstarter
+
+      - ADD README.rst LICENSE setup.py interact command /project/
+      - ADD photons_interactor /project/photons_interactor
+
+      - WORKDIR /project
+
+      - - ADD
+        - dest: /project/interactor.yml
+          content: |
+            interactor:
+              host: 0.0.0.0
+
+              database:
+                uri: "sqlite:///{config_root}/interactor.db"
+
+
+      - RUN ./interact nop
+      - CMD /project/interact serve
+
+    tasks:
+      serve:
+        description: Start the interactor
+        options:
+          ports:
+            - [6100, 6100]
+          network:
+            network_mode: host
