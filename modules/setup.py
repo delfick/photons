@@ -71,9 +71,9 @@ setup(
       }
 
     # metadata for upload to PyPI
-    , url = "http://github.com/delfick/photons-core"
+    , url = "http://github.com/delfick/photons"
     , author = "Stephen Moore"
-    , author_email = "delfick755@gmail.com"
+    , author_email = "github@delfick.com"
     , description = "The core modules of the photons framework"
     , long_description = open(readme_location).read()
     , license = "MIT"
