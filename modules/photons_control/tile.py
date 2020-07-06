@@ -1,5 +1,4 @@
 from photons_canvas.orientation import nearest_orientation
-from photons_control.planner import Skip, Plan, plans
 from photons_control.script import FromGenerator
 from photons_control.colour import make_hsbks
 
@@ -9,7 +8,6 @@ from photons_app.actions import an_action
 from photons_messages import TileMessages, TileEffectType, LightMessages
 
 from delfick_project.norms import BadSpecValue, sb, Meta
-from delfick_project.option_merge import MergedOptions
 import logging
 
 log = logging.getLogger(name="photons_control.tiles")
@@ -144,56 +142,22 @@ async def get_chain_state(collector, target, reference, **kwargs):
     Get the colors of the tiles in your chain
     """
 
-    class ChainStatePlan(Plan):
-        dependant_info = {"c": plans.CapabilityPlan(), "chain": plans.ChainPlan()}
-
-        class Instance(Plan.Instance):
-            finished_after_no_more_messages = True
-
-            def setup(self):
-                self.got = []
-
-            @property
-            def messages(self):
-                if self.deps["c"]["cap"].has_chain:
-                    length = len(self.deps["chain"]["chain"])
-                    width = self.deps["chain"]["width"]
-                    options = MergedOptions.using(
-                        {
-                            "target": serial,
-                            "tile_index": 0,
-                            "length": length,
-                            "x": 0,
-                            "y": 0,
-                            "width": width,
-                        },
-                        collector.photons_app.extra_as_json,
-                    )
-
-                    return [TileMessages.Get64.create(**options.as_dict())]
-                return Skip
-
-            def process(self, pkt):
-                if pkt | TileMessages.State64:
-                    self.got.append((pkt.tile_index, pkt))
-
-                if len(self.got) == len(self.deps["chain"]["chain"]):
-                    return True
-
-            async def info(self):
-                return [(i, p.colors) for i, p in sorted(self.got)]
-
     async with target.session() as sender:
-        ps = sender.make_plans(state=ChainStatePlan())
-        async for serial, complete, info in sender.gatherer.gather_per_serial(ps, reference):
-            if not complete or info["state"] is Skip:
+        plans = sender.make_plans("parts_and_colors")
+
+        def error(e):
+            log.error(e)
+
+        async for serial, _, parts in sender.gatherer.gather(plans, reference, error_catcher=error):
+            if not parts or not parts[0].device.cap.has_matrix:
                 continue
 
             print(serial)
-            for i, colors in info["state"]:
-                print("    Tile {0}".format(i))
-                for index, color in enumerate(colors):
-                    print("        color {0:<2d}".format(index), repr(color))
+            for part in parts:
+                print(f"    Tile {part.part_number}")
+                for i, color in enumerate(part.colors):
+                    color = (round(color[0], 3), round(color[1], 3), round(color[2], 3), color[3])
+                    print(f"        color {i:<2d}", repr(color))
                 print("")
 
 
