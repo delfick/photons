@@ -91,6 +91,9 @@ ChangeLog
     animations is entirely different and explained in the documentation. The
     animations are now more capable, flexible and look a bit better.
 
+    The ``photons_control.orientation`` module is now under
+    ``photons_canvas.orientation``.
+
     Two new gatherer plans have been introduced: ``parts`` and
     ``parts_and_colors``. These return ``photons_canvas.points.containers.Part``
     objects which represent a single item in a chain. Devices that don't have

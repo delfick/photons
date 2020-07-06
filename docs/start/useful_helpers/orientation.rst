@@ -12,9 +12,9 @@ values to the device, we first rotate them to the right.
 
 Photons contains code to make this easy.
 
-.. automodule:: photons_control.orientation
+.. automodule:: photons_canvas.orientation
     :members:
     :undoc-members:
 
-It is recommended you use the :ref:`"chain" plan <plan_chain>` to access this
+It is recommended you use the :ref:`"parts" plan <plan_parts>` to access this
 functionality.

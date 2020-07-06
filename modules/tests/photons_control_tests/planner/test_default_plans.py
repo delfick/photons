@@ -15,7 +15,7 @@ from photons_messages import (
     MultiZoneEffectType,
     Direction,
 )
-from photons_control.orientation import Orientation, reorient
+from photons_canvas.orientation import Orientation, reorient
 from photons_canvas.points import containers as cont
 from photons_transport.fake import FakeDevice
 from photons_canvas import orientation as co

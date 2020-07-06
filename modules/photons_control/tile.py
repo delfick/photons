@@ -1,4 +1,4 @@
-from photons_control.orientation import nearest_orientation
+from photons_canvas.orientation import nearest_orientation
 from photons_control.planner import Skip, Plan, plans
 from photons_control.script import FromGenerator
 from photons_control.colour import make_hsbks

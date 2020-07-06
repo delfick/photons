@@ -665,7 +665,7 @@ class ChainPlan(Plan):
 
         @property
         def Orien(self):
-            return __import__("photons_control.orientation").orientation.Orientation
+            return __import__("photons_canvas.orientation").orientation.Orientation
 
         def process(self, pkt):
             if self.zones is not Zones.MATRIX:
@@ -710,12 +710,12 @@ class ChainPlan(Plan):
             )
 
         def reverse_orient(self, orientations, index, colors):
-            orientation = __import__("photons_control").orientation
+            orientation = __import__("photons_canvas").orientation
             o = orientation.reverse_orientation(orientations.get(index, self.Orien.RightSideUp))
             return orientation.reorient(colors, o)
 
         def reorient(self, orientations, random_orientations, index, colors, randomize=False):
-            reorient = __import__("photons_control").orientation.reorient
+            reorient = __import__("photons_canvas").orientation.reorient
 
             if randomize:
                 orientations = random_orientations
