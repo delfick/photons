@@ -148,4 +148,4 @@ class ApplyThemeCommand(store.Command, DeviceChangeMixin):
     )
 
     async def execute(self):
-        return await self.send(ApplyTheme.msg(self.theme_options))
+        return await self.send(ApplyTheme.msg(self.theme_options), add_replies=False)

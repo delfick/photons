@@ -7,10 +7,12 @@ from interactor.commander.store import store
 from photons_app import helpers as hp
 
 from photons_control.transform import Transformer
+from photons_control.script import FromGenerator
 from photons_transport import catch_errors
 
 from delfick_project.norms import dictobj, sb
 from collections import defaultdict
+from itertools import chain
 import asyncio
 import uuid
 
@@ -163,24 +165,38 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
             return info
 
         with catch_errors(result.error):
+            msgs = []
+
             async with hp.TaskHolder(self.request_future) as ts:
                 for scene in await self.db_queue.request(get):
                     if scene.zones:
                         fltr = self.cap_filter(scene.matcher, "multizone")
-                        ts.add(self.apply_zones(fltr, scene, result))
+                        ts.add(self.apply_zones(fltr, scene, result, msgs))
 
                         fltr = self.cap_filter(scene.matcher, "not_multizone")
-                        ts.add(self.transform(fltr, scene, result))
+                        ts.add(self.transform(fltr, scene, result, msgs))
 
                     elif scene.chain:
                         fltr = self.cap_filter(scene.matcher, "chain")
-                        ts.add(self.apply_chain(fltr, scene, result))
+                        ts.add(self.apply_chain(fltr, scene, result, msgs))
 
                         fltr = self.cap_filter(scene.matcher, "not_chain")
-                        ts.add(self.transform(fltr, scene, result))
+                        ts.add(self.transform(fltr, scene, result, msgs))
 
                     else:
-                        ts.add(self.transform(self.make_filter(scene.matcher), scene, result))
+                        ts.add(self.transform(self.make_filter(scene.matcher), scene, result, msgs))
+
+            def make_gen(msg_and_serials):
+                async def gen(reference, sender, **kwargs):
+                    yield msg_and_serials[0]
+
+                return FromGenerator(gen, reference_override=msg_and_serials[1])
+
+            if msgs:
+                serials = list(set(chain.from_iterable([ss for _, ss in msgs])))
+                await self.send(
+                    list(map(make_gen, msgs)), serials=serials, add_replies=False, result=result
+                )
 
         return result
 
@@ -190,23 +206,23 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
             serials.append(device.serial)
         return serials
 
-    async def transform(self, fltr, scene, result):
+    async def transform(self, fltr, scene, result, msgs):
         options = scene.transform_options
         options.update(self.overrides)
 
         msg = Transformer.using(options)
         serials = await self._serials(fltr)
-        await self.send(msg, serials=serials, result=result, add_replies=False)
+        msgs.append((msg, serials))
 
-    async def apply_zones(self, fltr, scene, result):
+    async def apply_zones(self, fltr, scene, result, msgs):
         msg = list(scene.zone_msgs(self.overrides))
         serials = await self._serials(fltr)
-        await self.send(msg, serials=serials, result=result, add_replies=False)
+        msgs.append((msg, serials))
 
-    async def apply_chain(self, fltr, scene, result):
+    async def apply_chain(self, fltr, scene, result, msgs):
         msg = list(scene.chain_msgs(self.overrides))
         serials = await self._serials(fltr)
-        await self.send(msg, serials=serials, result=result, add_replies=False)
+        msgs.append((msg, serials))
 
 
 @store.command(name="scene_capture")
