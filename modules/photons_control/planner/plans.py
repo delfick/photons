@@ -611,8 +611,12 @@ class PartsAndColorsPlan(Plan):
 @a_plan("chain")
 class ChainPlan(Plan):
     """
-    This plan will return chain information about the device in a dictionary
-    containing:
+    This plan will return chain information about the device in a dictionary.
+
+    It is recommended you instead use the "parts" or "parts_and_colors" plans
+    instead.
+
+    The result includes:
 
     chain
         A list of :ref:`photons_messages.fields.Tile` objects.
