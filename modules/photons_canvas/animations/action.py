@@ -106,7 +106,7 @@ def print_help(*, animation_kls=None, animation_name=None, output=sys.stdout):
         p()
         p("""    lifx lan:animate balls -- '{"num_balls": 2}'""")
         p()
-        p("See https://delfick.github.io/photons-core/animations/commands.html")
+        p("See https://photons.delfick.com/animations/commands.html")
         p()
 
         p("Available animations include")
@@ -136,7 +136,7 @@ def print_help(*, animation_kls=None, animation_name=None, output=sys.stdout):
     p()
     p(f"""    {command} -- '{{"option1": "value1"}}'""")
     p()
-    p("See https://delfick.github.io/photons-core/animations/commands.html")
+    p("See https://photons.delfick.com/animations/commands.html")
     p()
     p()
     p("-" * 80)

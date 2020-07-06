@@ -4,8 +4,8 @@ Photons Tile Arranger
 This is a web UI for arranging the positions of a number of LIFX Tiles relative
 to each other.
 
-It is build on top of `Photons <https://delfick.github.io/photons-core/>`_ and
-once installed can be run with::
+It is build on top of `Photons <https://photons.delfick.com>`_ and once
+installed can be run with::
 
     lifx lan:arrange
 

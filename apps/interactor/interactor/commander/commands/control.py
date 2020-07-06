@@ -15,7 +15,7 @@ pkt_type_field = dictobj.Field(
         the name of the packet as known by the photons framework.
 
         A list of what's available can be found at
-        https://delfick.github.io/photons-core/binary_protocol.html
+        https://photons.delfick.com/interacting/packets.html
       """,
 )
 

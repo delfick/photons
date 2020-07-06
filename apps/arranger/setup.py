@@ -23,7 +23,7 @@ setup(
       }
 
     # metadata for upload to PyPI
-    , url = "http://github.com/delfick/photons-core"
+    , url = "http://github.com/delfick/photons/apps/arranger"
     , author = "Stephen Moore"
     , author_email = "github@delfick.com"
     , description = "A web interface for changing the user co-ordinates of LIFX tiles"

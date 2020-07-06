@@ -1,7 +1,7 @@
 Photons Interactor
 ==================
 
-A `Photons <https://delfick.github.io/photons-core>`_ powered server for
+A `Photons <https://photons.delfick.com>`_ powered server for
 interacting with LIFX lights over the lan.
 
 The server allows us to do continuous discovery and information gathering so that
