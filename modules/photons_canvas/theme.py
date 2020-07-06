@@ -29,7 +29,8 @@ class colors_spec(sb.Spec):
         return default_colors
 
     def normalise_filled(self, meta, val):
-        return [make_hsbk(val) for val in val]
+        cs = [make_hsbk(val) for val in val]
+        return [(c["hue"], c["saturation"], c["brightness"], c["kelvin"]) for c in cs]
 
 
 class Overrides(dictobj.Spec):
