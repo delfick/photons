@@ -3,7 +3,7 @@
 The Product Registry
 ====================
 
-Different LIFX devices have a range of capabilities. For example, our LIFX+
+Different LIFX devices have a range of capabilities. For example, the LIFX+
 range have the ability to output Infrared light, and the Tile has a 2d matrix
 of zones.
 

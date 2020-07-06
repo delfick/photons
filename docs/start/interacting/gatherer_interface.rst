@@ -5,13 +5,13 @@ The Gatherer Interface
 
 A common task is to gather information from devices. This can often require
 combining multiple points of information. For example to determine if the device
-supports extended multizone messages you need both the product id and hardware
+supports extended multizone messages you need both the product id and firmware
 version of the device.
 
 To get and combine this information in a way that streams that information
 back to you using the :ref:`sender <sender_interface>` API is a little tricky.
 
-To solve this problem, Photons supplies the ``gatherer`` that lets you ask for
+To solve this problem, Photons provides the ``gatherer`` that lets you ask for
 ``plans`` of information to be resolved.
 
 For example:
@@ -203,7 +203,7 @@ resolve first, and so on.
     function.
 
 You can look at the
-`source code <https://github.com/delfick/photons-core/blob/master/photons_control/planner/plans.py>`_
+`source code <https://github.com/delfick/photons/blob/main/modules/photons_control/planner/plans.py>`_
 for examples of plans.
 
 There's quite a few features on the ``Plan`` object:

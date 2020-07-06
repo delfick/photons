@@ -6,7 +6,7 @@ Photons Applications
 Photons comes with some applications built on top of the core code.
 
 :ref:`Tile arranger <app_tile_arranger>`
-    Photons animations require the tiles no where they are in relation to each
+    Photons animations require the tiles know where they are in relation to each
     other to make multiple tile sets appear as one collection of tiles in an
     animation.
 

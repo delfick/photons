@@ -35,14 +35,14 @@ To list all available tasks, run ``lifx help``. To get details about a specific
 task, run ``lifx help <task>``, e.g. ``lifx help transform``.
 
 .. note:: The ``options`` field must be valid JSON syntax which can be
-   cumbersome to provide directly on the command line. For ease of use, the
-   ``lifx`` utility accepts a `file://` path instead::
+    cumbersome to provide directly on the command line. For ease of use, the
+    ``lifx`` utility accepts a ``file://`` path instead::
 
-        $ lifx lan:transform -- file:///path/to/my/options.json
+          $ lifx lan:transform -- file:///path/to/my/options.json
 
     If the file is in the current directory::
 
-        $ lifx lan:transform -- file://options.json
+          $ lifx lan:transform -- file://options.json
 
 Running CLI commands on Windows
 -------------------------------

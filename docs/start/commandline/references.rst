@@ -30,9 +30,9 @@ Toggle the power on all devices on the network::
 
     $ lifx lan:power_toggle _
 
-Start the `Move` effect on all Z Strips and Beams::
+Set all multizone devices (Z and Beam) to green::
 
-    $ lifx lan:multizone_effect match:cap=multizone -- '{"effect": "move"}'
+    $ lifx lan:transform match:cap=multizone -- '{"color": "green"}'
 
 Transform a device with the label ``kitchen`` to blue over 2 seconds::
 

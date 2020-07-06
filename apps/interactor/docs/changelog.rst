@@ -5,6 +5,7 @@ Changelog
 
 0.7.0 - TBD
     * Import from https://photons-interactor.readthedocs.io/en/latest/
+
         * Cleaned up code
         * Device discovery is more efficient and less noisy due to new photons
           code

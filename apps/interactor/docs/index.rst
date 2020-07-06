@@ -89,6 +89,16 @@ And help for specific commands::
       -HContent-Type:application/json \
       -d '{"command": "help", "args": {"command": "transform"}}'
 
+Running on a raspberry Pi
+-------------------------
+
+Note that whilst you can run the interactor on an rPi and most commands will be
+super quick, some commands will not be. The way Photons creates messages is
+noticeably slow on an rPi for multizone and matrix devices as those messages
+are quite large. This may improve in the future, but for now applying a theme
+or scene to such devices may take a few seconds instead of instant. This problem
+does not exist on a more powerful computer.
+
 .. toctree::
     :hidden:
 

@@ -39,7 +39,7 @@ There a number of options available when running tile animations that can be
 specified after a ``--`` on the command line::
 
     # Make the tiles return to their previous state when the animation is stopped
-    $ lifx lan:animate -- '{"reinstate_on_end": true}'
+    $ lifx lan:animate -- '{"animations": ["balls", "falling"], "reinstate_on_end": true}'
 
 When a specific animation is specified, options for that animation are the
 object, and animation options are under ``run_options``::

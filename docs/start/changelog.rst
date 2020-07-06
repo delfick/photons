@@ -85,16 +85,16 @@ ChangeLog
     make it more clear and useful.
 
     The tile animations have also been rewritten from the ground up. The
-    photons_themes and photons_tile_paint modules have been replaced with the
-    photons_canvas module. ``ApplyTheme`` is now under
-    ``photons_canvas.ApplyTheme``. The programmatic and cli interface to
+    ``photons_themes`` and ``photons_tile_paint`` modules have been replaced
+    with the ``photons_canvas`` module. ``ApplyTheme`` is now under
+    ``photons_canvas.theme.ApplyTheme``. The programmatic and cli interface to
     animations is entirely different and explained in the documentation. The
     animations are now more capable, flexible and look a bit better.
 
     Two new gatherer plans have been introduced: ``parts`` and
-    ``parts_with_colors``. These return ``photons_canvas.points.containers.Part``
+    ``parts_and_colors``. These return ``photons_canvas.points.containers.Part``
     objects which represent a single item in a chain. Devices that don't have
-    chains (bulbs and strips) are represented as a single Part. The ``with_colors``
+    chains (bulbs and strips) are represented as a single Part. The ``and_colors``
     plan will also record the current state of the device in the part object.
 
     Creating packets has changed slightly. Instead of
@@ -103,6 +103,11 @@ ChangeLog
 
     If you have a packet class already, the ``unpack``, ``empty_normalise`` and
     ``normalise`` methods have been replaced with a single ``create`` method.
+
+    Finally, I have migrated the
+    `photons interactor <https://photons-interactor.readthedocs.io/en/latest/>`_
+    application into this codebase. As part of that I have split out the tile
+    arranging into it's own app and remove the web UI from the interactor app.
 
 0.25.0 - 8 March 2020
     * Added photons_control.planner.PacketPlan for making a plan that sends
