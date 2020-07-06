@@ -161,10 +161,17 @@ class ApplyTheme:
             if combined_canvas:
                 canvases.append(combined_canvas)
 
+            msgs = []
+
             if options.power_on:
                 for serial in serials:
-                    yield LightMessages.SetLightPower(
-                        level=65535, duration=options.duration, target=serial
+                    msgs.append(
+                        LightMessages.SetLightPower(
+                            level=65535,
+                            duration=options.duration,
+                            target=serial,
+                            res_required=False,
+                        )
                     )
 
             for canvas in canvases:
@@ -173,6 +180,8 @@ class ApplyTheme:
                 for msg in canvas.msgs(
                     options.override_layer, duration=options.duration, acks=True
                 ):
-                    yield msg
+                    msgs.append(msg)
+
+            yield msgs
 
         return FromGenerator(gen)
