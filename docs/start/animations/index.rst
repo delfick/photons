@@ -12,6 +12,10 @@ stream of messages are sent to the tiles to make it appear like movement. These
 work across multiple sets of the tiles as if they were all connected to each
 other, as opposed to firmware effects that are only per set of tiles.
 
+.. note:: For it to appear like the tiles are one, they need to be
+    :ref:`arranged <app_tile_arranger>` to know where they are in relation to
+    each other.
+
 Photons come with a selection of built in animations and has a public interface
 for defining your own.
 

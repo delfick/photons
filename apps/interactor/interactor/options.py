@@ -3,24 +3,29 @@ from interactor.database.database import Database
 from photons_app.formatter import MergedOptionStringFormatter
 
 from delfick_project.norms import dictobj, sb
+import os
+
+
+class host_spec(sb.Spec):
+    def normalise_empty(self, meta):
+        return os.environ.get("INTERACTOR_HOST", "127.0.0.1")
+
+    def normalise_filled(self, meta, val):
+        return sb.string_spec().normalise(meta, val)
+
+
+class port_spec(sb.Spec):
+    def normalise_empty(self, meta):
+        return int(os.environ.get("INTERACTOR_PORT", 6100))
+
+    def normalise_filled(self, meta, val):
+        return sb.integer_spec().normalise(meta, val)
 
 
 class Options(dictobj.Spec):
-    host = dictobj.Field(
-        sb.string_spec, default="localhost", help="The host to serve the server on"
-    )
+    host = dictobj.Field(host_spec, help="The host to serve the server on")
 
-    port = dictobj.Field(sb.integer_spec, default=6100, help="The port to serve the server on")
-
-    fake_devices = dictobj.Field(
-        sb.boolean,
-        default=False,
-        help=""""
-            Whether to look at the lan or use fake devices
-
-            This is useful for integration tests
-          """,
-    )
+    port = dictobj.Field(port_spec, help="The port to serve the server on")
 
     database = dictobj.Field(
         Database.FieldSpec(formatter=MergedOptionStringFormatter), help="Database options",

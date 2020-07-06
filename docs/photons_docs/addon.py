@@ -170,8 +170,10 @@ async def view_docs(collector, reference, tasks, **kwargs):
         )
     )
 
+    port = int(os.environ.get("PHOTONS_DOCS_PORT", 0))
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("0.0.0.0", 0))
+        s.bind(("0.0.0.0", port))
         port = s.getsockname()[1]
 
     photons_app = collector.configuration["photons_app"]

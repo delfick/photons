@@ -11,6 +11,7 @@
     useful_helpers/index.rst
     products/index.rst
     animations/index.rst
+    apps/index.rst
     glossary.rst
     changelog.rst
 
@@ -45,5 +46,5 @@ Photons provides:
 Source code
 -----------
 
-The code for photons is found at https://github.com/delfick/photons-core
+The code for photons is found at https://github.com/delfick/photons
 and includes an ``examples`` folder of scripts.

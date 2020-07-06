@@ -1,3 +1,8 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.tox/
+dist/
+build/
 arranger/static/node_modules/
 arranger/static/dist/dev/
-.lifx/

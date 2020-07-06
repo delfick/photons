@@ -6,7 +6,7 @@ import os
 describe "Options":
     it "has defaults", options_maker:
         options = options_maker(memory=False)
-        assert options.host == "localhost"
+        assert options.host == "127.0.0.1"
         assert options.port == 6100
         assert options.database.as_dict() == {
             "uri": f"sqlite:///{os.getcwd()}/interactor.db",
