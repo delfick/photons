@@ -269,7 +269,7 @@ class TileColorCycleAnimation(Animation):
     https://gist.github.com/delfick/22e984ff9587401a255b175f4db6b309
 
     run with::
-        
+
         lifx lan:animate -- file://instructions.json
     """
 

@@ -8,7 +8,6 @@ from photons_messages import DeviceMessages, LightMessages
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
-import pytest
 
 describe "find_packet":
 

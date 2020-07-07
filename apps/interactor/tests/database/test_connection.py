@@ -69,7 +69,7 @@ describe "DatabaseConnection":
             database.commit()
 
             database.refresh(one)
-            assert one.two == False
+            assert one.two is False
 
         it "can rollback", database, ThingModel:
             one = ThingModel(one="one", two="wat")
@@ -103,11 +103,11 @@ describe "DatabaseConnection":
             database.commit()
 
             two, made = database.queries.get_or_create_thing_model(one="one", two=True)
-            assert made == False
+            assert made is False
             assert one.id == two.id
 
             three, made = database.queries.get_or_create_thing_model(one="two", two=True)
-            assert made == True
+            assert made is True
             database.add(three)
             database.commit()
 

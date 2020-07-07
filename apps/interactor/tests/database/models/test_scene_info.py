@@ -3,7 +3,6 @@
 from interactor.database.models.scene_info import SceneInfo
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import Meta
 import sqlalchemy.exc
 import pytest
 import uuid
