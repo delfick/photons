@@ -3,12 +3,19 @@
 ChangeLog
 =========
 
-0.3.0 - TBD
+0.3.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the
     internal version of this library at LIFX was created over 4 years ago.
 
-    The main change being renaming the ``afr`` object and replacing the
-    ``run_with`` API.
+    * Rewritten documentation
+    * Rewritten tile animations
+    * New and improved API for creating custom scripts.
+    * Moved code from https://github.com/delfick/photons-core to
+      https://github.com/delfick/photons
+    * Documentation is no longer github pages and is hosted on
+      https://photons.delfick.com
+
+    First, I renamed the ``afr`` object and replacing the ``run_with`` API.
 
     .. code-block:: python
 
@@ -48,12 +55,12 @@ ChangeLog
             async for serial, label, info in sender.gatherer.gather(plans, reference):
                 print(serial, label, info)
 
-    I have also simplified the DeviceFinder such that the Special Reference and
-    Daemon it provides are two different things rather than on the same object.
-    This also makes it easier to create a DeviceFinder special reference as it
-    doesn't need a ``target`` and the Daemon only requires a ``sender``.
+    The DeviceFinder is now split into the Special Reference and Daemon it
+    provides rather than both on the same object. This has a benefit of making
+    it much easier to create a DeviceFinder special reference because it no
+    longer needs a ``target`` object.
 
-    I have simplified creating scripts by introducing ``photons_core.run``.
+    Starting custom scripts is easier with the introduced ``photons_core.run``.
 
     .. code-block:: python
 
@@ -74,15 +81,12 @@ ChangeLog
     The example scripts in the source code is now all under the ``examples``
     directory rather than spread across ``examples`` and ``scripts``.
 
-    I've moved ``photons_colour`` and colour related helpers in
-    ``photons_control.attributes`` into ``photons_control.colour``.
+    The ``photons_colour`` and colour related helpers in
+    ``photons_control.attributes`` are now in ``photons_control.colour``.
 
     I've introduced some additional helpers in ``photons_app.helpers`` for
-    working with asyncio tasks and also the ability to stream results from
+    working with asyncio tasks including the ability to stream results from
     multiple coroutines and async generators.
-
-    And most importantly, I've rewritten the documentation from scratch to
-    make it more clear and useful.
 
     The tile animations have also been rewritten from the ground up. The
     ``photons_themes`` and ``photons_tile_paint`` modules have been replaced
