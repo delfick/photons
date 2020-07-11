@@ -14,6 +14,7 @@ from photons_transport.targets import MemoryTarget
 from photons_transport.transports.udp import UDP
 
 from photons_app.errors import TimedOut
+from photons_app import helpers as hp
 
 from photons_messages import (
     protocol_register,
@@ -521,7 +522,7 @@ describe "FakeDevice":
         describe "reboot":
 
             async it "can be rebooted", device:
-                fut = asyncio.Future()
+                fut = hp.create_future()
 
                 called = []
 
@@ -693,7 +694,7 @@ describe "FakeDevice":
                 s2.add_service.assert_called_once_with(adder)
 
             async it "works", serial, device:
-                final_future = asyncio.Future()
+                final_future = hp.create_future()
                 target = MemoryTarget.create(
                     {"final_future": final_future, "protocol_register": protocol_register},
                     {"devices": [device]},
@@ -1073,7 +1074,7 @@ describe "FakeDevice":
 
                 assert port1 != port2
 
-                final_future = asyncio.Future()
+                final_future = hp.create_future()
                 target = MemoryTarget.create(
                     {"final_future": final_future, "protocol_register": protocol_register},
                     {"devices": [device]},

@@ -25,7 +25,7 @@ import pytest
 @pytest.fixture()
 def V():
     class V:
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         @hp.memoized_property
         def transport_target(s):
@@ -783,7 +783,7 @@ describe "Communication":
                 waiter.reset()
 
                 async def cancel():
-                    fut = asyncio.Future()
+                    fut = hp.create_future()
                     fut.cancel()
                     await fut
 
@@ -1046,7 +1046,7 @@ describe "Communication":
             a = mock.Mock(name="a")
             b = mock.Mock(name="b")
 
-            waiter = asyncio.Future()
+            waiter = hp.create_future()
 
             t = hp.async_as_background(V.communication._get_response(packet, 0.1, waiter))
             asyncio.get_event_loop().call_later(0.05, waiter.set_result, [a, b])
@@ -1055,7 +1055,7 @@ describe "Communication":
             assert not waiter.cancelled()
 
         async it "can timeout a task", V, packet, serial:
-            waiter = asyncio.Future()
+            waiter = hp.create_future()
 
             t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
 
@@ -1065,7 +1065,7 @@ describe "Communication":
             assert waiter.cancelled()
 
         async it "understands when waiter is cancelled", V, serial, packet:
-            waiter = asyncio.Future()
+            waiter = hp.create_future()
 
             t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
             asyncio.get_event_loop().call_later(0.01, waiter.cancel)
@@ -1076,7 +1076,7 @@ describe "Communication":
             assert waiter.cancelled()
 
         async it "passes on error from waiter", V, packet:
-            waiter = asyncio.Future()
+            waiter = hp.create_future()
 
             t = hp.async_as_background(V.communication._get_response(packet, 0.05, waiter))
             asyncio.get_event_loop().call_later(0.01, waiter.set_exception, ValueError("NOPE"))

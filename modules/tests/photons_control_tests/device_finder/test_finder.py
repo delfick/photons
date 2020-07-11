@@ -5,12 +5,12 @@ from photons_control.device_finder import Finder, Searcher, Collections, Device,
 from photons_app import helpers as hp
 
 from unittest import mock
-import asyncio
 import pytest
+
 
 describe "Finder":
     it "takes in a sender and uses it's stop_fut if final_future not specified":
-        stop_fut = asyncio.Future()
+        stop_fut = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
 
         finder = Finder(sender)
@@ -36,7 +36,7 @@ describe "Finder":
 
     it "uses given final_future if one is specified":
         sender = mock.Mock(name="sender", spec=[])
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         finder = Finder(sender, final_future)
 
@@ -48,7 +48,7 @@ describe "Finder":
 
     it "allows you to specify forget_after":
         sender = mock.Mock(name="sender", spec=[])
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         finder = Finder(sender, final_future)
         assert finder.forget_after == 30
@@ -60,7 +60,7 @@ describe "Finder":
 
         @pytest.fixture()
         def final_future(self):
-            fut = asyncio.Future()
+            fut = hp.create_future()
             try:
                 yield fut
             finally:
@@ -108,7 +108,7 @@ describe "Finder":
                 V.finder.devices["s2"].finish.side_effect = TypeError("NOPE")
 
                 called = []
-                s1fut = asyncio.Future()
+                s1fut = hp.create_future()
 
                 async def s3finish():
                     called.append("s3finish")

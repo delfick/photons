@@ -22,7 +22,7 @@ class C:
 
 describe "ResultStreamer":
     it "takes in final_future and other options":
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         error_catcher = mock.Mock(name="error_catcher")
         exceptions_only_to_error_catcher = mock.Mock(name="exceptions_only_to_error_catcher")
 
@@ -41,23 +41,23 @@ describe "ResultStreamer":
         assert not streamer.stop_on_completion
 
     async it "has a final future as a child of that passed in":
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         streamer = hp.ResultStreamer(final_future)
         streamer.final_future.cancel()
         assert not final_future.done()
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         streamer = hp.ResultStreamer(final_future)
         final_future.set_result(True)
         assert streamer.final_future.cancelled()
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         streamer = hp.ResultStreamer(final_future)
         final_future.set_exception(Exception("NOPE"))
         with assertRaises(Exception, "NOPE"):
             await streamer.final_future
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         streamer = hp.ResultStreamer(final_future)
         final_future.cancel()
         assert streamer.final_future.cancelled()
@@ -67,7 +67,7 @@ describe "ResultStreamer":
         @pytest.fixture()
         async def V(self):
             class V:
-                final_future = asyncio.Future()
+                final_future = hp.create_future()
                 error_catcher = mock.Mock(name="error_catcher")
 
                 @hp.memoized_property
@@ -197,7 +197,7 @@ describe "ResultStreamer":
         @pytest.fixture()
         async def V(self):
             class V:
-                final_future = asyncio.Future()
+                final_future = hp.create_future()
 
                 @hp.memoized_property
                 def streamer(s):
@@ -252,7 +252,7 @@ describe "ResultStreamer":
             class MakeStreamer:
                 def __init__(s, **kwargs):
                     s.kwargs = kwargs
-                    s.final_future = asyncio.Future()
+                    s.final_future = hp.create_future()
 
                 async def __aenter__(s):
                     s.streamer = hp.ResultStreamer(s.final_future, **s.kwargs)
@@ -268,7 +268,7 @@ describe "ResultStreamer":
         async def retrieve(self, streamer):
             streamer.no_more_work()
 
-            started = asyncio.Future()
+            started = hp.create_future()
 
             async def retrieve():
                 results = []
@@ -374,7 +374,7 @@ describe "ResultStreamer":
                 error_catcher.mock_calls == [mock.call(error), mock.call(C())]
 
         async it "can put successful results onto the queue", make_streamer:
-            make_return = asyncio.Future()
+            make_return = hp.create_future()
 
             async def func():
                 await make_return
@@ -394,7 +394,7 @@ describe "ResultStreamer":
 
         async it "can tell on_done about finishing successfully", make_streamer:
             on_done = mock.Mock(name="on_done")
-            make_return = asyncio.Future()
+            make_return = hp.create_future()
 
             async def func():
                 await make_return
@@ -414,7 +414,7 @@ describe "ResultStreamer":
                 on_done.assert_called_once_with(result)
 
         async it "doesn't call error_catcher if success and exceptions only", make_streamer:
-            make_return = asyncio.Future()
+            make_return = hp.create_future()
 
             async def func():
                 await make_return
@@ -434,7 +434,7 @@ describe "ResultStreamer":
 
     describe "async context manager":
         async it "calls finish on successful exit":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
             finish = pytest.helpers.AsyncMock(name="finish")
@@ -447,7 +447,7 @@ describe "ResultStreamer":
             finish.assert_called_once_with()
 
         async it "calls finish on unsuccessful exit":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
             finish = pytest.helpers.AsyncMock(name="finish")
@@ -462,11 +462,11 @@ describe "ResultStreamer":
             finish.assert_called_once_with()
 
         async it "calls finish on cancellation":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
             finish = pytest.helpers.AsyncMock(name="finish")
-            cancel_me_now = asyncio.Future()
+            cancel_me_now = hp.create_future()
 
             async def run_it():
                 with mock.patch.object(streamer, "finish", finish):
@@ -490,10 +490,10 @@ describe "ResultStreamer":
         async it "stops retrieving if there is results left to yield":
             called = []
 
-            gen_fut = asyncio.Future()
-            func_fut = asyncio.Future()
-            func3_fut = asyncio.Future()
-            final_future = asyncio.Future()
+            gen_fut = hp.create_future()
+            func_fut = hp.create_future()
+            func3_fut = hp.create_future()
+            final_future = hp.create_future()
 
             async def gen():
                 called.append(("started", "gen"))
@@ -590,7 +590,7 @@ describe "Using ResultStreamer":
 
     @pytest.fixture()
     def final_future(self):
-        fut = asyncio.Future()
+        fut = hp.create_future()
         try:
             yield fut
         finally:

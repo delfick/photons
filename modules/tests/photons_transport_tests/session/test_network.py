@@ -22,7 +22,7 @@ describe "NetworkSession":
     @pytest.fixture()
     def V(self):
         class V:
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             default_broadcast = "1.2.3.255"
 
             @hp.memoized_property

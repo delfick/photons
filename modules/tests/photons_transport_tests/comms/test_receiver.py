@@ -42,7 +42,7 @@ describe "Receiver":
 
                 @hp.memoized_property
                 def result(s):
-                    result = asyncio.Future()
+                    result = hp.create_future()
                     result.add_packet = mock.Mock(name="add_packet")
                     return result
 
@@ -60,7 +60,7 @@ describe "Receiver":
                 key = V.register(V.source, V.sequence, V.target)
 
                 loop = mock.Mock(name="loop")
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 other = mock.Mock(name="other")
                 called = []
 

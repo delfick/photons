@@ -96,8 +96,8 @@ describe "UDP":
 
         received = []
 
-        first_receive = asyncio.Future()
-        second_receive = asyncio.Future()
+        first_receive = hp.create_future()
+        second_receive = hp.create_future()
 
         def receive(message, addr):
             assert addr == (V.host, V.port)

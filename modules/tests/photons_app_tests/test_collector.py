@@ -338,7 +338,7 @@ describe "Collector":
             collector = Collector()
             collector.register = register
 
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
             configuration = {"photons_app": photons_app}
@@ -350,7 +350,7 @@ describe "Collector":
             register.post_register.assert_called_once_with({"lifx.photons": {}})
 
         it "creates and sets up a task finder":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
             configuration = {"photons_app": photons_app}

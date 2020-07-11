@@ -1,4 +1,5 @@
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from photons_messages import (
     LightMessages,
@@ -502,7 +503,7 @@ class MemoryTargetRunner:
 
 def with_runner(func):
     async def test(s, **kwargs):
-        final_future = asyncio.Future()
+        final_future = hp.create_future(name="chp.with_runner.final_future")
         try:
             runner = MemoryTargetRunner(final_future, s.devices, **kwargs)
             async with runner:
@@ -524,7 +525,7 @@ class ModuleLevelRunner:
         self.kwargs = kwargs
 
     async def server_runner(self, devices, **kwargs):
-        final_future = asyncio.Future()
+        final_future = hp.create_future("chp.ModuleLevelRunner.final_future")
         runner = MemoryTargetRunner(final_future, devices, **kwargs)
         await runner.start()
 

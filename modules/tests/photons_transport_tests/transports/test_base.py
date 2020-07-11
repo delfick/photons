@@ -163,7 +163,7 @@ describe "Transport":
                 transport.transport.cancel()
 
             async it "doesn't raise cancellations on transport", transport:
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 fut.cancel()
 
                 transport.transport = fut
@@ -172,7 +172,7 @@ describe "Transport":
                 assert True, "No CancelledError raised"
 
             async it "doesn't raise exceptions on transport", transport:
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 fut.set_exception(ValueError("YEAP"))
 
                 transport.transport = fut
@@ -183,7 +183,7 @@ describe "Transport":
             async it "closes the transport if there is one", transport, V:
                 close_transport = pytest.helpers.AsyncMock(name="close_transport")
 
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 fut.set_result(V.spawned)
                 transport.transport = fut
 

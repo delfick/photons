@@ -84,7 +84,7 @@ describe "just_log_exceptions":
 
 describe "TaskHolder":
     it "takes in a final future":
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         holder = hp.TaskHolder(final_future)
         assert holder.ts == []
         assert holder.final_future is final_future
@@ -98,7 +98,7 @@ describe "TaskHolder":
             finally:
                 called.append(amount)
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         async with hp.TaskHolder(final_future) as ts:
             ts.add(wait(0.05))
             ts.add(wait(0.01))
@@ -114,7 +114,7 @@ describe "TaskHolder":
             finally:
                 called.append(amount)
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         async with hp.TaskHolder(final_future) as ts:
             await ts.add(wait(0.05))
             await ts.add(wait(0.01))
@@ -133,7 +133,7 @@ describe "TaskHolder":
             finally:
                 called.append(amount)
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         async with hp.TaskHolder(final_future) as ts:
             ts.add(wait(ts, 0.05))
             ts.add(wait(ts, 0.01))
@@ -153,7 +153,7 @@ describe "TaskHolder":
             finally:
                 called.append(amount)
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         async with hp.TaskHolder(final_future) as ts:
             ts.add(wait(ts, 0.05))
             ts.add(wait(ts, 0.01))
@@ -173,7 +173,7 @@ describe "TaskHolder":
             finally:
                 called.append(("FINISHED", amount))
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
         async with hp.TaskHolder(final_future) as ts:
             ts.add(wait(ts, 5))
             ts.add(wait(ts, 0.05))
@@ -182,7 +182,7 @@ describe "TaskHolder":
 
     async it "can say how many pending tasks it has":
         called = []
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         async def doit():
             await asyncio.sleep(1)

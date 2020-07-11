@@ -2,6 +2,7 @@
 
 from photons_app.executor import library_setup
 from photons_app.errors import UserQuit
+from photons_app import helpers as hp
 
 from photons_control.device_finder import DeviceFinderDaemon, Filter
 from photons_control.colour import ColourParser
@@ -92,7 +93,7 @@ async def run_prompt(daemon, final_future, loop):
     while True:
         write_prompt()
 
-        done = asyncio.Future()
+        done = hp.create_future(name="device_finder.run_prompt.done")
 
         thread = threading.Thread(target=get_command, args=(done,))
         thread.daemon = True

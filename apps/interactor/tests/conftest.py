@@ -2,11 +2,11 @@ from interactor.options import Options
 from interactor.server import Server
 
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app import helpers as hp
 
 from photons_control import test_helpers as chp
 from photons_transport.fake import FakeDevice
 from photons_products import Products
-
 
 from whirlwind import test_helpers as wthp
 from unittest import mock
@@ -80,7 +80,7 @@ def make_options(host=None, port=None, database=None, memory=True):
 
 
 async def make_server_runner(store, target_register=None, **kwargs):
-    final_future = asyncio.Future()
+    final_future = hp.create_future(name="server_runner.final_future")
 
     options = make_options("127.0.0.1", wthp.free_port(), **kwargs)
 

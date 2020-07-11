@@ -1,3 +1,5 @@
+from photons_app import helpers as hp
+
 import asyncio
 import time
 
@@ -77,7 +79,7 @@ class RetryIterator:
         return diff, self.next - now
 
     async def wait(self, timeout):
-        f = asyncio.Future()
+        f = hp.create_future(name="RetryIterator.wait_resolver")
         loop = asyncio.get_event_loop()
         loop.call_later(timeout, f.cancel)
         await asyncio.wait([f])

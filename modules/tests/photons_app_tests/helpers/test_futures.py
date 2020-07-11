@@ -17,6 +17,24 @@ def loop():
     return asyncio.get_event_loop()
 
 
+describe "creating a future":
+    it "can create a future from a provided loop":
+        fut = mock.Mock(name="future")
+        loop = mock.Mock(name="loop")
+        loop.create_future.return_value = fut
+        assert hp.create_future(loop=loop) is fut
+        assert fut.name is None
+        loop.create_future.assert_called_once_with()
+
+    it "can create a future from current loop":
+        fut = hp.create_future()
+        assert isinstance(fut, asyncio.Future)
+        assert fut.name is None
+
+    it "can give a name to the future":
+        fut = hp.create_future(name="hi")
+        assert fut.name == "hi"
+
 describe "ResettableFuture":
     async it "ensure_future returns the ResettableFuture as is":
         fut = hp.ResettableFuture()
@@ -300,7 +318,7 @@ describe "ChildOfFuture":
     @pytest.fixture()
     def V(self):
         class V:
-            orig_fut = asyncio.Future()
+            orig_fut = hp.create_future()
 
             @hp.memoized_property
             def cof(s):
@@ -309,7 +327,7 @@ describe "ChildOfFuture":
         return V()
 
     async it "ensure_future returns the ChildOfFuture as is":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut = hp.ChildOfFuture(fut)
         assert asyncio.ensure_future(fut) is fut
 
@@ -357,24 +375,24 @@ describe "ChildOfFuture":
 
     describe "done":
         async it "is done if either this or original fut are done":
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             assert not cof.done()
             o.set_result(True)
             assert cof.done()
 
-            o2 = asyncio.Future()
+            o2 = hp.create_future()
             cof2 = hp.ChildOfFuture(o2)
             cof2.set_result(True)
             assert not o2.done()
             assert cof2.done()
 
-            o3 = asyncio.Future()
+            o3 = hp.create_future()
             cof3 = hp.ChildOfFuture(o3)
             o3.cancel()
             assert cof3.done()
 
-            o4 = asyncio.Future()
+            o4 = hp.create_future()
             cof4 = hp.ChildOfFuture(o4)
             cof4.cancel()
             assert not o4.done()
@@ -382,47 +400,47 @@ describe "ChildOfFuture":
 
     describe "cancelled":
         async it "is cancelled if either this or original fut are cancelled":
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             assert not cof.cancelled()
 
-            o2 = asyncio.Future()
+            o2 = hp.create_future()
             cof2 = hp.ChildOfFuture(o2)
             cof2.cancel()
             assert not o2.cancelled()
             assert cof2.cancelled()
 
-            o3 = asyncio.Future()
+            o3 = hp.create_future()
             cof3 = hp.ChildOfFuture(o3)
             o3.cancel()
             assert cof3.cancelled()
 
         async it "is cancelled if the original fut is done without errors":
-            o = asyncio.Future()
+            o = hp.create_future()
             o.set_result(None)
             cof = hp.ChildOfFuture(o)
             assert cof.cancelled()
 
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             o.set_result(None)
             assert cof.cancelled()
 
     describe "exception":
         async it "it complains no exception is set if neither fut cancelled or have exception":
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             with assertRaises(hp.InvalidStateError):
                 cof.exception()
 
         async it "complains future is cancelled when either fut is cancelled":
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             o.cancel()
             with assertRaises(asyncio.CancelledError):
                 cof.exception()
 
-            o2 = asyncio.Future()
+            o2 = hp.create_future()
             cof2 = hp.ChildOfFuture(o2)
             cof2.cancel()
             assert not o2.cancelled()
@@ -431,14 +449,14 @@ describe "ChildOfFuture":
 
         async it "returns the exception if original fut has an exception":
             error = PhotonsAppError("lol")
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             o.set_exception(error)
             assert cof.exception() is error
 
         async it "returns the exception if this_fut has an exception":
             error = PhotonsAppError("lol")
-            o = asyncio.Future()
+            o = hp.create_future()
             cof = hp.ChildOfFuture(o)
             cof.set_exception(error)
             assert not o.done()
@@ -446,7 +464,7 @@ describe "ChildOfFuture":
 
     describe "cancelling the parent":
         async it "cancels original_fut parent if that has cancel_parent":
-            grandparent = asyncio.Future()
+            grandparent = hp.create_future()
             parent = hp.ChildOfFuture(grandparent)
             cof = hp.ChildOfFuture(parent)
             cof.cancel_parent()
@@ -456,7 +474,7 @@ describe "ChildOfFuture":
             assert cof.cancelled()
 
         async it "cancels original fut if has no cancel_parent on it":
-            parent = asyncio.Future()
+            parent = hp.create_future()
             cof = hp.ChildOfFuture(parent)
             cof.cancel_parent()
             assert parent.cancelled()
@@ -756,7 +774,7 @@ describe "fut_has_callback":
         def func():
             pass
 
-        fut = asyncio.Future()
+        fut = hp.create_future()
         assert not hp.fut_has_callback(fut, func)
 
     async it "says no if it has other callbacks":
@@ -767,7 +785,7 @@ describe "fut_has_callback":
         def func2():
             pass
 
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.add_done_callback(func1)
         assert not hp.fut_has_callback(fut, func2)
 
@@ -776,7 +794,7 @@ describe "fut_has_callback":
         def func1():
             pass
 
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.add_done_callback(func1)
         assert hp.fut_has_callback(fut, func1)
 
@@ -855,39 +873,39 @@ describe "async_as_background":
 
 describe "silent_reporter":
     async it "does nothing if the future was cancelled":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.cancel()
         assert hp.silent_reporter(fut) is None
 
     async it "does nothing if the future has an exception":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.set_exception(Exception("wat"))
         assert hp.silent_reporter(fut) is None
 
     async it "returns true if we have a result":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.set_result(mock.Mock(name="result"))
         assert hp.silent_reporter(fut) is True
 
 describe "reporter":
     async it "does nothing if the future was cancelled":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.cancel()
         assert hp.reporter(fut) is None
 
     async it "does nothing if the future has an exception":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.set_exception(Exception("wat"))
         assert hp.reporter(fut) is None
 
     async it "returns true if we have a result":
-        fut = asyncio.Future()
+        fut = hp.create_future()
         fut.set_result(mock.Mock(name="result"))
         assert hp.reporter(fut) is True
 
 describe "transfer_result":
     async it "works as a done_callback", loop:
-        fut = asyncio.Future()
+        fut = hp.create_future()
 
         async def doit():
             return [1, 2]
@@ -899,7 +917,7 @@ describe "transfer_result":
         assert fut.result() == [1, 2]
 
     async it "can run a process function", loop:
-        fut = asyncio.Future()
+        fut = hp.create_future()
         res = mock.Mock(name="res")
 
         async def doit():
@@ -918,16 +936,16 @@ describe "transfer_result":
 
     describe "errors_only":
         async it "cancels fut if res is cancelled":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
             res.cancel()
 
             hp.transfer_result(fut, errors_only=True)(res)
             assert res.cancelled()
 
         async it "sets exception on fut if res has an exception":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
 
             error = ValueError("NOPE")
             res.set_exception(error)
@@ -936,8 +954,8 @@ describe "transfer_result":
             assert fut.exception() == error
 
         async it "does not transfer result":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
             res.set_result([1, 2])
 
             hp.transfer_result(fut, errors_only=True)(res)
@@ -945,16 +963,16 @@ describe "transfer_result":
 
     describe "not errors_only":
         async it "cancels fut if res is cancelled":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
             res.cancel()
 
             hp.transfer_result(fut, errors_only=False)(res)
             assert res.cancelled()
 
         async it "sets exception on fut if res has an exception":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
 
             error = ValueError("NOPE")
             res.set_exception(error)
@@ -963,8 +981,8 @@ describe "transfer_result":
             assert fut.exception() == error
 
         async it "transfers result":
-            fut = asyncio.Future()
-            res = asyncio.Future()
+            fut = hp.create_future()
+            res = hp.create_future()
             res.set_result([1, 2])
 
             hp.transfer_result(fut, errors_only=False)(res)
@@ -972,10 +990,10 @@ describe "transfer_result":
 
 describe "noncancelled_results_from_futs":
     async it "returns results from done futures that aren't cancelled":
-        fut1 = asyncio.Future()
-        fut2 = asyncio.Future()
-        fut3 = asyncio.Future()
-        fut4 = asyncio.Future()
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+        fut4 = hp.create_future()
 
         result1 = mock.Mock(name="result1")
         result2 = mock.Mock(name="result2")
@@ -990,10 +1008,10 @@ describe "noncancelled_results_from_futs":
         )
 
     async it "returns found errors as well":
-        fut1 = asyncio.Future()
-        fut2 = asyncio.Future()
-        fut3 = asyncio.Future()
-        fut4 = asyncio.Future()
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+        fut4 = hp.create_future()
 
         error1 = Exception("wat")
         result2 = mock.Mock(name="result2")
@@ -1005,10 +1023,10 @@ describe "noncancelled_results_from_futs":
         assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [result2])
 
     async it "squashes the same error into one error":
-        fut1 = asyncio.Future()
-        fut2 = asyncio.Future()
-        fut3 = asyncio.Future()
-        fut4 = asyncio.Future()
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+        fut4 = hp.create_future()
 
         error1 = PhotonsAppError("wat", one=1)
         error2 = PhotonsAppError("wat", one=1)
@@ -1020,11 +1038,11 @@ describe "noncancelled_results_from_futs":
         assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [])
 
     async it "can return error with multiple errors":
-        fut1 = asyncio.Future()
-        fut2 = asyncio.Future()
-        fut3 = asyncio.Future()
-        fut4 = asyncio.Future()
-        fut5 = asyncio.Future()
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+        fut4 = hp.create_future()
+        fut5 = hp.create_future()
 
         error1 = PhotonsAppError("wat")
         error2 = PhotonsAppError("wat2")
@@ -1045,11 +1063,11 @@ describe "find_and_apply_result":
     @pytest.fixture()
     def V(self):
         class V:
-            fut1 = asyncio.Future()
-            fut2 = asyncio.Future()
-            fut3 = asyncio.Future()
-            fut4 = asyncio.Future()
-            final_fut = asyncio.Future()
+            fut1 = hp.create_future()
+            fut2 = hp.create_future()
+            fut3 = hp.create_future()
+            fut4 = hp.create_future()
+            final_fut = hp.create_future()
 
             @hp.memoized_property
             def available_futs(s):

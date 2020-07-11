@@ -51,7 +51,7 @@ describe "Searcher":
         async it "does not do a search if one is already in progress", searcher:
             called = []
             serials = mock.Mock(name="serials")
-            continue_event = asyncio.Future()
+            continue_event = hp.create_future()
 
             async def _serials():
                 called.append("get_serials")
@@ -59,7 +59,7 @@ describe "Searcher":
                 assert not searcher.search_fut.done()
                 return serials
 
-            streamer = hp.ResultStreamer(asyncio.Future())
+            streamer = hp.ResultStreamer(hp.create_future())
             await streamer.add_coroutine(searcher.discover())
             await streamer.add_coroutine(searcher.discover())
             streamer.no_more_work()

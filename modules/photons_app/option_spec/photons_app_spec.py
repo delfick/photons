@@ -95,7 +95,7 @@ class PhotonsApp(dictobj.Spec):
             raise BadOption("The options after -- wasn't valid json", **kwargs)
 
     def separate_final_future(self, sleep=0):
-        other_future = asyncio.Future()
+        other_future = hp.create_future(name="photons_app.separate_final_future")
 
         def stop():
             other_future.cancel()

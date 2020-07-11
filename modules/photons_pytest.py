@@ -216,13 +216,13 @@ class FutureDominoes:
     class F:
         def __init__(self, num, done_callback):
             self.num = num
-            self.fut = asyncio.Future()
-            self.ready_fut = asyncio.Future()
+            self.fut = asyncio.get_event_loop().create_future()
+            self.ready_fut = asyncio.get_event_loop().create_future()
             self.done_callback = done_callback
 
             hp = __import__("photons_app.helpers").helpers
 
-            self.combined_fut = asyncio.Future()
+            self.combined_fut = asyncio.get_event_loop().create_future()
             self.fut.add_done_callback(hp.transfer_result(self.combined_fut))
             self.ready_fut.add_done_callback(hp.transfer_result(self.combined_fut))
 
@@ -364,7 +364,7 @@ def pytest_configure(config):
 
 class MemoryDevicesRunner:
     def __init__(self, devices):
-        self.final_future = asyncio.Future()
+        self.final_future = asyncio.get_event_loop().create_future()
         options = {
             "devices": devices,
             "final_future": self.final_future,

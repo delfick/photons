@@ -49,7 +49,7 @@ describe "SpecialReference":
 
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
-                    f = asyncio.Future()
+                    f = hp.create_future()
                     f.cancel()
                     return await f
 
@@ -61,7 +61,7 @@ describe "SpecialReference":
 
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
-                    f = asyncio.Future()
+                    f = hp.create_future()
                     f.set_exception(PhotonsAppError("FIND SERIALS BAD"))
                     return await f
 

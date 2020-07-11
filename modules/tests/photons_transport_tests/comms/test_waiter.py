@@ -16,7 +16,7 @@ import time
 
 describe "Waiter":
     async it "takes in several things":
-        stop_fut = asyncio.Future()
+        stop_fut = hp.create_future()
         writer = mock.Mock(name="writer")
         retry_options = mock.Mock(name="retry_options")
 
@@ -37,7 +37,7 @@ describe "Waiter":
         @pytest.fixture()
         async def V(self):
             class V:
-                stop_fut = asyncio.Future()
+                stop_fut = hp.create_future()
                 writer = pytest.helpers.AsyncMock(name="writer")
                 retry_options = RetryOptions()
 
@@ -126,7 +126,7 @@ describe "Waiter":
                 request.Meta.multi = None
 
                 async def writer():
-                    fut = asyncio.Future()
+                    fut = hp.create_future()
                     fut.cancel()
                     await fut
 
@@ -399,7 +399,7 @@ describe "Waiter":
                 assert V.waiter.result() is res
 
             async it "cancels all the results if the final future gets cancelled", V:
-                results = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
+                results = [hp.create_future(), hp.create_future(), hp.create_future()]
 
                 original_find_and_apply_result = hp.find_and_apply_result
 
@@ -440,7 +440,7 @@ describe "Waiter":
                 request.Meta.multi = None
                 result = Result(request, False, V.retry_options)
 
-                fut = asyncio.Future()
+                fut = hp.create_future()
 
                 async def write():
                     fut.set_result(True)
@@ -468,7 +468,7 @@ describe "Waiter":
                     else:
                         original_call_later(t, cb, *args)
 
-                result = asyncio.Future()
+                result = hp.create_future()
                 result.wait_for_result = lambda: True
 
                 V.waiter._writings_cb = writings_cb
@@ -501,7 +501,7 @@ describe "Waiter":
                     else:
                         original_call_later(t, cb, *args)
 
-                result = asyncio.Future()
+                result = hp.create_future()
                 result.wait_for_result = lambda: False
 
                 V.waiter._writings_cb = writings_cb
@@ -535,7 +535,7 @@ describe "Waiter":
                 V.waiter.results = []
 
                 async def do_write():
-                    fut = asyncio.Future()
+                    fut = hp.create_future()
                     fut.cancel()
                     await fut
 
@@ -562,7 +562,7 @@ describe "Waiter":
                     else:
                         original_call_soon(cb, *args, **kwargs)
 
-                result = asyncio.Future()
+                result = hp.create_future()
                 result.set_result([])
 
                 async def writer():
@@ -583,7 +583,7 @@ describe "Waiter":
             async it "calls _writings_cb when result is done if result isn't already done", V:
                 called = []
 
-                fut = asyncio.Future()
+                fut = hp.create_future()
 
                 def writings_cb(*args):
                     called.append("writings_cb")
@@ -591,7 +591,7 @@ describe "Waiter":
 
                 writings_cb = mock.Mock(name="writings_cb", side_effect=writings_cb)
 
-                result = asyncio.Future()
+                result = hp.create_future()
 
                 async def writer():
                     called.append("writer")

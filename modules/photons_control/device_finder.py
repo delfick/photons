@@ -485,7 +485,7 @@ class Device(dictobj.Spec):
 
     @hp.memoized_property
     def final_future(self):
-        return asyncio.Future()
+        return hp.create_future(name=f"DeviceFinder.Device({self.serial}).final_future")
 
     @property
     def property_fields(self):
@@ -836,7 +836,7 @@ class Finder:
 
         for serial, device in list(self.devices.items()):
             if fltr.matches_all:
-                fut = asyncio.Future()
+                fut = hp.create_future(name="DeviceFinder.Finder.find.fltr_fut")
                 fut.set_result(True)
                 await streamer.add_task(fut, context=device)
             else:
@@ -883,7 +883,9 @@ class Finder:
     async def finish(self):
         self.final_future.cancel()
 
-        async with hp.TaskHolder(asyncio.Future()) as ts:
+        async with hp.TaskHolder(
+            hp.create_future(name="DeviceFinder.Finder.finish.task_holder_final")
+        ) as ts:
             for serial, device in sorted(self.devices.items()):
                 ts.add(device.finish())
                 del self.devices[serial]

@@ -1,15 +1,16 @@
 from interactor.database.connection import DatabaseConnection
 from interactor.database.db_queue import DBQueue
 
+from photons_app import helpers as hp
+
 import tempfile
-import asyncio
 import pytest
 import os
 
 
 class DBRunner:
     def __init__(self, start_db_queue=False):
-        self.final_future = asyncio.Future()
+        self.final_future = hp.create_future(name="DBRunner.final_future")
         self.start_db_queue = start_db_queue
 
     async def __aenter__(self):

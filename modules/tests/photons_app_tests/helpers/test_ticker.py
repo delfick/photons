@@ -15,7 +15,7 @@ class MockedCallLater:
         self.task = None
         self.patch = None
 
-        self.cont = asyncio.Future()
+        self.cont = hp.create_future()
 
         self.funcs = []
         self.called_times = []
@@ -181,7 +181,7 @@ describe "tick":
     async it "stops if final_future stops", FakeTime:
         called = []
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:

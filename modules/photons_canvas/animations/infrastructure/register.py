@@ -1,7 +1,7 @@
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from delfick_project.norms import Meta, sb
-import asyncio
 
 
 class NoSuchAnimation(PhotonsAppError):
@@ -52,7 +52,7 @@ class Animator:
                 return animation
 
             # Make sure the options can be resolved
-            fut = asyncio.Future()
+            fut = hp.create_future(name="Animator.resolve_creator_validator")
             fut.cancel()
             make_animation(fut)
 

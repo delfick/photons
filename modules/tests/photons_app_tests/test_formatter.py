@@ -8,7 +8,6 @@ from delfick_project.option_merge import MergedOptions
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb, Meta
 from unittest import mock
-import asyncio
 import pytest
 import uuid
 
@@ -66,6 +65,6 @@ describe "MergedOptionStringFormatter":
         resource_filename.assert_called_once_with("somewhere.nice", "really/cool")
 
     it "can return asyncio.Future objects", V:
-        fut = asyncio.Future()
+        fut = hp.create_future()
         V.meta.everything["fut"] = fut
         assert V.spec.normalise(V.meta, "{fut}") is fut

@@ -362,7 +362,7 @@ class FromGenerator(object):
         def __init__(self, item, reference, sender, kwargs):
             self.item = item
             self.kwargs = kwargs
-            self.stop_fut = asyncio.Future()
+            self.stop_fut = hp.create_future(name="FromGenerator.Runner.stop_fut")
             self.reference = reference
             self.sender = sender
 
@@ -459,11 +459,11 @@ class FromGenerator(object):
                     if self.stop_fut.done():
                         break
 
-                    complete = asyncio.Future()
+                    complete = hp.create_future(name="FromGenerator.getter.complete")
 
                     f_for_items = []
                     for item in self.item.simplifier(msg):
-                        f = asyncio.Future()
+                        f = hp.create_future(name="FromGenerator.getter.item")
                         f_for_items.append(f)
                         t = hp.async_as_background(self.retrieve(item, f))
                         self.ts.append(t)

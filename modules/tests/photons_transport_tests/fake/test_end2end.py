@@ -3,17 +3,19 @@
 from photons_transport.targets import MemoryTarget, LanTarget
 from photons_transport.fake import FakeDevice
 
+from photons_app import helpers as hp
+
 from photons_messages import DiscoveryMessages, Services, DeviceMessages, protocol_register
 
 from collections import defaultdict
-import asyncio
+
 
 describe "Fake device":
 
     async it "works with sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=True)
 
-        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
+        options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
         target = MemoryTarget.create(options, {"devices": device})
 
         await device.start()
@@ -46,7 +48,7 @@ describe "Fake device":
     async it "works without sockets":
         device = FakeDevice("d073d5000001", [], use_sockets=False)
 
-        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
+        options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
         target = MemoryTarget.create(options, {"devices": device})
 
         await device.start()

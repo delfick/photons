@@ -5,7 +5,6 @@ from photons_transport.transports.memory import Memory
 from photons_app import helpers as hp
 
 from unittest import mock
-import asyncio
 import pytest
 
 describe "Memory":
@@ -69,8 +68,8 @@ describe "Memory":
         request1 = mock.Mock(name="request1")
         request2 = mock.Mock(name="request2")
 
-        first_receive = asyncio.Future()
-        second_receive = asyncio.Future()
+        first_receive = hp.create_future()
+        second_receive = hp.create_future()
 
         async def writer(receiver, bts):
             called.append("writer")

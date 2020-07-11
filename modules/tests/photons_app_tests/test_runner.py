@@ -291,6 +291,7 @@ describe "run":
         script = dedent(
             """
         from photons_app.actions import an_action
+        from photons_app import helpers as hp
 
         from delfick_project.addons import addon_hook
         import asyncio
@@ -304,7 +305,7 @@ describe "run":
         @an_action()
         async def a_test(collector, reference, artifact, **kwargs):
             try:
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 fut.cancel()
                 await fut
             except asyncio.CancelledError:
@@ -569,63 +570,63 @@ describe "run":
 
     describe "transfer_result":
         it "sets exception on final future if one is risen":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
 
             error = Exception("wat")
-            fut = asyncio.Future()
+            fut = hp.create_future()
             fut.set_exception(error)
 
             transfer_result(fut, final_future)
             assert final_future.exception() == error
 
         it "sets exception on final future if one is risen unless it's already cancelled":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             final_future.cancel()
 
             error = Exception("wat")
-            fut = asyncio.Future()
+            fut = hp.create_future()
             fut.set_exception(error)
 
             transfer_result(fut, final_future)
             assert final_future.cancelled()
 
         it "doesn't fail if the final_future is already cancelled when the task finishes":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             final_future.cancel()
 
-            fut = asyncio.Future()
+            fut = hp.create_future()
             fut.set_result(None)
 
             transfer_result(fut, final_future)
             assert final_future.cancelled()
 
         it "doesn't fail if the final_future is already done when the task finishes":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             final_future.set_result(None)
 
-            fut = asyncio.Future()
+            fut = hp.create_future()
             fut.set_result(None)
 
             transfer_result(fut, final_future)
             assert final_future.result() is None
 
         it "doesn't fail if the final_future already has an exception when the task finishes":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             error = Exception("WAT")
             final_future.set_exception(error)
 
-            fut = asyncio.Future()
+            fut = hp.create_future()
             fut.set_result(None)
 
             transfer_result(fut, final_future)
             assert final_future.exception() == error
 
         it "doesn't fail if the final_future already has an exception when the task has an error":
-            final_future = asyncio.Future()
+            final_future = hp.create_future()
             error = Exception("WAT")
             final_future.set_exception(error)
 
-            fut = asyncio.Future()
+            fut = hp.create_future()
             error2 = Exception("WAT2")
             fut.set_exception(error2)
 

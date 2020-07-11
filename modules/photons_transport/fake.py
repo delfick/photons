@@ -436,7 +436,7 @@ class FakeDevice:
 
     def wait_for(self, source, kls):
         assert (source, kls) not in self.waiters
-        fut = asyncio.Future()
+        fut = hp.create_future(name="FakeDevice.wait_for_fut")
         self.waiters[(source, kls)] = fut
         return fut
 

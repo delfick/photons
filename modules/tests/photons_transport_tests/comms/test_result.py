@@ -339,7 +339,7 @@ describe "Result":
             last_ack_received = mock.Mock(name="last_ack_received")
             result.last_ack_received = last_ack_received
 
-            fut = asyncio.Future()
+            fut = hp.create_future()
 
             def maybe_finish(current, attr):
                 assert current is last_ack_received

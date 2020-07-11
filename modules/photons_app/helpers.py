@@ -98,7 +98,7 @@ class ATicker:
         self.tick_fut = ResettableFuture()
         self.max_time = max_time
         self.last_tick = None
-        self.final_future = final_future or asyncio.Future()
+        self.final_future = final_future or create_future(name="Ticker.final_future")
         self.max_iterations = max_iterations
 
         self.start = time.time()
@@ -188,7 +188,7 @@ class TaskHolder:
         from photons_app import helpers as hp
 
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         async def something():
             await asyncio.sleep(5)
@@ -204,7 +204,7 @@ class TaskHolder:
         from photons_app import helpers as hp
 
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         async def something():
             await asyncio.sleep(5)
@@ -323,7 +323,7 @@ class ResultStreamer:
         from photons_app import helpers as hp
 
 
-        final_future = asyncio.Future()
+        final_future = hp.create_future()
 
         def error_catcher(error_result):
             print(error_result)
@@ -740,7 +740,7 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
 
         await hp.async_with_timeout(my_coroutine(), timeout=20)
     """
-    f = asyncio.Future()
+    f = create_future(name="async_with_timeout.final")
     t = async_as_background(coroutine, silent=silent)
 
     def pass_result(res):
@@ -768,6 +768,12 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
 
     asyncio.get_event_loop().call_later(timeout, set_timeout)
     return await f
+
+
+def create_future(*, name=None, loop=None):
+    future = (loop or asyncio.get_event_loop()).create_future()
+    future.name = name
+    return future
 
 
 class memoized_property(object):
@@ -899,7 +905,7 @@ def transfer_result(fut, errors_only=False, process=None):
         async def my_coroutine():
             return 2
 
-        fut = asyncio.Future()
+        fut = hp.create_future()
         task = hp.async_as_background(my_coroutine())
         task.add_done_callback(hp.transfer_result(fut))
 
@@ -1060,7 +1066,7 @@ class ResettableFuture(object):
         else:
             self.info = info
         self.creationists = []
-        self.reset_fut = asyncio.Future()
+        self.reset_fut = create_future(name="ResettableFuture.reset_fut")
 
     @property
     def _loop(self):
@@ -1071,7 +1077,10 @@ class ResettableFuture(object):
             if not self.reset_fut.done():
                 self.reset_fut.set_result(True)
         done_callbacks = getattr(self, "info", {}).get("done_callbacks", [])
-        self.info = {"fut": asyncio.Future(), "done_callbacks": done_callbacks}
+        self.info = {
+            "fut": create_future(name="ResettableFuture.value_fut"),
+            "done_callbacks": done_callbacks,
+        }
         for cb in done_callbacks:
             self.info["fut"].add_done_callback(cb)
 
@@ -1145,7 +1154,7 @@ class ResettableFuture(object):
                 yield from waiter
 
             if self.reset_fut.done():
-                self.reset_fut = asyncio.Future()
+                self.reset_fut = create_future(name="ResettableFuture.reset_fut")
 
     __iter__ = __await__
 
@@ -1164,7 +1173,7 @@ class ChildOfFuture(object):
     _asyncio_future_blocking = False
 
     def __init__(self, original_fut):
-        self.this_fut = asyncio.Future()
+        self.this_fut = create_future(name="ChildOfFuture.value_fut")
         self.original_fut = original_fut
         self.done_callbacks = []
 
@@ -1390,7 +1399,7 @@ class ThreadToAsyncQueue(object):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
         for thread_number, _ in enumerate(range(self.num_threads)):
-            fut = asyncio.Future()
+            fut = create_future(name="ThreadToAsyncQueue.start_marker")
             ready.append(fut)
             thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
             thread.start()
@@ -1425,7 +1434,7 @@ class ThreadToAsyncQueue(object):
             assert (await queue.request(action)) == "c"
         """
         key = str(uuid.uuid1())
-        fut = asyncio.Future()
+        fut = create_future(name="ThreadToAsyncQueue.request_fut")
         self.futures[key] = fut
         self.queue.put((key, func))
         return fut

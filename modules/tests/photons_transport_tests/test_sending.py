@@ -3,12 +3,13 @@
 from photons_transport.targets import MemoryTarget
 from photons_transport.fake import FakeDevice
 
+from photons_app import helpers as hp
+
 from photons_messages import DeviceMessages, protocol_register
 from photons_control import test_helpers as chp
 from photons_products import Products
 
 from collections import defaultdict
-import asyncio
 import pytest
 
 
@@ -16,7 +17,7 @@ import pytest
 async def _setup():
     device = FakeDevice("d073d5001337", chp.default_responders(Products.LCM2_A19), use_sockets=True)
     async with device:
-        options = {"final_future": asyncio.Future(), "protocol_register": protocol_register}
+        options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
         target = MemoryTarget.create(options, {"devices": device})
         yield target, device
 

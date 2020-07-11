@@ -19,7 +19,7 @@ describe "timeout_task":
         task = hp.async_as_background(doit())
         await task
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         timeout_task(task, errf, 1)
 
         assert not errf.done()
@@ -34,7 +34,7 @@ describe "timeout_task":
         with assertRaises(Exception, "NOPE"):
             await task
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         timeout_task(task, errf, 1)
 
         assert not errf.done()
@@ -53,7 +53,7 @@ describe "timeout_task":
 
         assert task.cancelled()
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         timeout_task(task, errf, 1)
 
         assert not errf.done()
@@ -68,7 +68,7 @@ describe "timeout_task":
 
         task = hp.async_as_background(doit())
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         serial = mock.Mock(name="serial")
         timeout_task(task, errf, serial)
 
@@ -94,7 +94,7 @@ describe "timeout_task":
 
         task = hp.async_as_background(doit())
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         errf.set_result(1)
 
         serial = mock.Mock(name="serial")
@@ -120,7 +120,7 @@ describe "timeout_task":
 
         task = hp.async_as_background(doit())
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         errf.set_exception(ValueError("NOPE"))
 
         serial = mock.Mock(name="serial")
@@ -147,7 +147,7 @@ describe "timeout_task":
 
         task = hp.async_as_background(doit())
 
-        errf = asyncio.Future()
+        errf = hp.create_future()
         errf.cancel()
 
         serial = mock.Mock(name="serial")

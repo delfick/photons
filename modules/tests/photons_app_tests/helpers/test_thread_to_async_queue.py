@@ -5,7 +5,6 @@ from photons_app import helpers as hp
 
 from unittest import mock
 import threading
-import asyncio
 import pytest
 import time
 import uuid
@@ -13,7 +12,7 @@ import uuid
 
 @pytest.fixture()
 def stop_fut():
-    stop_fut = asyncio.Future()
+    stop_fut = hp.create_future()
     try:
         yield stop_fut
     finally:
@@ -103,7 +102,7 @@ describe "ThreadToAsyncQueue":
 
             async it "sets exception on the future if result is Nope", ttaq:
                 key = str(uuid.uuid1())
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 ttaq.futures[key] = fut
 
                 result = hp.Nope
@@ -116,7 +115,7 @@ describe "ThreadToAsyncQueue":
 
             async it "otherwise sets result on the future", ttaq:
                 key = str(uuid.uuid1())
-                fut = asyncio.Future()
+                fut = hp.create_future()
                 ttaq.futures[key] = fut
 
                 result = mock.Mock(name="result")

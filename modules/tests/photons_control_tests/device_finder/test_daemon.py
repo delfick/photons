@@ -14,7 +14,7 @@ import pytest
 
 describe "DeviceFinderDaemon":
     it "takes in a sender":
-        stop_fut = asyncio.Future()
+        stop_fut = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
 
         daemon = DeviceFinderDaemon(sender)
@@ -32,8 +32,8 @@ describe "DeviceFinderDaemon":
         assert daemon.finder.forget_after == 30
 
     it "can take in options":
-        stop_fut = asyncio.Future()
-        final_future = asyncio.Future()
+        stop_fut = hp.create_future()
+        final_future = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
 
         daemon = DeviceFinderDaemon(
@@ -68,7 +68,7 @@ describe "DeviceFinderDaemon":
 
         @pytest.fixture()
         def final_future(self):
-            fut = asyncio.Future()
+            fut = hp.create_future()
             try:
                 yield fut
             finally:
@@ -114,13 +114,13 @@ describe "DeviceFinderDaemon":
 
         async it "can create and close the search loop", V:
             called = []
-            started = asyncio.Future()
+            started = hp.create_future()
 
             async def search_loop():
                 called.append("search_loop")
                 started.set_result(True)
                 try:
-                    await asyncio.Future()
+                    await hp.create_future()
                 except asyncio.CancelledError:
                     called.append("cancelled_search_loop")
 
@@ -159,7 +159,7 @@ describe "DeviceFinderDaemon":
 
             async it "keeps doing a search", V, FakeTime:
                 called = []
-                finish_fut = asyncio.Future()
+                finish_fut = hp.create_future()
 
                 with FakeTime() as t:
 
@@ -244,7 +244,7 @@ describe "DeviceFinderDaemon":
 
                     async def run():
                         async with V.daemon:
-                            await asyncio.Future()
+                            await hp.create_future()
 
                     async with hp.TaskHolder(V.final_future) as ts:
                         t = ts.add(run())
@@ -304,7 +304,7 @@ describe "DeviceFinderDaemon":
 
                     async def run():
                         async with V.daemon:
-                            await asyncio.Future()
+                            await hp.create_future()
 
                     async with hp.TaskHolder(V.final_future) as ts:
                         t = ts.add(run())
