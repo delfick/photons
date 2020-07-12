@@ -1142,10 +1142,6 @@ class ResettableFuture(object):
         self.creationists = []
         self.reset_fut = create_future(name="ResettableFuture.reset_fut")
 
-    @property
-    def _loop(self):
-        return asyncio.get_event_loop()
-
     def reset(self):
         if hasattr(self, "reset_fut"):
             if not self.reset_fut.done():
@@ -1215,15 +1211,14 @@ class ResettableFuture(object):
         return "<ResettableFuture: {0}>".format(repr(self.info["fut"]))
 
     def __await__(self):
+        return (yield from self.wait().__await__())
+
+    async def wait(self):
         while True:
             if self.done() or self.cancelled():
-                return (yield from self.info["fut"])
+                return await self.info["fut"]
 
-            waiter = wait_for_first_future(self.info["fut"], self.reset_fut)
-            if hasattr(waiter, "__await__"):
-                yield from waiter.__await__()
-            else:
-                yield from waiter
+            await wait_for_first_future(self.info["fut"], self.reset_fut)
 
             if self.reset_fut.done():
                 self.reset_fut = create_future(name="ResettableFuture.reset_fut")
@@ -1248,10 +1243,6 @@ class ChildOfFuture(object):
         self.this_fut = create_future(name="ChildOfFuture.value_fut")
         self.original_fut = original_fut
         self.done_callbacks = []
-
-    @property
-    def _loop(self):
-        return asyncio.get_event_loop()
 
     @property
     def _callbacks(self):
@@ -1356,6 +1347,9 @@ class ChildOfFuture(object):
         return "<ChildOfFuture: {0} |:| {1}>".format(repr(self.original_fut), repr(self.this_fut))
 
     def __await__(self):
+        return (yield from self.wait().__await__())
+
+    async def wait(self):
         while True:
             if (
                 self.original_fut.done()
@@ -1365,26 +1359,12 @@ class ChildOfFuture(object):
                 self.this_fut.cancel()
 
             if self.this_fut.done():
-                if hasattr(self, "waiter"):
-                    del self.waiter
-                return (yield from self.this_fut)
+                return await self.this_fut
 
             if self.original_fut.done():
-                if hasattr(self, "waiter"):
-                    del self.waiter
-                return (yield from self.original_fut)
+                return await self.original_fut
 
-            if hasattr(self, "waiter"):
-                if self.waiter.cancelled() or self.waiter.done():
-                    self.waiter = None
-
-            if not getattr(self, "waiter", None):
-                self.waiter = wait_for_first_future(self.original_fut, self.this_fut)
-
-            if hasattr(self.waiter, "__await__"):
-                yield from self.waiter.__await__()
-            else:
-                yield from self.waiter
+            await wait_for_first_future(self.original_fut, self.this_fut)
 
     __iter__ = __await__
 
