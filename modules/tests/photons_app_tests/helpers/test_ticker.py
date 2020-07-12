@@ -43,8 +43,7 @@ class MockedCallLater:
         if self.patch:
             self.patch.stop()
         if self.task:
-            self.task.cancel()
-            await asyncio.wait([self.task])
+            await hp.cancel_futures_and_wait(self.task)
 
     def call_later(self, when, func, *args):
         def caller():

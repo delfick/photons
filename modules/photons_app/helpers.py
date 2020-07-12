@@ -123,7 +123,7 @@ class ATicker:
         if self.last_tick is None:
             self.change_after(self.every, set_new_every=False)
 
-        await asyncio.wait([self.tick_fut, self.final_future], return_when=asyncio.FIRST_COMPLETED)
+        await wait_for_first_future(self.tick_fut, self.final_future)
         self.tick_fut.reset()
 
         if self.final_future.done():
@@ -265,13 +265,13 @@ class TaskHolder:
                     t.cancel()
 
             if self.ts:
-                return_when = (
-                    asyncio.ALL_COMPLETED if self.final_future.done() else asyncio.FIRST_COMPLETED
-                )
-                await asyncio.wait([self.final_future, *self.ts], return_when=return_when)
+                if self.final_future.done():
+                    await wait_for_all_futures(self.final_future, *self.ts)
+                else:
+                    await wait_for_first_future(self.final_future, *self.ts)
 
         if self.ts:
-            await asyncio.wait(self.ts)
+            await wait_for_all_futures(*self.ts)
 
     @property
     def pending(self):
@@ -420,9 +420,8 @@ class ResultStreamer:
         task = await self.add_coroutine(run(), context=context, on_done=on_done)
 
         if self.final_future.done():
-            task.cancel()
-            await asyncio.wait([task])
-            await asyncio.wait([gen.aclose()])
+            await cancel_futures_and_wait(task)
+            await wait_for_all_futures(async_as_background(gen.aclose()))
             return task
 
         self.generators.append((task, gen))
@@ -437,8 +436,7 @@ class ResultStreamer:
 
     async def add_task(self, task, *, context=None, on_done=None):
         if self.final_future.done():
-            task.cancel()
-            await asyncio.wait([task])
+            await cancel_futures_and_wait(task)
             return task
 
         def add_to_queue(res):
@@ -479,7 +477,7 @@ class ResultStreamer:
     async def retrieve(self):
         while True:
             nxt = async_as_background(self.queue.get())
-            await asyncio.wait([nxt, self.final_future], return_when=asyncio.FIRST_COMPLETED)
+            await wait_for_first_future(nxt, self.final_future)
 
             if self.final_future.done():
                 nxt.cancel()
@@ -495,8 +493,8 @@ class ResultStreamer:
             new_gens = []
             for t, g in self.generators:
                 if t.done():
-                    await asyncio.wait([t])
-                    await asyncio.wait([g.aclose()])
+                    await wait_for_all_futures(t)
+                    await wait_for_all_futures(async_as_background(g.aclose()))
                 else:
                     new_gens.append((t, g))
             self.generators = new_gens
@@ -516,10 +514,8 @@ class ResultStreamer:
             wait_for.append(t)
             second_after.append(lambda: g.aclose())
 
-        if wait_for:
-            await asyncio.wait(wait_for)
-        if second_after:
-            await asyncio.wait([l() for l in second_after])
+        await wait_for_all_futures(*wait_for)
+        await wait_for_all_futures(*[async_as_background(l()) for l in second_after])
 
         self.queue.put_nowait(None)
 
@@ -1223,9 +1219,7 @@ class ResettableFuture(object):
             if self.done() or self.cancelled():
                 return (yield from self.info["fut"])
 
-            waiter = asyncio.wait(
-                [self.info["fut"], self.reset_fut], return_when=asyncio.FIRST_COMPLETED
-            )
+            waiter = wait_for_first_future(self.info["fut"], self.reset_fut)
             if hasattr(waiter, "__await__"):
                 yield from waiter.__await__()
             else:
@@ -1385,13 +1379,12 @@ class ChildOfFuture(object):
                     self.waiter = None
 
             if not getattr(self, "waiter", None):
-                self.waiter = asyncio.ensure_future(
-                    asyncio.wait(
-                        [self.original_fut, self.this_fut], return_when=asyncio.FIRST_COMPLETED
-                    )
-                )
+                self.waiter = wait_for_first_future(self.original_fut, self.this_fut)
 
-            yield from self.waiter
+            if hasattr(self.waiter, "__await__"):
+                yield from self.waiter.__await__()
+            else:
+                yield from self.waiter
 
     __iter__ = __await__
 

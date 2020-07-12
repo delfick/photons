@@ -37,16 +37,15 @@ class Transport:
 
     async def close(self):
         if self.transport:
-            try:
-                (f,), _ = await asyncio.wait([self.transport])
-            except asyncio.CancelledError:
-                raise
-            except:
-                return
-            else:
-                if f.done() and not f.cancelled() and not f.exception():
-                    await self.close_transport(f.result())
+            await hp.wait_for_all_futures(self.transport)
+
+            t = self.transport
             self.transport = None
+
+            if t.cancelled() or t.exception():
+                return
+
+            await self.close_transport(t.result())
 
     async def close_transport(self, transport):
         pass

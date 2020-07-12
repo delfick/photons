@@ -82,7 +82,7 @@ class RetryIterator:
         f = hp.create_future(name="RetryIterator.wait_resolver")
         loop = asyncio.get_event_loop()
         loop.call_later(timeout, f.cancel)
-        await asyncio.wait([f])
+        await hp.wait_for_all_futures(f)
 
 
 class RetryOptions:

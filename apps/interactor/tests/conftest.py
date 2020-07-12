@@ -136,9 +136,7 @@ class ServerWrapper:
         await self.finish()
 
     async def finish(self):
-        _, nd = await asyncio.wait([self.runner.close(None, None, None)])
-        if nd:
-            assert False, "Failed to shutdown the runner"
+        await hp.wait_for_all_futures(hp.async_as_background(self.runner.close(None, None, None)))
 
     def test_wrap(self):
         class Wrap:

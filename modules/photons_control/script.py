@@ -518,5 +518,5 @@ class FromGenerator(object):
 
                 complete.set_result(True)
 
-            waiter = hp.async_as_background(asyncio.wait(fs))
+            waiter = hp.async_as_background(hp.wait_for_all_futures(*fs))
             waiter.add_done_callback(finish)

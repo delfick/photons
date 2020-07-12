@@ -213,9 +213,7 @@ class Communication:
                 log.error(hp.lc("Failed to close transport", error=error, serial=serial))
 
         if self.received_data_tasks:
-            for t in self.received_data_tasks:
-                t.cancel()
-            await asyncio.wait(self.received_data_tasks)
+            await hp.cancel_futures_and_wait(*self.received_data_tasks)
 
     @hp.memoized_property
     def source(self):

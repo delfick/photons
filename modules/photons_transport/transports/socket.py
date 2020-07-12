@@ -53,10 +53,8 @@ class Socket(Transport):
 
         for fut in self.socket_futs:
             close_existing(fut)
-            fut.cancel()
 
-        if self.socket_futs:
-            await asyncio.wait(self.socket_futs)
+        await hp.cancel_futures_and_wait(*self.socket_futs)
 
     async def close_transport(self, transport):
         close_socket(transport)

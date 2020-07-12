@@ -487,13 +487,15 @@ describe "ResultStreamer":
             finish.assert_called_once_with()
 
     describe "finishing by final_future":
+
+        @pytest.mark.focus
         async it "stops retrieving if there is results left to yield":
             called = []
 
             gen_fut = hp.create_future()
             func_fut = hp.create_future()
             func3_fut = hp.create_future()
-            final_future = hp.create_future()
+            final_future = hp.ChildOfFuture(hp.create_future())
 
             async def gen():
                 called.append(("started", "gen"))

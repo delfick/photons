@@ -1197,7 +1197,7 @@ describe "waiting for all futures":
         fut3 = hp.create_future()
         fut4 = hp.create_future()
 
-        w = hp.async_as_background(hp.wait_for_all_futures(fut1, fut2, fut3, fut4))
+        w = hp.async_as_background(hp.wait_for_all_futures(fut1, fut2, fut3, fut3, fut4))
         await asyncio.sleep(0.01)
         assert not w.done()
 

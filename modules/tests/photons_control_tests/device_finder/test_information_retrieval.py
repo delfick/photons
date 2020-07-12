@@ -148,6 +148,28 @@ describe "Device":
 
         all_futs = []
 
+        class Waiter:
+            def __init__(s, name, kls):
+                s.name = name
+                s.kls = kls
+                s.make_fut()
+
+            def make_fut(s, res=None):
+                fut = message_futs[s.name] = V.fake_device.wait_for("memory", s.kls)
+                fut.add_done_callback(s.make_fut)
+
+            def __await__(s):
+                yield from message_futs[s.name]
+
+            def add_done_callback(s, cb):
+                message_futs[s.name].add_done_callback(cb)
+
+            def remove_done_callback(s, cb):
+                message_futs[s.name].remove_done_callback(cb)
+
+            def done(s):
+                return message_futs[s.name].done()
+
         for name, kls in [
             ("color", LightMessages.GetColor),
             ("version", DeviceMessages.GetVersion),
@@ -155,20 +177,6 @@ describe "Device":
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
         ]:
-
-            class Waiter:
-                def __init__(s, name, kls):
-                    s.name = name
-                    s.kls = kls
-                    s.make_fut()
-
-                def make_fut(s, res=None):
-                    fut = message_futs[s.name] = V.fake_device.wait_for("memory", s.kls)
-                    fut.add_done_callback(s.make_fut)
-
-                def __await__(s):
-                    yield from message_futs[s.name]
-
             waiter = Waiter(name, kls)
             setattr(Futs, name, waiter)
             all_futs.append(waiter)
@@ -179,7 +187,7 @@ describe "Device":
             await futs[1]
             assert V.device.info == info
 
-            await asyncio.wait(all_futs)
+            await hp.wait_for_all_futures(*all_futs)
             assert V.t.time == len(all_futs) - 1
 
             V.received(*msgs)
@@ -209,7 +217,7 @@ describe "Device":
             )
             assert V.device.info == info
 
-            await asyncio.wait([Futs.color])
+            await hp.wait_for_all_futures(Futs.color)
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,
             )
@@ -217,7 +225,7 @@ describe "Device":
                 V.t.set(15)
             assert V.t.time == len(all_futs) + 10
 
-            await asyncio.wait([Futs.group, Futs.location])
+            await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
                 *([LightMessages.GetColor()] * 3),
                 DeviceMessages.GetGroup(),
@@ -230,13 +238,13 @@ describe "Device":
             assert V.t.time >= 69
 
             assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
-            await asyncio.wait([Futs.color])
+            await hp.wait_for_all_futures(Futs.color)
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,
             )
             assert V.t.time <= 76
 
-            await asyncio.wait([Futs.firmware])
+            await hp.wait_for_all_futures(Futs.firmware)
             # First firmware was at t=2
             # So next refresh after 102
             # So needs a full cycle after that

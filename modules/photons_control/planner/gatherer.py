@@ -425,12 +425,12 @@ class Gatherer:
                 ts.append(hp.async_as_background(self._follow(plans, serial, queue, **kwargs)))
 
             def on_finish(res):
-                hp.async_as_background(queue.put(Done))
+                queue.put_nowait(Done)
 
             if not ts:
                 on_finish(None)
             else:
-                t = hp.async_as_background(asyncio.wait(ts))
+                t = hp.async_as_background(hp.wait_for_all_futures(*ts))
                 t.add_done_callback(on_finish)
 
             while True:

@@ -52,9 +52,8 @@ def run(coro, photons_app, target_register):
     task.add_done_callback(hp.silent_reporter)
 
     async def wait():
-        done, _ = await asyncio.wait(
-            [final_future, graceful_future, task], return_when=asyncio.FIRST_COMPLETED
-        )
+        await hp.wait_for_first_future(final_future, graceful_future, task)
+
         if task.done():
             await task
         elif graceful_future.done():

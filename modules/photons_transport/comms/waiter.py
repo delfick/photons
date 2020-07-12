@@ -77,10 +77,7 @@ class Waiter(object):
         return (yield from self.final_future)
 
     async def finish(self):
-        if self.write_tasks:
-            for t in self.write_tasks:
-                t.cancel()
-            await asyncio.wait(self.write_tasks)
+        await hp.cancel_futures_and_wait(*self.write_tasks)
 
     @hp.memoized_property
     def _writings_cb(self):
