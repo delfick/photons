@@ -776,6 +776,84 @@ def create_future(*, name=None, loop=None):
     return future
 
 
+async def wait_for_all_futures(*futs):
+    """
+    Wait for all the futures to be complete and return without error regardless
+    of whether the futures completed successfully or not.
+
+    If there are no futures, nothing is done and we return without error.
+
+    We determine all the futures are done when the number of completed futures
+    is equal to the number of futures we started with. This is to ensure if a
+    future is special and calling done() after the future callback has been
+    called is not relevant anymore, we still count the future as done.
+    """
+    if not futs:
+        return
+
+    waiter = create_future(name="all_futures.waiter")
+
+    unique = {id(fut): fut for fut in futs}.values()
+    complete = {}
+
+    def done(res):
+        complete[id(res)] = True
+        if not waiter.done() and len(complete) == len(unique):
+            waiter.set_result(True)
+
+    for fut in unique:
+        fut.add_done_callback(done)
+
+    try:
+        await waiter
+    finally:
+        for fut in unique:
+            fut.remove_done_callback(done)
+
+
+async def wait_for_first_future(*futs):
+    """
+    Return without error when the first future to be completed is done.
+    """
+    if not futs:
+        return
+
+    waiter = create_future(name="first_future.waiter")
+    unique = {id(fut): fut for fut in futs}.values()
+
+    def done(res):
+        if not waiter.done():
+            waiter.set_result(True)
+
+    for fut in unique:
+        fut.add_done_callback(done)
+
+    try:
+        await waiter
+    finally:
+        for fut in unique:
+            fut.remove_done_callback(done)
+
+
+async def cancel_futures_and_wait(*futs):
+    """
+    Cancel the provided futures and wait for them all to finish. We will still
+    await the futures if they are all already done to ensure no warnings about
+    futures being destroyed while still pending.
+    """
+    if not futs:
+        return
+
+    waiting = []
+
+    for fut in futs:
+        if not fut.done():
+            fut.cancel()
+            waiting.append(fut)
+
+    await wait_for_all_futures(*waiting)
+
+
 class memoized_property(object):
     """
     Decorator to make a descriptor that memoizes it's value

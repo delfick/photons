@@ -1185,3 +1185,146 @@ describe "find_and_apply_result":
         for f in V.available_futs:
             assert not f.done()
         assert not V.final_fut.done()
+
+describe "waiting for all futures":
+    async it "does nothing if there are no futures":
+        await hp.wait_for_all_futures()
+
+    async it "waits for all the futures to be complete regardless of status":
+        """Deliberately don't wait on futures to ensure we don't get warnings if they aren't awaited"""
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+        fut4 = hp.create_future()
+
+        w = hp.async_as_background(hp.wait_for_all_futures(fut1, fut2, fut3, fut4))
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut1.set_result(True)
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut2.set_exception(Exception("yo"))
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut3.cancel()
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut4.set_result(False)
+
+        await asyncio.sleep(0.01)
+        assert w.done()
+        await w
+
+        assert not any(f._callbacks for f in (fut1, fut2, fut3, fut4))
+
+describe "waiting for first future":
+    async it "does nothing if there are no futures":
+        await hp.wait_for_first_future()
+
+    async it "returns if any of the futures are already done":
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+
+        fut2.set_result(True)
+        await hp.wait_for_first_future(fut1, fut2, fut3)
+        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+
+    async it "returns on the first future to have a result":
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+
+        w = hp.async_as_background(hp.wait_for_first_future(fut1, fut2, fut3))
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut2.set_result(True)
+        await fut2
+        await asyncio.sleep(0.01)
+        assert w.done()
+
+        await w
+        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+
+    async it "returns on the first future to have an exception":
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+
+        w = hp.async_as_background(hp.wait_for_first_future(fut1, fut2, fut3))
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut3.set_exception(ValueError("NOPE"))
+        with assertRaises(ValueError, "NOPE"):
+            await fut3
+        await asyncio.sleep(0.01)
+        assert w.done()
+
+        await w
+        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+
+    async it "returns on the first future to be cancelled":
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+
+        w = hp.async_as_background(hp.wait_for_first_future(fut1, fut2, fut3))
+        await asyncio.sleep(0.01)
+        assert not w.done()
+
+        fut1.cancel()
+        with assertRaises(asyncio.CancelledError):
+            await fut1
+        await asyncio.sleep(0.01)
+        assert w.done()
+
+        await w
+        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+
+describe "cancel futures and wait":
+    async it "does nothing if there are no futures":
+        await hp.cancel_futures_and_wait()
+
+    async it "does nothing if all the futures are already done":
+        fut1 = hp.create_future()
+        fut2 = hp.create_future()
+        fut3 = hp.create_future()
+
+        fut1.set_result(True)
+        fut2.set_exception(ValueError("YEAP"))
+        fut3.cancel()
+
+        await hp.cancel_futures_and_wait(fut1, fut2, fut3)
+
+    async it "cancels running tasks":
+        called = []
+
+        async def run1():
+            print("DAFUQ")
+            try:
+                await asyncio.sleep(100)
+                print(" DSfsdf ")
+            except asyncio.CancelledError:
+                print("?")
+                called.append("run1")
+
+        async def run2():
+            called.append("run2")
+            await asyncio.sleep(50)
+
+        async def run3():
+            raise ValueError("HELLO")
+
+        fut1 = hp.async_as_background(run1())
+        fut2 = hp.async_as_background(run2())
+        fut3 = hp.async_as_background(run3())
+
+        await asyncio.sleep(0.01)
+        await hp.cancel_futures_and_wait(fut1, fut2, fut3)
+        assert sorted(called) == ["run1", "run2"]

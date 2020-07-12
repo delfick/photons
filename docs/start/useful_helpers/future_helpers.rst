@@ -30,6 +30,20 @@ awaited on.
 
 .. autofunction:: photons_app.helpers.async_with_timeout
 
+Managing futures
+----------------
+
+It can be useful to wait for all futures to complete or just one future to
+complete. The standard library provides ``asyncio.wait`` for this, but Photons
+provides a simpler version of this that doesn't need to worry about returning
+results.
+
+.. autofunction:: photons_app.helpers.wait_for_all_futures
+
+.. autofunction:: photons_app.helpers.wait_for_first_future
+
+.. autofunction:: photons_app.helpers.cancel_futures_and_wait
+
 Future callbacks
 ----------------
 
