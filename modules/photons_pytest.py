@@ -361,6 +361,25 @@ def pytest_configure(config):
         else:
             return mock.MagicMock(*args, **kwargs)
 
+    @pytest.helpers.register
+    def child_future_of(fut):
+        hp = __import__("photons_app").helpers
+
+        class Compare:
+            def __eq__(s, other):
+                s.other = other
+                s.eq = isinstance(other, hp.ChildOfFuture) and other.original_fut is fut
+                return s.eq
+
+            def __repr__(s):
+                if not hasattr(s, "eq"):
+                    return f"<<COMPARE child of future {fut}>>"
+                if not s.eq:
+                    return f"<<DIFFERENT got: {s.other.original_fut}, want: {fut}>>"
+                return repr(s.other)
+
+        return Compare()
+
 
 class MemoryDevicesRunner:
     def __init__(self, devices):

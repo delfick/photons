@@ -1,8 +1,10 @@
 from photons_app.errors import PhotonsAppError
 
+from queue import Queue as NormalQueue, Empty as NormalEmpty
 from delfick_project.logging import lc
 from contextlib import contextmanager
 from queue import Queue, Empty
+from collections import deque
 from functools import wraps
 import threading
 import tempfile
@@ -1156,7 +1158,11 @@ class ResettableFuture(object):
 
     @property
     def _callbacks(self):
-        return self.info["fut"]._callbacks
+        if not self.info["fut"]._callbacks:
+            return self.info.get("done_callbacks")
+        if not self.info.get("done_callbacks"):
+            return self.info["fut"]._callbacks
+        return self.info["fut"]._callbacks + self.info["done_callbacks"]
 
     def set_result(self, data):
         self.info["fut"].set_result(data)
@@ -1246,7 +1252,11 @@ class ChildOfFuture(object):
 
     @property
     def _callbacks(self):
-        return self.this_fut._callbacks
+        if not self.this_fut._callbacks:
+            return self.done_callbacks
+        if not self.done_callbacks:
+            return self.this_fut._callbacks
+        return self.this_fut._callbacks + self.done_callbacks
 
     def set_result(self, data):
         if self.original_fut.cancelled():
@@ -1367,6 +1377,155 @@ class ChildOfFuture(object):
             await wait_for_first_future(self.original_fut, self.this_fut)
 
     __iter__ = __await__
+
+
+class SyncQueue:
+    """
+    A simple wrapper around the standard library non async queue.
+
+    Usage is:
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+        queue = hp.SyncQueue()
+
+        async def results():
+            for result in queue:
+                print(result)
+
+        ...
+
+        queue.append(something)
+        queue.append(another)
+    """
+
+    def __init__(self, final_future, timeout=0.05, empty_on_finished=False):
+        self.timeout = timeout
+        self.collection = NormalQueue()
+        self.final_future = ChildOfFuture(final_future)
+        self.empty_on_finished = empty_on_finished
+
+    def append(self, item):
+        self.collection.put(item)
+
+    def __iter__(self):
+        return iter(self.get_all())
+
+    def get_all(self):
+        while True:
+            if self.final_future.done():
+                break
+
+            try:
+                nxt = self.collection.get(timeout=self.timeout)
+            except NormalEmpty:
+                continue
+            else:
+                if self.final_future.done():
+                    break
+
+                yield nxt
+
+        if self.final_future.done() and self.empty_on_finished:
+            for nxt in self.remaining():
+                yield nxt
+
+    def remaining(self):
+        while True:
+            if not self.collection.empty():
+                yield self.collection.get(block=False)
+            else:
+                break
+
+
+class Queue:
+    """
+    A custom async queue class.
+
+    Usage is:
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+        final_future = hp.create_future()
+        queue = hp.Queue(final_future)
+
+        async def results():
+            # This will continue forever until final_future is done
+            async for result in queue:
+                print(result)
+
+        ...
+
+        queue.append(something)
+        queue.append(another)
+
+    Note that the main difference between this and the standard library
+    asyncio.Queue is that this one does not have the ability to impose limits.
+    """
+
+    class Done:
+        pass
+
+    def __init__(self, final_future, empty_on_finished=False):
+        self.waiter = ResettableFuture()
+        self.collection = deque()
+        self.final_future = ChildOfFuture(final_future)
+        self.empty_on_finished = empty_on_finished
+
+        self.final_future.add_done_callback(self._stop_waiter)
+
+    def _stop_waiter(self, res):
+        self.waiter.reset()
+        self.waiter.set_result(True)
+
+    async def _get(self):
+        if self.final_future.done():
+            yield self.Done
+            return
+
+        await self.waiter
+
+        if self.final_future.done():
+            yield self.Done
+            return
+
+        for nxt in self.remaining():
+            yield nxt
+            if self.final_future.done():
+                yield self.Done
+                return
+
+    def append(self, item):
+        self.collection.append(item)
+        if not self.waiter.done():
+            self.waiter.set_result(True)
+
+    def __aiter__(self):
+        return self.get_all()
+
+    async def get_all(self):
+        while True:
+            stop = False
+            async for nxt in self._get():
+                if nxt is self.Done:
+                    stop = True
+                    break
+                yield nxt
+            if stop:
+                break
+
+        if self.final_future.done() and self.empty_on_finished:
+            for nxt in self.remaining():
+                yield nxt
+
+    def remaining(self):
+        while self.collection:
+            yield self.collection.popleft()
+        self.waiter.reset()
 
 
 class ThreadToAsyncQueue(object):
