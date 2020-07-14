@@ -3,7 +3,6 @@ from photons_app.errors import PhotonsAppError
 from queue import Queue as NormalQueue, Empty as NormalEmpty
 from delfick_project.logging import lc
 from contextlib import contextmanager
-from queue import Queue, Empty
 from collections import deque
 from functools import wraps
 import threading
@@ -11,7 +10,6 @@ import tempfile
 import secrets
 import asyncio
 import logging
-import uuid
 import time
 import sys
 import os
@@ -1585,14 +1583,17 @@ class ThreadToAsyncQueue(object):
 
     def __init__(self, stop_fut, num_threads, onerror, *args, **kwargs):
         self.loop = asyncio.get_event_loop()
-        self.queue = Queue()
+        self.stop_fut = ChildOfFuture(stop_fut)
+
+        self.queue = SyncQueue(self.stop_fut, empty_on_finished=True)
         self.futures = {}
         self.onerror = onerror
-        self.stop_fut = ChildOfFuture(stop_fut)
         self.num_threads = num_threads
 
-        self.result_queue = asyncio.Queue()
+        self.result_queue = Queue(self.stop_fut, empty_on_finished=True)
         self.setup(*args, **kwargs)
+
+        self.future_setter = None
 
     def setup(self, *args, **kwargs):
         """
@@ -1603,17 +1604,18 @@ class ThreadToAsyncQueue(object):
     async def finish(self):
         """Signal to the tasks to stop at the next available moment"""
         self.stop_fut.cancel()
-        await self.result_queue.put(None)
+        if self.future_setter:
+            await wait_for_all_futures(self.future_setter)
 
     def start(self, impl=None):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
         for thread_number, _ in enumerate(range(self.num_threads)):
-            fut = create_future(name="ThreadToAsyncQueue.start_marker")
+            fut = create_future(name="ThreadToAsyncQueue.ready_fut")
             ready.append(fut)
             thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
             thread.start()
-        async_as_background(self.set_futures())
+        self.future_setter = async_as_background(self.set_futures())
         return asyncio.gather(*ready)
 
     def request(self, func):
@@ -1643,19 +1645,20 @@ class ThreadToAsyncQueue(object):
 
             assert (await queue.request(action)) == "c"
         """
-        key = str(uuid.uuid1())
-        fut = create_future(name="ThreadToAsyncQueue.request_fut")
+        if self.stop_fut.done():
+            fut = create_future(name="ThreadToAsyncQueue.done_request")
+            fut.cancel()
+            return fut
+
+        key = secrets.token_urlsafe(16)
+        fut = create_future(name="ThreadToAsyncQueue.request")
         self.futures[key] = fut
-        self.queue.put((key, func))
+        self.queue.append((key, func))
         return fut
 
     async def set_futures(self):
         """Get results from the result_queue and set that result on the appropriate future"""
-        while True:
-            res = await self.result_queue.get()
-            if self.stop_fut.finished():
-                break
-
+        async for res in self.result_queue:
             if not res:
                 continue
 
@@ -1698,7 +1701,7 @@ class ThreadToAsyncQueue(object):
             self.onerror(sys.exc_info())
 
         try:
-            self.loop.call_soon_threadsafe(self.result_queue.put_nowait, (key, result, exception))
+            self.loop.call_soon_threadsafe(self.result_queue.append, (key, result, exception))
         except RuntimeError:
             log.error(
                 PhotonsAppError(
@@ -1728,30 +1731,19 @@ class ThreadToAsyncQueue(object):
 
     def _listener(self, thread_number, impl, args):
         """Forever, with error catching, get nxt request of the queue and process"""
-        while True:
-            if self.stop_fut.finished():
-                break
-
+        for nxt in self.queue:
             try:
-                nxt = self.queue.get(timeout=0.05)
-            except Empty:
-                continue
-            else:
-                if self.stop_fut.finished():
-                    break
+                args = self.create_args(thread_number, existing=args)
+                if args is None:
+                    args = ()
 
-                try:
-                    args = self.create_args(thread_number, existing=args)
-                    if args is None:
-                        args = ()
-
-                    (impl or self.listener_impl)(nxt, *args)
-                except KeyboardInterrupt:
-                    raise
-                except:
-                    exc_info = sys.exc_info()
-                    log.error(exc_info[1], exc_info=exc_info)
-                    self.onerror(exc_info)
+                (impl or self.listener_impl)(nxt, *args)
+            except KeyboardInterrupt:
+                raise
+            except:
+                exc_info = sys.exc_info()
+                log.error(exc_info[1], exc_info=exc_info)
+                self.onerror(exc_info)
 
     def wrap_request(self, proc, args):
         """

@@ -3,8 +3,10 @@
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
+from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import threading
+import asyncio
 import pytest
 import time
 import uuid
@@ -66,6 +68,10 @@ describe "ThreadToAsyncQueue":
             # Proof that action2 wasn't held up by action
             assert called == [2, 1]
 
+            ttaq.stop_fut.cancel()
+            with assertRaises(asyncio.CancelledError):
+                await ttaq.request(lambda: 1)
+
     describe "white box testing":
 
         @pytest.fixture()
@@ -78,14 +84,14 @@ describe "ThreadToAsyncQueue":
                 func = mock.Mock(name="func")
                 key = "key"
 
-                assert ttaq.queue.empty()
+                assert ttaq.queue.collection.empty()
                 assert len(ttaq.futures) == 0
 
-                with mock.patch("uuid.uuid1", lambda: key):
+                with mock.patch("secrets.token_urlsafe", lambda _: key):
                     fut = ttaq.request(func)
 
-                assert ttaq.queue.qsize() == 1
-                thing = ttaq.queue.get()
+                assert ttaq.queue.collection.qsize() == 1
+                thing = ttaq.queue.collection.get()
 
                 assert thing == (key, func)
                 assert ttaq.futures[key] is fut
@@ -138,7 +144,9 @@ describe "ThreadToAsyncQueue":
                 thread.daemon = True
                 thread.start()
 
-                assert (await ttaq.result_queue.get()) == (key, action_result, hp.Nope)
+                async for result in ttaq.result_queue:
+                    assert result == (key, action_result, hp.Nope)
+                    break
 
             async it "gives you the exception when it fails", ttaq:
                 key = str(uuid.uuid1())
@@ -156,9 +164,11 @@ describe "ThreadToAsyncQueue":
                 thread.daemon = True
                 thread.start()
 
-                assert (await ttaq.result_queue.get()) == (key, hp.Nope, error)
-                assert called == ["action"]
-                onerror.assert_called_once_with((PhotonsAppError, error, mock.ANY))
+                async for result in ttaq.result_queue:
+                    assert result == (key, hp.Nope, error)
+                    assert called == ["action"]
+                    onerror.assert_called_once_with((PhotonsAppError, error, mock.ANY))
+                    break
 
 describe "ThreadToAsyncQueuewith custom args":
 
