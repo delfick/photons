@@ -269,16 +269,10 @@ class Arranger:
 
     async def animation_event(self, event):
         if self.animation_streamer:
-
             if not isinstance(event, (str, tuple)):
                 await self.animation_streamer.add_generator(event)
-
             else:
-
-                async def ret():
-                    return event
-
-                await self.animation_streamer.add_coroutine(ret())
+                await self.animation_streamer.add_value(event)
 
     async def add_highlight(self, part):
         await self.animation_event(("highlight", part))

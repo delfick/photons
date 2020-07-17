@@ -361,6 +361,8 @@ class ResultStreamer:
 
     .. automethod:: add_coroutine
 
+    .. automethod:: add_value
+
     .. automethod:: add_task
 
     .. automethod:: no_more_work
@@ -447,6 +449,12 @@ class ResultStreamer:
             context=context,
             on_done=on_done,
         )
+
+    async def add_value(self, value, *, context=None, on_done=None):
+        async def return_value():
+            return value
+
+        return await self.add_coroutine(return_value(), context=context, on_done=on_done)
 
     async def add_task(self, task, *, context=None, on_done=None):
         if self.final_future.done():

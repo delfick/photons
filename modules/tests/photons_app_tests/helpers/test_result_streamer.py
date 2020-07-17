@@ -245,6 +245,66 @@ describe "ResultStreamer":
 
             add_task.assert_called_once_with(mock.ANY, context=None, on_done=None)
 
+    describe "add_value":
+
+        @pytest.fixture()
+        async def V(self):
+            class V:
+                final_future = hp.create_future()
+
+                @hp.memoized_property
+                def streamer(s):
+                    return hp.ResultStreamer(s.final_future)
+
+            v = V()
+            try:
+                yield v
+            finally:
+                v.final_future.cancel()
+                await v.streamer.finish()
+
+        async it "uses add_coroutine", V:
+            ctx = mock.Mock(name="ctx")
+            on_done = mock.Mock(name="on_done")
+
+            task = mock.Mock(name="task")
+            add_coroutine = pytest.helpers.AsyncMock(name="add_coroutine", return_value=task)
+
+            with mock.patch.object(V.streamer, "add_coroutine", add_coroutine):
+                assert await V.streamer.add_value(20, context=ctx, on_done=on_done) is task
+
+            add_coroutine.assert_called_once_with(mock.ANY, context=ctx, on_done=on_done)
+
+            coro = add_coroutine.mock_calls[0][1][0]
+            assert await coro == 20
+
+        async it "has defaults for context and on_done", V:
+            task = mock.Mock(name="task")
+            add_coroutine = pytest.helpers.AsyncMock(name="add_coroutine", return_value=task)
+
+            with mock.patch.object(V.streamer, "add_coroutine", add_coroutine):
+                assert await V.streamer.add_value(40) is task
+
+            add_coroutine.assert_called_once_with(mock.ANY, context=None, on_done=None)
+            assert await add_coroutine.mock_calls[0][1][0] == 40
+
+        async it "works", V:
+            found = []
+
+            async def adder(streamer):
+                await streamer.add_value(1, context="adder")
+                await streamer.add_value(2, context="adder")
+                return "ADDER"
+
+            async with hp.ResultStreamer(V.final_future) as streamer:
+                await streamer.add_coroutine(adder(streamer))
+                streamer.no_more_work()
+
+                async for result in streamer:
+                    found.append((result.successful, result.value, result.context))
+
+            assert found == [(True, "ADDER", None), (True, 1, "adder"), (True, 2, "adder")]
+
     describe "add_task":
 
         @pytest.fixture()
