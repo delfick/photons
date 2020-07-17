@@ -371,6 +371,9 @@ class ResultStreamer:
     class GeneratorComplete:
         pass
 
+    class FinishedTask:
+        pass
+
     class Result:
         """
         The object that the streamer will yield. This contains the ``value``
@@ -396,32 +399,43 @@ class ResultStreamer:
             status = "success" if self.successful else "failed"
             return f"<Result {status}: {self.value}: {self.context}>"
 
-    def __init__(self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False):
+    def __init__(
+        self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False,
+    ):
         self.final_future = ChildOfFuture(final_future)
         self.error_catcher = error_catcher
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
         self.ts = []
-        self.waiting = 0
         self.generators = []
 
-        self.queue = asyncio.Queue()
+        self.queue = Queue(final_future)
         self.stop_on_completion = False
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.finish()
+
+    def __aiter__(self):
+        return self.retrieve()
 
     async def add_generator(self, gen, *, context=None, on_each=None, on_done=None):
         async def run():
             async for result in gen:
                 result = self.Result(result, context, True)
-                self.queue.put_nowait(result)
+                self.queue.append(result)
                 if on_each:
                     on_each(result)
             return self.GeneratorComplete
 
         task = await self.add_coroutine(run(), context=context, on_done=on_done)
+        task.gen = gen
 
         if self.final_future.done():
             await cancel_futures_and_wait(task)
-            await wait_for_all_futures(async_as_background(gen.aclose()))
+            await wait_for_first_future(async_as_background(gen.aclose()))
             return task
 
         self.generators.append((task, gen))
@@ -440,7 +454,6 @@ class ResultStreamer:
             return task
 
         def add_to_queue(res):
-            self.waiting -= 1
             successful = False
 
             if res.cancelled():
@@ -461,40 +474,39 @@ class ResultStreamer:
                     v = value if self.exceptions_only_to_error_catcher else result
                     add_error(self.error_catcher, v)
 
-                self.queue.put_nowait(result)
+                self.queue.append(result)
 
             if on_done:
                 on_done(result)
 
+            self.queue.append(self.FinishedTask)
+
         task.add_done_callback(add_to_queue)
         self.ts.append(task)
-        self.waiting += 1
         return task
 
     def no_more_work(self):
         self.stop_on_completion = True
 
     async def retrieve(self):
-        while True:
-            nxt = async_as_background(self.queue.get())
-            await wait_for_first_future(nxt, self.final_future)
-
-            if self.final_future.done():
-                nxt.cancel()
-                return
-
-            yield (await nxt)
+        async for nxt in self.queue:
+            if nxt is not self.FinishedTask:
+                yield nxt
 
             self.ts = [t for t in self.ts if not t.done()]
-            if self.stop_on_completion and not self.waiting and self.queue.empty():
+            if self.stop_on_completion and not self.ts:
+                for nxt in self.queue.remaining():
+                    if nxt is not self.FinishedTask:
+                        yield nxt
+
                 return
 
             # Cleanup any finished generators
             new_gens = []
             for t, g in self.generators:
                 if t.done():
-                    await wait_for_all_futures(t)
-                    await wait_for_all_futures(async_as_background(g.aclose()))
+                    await wait_for_first_future(t)
+                    await wait_for_first_future(async_as_background(g.aclose()))
                 else:
                     new_gens.append((t, g))
             self.generators = new_gens
@@ -512,21 +524,10 @@ class ResultStreamer:
         for t, g in self.generators:
             t.cancel()
             wait_for.append(t)
-            second_after.append(lambda: g.aclose())
+            second_after.append(lambda: async_as_background(g.aclose()))
 
         await wait_for_all_futures(*wait_for)
-        await wait_for_all_futures(*[async_as_background(l()) for l in second_after])
-
-        self.queue.put_nowait(None)
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.finish()
-
-    def __aiter__(self):
-        return self.retrieve()
+        await wait_for_all_futures(*[l() for l in second_after])
 
 
 @contextmanager

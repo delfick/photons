@@ -37,7 +37,7 @@ describe "ResultStreamer":
         assert streamer.exceptions_only_to_error_catcher is exceptions_only_to_error_catcher
 
         assert streamer.ts == []
-        assert isinstance(streamer.queue, asyncio.Queue)
+        assert isinstance(streamer.queue, hp.Queue)
         assert not streamer.stop_on_completion
 
     async it "has a final future as a child of that passed in":
@@ -488,7 +488,6 @@ describe "ResultStreamer":
 
     describe "finishing by final_future":
 
-        @pytest.mark.focus
         async it "stops retrieving if there is results left to yield":
             called = []
 
