@@ -414,31 +414,6 @@ class Gatherer:
         if not plans:
             return
 
-        async def gathering(serials, kwargs):
-            class Done:
-                pass
-
-            ts = []
-            queue = asyncio.Queue()
-
-            for serial in serials:
-                ts.append(hp.async_as_background(self._follow(plans, serial, queue, **kwargs)))
-
-            def on_finish(res):
-                queue.put_nowait(Done)
-
-            if not ts:
-                on_finish(None)
-            else:
-                t = hp.async_as_background(hp.wait_for_all_futures(*ts))
-                t.add_done_callback(on_finish)
-
-            while True:
-                nxt = await queue.get()
-                if nxt is Done:
-                    break
-                yield nxt
-
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
@@ -449,8 +424,16 @@ class Gatherer:
             for serial in missing:
                 hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
 
-            async for item in gathering(serials, kwargs):
-                yield item
+            async with hp.ResultStreamer(
+                self.sender.stop_fut, error_catcher=error_catcher
+            ) as streamer:
+                for serial in serials:
+                    await streamer.add_generator(self._follow(plans, serial, **kwargs))
+                streamer.no_more_work()
+
+                async for result in streamer:
+                    if result.successful:
+                        yield result.value
 
     async def gather_all(self, plans, reference, **kwargs):
         """
@@ -507,7 +490,7 @@ class Gatherer:
                 if serial not in done:
                     yield serial, False, info
 
-    async def _follow(self, plans, serial, queue, **kwargs):
+    async def _follow(self, plans, serial, **kwargs):
         """
         * get dependency information
         * Determine messages to be sent to devices
@@ -526,15 +509,15 @@ class Gatherer:
         # But we'll return them before we send those messages
         # So that those results are immediately available
         async for complete in planner.completed():
-            await queue.put(complete)
+            yield complete
 
         if msgs_to_send:
             async for pkt in self.sender(msgs_to_send, **kwargs):
                 async for complete in planner.add(pkt):
-                    await queue.put(complete)
+                    yield complete
 
         async for complete in planner.ended():
-            await queue.put(complete)
+            yield complete
 
     async def _deps(self, plans, serial, **kwargs):
         """
