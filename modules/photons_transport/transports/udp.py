@@ -21,12 +21,15 @@ class UDP(Socket):
             if not fut.done():
                 fut.cancel()
 
-        loop.call_later(timeout, canceler)
+        handle = loop.call_later(timeout, canceler)
 
         log.info(self.lc("Creating datagram endpoint", address=self.address))
         await loop.create_datagram_endpoint(Protocol, sock=sock)
 
-        return await fut
+        try:
+            return await fut
+        finally:
+            handle.cancel()
 
     async def write(self, transport, bts, original_message):
         transport.sendto(bts, self.address)
