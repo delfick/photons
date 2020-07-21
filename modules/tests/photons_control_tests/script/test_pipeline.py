@@ -37,7 +37,6 @@ def loop_time():
 
 describe "Pipeline":
 
-    @pytest.mark.focus
     async it "does all messages at once if pipeline isn't used", runner:
         got_times = defaultdict(list)
 
@@ -423,7 +422,6 @@ describe "Pipeline":
         assert len(got[serial]) == 1, got[serial]
         assert got[serial][0] | DeviceMessages.StatePower
 
-    @pytest.mark.focus
     async it "can raise all errors", runner:
 
         async def waiter(pkt, source):
