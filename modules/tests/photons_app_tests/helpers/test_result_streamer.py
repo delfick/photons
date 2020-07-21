@@ -630,6 +630,7 @@ describe "ResultStreamer":
                 ("result", 2, "gen"),
                 ("result", 20, "func2"),
                 ("finished", "func"),
+                ("result", None, "func"),
                 ("cancelled", "gen"),
                 ("cancelled", "func3"),
                 ("catcher", gen_result),
@@ -640,7 +641,12 @@ describe "ResultStreamer":
             for e, g in zip(expected, called):
                 assert e == g
 
-            assert results == [R(1, "gen", True), R(2, "gen", True), R(20, "func2", True)]
+            assert results == [
+                R(1, "gen", True),
+                R(2, "gen", True),
+                R(20, "func2", True),
+                R(None, "func", True),
+            ]
 
             expected_cancelled = {"gen": True, "func": False, "func2": False, "func3": True}
             assert len(expected_cancelled) == len(tasks)

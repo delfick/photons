@@ -411,8 +411,10 @@ class ResultStreamer:
         self.ts = []
         self.generators = []
 
-        self.queue = Queue(final_future)
+        self.queue = Queue(final_future, empty_on_finished=True)
         self.stop_on_completion = False
+
+        self._registered = 0
 
     async def __aenter__(self):
         return self
@@ -491,6 +493,7 @@ class ResultStreamer:
 
         task.add_done_callback(add_to_queue)
         self.ts.append(task)
+        self._registered += 1
         return task
 
     def no_more_work(self):
@@ -498,15 +501,13 @@ class ResultStreamer:
 
     async def retrieve(self):
         async for nxt in self.queue:
-            if nxt is not self.FinishedTask:
+            if nxt is self.FinishedTask:
+                self._registered -= 1
+            else:
                 yield nxt
 
             self.ts = [t for t in self.ts if not t.done()]
-            if self.stop_on_completion and not self.ts:
-                for nxt in self.queue.remaining():
-                    if nxt is not self.FinishedTask:
-                        yield nxt
-
+            if self.stop_on_completion and not self.ts and self._registered <= 0:
                 return
 
             # Cleanup any finished generators
@@ -771,8 +772,11 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
             t.cancel()
             f.cancel()
 
-    asyncio.get_event_loop().call_later(timeout, set_timeout)
-    return await f
+    handle = asyncio.get_event_loop().call_later(timeout, set_timeout)
+    try:
+        return await f
+    finally:
+        handle.cancel()
 
 
 def create_future(*, name=None, loop=None):
