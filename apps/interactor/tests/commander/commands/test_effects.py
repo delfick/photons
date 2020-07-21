@@ -429,14 +429,18 @@ describe "Effect commands":
         )
 
     @pytest.mark.async_timeout(1.5)
-    @pytest.mark.focus
     async it "works if devices are offline", fake, runner, asserter, results, sender:
         offline1 = fake.for_serial("d073d5000001").offline()
         offline5 = fake.for_serial("d073d5000005").offline()
         offline7 = fake.for_serial("d073d5000007").offline()
 
         fail = {
-            "error": {"message": "Timed out. Waiting for reply to a packet"},
+            "error": {
+                "message": "Timed out. Waiting for reply to a packet",
+                "sent_pkt_type": 32,
+                "sequence": mock.ANY,
+                "source": mock.ANY,
+            },
             "error_code": "TimedOut",
             "status": 400,
         }

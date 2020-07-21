@@ -5,6 +5,7 @@ from interactor.commander.store import store, load_commands
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.colour import ColourParser
 
+from unittest import mock
 import pytest
 import json
 
@@ -110,7 +111,12 @@ describe "Control Commands":
         bathroom_light = fake.for_serial("d073d5000002")
         with bathroom_light.offline():
             expected["d073d5000002"] = {
-                "error": {"message": "Timed out. Waiting for reply to a packet"},
+                "error": {
+                    "message": "Timed out. Waiting for reply to a packet",
+                    "sent_pkt_type": 101,
+                    "source": mock.ANY,
+                    "sequence": mock.ANY,
+                },
                 "error_code": "TimedOut",
                 "status": 400,
             }
@@ -163,7 +169,12 @@ describe "Control Commands":
         bathroom_light = fake.for_serial("d073d5000002")
         with bathroom_light.offline():
             expected["results"]["d073d5000002"] = {
-                "error": {"message": "Timed out. Waiting for reply to a packet"},
+                "error": {
+                    "message": "Timed out. Waiting for reply to a packet",
+                    "sent_pkt_type": 21,
+                    "source": mock.ANY,
+                    "sequence": mock.ANY,
+                },
                 "error_code": "TimedOut",
                 "status": 400,
             }
@@ -269,7 +280,12 @@ describe "Control Commands":
         tv_light = fake.for_attribute("label", "tv", expect=1)[0]
         with tv_light.offline():
             expected["results"]["d073d5000006"] = {
-                "error": {"message": "Timed out. Waiting for reply to a packet"},
+                "error": {
+                    "message": "Timed out. Waiting for reply to a packet",
+                    "sent_pkt_type": 101,
+                    "source": mock.ANY,
+                    "sequence": mock.ANY,
+                },
                 "error_code": "TimedOut",
                 "status": 400,
             }
@@ -314,7 +330,12 @@ describe "Control Commands":
         tv_light = fake.for_attribute("label", "tv", expect=1)[0]
         with tv_light.offline():
             expected["results"]["d073d5000006"] = {
-                "error": {"message": "Timed out. Waiting for reply to a packet"},
+                "error": {
+                    "message": "Timed out. Waiting for reply to a packet",
+                    "sent_pkt_type": 101,
+                    "source": mock.ANY,
+                    "sequence": mock.ANY,
+                },
                 "error_code": "TimedOut",
                 "status": 400,
             }
