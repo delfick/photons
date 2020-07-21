@@ -1,7 +1,5 @@
 from photons_app import helpers as hp
 
-import asyncio
-
 
 class Transport:
     def __init__(self, session, *args, **kwargs):

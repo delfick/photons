@@ -3,7 +3,6 @@ from photons_transport.transports.base import Transport
 from photons_app import helpers as hp
 
 import logging
-import asyncio
 
 log = logging.getLogger("photons_transport.transports.socket")
 

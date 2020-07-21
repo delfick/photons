@@ -2,23 +2,19 @@
 
 from photons_transport.comms.base import Communication, Found, FakeAck
 from photons_transport.errors import FailedToFindDevice
-from photons_transport.transports.base import Transport
 from photons_transport.comms.receiver import Receiver
-from photons_transport import RetryOptions
 
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import FoundNoDevices, TimedOut
+from photons_app.errors import FoundNoDevices
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, protocol_register, LIFXPacket, CoreMessages
-from photons_protocol.messages import Messages
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb, Meta
 from contextlib import contextmanager
 from unittest import mock
 import binascii
-import asyncio
 import pytest
 
 

@@ -2,7 +2,6 @@
 
 from photons_app import helpers as hp
 
-import pytest
 import time
 
 
