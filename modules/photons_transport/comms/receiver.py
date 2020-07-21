@@ -26,15 +26,8 @@ class Receiver(object):
         self.results[key] = (original, result)
 
         def cleanup(res):
-            """
-            Remove the future from our results after a small delay
-            """
-
-            def remove():
-                if key in self.results:
-                    del self.results[key]
-
-            self.loop.call_later(0.5, remove)
+            if key in self.results:
+                del self.results[key]
 
         result.add_done_callback(cleanup)
 

@@ -128,7 +128,7 @@ method:
             # And then retry every second after that.
             retrier = RetryOptions(timeouts=[[0.5, 2], [1, 2]])
 
-            async for time_left, _ in retrier.iterator(end_after=timeout):
+            async for time_left, _ in retrier.tick(timeout):
                 if len(serials) >= self.upto:
                     break
 

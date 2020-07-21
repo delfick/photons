@@ -25,7 +25,7 @@ from photons_messages import (
 )
 from photons_products import Products
 
-from delfick_project.errors_pytest import assertRaises
+from delfick_project.errors_pytest import assertRaises, assertSameError
 from unittest import mock
 import asyncio
 import pytest
@@ -1090,7 +1090,15 @@ describe "FakeDevice":
                     async for pkt in sender(echo, serial, message_timeout=0.05, error_catcher=es):
                         got.append(pkt)
                     assert len(got) == 0
-                    assert es == [TimedOut("Waiting for reply to a packet", serial=serial)]
+                    assert len(es) == 1
+                    echo_type = DeviceMessages.EchoRequest.Payload.message_type
+                    assertSameError(
+                        es[0],
+                        TimedOut,
+                        "Waiting for reply to a packet",
+                        dict(serial=serial, sent_pkt_type=echo_type),
+                        [],
+                    )
 
                     await sender.forget(serial)
                     await second_service.add_service(sender.add_service)

@@ -6,8 +6,8 @@ way. You use these targets to create one or more sessions, which each have one
 or more connections to your devices that it uses to send a receive messages.
 """
 
-from photons_transport.retry_options import RetryOptions, RetryIterator
 from photons_app.errors import RunErrors, PhotonsAppError
+from photons_transport.retry_options import RetryOptions
 from photons_app import helpers as hp
 
 from contextlib import contextmanager
@@ -15,9 +15,6 @@ import logging
 import asyncio
 
 log = logging.getLogger("photons_transport")
-
-RetryOptions = RetryOptions
-RetryIterator = RetryIterator
 
 
 @contextmanager
@@ -46,4 +43,4 @@ def catch_errors(error_catcher=None):
         raise RunErrors(_errors=error_catcher)
 
 
-__all__ = ["RetryOptions", "RetryIterator", "catch_errors"]
+__all__ = ["RetryOptions", "catch_errors"]

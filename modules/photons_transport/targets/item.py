@@ -5,7 +5,6 @@ from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
 from delfick_project.norms import sb
-from functools import partial
 import asyncio
 import logging
 
@@ -14,6 +13,10 @@ log = logging.getLogger("photons_transport.targets.item")
 
 class Done:
     """Used to specify when we should close a queue"""
+
+
+def silence_errors(e):
+    pass
 
 
 def choose_source(pkt, source):
@@ -221,41 +224,44 @@ class Item(object):
 
     async def write_messages(self, sender, packets, kwargs):
         """Send all our packets and collect all the results"""
-        fs = []
-        queue = asyncio.Queue()
+
         error_catcher = kwargs["error_catcher"]
 
-        def on_done(packet, res):
-            if res.cancelled():
-                hp.add_error(error_catcher, TimedOut("Message was cancelled", serial=packet.serial))
-            else:
-                exc = res.exception()
-                if exc:
-                    hp.add_error(error_catcher, exc)
+        async with hp.ResultStreamer(sender.stop_fut, error_catcher=silence_errors) as streamer:
+            count = 0
+            for original, packet in packets:
+                count += 1
+                await streamer.add_coroutine(
+                    self.do_send(sender, original, packet, kwargs), context=packet
+                )
 
-            if all(f.done() for f in fs):
-                hp.async_as_background(queue.put(Done))
+            streamer.no_more_work()
 
-        for original, packet in packets:
-            coro = self.do_send(sender, original, packet, queue, kwargs)
-            f = hp.async_as_background(coro, silent=True)
-            f.add_done_callback(partial(on_done, packet))
-            fs.append(f)
+            got = 0
+            async for result in streamer:
+                got += 1
+                if result.successful:
+                    for msg in result.value:
+                        yield msg
+                else:
+                    exc = result.value
+                    pkt = result.context
+                    if isinstance(exc, asyncio.CancelledError):
+                        hp.add_error(
+                            error_catcher,
+                            TimedOut(
+                                "Message was cancelled",
+                                sent_pkt_type=pkt.pkt_type,
+                                serial=pkt.serial,
+                                source=pkt.source,
+                                sequence=pkt.sequence,
+                            ),
+                        )
+                    else:
+                        hp.add_error(error_catcher, exc)
 
-        try:
-            while True:
-                msg = await queue.get()
-
-                if msg is Done:
-                    break
-
-                yield msg
-        finally:
-            for f in fs:
-                f.cancel()
-
-    async def do_send(self, sender, original, packet, queue, kwargs):
-        res = await sender.send_single(
+    async def do_send(self, sender, original, packet, kwargs):
+        return await sender.send_single(
             original,
             packet,
             timeout=kwargs.get("message_timeout", 10),
@@ -264,5 +270,3 @@ class Item(object):
             broadcast=kwargs.get("broadcast"),
             connect_timeout=kwargs.get("connect_timeout", 10),
         )
-        for thing in res:
-            await queue.put(thing)

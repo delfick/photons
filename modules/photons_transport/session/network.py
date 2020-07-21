@@ -10,7 +10,6 @@ from photons_messages import DiscoveryMessages, Services
 import binascii
 import logging
 import asyncio
-import time
 
 log = logging.getLogger("photons_transport.session.network")
 
@@ -96,11 +95,9 @@ class NetworkSession(Communication):
 
         return list(found_now)
 
-    async def _search_retry_iterator(self, end_after, get_now=time.time):
+    async def _search_retry_iterator(self, end_after):
         timeouts = [(0.6, 1.8), (1, 4)]
-        retrier = RetryOptions(timeouts=timeouts)
-
-        async for info in retrier.iterator(end_after=end_after, get_now=get_now):
+        async for info in RetryOptions(timeouts=timeouts).tick(end_after):
             yield info
 
     async def make_transport(self, serial, service, kwargs):

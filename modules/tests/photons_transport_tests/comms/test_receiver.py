@@ -58,32 +58,14 @@ describe "Receiver":
             async it "puts the result under a key of source, sequence, target", V:
                 assert V.receiver.results == {}
                 key = V.register(V.source, V.sequence, V.target)
+                assert key == (V.source, V.sequence, V.target)
+                assert V.receiver.results == {key: (V.original, V.result)}
 
-                loop = mock.Mock(name="loop")
-                fut = hp.create_future()
-                other = mock.Mock(name="other")
-                called = []
-
-                def call_later(t, cb):
-                    called.append("call_later")
-
-                    assert t == 0.5
-                    assert V.receiver.results == {key: (V.original, V.result)}
-
-                    V.receiver.results["other"] = other
-                    cb()
-                    fut.set_result(True)
-
-                loop.call_later.side_effect = call_later
-
-                with mock.patch.object(Receiver, "loop", loop):
-                    assert called == []
-
-                    V.result.set_result([])
-                    await fut
-
-                    assert called == ["call_later"]
-                    assert V.receiver.results == {"other": other}
+                r = mock.Mock(name="r")
+                V.result.set_result([r])
+                assert await V.result == [r]
+                await asyncio.sleep(0)
+                assert V.receiver.results == {}
 
         describe "recv":
             async it "finds result based on source, sequence, target", V:

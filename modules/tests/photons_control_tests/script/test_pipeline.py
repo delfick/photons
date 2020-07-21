@@ -9,6 +9,7 @@ from photons_app.special import FoundSerials
 from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
 
+from delfick_project.errors_pytest import assertSameError
 from collections import defaultdict
 from itertools import chain
 import asyncio
@@ -36,6 +37,7 @@ def loop_time():
 
 describe "Pipeline":
 
+    @pytest.mark.focus
     async it "does all messages at once if pipeline isn't used", runner:
         got_times = defaultdict(list)
 
@@ -57,6 +59,7 @@ describe "Pipeline":
         await runner.sender.find_specific_serials(runner.serials)
         start = loop_time()
         async for pkt in runner.sender(msgs, runner.serials):
+            print(pkt.serial, repr(pkt.payload))
             got[pkt.serial].append(pkt)
         assert loop_time() - start < 0.3
 
@@ -305,7 +308,14 @@ describe "Pipeline":
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
         assert len(errors) == 1
-        assert errors[0] == TimedOut("Waiting for reply to a packet", serial=light1.serial)
+
+        assertSameError(
+            errors[0],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light1.serial, sent_pkt_type=DeviceMessages.SetLabel.Payload.message_type),
+            [],
+        )
 
         last_time_light1 = sorted(t for _, t in got[light1.serial])[-1]
 
@@ -349,7 +359,14 @@ describe "Pipeline":
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
         assert len(errors) == 1
-        assert errors[0] == TimedOut("Waiting for reply to a packet", serial=light1.serial)
+
+        assertSameError(
+            errors[0],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light1.serial, sent_pkt_type=DeviceMessages.SetLabel.Payload.message_type),
+            [],
+        )
 
         for serial in (light2.serial, light3.serial):
             assert len(got[serial]) == 3, got[serial]
@@ -389,7 +406,13 @@ describe "Pipeline":
 
         assert all(serial in got for serial in runner.serials), (list(got), errors)
         assert len(errors) == 1
-        assert errors[0] == TimedOut("Waiting for reply to a packet", serial=light1.serial)
+        assertSameError(
+            errors[0],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light1.serial, sent_pkt_type=DeviceMessages.SetLabel.Payload.message_type),
+            [],
+        )
 
         for serial in (light2.serial, light3.serial):
             assert len(got[serial]) == 2, got[serial]
@@ -400,6 +423,7 @@ describe "Pipeline":
         assert len(got[serial]) == 1, got[serial]
         assert got[serial][0] | DeviceMessages.StatePower
 
+    @pytest.mark.focus
     async it "can raise all errors", runner:
 
         async def waiter(pkt, source):
@@ -425,7 +449,8 @@ describe "Pipeline":
             assert len(errors.errors) == 2
             serials = {light1.serial: True, light2.serial: True}
             for error in errors.errors:
-                assert isinstance(error, TimedOut)
+                if not isinstance(error, TimedOut):
+                    raise error
                 serials.pop(error.kwargs["serial"])
             assert serials == {}
 

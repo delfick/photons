@@ -14,12 +14,21 @@ from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages
 
-from delfick_project.errors_pytest import assertRaises
+from delfick_project.errors_pytest import assertRaises, assertSameError
 from delfick_project.norms import sb
 from unittest import mock
 import binascii
 import asyncio
 import pytest
+
+
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
 @pytest.fixture()
@@ -324,14 +333,16 @@ describe "Item":
         describe "write_messages":
 
             @pytest.fixture()
-            def V(self):
+            def V(self, final_future):
                 class V:
                     serial1 = "d073d5000000"
                     serial2 = "d073d5000001"
 
                     results = [mock.Mock(name=f"res{i}") for i in range(10)]
 
-                    sender = mock.Mock(name="sender", spec=["send_single"])
+                    sender = mock.Mock(
+                        name="sender", stop_fut=final_future, spec=["send_single", "stop_fut"]
+                    )
 
                     error_catcher = []
 
@@ -528,20 +539,18 @@ describe "Item":
 
                 V.sender.send_single.side_effect = send_single
 
-                class IS:
-                    def __init__(s, want):
-                        s.want = want
-
-                    def __eq__(s, other):
-                        return isinstance(other, type(s.want)) and repr(s.want) == repr(other)
-
                 res = []
                 async for r in item.write_messages(V.sender, V.packets, V.kwargs):
                     res.append(r)
-                assert V.error_catcher == [
-                    TimedOut("Message was cancelled", serial=V.p1.serial),
-                    IS(ValueError("NOPE")),
-                ]
+                assert len(V.error_catcher) == 2
+                assertSameError(
+                    V.error_catcher[0],
+                    TimedOut,
+                    "Message was cancelled",
+                    dict(serial=V.p1.serial),
+                    [],
+                )
+                assertSameError(V.error_catcher[1], ValueError, "NOPE", {}, [])
 
                 assert res == [V.results[i] for i in (0, 6)]
 
@@ -638,7 +647,7 @@ describe "Item":
         describe "run":
 
             @pytest.fixture()
-            def V(self):
+            def V(self, final_future):
                 class V:
                     source = 9001
                     found = Found()
@@ -649,7 +658,8 @@ describe "Item":
                             name="sender",
                             source=s.source,
                             found=s.found,
-                            spec=["source", "seq", "found"],
+                            stop_fut=final_future,
+                            spec=["source", "seq", "found", "stop_fut"],
                         )
                         sender.seq.return_value = 1
                         return sender

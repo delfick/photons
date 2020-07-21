@@ -10,7 +10,7 @@ from photons_transport.errors import FailedToFindDevice
 from photons_transport.fake import FakeDevice
 from photons_messages import DeviceMessages
 
-from delfick_project.errors_pytest import assertRaises
+from delfick_project.errors_pytest import assertRaises, assertSameError
 from collections import defaultdict
 from functools import partial
 import asyncio
@@ -136,11 +136,22 @@ describe "FromGenerator":
 
             device.compare_received(expected[device])
 
-        assert errors == [
-            FailedToFindDevice(serial=light3.serial),
-            TimedOut("Waiting for reply to a packet", serial=light1.serial),
-            TimedOut("Waiting for reply to a packet", serial=light2.serial),
-        ]
+        assert len(errors) == 3
+        assertSameError(errors[0], FailedToFindDevice, "", dict(serial=light3.serial), [])
+        assertSameError(
+            errors[1],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light1.serial, sent_pkt_type=DeviceMessages.SetLabel.Payload.message_type),
+            [],
+        )
+        assertSameError(
+            errors[2],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light2.serial, sent_pkt_type=DeviceMessages.GetPower.Payload.message_type),
+            [],
+        )
 
         # The FailedToFindDevice happens before the script is run and so doesn't get taken into
         # account by the error_catcher_override
@@ -270,7 +281,14 @@ describe "FromGenerator":
             error_catcher=errors,
         )
 
-        assert errors == [TimedOut("Waiting for reply to a packet", serial=light1.serial)]
+        assert len(errors) == 1
+        assertSameError(
+            errors[0],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light1.serial, sent_pkt_type=DeviceMessages.GetPower.Payload.message_type),
+            [],
+        )
 
     async it "it can have a serial override", runner:
 
@@ -373,7 +391,14 @@ describe "FromGenerator":
         assert got[1] - start < 0.1
         assert got[2] - got[1] > 0.1
 
-        assert errors == [TimedOut("Waiting for reply to a packet", serial=light2.serial)]
+        assert len(errors) == 1
+        assertSameError(
+            errors[0],
+            TimedOut,
+            "Waiting for reply to a packet",
+            dict(serial=light2.serial, sent_pkt_type=DeviceMessages.GetPower.Payload.message_type),
+            [],
+        )
 
     async it "can provide errors", runner:
 

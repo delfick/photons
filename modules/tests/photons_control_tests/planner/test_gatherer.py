@@ -9,9 +9,10 @@ from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-from delfick_project.errors_pytest import assertRaises
+from delfick_project.errors_pytest import assertRaises, assertSameError
 from contextlib import contextmanager
 from unittest import mock
+import itertools
 import pytest
 
 light1 = FakeDevice(
@@ -61,6 +62,13 @@ async def runner(memory_devices_runner):
 @pytest.fixture(autouse=True)
 async def reset_runner(runner):
     await runner.per_test()
+
+
+def compare_called(got, want):
+    for i, (g, w) in enumerate(itertools.zip_longest(got, want)):
+        if g != w:
+            print(i, g, w)
+    assert want == got
 
 
 describe "Gatherer":
@@ -113,7 +121,7 @@ describe "Gatherer":
 
             assert got == {light1.serial: (True, {"p": i1}), light2.serial: (True, {"p": i2})}
 
-            assert called == [("info", light1.serial), ("info", light2.serial)]
+            compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
         async it "does not process other messages", runner:
             called = []
@@ -142,7 +150,7 @@ describe "Gatherer":
                 light2.serial: (True, {"p": i2, "power": {"level": 65535, "on": True}}),
             }
 
-            assert called == [("info", light1.serial), ("info", light2.serial)]
+            compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
         async it "can be determined by logic", runner:
             called = []
@@ -176,11 +184,10 @@ describe "Gatherer":
 
             assert got == {light1.serial: (True, {"p": i1}), light2.serial: (True, {"p": "sam"})}
 
-            assert called == [
-                ("info", light1.serial),
-                ("process", light2.serial),
-                ("info", light2.serial),
-            ]
+            compare_called(
+                called,
+                [("info", light1.serial), ("process", light2.serial), ("info", light2.serial)],
+            )
 
             self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
@@ -206,7 +213,7 @@ describe "Gatherer":
 
             assert got == {light1.serial: (True, {"p": Skip}), light2.serial: (True, {"p": Skip})}
 
-            assert called == []
+            compare_called(called, [])
 
         async it "does not process other messages", runner:
             called = []
@@ -231,7 +238,7 @@ describe "Gatherer":
                 light2.serial: (True, {"p": Skip, "power": {"level": 65535, "on": True}}),
             }
 
-            assert called == []
+            compare_called(called, [])
 
         async it "can be determined by logic", runner:
             called = []
@@ -261,7 +268,7 @@ describe "Gatherer":
 
             assert got == {light1.serial: (True, {"p": Skip}), light2.serial: (True, {"p": "sam"})}
 
-            assert called == [("process", light2.serial), ("info", light2.serial)]
+            compare_called(called, [("process", light2.serial), ("info", light2.serial)])
 
             self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
@@ -297,14 +304,17 @@ describe "Gatherer":
                 ),
             }
 
-            assert called == [
-                (light1.serial, {"label": "bob"}),
-                (light1.serial, {"level": 0}),
-                (light2.serial, {"label": "sam"}),
-                (light2.serial, {"level": 65535}),
-                ("info", light1.serial),
-                ("info", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    (light1.serial, {"label": "bob"}),
+                    (light1.serial, {"level": 0}),
+                    ("info", light1.serial),
+                    (light2.serial, {"label": "sam"}),
+                    (light2.serial, {"level": 65535}),
+                    ("info", light2.serial),
+                ],
+            )
 
         async it "still finishes if no messages processed but finished_after_no_more_messages", runner:
             called = []
@@ -330,7 +340,7 @@ describe "Gatherer":
                 light2.serial: (True, {"other": True}),
             }
 
-            assert called == [("info", light1.serial), ("info", light2.serial)]
+            compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
     describe "a plan that never finishes":
 
@@ -354,12 +364,15 @@ describe "Gatherer":
                 light2.serial: (False, {"label": "sam", "power": {"level": 65535, "on": True}}),
             }
 
-            assert called == [
-                ("process", light1.serial),
-                ("process", light1.serial),
-                ("process", light2.serial),
-                ("process", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("process", light1.serial),
+                    ("process", light1.serial),
+                    ("process", light2.serial),
+                    ("process", light2.serial),
+                ],
+            )
 
     describe "A plan with messages":
 
@@ -400,12 +413,15 @@ describe "Gatherer":
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            assert called == [
-                (light1.serial, label_type),
-                ("info", light1.serial),
-                (light2.serial, label_type),
-                ("info", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    (light1.serial, label_type),
+                    ("info", light1.serial),
+                    (light2.serial, label_type),
+                    ("info", light2.serial),
+                ],
+            )
 
         async it "adds errors from info", runner:
             error = ValueError("ERROR")
@@ -518,21 +534,24 @@ describe "Gatherer":
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("label", light1.serial, power_type),
-                ("looker", light1.serial, power_type),
-                ("power", light1.serial, power_type),
-                ("info.power", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-                ("looker", light2.serial, label_type),
-                ("power", light2.serial, label_type),
-                ("looker", light2.serial, power_type),
-                ("power", light2.serial, power_type),
-                ("info.power", light2.serial),
-                ("info.looker", light2.serial),
-                ("info.looker", light1.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("looker", light2.serial, label_type),
+                    ("power", light2.serial, label_type),
+                    ("looker", light2.serial, power_type),
+                    ("power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("info.looker", light2.serial),
+                    ("info.looker", light1.serial),
+                ],
+            )
 
             found.clear()
             called.clear()
@@ -545,7 +564,7 @@ describe "Gatherer":
 
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            assert called == [("label", light1.serial, power_type)]
+            compare_called(called, [("label", light1.serial, power_type)])
 
             assert found == [
                 (light2.serial, True, {"looker": True, "label": "sam", "power": 65535}),
@@ -557,13 +576,20 @@ describe "Gatherer":
                 with light1.no_replies_for(DeviceMessages.GetLabel):
                     await gatherer.gather_all(plans, two_lights, message_timeout=0.1)
             except BadRunWithResults as e:
-                error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
-                assert e.errors == [error]
+                assert len(e.errors) == 1
+                label_type = DeviceMessages.GetLabel.Payload.message_type
+                assertSameError(
+                    e.errors[0],
+                    TimedOut,
+                    "Waiting for reply to a packet",
+                    dict(serial=light1.serial, sent_pkt_type=label_type),
+                    [],
+                )
                 found = e.kwargs["results"]
 
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            assert called == [("label", light1.serial, power_type)]
+            compare_called(called, [("label", light1.serial, power_type)])
 
             assert found == {
                 light2.serial: (True, {"looker": True, "label": "sam", "power": 65535}),
@@ -619,16 +645,24 @@ describe "Gatherer":
             error_catcher = []
             kwargs = {"message_timeout": 0.1, "error_catcher": error_catcher}
 
-            found = []
-            error = TimedOut("Waiting for reply to a packet", serial=light1.serial)
+            def assertError(errors):
+                assert len(errors) == 1
+                label_type = DeviceMessages.GetLabel.Payload.message_type
+                assertSameError(
+                    errors[0],
+                    TimedOut,
+                    "Waiting for reply to a packet",
+                    dict(serial=light1.serial, sent_pkt_type=label_type),
+                    [],
+                )
+                errors.clear()
 
+            found = []
             with light1.no_replies_for(DeviceMessages.GetLabel):
                 async for serial, label, info in gatherer.gather(plans, two_lights, **kwargs):
                     found.append((serial, label, info))
 
-            assert error_catcher == [error]
-            error_catcher.clear()
-
+            assertError(error_catcher)
             assert found == [
                 (light1.serial, "power", 0),
                 (light2.serial, "label", "sam"),
@@ -648,21 +682,24 @@ describe "Gatherer":
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("label", light1.serial, power_type),
-                ("looker", light1.serial, power_type),
-                ("power", light1.serial, power_type),
-                ("info.power", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-                ("looker", light2.serial, label_type),
-                ("power", light2.serial, label_type),
-                ("looker", light2.serial, power_type),
-                ("power", light2.serial, power_type),
-                ("info.power", light2.serial),
-                ("info.looker", light2.serial),
-                ("info.looker", light1.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("looker", light2.serial, label_type),
+                    ("power", light2.serial, label_type),
+                    ("looker", light2.serial, power_type),
+                    ("power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("info.looker", light2.serial),
+                    ("info.looker", light1.serial),
+                ],
+            )
 
             found.clear()
             called.clear()
@@ -672,12 +709,10 @@ describe "Gatherer":
                 ):
                     found.append((serial, completed, info))
 
-            assert error_catcher == [error]
-            error_catcher.clear()
-
+            assertError(error_catcher)
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            assert called == [("label", light1.serial, power_type)]
+            compare_called(called, [("label", light1.serial, power_type)])
 
             assert found == [
                 (light2.serial, True, {"looker": True, "label": "sam", "power": 65535}),
@@ -688,12 +723,10 @@ describe "Gatherer":
             with light1.no_replies_for(DeviceMessages.GetLabel):
                 found = dict(await gatherer.gather_all(plans, two_lights, **kwargs))
 
-            assert error_catcher == [error]
-            error_catcher.clear()
-
+            assertError(error_catcher)
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
-            assert called == [("label", light1.serial, power_type)]
+            compare_called(called, [("label", light1.serial, power_type)])
 
             assert found == {
                 light2.serial: (True, {"looker": True, "label": "sam", "power": 65535}),
@@ -728,7 +761,9 @@ describe "Gatherer":
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            assert called == [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            compare_called(
+                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            )
 
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -738,7 +773,9 @@ describe "Gatherer":
             got = dict(await gatherer.gather_all(plans, light1.serial))
             assert got == {light1.serial: (True, {"label": "bob"})}
 
-            assert called == [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            compare_called(
+                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+            )
 
             self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -749,7 +786,7 @@ describe "Gatherer":
             got = dict(await gatherer.gather_all(plans, light1.serial))
             assert got == {light1.serial: (True, {"label": "bob"})}
 
-            assert called == []
+            compare_called(called, [])
             self.compare_received({light1: [], light2: [], light3: []})
 
         async it "it can refresh on time", runner:
@@ -779,10 +816,9 @@ describe "Gatherer":
 
                 label_type = DeviceMessages.StateLabel.Payload.message_type
 
-                assert called == [
-                    ("label", light1.serial, label_type),
-                    ("info.label", light1.serial),
-                ]
+                compare_called(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+                )
 
                 self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -794,7 +830,7 @@ describe "Gatherer":
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 assert got == {light1.serial: (True, {"label": "bob"})}
 
-                assert called == []
+                compare_called(called, [])
                 self.compare_received({light1: [], light2: [], light3: []})
 
                 # After a second, we get refreshed
@@ -802,68 +838,11 @@ describe "Gatherer":
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 assert got == {light1.serial: (True, {"label": "bob"})}
 
-                assert called == [
-                    ("label", light1.serial, label_type),
-                    ("info.label", light1.serial),
-                ]
-
-                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
-
-                called.clear()
-
-        async it "it can have different refresh based on logic in the instance", runner:
-            with self.modified_time() as t:
-                called = []
-
-                class LabelPlan(Plan):
-                    messages = [DeviceMessages.GetLabel()]
-
-                    class Instance(Plan.Instance):
-                        @property
-                        def refresh(s):
-                            if s.serial == light1.serial:
-                                return 1
-                            elif s.serial == light2.serial:
-                                return 2
-                            else:
-                                assert False, "unknown serial"
-
-                        def process(s, pkt):
-                            called.append(("label", pkt.serial, pkt.pkt_type))
-
-                            if pkt | DeviceMessages.StateLabel:
-                                s.label = pkt.label
-                                return True
-
-                        async def info(s):
-                            called.append(("info.label", s.serial))
-                            return s.label
-
-                gatherer = Gatherer(runner.sender)
-                plans = make_plans(label=LabelPlan())
-                got = dict(await gatherer.gather_all(plans, two_lights))
-                assert got == {
-                    light1.serial: (True, {"label": "bob"}),
-                    light2.serial: (True, {"label": "sam"}),
-                }
-
-                label_type = DeviceMessages.StateLabel.Payload.message_type
-
-                assert called == [
-                    ("label", light1.serial, label_type),
-                    ("info.label", light1.serial),
-                    ("label", light2.serial, label_type),
-                    ("info.label", light2.serial),
-                ]
-
-                self.compare_received(
-                    {
-                        light1: [DeviceMessages.GetLabel()],
-                        light2: [DeviceMessages.GetLabel()],
-                        light3: [],
-                    }
+                compare_called(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
                 )
 
+                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
                 called.clear()
 
                 # Get it again, our refresh means it will be cached
@@ -875,8 +854,11 @@ describe "Gatherer":
                     light2.serial: (True, {"label": "sam"}),
                 }
 
-                assert called == []
-                self.compare_received({light1: [], light2: [], light3: []})
+                compare_called(
+                    called, [("label", light2.serial, label_type), ("info.label", light2.serial)]
+                )
+                self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
+                called.clear()
 
                 # After a second, we get light1 refreshed
                 t.forward(0.5)
@@ -886,10 +868,9 @@ describe "Gatherer":
                     light2.serial: (True, {"label": "sam"}),
                 }
 
-                assert called == [
-                    ("label", light1.serial, label_type),
-                    ("info.label", light1.serial),
-                ]
+                compare_called(
+                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
+                )
 
                 self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -903,12 +884,15 @@ describe "Gatherer":
                     light2.serial: (True, {"label": "sam"}),
                 }
 
-                assert called == [
-                    ("label", light1.serial, label_type),
-                    ("info.label", light1.serial),
-                    ("label", light2.serial, label_type),
-                    ("info.label", light2.serial),
-                ]
+                compare_called(
+                    called,
+                    [
+                        ("label", light1.serial, label_type),
+                        ("info.label", light1.serial),
+                        ("label", light2.serial, label_type),
+                        ("info.label", light2.serial),
+                    ],
+                )
 
                 self.compare_received(
                     {
@@ -965,16 +949,19 @@ describe "Gatherer":
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            assert called == [
-                ("label", light1.serial, label_type),
-                ("info.label", light1.serial),
-                ("reverse", light1.serial, label_type),
-                ("info.reverse", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-                ("reverse", light2.serial, label_type),
-                ("info.reverse", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("reverse", light1.serial, label_type),
+                    ("info.reverse", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("reverse", light2.serial, label_type),
+                    ("info.reverse", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -994,12 +981,15 @@ describe "Gatherer":
                 light2.serial: (True, {"label": "sam", "rev": "mas"}),
             }
 
-            assert called == [
-                ("label", light1.serial, label_type),
-                ("info.label", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1057,16 +1047,19 @@ describe "Gatherer":
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            assert called == [
-                ("label", light1.serial, label_type),
-                ("info.label", light1.serial),
-                ("reverse", light1.serial, label_type),
-                ("info.reverse", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-                ("reverse", light2.serial, label_type),
-                ("info.reverse", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("reverse", light1.serial, label_type),
+                    ("info.reverse", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                    ("reverse", light2.serial, label_type),
+                    ("info.reverse", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1086,12 +1079,15 @@ describe "Gatherer":
                 light2.serial: (True, {"label": "sam", "rev": "mas"}),
             }
 
-            assert called == [
-                ("label", light1.serial, label_type),
-                ("info.label", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.label", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("label", light1.serial, label_type),
+                    ("info.label", light1.serial),
+                    ("label", light2.serial, label_type),
+                    ("info.label", light2.serial),
+                ],
+            )
 
             self.compare_received({light1: [], light2: [], light3: []})
 
@@ -1110,7 +1106,7 @@ describe "Gatherer":
                             return [DeviceMessages.GetPower()]
 
                     def process(s, pkt):
-                        called.append(("power", s.serial, pkt.pkt_type))
+                        called.append(("power.process.power", s.serial, pkt.pkt_type))
                         if pkt | DeviceMessages.StatePower:
                             s.level = pkt.level
                             return True
@@ -1132,14 +1128,17 @@ describe "Gatherer":
                             return [DeviceMessages.GetLabel()]
 
                     def process(s, pkt):
-                        called.append(("label", pkt.serial, pkt.pkt_type))
 
                         if pkt | DeviceMessages.StateLabel:
+                            called.append(("info.process.label", pkt.serial, pkt.pkt_type))
                             s.i = pkt.label
                             return True
                         elif pkt | LightMessages.StateInfrared:
+                            called.append(("info.process.infrared", pkt.serial, pkt.pkt_type))
                             s.i = pkt.brightness
                             return True
+                        elif pkt | DeviceMessages.StatePower:
+                            called.append(("info.process.power", pkt.serial, pkt.pkt_type))
 
                     async def info(s):
                         called.append(("info.info", s.serial))
@@ -1159,20 +1158,23 @@ describe "Gatherer":
             power_type = DeviceMessages.StatePower.Payload.message_type
             infrared_type = LightMessages.StateInfrared.Payload.message_type
 
-            assert called == [
-                ("power", light1.serial, power_type),
-                ("info.power", light1.serial),
-                ("power", light2.serial, power_type),
-                ("info.power", light2.serial),
-                ("label", light3.serial, label_type),
-                ("info.info", light3.serial),
-                ("label", light1.serial, power_type),
-                ("label", light2.serial, power_type),
-                ("label", light1.serial, infrared_type),
-                ("info.info", light1.serial),
-                ("label", light2.serial, label_type),
-                ("info.info", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("power.process.power", light1.serial, power_type),
+                    ("info.power", light1.serial),
+                    ("power.process.power", light2.serial, power_type),
+                    ("info.power", light2.serial),
+                    ("info.process.power", light1.serial, power_type),
+                    ("info.process.power", light2.serial, power_type),
+                    ("info.process.label", light3.serial, label_type),
+                    ("info.info", light3.serial),
+                    ("info.process.infrared", light1.serial, infrared_type),
+                    ("info.info", light1.serial),
+                    ("info.process.label", light2.serial, label_type),
+                    ("info.info", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1241,22 +1243,25 @@ describe "Gatherer":
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("plan1", light1.serial, label_type),
-                ("info.plan1", light1.serial),
-                ("plan1", light2.serial, label_type),
-                ("info.plan1", light2.serial),
-                ("plan2", light1.serial, label_type),
-                ("info.plan2", light1.serial),
-                ("plan2", light2.serial, label_type),
-                ("info.plan2", light2.serial),
-                ("plan3", light1.serial, label_type),
-                ("plan3", light2.serial, label_type),
-                ("plan3", light1.serial, power_type),
-                ("info.plan3", light1.serial),
-                ("plan3", light2.serial, power_type),
-                ("info.plan3", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light1.serial, label_type),
+                    ("info.plan2", light1.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("info.plan2", light2.serial),
+                    ("plan3", light1.serial, label_type),
+                    ("plan3", light2.serial, label_type),
+                    ("plan3", light1.serial, power_type),
+                    ("info.plan3", light1.serial),
+                    ("plan3", light2.serial, power_type),
+                    ("info.plan3", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1316,15 +1321,18 @@ describe "Gatherer":
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("plan1", light1.serial, label_type),
-                ("info.plan1", light1.serial),
-                ("plan1", light2.serial, label_type),
-                ("info.plan1", light2.serial),
-                ("plan2", light2.serial, label_type),
-                ("plan2", light2.serial, power_type),
-                ("info.plan2", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1378,21 +1386,24 @@ describe "Gatherer":
 
             assert got == {
                 light1.serial: (True, {"plan1": "bob", "plan2": Skip}),
-                light2.serial: (True, {"plan1": "sam", "plan2": {"label": "sam", "power": 65535}},),
+                light2.serial: (True, {"plan1": "sam", "plan2": {"label": "sam", "power": 65535}}),
             }
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("plan1", light1.serial, label_type),
-                ("info.plan1", light1.serial),
-                ("plan1", light2.serial, label_type),
-                ("info.plan1", light2.serial),
-                ("plan2", light2.serial, label_type),
-                ("plan2", light2.serial, power_type),
-                ("info.plan2", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {
@@ -1463,15 +1474,18 @@ describe "Gatherer":
             label_type = DeviceMessages.StateLabel.Payload.message_type
             power_type = DeviceMessages.StatePower.Payload.message_type
 
-            assert called == [
-                ("plan1", light1.serial, label_type),
-                ("info.plan1", light1.serial),
-                ("plan1", light2.serial, label_type),
-                ("info.plan1", light2.serial),
-                ("plan2", light2.serial, label_type),
-                ("plan2", light2.serial, power_type),
-                ("info.plan2", light2.serial),
-            ]
+            compare_called(
+                called,
+                [
+                    ("plan1", light1.serial, label_type),
+                    ("info.plan1", light1.serial),
+                    ("plan1", light2.serial, label_type),
+                    ("info.plan1", light2.serial),
+                    ("plan2", light2.serial, label_type),
+                    ("plan2", light2.serial, power_type),
+                    ("info.plan2", light2.serial),
+                ],
+            )
 
             self.compare_received(
                 {

@@ -1,6 +1,5 @@
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.comms.receiver import Receiver
-from photons_transport.comms.waiter import Waiter
 from photons_transport.comms.writer import Writer
 
 from photons_app.errors import TimedOut, FoundNoDevices, RunErrors, BadRunWithResults
@@ -12,8 +11,8 @@ from photons_protocol.messages import Messages
 import binascii
 import logging
 import asyncio
-import struct
 import random
+import struct
 import json
 
 log = logging.getLogger("photons_transport.comms")
@@ -358,12 +357,35 @@ class Communication:
             connect_timeout=connect_timeout,
         )
 
-        waiter = Waiter(self.stop_fut, writer, retry_options, no_retry=no_retry)
+        tick_fut = hp.ChildOfFuture(self.stop_fut)
 
-        try:
-            return await self._get_response(packet, timeout, waiter, limit=limit)
-        finally:
-            waiter.cancel()
+        results = []
+
+        async with hp.ResultStreamer(tick_fut) as streamer:
+            await streamer.add_generator(
+                retry_options.tick(timeout), context="tick", on_done=lambda res: tick_fut.cancel()
+            )
+            streamer.no_more_work()
+
+            async for result in streamer:
+                if not result.successful:
+                    raise result.value
+
+                if result.context == "tick":
+                    if not any(result.wait_for_result() for result in results):
+                        result = await writer()
+                        results.append(result)
+                        await streamer.add_task(result, context="write")
+                elif result.context == "write":
+                    return result.value
+
+        raise TimedOut(
+            "Waiting for reply to a packet",
+            serial=packet.serial,
+            sent_pkt_type=packet.pkt_type,
+            source=packet.source,
+            sequence=packet.sequence,
+        )
 
     async def _transport_for_send(self, transport, packet, original, broadcast, connect_timeout):
         is_broadcast = bool(broadcast)
@@ -412,56 +434,3 @@ class Communication:
             log.exception(error)
         else:
             await self.receiver.recv(pkt, addr, allow_zero=allow_zero)
-
-    async def _get_response(self, packet, timeout, waiter, limit=None):
-        errf = hp.ResettableFuture()
-        errf.add_done_callback(hp.silent_reporter)
-
-        response = []
-
-        async def wait_for_responses():
-            async with (limit or NoLimit()):
-                if hasattr(asyncio, "current_task"):
-                    current_task = asyncio.current_task()
-                else:
-                    current_task = asyncio.Task.current_task()
-
-                asyncio.get_event_loop().call_later(
-                    timeout, timeout_task, current_task, errf, packet.serial
-                )
-
-                try:
-                    for info in await waiter:
-                        response.append(info)
-                finally:
-                    if hasattr(waiter, "finish"):
-                        await waiter.finish()
-
-        f = hp.async_as_background(wait_for_responses(), silent=True)
-
-        def process(res):
-            if errf.done() and not errf.cancelled():
-                # Errf has an exception
-                return
-
-            elif res.cancelled():
-                errf.reset()
-                errf.set_exception(TimedOut("Message was cancelled", serial=packet.serial))
-                return
-
-            if not res.cancelled():
-                exc = res.exception()
-                if exc:
-                    errf.set_exception(exc)
-                    return
-
-            errf.set_result(True)
-
-        f.add_done_callback(process)
-
-        try:
-            await errf
-        finally:
-            f.cancel()
-
-        return response

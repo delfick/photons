@@ -14,7 +14,6 @@ from delfick_project.errors_pytest import assertRaises
 from contextlib import contextmanager
 from unittest import mock
 import binascii
-import asyncio
 import pytest
 
 describe "NetworkSession":
@@ -507,58 +506,6 @@ describe "NetworkSession":
 
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
-
-    describe "private _search_retry_iterator":
-
-        async it "returns an iterator", V:
-
-            class Now:
-                def __init__(s):
-                    s.value = 0
-
-                def skip(s, val):
-                    if val > 0:
-                        s.value += val
-
-                def __call__(s):
-                    return s.value
-
-            now = Now()
-            sleeps = []
-
-            def call_later(amount, func):
-                sleeps.append(amount)
-                now.skip(amount)
-                func()
-
-            call_later = mock.Mock(name="call_later", side_effect=call_later)
-
-            additions = [0.5, 0.7, 1, 2, 4, 2, 20]
-
-            res = []
-            with mock.patch.object(asyncio.get_event_loop(), "call_later", call_later):
-                async for r in V.session._search_retry_iterator(20, get_now=now):
-                    res.append(r)
-                    now.skip(additions.pop(0))
-
-            assert additions == []
-            assert sleeps == [
-                0.09999999999999998,
-                0.5,
-                0.7999999999999998,
-                0.40000000000000036,
-                -0.5999999999999996,
-                1.8000000000000007,
-            ]
-            assert res == [
-                (20, 0.6),
-                (19.4, 1.1999999999999997),
-                (18.2, 1.7999999999999998),
-                (16.4, 2.4000000000000004),
-                (14.0, 3.4000000000000004),
-                (10.0, 3.8000000000000007),
-                (6.199999999999999, 4.400000000000002),
-            ]
 
     describe "make_transport":
         async it "complains if the service isn't a valid Service", V:

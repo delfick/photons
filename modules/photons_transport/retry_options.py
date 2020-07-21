@@ -1,88 +1,6 @@
 from photons_app import helpers as hp
 
-import asyncio
 import time
-
-
-class RetryIterator:
-    """
-    An async generator to help with retries.
-
-    usage is like:
-
-    .. code-block:: python
-
-        import time
-
-        retries = [1, 2, 3]
-        def get_next_time():
-            if len(retries) == 1:
-                return retries[0]
-            return retries.pop(0)
-
-        end_at = time.time() + 10
-        min_wait = 0.1
-
-        async for time_left, time_till_next_retry in RetryIterator(end_at, get_next_time):
-            # Do something that will take up to time_till_next_retry seconds
-
-    The recommended way of creating one of these is via a RetryOptions object:
-
-    .. code-block:: python
-
-        async for time_left, time_till_next_retry in RetryOptions().iterator(end_after=10):
-            # Do something that will take up to time_till_next_retry seconds
-
-    The async generator will use get_next_time to determine the minimum amount of time to wait before
-    letting the body of the loop run again. So let's say time_till_next_retry is 3 seconds and the
-    body takes only 1 second, then we will wait 2 seconds before letting the body run again.
-
-    You may also provided min_wait (defaults to 0.1). We will stop iteration if the time left till
-    we should end is less than this amount. We will also use get_next_time() again if the time between
-    now and the next time is less than min_wait
-    """
-
-    def __init__(self, end_at, get_next_time, min_wait=0.1, get_now=time.time):
-        self.next = None
-        self.end_at = end_at
-        self.min_wait = min_wait
-        self.get_now = get_now
-        self.get_next_time = get_next_time
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        t = self.next
-        now = self.get_now()
-
-        diff = self.end_at - now
-        if diff <= self.min_wait:
-            raise StopAsyncIteration
-
-        if t is None:
-            self.next = now + self.get_next_time()
-            return self.end_at - now, self.next - now
-
-        wait = t - now
-        diff = self.end_at - now
-        if diff - wait < self.min_wait:
-            raise StopAsyncIteration
-
-        await self.wait(wait)
-        now = self.get_now()
-
-        diff = self.end_at - now
-        while self.next - now < self.min_wait:
-            self.next += self.get_next_time()
-
-        return diff, self.next - now
-
-    async def wait(self, timeout):
-        f = hp.create_future(name="RetryIterator.wait_resolver")
-        loop = asyncio.get_event_loop()
-        loop.call_later(timeout, f.cancel)
-        await hp.wait_for_all_futures(f)
 
 
 class RetryOptions:
@@ -117,8 +35,6 @@ class RetryOptions:
     timeouts
         A list of (step, end) tuples that is used to determine the retry backoff.
 
-        This is used by the ``next_time`` property on this object.
-
         Essentially, starting with the first step, increase by step until you
         reach end and then use the next tuple to determine backoff from there.
 
@@ -140,29 +56,22 @@ class RetryOptions:
         if timeouts is not None:
             self.timeouts = timeouts
 
-    @property
-    def next_time(self):
-        """
-        Return the next backoff time
-        """
-        if self.timeout_item is None:
-            self.timeout_item = 0
+    async def tick(self, timeout, min_wait=0.1):
+        timeouts = list(self.timeouts)
+        step, end = timeouts.pop(0)
+        ticker = hp.ATicker(every=step, max_time=timeout, min_wait=min_wait)
 
-        if self.timeout is None:
-            self.timeout = self.timeouts[self.timeout_item][0]
-            return self.timeout
+        start = time.time()
+        final_time = time.time() + timeout
 
-        step, end = self.timeouts[self.timeout_item]
-        if self.timeout >= end:
-            if self.timeout_item == len(self.timeouts) - 1:
-                return self.timeout
+        async for _, nxt in ticker:
+            now = time.time()
 
-            self.timeout_item += 1
-            step, end = self.timeouts[self.timeout_item]
+            if end and now - start > end:
+                if timeouts:
+                    step, end = timeouts.pop(0)
+                    ticker.change_after(step)
+                else:
+                    end = None
 
-        self.timeout += step
-        return self.timeout
-
-    def iterator(self, *, end_after, min_wait=0.1, get_now=time.time):
-        end_at = get_now() + end_after
-        return RetryIterator(end_at, lambda: self.next_time, min_wait=min_wait, get_now=get_now)
+            yield round(final_time - now, 3), nxt
