@@ -92,51 +92,148 @@ def a_temp_dir():
     return TempDir
 
 
+class FakeTimeImpl:
+    def __init__(self, mock_sleep=False, mock_async_sleep=False):
+        self.time = 0
+        self.patches = []
+        self.mock_sleep = mock_sleep
+        self.mock_async_sleep = mock_async_sleep
+        self.original_time = time.time
+        self.original_async_sleep = asyncio.sleep
+
+    def set(self, t):
+        self.time = t
+
+    def add(self, t):
+        self.time += t
+
+    def __enter__(self):
+        self.patches.append(mock.patch("time.time", self))
+
+        if self.mock_sleep:
+            self.patches.append(mock.patch("time.sleep", self.sleep))
+        if self.mock_async_sleep:
+            self.patches.append(mock.patch("asyncio.sleep", self.async_sleep))
+
+        for p in self.patches:
+            p.start()
+
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        for p in self.patches:
+            p.stop()
+
+    def __call__(self):
+        return round(self.time, 3)
+
+    def sleep(self, amount):
+        self.add(amount)
+
+    async def async_sleep(self, amount):
+        self.add(amount)
+        await self.original_async_sleep(0.001)
+
+
+class MockedCallLaterImpl:
+    def __init__(self, t):
+        self.t = t
+        self.loop = asyncio.get_event_loop()
+
+        self.task = None
+        self.patch = None
+
+        self.cont = self.hp.create_future()
+
+        self.funcs = []
+        self.called_times = []
+
+        self.wait = None
+        self.waiter = self.hp.ResettableFuture()
+        self.waiter.set_result(True)
+
+    @property
+    def hp(self):
+        return __import__("photons_app").helpers
+
+    def for_another(self, amount):
+        self.wait = time.time() + amount
+        self.waiter.reset()
+        return self.waiter
+
+    async def __aenter__(self):
+        self.task = self.hp.async_as_background(self._calls())
+        self.patch = mock.patch.object(self.loop, "call_later", self._call_later)
+        self.patch.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.patch:
+            self.patch.stop()
+        if self.task:
+            await self.hp.cancel_futures_and_wait(self.task)
+
+    def _start(self):
+        if not self.cont.done():
+            self.cont.set_result(True)
+
+    def _call_later(self, when, func, *args):
+        self._start()
+
+        info = {"cancelled": False}
+
+        def caller():
+            if not info["cancelled"]:
+                self.called_times.append(time.time())
+                func(*args)
+
+        class Handle:
+            def cancel(s):
+                info["cancelled"] = True
+
+        self.funcs.append((round(time.time() + when, 3), caller))
+        return Handle()
+
+    def _run(self):
+        remaining = []
+        executed = False
+        now = time.time()
+        for k, f in self.funcs:
+            if now < k:
+                remaining.append((k, f))
+            else:
+                f()
+                executed = True
+        self.funcs = remaining
+        return executed
+
+    async def _calls(self):
+        while True:
+            await self.cont
+            now = time.time()
+
+            if self.wait and now >= self.wait:
+                self.waiter.reset()
+                self.waiter.set_result(True)
+                await asyncio.sleep(0)
+
+            await asyncio.sleep(0)
+            if not self._run():
+                await asyncio.sleep(0)
+                if self.waiter.done() and self.wait:
+                    self.wait = None
+                else:
+                    self.t.add(0.1)
+
+
+@pytest.fixture(scope="session")
+def MockedCallLater():
+    return MockedCallLaterImpl
+
+
 @pytest.fixture(scope="session")
 def FakeTime():
-    class FakeTime:
-        def __init__(self, mock_sleep=False, mock_async_sleep=False):
-            self.time = 0
-            self.patches = []
-            self.mock_sleep = mock_sleep
-            self.mock_async_sleep = mock_async_sleep
-            self.original_time = time.time
-            self.original_async_sleep = asyncio.sleep
-
-        def set(self, t):
-            self.time = t
-
-        def add(self, t):
-            self.time += t
-
-        def __enter__(self):
-            self.patches.append(mock.patch("time.time", self))
-
-            if self.mock_sleep:
-                self.patches.append(mock.patch("time.sleep", self.sleep))
-            if self.mock_async_sleep:
-                self.patches.append(mock.patch("asyncio.sleep", self.async_sleep))
-
-            for p in self.patches:
-                p.start()
-
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            for p in self.patches:
-                p.stop()
-
-        def __call__(self):
-            return self.time
-
-        def sleep(self, amount):
-            self.add(amount)
-
-        async def async_sleep(self, amount):
-            self.add(amount)
-            await self.original_async_sleep(0.001)
-
-    return FakeTime
+    return FakeTimeImpl
 
 
 class FutureDominoes:

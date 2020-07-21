@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+0.3.1 - TBD
+    * The ``photons_app.helpers.ATicker`` helper now yields
+      ``(iteration, time_till_next)`` where ``iteration`` is the count of
+      iterations starting from 1, and ``time_till_next`` is the number of seconds
+      till the next scheduled iteration.
+
 0.3.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the
     internal version of this library at LIFX was created over 4 years ago.

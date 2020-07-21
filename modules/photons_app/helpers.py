@@ -57,8 +57,10 @@ class ATicker:
 
         assert timing == [0, 10, 20, 30, 40]
 
-    The value that is yielded is a number representing which iteration is being
-    executed. This will start at 1 and increment by 1 each iteration.
+    The value that is yielded is a tuple of (iteration, time_till_next) where
+    ``iteration`` is a counter of how many times we yield a value starting from
+    1 and the ``time_till_next`` is the number of seconds till the next time we
+    yield a value.
 
     You can use the shortcut :func:`tick` to create one of these, but if you
     do create this yourself, you can change the ``every`` value while you're
@@ -84,76 +86,108 @@ class ATicker:
                 # tick, but ticks after that will go back to 20 seconds apart.
                 ticker.change_after(40, set_new_every=False)
 
-    The ``ATicker`` also takes in an optional ``final_future``, which when
-    cancelled will stop the ticker.
+    There are three other options:
 
-    This will iterate forever unless ``max_iterations`` or ``max_time`` are
-    specified. Specifying ``max_iterations`` will mean the Ticker stops after
-    that many iterations and ``max_time`` will stop the iterating once it's been
-    that many seconds since it started.
+    final_future
+        If this future is completed then the iteration will stop
+
+    max_iterations
+        Iterations after this number will cause the loop to finish. By default
+        there is no limit
+
+    max_time
+        After this many iterations the loop will stop. By default there is no
+        limit
     """
 
-    def __init__(self, every, *, final_future=None, max_iterations=None, max_time=None):
+    def __init__(
+        self, every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1
+    ):
         self.every = every
-        self.tick_fut = ResettableFuture()
         self.max_time = max_time
-        self.last_tick = None
-        self.final_future = final_future or create_future(name="Ticker.final_future")
+        self.min_wait = min_wait or 0
         self.max_iterations = max_iterations
 
-        self.start = time.time()
-        self.iteration = 0
-        self.diff = every
+        self.handle = None
+        self.expected = None
+
+        self.waiter = ResettableFuture()
+        self.final_future = final_future or create_future(name="Ticker.final_future")
 
     def __aiter__(self):
-        return self
+        return self.tick()
 
-    async def __anext__(self):
-        self.iteration += 1
-
-        if self.final_future.done():
-            raise StopAsyncIteration
-
-        if self.max_iterations is not None and self.iteration > self.max_iterations:
-            raise StopAsyncIteration
-
-        if self.max_time is not None and time.time() - self.start >= self.max_time:
-            raise StopAsyncIteration
-
-        if self.last_tick is None:
-            self.change_after(self.every, set_new_every=False)
-
-        await wait_for_first_future(self.tick_fut, self.final_future)
-        self.tick_fut.reset()
-
-        if self.final_future.done():
-            raise StopAsyncIteration
-
-        self.change_after(self.every, set_new_every=False)
-        return self.iteration
+    async def tick(self):
+        try:
+            async for info in self._tick():
+                yield info
+        finally:
+            self._change_handle()
 
     def change_after(self, every, *, set_new_every=True):
-        now = time.time()
-
-        def reset(current=None):
-            if current is None or self.last_tick[1] == current[1]:
-                self.tick_fut.reset()
-                self.last_tick = (time.time(), secrets.token_urlsafe(16))
-                self.tick_fut.set_result(True)
-
-        if self.last_tick is None:
-            reset()
-            return
-
-        if set_new_every and every != self.every:
-            self.last_tick = (self.last_tick[0], secrets.token_urlsafe(16))
+        old_every = self.every
+        if set_new_every:
             self.every = every
 
-        diff = self.diff = every - (now - self.last_tick[0])
-        asyncio.get_event_loop().call_later(diff, reset, self.last_tick)
+        if self.expected is None:
+            return
+
+        last = self.expected - old_every
+
+        expected = last + every
+        if set_new_every:
+            self.expected = expected
+
+        diff = round(expected - time.time(), 3)
+        self._change_handle()
+
+        if diff <= 0:
+            self.waiter.reset()
+            self.waiter.set_result(True)
+        else:
+            self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
+
+    def _change_handle(self, handle=None):
+        if self.handle:
+            self.handle.cancel()
+        self.handle = handle
+
+    def _waited(self):
+        self.waiter.reset()
+        self.waiter.set_result(True)
+
+    async def _tick(self):
+        start = time.time()
+        iteration = 0
+        self.expected = start
+
+        self._waited()
+
+        while True:
+            await wait_for_first_future(self.final_future, self.waiter)
+
+            self.waiter.reset()
+            if self.final_future.done():
+                return
+
+            if self.max_iterations is not None and iteration >= self.max_iterations:
+                return
+
+            now = time.time()
+            if self.max_time is not None and now - start >= self.max_time:
+                return
+
+            while self.expected - now <= self.min_wait:
+                self.expected += self.every
+
+            diff = round(self.expected - now, 3)
+            self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
+
+            iteration += 1
+            yield iteration, diff
 
 
-async def tick(every, *, final_future=None, max_iterations=None, max_time=None):
+async def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wait=None):
     """
     .. code-block:: python
 
@@ -171,7 +205,12 @@ async def tick(every, *, final_future=None, max_iterations=None, max_time=None):
     If you want control of the ticker during the iteration, then use
     :class:`ATicker` directly.
     """
-    kwargs = {"final_future": final_future, "max_iterations": max_iterations, "max_time": max_time}
+    kwargs = {
+        "final_future": final_future,
+        "max_iterations": max_iterations,
+        "max_time": max_time,
+        "min_wait": min_wait,
+    }
 
     async for i in ATicker(every, **kwargs):
         yield i
