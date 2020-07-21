@@ -20,5 +20,5 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         --ignore-directory generate_photons_messages/.generate_photons_messages \
         --ignore-directory apps/tile_arranger/static/node_modules \
         --ignore-directory apps/tile_arranger/static/dist \
-        --ignore-directory apps/tile_arranger/.lifx 
+        --ignore-directory apps/interactor/docker/.harpoon
 )
