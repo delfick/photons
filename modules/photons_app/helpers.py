@@ -117,12 +117,13 @@ class ATicker:
     def __aiter__(self):
         return self.tick()
 
+    def stop(self):
+        self.final_future.cancel()
+
     async def tick(self):
         final_handle = None
         if self.max_time:
-            final_handle = asyncio.get_event_loop().call_later(
-                self.max_time, self.final_future.cancel
-            )
+            final_handle = asyncio.get_event_loop().call_later(self.max_time, self.stop)
 
         try:
             async for info in self._tick():

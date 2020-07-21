@@ -251,8 +251,6 @@ describe "DeviceFinderDaemon":
                         await futs[4]
                         t.cancel()
 
-                await futs
-
                 for eril in (d1eril, d2eril):
                     assert len(eril.mock_calls) == 4
 
@@ -291,7 +289,7 @@ describe "DeviceFinderDaemon":
                     while True:
                         await futs[i]
                         i += 1
-                        yield
+                        yield 1, 1
 
                 tick = pytest.helpers.MagicAsyncMock(name="tick", side_effect=tick)
 
@@ -310,8 +308,6 @@ describe "DeviceFinderDaemon":
                         t = ts.add(run())
                         await futs[4]
                         t.cancel()
-
-                await futs
 
                 assert len(d1eril.mock_calls) == 4
                 assert len(d2eril.mock_calls) == 3

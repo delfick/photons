@@ -874,28 +874,28 @@ describe "Using ResultStreamer":
         await add_gen2()
         streamer.no_more_work()
 
-        def WITHDONE(make, *, incrementupto=True):
+        def WITHDONE(make):
             def access():
                 r = make()
                 expected["done"].append(lambda: r)
-                return next(counter), r, incrementupto
+                return next(counter), r
 
             return access
 
-        def ERROR(make, *, incrementupto=True):
+        def ERROR(make):
             def access():
                 r = make()
                 expected["done"].append(lambda: r)
                 expected["errors"].append(r)
-                return next(counter), r, incrementupto
+                return next(counter), r
 
             return access
 
-        def VALUE(make, *, incrementupto=True, done=None):
+        def VALUE(make, *, done=None):
             def access():
                 if done:
                     expected["done"].append(done)
-                return next(counter), make(), incrementupto
+                return next(counter), make()
 
             return access
 
@@ -937,7 +937,6 @@ describe "Using ResultStreamer":
         yd.append(
             VALUE(
                 lambda: XS.g2.result("r_g2_last"),
-                incrementupto=False,
                 done=lambda: R(hp.ResultStreamer.GeneratorComplete, XS.g2, True),
             )
         )
@@ -974,7 +973,6 @@ describe "Using ResultStreamer":
         expected = await self.fill_streamer(streamer, futs, CTX, make_on_done)
 
         i = -1
-        upto = 0
         async with streamer:
             futs.start()
 
@@ -985,7 +983,7 @@ describe "Using ResultStreamer":
                 print(
                     f"STREAMED: value:`{type(result.value)}`{result.value}`\tcontext:`{result.context}`\tkey:`{key}`"
                 )
-                expectedi, r, incrementupto = expected["yielded"][i]()
+                expectedi, r = expected["yielded"][i]()
 
                 if not result.successful and r.successful:
                     print("EXPECTED SUCCESS, got failure")
@@ -1000,12 +998,8 @@ describe "Using ResultStreamer":
                         r.value = repr(r.value)
                         result.value = repr(result.value)
 
-                if incrementupto:
-                    upto += 1
-
                 assert result == r
                 assert i == expectedi
-                assert futs.upto == upto
 
         # And make sure all the dominoes fell over
         await futs

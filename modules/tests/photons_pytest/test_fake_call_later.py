@@ -4,6 +4,7 @@ from photons_app import helpers as hp
 
 import asyncio
 import time
+import pytest
 
 
 def call_later(*args):
@@ -61,22 +62,26 @@ describe "MockedCalledLater":
                 waiter.reset()
                 assert time.time() == 0.3
 
-                await m.for_another(1)
+                await m.add(1)
+                assert time.time() == 1.3
                 assert not waiter.done()
 
                 nxt(2, waiter.set_result, True)
-                await m.for_another(1.5)
+                await m.add(1.5)
+                assert time.time() == 2.8
 
                 nxt(1.5, waiter.set_result, True)
-                await m.for_another(0.6)
+                await m.add(0.6)
+                assert time.time() == 3.4
                 assert not waiter.done()
 
                 assert await waiter is True
+                assert time.time() == 2.8 + 1.5
                 assert time.time() == 0.3 + 1 + 1.5 + 1.5
 
                 waiter.reset()
                 nxt(0.3, waiter.set_result, True)
-                await m.for_another(0.4)
+                await m.add(0.4)
                 assert waiter.done()
                 assert await waiter is True
 

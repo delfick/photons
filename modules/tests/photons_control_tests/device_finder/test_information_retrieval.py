@@ -10,7 +10,6 @@ from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 from unittest import mock
-import asyncio
 import pytest
 
 describe "Device":
@@ -75,6 +74,16 @@ describe "Device":
                     else:
                         assert not f.done()
 
+            def tick(s, futs, oldtick):
+                async def tick(*args, **kwargs):
+                    async for iteration, nxt in oldtick(*args, **kwargs):
+                        await futs[iteration]
+                        if iteration == futs.expected:
+                            kwargs["final_future"].cancel()
+                        yield iteration, nxt
+
+                return tick
+
         return V()
 
     async it "can match against a fltr", V:
@@ -115,22 +124,11 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
 
-    @pytest.mark.async_timeout(2)
-    async it "can start an information loop", V:
+    async it "can start an information loop", V, fake_time, MockedCallLater:
+        fake_time.set(1)
 
-        futs = pytest.helpers.FutureDominoes(expected=110)
+        futs = pytest.helpers.FutureDominoes(expected=104)
         futs.start()
-
-        async def tick(every):
-            i = -1
-            while True:
-                i += 1
-                await futs[i + 1]
-                if i == futs.expected - 1:
-                    V.device.final_future.cancel()
-                yield
-                V.t.set(i)
-                await asyncio.sleep(0)
 
         msgs = [e.value.msg for e in list(InfoPoints)]
         assert msgs == [
@@ -145,8 +143,6 @@ describe "Device":
 
         class Futs:
             pass
-
-        all_futs = []
 
         class Waiter:
             def __init__(s, name, kls):
@@ -177,18 +173,21 @@ describe "Device":
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
         ]:
-            waiter = Waiter(name, kls)
-            setattr(Futs, name, waiter)
-            all_futs.append(waiter)
+            setattr(Futs, name, Waiter(name, kls))
 
         async def checker():
             info = {"serial": V.fake_device.serial}
 
             await futs[1]
             assert V.device.info == info
+            await hp.wait_for_all_futures(*[V.device.point_futures[kls] for kls in InfoPoints])
 
-            await hp.wait_for_all_futures(*all_futs)
-            assert V.t.time == len(all_futs) - 1
+            found = []
+            for kls in list(InfoPoints):
+                found.append(V.device.point_futures[kls].result())
+            assert found == [1, 2, 3, 4, 5]
+
+            assert V.t.time == 5
 
             V.received(*msgs)
 
@@ -213,6 +212,8 @@ describe "Device":
                     ],
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",
+                    "location_id": "bb000000000000000000000000000000",
+                    "location_name": "l1",
                 }
             )
             assert V.device.info == info
@@ -221,36 +222,36 @@ describe "Device":
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,
             )
-            if V.t.time == 16:
-                V.t.set(15)
-            assert V.t.time == len(all_futs) + 10
+            assert V.t.time == 11
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
-                *([LightMessages.GetColor()] * 3),
+                *([LightMessages.GetColor()] * 5),
                 DeviceMessages.GetGroup(),
                 DeviceMessages.GetLocation(),
                 keep_duplicates=True,
             )
-            # First location was at t=4
-            # We then wait until at least 64
+            # First location was at t=5
+            # We then wait another 60
             # 60 is at 12 rounds, and next location after that is after 5
-            assert V.t.time >= 69
+            assert V.t.time == 65
 
             assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
             await hp.wait_for_all_futures(Futs.color)
             V.received(
                 LightMessages.GetColor(), keep_duplicates=True,
             )
-            assert V.t.time <= 76
+            # 61 + 10 = 71
+            assert V.t.time == 71
 
             await hp.wait_for_all_futures(Futs.firmware)
-            # First firmware was at t=2
-            # So next refresh after 102
-            # So needs a full cycle after that
-            assert V.t.time >= 107
+            # First firmware was at t=3
+            # So next refresh after 103 which is 2 after 101 which is where LIGHT_STATE last is
+            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 101
+            assert V.t.time == 103
 
             V.received(
+                LightMessages.GetColor(),
                 LightMessages.GetColor(),
                 LightMessages.GetColor(),
                 DeviceMessages.GetHostFirmware(),
@@ -260,14 +261,16 @@ describe "Device":
         checker_task = None
         time_between_queries = {"FIRMWARE": 100}
 
-        with mock.patch.object(hp, "tick", tick):
-            async with hp.TaskHolder(V.runner.final_future) as ts:
-                checker_task = ts.add(checker())
-                ts.add_task(
-                    V.device.ensure_refresh_information_loop(
-                        V.runner.sender, time_between_queries, V.finder.collections
+        async with MockedCallLater(fake_time):
+            oldtick = hp.tick
+            with mock.patch.object(hp, "tick", V.tick(futs, oldtick)):
+                async with hp.TaskHolder(V.runner.final_future) as ts:
+                    checker_task = ts.add(checker())
+                    ts.add_task(
+                        V.device.ensure_refresh_information_loop(
+                            V.runner.sender, time_between_queries, V.finder.collections
+                        )
                     )
-                )
 
         await checker_task
         await futs

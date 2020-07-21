@@ -12,6 +12,7 @@ import sys
 import re
 import os
 
+
 try:
     import pytest
 except:
@@ -102,10 +103,10 @@ class FakeTimeImpl:
         self.original_async_sleep = asyncio.sleep
 
     def set(self, t):
-        self.time = t
+        self.time = round(t, 3)
 
     def add(self, t):
-        self.time += t
+        self.time = round(self.time + t, 3)
 
     def __enter__(self):
         self.patches.append(mock.patch("time.time", self))
@@ -141,44 +142,35 @@ class MockedCallLaterImpl:
         self.loop = asyncio.get_event_loop()
 
         self.task = None
-        self.patch = None
-
-        self.cont = self.hp.create_future()
+        self.call_later_patch = None
+        self.create_future_patch = None
 
         self.funcs = []
         self.called_times = []
+        self.have_call_later = self.hp.ResettableFuture()
 
-        self.wait = None
-        self.waiter = self.hp.ResettableFuture()
-        self.waiter.set_result(True)
+    async def __aenter__(self):
+        self.task = self.hp.async_as_background(self._calls())
+        self.call_later_patch = mock.patch.object(self.loop, "call_later", self._call_later)
+        self.call_later_patch.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.call_later_patch:
+            self.call_later_patch.stop()
+        if self.task:
+            await self.hp.cancel_futures_and_wait(self.task)
+
+    async def add(self, amount):
+        await self._run(iterations=round(amount / 0.1))
 
     @property
     def hp(self):
         return __import__("photons_app").helpers
 
-    def for_another(self, amount):
-        self.wait = time.time() + amount
-        self.waiter.reset()
-        return self.waiter
-
-    async def __aenter__(self):
-        self.task = self.hp.async_as_background(self._calls())
-        self.patch = mock.patch.object(self.loop, "call_later", self._call_later)
-        self.patch.start()
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        if self.patch:
-            self.patch.stop()
-        if self.task:
-            await self.hp.cancel_futures_and_wait(self.task)
-
-    def _start(self):
-        if not self.cont.done():
-            self.cont.set_result(True)
-
     def _call_later(self, when, func, *args):
-        self._start()
+        self.have_call_later.reset()
+        self.have_call_later.set_result(True)
 
         info = {"cancelled": False}
 
@@ -194,36 +186,46 @@ class MockedCallLaterImpl:
         self.funcs.append((round(time.time() + when, 3), caller))
         return Handle()
 
-    def _run(self):
-        remaining = []
-        executed = False
-        now = time.time()
-        for k, f in self.funcs:
-            if now < k:
-                remaining.append((k, f))
-            else:
-                f()
-                executed = True
-        self.funcs = remaining
-        return executed
+    async def _allow_real_loop(self):
+        while True:
+            ready = asyncio.get_event_loop()._ready
+            ready_len = len(ready)
+            await asyncio.sleep(0)
+            if ready_len == 0:
+                return
 
     async def _calls(self):
+        await self.have_call_later
+
         while True:
-            await self.cont
+            await self._allow_real_loop()
+            await self.have_call_later
+            await self._run()
+            if not self.funcs:
+                self.have_call_later.reset()
+
+    async def _run(self, iterations=0):
+        for iteration in range(iterations + 1):
             now = time.time()
+            executed = False
+            remaining = []
 
-            if self.wait and now >= self.wait:
-                self.waiter.reset()
-                self.waiter.set_result(True)
-                await asyncio.sleep(0)
-
-            await asyncio.sleep(0)
-            if not self._run():
-                await asyncio.sleep(0)
-                if self.waiter.done() and self.wait:
-                    self.wait = None
+            for k, f in self.funcs:
+                if now < k:
+                    remaining.append((k, f))
                 else:
-                    self.t.add(0.1)
+                    executed = True
+                    f()
+
+            self.funcs = remaining
+
+            if iterations > 1 and iteration > 0:
+                self.t.add(0.1)
+
+        if not executed and iterations == 0:
+            self.t.add(0.1)
+
+        return executed
 
 
 @pytest.fixture(scope="session")
@@ -312,16 +314,15 @@ class FutureDominoes:
 
     class F:
         def __init__(self, num, done_callback):
+            self.hp = __import__("photons_app.helpers").helpers
+
             self.num = num
-            self.fut = asyncio.get_event_loop().create_future()
-            self.ready_fut = asyncio.get_event_loop().create_future()
+            self.fut = self.hp.create_future()
+            self.ready_fut = self.hp.create_future()
             self.done_callback = done_callback
 
-            hp = __import__("photons_app.helpers").helpers
-
-            self.combined_fut = asyncio.get_event_loop().create_future()
-            self.fut.add_done_callback(hp.transfer_result(self.combined_fut))
-            self.ready_fut.add_done_callback(hp.transfer_result(self.combined_fut))
+        def __repr__(self):
+            return f"<Domino {self.num} - ready: {self.ready_fut} - fut: {self.fut}>"
 
         def done(self):
             return self.fut.done()
@@ -335,11 +336,17 @@ class FutureDominoes:
                 self.fut.set_result(True)
 
         def __await__(self):
+            yield from self.wait().__await__()
+
+        async def wait(self):
+            exc = None
             try:
-                yield from self.combined_fut
-            except asyncio.CancelledError:
-                pass
-            self.done_callback()
+                await self.hp.wait_for_first_future(self.ready_fut, self.fut)
+            except:
+                exc = sys.exc_info()[1]
+                raise
+            finally:
+                self.done_callback(exc)
 
     def make(self, num):
         if num > self.expected:
@@ -353,7 +360,11 @@ class FutureDominoes:
 
         print(f"Making domino {num}")
 
-        def fire_next():
+        def fire_next(exc=None):
+            if exc:
+                self.finished.set_exception(exc)
+                return
+
             if self.before_next_domino:
                 self.before_next_domino(num)
 
@@ -362,12 +373,8 @@ class FutureDominoes:
                 if not self.finished.done():
                     self.finished.set_result(True)
             else:
-
-                def resolve_next():
-                    self[num + 1].ready_to_resolve()
-                    self.upto = num + 1
-
-                asyncio.get_event_loop().call_later(0.005, resolve_next)
+                self[num + 1].ready_to_resolve()
+                self.upto = num + 1
 
         fut = self.futs[num] = self.F(num, fire_next)
 
@@ -480,7 +487,8 @@ def pytest_configure(config):
 
 class MemoryDevicesRunner:
     def __init__(self, devices):
-        self.final_future = asyncio.get_event_loop().create_future()
+        self.final_future = __import__("photons_app").helpers.create_future()
+
         options = {
             "devices": devices,
             "final_future": self.final_future,

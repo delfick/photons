@@ -76,13 +76,13 @@ describe "tick":
                 async for i, _ in hp.tick(3):
                     called.append((i, time.time()))
 
-                    await m.for_another(2)
+                    await m.add(2)
 
                     if len(called) == 3:
-                        await m.for_another(3)
+                        await m.add(3)
 
                     if len(called) == 5:
-                        await m.for_another(7)
+                        await m.add(7)
 
                     if len(called) == 7:
                         break
@@ -121,10 +121,10 @@ describe "ATicker":
                         ticker.change_after(5)
 
                     elif len(called) == 5:
-                        await m.for_another(8)
+                        await m.add(8)
 
                     elif len(called) == 7:
-                        await m.for_another(1)
+                        await m.add(1)
 
                     elif len(called) == 10:
                         break
@@ -171,7 +171,7 @@ describe "ATicker":
                     called.append((i, nxt, time.time()))
 
                     if len(called) == 2:
-                        await m.for_another(9)
+                        await m.add(9)
 
                     elif len(called) == 4:
                         break

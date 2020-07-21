@@ -82,13 +82,13 @@ describe "RetryOptions":
                         count += 1
                         found.append((time.time(), info))
                         if count == 2:
-                            await m.for_another(1)
+                            await m.add(1)
                         elif count == 5:
-                            await m.for_another(2)
+                            await m.add(2)
                         elif count == 8:
-                            await m.for_another(0.7)
+                            await m.add(0.7)
                         elif count == 9:
-                            await m.for_another(3)
+                            await m.add(3)
 
             assert found == [
                 (0, (11, 0.6)),

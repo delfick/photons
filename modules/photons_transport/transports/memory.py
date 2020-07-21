@@ -1,7 +1,5 @@
 from photons_transport.transports.base import Transport
 
-from photons_app import helpers as hp
-
 import logging
 
 log = logging.getLogger("photons_transport.transports.memory")
@@ -29,4 +27,4 @@ class Memory(Transport):
         return self.writer
 
     async def write(self, transport, bts, original_message):
-        hp.async_as_background(self.writer(self.session.received_data, bts))
+        await self.writer(self.session.received_data, bts)

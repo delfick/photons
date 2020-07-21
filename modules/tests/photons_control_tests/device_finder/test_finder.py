@@ -420,12 +420,12 @@ describe "Finder":
                     expected_called = [
                         "s4finish_start",
                         "s5finish_start",
-                        "s5finish_done",
                         "s6finish_start",
                         "s1matches_start",
                         "s2matches_start",
                         "s3matches_start",
                         "s7matches_start",
+                        "s5finish_done",
                         "s1matches_done",
                         "s4finish_done",
                         "s7matches_done",

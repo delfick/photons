@@ -636,7 +636,7 @@ class Device(dictobj.Spec):
                 refreshes[e] = time_between_queries.get(e.name, e.value.refresh)
 
         async def gen(reference, sender, **kwargs):
-            async for _ in hp.tick(1):
+            async for info in hp.tick(1, final_future=self.final_future):
                 if self.final_future.done():
                     return
 
