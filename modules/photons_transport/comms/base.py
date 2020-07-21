@@ -363,7 +363,9 @@ class Communication:
 
         async with hp.ResultStreamer(tick_fut) as streamer:
             await streamer.add_generator(
-                retry_options.tick(timeout), context="tick", on_done=lambda res: tick_fut.cancel()
+                retry_options.tick(tick_fut, timeout),
+                context="tick",
+                on_done=lambda res: tick_fut.cancel(),
             )
             streamer.no_more_work()
 

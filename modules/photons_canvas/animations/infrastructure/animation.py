@@ -40,7 +40,9 @@ class Animation:
 
     @hp.memoized_property
     def ticker(self):
-        return hp.ATicker(self.every, max_time=self.num_seconds, min_wait=0.01)
+        return hp.ATicker(
+            self.every, max_time=self.num_seconds, min_wait=0.01, final_future=self.final_future
+        )
 
     async def stream(self, animation_state):
         stop_fut = hp.ChildOfFuture(self.final_future)

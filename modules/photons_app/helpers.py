@@ -112,16 +112,24 @@ class ATicker:
         self.expected = None
 
         self.waiter = ResettableFuture()
-        self.final_future = final_future or create_future(name="Ticker.final_future")
+        self.final_future = ChildOfFuture(final_future or create_future(name="Ticker.final_future"))
 
     def __aiter__(self):
         return self.tick()
 
     async def tick(self):
+        final_handle = None
+        if self.max_time:
+            final_handle = asyncio.get_event_loop().call_later(
+                self.max_time, self.final_future.cancel
+            )
+
         try:
             async for info in self._tick():
                 yield info
         finally:
+            if final_handle:
+                final_handle.cancel()
             self._change_handle()
 
     def change_after(self, every, *, set_new_every=True):

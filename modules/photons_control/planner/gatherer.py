@@ -425,7 +425,9 @@ class Gatherer:
                 hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
 
             async with hp.ResultStreamer(
-                self.sender.stop_fut, error_catcher=error_catcher
+                self.sender.stop_fut,
+                error_catcher=error_catcher,
+                exceptions_only_to_error_catcher=True,
             ) as streamer:
                 for serial in serials:
                     await streamer.add_generator(self._follow(plans, serial, **kwargs))

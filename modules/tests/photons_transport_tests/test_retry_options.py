@@ -2,8 +2,20 @@
 
 from photons_transport import RetryOptions
 
+from photons_app import helpers as hp
+
 from unittest import mock
+import pytest
 import time
+
+
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
 describe "RetryOptions":
@@ -33,13 +45,13 @@ describe "RetryOptions":
         assert options.timeout_item is None
 
     describe "tick":
-        async it "yields till the timeout", FakeTime, MockedCallLater:
+        async it "yields till the timeout", final_future, FakeTime, MockedCallLater:
             options = RetryOptions(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []
             with FakeTime() as t:
                 async with MockedCallLater(t):
-                    async for info in options.tick(10):
+                    async for info in options.tick(final_future, 10):
                         found.append((time.time(), info))
 
             assert found == [
@@ -59,14 +71,14 @@ describe "RetryOptions":
                 (9.2, (0.8, 1.2)),
             ]
 
-        async it "takes into account how long the block takes", FakeTime, MockedCallLater:
+        async it "takes into account how long the block takes", final_future, FakeTime, MockedCallLater:
             options = RetryOptions(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []
             with FakeTime() as t:
                 async with MockedCallLater(t) as m:
                     count = -1
-                    async for info in options.tick(11):
+                    async for info in options.tick(final_future, 11):
                         count += 1
                         found.append((time.time(), info))
                         if count == 2:

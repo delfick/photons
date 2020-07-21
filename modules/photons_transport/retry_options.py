@@ -1,5 +1,6 @@
 from photons_app import helpers as hp
 
+import asyncio
 import time
 
 
@@ -56,10 +57,12 @@ class RetryOptions:
         if timeouts is not None:
             self.timeouts = timeouts
 
-    async def tick(self, timeout, min_wait=0.1):
+    async def tick(self, final_future, timeout, min_wait=0.1):
         timeouts = list(self.timeouts)
         step, end = timeouts.pop(0)
-        ticker = hp.ATicker(every=step, max_time=timeout, min_wait=min_wait)
+        ticker = hp.ATicker(
+            every=step, final_future=final_future, max_time=timeout, min_wait=min_wait
+        )
 
         start = time.time()
         final_time = time.time() + timeout
