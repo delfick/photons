@@ -672,8 +672,8 @@ describe "ChildOfFuture":
             assert V.cof.done_callbacks == []
 
         async it "removes callback from the futures if no more callbacks", V:
-            assertFutCallbacks(V.orig_fut, hp.reporter)
-            assertFutCallbacks(V.cof.this_fut, hp.reporter)
+            assertFutCallbacks(V.orig_fut, hp.silent_reporter)
+            assertFutCallbacks(V.cof.this_fut, hp.silent_reporter)
 
             cb = mock.Mock(name="cb")
             cb2 = mock.Mock(name="c2")
@@ -697,8 +697,8 @@ describe "ChildOfFuture":
 
             V.cof.remove_done_callback(cb2)
             assert V.cof.done_callbacks == []
-            assertFutCallbacks(V.orig_fut, hp.reporter)
-            assertFutCallbacks(V.cof.this_fut, hp.reporter)
+            assertFutCallbacks(V.orig_fut, hp.silent_reporter)
+            assertFutCallbacks(V.cof.this_fut, hp.silent_reporter)
 
     describe "repr":
         async it "gives repr for both futures":
