@@ -27,6 +27,28 @@ def choose_source(pkt, source):
         return source
 
 
+class NoLimit:
+    """Used when we don't have a limit semaphore to impose no limit on concurrent access"""
+
+    async def __aenter__(self):
+        pass
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
+    async def acquire(self):
+        pass
+
+    def release(self):
+        pass
+
+    def locked(self):
+        return False
+
+
+no_limit = NoLimit()
+
+
 class Item(object):
     def __init__(self, parts):
         self.parts = parts
@@ -261,12 +283,12 @@ class Item(object):
                         hp.add_error(error_catcher, exc)
 
     async def do_send(self, sender, original, packet, kwargs):
-        return await sender.send_single(
-            original,
-            packet,
-            timeout=kwargs.get("message_timeout", 10),
-            limit=kwargs.get("limit"),
-            no_retry=kwargs.get("no_retry", False),
-            broadcast=kwargs.get("broadcast"),
-            connect_timeout=kwargs.get("connect_timeout", 10),
-        )
+        async with (kwargs.get("limit") or no_limit):
+            return await sender.send_single(
+                original,
+                packet,
+                timeout=kwargs.get("message_timeout", 10),
+                no_retry=kwargs.get("no_retry", False),
+                broadcast=kwargs.get("broadcast"),
+                connect_timeout=kwargs.get("connect_timeout", 10),
+            )

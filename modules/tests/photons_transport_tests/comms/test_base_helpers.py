@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.comms.base import timeout_task, NoLimit
+from photons_transport.comms.base import timeout_task
 
 from photons_app.errors import TimedOut
 from photons_app import helpers as hp
@@ -160,32 +160,3 @@ describe "timeout_task":
 
         assert task.cancelled()
         assert errf.cancelled()
-
-describe "NoLimit":
-
-    async it "behaves like a normal semaphore context manager":
-        called = []
-
-        lock = NoLimit()
-
-        assert not lock.locked()
-        async with lock:
-            assert not lock.locked()
-            called.append("no limit")
-        assert not lock.locked()
-
-        assert called == ["no limit"]
-
-    async it "behaves like a normal semaphore not context manager":
-        called = []
-
-        lock = NoLimit()
-        assert not lock.locked()
-
-        await lock.acquire()
-        assert not lock.locked()
-        called.append("no limit")
-        lock.release()
-        assert not lock.locked()
-
-        assert called == ["no limit"]

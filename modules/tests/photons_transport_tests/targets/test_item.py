@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.targets.item import Item
+from photons_transport.targets.item import Item, NoLimit
 from photons_transport.comms.base import Found
 
 from photons_app.errors import (
@@ -35,6 +35,35 @@ def final_future():
 def item():
     return Item([DeviceMessages.GetPower(), DeviceMessages.GetLabel()])
 
+
+describe "NoLimit":
+
+    async it "behaves like a normal semaphore context manager":
+        called = []
+
+        lock = NoLimit()
+
+        assert not lock.locked()
+        async with lock:
+            assert not lock.locked()
+            called.append("no limit")
+        assert not lock.locked()
+
+        assert called == ["no limit"]
+
+    async it "behaves like a normal semaphore not context manager":
+        called = []
+
+        lock = NoLimit()
+        assert not lock.locked()
+
+        await lock.acquire()
+        assert not lock.locked()
+        called.append("no limit")
+        lock.release()
+        assert not lock.locked()
+
+        assert called == ["no limit"]
 
 describe "Item":
     async it "takes in parts":
@@ -407,40 +436,16 @@ describe "Item":
 
                 assert V.sender.send_single.mock_calls == [
                     mock.call(
-                        V.o1,
-                        V.p1,
-                        timeout=10,
-                        limit=None,
-                        no_retry=False,
-                        broadcast=None,
-                        connect_timeout=10,
+                        V.o1, V.p1, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
                     ),
                     mock.call(
-                        V.o2,
-                        V.p2,
-                        timeout=10,
-                        limit=None,
-                        no_retry=False,
-                        broadcast=None,
-                        connect_timeout=10,
+                        V.o2, V.p2, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
                     ),
                     mock.call(
-                        V.o3,
-                        V.p3,
-                        timeout=10,
-                        limit=None,
-                        no_retry=False,
-                        broadcast=None,
-                        connect_timeout=10,
+                        V.o3, V.p3, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
                     ),
                     mock.call(
-                        V.o4,
-                        V.p4,
-                        timeout=10,
-                        limit=None,
-                        no_retry=False,
-                        broadcast=None,
-                        connect_timeout=10,
+                        V.o4, V.p4, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
                     ),
                 ]
 
@@ -462,7 +467,6 @@ describe "Item":
                 V.sender.send_single.side_effect = send_single
 
                 mt = mock.Mock(name="message_timeout")
-                limit = mock.Mock(name="limit")
                 nr = mock.Mock(name="no_retry")
                 broadcast = mock.Mock(name="broadcast")
                 ct = mock.Mock(nme="connect_timeout")
@@ -470,7 +474,6 @@ describe "Item":
                 kwargs = {
                     "error_catcher": V.error_catcher,
                     "message_timeout": mt,
-                    "limit": limit,
                     "no_retry": nr,
                     "broadcast": broadcast,
                     "connect_timeout": ct,
@@ -488,7 +491,6 @@ describe "Item":
                         V.o1,
                         V.p1,
                         timeout=mt,
-                        limit=limit,
                         no_retry=nr,
                         broadcast=broadcast,
                         connect_timeout=ct,
@@ -497,7 +499,6 @@ describe "Item":
                         V.o2,
                         V.p2,
                         timeout=mt,
-                        limit=limit,
                         no_retry=nr,
                         broadcast=broadcast,
                         connect_timeout=ct,
@@ -506,7 +507,6 @@ describe "Item":
                         V.o3,
                         V.p3,
                         timeout=mt,
-                        limit=limit,
                         no_retry=nr,
                         broadcast=broadcast,
                         connect_timeout=ct,
@@ -515,7 +515,6 @@ describe "Item":
                         V.o4,
                         V.p4,
                         timeout=mt,
-                        limit=limit,
                         no_retry=nr,
                         broadcast=broadcast,
                         connect_timeout=ct,

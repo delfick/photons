@@ -122,25 +122,6 @@ def timeout_task(task, errf, serial):
         task.cancel()
 
 
-class NoLimit:
-    """Used when we don't have a limit semaphore to impose no limit on concurrent access"""
-
-    async def __aenter__(self):
-        pass
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
-    async def acquire(self):
-        pass
-
-    def release(self):
-        pass
-
-    def locked(self):
-        return False
-
-
 class Sender:
     def __init__(self, session, msg, reference, **kwargs):
         self.msg = msg
@@ -333,7 +314,6 @@ class Communication:
         packet,
         *,
         timeout,
-        limit=None,
         no_retry=False,
         transport=None,
         broadcast=False,
