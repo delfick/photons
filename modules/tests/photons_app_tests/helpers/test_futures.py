@@ -672,8 +672,8 @@ describe "ChildOfFuture":
             assert V.cof.done_callbacks == []
 
         async it "removes callback from the futures if no more callbacks", V:
-            assertFutCallbacks(V.orig_fut)
-            assertFutCallbacks(V.cof.this_fut)
+            assertFutCallbacks(V.orig_fut, hp.reporter)
+            assertFutCallbacks(V.cof.this_fut, hp.reporter)
 
             cb = mock.Mock(name="cb")
             cb2 = mock.Mock(name="c2")
@@ -697,8 +697,8 @@ describe "ChildOfFuture":
 
             V.cof.remove_done_callback(cb2)
             assert V.cof.done_callbacks == []
-            assertFutCallbacks(V.orig_fut)
-            assertFutCallbacks(V.cof.this_fut)
+            assertFutCallbacks(V.orig_fut, hp.reporter)
+            assertFutCallbacks(V.cof.this_fut, hp.reporter)
 
     describe "repr":
         async it "gives repr for both futures":
@@ -1232,7 +1232,8 @@ describe "waiting for first future":
 
         fut2.set_result(True)
         await hp.wait_for_first_future(fut1, fut2, fut3)
-        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+        assert not fut2._callbacks
+        assert all(len(f._callbacks) == 1 for f in (fut1, fut3))
 
     async it "returns on the first future to have a result":
         fut1 = hp.create_future()
@@ -1249,7 +1250,8 @@ describe "waiting for first future":
         assert w.done()
 
         await w
-        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+        assert not fut2._callbacks
+        assert all(len(f._callbacks) == 1 for f in (fut1, fut3))
 
     async it "returns on the first future to have an exception":
         fut1 = hp.create_future()
@@ -1267,7 +1269,8 @@ describe "waiting for first future":
         assert w.done()
 
         await w
-        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+        assert not fut3._callbacks
+        assert all(len(f._callbacks) == 1 for f in (fut1, fut2))
 
     async it "returns on the first future to be cancelled":
         fut1 = hp.create_future()
@@ -1285,7 +1288,8 @@ describe "waiting for first future":
         assert w.done()
 
         await w
-        assert not any(f._callbacks for f in (fut1, fut2, fut3))
+        assert not fut1._callbacks
+        assert all(len(f._callbacks) == 1 for f in (fut2, fut3))
 
 describe "cancel futures and wait":
     async it "does nothing if there are no futures":

@@ -829,6 +829,7 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
 def create_future(*, name=None, loop=None):
     future = (loop or asyncio.get_event_loop()).create_future()
     future.name = name
+    future.add_done_callback(reporter)
     return future
 
 
