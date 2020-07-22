@@ -317,6 +317,8 @@ class TaskHolder:
                 else:
                     await wait_for_first_future(self.final_future, *self.ts)
 
+                self.ts = [t for t in self.ts if not t.done()]
+
         if self.ts:
             await wait_for_all_futures(*self.ts)
 
