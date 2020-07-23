@@ -718,38 +718,6 @@ def fut_has_callback(fut, callback):
     return False
 
 
-def async_as_normal(func):
-    """
-    Return a function that creates a task on the provided loop using the
-    provided func and add :func:`reporter` as a done callback. The task
-    that is created is returned to you when you call the result.
-
-    .. code-block:: python
-
-        from photons_app import helpers as hp
-
-
-        # Define my async function
-        async def my_func(a, b):
-            await something(a, b)
-
-        # Create a callable that will start the async function in the background
-        func = hp.async_as_normal(my_func)
-
-        # start the async job
-        task = func(1, b=6)
-    """
-
-    @wraps(func)
-    def normal(*args, **kwargs):
-        coroutine = func(*args, **kwargs)
-        t = asyncio.get_event_loop().create_task(coroutine)
-        t.add_done_callback(reporter)
-        return t
-
-    return normal
-
-
 def async_as_background(coroutine, silent=False):
     """
     Create a task with :func:`reporter` as a done callback and return the created

@@ -8,6 +8,8 @@ ChangeLog
       ``(iteration, time_till_next)`` where ``iteration`` is the count of
       iterations starting from 1, and ``time_till_next`` is the number of seconds
       till the next scheduled iteration.
+    * Removed photons_app.helpers.async_as_normal. It wasn't possible to ensure
+      sure the task created from that was cleaned up
 
 0.3.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the

@@ -805,17 +805,6 @@ describe "fut_has_callback":
         fut.add_done_callback(func2)
         assert hp.fut_has_callback(fut, func2)
 
-describe "async_as_normal":
-    async it "returns a function that spawns the coroutine as a task":
-
-        async def func(one, two, three=None):
-            return "{0}.{1}.{2}".format(one, two, three)
-
-        normal = hp.async_as_normal(func)
-        t = normal(1, 2, three=4)
-        assert isinstance(t, asyncio.Task)
-        assert await t == "1.2.4"
-
 describe "async_with_timeout":
     async it "returns the result of waiting on the coroutine":
         val = str(uuid.uuid1())

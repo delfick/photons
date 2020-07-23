@@ -24,8 +24,6 @@ These functions are for turning coroutines into tasks. In asyncio Python a
 coroutine isn't put onto the loop until it's either turned into a task or
 awaited on.
 
-.. autofunction:: photons_app.helpers.async_as_normal
-
 .. autofunction:: photons_app.helpers.async_as_background
 
 .. autofunction:: photons_app.helpers.async_with_timeout
