@@ -152,7 +152,6 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
         return fltr
 
     async def execute(self):
-        ts = []
         result = ihp.ResultBuilder()
         self.sender.gatherer.clear_cache()
 

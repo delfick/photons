@@ -4,7 +4,6 @@ from photons_app import helpers as hp
 
 import asyncio
 import time
-import pytest
 
 
 def call_later(*args):
