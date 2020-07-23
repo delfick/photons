@@ -290,7 +290,7 @@ class TaskHolder:
 
     def __init__(self, final_future):
         self.ts = []
-        self.final_future = final_future
+        self.final_future = ChildOfFuture(final_future)
 
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
@@ -304,6 +304,8 @@ class TaskHolder:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
+        if exc:
+            self.final_future.set_exception(exc)
         await self.finish()
 
     async def finish(self):
