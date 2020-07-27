@@ -16,8 +16,10 @@ class SpecialReference:
     """
 
     def __init__(self):
-        self.found = hp.ResettableFuture()
-        self.finding = hp.ResettableFuture()
+        self.found = hp.ResettableFuture(name=f"SpecialReference({self.__class__.__name__}.found)")
+        self.finding = hp.ResettableFuture(
+            name=f"SpecialReference({self.__class__.__name__}.finding"
+        )
 
     async def find_serials(self, sender, *, timeout, broadcast=True):
         """Must be implemented by the subclass, return ``found`` from this function"""

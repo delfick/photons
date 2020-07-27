@@ -97,7 +97,9 @@ class NetworkSession(Communication):
 
     async def _search_retry_iterator(self, end_after):
         timeouts = [(0.6, 1.8), (1, 4)]
-        async for info in RetryOptions(timeouts=timeouts).tick(self.stop_fut, end_after):
+        async for info in RetryOptions(
+            timeouts=timeouts, name="NetworkSession::_search_retry_iterator"
+        ).tick(self.stop_fut, end_after):
             yield info
 
     async def make_transport(self, serial, service, kwargs):

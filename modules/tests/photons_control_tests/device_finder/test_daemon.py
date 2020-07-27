@@ -178,7 +178,7 @@ describe "DeviceFinderDaemon":
 
                     with mock.patch.object(V.daemon.finder, "find", find):
 
-                        async def tick(every):
+                        async def tick(every, name=None):
                             while True:
                                 t.add(every)
                                 await asyncio.sleep(0.001)
@@ -226,7 +226,7 @@ describe "DeviceFinderDaemon":
 
                 find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                async def tick(every):
+                async def tick(every, name=None):
                     i = 1
                     while True:
                         await futs[i]
@@ -284,7 +284,7 @@ describe "DeviceFinderDaemon":
 
                 find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                async def tick(every):
+                async def tick(every, name=None):
                     i = 1
                     while True:
                         await futs[i]

@@ -41,7 +41,11 @@ class Animation:
     @hp.memoized_property
     def ticker(self):
         return hp.ATicker(
-            self.every, max_time=self.num_seconds, min_wait=0.01, final_future=self.final_future
+            self.every,
+            max_time=self.num_seconds,
+            min_wait=0.01,
+            final_future=self.final_future,
+            name=f"Animation({self.__class__.__name__})",
         )
 
     async def stream(self, animation_state):
@@ -57,7 +61,10 @@ class Animation:
 
         with hp.ChildOfFuture(self.final_future) as stop_fut:
             async with hp.ResultStreamer(
-                stop_fut, error_catcher=errors, exceptions_only_to_error_catcher=True
+                stop_fut,
+                error_catcher=errors,
+                exceptions_only_to_error_catcher=True,
+                name=f"Animation({self.__class__.__name__})",
             ) as streamer:
                 await streamer.add_generator(tick(), context=AnimationEvent.Types.TICK)
                 await streamer.add_generator(

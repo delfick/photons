@@ -119,8 +119,16 @@ class ATicker:
     """
 
     def __init__(
-        self, every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1
+        self,
+        every,
+        *,
+        final_future=None,
+        max_iterations=None,
+        max_time=None,
+        min_wait=0.1,
+        name=None,
     ):
+        self.name = name
         self.every = every
         self.max_time = max_time
         self.min_wait = min_wait or 0
@@ -129,8 +137,10 @@ class ATicker:
         self.handle = None
         self.expected = None
 
-        self.waiter = ResettableFuture()
-        self.final_future = ChildOfFuture(final_future or create_future(name="Ticker.final_future"))
+        self.waiter = ResettableFuture(name=f"ATicker({self.name})")
+        self.final_future = ChildOfFuture(
+            final_future or create_future(name=f"ATicker.{self.name}.__init__|final_future|")
+        )
 
     def __aiter__(self):
         return self.tick()
@@ -215,7 +225,9 @@ class ATicker:
             yield iteration, diff
 
 
-async def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wait=None):
+async def tick(
+    every, *, final_future=None, max_iterations=None, max_time=None, min_wait=None, name=None
+):
     """
     .. code-block:: python
 
@@ -238,6 +250,7 @@ async def tick(every, *, final_future=None, max_iterations=None, max_time=None, 
         "max_iterations": max_iterations,
         "max_time": max_time,
         "min_wait": min_wait,
+        "name": f"tick({name})",
     }
 
     async for i in ATicker(every, **kwargs):
@@ -307,9 +320,13 @@ class TaskHolder:
     .. automethod:: finish
     """
 
-    def __init__(self, final_future):
+    def __init__(self, final_future, *, name=None):
+        self.name = name
+
         self.ts = []
-        self.final_future = ChildOfFuture(final_future)
+        self.final_future = ChildOfFuture(
+            final_future, name=f"TaskHolder.{self.name}.__init__|final_future|"
+        )
 
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
@@ -339,14 +356,18 @@ class TaskHolder:
 
             if self.ts:
                 if self.final_future.done():
-                    await wait_for_all_futures(self.final_future, *self.ts)
+                    await wait_for_all_futures(
+                        self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish_ff_done"
+                    )
                 else:
-                    await wait_for_first_future(self.final_future, *self.ts)
+                    await wait_for_first_future(
+                        self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish"
+                    )
 
                 self.ts = [t for t in self.ts if not t.done()]
 
         if self.ts:
-            await wait_for_all_futures(*self.ts)
+            await wait_for_all_futures(*self.ts, name=f"TaskHolder({self.name})::finish_final")
 
     @property
     def pending(self):
@@ -477,16 +498,21 @@ class ResultStreamer:
             return f"<Result {status}: {self.value}: {self.context}>"
 
     def __init__(
-        self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False,
+        self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False, name=None
     ):
-        self.final_future = ChildOfFuture(final_future)
+        self.name = name
+        self.final_future = ChildOfFuture(
+            final_future, name=f"ResultStreamer.{self.name}.__init__|final_future|"
+        )
         self.error_catcher = error_catcher
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
         self.ts = []
         self.generators = []
 
-        self.queue = Queue(final_future, empty_on_finished=True)
+        self.queue = Queue(
+            final_future, empty_on_finished=True, name=f"ResultStreamer({self.name})"
+        )
         self.stop_on_completion = False
 
         self._registered = 0
@@ -768,7 +794,7 @@ def async_as_background(coroutine, silent=False):
     return t
 
 
-async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=False):
+async def async_with_timeout(coroutine, *, timeout=10, timeout_error=None, silent=False, name=None):
     """
     Run a coroutine as a task until it's complete or times out.
 
@@ -789,7 +815,7 @@ async def async_with_timeout(coroutine, timeout=10, timeout_error=None, silent=F
 
         await hp.async_with_timeout(my_coroutine(), timeout=20)
     """
-    f = create_future(name="async_with_timeout.final")
+    f = create_future(name=f"async_with_timeout.{name}|final|")
     t = async_as_background(coroutine, silent=silent)
 
     def pass_result(res):
@@ -829,7 +855,7 @@ def create_future(*, name=None, loop=None):
     return future
 
 
-async def wait_for_all_futures(*futs):
+async def wait_for_all_futures(*futs, name=None):
     """
     Wait for all the futures to be complete and return without error regardless
     of whether the futures completed successfully or not.
@@ -844,7 +870,7 @@ async def wait_for_all_futures(*futs):
     if not futs:
         return
 
-    waiter = create_future(name="all_futures.waiter")
+    waiter = create_future(name=f"all_futures.{name}|waiter|")
 
     unique = {id(fut): fut for fut in futs}.values()
     complete = {}
@@ -864,14 +890,14 @@ async def wait_for_all_futures(*futs):
             fut.remove_done_callback(done)
 
 
-async def wait_for_first_future(*futs):
+async def wait_for_first_future(*futs, name=None):
     """
     Return without error when the first future to be completed is done.
     """
     if not futs:
         return
 
-    waiter = create_future(name="first_future.waiter")
+    waiter = create_future(name=f"first_future.{name}.waiter")
     unique = {id(fut): fut for fut in futs}.values()
 
     def done(res):
@@ -1191,7 +1217,8 @@ class ResettableFuture(object):
 
     _asyncio_future_blocking = False
 
-    def __init__(self, info=None):
+    def __init__(self, *, info=None, name=None):
+        self.name = name
         if info is None:
             self.reset()
         else:
@@ -1264,7 +1291,9 @@ class ResettableFuture(object):
         return self.info["fut"].remove_done_callback(func)
 
     def freeze(self):
-        fut = ResettableFuture({k: v for k, v in self.info.items()})
+        fut = ResettableFuture(
+            info={k: v for k, v in self.info.items()}, name=f"{self.name}-freeze"
+        )
         fut.creationists = list(self.creationists)
         return fut
 
@@ -1300,8 +1329,9 @@ class ChildOfFuture(object):
 
     _asyncio_future_blocking = False
 
-    def __init__(self, original_fut):
-        self.this_fut = create_future(name="ChildOfFuture.value_fut")
+    def __init__(self, original_fut, *, name=None):
+        self.name = name
+        self.this_fut = create_future(name=f"ChildOfFuture.{self.name}.fut.__init__")
         self.original_fut = original_fut
         self.done_callbacks = []
 
@@ -1462,10 +1492,13 @@ class SyncQueue:
         queue.append(another)
     """
 
-    def __init__(self, final_future, timeout=0.05, empty_on_finished=False):
+    def __init__(self, final_future, *, timeout=0.05, empty_on_finished=False, name=None):
+        self.name = name
         self.timeout = timeout
         self.collection = NormalQueue()
-        self.final_future = ChildOfFuture(final_future)
+        self.final_future = ChildOfFuture(
+            final_future, name=f"SyncQueue.{self.name}.__init__|final_future|"
+        )
         self.empty_on_finished = empty_on_finished
 
     def append(self, item):
@@ -1534,10 +1567,13 @@ class Queue:
     class Done:
         pass
 
-    def __init__(self, final_future, empty_on_finished=False):
-        self.waiter = ResettableFuture()
+    def __init__(self, final_future, *, empty_on_finished=False, name=None):
+        self.name = name
+        self.waiter = ResettableFuture(name=f"Queue({self.name})")
         self.collection = deque()
-        self.final_future = ChildOfFuture(final_future)
+        self.final_future = ChildOfFuture(
+            final_future, name=f"Queue.{self.name}.__init__|final_future|"
+        )
         self.empty_on_finished = empty_on_finished
 
         self.final_future.add_done_callback(self._stop_waiter)
@@ -1650,16 +1686,23 @@ class ThreadToAsyncQueue(object):
     .. automethod:: finish
     """
 
-    def __init__(self, stop_fut, num_threads, onerror, *args, **kwargs):
+    def __init__(self, stop_fut, num_threads, onerror, *args, name=None, **kwargs):
+        self.name = name
         self.loop = asyncio.get_event_loop()
-        self.stop_fut = ChildOfFuture(stop_fut)
+        self.stop_fut = ChildOfFuture(
+            stop_fut, name=f"ThreadToAsyncQueue.{self.name}.__init__|stop_fut|"
+        )
 
-        self.queue = SyncQueue(self.stop_fut, empty_on_finished=True)
+        self.queue = SyncQueue(
+            self.stop_fut, empty_on_finished=True, name=f"ThreadToAsyncQueue({self.name})"
+        )
         self.futures = {}
         self.onerror = onerror
         self.num_threads = num_threads
 
-        self.result_queue = Queue(self.stop_fut, empty_on_finished=True)
+        self.result_queue = Queue(
+            self.stop_fut, empty_on_finished=True, name=f"ThreadToAsyncQueue({self.name})"
+        )
         self.setup(*args, **kwargs)
 
         self.future_setter = None
@@ -1682,7 +1725,7 @@ class ThreadToAsyncQueue(object):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
         for thread_number, _ in enumerate(range(self.num_threads)):
-            fut = create_future(name="ThreadToAsyncQueue.ready_fut")
+            fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.start|ready_fut|")
             ready.append(fut)
             thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
             thread.start()
@@ -1717,12 +1760,12 @@ class ThreadToAsyncQueue(object):
             assert (await queue.request(action)) == "c"
         """
         if self.stop_fut.done():
-            fut = create_future(name="ThreadToAsyncQueue.done_request")
+            fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.request|result_cancelled|")
             fut.cancel()
             return fut
 
         key = secrets.token_urlsafe(16)
-        fut = create_future(name="ThreadToAsyncQueue.request")
+        fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.request|result_fut|")
         self.futures[key] = fut
         self.queue.append((key, func))
         return fut

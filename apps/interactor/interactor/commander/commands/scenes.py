@@ -166,7 +166,7 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
         with catch_errors(result.error):
             msgs = []
 
-            async with hp.TaskHolder(self.request_future) as ts:
+            async with hp.TaskHolder(self.request_future, name="SceneApplyCommand") as ts:
                 for scene in await self.db_queue.request(get):
                     if scene.zones:
                         fltr = self.cap_filter(scene.matcher, "multizone")

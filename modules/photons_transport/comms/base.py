@@ -340,7 +340,9 @@ class Communication:
         results = []
 
         with hp.ChildOfFuture(self.stop_fut) as tick_fut:
-            async with hp.ResultStreamer(tick_fut) as streamer:
+            async with hp.ResultStreamer(
+                tick_fut, name=f"SendPacket({original.pkt_type, original.serial})"
+            ) as streamer:
                 await streamer.add_generator(
                     retry_options.tick(tick_fut, timeout),
                     context="tick",

@@ -50,7 +50,8 @@ class RetryOptions:
 
     timeouts = [(0.2, 0.2), (0.1, 0.5), (0.2, 1), (1, 5)]
 
-    def __init__(self, timeouts=None):
+    def __init__(self, timeouts=None, name=None):
+        self.name = name
         self.timeout = None
         self.timeout_item = None
         if timeouts is not None:
@@ -60,7 +61,11 @@ class RetryOptions:
         timeouts = list(self.timeouts)
         step, end = timeouts.pop(0)
         ticker = hp.ATicker(
-            every=step, final_future=final_future, max_time=timeout, min_wait=min_wait
+            every=step,
+            final_future=final_future,
+            max_time=timeout,
+            min_wait=min_wait,
+            name=f"RetryOptions(tick.{self.name})",
         )
 
         start = time.time()

@@ -165,7 +165,9 @@ class ArrangerAnimation(Animation):
             return event.state.next_layer
 
     async def make_user_events(self, animation_state):
-        async with hp.ResultStreamer(self.final_future) as streamer:
+        async with hp.ResultStreamer(
+            self.final_future, name="ArrangerAnimation::make_user_events"
+        ) as streamer:
             self.options.arranger.animation_streamer = streamer
 
             if self.options.arranger.progress_cbs:
@@ -239,7 +241,7 @@ class PartsInfo:
 
             if real_part not in self.parts:
                 self.parts[real_part] = dict(part)
-                self.locks[real_part] = (asyncio.Lock(), hp.ResettableFuture())
+                self.locks[real_part] = (asyncio.Lock(), hp.ResettableFuture(name="PartsInfo"))
 
             self.real_parts[real_part] = real_part
             self.info.append(nxt)
@@ -259,10 +261,10 @@ class Arranger:
         self.progress_cbs = []
         self.animation_fut = None
 
-        self.tasks = hp.TaskHolder(self.final_future)
+        self.tasks = hp.TaskHolder(self.final_future, name="Arranger")
         self.cleaners.append(self.tasks.finish)
 
-        self.streamer = hp.ResultStreamer(self.final_future)
+        self.streamer = hp.ResultStreamer(self.final_future, name="Arranger")
         self.cleaners.append(self.streamer.finish)
 
         self.animation_streamer = None

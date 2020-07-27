@@ -59,7 +59,9 @@ class AnimationRunner:
         animations = self.run_options.animations_iter
         self.combined_state = State(self.final_future)
 
-        async with self.reinstate(), hp.TaskHolder(self.final_future) as ts:
+        async with self.reinstate(), hp.TaskHolder(
+            self.final_future, name="AnimationRunner::run"
+        ) as ts:
             self.transfer_error(
                 ts, ts.add(self.animate(ts, cannon, self.combined_state, animations))
             )
@@ -127,7 +129,11 @@ class AnimationRunner:
                     log.exception("Unexpected error running animation")
 
     async def collect_parts(self, ts):
-        async for _ in hp.tick(self.run_options.rediscover_every, final_future=self.final_future):
+        async for _ in hp.tick(
+            self.run_options.rediscover_every,
+            final_future=self.final_future,
+            name="AnimationRunner::collect_parts",
+        ):
             with hp.just_log_exceptions(log, reraise=[asyncio.CancelledError]):
                 serials = self.reference
                 if isinstance(serials, str):

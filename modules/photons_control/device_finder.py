@@ -480,8 +480,13 @@ class Device(dictobj.Spec):
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
-        self.point_futures = {e: hp.ResettableFuture() for e in InfoPoints}
-        self.point_futures[None] = hp.ResettableFuture()
+        self.point_futures = {
+            e: hp.ResettableFuture(name=f"Device({self.serial}.point_futures[{e.name}])")
+            for e in InfoPoints
+        }
+        self.point_futures[None] = hp.ResettableFuture(
+            name=f"Device({self.serial}.pooint_futures[None])"
+        )
 
     @hp.memoized_property
     def final_future(self):
@@ -636,7 +641,11 @@ class Device(dictobj.Spec):
                 refreshes[e] = time_between_queries.get(e.name, e.value.refresh)
 
         async def gen(reference, sender, **kwargs):
-            async for info in hp.tick(1, final_future=self.final_future):
+            async for info in hp.tick(
+                1,
+                final_future=self.final_future,
+                name=f"Device::refresh_information_loop({self.serial})",
+            ):
                 if self.final_future.done():
                     return
 
@@ -726,7 +735,7 @@ class DeviceFinderDaemon:
     async def search_loop(self):
         refresh_discovery_fltr = Filter.empty(refresh_discovery=True)
 
-        async for _ in hp.tick(self.search_interval):
+        async for _ in hp.tick(self.search_interval, name="DeviceFinderDaemon::search_loop"):
             if self.final_future.done():
                 return
 
@@ -752,7 +761,7 @@ class DeviceFinderDaemon:
 class Searcher:
     def __init__(self, sender):
         self.sender = sender
-        self.search_fut = hp.ResettableFuture()
+        self.search_fut = hp.ResettableFuture(name="Seacher(search_fut)")
         self.search_fut.set_result(None)
 
     async def _serials(self):
@@ -826,7 +835,10 @@ class Finder:
             )
 
         streamer = hp.ResultStreamer(
-            self.final_future, error_catcher=error, exceptions_only_to_error_catcher=True
+            self.final_future,
+            error_catcher=error,
+            exceptions_only_to_error_catcher=True,
+            name="Finder::find",
         )
 
         for device in removed:
@@ -856,7 +868,10 @@ class Finder:
             )
 
         streamer = hp.ResultStreamer(
-            self.final_future, error_catcher=error, exceptions_only_to_error_catcher=True
+            self.final_future,
+            error_catcher=error,
+            exceptions_only_to_error_catcher=True,
+            name="Finder::info",
         )
 
         async def find():
@@ -882,7 +897,8 @@ class Finder:
         self.final_future.cancel()
 
         async with hp.TaskHolder(
-            hp.create_future(name="DeviceFinder.Finder.finish.task_holder_final")
+            hp.create_future(name="DeviceFinder.Finder.finish.task_holder_final"),
+            name="DeviceFinderFinder",
         ) as ts:
             for serial, device in sorted(self.devices.items()):
                 ts.add(device.finish())

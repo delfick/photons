@@ -50,7 +50,9 @@ async def arrange(collector, target, reference, **kwargs):
     photons_app = collector.photons_app
 
     with photons_app.using_graceful_future() as final_future:
-        async with target.session() as sender, hp.TaskHolder(final_future) as ts:
+        async with target.session() as sender, hp.TaskHolder(
+            final_future, name="cli_arrange"
+        ) as ts:
 
             async def run():
                 try:

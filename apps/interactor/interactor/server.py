@@ -1,10 +1,11 @@
 from interactor.request_handlers import CommandHandler, WSHandler
 
+from photons_app import helpers as hp
+
 from photons_control.device_finder import DeviceFinderDaemon, Finder
 
-from whirlwind.server import Server, wait_for_futures
 from whirlwind.commander import Commander
-import asyncio
+from whirlwind.server import Server
 import logging
 import time
 
@@ -66,9 +67,4 @@ class Server(Server):
         )
 
     async def cleanup(self):
-        try:
-            await wait_for_futures(self.wsconnections)
-        except asyncio.CancelledError:
-            raise
-        except:
-            log.exception("Problem cleaning up websocket connections")
+        await hp.wait_for_all_futures(*self.wsconnections.values(), name="Server::cleanup")

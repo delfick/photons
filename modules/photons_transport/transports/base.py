@@ -35,7 +35,9 @@ class Transport:
 
     async def close(self):
         if self.transport:
-            await hp.wait_for_all_futures(self.transport)
+            await hp.wait_for_all_futures(
+                self.transport, name=f"Transport::{self.session.__class__.__name__}::close"
+            )
 
             t = self.transport
             self.transport = None

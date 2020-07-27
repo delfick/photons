@@ -52,7 +52,9 @@ def run(coro, photons_app, target_register):
     task.add_done_callback(hp.silent_reporter)
 
     async def wait():
-        await hp.wait_for_first_future(final_future, graceful_future, task)
+        await hp.wait_for_first_future(
+            final_future, graceful_future, task, name="photons_app::run::wait"
+        )
 
         if task.done():
             await task

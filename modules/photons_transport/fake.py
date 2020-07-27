@@ -209,7 +209,7 @@ class FakeDevice:
         self.attrs = Attrs(self)
         self.attrs.online = False
 
-        self.wait_for_reboot_fut = hp.ResettableFuture()
+        self.wait_for_reboot_fut = hp.ResettableFuture(name=f"FakeDevice.{serial}.wait_for_reboot")
         self.wait_for_reboot_fut.set_result(True)
 
         self.reboots = []

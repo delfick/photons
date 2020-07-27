@@ -64,7 +64,7 @@ class Socket(Transport):
         return not transport.is_closing()
 
     def make_socket_protocol(self):
-        fut = hp.ResettableFuture()
+        fut = hp.ResettableFuture(name="Socket::make_socket_protocol")
         fut.add_done_callback(hp.reporter)
         self.socket_futs.append(fut)
         self.socket_futs = [t for t in self.socket_futs if not t.done()]

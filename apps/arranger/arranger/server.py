@@ -1,12 +1,11 @@
 from arranger.request_handlers.command import WSHandler
 from arranger.arranger import Arranger
 
+from photons_app import helpers as hp
 
-from whirlwind.server import Server, wait_for_futures
-from whirlwind.commander import Commander
 from tornado.web import StaticFileHandler
-from functools import partial
-import asyncio
+from whirlwind.commander import Commander
+from whirlwind.server import Server
 import logging
 import time
 
@@ -53,8 +52,6 @@ class Server(Server):
         self.cleaners = cleaners
         self.server_options = server_options
 
-        self.cleaners.append(partial(wait_for_futures, self.wsconnections))
-
         self.tasks = ts
         self.tasks._merged_options_formattable = True
         self.cleaners.append(self.tasks.finish)
@@ -74,9 +71,4 @@ class Server(Server):
         )
 
     async def cleanup(self):
-        try:
-            await wait_for_futures(self.wsconnections)
-        except asyncio.CancelledError:
-            raise
-        except:
-            log.exception("Problem cleaning up websocket connections")
+        await hp.wait_for_all_futures(*self.wsconnections.values(), name="Server::cleanup")
