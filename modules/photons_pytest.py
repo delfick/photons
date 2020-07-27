@@ -247,109 +247,126 @@ class FutureDominoes:
     .. code-block:: python
 
         async def run():
-            futs = FutureDominoes(expected=8)
+            async with FutureDominoes(expected=8) as futs:
+                called = []
 
-            called = []
+                async def one():
+                    await futs[1]
+                    called.append("first")
+                    await futs[2]
+                    called.append("second")
+                    await futs[5]
+                    called.append("fifth")
+                    await futs[7]
+                    called.append("seventh")
 
-            async def one():
-                await futs[1]
-                called.append("first")
-                await futs[2]
-                called.append("second")
-                await futs[5]
-                called.append("fifth")
-                await futs[7]
-                called.append("seventh")
+                async def two():
+                    await futs[3]
+                    called.append("third")
 
-            async def two():
-                await futs[3]
-                called.append("third")
+                    start = 4
+                    while start <= 6:
+                        await futs[start]
+                        called.append(("gen", start))
+                        yield ("genresult", start)
+                        start += 2
 
-                start = 4
-                while start <= 6:
-                    await futs[start]
-                    called.append(("gen", start))
-                    yield ("genresult", start)
-                    start += 2
+                async def three():
+                    await futs[8]
+                    called.append("final")
 
-            async def three():
-                await futs[8]
-                called.append("final")
+                loop = asyncio.get_event_loop()
+                loop.create_task(three())
+                loop.create_task(one())
 
-            loop = asyncio.get_event_loop()
-            loop.create_task(three())
-            loop.create_task(one())
+                async def run_two():
+                    async for r in two():
+                        called.append(r)
 
-            async def run_two():
-                async for r in two():
-                    called.append(r)
+                loop.create_task(run_two())
 
-            loop.create_task(run_two())
-
-            futs.start()
-            await futs
-
-            assert called == [
-                "first",
-                "second",
-                "third",
-                ("gen", 4),
-                ("genresult", 4),
-                "fifth",
-                ("gen", 6),
-                ("genresult", 6),
-                "seventh",
-                "final",
-            ]
+                assert called == [
+                    "first",
+                    "second",
+                    "third",
+                    ("gen", 4),
+                    ("genresult", 4),
+                    "fifth",
+                    ("gen", 6),
+                    ("genresult", 6),
+                    "seventh",
+                    "final",
+                ]
     """
 
     def __init__(self, *, before_next_domino=None, expected):
         self.futs = {}
+        self.retrieved = {}
+
         self.upto = 1
         self.expected = int(expected)
         self.before_next_domino = before_next_domino
+        self.finished = self.hp.ResettableFuture()
 
-        hp = __import__("photons_app.helpers").helpers
-        self.finished = hp.ResettableFuture()
+        for i in range(self.expected):
+            self.make(i + 1)
 
-    class F:
-        def __init__(self, num, done_callback):
-            self.hp = __import__("photons_app.helpers").helpers
+    async def __aenter__(self):
+        self._tick = self.hp.async_as_background(self.tick())
+        self._tick.add_done_callback(self.hp.transfer_result(self.finished))
+        return self
 
-            self.num = num
-            self.fut = self.hp.create_future()
-            self.ready_fut = self.hp.create_future()
-            self.done_callback = done_callback
+    async def __aexit__(self, exc_typ, exc, tb):
+        if hasattr(self, "_tick"):
+            if exc and not self._tick.done():
+                self._tick.cancel()
+            await self.hp.wait_for_all_futures(self._tick)
 
-        def __repr__(self):
-            return f"<Domino {self.num} - ready: {self.ready_fut} - fut: {self.fut}>"
+        if not exc:
+            await self._tick
 
-        def done(self):
-            return self.fut.done()
+    async def tick(self):
+        async for i, _ in self.hp.tick(0, min_wait=0):
+            await self.hp.wait_for_all_futures(self.retrieved[i], self.futs[i])
+            print(f"Waited for Domino {i}")
 
-        def ready_to_resolve(self):
-            if not self.ready_fut.done():
-                self.ready_fut.set_result(True)
+            self.upto = i
 
-        def resolve(self):
-            if not self.fut.done():
-                self.fut.set_result(True)
+            await self._allow_real_loop()
 
-        def __await__(self):
-            yield from self.wait().__await__()
+            if i >= self.expected:
+                print("Finished knocking over dominoes")
+                if not self.finished.done():
+                    self.finished.set_result(True)
 
-        async def wait(self):
-            exc = None
-            try:
-                await self.hp.wait_for_first_future(self.ready_fut, self.fut)
-            except:
-                exc = sys.exc_info()[1]
-                raise
-            finally:
-                self.done_callback(exc)
+            if self.finished.done():
+                return
+
+            self.make(i + 1)
+
+            if self.before_next_domino:
+                self.before_next_domino(i)
+
+            self.futs[i + 1].set_result(True)
+
+    async def _allow_real_loop(self):
+        while True:
+            ready = asyncio.get_event_loop()._ready
+            ready_len = len(ready)
+            await asyncio.sleep(0)
+            if ready_len == 0:
+                return
+
+    @property
+    def hp(self):
+        return __import__("photons_app").helpers
+
+    @property
+    def loop(self):
+        return asyncio.get_event_loop()
 
     def make(self, num):
-        if num > self.expected:
+        if num > self.expected or self.finished.done():
             exc = Exception(f"Only expected up to {self.expected} dominoes")
             self.finished.reset()
             self.finished.set_exception(exc)
@@ -358,38 +375,19 @@ class FutureDominoes:
         if num in self.futs:
             return self.futs[num]
 
-        print(f"Making domino {num}")
-
-        def fire_next(exc=None):
-            if exc:
-                self.finished.set_exception(exc)
-                return
-
-            if self.before_next_domino:
-                self.before_next_domino(num)
-
-            if num + 1 > self.expected:
-                print("Finished knocking over dominoes")
-                if not self.finished.done():
-                    self.finished.set_result(True)
-            else:
-                self[num + 1].ready_to_resolve()
-                self.upto = num + 1
-
-        fut = self.futs[num] = self.F(num, fire_next)
-
+        fut = self.hp.create_future(name=f"Domino({num})")
+        self.futs[num] = fut
+        self.retrieved[num] = self.hp.create_future(name=f"Domino({num}.retrieved")
+        fut.add_done_callback(self.hp.transfer_result(self.finished, errors_only=True))
         return fut
 
-    def start(self):
-        self[1].resolve()
-
     def __getitem__(self, num):
-        return self.make(num)
-
-    def __await__(self):
-        if not self[1].done():
-            raise Exception("The dominoes were never started")
-        yield from self.finished
+        if not self.futs[1].done():
+            self.futs[1].set_result(True)
+        fut = self.make(num)
+        if not self.retrieved[num].done():
+            self.retrieved[num].set_result(True)
+        return fut
 
 
 def pytest_configure(config):

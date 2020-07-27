@@ -74,16 +74,6 @@ describe "Device":
                     else:
                         assert not f.done()
 
-            def tick(s, futs, oldtick):
-                async def tick(*args, **kwargs):
-                    async for iteration, nxt in oldtick(*args, **kwargs):
-                        await futs[iteration]
-                        if iteration == futs.expected:
-                            kwargs["final_future"].cancel()
-                        yield iteration, nxt
-
-                return tick
-
         return V()
 
     async it "can match against a fltr", V:
@@ -124,11 +114,9 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
 
+    @pytest.mark.focus
     async it "can start an information loop", V, fake_time, MockedCallLater:
         fake_time.set(1)
-
-        futs = pytest.helpers.FutureDominoes(expected=104)
-        futs.start()
 
         msgs = [e.value.msg for e in list(InfoPoints)]
         assert msgs == [
@@ -175,10 +163,9 @@ describe "Device":
         ]:
             setattr(Futs, name, Waiter(name, kls))
 
-        async def checker():
+        async def checker(ff):
             info = {"serial": V.fake_device.serial}
 
-            await futs[1]
             assert V.device.info == info
             await hp.wait_for_all_futures(*[V.device.point_futures[kls] for kls in InfoPoints])
 
@@ -258,14 +245,15 @@ describe "Device":
                 keep_duplicates=True,
             )
 
+            ff.cancel()
+
         checker_task = None
         time_between_queries = {"FIRMWARE": 100}
 
         async with MockedCallLater(fake_time):
-            oldtick = hp.tick
-            with mock.patch.object(hp, "tick", V.tick(futs, oldtick)):
-                async with hp.TaskHolder(V.runner.final_future) as ts:
-                    checker_task = ts.add(checker())
+            with hp.ChildOfFuture(V.runner.final_future) as ff:
+                async with hp.TaskHolder(ff, name="TEST") as ts:
+                    checker_task = ts.add(checker(ff))
                     ts.add_task(
                         V.device.ensure_refresh_information_loop(
                             V.runner.sender, time_between_queries, V.finder.collections
@@ -273,4 +261,3 @@ describe "Device":
                     )
 
         await checker_task
-        await futs

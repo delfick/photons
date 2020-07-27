@@ -965,56 +965,50 @@ describe "Using ResultStreamer":
 
             return on_done
 
-        futs = pytest.helpers.FutureDominoes(expected=14)
+        async with pytest.helpers.FutureDominoes(expected=14) as futs:
+            error_catcher = []
+            streamer = hp.ResultStreamer(final_future, error_catcher=error_catcher)
 
-        error_catcher = []
-        streamer = hp.ResultStreamer(final_future, error_catcher=error_catcher)
+            expected = await self.fill_streamer(streamer, futs, CTX, make_on_done)
 
-        expected = await self.fill_streamer(streamer, futs, CTX, make_on_done)
+            i = -1
+            async with streamer:
+                async for result in streamer:
+                    i += 1
+                    key = result.context.key
+                    print()
+                    print(
+                        f"STREAMED: value:`{type(result.value)}`{result.value}`\tcontext:`{result.context}`\tkey:`{key}`"
+                    )
+                    expectedi, r = expected["yielded"][i]()
 
-        i = -1
-        async with streamer:
-            futs.start()
+                    if not result.successful and r.successful:
+                        print("EXPECTED SUCCESS, got failure")
+                        traceback.print_tb(result.value.__traceback__, file=sys.stdout)
 
-            async for result in streamer:
-                i += 1
-                key = result.context.key
-                print()
-                print(
-                    f"STREAMED: value:`{type(result.value)}`{result.value}`\tcontext:`{result.context}`\tkey:`{key}`"
-                )
-                expectedi, r = expected["yielded"][i]()
+                    if result.successful and not r.successful:
+                        print("EXPECTED FAILURE, got success")
+                        traceback.print_tb(r.value.__traceback__, file=sys.stdout)
 
-                if not result.successful and r.successful:
-                    print("EXPECTED SUCCESS, got failure")
-                    traceback.print_tb(result.value.__traceback__, file=sys.stdout)
+                    if not result.successful and not r.successful:
+                        if isinstance(result.value, r.value.__class__):
+                            r.value = repr(r.value)
+                            result.value = repr(result.value)
 
-                if result.successful and not r.successful:
-                    print("EXPECTED FAILURE, got success")
-                    traceback.print_tb(r.value.__traceback__, file=sys.stdout)
+                    assert result == r
+                    assert i == expectedi
 
-                if not result.successful and not r.successful:
-                    if isinstance(result.value, r.value.__class__):
-                        r.value = repr(r.value)
-                        result.value = repr(result.value)
+            assert error_catcher == expected["errors"]
 
-                assert result == r
-                assert i == expectedi
+            print("+++++++ FINISHED TEST")
+            print("EXPECTED DONE")
+            for d in info["done"]:
+                print("\t", d)
 
-        # And make sure all the dominoes fell over
-        await futs
+            print()
+            print("EXPECTED DONE")
+            expected_done = [d() for d in expected["done"]]
+            for d in expected_done:
+                print("\t", d)
 
-        assert error_catcher == expected["errors"]
-
-        print("+++++++ FINISHED TEST")
-        print("EXPECTED DONE")
-        for d in info["done"]:
-            print("\t", d)
-
-        print()
-        print("EXPECTED DONE")
-        expected_done = [d() for d in expected["done"]]
-        for d in expected_done:
-            print("\t", d)
-
-        assert info["done"] == expected_done
+            assert info["done"] == expected_done

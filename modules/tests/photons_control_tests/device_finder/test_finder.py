@@ -6,6 +6,7 @@ from photons_app import helpers as hp
 
 from unittest import mock
 import pytest
+import time
 
 
 describe "Finder":
@@ -286,126 +287,126 @@ describe "Finder":
                         for p in s.patches:
                             p.stop()
 
-                futs = pytest.helpers.FutureDominoes(expected=6)
                 called = []
+                async with pytest.helpers.FutureDominoes(expected=6) as futs:
+                    m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                    s1 = m("s1")
+                    s2 = m("s2")
+                    s3 = m("s3")
+                    s4 = m("s4")
+                    s5 = m("s5")
+                    s6 = m("s6")
+                    s7 = m("s7")
 
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
-                s1 = m("s1")
-                s2 = m("s2")
-                s3 = m("s3")
-                s4 = m("s4")
-                s5 = m("s5")
-                s6 = m("s6")
-                s7 = m("s7")
+                    added = [s2]
+                    removed = [s4, s5, s6]
+                    ensure_devices = pytest.helpers.AsyncMock(
+                        name="ensure_devices", return_value=[added, removed]
+                    )
 
-                added = [s2]
-                removed = [s4, s5, s6]
-                ensure_devices = pytest.helpers.AsyncMock(
-                    name="ensure_devices", return_value=[added, removed]
-                )
+                    assert V.finder.devices == {}
+                    V.finder.devices = {"s1": s1, "s2": s2, "s3": s3, "s7": s7}
 
-                assert V.finder.devices == {}
-                V.finder.devices = {"s1": s1, "s2": s2, "s3": s3, "s7": s7}
+                    ensure_devices_patch = mock.patch.object(
+                        V.finder, "_ensure_devices", ensure_devices
+                    )
 
-                ensure_devices_patch = mock.patch.object(
-                    V.finder, "_ensure_devices", ensure_devices
-                )
+                    with Patches(
+                        [s1, s2, s3, s4, s5, s6, s7]
+                    ), ensure_devices_patch, FakeTime() as t:
 
-                with Patches([s1, s2, s3, s4, s5, s6, s7]), ensure_devices_patch, FakeTime() as t:
+                        async def s4finish():
+                            called.append("s4finish_start")
+                            await futs[3]
+                            if not matches_runs:
+                                await futs[4]
+                                await futs[5]
+                            t.add(1)
+                            called.append("s4finish_done")
 
-                    async def s4finish():
-                        called.append("s4finish_start")
-                        await futs[3]
-                        if not matches_runs:
-                            await futs[4]
-                            await futs[5]
-                        t.add(1)
-                        called.append("s4finish_done")
+                        async def s5finish():
+                            called.append("s5finish_start")
+                            await futs[1]
+                            if not matches_runs:
+                                await futs[2]
+                            t.add(1)
+                            called.append("s5finish_done")
+                            raise ValueError("NOPE")
 
-                    async def s5finish():
-                        called.append("s5finish_start")
-                        await futs[1]
-                        if not matches_runs:
+                        async def s6finish():
+                            called.append("s6finish_start")
+                            await futs[6]
+                            t.add(1)
+                            called.append("s6finish_done")
+                            raise ValueError("NOPE")
+
+                        s4.finish.side_effect = s4finish
+                        s5.finish.side_effect = s5finish
+                        s6.finish.side_effect = s6finish
+
+                        async def s1matches(*args, **kwargs):
+                            called.append("s1matches_start")
                             await futs[2]
-                        t.add(1)
-                        called.append("s5finish_done")
-                        raise ValueError("NOPE")
+                            t.add(1)
+                            called.append("s1matches_done")
+                            return False
 
-                    async def s6finish():
-                        called.append("s6finish_start")
-                        await futs[6]
-                        t.add(1)
-                        called.append("s6finish_done")
-                        raise ValueError("NOPE")
+                        async def s2matches(*args, **kwargs):
+                            called.append("s2matches_start")
+                            await futs[5]
+                            t.add(1)
+                            called.append("s2matches_done")
+                            raise TypeError("NUP")
 
-                    s4.finish.side_effect = s4finish
-                    s5.finish.side_effect = s5finish
-                    s6.finish.side_effect = s6finish
+                        async def s3matches(*args, **kwargs):
+                            called.append("s3matches_start")
+                            await futs[4]
+                            t.add(1)
+                            called.append("s3matches_done")
+                            return True
 
-                    async def s1matches(*args, **kwargs):
-                        called.append("s1matches_start")
-                        await futs[2]
-                        t.add(1)
-                        called.append("s1matches_done")
-                        return False
+                        async def s7matches(*args, **kwargs):
+                            called.append("s7matches_start")
+                            # This finishes at the same time s4 finishes
+                            await futs[3]
+                            called.append("s7matches_done")
+                            return True
 
-                    async def s2matches(*args, **kwargs):
-                        called.append("s2matches_start")
-                        await futs[5]
-                        t.add(1)
-                        called.append("s2matches_done")
-                        raise TypeError("NUP")
+                        s1.matches.side_effect = s1matches
+                        s2.matches.side_effect = s2matches
+                        s3.matches.side_effect = s3matches
+                        s7.matches.side_effect = s7matches
 
-                    async def s3matches(*args, **kwargs):
-                        called.append("s3matches_start")
-                        await futs[4]
-                        t.add(1)
-                        called.append("s3matches_done")
-                        return True
+                        found = []
 
-                    async def s7matches(*args, **kwargs):
-                        called.append("s7matches_start")
-                        # This finishes at the same time s4 finishes
-                        await futs[3]
-                        called.append("s7matches_done")
-                        return True
+                        async for device in V.finder.find(fltr):
+                            found.append((t.time, device))
 
-                    s1.matches.side_effect = s1matches
-                    s2.matches.side_effect = s2matches
-                    s3.matches.side_effect = s3matches
-                    s7.matches.side_effect = s7matches
+                        if not matches_runs:
+                            expected = [(0, d) for d in (s1, s2, s3, s7)]
+                        else:
+                            expected = [(3, s7), (4, s3)]
 
-                    found = []
-                    futs.start()
+                        same = found == expected
+                        if not same:
+                            print("Found")
+                            for t, d in found:
+                                print("\t", t, d.serial)
+                            print("Expected")
+                            for t, d in expected:
+                                print("\t", t, d.serial)
+                        assert same
 
-                    async for device in V.finder.find(fltr):
-                        found.append((t.time, device))
-
-                    if not matches_runs:
-                        expected = [(0, d) for d in (s1, s2, s3, s7)]
-                    else:
-                        expected = [(3, s7), (4, s3)]
-
-                    same = found == expected
-                    if not same:
-                        print("Found")
-                        for t, d in found:
-                            print("\t", t, d.serial)
-                        print("Expected")
-                        for t, d in expected:
-                            print("\t", t, d.serial)
-                    assert same
-
-                    if matches_runs:
-                        for d in (s4, s5, s6):
-                            d.matches.assert_not_called()
-                        for d in (s1, s2, s3, s7):
-                            d.matches.assert_called_once_with(
-                                V.finder.sender, fltr, V.finder.collections
-                            )
-                    else:
-                        for d in (s1, s2, s3, s4, s5, s6, s7):
-                            d.matches.assert_not_called()
+                        if matches_runs:
+                            for d in (s4, s5, s6):
+                                d.matches.assert_not_called()
+                            for d in (s1, s2, s3, s7):
+                                d.matches.assert_called_once_with(
+                                    V.finder.sender, fltr, V.finder.collections
+                                )
+                        else:
+                            for d in (s1, s2, s3, s4, s5, s6, s7):
+                                d.matches.assert_not_called()
 
                 if not matches_runs:
                     expected_called = [
@@ -420,12 +421,12 @@ describe "Finder":
                     expected_called = [
                         "s4finish_start",
                         "s5finish_start",
+                        "s5finish_done",
                         "s6finish_start",
                         "s1matches_start",
                         "s2matches_start",
                         "s3matches_start",
                         "s7matches_start",
-                        "s5finish_done",
                         "s1matches_done",
                         "s4finish_done",
                         "s7matches_done",
@@ -435,7 +436,6 @@ describe "Finder":
                     ]
 
                 assert called == expected_called
-                await futs
 
         describe "info":
 
@@ -472,93 +472,90 @@ describe "Finder":
                         for p in s.patches:
                             p.stop()
 
-                futs = pytest.helpers.FutureDominoes(expected=7)
-                called = []
+                async with pytest.helpers.FutureDominoes(expected=7) as futs:
+                    called = []
 
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
-                s1 = m("s1")
-                s2 = m("s2")
-                s3 = m("s3")
-                s4 = m("s4")
+                    m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                    s1 = m("s1")
+                    s2 = m("s2")
+                    s3 = m("s3")
+                    s4 = m("s4")
 
-                find_mock = pytest.helpers.MagicAsyncMock(name="find_mock")
-                find_patch = mock.patch.object(V.finder, "find", find_mock)
+                    find_mock = pytest.helpers.MagicAsyncMock(name="find_mock")
+                    find_patch = mock.patch.object(V.finder, "find", find_mock)
 
-                with Patches([s1, s2, s3, s4]), find_patch, FakeTime() as t:
+                    with Patches([s1, s2, s3, s4]), find_patch, FakeTime() as t:
 
-                    async def find(fr):
-                        assert fr is fltr
-                        await futs[1]
-                        t.add(1)
-                        yield s1
-                        await futs[3]
-                        t.add(1)
-                        yield s2
-                        await futs[4]
-                        t.add(1)
-                        yield s3
-                        yield s4
+                        async def find(fr):
+                            assert fr is fltr
+                            await futs[1]
+                            t.add(1)
+                            yield s1
+                            await futs[3]
+                            t.add(1)
+                            yield s2
+                            await futs[4]
+                            t.add(1)
+                            yield s3
+                            yield s4
 
-                    find_mock.side_effect = find
+                        find_mock.side_effect = find
 
-                    async def s1matches(*args, **kwargs):
-                        called.append("s1matches_start")
-                        await futs[2]
-                        t.add(1)
-                        called.append("s1matches_done")
-                        raise TypeError("NUP")
+                        async def s1matches(*args, **kwargs):
+                            called.append("s1matches_start")
+                            await futs[2]
+                            t.add(1)
+                            called.append("s1matches_done")
+                            raise TypeError("NUP")
 
-                    async def s2matches(*args, **kwargs):
-                        called.append("s2matches_start")
-                        await futs[5]
-                        t.add(1)
-                        called.append("s2matches_done")
-                        return True
+                        async def s2matches(*args, **kwargs):
+                            called.append("s2matches_start")
+                            await futs[5]
+                            t.add(1)
+                            called.append("s2matches_done")
+                            return True
 
-                    async def s3matches(*args, **kwargs):
-                        called.append("s3matches_start")
-                        await futs[7]
-                        t.add(1)
-                        called.append("s3matches_done")
-                        return True
+                        async def s3matches(*args, **kwargs):
+                            called.append("s3matches_start")
+                            await futs[7]
+                            t.add(1)
+                            called.append("s3matches_done")
+                            return True
 
-                    async def s4matches(*args, **kwargs):
-                        called.append("s3matches_start")
-                        # This finishes at the same time s4 finishes
-                        await futs[6]
-                        t.add(1)
-                        called.append("s7matches_done")
-                        return False
+                        async def s4matches(*args, **kwargs):
+                            called.append("s3matches_start")
+                            # This finishes at the same time s4 finishes
+                            await futs[6]
+                            t.add(1)
+                            called.append("s7matches_done")
+                            return False
 
-                    s1.matches.side_effect = s1matches
-                    s2.matches.side_effect = s2matches
-                    s3.matches.side_effect = s3matches
-                    s4.matches.side_effect = s4matches
+                        s1.matches.side_effect = s1matches
+                        s2.matches.side_effect = s2matches
+                        s3.matches.side_effect = s3matches
+                        s4.matches.side_effect = s4matches
 
-                    found = []
-                    futs.start()
+                        found = []
 
-                    async for device in V.finder.info(fltr):
-                        found.append((t.time, device))
+                        async for device in V.finder.info(fltr):
+                            found.append((t.time, device))
 
-                    find_mock.assert_called_once_with(fltr)
+                        find_mock.assert_called_once_with(fltr)
 
-                    expected = [(5, s2), (7, s3)]
+                        expected = [(5, s2), (7, s3)]
 
-                    same = found == expected
-                    if not same:
-                        print("Found")
-                        for t, d in found:
-                            print("\t", t, d.serial)
-                        print("Expected")
-                        for t, d in expected:
-                            print("\t", t, d.serial)
-                    assert same
+                        same = found == expected
+                        if not same:
+                            print("Found")
+                            for t, d in found:
+                                print("\t", t, d.serial)
+                            print("Expected")
+                            for t, d in expected:
+                                print("\t", t, d.serial)
+                        assert same
 
-                    empty_fltr = Filter.empty(refresh_info=fltr.refresh_info)
-                    for d in (s1, s2, s3, s4):
-                        d.matches.assert_called_once_with(
-                            V.finder.sender, empty_fltr, V.finder.collections
-                        )
-
-                await futs
+                        empty_fltr = Filter.empty(refresh_info=fltr.refresh_info)
+                        for d in (s1, s2, s3, s4):
+                            d.matches.assert_called_once_with(
+                                V.finder.sender, empty_fltr, V.finder.collections
+                            )
