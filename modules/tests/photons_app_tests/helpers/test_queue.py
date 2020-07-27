@@ -64,7 +64,7 @@ describe "Queue":
         assert queue.waiter.done()
 
         found = []
-        async for item in queue._get():
+        async for item in queue._get_and_wait():
             found.append(item)
         assert found == [1, 2]
         assert not queue.waiter.done()
@@ -72,7 +72,7 @@ describe "Queue":
         queue.append(3)
         assert queue.waiter.done()
         found = []
-        async for item in queue._get():
+        async for item in queue._get_and_wait():
             found.append(item)
         assert found == [3]
 
@@ -86,7 +86,6 @@ describe "Queue":
         queue.append(2)
 
         assert list(queue.remaining()) == [1, 2]
-        assert not queue.waiter.done()
 
         assert not queue.collection
 

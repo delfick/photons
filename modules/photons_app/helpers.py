@@ -1588,13 +1588,7 @@ class Queue:
     async def finish(self):
         self.final_future.cancel()
 
-    async def _get(self):
-        if self.final_future.done():
-            yield self.Done
-            return
-
-        await self.waiter
-
+    async def _get_and_wait(self):
         if self.final_future.done():
             yield self.Done
             return
@@ -1602,8 +1596,18 @@ class Queue:
         for nxt in self.remaining():
             yield nxt
             if self.final_future.done():
-                yield self.Done
-                return
+                break
+
+        if self.final_future.done():
+            yield self.Done
+            return
+
+        await wait_for_first_future(self.final_future, self.waiter)
+
+        if self.waiter.done():
+            await self.waiter
+
+        self.waiter.reset()
 
     def append(self, item):
         self.collection.append(item)
@@ -1614,9 +1618,11 @@ class Queue:
         return self.get_all()
 
     async def get_all(self):
+        self.waiter.reset()
+
         while True:
             stop = False
-            async for nxt in self._get():
+            async for nxt in self._get_and_wait():
                 if nxt is self.Done:
                     stop = True
                     break
@@ -1631,7 +1637,6 @@ class Queue:
     def remaining(self):
         while self.collection:
             yield self.collection.popleft()
-        self.waiter.reset()
 
 
 class ThreadToAsyncQueue(object):
