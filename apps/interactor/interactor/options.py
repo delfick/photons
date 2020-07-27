@@ -1,5 +1,3 @@
-from interactor.database.database import Database
-
 from photons_app.formatter import MergedOptionStringFormatter
 
 from delfick_project.norms import dictobj, sb
@@ -28,5 +26,8 @@ class Options(dictobj.Spec):
     port = dictobj.Field(port_spec, help="The port to serve the server on")
 
     database = dictobj.Field(
-        Database.FieldSpec(formatter=MergedOptionStringFormatter), help="Database options",
+        lambda: __import__("interactor.database.database").database.database.Database.FieldSpec(
+            formatter=MergedOptionStringFormatter
+        ),
+        help="Database options",
     )

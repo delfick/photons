@@ -1,4 +1,3 @@
-from interactor.database import database
 from interactor.options import Options
 from interactor.server import Server
 
@@ -57,6 +56,8 @@ async def migrate(collector, extra=None, **kwargs):
     Basically, everything after the ``--`` is passed as commandline arguments
     to alembic.
     """
+    from interactor.database import database
+
     if extra is None:
         extra = collector.configuration["photons_app"].extra
     await database.migrate(collector.configuration["interactor"].database, extra)

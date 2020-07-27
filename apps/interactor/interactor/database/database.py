@@ -1,8 +1,6 @@
 from interactor.database.connection import Base, DatabaseConnection
 
-from alembic.config import CommandLine as AlembicCommandLine, Config as AlembicConfig
 from delfick_project.norms import dictobj, sb
-from alembic.script import ScriptDirectory
 from urllib.parse import urlparse
 from sqlalchemy import pool
 import shlex
@@ -42,6 +40,9 @@ class Database(dictobj.Spec):
 
 
 async def migrate(database, extra=""):
+    from alembic.config import CommandLine as AlembicCommandLine, Config as AlembicConfig
+    from alembic.script import ScriptDirectory
+
     class Script(ScriptDirectory):
         def run_env(script):
             from alembic import context as alembic_context

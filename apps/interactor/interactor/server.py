@@ -1,5 +1,4 @@
 from interactor.request_handlers import CommandHandler, WSHandler
-from interactor.database.db_queue import DBQueue
 
 from photons_control.device_finder import DeviceFinderDaemon, Finder
 
@@ -43,7 +42,7 @@ class Server(Server):
         self.cleaners = cleaners
         self.server_options = server_options
 
-        self.db_queue = DBQueue(
+        self.db_queue = __import__("interactor.database.db_queue").database.db_queue.DBQueue(
             self.final_future, 5, lambda exc: 1, self.server_options.database.uri
         )
         self.cleaners.append(self.db_queue.finish)

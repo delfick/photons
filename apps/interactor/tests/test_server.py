@@ -41,7 +41,7 @@ def V():
 @pytest.fixture(scope="module")
 async def wrapper(V, server_wrapper):
     commander_patch = mock.patch("interactor.server.Commander", V.FakeCommander)
-    db_patch = mock.patch("interactor.server.DBQueue", V.FakeDBQueue)
+    db_patch = mock.patch("interactor.database.db_queue.DBQueue", V.FakeDBQueue)
 
     with commander_patch, db_patch:
         async with server_wrapper(store) as wrapper:
