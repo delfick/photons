@@ -337,29 +337,28 @@ class Communication:
             connect_timeout=connect_timeout,
         )
 
-        tick_fut = hp.ChildOfFuture(self.stop_fut)
-
         results = []
 
-        async with hp.ResultStreamer(tick_fut) as streamer:
-            await streamer.add_generator(
-                retry_options.tick(tick_fut, timeout),
-                context="tick",
-                on_done=lambda res: tick_fut.cancel(),
-            )
-            streamer.no_more_work()
+        with hp.ChildOfFuture(self.stop_fut) as tick_fut:
+            async with hp.ResultStreamer(tick_fut) as streamer:
+                await streamer.add_generator(
+                    retry_options.tick(tick_fut, timeout),
+                    context="tick",
+                    on_done=lambda res: tick_fut.cancel(),
+                )
+                streamer.no_more_work()
 
-            async for result in streamer:
-                if not result.successful:
-                    raise result.value
+                async for result in streamer:
+                    if not result.successful:
+                        raise result.value
 
-                if result.context == "tick":
-                    if not any(result.wait_for_result() for result in results):
-                        result = await writer()
-                        results.append(result)
-                        await streamer.add_task(result, context="write")
-                elif result.context == "write":
-                    return result.value
+                    if result.context == "tick":
+                        if not any(result.wait_for_result() for result in results):
+                            result = await writer()
+                            results.append(result)
+                            await streamer.add_task(result, context="write")
+                    elif result.context == "write":
+                        return result.value
 
         raise TimedOut(
             "Waiting for reply to a packet",

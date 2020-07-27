@@ -102,4 +102,5 @@ async def animate(collector, target, reference, artifact, **kwargs):
                 error_catcher=errors,
                 animation_options=conf.get("animation_options", {}),
             )
-            await runner.run()
+            async with runner:
+                await runner.run()

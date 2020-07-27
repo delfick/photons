@@ -158,13 +158,16 @@ def Flicker(
                 )
             )
 
-            await AnimationRunner(
+            runner = AnimationRunner(
                 sender,
                 reference,
                 run_options=[[(FlickerAnimation, Options), options]],
                 final_future=animation_final_future or sender.stop_fut,
                 **{**kwargs, "message_timeout": 5},
-            ).run()
+            )
+
+            async with runner:
+                await runner.run()
 
             return
 

@@ -197,14 +197,17 @@ async def tile_animation(collector, target, reference, **kwargs):
     try:
         with collector.photons_app.using_graceful_future() as final_future:
             async with target.session() as sender:
-                await AnimationRunner(
+                runner = AnimationRunner(
                     sender,
                     reference,
                     run_options,
                     final_future=final_future,
                     message_timeout=1,
                     error_catcher=error,
-                ).run()
+                )
+
+                async with runner:
+                    await runner.run()
     except Finish:
         pass
 

@@ -147,6 +147,7 @@ class ATicker:
             async for info in self._tick():
                 yield info
         finally:
+            self.final_future.cancel()
             if final_handle:
                 final_handle.cancel()
             self._change_handle()
@@ -322,9 +323,13 @@ class TaskHolder:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        if exc:
+        if exc and not self.final_future.done():
             self.final_future.set_exception(exc)
-        await self.finish()
+
+        try:
+            await self.finish()
+        finally:
+            self.final_future.cancel()
 
     async def finish(self):
         while any(not t.done() for t in self.ts):
@@ -1300,6 +1305,12 @@ class ChildOfFuture(object):
         self.original_fut = original_fut
         self.done_callbacks = []
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_typ, exc, tb):
+        self.cancel()
+
     @property
     def _callbacks(self):
         if not self.this_fut._callbacks:
@@ -1460,6 +1471,9 @@ class SyncQueue:
     def append(self, item):
         self.collection.put(item)
 
+    def finish(self):
+        self.final_future.cancel()
+
     def __iter__(self):
         return iter(self.get_all())
 
@@ -1531,6 +1545,9 @@ class Queue:
     def _stop_waiter(self, res):
         self.waiter.reset()
         self.waiter.set_result(True)
+
+    async def finish(self):
+        self.final_future.cancel()
 
     async def _get(self):
         if self.final_future.done():
@@ -1658,6 +1675,8 @@ class ThreadToAsyncQueue(object):
         self.stop_fut.cancel()
         if self.future_setter:
             await wait_for_all_futures(self.future_setter)
+        self.queue.finish()
+        await self.result_queue.finish()
 
     def start(self, impl=None):
         """Start tasks to listen for requests made with the ``request`` method"""

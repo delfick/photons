@@ -45,7 +45,6 @@ class Animation:
         )
 
     async def stream(self, animation_state):
-        stop_fut = hp.ChildOfFuture(self.final_future)
         del self.ticker
 
         async def tick():
@@ -56,19 +55,20 @@ class Animation:
             if not isinstance(e, asyncio.CancelledError):
                 log.error(hp.lc(error=e, error_type=type(e)))
 
-        async with hp.ResultStreamer(
-            stop_fut, error_catcher=errors, exceptions_only_to_error_catcher=True
-        ) as streamer:
-            await streamer.add_generator(tick(), context=AnimationEvent.Types.TICK)
-            await streamer.add_generator(
-                self.make_user_events(animation_state), context=AnimationEvent.Types.USER_EVENT
-            )
-            streamer.no_more_work()
+        with hp.ChildOfFuture(self.final_future) as stop_fut:
+            async with hp.ResultStreamer(
+                stop_fut, error_catcher=errors, exceptions_only_to_error_catcher=True
+            ) as streamer:
+                await streamer.add_generator(tick(), context=AnimationEvent.Types.TICK)
+                await streamer.add_generator(
+                    self.make_user_events(animation_state), context=AnimationEvent.Types.USER_EVENT
+                )
+                streamer.no_more_work()
 
-            async for result in streamer:
-                if result.value is hp.ResultStreamer.GeneratorComplete:
-                    continue
-                yield result
+                async for result in streamer:
+                    if result.value is hp.ResultStreamer.GeneratorComplete:
+                        continue
+                    yield result
 
     def setup(self):
         pass

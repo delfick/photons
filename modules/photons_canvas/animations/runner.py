@@ -33,6 +33,16 @@ class AnimationRunner:
         self.seen_serials = set()
         self.used_serials = set()
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.finish()
+
+    async def finish(self):
+        if hasattr(self, "final_future"):
+            self.final_future.cancel()
+
     def make_cannon(self):
         if not self.run_options.noisy_network:
             return cannons.FastNetworkCannon(self.sender, cannons.Sem())
@@ -96,24 +106,25 @@ class AnimationRunner:
             except StopIteration:
                 break
 
-            animation = make_animation(hp.ChildOfFuture(self.final_future))
+            with hp.ChildOfFuture(self.final_future) as animation_fut:
+                animation = make_animation(animation_fut)
 
-            try:
-                await state.set_animation(animation, background)
+                try:
+                    await state.set_animation(animation, background)
 
-                async for messages in state.messages():
-                    by_serial = defaultdict(list)
-                    for msg in messages:
-                        by_serial[msg.serial].append(msg)
+                    async for messages in state.messages():
+                        by_serial = defaultdict(list)
+                        for msg in messages:
+                            by_serial[msg.serial].append(msg)
 
-                    for serial, msgs in by_serial.items():
-                        ts.add(cannon.fire(ts, serial, msgs))
-            except asyncio.CancelledError:
-                raise
-            except Finish:
-                pass
-            except Exception:
-                log.exception("Unexpected error running animation")
+                        for serial, msgs in by_serial.items():
+                            ts.add(cannon.fire(ts, serial, msgs))
+                except asyncio.CancelledError:
+                    raise
+                except Finish:
+                    pass
+                except Exception:
+                    log.exception("Unexpected error running animation")
 
     async def collect_parts(self, ts):
         async for _ in hp.tick(self.run_options.rediscover_every, final_future=self.final_future):

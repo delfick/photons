@@ -409,7 +409,7 @@ class Arranger:
 
         try:
             log.info("Starting arranger animation")
-            await AnimationRunner(
+            runner = AnimationRunner(
                 self.sender,
                 self.reference,
                 run_options,
@@ -417,10 +417,16 @@ class Arranger:
                 message_timeout=1,
                 error_catcher=lambda e: False,
                 animation_options=self.animation_options,
-            ).run()
+            )
+
+            async with runner:
+                await runner.run()
         finally:
             self.parts_info.reset()
 
             self.running = False
+
+            self.animation_fut.cancel()
             self.animation_fut = None
+
             self.animation_streamer = None

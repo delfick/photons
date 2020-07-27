@@ -59,7 +59,8 @@ class SpecialReference:
 
             exc = res.exception()
             if exc:
-                self.found.set_exception(exc)
+                if not self.found.done():
+                    self.found.set_exception(exc)
                 return
 
             found = res.result()

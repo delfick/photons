@@ -344,8 +344,9 @@ class FromGenerator(object):
             kwargs["error_catcher"] = error_catcher
 
             try:
-                async for result in runner:
-                    yield result
+                async with runner:
+                    async for result in runner:
+                        yield result
             finally:
                 if do_raise and error_catcher:
                     raise RunErrors(_errors=list(set(error_catcher)))
@@ -363,6 +364,12 @@ class FromGenerator(object):
 
             self.ts = []
             self.queue = hp.Queue(self.stop_fut)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_typ, exc, tb):
+            self.stop_fut.cancel()
 
         def __aiter__(self):
             return self.results()
