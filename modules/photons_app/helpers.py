@@ -31,6 +31,24 @@ class Nope:
     pass
 
 
+def fut_to_string(f):
+    if not isinstance(f, asyncio.Future):
+        s = repr(f)
+    else:
+        s = f"<Future {getattr(f, 'name', None)}>"
+        if not f.done():
+            s = f"{s}(pending)"
+        elif f.cancelled():
+            s = f"{s}(cancelled)"
+        else:
+            exc = f.exception()
+            if exc:
+                s = f"{s}(exception:{type(exc).__name__}:{exc})"
+            else:
+                s = f"{s}(result)"
+    return s
+
+
 class ATicker:
     """
     This object gives you an async generator that yields every ``every``

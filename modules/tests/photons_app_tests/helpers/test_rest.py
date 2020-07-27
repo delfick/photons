@@ -6,6 +6,49 @@ from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import os
 
+describe "future to string":
+    it "just repr's a not future":
+
+        class Thing:
+            def __repr__(s):
+                return "<REPR THING>"
+
+        assert hp.fut_to_string(Thing()) == "<REPR THING>"
+
+    it "says if the future is pending":
+        fut = hp.create_future(name="one")
+        assert hp.fut_to_string(fut) == "<Future one>(pending)"
+
+        fut = hp.create_future()
+        assert hp.fut_to_string(fut) == "<Future None>(pending)"
+
+    it "says if the future is cancelled":
+        fut = hp.create_future(name="one")
+        fut.cancel()
+        assert hp.fut_to_string(fut) == "<Future one>(cancelled)"
+
+        fut = hp.create_future()
+        fut.cancel()
+        assert hp.fut_to_string(fut) == "<Future None>(cancelled)"
+
+    it "says if the future has an exception":
+        fut = hp.create_future(name="one")
+        fut.set_exception(ValueError("HI"))
+        assert hp.fut_to_string(fut) == "<Future one>(exception:ValueError:HI)"
+
+        fut = hp.create_future()
+        fut.set_exception(TypeError("NOPE"))
+        assert hp.fut_to_string(fut) == "<Future None>(exception:TypeError:NOPE)"
+
+    it "says if the future has a result":
+        fut = hp.create_future(name="one")
+        fut.set_result(True)
+        assert hp.fut_to_string(fut) == "<Future one>(result)"
+
+        fut = hp.create_future()
+        fut.set_result(False)
+        assert hp.fut_to_string(fut) == "<Future None>(result)"
+
 describe "add_error":
     it "calls the error_catcher with the error if it's a callable":
         error = mock.Mock(name="error")
