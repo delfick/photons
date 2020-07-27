@@ -20,6 +20,41 @@ describe "tick":
         assert called == [(1, 3, 0), (2, 3, 3), (3, 3, 6), (4, 3, 9), (5, 3, 12)]
         assert m.called_times == [3, 6, 9, 12]
 
+    async it "works with 0 every", FakeTime, MockedCallLater:
+        called = []
+
+        with FakeTime() as t:
+            async with MockedCallLater(t) as m:
+                async for i, nxt in hp.tick(0, min_wait=0):
+                    called.append((i, nxt, time.time()))
+                    if i == 3:
+                        await m.add(2)
+                    elif i == 6:
+                        break
+
+        assert called == [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 2.0), (5, 0, 2.0), (6, 0, 2.0)]
+
+    async it "works with 0 every and nonzero min_wait", FakeTime, MockedCallLater:
+        called = []
+
+        with FakeTime() as t:
+            async with MockedCallLater(t) as m:
+                async for i, nxt in hp.tick(0, min_wait=0.1):
+                    called.append((i, nxt, time.time()))
+                    if i == 3:
+                        await m.add(2)
+                    elif i == 6:
+                        break
+
+        assert called == [
+            (1, 0.1, 0),
+            (2, 0.1, 0.1),
+            (3, 0.1, 0.2),
+            (4, 0.1, 2.2),
+            (5, 0.1, 2.3),
+            (6, 0.1, 2.4),
+        ]
+
     async it "keeps yielding until max_iterations", FakeTime, MockedCallLater:
         called = []
 

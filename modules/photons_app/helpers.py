@@ -215,10 +215,13 @@ class ATicker:
             if self.max_time is not None and now - start >= self.max_time:
                 return
 
-            while self.expected - now <= self.min_wait:
-                self.expected += self.every
+            diff = self.min_wait
+            if self.every > 0:
+                while self.expected - now < self.min_wait:
+                    self.expected += self.every
 
-            diff = round(self.expected - now, 3)
+                diff = round(self.expected - now, 3)
+
             self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
 
             iteration += 1
@@ -226,7 +229,7 @@ class ATicker:
 
 
 async def tick(
-    every, *, final_future=None, max_iterations=None, max_time=None, min_wait=None, name=None
+    every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1, name=None
 ):
     """
     .. code-block:: python
