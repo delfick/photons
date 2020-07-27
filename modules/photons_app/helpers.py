@@ -31,11 +31,13 @@ class Nope:
     pass
 
 
-def fut_to_string(f):
+def fut_to_string(f, with_name=True):
     if not isinstance(f, asyncio.Future):
         s = repr(f)
     else:
-        s = f"<Future {getattr(f, 'name', None)}>"
+        s = ""
+        if with_name:
+            s = f"<Future {getattr(f, 'name', None)}>"
         if not f.done():
             s = f"{s}(pending)"
         elif f.cancelled():
@@ -1207,117 +1209,63 @@ class ResettableFuture(object):
         fut.set_result(False)
         await fut == False
 
-    This also supports an ``on_creation`` store that holds functions to be called
-    when a new result is set.
+    Calling reset on one of these will do nothing if it already isn't resolved.
 
-    Usage:
-
-    .. code-block:: python
-
-        fut = ResettableFuture()
-        def do_something(val):
-            # Note that this callback is _not_ async
-            print(val)
-        fut.on_creation(do_something)
+    Calling reset on a resolved future will also remove any registered done
+    callbacks.
     """
 
     _asyncio_future_blocking = False
 
-    def __init__(self, *, info=None, name=None):
+    def __init__(self, name=None):
         self.name = name
-        if info is None:
-            self.reset()
-        else:
-            self.info = info
-        self.creationists = []
-        self.reset_fut = create_future(name="ResettableFuture.reset_fut")
+        self.fut = create_future(name=f"ResettableFuture.{self.name}.fut.__init__")
 
-    def reset(self):
-        if hasattr(self, "reset_fut"):
-            if not self.reset_fut.done():
-                self.reset_fut.set_result(True)
-        done_callbacks = getattr(self, "info", {}).get("done_callbacks", [])
-        self.info = {
-            "fut": create_future(name="ResettableFuture.value_fut"),
-            "done_callbacks": done_callbacks,
-        }
-        for cb in done_callbacks:
-            self.info["fut"].add_done_callback(cb)
+    def reset(self, force=False):
+        if force:
+            self.fut.cancel()
+
+        if not self.fut.done():
+            return
+
+        self.fut = create_future(name=f"ResettableFuture.{self.name}.fut.reset")
 
     @property
     def _callbacks(self):
-        if not self.info["fut"]._callbacks:
-            return self.info.get("done_callbacks")
-        if not self.info.get("done_callbacks"):
-            return self.info["fut"]._callbacks
-        return self.info["fut"]._callbacks + self.info["done_callbacks"]
+        return self.fut._callbacks
 
     def set_result(self, data):
-        self.info["fut"].set_result(data)
-        for func in self.creationists:
-            func(data)
-
-    def result(self):
-        return self.info["fut"].result()
-
-    def done(self):
-        return self.info["fut"].done()
-
-    def cancelled(self):
-        return self.info["fut"].cancelled()
-
-    def exception(self):
-        return self.info["fut"].exception()
-
-    def cancel(self):
-        self.info["fut"].cancel()
-
-    def ready(self):
-        return self.done() and not self.cancelled()
-
-    def settable(self):
-        return not self.done() and not self.cancelled()
-
-    def finished(self):
-        return self.done() or self.cancelled()
+        self.fut.set_result(data)
 
     def set_exception(self, exc):
-        self.info["fut"].set_exception(exc)
+        self.fut.set_exception(exc)
 
-    def on_creation(self, func):
-        self.creationists.append(func)
+    def cancel(self):
+        self.fut.cancel()
+
+    def result(self):
+        return self.fut.result()
+
+    def done(self):
+        return self.fut.done()
+
+    def cancelled(self):
+        return self.fut.cancelled()
+
+    def exception(self):
+        return self.fut.exception()
 
     def add_done_callback(self, func):
-        self.info["done_callbacks"].append(func)
-        return self.info["fut"].add_done_callback(func)
+        self.fut.add_done_callback(func)
 
     def remove_done_callback(self, func):
-        if func in self.info["done_callbacks"]:
-            self.info["done_callbacks"] = [cb for cb in self.info["done_callbacks"] if cb != func]
-        return self.info["fut"].remove_done_callback(func)
-
-    def freeze(self):
-        fut = ResettableFuture(
-            info={k: v for k, v in self.info.items()}, name=f"{self.name}-freeze"
-        )
-        fut.creationists = list(self.creationists)
-        return fut
+        self.fut.remove_done_callback(func)
 
     def __repr__(self):
-        return "<ResettableFuture: {0}>".format(repr(self.info["fut"]))
+        return f"<ResettableFuture: {self.name}: {fut_to_string(self.fut)}>"
 
     def __await__(self):
-        return (yield from self.wait().__await__())
-
-    async def wait(self):
-        while True:
-            if self.done() or self.cancelled():
-                return await self.info["fut"]
-
-            await wait_for_first_future(self.info["fut"], self.reset_fut)
-
-            if self.reset_fut.done():
-                self.reset_fut = create_future(name="ResettableFuture.reset_fut")
+        return (yield from self.fut)
 
     __iter__ = __await__
 
@@ -1331,15 +1279,29 @@ class ChildOfFuture(object):
 
     The special case is if the parent receives a result, then this future is
     cancelled.
+
+    The recommended use is with it's context manager::
+
+        from photons_app import helpers as hp
+
+        parent_fut = hp.create_future()
+
+        with hp.ChildOfFuture(parent_fut):
+            ...
+
+    If you don't use the context manager then ensure you resolve the future when
+    you no longer need it (i.e. ``fut.cancel()``) to avoid a memory leak.
     """
 
     _asyncio_future_blocking = False
 
     def __init__(self, original_fut, *, name=None):
         self.name = name
-        self.this_fut = create_future(name=f"ChildOfFuture.{self.name}.fut.__init__")
+        self.fut = create_future(name=f"ChildOfFuture.{self.name}.fut.__init__")
         self.original_fut = original_fut
-        self.done_callbacks = []
+
+        self.fut.add_done_callback(self.remove_parent_done)
+        self.original_fut.add_done_callback(self.parent_done)
 
     def __enter__(self):
         return self
@@ -1347,46 +1309,67 @@ class ChildOfFuture(object):
     def __exit__(self, exc_typ, exc, tb):
         self.cancel()
 
+    def parent_done(self, res):
+        if self.fut.done():
+            return
+
+        if res.cancelled():
+            self.fut.cancel()
+            return
+
+        exc = res.exception()
+        if exc:
+            self.fut.set_exception(exc)
+        else:
+            self.fut.cancel()
+
+    def remove_parent_done(self, ret):
+        self.original_fut.remove_done_callback(self.parent_done)
+
     @property
     def _callbacks(self):
-        if not self.this_fut._callbacks:
-            return self.done_callbacks
-        if not self.done_callbacks:
-            return self.this_fut._callbacks
-        return self.this_fut._callbacks + self.done_callbacks
+        return self.fut._callbacks
 
     def set_result(self, data):
-        if self.original_fut.cancelled():
-            raise InvalidStateError("CANCELLED: {!r}".format(self.original_fut))
-        self.this_fut.set_result(data)
+        if self.original_fut.done():
+            self.original_fut.set_result(data)
+        self.fut.set_result(data)
+
+    def set_exception(self, exc):
+        if self.original_fut.done():
+            self.original_fut.set_exception(exc)
+        self.fut.set_exception(exc)
+
+    def cancel(self):
+        self.fut.cancel()
 
     def result(self):
         if self.original_fut.done() or self.original_fut.cancelled():
             if self.original_fut.cancelled():
                 return self.original_fut.result()
             else:
-                self.this_fut.cancel()
-        if self.this_fut.done() or self.this_fut.cancelled():
-            return self.this_fut.result()
+                self.fut.cancel()
+        if self.fut.done() or self.fut.cancelled():
+            return self.fut.result()
         return self.original_fut.result()
 
     def done(self):
-        return self.this_fut.done() or self.original_fut.done()
+        return self.fut.done() or self.original_fut.done()
 
     def cancelled(self):
-        if self.this_fut.cancelled() or self.original_fut.cancelled():
+        if self.fut.cancelled() or self.original_fut.cancelled():
             return True
 
-        # We cancel this_fut if original_fut gets a result
+        # We cancel fut if original_fut gets a result
         if self.original_fut.done() and not self.original_fut.exception():
-            self.this_fut.cancel()
+            self.fut.cancel()
             return True
 
         return False
 
     def exception(self):
-        if self.this_fut.done() and not self.this_fut.cancelled():
-            exc = self.this_fut.exception()
+        if self.fut.done() and not self.fut.cancelled():
+            exc = self.fut.exception()
             if exc is not None:
                 return exc
 
@@ -1395,8 +1378,8 @@ class ChildOfFuture(object):
             if exc is not None:
                 return exc
 
-        if self.this_fut.cancelled() or self.this_fut.done():
-            return self.this_fut.exception()
+        if self.fut.cancelled() or self.fut.done():
+            return self.fut.exception()
 
         return self.original_fut.exception()
 
@@ -1406,72 +1389,17 @@ class ChildOfFuture(object):
         else:
             self.original_fut.cancel()
 
-    def cancel(self):
-        self.this_fut.cancel()
-
-    def ready(self):
-        return self.done() and not self.cancelled()
-
-    def settable(self):
-        return not self.done() and not self.cancelled()
-
-    def finished(self):
-        return self.done() or self.cancelled()
-
-    def set_exception(self, exc):
-        self.this_fut.set_exception(exc)
-
     def add_done_callback(self, func):
-        if func not in self.done_callbacks:
-            self.done_callbacks.append(func)
-
-        if not fut_has_callback(self.this_fut, self._done_cb):
-            self.this_fut.add_done_callback(self._done_cb)
-        if not fut_has_callback(self.original_fut, self._parent_done_cb):
-            self.original_fut.add_done_callback(self._parent_done_cb)
+        self.fut.add_done_callback(func)
 
     def remove_done_callback(self, func):
-        if func in self.done_callbacks:
-            self.done_callbacks = [cb for cb in self.done_callbacks if cb != func]
-        if not self.done_callbacks:
-            self.this_fut.remove_done_callback(self._done_cb)
-            self.original_fut.remove_done_callback(self._parent_done_cb)
-
-    def _done_cb(self, *args, **kwargs):
-        try:
-            cbs = list(self.done_callbacks)
-            for cb in cbs:
-                cb(*args, **kwargs)
-                self.remove_done_callback(cb)
-        finally:
-            self.original_fut.remove_done_callback(self._parent_done_cb)
-
-    def _parent_done_cb(self, *args, **kwargs):
-        if not self.this_fut.done() and not self.this_fut.cancelled():
-            self._done_cb(*args, **kwargs)
+        self.fut.remove_done_callback(func)
 
     def __repr__(self):
-        return "<ChildOfFuture: {0} |:| {1}>".format(repr(self.original_fut), repr(self.this_fut))
+        return f"<ChildOfFuture#{self.name}({fut_to_string(self.fut, with_name=False)})#!{fut_to_string(self.original_fut)}!#>"
 
     def __await__(self):
-        return (yield from self.wait().__await__())
-
-    async def wait(self):
-        while True:
-            if (
-                self.original_fut.done()
-                and not self.original_fut.cancelled()
-                and not self.original_fut.exception()
-            ):
-                self.this_fut.cancel()
-
-            if self.this_fut.done():
-                return await self.this_fut
-
-            if self.original_fut.done():
-                return await self.original_fut
-
-            await wait_for_first_future(self.original_fut, self.this_fut)
+        return (yield from self.fut)
 
     __iter__ = __await__
 

@@ -45,7 +45,7 @@ def assert_payloads_equals(payload, expected):
     assert len(different) == 0
 
 
-def assertFutCallbacks(fut, *cbs):
+def assertFutCallbacks(fut, *cbs, exhaustive=False):
     callbacks = fut._callbacks
 
     try:
@@ -87,6 +87,9 @@ def assertFutCallbacks(fut, *cbs):
     for cb in cbs:
         msg = f"Expected {expected[cb]} instances of {cb}, got {counts[cb]} in {callbacks}"
         assert counts[cb] == expected[cb], msg
+
+    if exhaustive and len(callbacks) != len(cbs):
+        assert False, f"Expected exactly {len(cbs)} callbacks but have {len(callbacks)}"
 
 
 @contextmanager
