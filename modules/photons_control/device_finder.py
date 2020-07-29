@@ -1,5 +1,5 @@
 from photons_app.special import FoundSerials, SpecialReference
-from photons_app.errors import PhotonsAppError
+from photons_app.errors import PhotonsAppError, FoundNoDevices
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
@@ -761,12 +761,17 @@ class DeviceFinderDaemon:
 class Searcher:
     def __init__(self, sender):
         self.sender = sender
-        self.search_fut = hp.ResettableFuture(name="Seacher(search_fut)")
+        self.search_fut = hp.ResettableFuture(name="Searcher(search_fut)")
         self.search_fut.set_result(None)
 
     async def _serials(self):
-        _, serials = await FoundSerials().find(self.sender, timeout=5)
-        return serials
+        try:
+            _, serials = await FoundSerials().find(self.sender, timeout=5)
+        except FoundNoDevices:
+            log.info("Found no devices")
+            return []
+        else:
+            return serials
 
     async def discover(self, refresh=False):
         if not self.search_fut.done() or not refresh:
