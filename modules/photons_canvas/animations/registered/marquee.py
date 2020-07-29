@@ -162,7 +162,7 @@ class MarqueeAnimation(Animation):
 
             if (
                 self.options.num_iterations > 0
-                and event.state.iterations >= self.options.num_iterations
+                and event.state.iteration >= self.options.num_iterations
             ):
                 raise Finish("Reached maximum iterations")
 
