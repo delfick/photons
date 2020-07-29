@@ -1012,3 +1012,10 @@ describe "Using ResultStreamer":
                 print("\t", d)
 
             assert info["done"] == expected_done
+
+    async it "doesn't hang if there is no work", final_future:
+        async with hp.ResultStreamer(final_future) as streamer:
+            streamer.no_more_work()
+
+            async for result in streamer:
+                pass

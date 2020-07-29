@@ -604,6 +604,9 @@ class ResultStreamer:
         self.stop_on_completion = True
 
     async def retrieve(self):
+        if self.stop_on_completion and not self.ts:
+            return
+
         async for nxt in self.queue:
             if nxt is self.FinishedTask:
                 self._registered -= 1
