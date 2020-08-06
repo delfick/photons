@@ -167,7 +167,9 @@ class Communication:
         self.transport_target = target
 
         self.found = Found()
-        self.stop_fut = hp.ChildOfFuture(self.transport_target.final_future)
+        self.stop_fut = hp.ChildOfFuture(
+            self.transport_target.final_future, name=f"{type(self).__name__}.__init__|stop_fut|"
+        )
         self.receiver = Receiver()
         self.received_data_tasks = []
 
@@ -194,7 +196,9 @@ class Communication:
                 log.error(hp.lc("Failed to close transport", error=error, serial=serial))
 
         if self.received_data_tasks:
-            await hp.cancel_futures_and_wait(*self.received_data_tasks)
+            await hp.cancel_futures_and_wait(
+                *self.received_data_tasks, name=f"{type(self).__name__}.finish"
+            )
 
     @hp.memoized_property
     def source(self):
@@ -340,9 +344,11 @@ class Communication:
 
         results = []
 
-        with hp.ChildOfFuture(self.stop_fut) as tick_fut:
+        with hp.ChildOfFuture(
+            self.stop_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
+        ) as tick_fut:
             async with hp.ResultStreamer(
-                tick_fut, name=f"SendPacket({original.pkt_type, original.serial})"
+                tick_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
             ) as streamer:
                 await streamer.add_generator(
                     retry_options.tick(tick_fut, timeout),

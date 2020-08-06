@@ -332,7 +332,7 @@ class FakeDevice:
             if hasattr(responder, "shutdown"):
                 await responder.shutdown(self)
 
-        await hp.cancel_futures_and_wait(*self.write_tasks)
+        await hp.cancel_futures_and_wait(*self.write_tasks, name=f"FakeDevice.{self.serial}.finish")
 
     def set_intercept_got_message(self, interceptor):
         self.intercept_got_message = interceptor

@@ -358,7 +358,9 @@ class FromGenerator(object):
         def __init__(self, item, reference, sender, kwargs):
             self.item = item
             self.kwargs = kwargs
-            self.stop_fut = hp.ChildOfFuture(sender.stop_fut)
+            self.stop_fut = hp.ChildOfFuture(
+                sender.stop_fut, name="FromGenerator.Runner.__init__|stop_fut|"
+            )
             self.reference = reference
             self.sender = sender
 
@@ -436,7 +438,7 @@ class FromGenerator(object):
                                 tasks.append(tts.add(self.retrieve(item, f)))
 
                     task = ts.add(get_all())
-                    await hp.wait_for_all_futures(task)
+                    await hp.wait_for_all_futures(task, name="FromGenerator.Runner.getter")
 
                     if not task.cancelled() and task.exception():
                         hp.add_error(self.error_catcher, task.exception())

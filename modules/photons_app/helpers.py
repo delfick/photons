@@ -141,7 +141,8 @@ class ATicker:
 
         self.waiter = ResettableFuture(name=f"ATicker({self.name})")
         self.final_future = ChildOfFuture(
-            final_future or create_future(name=f"ATicker.{self.name}.__init__|final_future|")
+            final_future or create_future(name=f"ATicker.{self.name}.__init__|owned_final_future|"),
+            name=f"ATicker.{self.name}.__init__|final_future|",
         )
 
     def __aiter__(self):
@@ -204,7 +205,9 @@ class ATicker:
         self._waited()
 
         while True:
-            await wait_for_first_future(self.final_future, self.waiter)
+            await wait_for_first_future(
+                self.final_future, self.waiter, name=f"ATicker.{self.name}._tick"
+            )
 
             self.waiter.reset()
             if self.final_future.done():
@@ -544,8 +547,13 @@ class ResultStreamer:
         task.gen = gen
 
         if self.final_future.done():
-            await cancel_futures_and_wait(task)
-            await wait_for_first_future(async_as_background(gen.aclose()))
+            await cancel_futures_and_wait(
+                task, name=f"ResultStreamer.{self.name}.add_generator_already_stopped.task"
+            )
+            await wait_for_first_future(
+                async_as_background(gen.aclose()),
+                name=f"ResultStreamer.{self.name}.add_generator_already_stopped.gen",
+            )
             return task
 
         self.generators.append((task, gen))
@@ -566,7 +574,9 @@ class ResultStreamer:
 
     async def add_task(self, task, *, context=None, on_done=None):
         if self.final_future.done():
-            await cancel_futures_and_wait(task)
+            await cancel_futures_and_wait(
+                task, name=f"ResultStreamer.{self.name}.add_task_already_stopped"
+            )
             return task
 
         def add_to_queue(res):
@@ -623,8 +633,13 @@ class ResultStreamer:
             new_gens = []
             for t, g in self.generators:
                 if t.done():
-                    await wait_for_first_future(t)
-                    await wait_for_first_future(async_as_background(g.aclose()))
+                    await wait_for_first_future(
+                        t, name=f"ResultStreamer.{self.name}.retrieve.done_t"
+                    )
+                    await wait_for_first_future(
+                        async_as_background(g.aclose()),
+                        name=f"ResultStreamer.{self.name}.retrieve.done_gen",
+                    )
                 else:
                     new_gens.append((t, g))
             self.generators = new_gens
@@ -644,8 +659,11 @@ class ResultStreamer:
             wait_for.append(t)
             second_after.append(lambda: async_as_background(g.aclose()))
 
-        await wait_for_all_futures(*wait_for)
-        await wait_for_all_futures(*[l() for l in second_after])
+
+        await wait_for_all_futures(*wait_for, name=f"ResultStreamer.{self.name}.finish.tasks")
+        await wait_for_all_futures(
+            *[l() for l in second_after], name=f"ResultStreamer.{self.name}.finish.gens"
+        )
 
 
 @contextmanager
@@ -922,7 +940,7 @@ async def wait_for_first_future(*futs, name=None):
             fut.remove_done_callback(done)
 
 
-async def cancel_futures_and_wait(*futs):
+async def cancel_futures_and_wait(*futs, name=None):
     """
     Cancel the provided futures and wait for them all to finish. We will still
     await the futures if they are all already done to ensure no warnings about
@@ -938,7 +956,7 @@ async def cancel_futures_and_wait(*futs):
             fut.cancel()
             waiting.append(fut)
 
-    await wait_for_all_futures(*waiting)
+    await wait_for_all_futures(*waiting, name=f"cancel_futures_and_wait.{name}")
 
 
 class memoized_property(object):
@@ -1533,7 +1551,9 @@ class Queue:
             yield self.Done
             return
 
-        await wait_for_first_future(self.final_future, self.waiter)
+        await wait_for_first_future(
+            self.final_future, self.waiter, name=f"Queue.{self.name}._get_and_wait"
+        )
 
         if self.waiter.done():
             await self.waiter
@@ -1656,7 +1676,9 @@ class ThreadToAsyncQueue(object):
         """Signal to the tasks to stop at the next available moment"""
         self.stop_fut.cancel()
         if self.future_setter:
-            await wait_for_all_futures(self.future_setter)
+            await wait_for_all_futures(
+                self.future_setter, name=f"ThreadToAsyncQueue.{self.name}.finish"
+            )
         self.queue.finish()
         await self.result_queue.finish()
 

@@ -53,7 +53,7 @@ class Socket(Transport):
         for fut in self.socket_futs:
             close_existing(fut)
 
-        await hp.cancel_futures_and_wait(*self.socket_futs)
+        await hp.cancel_futures_and_wait(*self.socket_futs, name=f"{type(self).__name__}.close")
 
     async def close_transport(self, transport):
         close_socket(transport)

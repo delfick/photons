@@ -159,7 +159,7 @@ class MockedCallLaterImpl:
         if self.call_later_patch:
             self.call_later_patch.stop()
         if self.task:
-            await self.hp.cancel_futures_and_wait(self.task)
+            await self.hp.cancel_futures_and_wait(self.task, name="MockedCallLater.exit")
 
     async def add(self, amount):
         await self._run(iterations=round(amount / 0.1))

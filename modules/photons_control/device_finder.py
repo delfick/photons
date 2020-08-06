@@ -485,7 +485,7 @@ class Device(dictobj.Spec):
             for e in InfoPoints
         }
         self.point_futures[None] = hp.ResettableFuture(
-            name=f"Device({self.serial}.pooint_futures[None])"
+            name=f"Device({self.serial}.point_futures[None])"
         )
 
     @hp.memoized_property
@@ -617,7 +617,9 @@ class Device(dictobj.Spec):
     async def finish(self):
         self.final_future.cancel()
         if hasattr(self, "_refresh_information_loop"):
-            await hp.cancel_futures_and_wait(self._refresh_information_loop)
+            await hp.cancel_futures_and_wait(
+                self._refresh_information_loop, name=f"Device.{self.serial}.finish"
+            )
         del self.final_future
 
     def ensure_refresh_information_loop(self, sender, time_between_queries, collections):
@@ -705,7 +707,9 @@ class DeviceFinderDaemon:
         self.time_between_queries = time_between_queries
 
         final_future = final_future or sender.stop_fut
-        self.final_future = hp.ChildOfFuture(final_future)
+        self.final_future = hp.ChildOfFuture(
+            final_future, name="DeviceFinderDaemon.__init__|final_future|"
+        )
 
         self.own_finder = not bool(finder)
         self.finder = finder or Finder(
@@ -728,7 +732,7 @@ class DeviceFinderDaemon:
     async def finish(self):
         self.final_future.cancel()
         if hasattr(self, "_search_loop"):
-            await hp.cancel_futures_and_wait(self._search_loop)
+            await hp.cancel_futures_and_wait(self._search_loop, name="DeviceFinderDaemon.finish")
         if self.own_finder:
             await self.finder.finish()
 
@@ -798,7 +802,9 @@ class Finder:
         self.last_seen = {}
         self.searcher = Searcher(sender)
         self.collections = Collections()
-        self.final_future = hp.ChildOfFuture(final_future or self.sender.stop_fut)
+        self.final_future = hp.ChildOfFuture(
+            final_future or self.sender.stop_fut, name="Finder.__init__|final_future|"
+        )
 
     async def _ensure_devices(self, fltr):
         added = []

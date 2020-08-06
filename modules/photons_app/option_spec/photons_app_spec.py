@@ -56,11 +56,11 @@ class PhotonsApp(dictobj.Spec):
 
     @hp.memoized_property
     def final_future(self):
-        return self.loop.create_future()
+        return hp.create_future(name="program_final_future", loop=self.loop)
 
     @hp.memoized_property
     def graceful_final_future(self):
-        fut = self.loop.create_future()
+        fut = hp.create_future(name="program_graceful_final_future", loop=self.loop)
         fut.setup = False
         return fut
 
