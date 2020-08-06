@@ -171,7 +171,9 @@ class Communication:
             self.transport_target.final_future, name=f"{type(self).__name__}.__init__|stop_fut|"
         )
         self.receiver = Receiver()
-        self.received_data_tasks = []
+        self.received_data_tasks = hp.TaskHolder(
+            self.stop_fut, name=f"{type(self).__name__}.__init__|received_data_tasks|"
+        )
 
         self.make_plans = __import__("photons_control.planner").planner.make_plans
 
@@ -195,10 +197,7 @@ class Communication:
             except Exception as error:
                 log.error(hp.lc("Failed to close transport", error=error, serial=serial))
 
-        if self.received_data_tasks:
-            await hp.cancel_futures_and_wait(
-                *self.received_data_tasks, name=f"{type(self).__name__}.finish"
-            )
+        await self.received_data_tasks.finish()
 
     @hp.memoized_property
     def source(self):
@@ -394,9 +393,7 @@ class Communication:
         return transport, is_broadcast
 
     def sync_received_data(self, *args, **kwargs):
-        task = hp.async_as_background(self.received_data(*args, **kwargs))
-        self.received_data_tasks.append(task)
-        return task
+        return self.received_data_tasks.add(self.received_data(*args, **kwargs))
 
     async def received_data(self, data, addr, allow_zero=False):
         """What to do when we get some data"""
