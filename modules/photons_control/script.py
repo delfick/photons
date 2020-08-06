@@ -331,41 +331,40 @@ class FromGenerator(object):
             self.error_catcher_override = catcher_override
 
         async def run(self, reference, sender, **kwargs):
-            runner = self.runner_kls(self, reference, sender, kwargs)
+            with hp.ChildOfFuture(sender.stop_fut, name="FromGenerator.Runner.run") as stop_fut:
+                runner = self.runner_kls(self, stop_fut, reference, sender, kwargs)
 
-            error_catcher = kwargs.get("error_catcher")
-            if self.error_catcher_override:
-                error_catcher = self.error_catcher_override(runner.run_reference, error_catcher)
+                error_catcher = kwargs.get("error_catcher")
+                if self.error_catcher_override:
+                    error_catcher = self.error_catcher_override(runner.run_reference, error_catcher)
 
-            do_raise = error_catcher is None
-            if do_raise:
-                error_catcher = []
+                do_raise = error_catcher is None
+                if do_raise:
+                    error_catcher = []
 
-            kwargs["error_catcher"] = error_catcher
+                kwargs["error_catcher"] = error_catcher
 
-            try:
-                async with runner:
-                    async for result in runner:
-                        yield result
-            finally:
-                if do_raise and error_catcher:
-                    raise RunErrors(_errors=list(set(error_catcher)))
+                try:
+                    async with hp.TaskHolder(stop_fut, name="FromGenerator.Runner.run") as ts:
+                        async for result in runner.results(ts):
+                            yield result
+                finally:
+                    if do_raise and error_catcher:
+                        raise RunErrors(_errors=list(set(error_catcher)))
 
     class Runner:
         class Done:
             pass
 
-        def __init__(self, item, reference, sender, kwargs):
+        def __init__(self, item, stop_fut, reference, sender, kwargs):
             self.item = item
             self.kwargs = kwargs
-            self.stop_fut = hp.ChildOfFuture(
-                sender.stop_fut, name="FromGenerator.Runner.__init__|stop_fut|"
-            )
             self.reference = reference
             self.sender = sender
 
             self.ts = []
-            self.queue = hp.Queue(self.stop_fut)
+            self.stop_fut = stop_fut
+            self.queue = hp.Queue(self.stop_fut, name="FromGenerator.Runner")
 
         async def __aenter__(self):
             return self
@@ -376,21 +375,26 @@ class FromGenerator(object):
         def __aiter__(self):
             return self.results()
 
-        async def results(self):
-            async with hp.TaskHolder(self.stop_fut) as ts:
-                task = ts.add(self.getter(ts))
+        async def results(self, ts):
+            task = ts.add(self.getter())
 
-                def pass_on_error(res):
-                    if not res.cancelled():
-                        exc = res.exception()
-                        if exc:
-                            hp.add_error(self.error_catcher, exc)
-                    self.stop_fut.cancel()
+            def pass_on_error(res):
+                if not res.cancelled():
+                    exc = res.exception()
+                    if exc:
+                        hp.add_error(self.error_catcher, exc)
+                self.stop_fut.cancel()
 
-                task.add_done_callback(pass_on_error)
+            task.add_done_callback(pass_on_error)
 
+            try:
                 async for result in self.queue:
                     yield result
+            finally:
+                await hp.wait_for_all_futures(
+                    hp.async_as_background(self.queue.finish()),
+                    name="FromGenerator.Runner.results.finally",
+                )
 
         @property
         def error_catcher(self):
@@ -409,50 +413,79 @@ class FromGenerator(object):
             elif self.item.reference_override is not None:
                 return self.item.reference_override
 
-        async def getter(self, ts):
+        async def getter(self):
             gen = self.item.generator(self.generator_reference, self.sender, **self.kwargs)
 
+            with hp.ChildOfFuture(self.stop_fut, name="FromGenerator.Runner.getter") as getter_fut:
+                async with hp.ResultStreamer(
+                    getter_fut, name="FromGenerator.Runner.getter"
+                ) as streamer:
+                    await streamer.add_coroutine(self.consume(gen, streamer))
+                    streamer.no_more_work()
+
+                    async for result in streamer:
+                        if not result.successful:
+                            raise result.value
+
+        async def consume(self, gen, streamer):
             complete = None
 
-            while True:
-                try:
-                    msg = await gen.asend(complete)
-                    if isinstance(msg, Exception):
-                        hp.add_error(self.error_catcher, msg)
-                        continue
+            try:
+                while True:
+                    try:
+                        msg = await gen.asend(complete)
+                        if isinstance(msg, Exception):
+                            hp.add_error(self.error_catcher, msg)
+                            continue
 
-                    if self.stop_fut.done():
-                        break
-
-                    complete = hp.create_future(name="FromGenerator.getter.complete")
-
-                    tasks = []
-
-                    async def get_all():
-                        async with hp.TaskHolder(self.stop_fut) as tts:
-                            f_for_items = []
-                            for item in self.item.simplifier(msg):
-                                f = hp.create_future(name="FromGenerator.getter.item")
-                                f_for_items.append(f)
-                                tasks.append(tts.add(self.retrieve(item, f)))
-
-                    task = ts.add(get_all())
-                    await hp.wait_for_all_futures(task, name="FromGenerator.Runner.getter")
-
-                    if not task.cancelled() and task.exception():
-                        hp.add_error(self.error_catcher, task.exception())
-
-                    for t in tasks:
-                        if not t.done() or t.cancelled() or t.exception() or t.result() is False:
-                            complete.set_result(False)
+                        if self.stop_fut.done():
                             break
 
-                    if not complete.done():
-                        complete.set_result(True)
-                except StopAsyncIteration:
-                    break
+                        complete = hp.create_future(name="FromGenerator.getter|complete")
+                        await streamer.add_coroutine(self.retrieve_all(msg, complete))
+                    except StopAsyncIteration:
+                        break
+            finally:
+                await self.stop_gen(gen, complete)
 
-        async def retrieve(self, item, f):
+        async def stop_gen(self, gen, complete):
+            async def final():
+                await gen.athrow(asyncio.CancelledError())
+
+                try:
+                    await gen.asend(complete)
+                except StopAsyncIteration:
+                    pass
+
+                await gen.aclose()
+
+            await hp.wait_for_all_futures(
+                hp.async_as_background(final()), name="FromGenerator.Runner.stop_gen"
+            )
+
+        async def retrieve_all(self, msg, complete):
+            with hp.ChildOfFuture(
+                self.stop_fut, name="FromGenerator.Runner.retrieve_all"
+            ) as getter_fut:
+                async with hp.ResultStreamer(
+                    getter_fut, name="FromGenerator.Runner.retrieve_all"
+                ) as streamer:
+                    for item in self.item.simplifier(msg):
+                        await streamer.add_coroutine(self.retrieve(item), context="retrieved")
+                    streamer.no_more_work()
+
+                    async for result in streamer:
+                        if not result.successful:
+                            raise result.value
+
+                        elif result.context == "retrieved":
+                            if not result.value and not complete.done():
+                                complete.set_result(False)
+
+                if not complete.done():
+                    complete.set_result(True)
+
+        async def retrieve(self, item):
             i = {"success": True}
 
             def pass_on_error(e):

@@ -11,10 +11,13 @@ from photons_transport.fake import FakeDevice
 from photons_messages import DeviceMessages
 
 from delfick_project.errors_pytest import assertRaises, assertSameError
+from contextlib import contextmanager
 from collections import defaultdict
 from functools import partial
 import asyncio
 import pytest
+import sys
+
 
 light1 = FakeDevice(
     "d073d5000001", chp.default_responders(power=0, color=chp.Color(0, 1, 0.3, 2500))
@@ -401,6 +404,8 @@ describe "FromGenerator":
         )
 
     async it "can provide errors", runner:
+        for device in runner.devices:
+            device.compare_received([])
 
         async def gen(reference, sender, **kwargs):
             yield FailedToFindDevice(serial=light1.serial)
@@ -419,3 +424,132 @@ describe "FromGenerator":
 
         with assertRaises(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
             await self.assertScript(runner, gen, expected=expected)
+
+    async it "can be cancelled", runner, FakeTime, MockedCallLater:
+        called = []
+
+        @contextmanager
+        def alter_called(name):
+            called.append(("start", name))
+            try:
+                yield
+            except asyncio.CancelledError:
+                called.append(("cancelled", name))
+                raise
+            except:
+                called.append(("error", name, sys.exc_info()))
+                raise
+            finally:
+                called.append(("finally", name))
+
+        def make_secondary_msg(i, m):
+            async def gen(reference, sender, **kwargs):
+                with alter_called(("secondary", i)):
+                    async for _ in hp.tick(0.1):
+                        called.append(("secondary", i))
+                        yield DeviceMessages.SetPower(level=0)
+
+            return FromGenerator(gen, reference_override=True)
+
+        def make_primary_msg(m):
+            async def gen(reference, sender, **kwargs):
+                with alter_called("primary"):
+                    async for i, _ in hp.tick(0.3):
+                        called.append(("primary", i))
+                        yield make_secondary_msg(i, m)
+
+            return FromGenerator(gen, reference_override=True)
+
+        with FakeTime() as t:
+            async with MockedCallLater(t) as m:
+                msg = make_primary_msg(m)
+
+                fut = hp.create_future()
+                async with hp.ResultStreamer(fut) as streamer:
+
+                    async def pkts():
+                        with alter_called("pkts"):
+                            async for pkt in runner.sender(msg, light1.serial):
+                                yield pkt
+
+                    t = await streamer.add_generator(pkts(), context="pkt")
+                    streamer.no_more_work()
+
+                    found = []
+                    async for result in streamer:
+                        if result.context == "pkt":
+                            found.append(result)
+                            if len(found) == 18:
+                                t.cancel()
+
+            # 3 + 6 + 9
+            assert called.count(("secondary", 1)) == 8
+            assert called.count(("secondary", 2)) == 5
+            assert called.count(("secondary", 3)) == 3
+            assert called.count(("secondary", 4)) == 2
+
+            assert called == [
+                ("start", "pkts"),
+                ("start", "primary"),
+                ("primary", 1),
+                ("start", ("secondary", 1)),
+                ("secondary", 1),
+                ("secondary", 1),
+                ("secondary", 1),
+                ("primary", 2),
+                ("secondary", 1),
+                ("start", ("secondary", 2)),
+                ("secondary", 2),
+                ("secondary", 1),
+                ("secondary", 2),
+                ("primary", 3),
+                ("secondary", 1),
+                ("secondary", 2),
+                ("start", ("secondary", 3)),
+                ("secondary", 3),
+                ("secondary", 1),
+                ("secondary", 2),
+                ("secondary", 3),
+                ("primary", 4),
+                ("start", ("secondary", 4)),
+                ("secondary", 4),
+                ("secondary", 1),
+                ("secondary", 2),
+                ("secondary", 3),
+                ("secondary", 4),
+                ("cancelled", "primary"),
+                ("finally", "primary"),
+                ("cancelled", ("secondary", 1)),
+                ("finally", ("secondary", 1)),
+                ("cancelled", ("secondary", 2)),
+                ("finally", ("secondary", 2)),
+                ("cancelled", ("secondary", 3)),
+                ("finally", ("secondary", 3)),
+                ("cancelled", ("secondary", 4)),
+                ("finally", ("secondary", 4)),
+                ("cancelled", "pkts"),
+                ("finally", "pkts"),
+            ]
+
+        got = [(i, serial, p) for i, serial, p, *_ in runner.sender.received]
+        assert len(got) == 18
+        assert got == [
+            (0, "d073d5000001", "SetPowerPayload"),
+            (0.1, "d073d5000001", "SetPowerPayload"),
+            (0.2, "d073d5000001", "SetPowerPayload"),
+            (0.3, "d073d5000001", "SetPowerPayload"),
+            (0.3, "d073d5000001", "SetPowerPayload"),
+            (0.4, "d073d5000001", "SetPowerPayload"),
+            (0.4, "d073d5000001", "SetPowerPayload"),
+            (0.6, "d073d5000001", "SetPowerPayload"),
+            (0.6, "d073d5000001", "SetPowerPayload"),
+            (0.6, "d073d5000001", "SetPowerPayload"),
+            (0.8, "d073d5000001", "SetPowerPayload"),
+            (0.8, "d073d5000001", "SetPowerPayload"),
+            (0.8, "d073d5000001", "SetPowerPayload"),
+            (0.9, "d073d5000001", "SetPowerPayload"),
+            (1.0, "d073d5000001", "SetPowerPayload"),
+            (1.0, "d073d5000001", "SetPowerPayload"),
+            (1.0, "d073d5000001", "SetPowerPayload"),
+            (1.1, "d073d5000001", "SetPowerPayload"),
+        ]
