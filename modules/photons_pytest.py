@@ -518,6 +518,7 @@ class MemoryDevicesRunner:
             await device.reset()
 
     async def per_test(self):
+        self.sender.received.clear()
         await self.reset_devices()
         del self.sender.gatherer
 
