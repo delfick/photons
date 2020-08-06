@@ -336,12 +336,18 @@ class TaskHolder:
             final_future, name=f"TaskHolder.{self.name}.__init__|final_future|"
         )
 
+        self._cleaner = None
+        self._cleaner_waiter = ResettableFuture(name="TaskHolder.__init__|cleaner_waiter|")
+
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
 
     def add_task(self, task):
+        if not self._cleaner:
+            self._cleaner = async_as_background(self.cleaner())
+
+        task.add_done_callback(lambda res: self._cleaner_waiter.reset())
         self.ts.append(task)
-        self.ts = [t for t in self.ts if not t.done()]
         return task
 
     async def __aenter__(self):
@@ -357,29 +363,59 @@ class TaskHolder:
             self.final_future.cancel()
 
     async def finish(self):
-        while any(not t.done() for t in self.ts):
-            for t in self.ts:
-                if self.final_future.done():
-                    t.cancel()
+        try:
+            while any(not t.done() for t in self.ts):
+                for t in self.ts:
+                    if self.final_future.done():
+                        t.cancel()
 
-            if self.ts:
-                if self.final_future.done():
-                    await wait_for_all_futures(
-                        self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish_ff_done"
-                    )
-                else:
-                    await wait_for_first_future(
-                        self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish"
-                    )
+                if self.ts:
+                    if self.final_future.done():
+                        await wait_for_all_futures(
+                            self.final_future,
+                            *self.ts,
+                            name=f"TaskHolder({self.name})::finish_ff_done",
+                        )
+                    else:
+                        await wait_for_first_future(
+                            self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish"
+                        )
 
-                self.ts = [t for t in self.ts if not t.done()]
+                    self.ts = [t for t in self.ts if not t.done()]
 
-        if self.ts:
-            await wait_for_all_futures(*self.ts, name=f"TaskHolder({self.name})::finish_final")
+        finally:
+            if self._cleaner:
+                self._cleaner.cancel()
+                await wait_for_all_futures(self._cleaner)
+
+            await wait_for_all_futures(async_as_background(self.clean()))
 
     @property
     def pending(self):
         return sum(1 for t in self.ts if not t.done())
+
+    def __contains__(self, task):
+        return task in self.ts
+
+    def __iter__(self):
+        return iter(self.ts)
+
+    async def cleaner(self):
+        while True:
+            await self._cleaner_waiter
+            await self.clean()
+
+    async def clean(self):
+        destroyed = []
+        remaining = []
+        for t in self.ts:
+            if t.done():
+                destroyed.append(t)
+            else:
+                remaining.append(t)
+
+        await wait_for_all_futures(*destroyed)
+        self.ts = remaining
 
 
 class ResultStreamer:
@@ -658,7 +694,6 @@ class ResultStreamer:
             t.cancel()
             wait_for.append(t)
             second_after.append(lambda: async_as_background(g.aclose()))
-
 
         await wait_for_all_futures(*wait_for, name=f"ResultStreamer.{self.name}.finish.tasks")
         await wait_for_all_futures(

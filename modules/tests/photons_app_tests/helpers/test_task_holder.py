@@ -3,6 +3,7 @@
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from unittest import mock
 import asyncio
 import pytest
 
@@ -161,3 +162,72 @@ describe "TaskHolder":
         with assertRaises(asyncio.CancelledError):
             await t
         assert called == ["one_start", "two_start", "one_cancelled", "two_cancelled"]
+
+    async it "can iterate tasks", final_future:
+        async with hp.TaskHolder(final_future) as ts:
+
+            async def hi():
+                pass
+
+            t1 = ts.add(hi())
+            assert list(ts) == [t1]
+
+            t2 = ts.add(hi())
+            t3 = ts.add(hi())
+            assert list(ts) == [t1, t2, t3]
+
+    async it "can say if the holder has a task", final_future:
+        async with hp.TaskHolder(final_future) as ts:
+
+            async def hi():
+                pass
+
+            t1 = hp.async_as_background(hi())
+            t2 = hp.async_as_background(hi())
+
+            assert t1 not in ts
+            ts.add_task(t1)
+            assert t1 in ts
+            assert t2 not in ts
+
+            ts.add_task(t2)
+            assert t1 in ts
+            assert t2 in ts
+
+    async it "can clean up tasks", final_future:
+        called = []
+        wait = hp.create_future()
+
+        async def one():
+            called.append("ONE")
+            try:
+                await asyncio.sleep(200)
+            except asyncio.CancelledError:
+                called.append("CANC_ONE")
+                raise
+            finally:
+                called.append("FIN_ONE")
+
+        async def two():
+            called.append("TWO")
+            try:
+                await wait
+                called.append("DONE_TWO")
+            finally:
+                called.append("FIN_TWO")
+
+        async with hp.TaskHolder(final_future) as ts:
+            t1 = ts.add(one())
+            ts.add(two())
+
+            assert called == []
+            await asyncio.sleep(0)
+            assert called == ["ONE", "TWO"]
+
+            t1.cancel()
+            await asyncio.sleep(0)
+            assert called == ["ONE", "TWO", "CANC_ONE", "FIN_ONE"]
+
+            wait.set_result(True)
+            await asyncio.sleep(0)
+            assert called == ["ONE", "TWO", "CANC_ONE", "FIN_ONE", "DONE_TWO", "FIN_TWO"]
