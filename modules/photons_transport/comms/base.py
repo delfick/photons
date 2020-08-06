@@ -94,12 +94,13 @@ class Found:
 
         for target in list(self):
             if target not in found_now:
-                for transport in self[target].values():
-                    try:
-                        await transport.close()
-                    except Exception as error:
-                        log.error(hp.lc("Failed to close transport", error=error))
-                del self[target]
+                if target in self:
+                    for transport in self[target].values():
+                        try:
+                            await transport.close()
+                        except Exception as error:
+                            log.error(hp.lc("Failed to close transport", error=error))
+                    del self[target]
 
     def __iter__(self):
         return iter(self.found)
