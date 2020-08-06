@@ -219,7 +219,7 @@ class MockedCallLaterImpl:
 
             self.funcs = remaining
 
-            if iterations > 1 and iteration > 0:
+            if iterations >= 1 and iteration > 0:
                 self.t.add(0.1)
 
         if not executed and iterations == 0:
