@@ -487,6 +487,7 @@ class Device(dictobj.Spec):
         self.point_futures[None] = hp.ResettableFuture(
             name=f"Device({self.serial}.point_futures[None])"
         )
+        self.refreshing = hp.ResettableFuture(name=f"Device({self.serial}.refreshing")
 
     @hp.memoized_property
     def final_future(self):
@@ -616,21 +617,20 @@ class Device(dictobj.Spec):
 
     async def finish(self):
         self.final_future.cancel()
-        if hasattr(self, "_refresh_information_loop"):
-            await hp.cancel_futures_and_wait(
-                self._refresh_information_loop, name=f"Device.{self.serial}.finish"
-            )
         del self.final_future
 
-    def ensure_refresh_information_loop(self, sender, time_between_queries, collections):
-        loop = getattr(self, "_refresh_information_loop", None)
-        if not loop or loop.done():
-            self._refresh_information_loop = hp.async_as_background(
-                self.refresh_information_loop(sender, time_between_queries, collections)
-            )
-        return self._refresh_information_loop
-
     async def refresh_information_loop(self, sender, time_between_queries, collections):
+        if self.refreshing.done():
+            return
+
+        self.refreshing.reset()
+        self.refreshing.set_result(True)
+        try:
+            await self._refresh_information_loop(sender, time_between_queries, collections)
+        finally:
+            self.refreshing.reset()
+
+    async def _refresh_information_loop(self, sender, time_between_queries, collections):
         points = iter(itertools.cycle(list(InfoPoints)))
 
         time_between_queries = time_between_queries or {}
@@ -716,6 +716,8 @@ class DeviceFinderDaemon:
             self.sender, self.final_future, forget_after=forget_after, limit=limit
         )
 
+        self.ts = hp.TaskHolder(self.final_future)
+
     def reference(self, fltr):
         return DeviceFinder(fltr, finder=self.finder)
 
@@ -727,31 +729,43 @@ class DeviceFinderDaemon:
         await self.finish()
 
     async def start(self):
-        self._search_loop = hp.async_as_background(self.search_loop())
+        self.ts.add(self.search_loop())
 
     async def finish(self):
         self.final_future.cancel()
-        if hasattr(self, "_search_loop"):
-            await hp.cancel_futures_and_wait(self._search_loop, name="DeviceFinderDaemon.finish")
+        await self.ts.finish()
         if self.own_finder:
             await self.finder.finish()
 
     async def search_loop(self):
         refresh_discovery_fltr = Filter.empty(refresh_discovery=True)
 
-        async for _ in hp.tick(self.search_interval, name="DeviceFinderDaemon::search_loop"):
-            if self.final_future.done():
-                return
-
-            try:
-                async for device in self.finder.find(refresh_discovery_fltr):
-                    device.ensure_refresh_information_loop(
+        async def add(streamer):
+            async for device in self.finder.find(refresh_discovery_fltr):
+                await streamer.add_coroutine(
+                    device.refresh_information_loop(
                         self.sender, self.time_between_queries, self.finder.collections
+                    ),
+                    context=device,
+                )
+
+        async def ensure(streamer):
+            async for _ in hp.tick(self.search_interval, final_future=self.final_future):
+                await hp.wait_for_all_futures(
+                    await streamer.add_coroutine(add(streamer)),
+                    name="DeviceFinderDaemon.search_loop.ensure",
+                )
+
+        async with hp.ResultStreamer(self.final_future, name="search_loop") as streamer:
+            await streamer.add_coroutine(ensure(streamer))
+            streamer.no_more_work()
+
+            async for result in streamer:
+                if not result.successful:
+                    log.exception(
+                        "Something went wrong in a search",
+                        exc_info=(type(result.value), result.value, result.value.__traceback__),
                     )
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                log.exception("Something went wrong in a search")
 
     async def serials(self, fltr):
         async for device in self.finder.find(fltr):

@@ -10,6 +10,7 @@ from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 from unittest import mock
+import asyncio
 import pytest
 
 describe "Device":
@@ -114,7 +115,6 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
 
-    @pytest.mark.focus
     async it "can start an information loop", V, fake_time, MockedCallLater:
         fake_time.set(1)
 
@@ -254,10 +254,65 @@ describe "Device":
             with hp.ChildOfFuture(V.runner.final_future) as ff:
                 async with hp.TaskHolder(ff, name="TEST") as ts:
                     checker_task = ts.add(checker(ff))
-                    ts.add_task(
-                        V.device.ensure_refresh_information_loop(
+                    ts.add(
+                        V.device.refresh_information_loop(
                             V.runner.sender, time_between_queries, V.finder.collections
                         )
                     )
 
         await checker_task
+
+    async it "doesn't do multiple refresh loops at the same time", V, fake_time, MockedCallLater:
+
+        async def impl(*args, **kwargs):
+            await asyncio.sleep(200)
+
+        private_refresh_information_loop = pytest.helpers.AsyncMock(
+            name="_refresh_information_loop", side_effect=impl
+        )
+
+        with mock.patch.object(
+            V.device, "_refresh_information_loop", private_refresh_information_loop
+        ):
+            async with hp.TaskHolder(V.runner.final_future, name="TEST") as ts:
+                assert not V.device.refreshing.done()
+
+                t1 = ts.add(
+                    V.device.refresh_information_loop(V.runner.sender, None, V.finder.collections)
+                )
+
+                await asyncio.sleep(0)
+                assert V.device.refreshing.done()
+                private_refresh_information_loop.assert_called_once_with(
+                    V.runner.sender, None, V.finder.collections
+                )
+                assert not t1.done()
+
+                # Next time we add does nothing
+                t2 = ts.add(
+                    V.device.refresh_information_loop(V.runner.sender, None, V.finder.collections)
+                )
+
+                await asyncio.sleep(0)
+                assert V.device.refreshing.done()
+                private_refresh_information_loop.assert_called_once_with(
+                    V.runner.sender, None, V.finder.collections
+                )
+                assert t2.done()
+                assert not t1.done()
+
+                # Now we stop the current one and restart again to actually be called
+                t1.cancel()
+                await asyncio.sleep(0)
+                assert not V.device.refreshing.done()
+
+                t3 = ts.add(
+                    V.device.refresh_information_loop(V.runner.sender, None, V.finder.collections)
+                )
+
+                await asyncio.sleep(0)
+                assert V.device.refreshing.done()
+                assert len(private_refresh_information_loop.mock_calls) == 2
+                assert not t3.done()
+
+                t3.cancel()

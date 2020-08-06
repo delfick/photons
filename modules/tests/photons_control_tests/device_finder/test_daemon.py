@@ -178,7 +178,7 @@ describe "DeviceFinderDaemon":
 
                     with mock.patch.object(V.daemon.finder, "find", find):
 
-                        async def tick(every, name=None, min_wait=0.1):
+                        async def tick(every, final_future=None, name=None, min_wait=0.1):
                             while True:
                                 t.add(every)
                                 await asyncio.sleep(0.001)
@@ -206,11 +206,11 @@ describe "DeviceFinderDaemon":
                     d1 = m("d073d5000001")
                     d2 = m("d073d5000002")
 
-                    d1eril = mock.Mock(name="d1_ensure_refresh_information_loop")
-                    d2eril = mock.Mock(name="d2_ensure_refresh_information_loop")
+                    d1ril = pytest.helpers.AsyncMock(name="d1_refresh_information_loop")
+                    d2ril = pytest.helpers.AsyncMock(name="d2_refresh_information_loop")
 
-                    p1 = mock.patch.object(d1, "ensure_refresh_information_loop", d1eril)
-                    p2 = mock.patch.object(d2, "ensure_refresh_information_loop", d2eril)
+                    p1 = mock.patch.object(d1, "refresh_information_loop", d1ril)
+                    p2 = mock.patch.object(d2, "refresh_information_loop", d2ril)
 
                     async def find(fltr):
                         assert fltr.matches_all
@@ -221,14 +221,14 @@ describe "DeviceFinderDaemon":
                         yield d1
                         yield d2
 
-                        assert len(d1eril.mock_calls) == len(called)
-                        assert len(d2eril.mock_calls) == len(called)
+                        assert len(d1ril.mock_calls) == len(called)
+                        assert len(d2ril.mock_calls) == len(called)
 
                     find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
                     original_tick = hp.tick
 
-                    async def tick(every, name=None, min_wait=0.1):
+                    async def tick(every, final_future=None, name=None, min_wait=0.1):
                         async for i, nxt in original_tick(0, min_wait=0):
                             await futs[i]
                             yield i, nxt
@@ -249,8 +249,8 @@ describe "DeviceFinderDaemon":
                             await futs[4]
                             t.cancel()
 
-                    for eril in (d1eril, d2eril):
-                        assert len(eril.mock_calls) == 4
+                    for eril in (d1ril, d2ril):
+                        assert len(eril.mock_calls) >= 3
 
                         assert eril.mock_calls[0] == mock.call(
                             V.daemon.sender,
@@ -266,11 +266,11 @@ describe "DeviceFinderDaemon":
                         d1 = m("d073d5000001")
                         d2 = m("d073d5000002")
 
-                        d1eril = mock.Mock(name="d1_ensure_refresh_information_loop")
-                        d2eril = mock.Mock(name="d2_ensure_refresh_information_loop")
+                        d1ril = pytest.helpers.AsyncMock(name="d1_refresh_information_loop")
+                        d2ril = pytest.helpers.AsyncMock(name="d2_refresh_information_loop")
 
-                        p1 = mock.patch.object(d1, "ensure_refresh_information_loop", d1eril)
-                        p2 = mock.patch.object(d2, "ensure_refresh_information_loop", d2eril)
+                        p1 = mock.patch.object(d1, "refresh_information_loop", d1ril)
+                        p2 = mock.patch.object(d2, "refresh_information_loop", d2ril)
 
                         async def find(fltr):
                             called.append(1)
@@ -284,7 +284,7 @@ describe "DeviceFinderDaemon":
 
                         find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                        async def tick(every, name=None, min_wait=0.1):
+                        async def tick(every, final_future=None, name=None, min_wait=0.1):
                             i = 1
                             while True:
                                 await futs[i]
@@ -307,10 +307,10 @@ describe "DeviceFinderDaemon":
                                 await futs[4]
                                 t.cancel()
 
-                        assert len(d1eril.mock_calls) == 4
-                        assert len(d2eril.mock_calls) == 3
+                        assert len(d1ril.mock_calls) == 4
+                        assert len(d2ril.mock_calls) == 3
 
-                        for eril in (d1eril, d2eril):
+                        for eril in (d1ril, d2ril):
                             assert eril.mock_calls[0] == mock.call(
                                 V.daemon.sender,
                                 V.daemon.time_between_queries,
