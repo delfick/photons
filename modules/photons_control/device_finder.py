@@ -776,33 +776,6 @@ class DeviceFinderDaemon:
             yield device
 
 
-class Searcher:
-    def __init__(self, sender):
-        self.sender = sender
-        self.search_fut = hp.ResettableFuture(name="Searcher(search_fut)")
-        self.search_fut.set_result(None)
-
-    async def _serials(self):
-        try:
-            _, serials = await FoundSerials().find(self.sender, timeout=5)
-        except FoundNoDevices:
-            log.info("Found no devices")
-            return []
-        else:
-            return serials
-
-    async def discover(self, refresh=False):
-        if not self.search_fut.done() or not refresh:
-            serials = await self.search_fut
-            if serials is not None:
-                return serials
-
-        self.search_fut.reset()
-        serials = await self._serials()
-        self.search_fut.set_result(serials)
-        return serials
-
-
 class Finder:
     def __init__(self, sender, final_future=None, *, forget_after=30, limit=30):
         self.sender = sender
@@ -814,90 +787,49 @@ class Finder:
 
         self.devices = {}
         self.last_seen = {}
-        self.searcher = Searcher(sender)
+        self.searched = hp.ResettableFuture()
         self.collections = Collections()
-        self.final_future = hp.ChildOfFuture(
-            final_future or self.sender.stop_fut, name="Finder.__init__|final_future|"
-        )
-
-    async def _ensure_devices(self, fltr):
-        added = []
-        removed = []
-
-        serials = await self.searcher.discover(
-            refresh=False if fltr is None else fltr.refresh_discovery
-        )
-
-        if self.final_future.done():
-            return [], []
-
-        for serial in serials:
-            if serial not in self.devices:
-                device = Device.FieldSpec().empty_normalise(serial=serial, limit=self.limit)
-                added.append(device)
-                self.devices[serial] = device
-            self.last_seen[serial] = time.time()
-
-        for serial, device in list(self.devices.items()):
-            if time.time() - self.last_seen[serial] > self.forget_after:
-                del self.devices[serial]
-                if serial in self.last_seen:
-                    del self.last_seen[serial]
-                removed.append(device)
-
-        return added, removed
+        self.final_future = hp.ChildOfFuture(final_future or self.sender.stop_fut)
 
     async def find(self, fltr):
-        _, removed = await self._ensure_devices(fltr)
+        if self.final_future.done():
+            return
 
-        def error(e):
-            log.error(
-                hp.lc(
-                    "Failed to determine if device matched filter",
-                    error=e,
-                    error_type=type(e).__name__,
-                )
-            )
+        refresh = False if fltr is None else fltr.refresh_discovery
+        serials = await self._find_all_serials(refresh=refresh)
+        removed = self._ensure_devices(serials)
 
-        streamer = hp.ResultStreamer(
-            self.final_future,
-            error_catcher=error,
-            exceptions_only_to_error_catcher=True,
-            name="Finder::find",
-        )
+        async with hp.ResultStreamer(self.final_future, name="Finder::find") as streamer:
+            for device in removed:
+                await streamer.add_coroutine(device.finish())
 
-        for device in removed:
-            await streamer.add_coroutine(device.finish())
+            for serial, device in list(self.devices.items()):
+                if fltr.matches_all:
+                    fut = hp.create_future(name="DeviceFinder.Finder.find.fltr_fut")
+                    fut.set_result(True)
+                    await streamer.add_task(fut, context=device)
+                else:
+                    await streamer.add_coroutine(
+                        device.matches(self.sender, fltr, self.collections), context=device
+                    )
 
-        for serial, device in list(self.devices.items()):
-            if fltr.matches_all:
-                fut = hp.create_future(name="DeviceFinder.Finder.find.fltr_fut")
-                fut.set_result(True)
-                await streamer.add_task(fut, context=device)
-            else:
-                await streamer.add_coroutine(
-                    device.matches(self.sender, fltr, self.collections), context=device
-                )
+            streamer.no_more_work()
 
-        streamer.no_more_work()
-
-        async with streamer:
-            async for result in streamer:
-                if result.successful and result.value and result.context:
-                    yield result.context
+            async with streamer:
+                async for result in streamer:
+                    if not result.successful:
+                        log.exception(
+                            "Failed to determine if device matched filter",
+                            exc_info=(type(result.value), result.value, result.value.__traceback__),
+                        )
+                    elif result.value and result.context:
+                        yield result.context
 
     async def info(self, fltr):
         def error(e):
             log.error(
                 hp.lc("Failed to find information for device", error=e, error_type=type(e).__name__)
             )
-
-        streamer = hp.ResultStreamer(
-            self.final_future,
-            error_catcher=error,
-            exceptions_only_to_error_catcher=True,
-            name="Finder::info",
-        )
 
         async def find():
             async for device in self.find(fltr):
@@ -908,14 +840,27 @@ class Finder:
                     context=device,
                 )
 
-        await streamer.add_coroutine(find(), context=True)
-        streamer.no_more_work()
+        streamer = hp.ResultStreamer(
+            self.final_future,
+            error_catcher=error,
+            exceptions_only_to_error_catcher=True,
+            name="Finder::info",
+        )
 
         async with streamer:
+            await streamer.add_coroutine(find(), context=True)
+            streamer.no_more_work()
+
             async for result in streamer:
-                if result.context is True and not result.successful:
-                    raise result.value
-                if result.successful and result.value and result.context:
+                if not result.successful:
+                    log.exception(
+                        "Failed to find information for device",
+                        exc_info=(type(result.value), result.value, result.value.__traceback__),
+                    )
+                    if result.context is True:
+                        raise result.value
+
+                elif result.value and result.context:
                     yield result.context
 
     async def finish(self):
@@ -934,3 +879,35 @@ class Finder:
 
     async def __aexit__(self, exc_typ, exc, tb):
         await self.finish()
+
+    async def _find_all_serials(self, *, refresh):
+        serials = None
+        if self.searched.done() and not refresh:
+            serials = self.searched.result()
+        else:
+            _, serials = await FoundSerials().find(self.sender, timeout=5)
+            self.searched.reset()
+            self.searched.set_result(serials)
+
+        return serials
+
+    def _ensure_devices(self, serials):
+        removed = []
+
+        if self.final_future.done():
+            return [], []
+
+        for serial in serials:
+            if serial not in self.devices:
+                device = Device.FieldSpec().empty_normalise(serial=serial, limit=self.limit)
+                self.devices[serial] = device
+            self.last_seen[serial] = time.time()
+
+        for serial, device in list(self.devices.items()):
+            if time.time() - self.last_seen[serial] > self.forget_after:
+                del self.devices[serial]
+                if serial in self.last_seen:
+                    del self.last_seen[serial]
+                removed.append(device)
+
+        return removed

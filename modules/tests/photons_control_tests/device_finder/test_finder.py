@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_control.device_finder import Finder, Searcher, Collections, Device, Filter
+from photons_control.device_finder import Finder, Collections, Device, Filter
 
 from photons_app import helpers as hp
 
@@ -22,11 +22,6 @@ describe "Finder":
         assert finder.devices == {}
         assert finder.last_seen == {}
 
-        class S:
-            def __eq__(s, other):
-                return isinstance(other, Searcher) and other.sender is sender
-
-        assert finder.searcher == S()
         assert isinstance(finder.collections, Collections)
 
         class F:
@@ -139,108 +134,62 @@ describe "Finder":
                     p.stop()
 
         describe "ensure_devices":
-            async it "gives the fltr to searcher.discovery", V:
-                discover = pytest.helpers.AsyncMock(name="discover", return_value=[])
-
-                with mock.patch.object(V.finder.searcher, "discover", discover):
-                    assert (await V.finder._ensure_devices(None)) == ([], [])
-                    discover.assert_called_once_with(refresh=False)
-
-                    discover.reset_mock()
-                    assert (await V.finder._ensure_devices(Filter.empty())) == ([], [])
-                    discover.assert_called_once_with(refresh=False)
-
-                    discover.reset_mock()
-                    assert (await V.finder._ensure_devices(Filter.empty(refresh_info=True))) == (
-                        [],
-                        [],
-                    )
-                    discover.assert_called_once_with(refresh=False)
-
-                    discover.reset_mock()
-                    assert (
-                        await V.finder._ensure_devices(Filter.empty(refresh_discovery=True))
-                    ) == ([], [])
-                    discover.assert_called_once_with(refresh=True)
-
             async it "can add and remove devices", V, FakeTime:
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
 
-                fltr = Filter.empty()
-                discover = pytest.helpers.AsyncMock(name="discover")
+                async def assertDevices(serials, added, removed):
+                    existing = {d.serial: id(d) for d in V.finder.devices.values()}
+                    existing_last_seen = dict(V.finder.last_seen)
 
-                devices = {}
-                last_seen = {}
-
-                async def assertDevices(added, removed):
-                    ad, rd = await V.finder._ensure_devices(fltr)
-
-                    ad = sorted([d.serial for d in ad])
+                    rd = V.finder._ensure_devices(serials)
                     rd = sorted([d.serial for d in rd])
-                    added = sorted([d.serial for d in added])
-                    removed = sorted([d.serial for d in removed])
 
-                    same = ad == added and rd == removed
+                    now = list(V.finder.devices)
+
+                    got = sorted(set(now) - set(existing))
+                    want = sorted(added)
+                    removed = sorted(removed)
+
+                    same = got == want and rd == removed
 
                     if not same:
                         print("==== ADDED")
                         print(f"Expected: {added}")
-                        print(f"Got     : {ad}")
+                        print(f"Got     : {got}")
                         print("==== REMOVED")
                         print(f"Expected: {removed}")
                         print(f"Got     : {rd}")
 
-                    assert sorted(V.finder.devices) == sorted(devices)
-                    assert sorted(V.finder.devices) == sorted(
-                        [d.serial for d in V.finder.devices.values()]
-                    )
-                    assert sorted(devices) == sorted([d.serial for d in devices.values()])
+                    assert got == want
+                    assert rd == removed
+                    assert all(serial not in V.finder.devices for serial in removed)
 
-                    assert V.finder.last_seen == last_seen
+                    assert {
+                        d.serial: id(d)
+                        for d in V.finder.devices.values()
+                        if d.serial in existing and d.serial not in removed
+                    } == {serial: d for serial, d in existing.items() if serial not in removed}
 
-                with mock.patch.object(V.finder.searcher, "discover", discover), FakeTime() as t:
-                    discover.return_value = []
-                    await assertDevices([], [])
+                    for serial in V.finder.devices:
+                        assert serial not in removed
+                        if serial not in added and serial in serials:
+                            assert V.finder.last_seen[serial] > existing_last_seen[serial]
 
-                    discover.return_value = ["s1", "s2", "s3"]
-                    devices.update({"s1": m("s1"), "s2": m("s2"), "s3": m("s3")})
-                    last_seen.update({"s1": t.time, "s2": t.time, "s3": t.time})
-                    await assertDevices([m("s1"), m("s2"), m("s3")], [])
+                with FakeTime() as t:
+                    await assertDevices([], [], [])
+
+                    await assertDevices(["s1", "s2", "s3"], ["s1", "s2", "s3"], [])
 
                     t.add(10)
-                    discover.return_value = ["s2", "s1", "s4"]
-                    devices.update({"s4": m("s4")})
-                    last_seen.update({"s2": t.time, "s1": t.time, "s4": t.time})
-                    await assertDevices([m("s4")], [])
+                    await assertDevices(["s2", "s1", "s4"], ["s4"], [])
 
                     t.add(21)
-                    discover.return_value = ["s1"]
-                    s3 = devices.pop("s3")
-                    del last_seen["s3"]
-                    last_seen.update({"s1": t.time})
-                    await assertDevices([], [s3])
+                    await assertDevices(["s1"], [], ["s3"])
 
                     t.add(20)
-                    discover.return_value = ["s5"]
-                    s2 = devices.pop("s2")
-                    s4 = devices.pop("s4")
-                    del last_seen["s2"]
-                    del last_seen["s4"]
-                    last_seen.update({"s5": t.time})
-                    devices.update({"s5": m("s5")})
-                    await assertDevices([m("s5")], [s2, s4])
+                    await assertDevices(["s5"], ["s5"], ["s2", "s4"])
 
-                    # And no devices added or removed if final future
-                    # is done after the search
-                    t.add(30)
-
-                    async def dr(refresh):
-                        V.finder.final_future.cancel()
-                        return ["s7"]
-
-                    discover.reset_mock()
-                    discover.side_effect = dr
-                    await assertDevices([], [])
+                    t.add(10)
+                    await assertDevices(["s1", "s5"], [], [])
 
         describe "find":
 
@@ -298,22 +247,27 @@ describe "Finder":
                     s6 = m("s6")
                     s7 = m("s7")
 
-                    added = [s2]
-                    removed = [s4, s5, s6]
-                    ensure_devices = pytest.helpers.AsyncMock(
-                        name="ensure_devices", return_value=[added, removed]
+                    all_serials = [s1, s2, s3, s4, s5, s6, s7]
+                    private_find_all_serials = pytest.helpers.AsyncMock(
+                        name="_find_all_serials", return_value=all_serials
                     )
+
+                    removed = [s4, s5, s6]
+                    private_ensure_devices = mock.Mock(name="_ensure_devices", return_value=removed)
 
                     assert V.finder.devices == {}
                     V.finder.devices = {"s1": s1, "s2": s2, "s3": s3, "s7": s7}
 
                     ensure_devices_patch = mock.patch.object(
-                        V.finder, "_ensure_devices", ensure_devices
+                        V.finder, "_ensure_devices", private_ensure_devices
+                    )
+                    find_all_serials_patch = mock.patch.object(
+                        V.finder, "_find_all_serials", private_find_all_serials
                     )
 
                     with Patches(
                         [s1, s2, s3, s4, s5, s6, s7]
-                    ), ensure_devices_patch, FakeTime() as t:
+                    ), ensure_devices_patch, find_all_serials_patch, FakeTime() as t:
 
                         async def s4finish():
                             called.append("s4finish_start")
@@ -407,6 +361,8 @@ describe "Finder":
                         else:
                             for d in (s1, s2, s3, s4, s5, s6, s7):
                                 d.matches.assert_not_called()
+
+                private_ensure_devices.assert_called_once_with(all_serials)
 
                 if not matches_runs:
                     expected_called = [
