@@ -413,7 +413,6 @@ class FromGenerator(object):
             gen = self.item.generator(self.generator_reference, self.sender, **self.kwargs)
 
             complete = None
-            getter_fut = hp.ChildOfFuture(self.stop_fut)
 
             while True:
                 try:
@@ -452,9 +451,6 @@ class FromGenerator(object):
                         complete.set_result(True)
                 except StopAsyncIteration:
                     break
-                finally:
-                    if not getter_fut.done():
-                        getter_fut.set_result(True)
 
         async def retrieve(self, item, f):
             i = {"success": True}
