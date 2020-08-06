@@ -36,7 +36,7 @@ describe "ResultStreamer":
         assert streamer.error_catcher is error_catcher
         assert streamer.exceptions_only_to_error_catcher is exceptions_only_to_error_catcher
 
-        assert streamer.ts == []
+        assert len(streamer.ts.ts) == 0
         assert isinstance(streamer.queue, hp.Queue)
         assert not streamer.stop_on_completion
 

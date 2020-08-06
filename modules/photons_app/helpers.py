@@ -551,15 +551,17 @@ class ResultStreamer:
         self.error_catcher = error_catcher
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
-        self.ts = []
-        self.generators = []
-
-        self.queue = Queue(
-            final_future, empty_on_finished=True, name=f"ResultStreamer({self.name})"
+        self.queue_future = ChildOfFuture(
+            final_future, name=f"ResultStreamer.{self.name}.__init__|queue_future|"
         )
-        self.stop_on_completion = False
+        self.queue = Queue(
+            self.queue_future, empty_on_finished=True, name=f"ResultStreamer({self.name})",
+        )
+
+        self.ts = TaskHolder(self.final_future, name="ResultStreamer.__init__(ts)")
 
         self._registered = 0
+        self.stop_on_completion = False
 
     async def __aenter__(self):
         return self
@@ -592,7 +594,13 @@ class ResultStreamer:
             )
             return task
 
-        self.generators.append((task, gen))
+        async def close_gen():
+            try:
+                await task
+            finally:
+                await gen.aclose()
+
+        self.ts.add(close_gen(), silent=True)
         return task
 
     async def add_coroutine(self, coro, *, context=None, on_done=None):
@@ -644,7 +652,7 @@ class ResultStreamer:
             self.queue.append(self.FinishedTask)
 
         task.add_done_callback(add_to_queue)
-        self.ts.append(task)
+        self.ts.add_task(task)
         self._registered += 1
         return task
 
@@ -652,8 +660,10 @@ class ResultStreamer:
         self.stop_on_completion = True
 
     async def retrieve(self):
-        if self.stop_on_completion and not self.ts:
+        if self.stop_on_completion and not self.ts.pending and self._registered == 0:
             return
+
+        self.started = True
 
         async for nxt in self.queue:
             if nxt is self.FinishedTask:
@@ -661,44 +671,18 @@ class ResultStreamer:
             else:
                 yield nxt
 
-            self.ts = [t for t in self.ts if not t.done()]
-            if self.stop_on_completion and not self.ts and self._registered <= 0:
+            if self.stop_on_completion and not self.ts.pending and self._registered <= 0:
                 return
-
-            # Cleanup any finished generators
-            new_gens = []
-            for t, g in self.generators:
-                if t.done():
-                    await wait_for_first_future(
-                        t, name=f"ResultStreamer.{self.name}.retrieve.done_t"
-                    )
-                    await wait_for_first_future(
-                        async_as_background(g.aclose()),
-                        name=f"ResultStreamer.{self.name}.retrieve.done_gen",
-                    )
-                else:
-                    new_gens.append((t, g))
-            self.generators = new_gens
 
     async def finish(self):
         self.final_future.cancel()
 
-        wait_for = []
-        second_after = []
-
-        for t in self.ts:
-            t.cancel()
-            wait_for.append(t)
-
-        for t, g in self.generators:
-            t.cancel()
-            wait_for.append(t)
-            second_after.append(lambda: async_as_background(g.aclose()))
-
-        await wait_for_all_futures(*wait_for, name=f"ResultStreamer.{self.name}.finish.tasks")
-        await wait_for_all_futures(
-            *[l() for l in second_after], name=f"ResultStreamer.{self.name}.finish.gens"
-        )
+        try:
+            await self.ts.finish()
+        finally:
+            if not self._registered:
+                self.queue_future.cancel()
+                await self.queue.finish()
 
 
 @contextmanager
@@ -1563,6 +1547,7 @@ class Queue:
         )
         self.empty_on_finished = empty_on_finished
 
+        self.stop = False
         self.final_future.add_done_callback(self._stop_waiter)
 
     def _stop_waiter(self, res):

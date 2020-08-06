@@ -309,9 +309,9 @@ describe "Gatherer":
                 [
                     (light1.serial, {"label": "bob"}),
                     (light1.serial, {"level": 0}),
-                    ("info", light1.serial),
                     (light2.serial, {"label": "sam"}),
                     (light2.serial, {"level": 65535}),
+                    ("info", light1.serial),
                     ("info", light2.serial),
                 ],
             )
@@ -1165,10 +1165,10 @@ describe "Gatherer":
                     ("info.power", light1.serial),
                     ("power.process.power", light2.serial, power_type),
                     ("info.power", light2.serial),
-                    ("info.process.power", light1.serial, power_type),
-                    ("info.process.power", light2.serial, power_type),
                     ("info.process.label", light3.serial, label_type),
                     ("info.info", light3.serial),
+                    ("info.process.power", light1.serial, power_type),
+                    ("info.process.power", light2.serial, power_type),
                     ("info.process.infrared", light1.serial, infrared_type),
                     ("info.info", light1.serial),
                     ("info.process.label", light2.serial, label_type),
