@@ -6,7 +6,6 @@ from photons_app import helpers as hp
 
 from unittest import mock
 import pytest
-import time
 
 
 describe "Finder":

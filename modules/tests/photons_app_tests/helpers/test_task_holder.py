@@ -3,7 +3,6 @@
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import asyncio
 import pytest
 

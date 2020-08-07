@@ -1,5 +1,5 @@
 from photons_app.special import FoundSerials, SpecialReference
-from photons_app.errors import PhotonsAppError, FoundNoDevices
+from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 

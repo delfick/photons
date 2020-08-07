@@ -9,7 +9,6 @@ from photons_messages import DiscoveryMessages, Services
 
 import binascii
 import logging
-import asyncio
 
 log = logging.getLogger("photons_transport.session.network")
 
