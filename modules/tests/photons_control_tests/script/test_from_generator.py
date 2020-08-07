@@ -76,9 +76,12 @@ describe "FromGenerator":
         errors = []
 
         got = defaultdict(list)
-        with light3.offline():
-            async for pkt in runner.sender(msg, runner.serials, error_catcher=errors):
-                got[pkt.serial].append(pkt)
+        try:
+            with light3.offline():
+                async for pkt in runner.sender(msg, runner.serials, error_catcher=errors):
+                    got[pkt.serial].append(pkt)
+        finally:
+            assert errors == [FailedToFindDevice(serial=light3.serial)]
 
         assert len(runner.devices) > 0
 
@@ -92,8 +95,6 @@ describe "FromGenerator":
                 assert len(got[device.serial]) == 2
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
-
-        assert errors == [FailedToFindDevice(serial=light3.serial)]
 
     async it "is able to do a FromGenerator per serial with per serial error_catchers", runner:
 

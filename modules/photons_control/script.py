@@ -8,8 +8,13 @@ from delfick_project.norms import sb
 import asyncio
 import logging
 import time
+import sys
 
 log = logging.getLogger("photons_control.script")
+
+
+def squash(result):
+    pass
 
 
 async def find_serials(reference, sender, timeout):
@@ -331,29 +336,34 @@ class FromGenerator(object):
             self.error_catcher_override = catcher_override
 
         async def run(self, reference, sender, **kwargs):
-            with hp.ChildOfFuture(sender.stop_fut, name="FromGenerator.Runner.run") as stop_fut:
-                runner = self.runner_kls(self, stop_fut, reference, sender, kwargs)
+            runner = self.runner_kls(self, sender.stop_fut, reference, sender, kwargs)
 
-                error_catcher = kwargs.get("error_catcher")
-                if self.error_catcher_override:
-                    error_catcher = self.error_catcher_override(runner.run_reference, error_catcher)
+            error_catcher = kwargs.get("error_catcher")
+            if self.error_catcher_override:
+                error_catcher = self.error_catcher_override(runner.run_reference, error_catcher)
 
-                do_raise = error_catcher is None
-                if do_raise:
-                    error_catcher = []
+            do_raise = error_catcher is None
+            if do_raise:
+                error_catcher = []
 
-                kwargs["error_catcher"] = error_catcher
+            kwargs["error_catcher"] = error_catcher
 
-                try:
-                    async with hp.TaskHolder(stop_fut, name="FromGenerator.Runner.run") as ts:
-                        async for result in runner.results(ts):
-                            yield result
-                finally:
-                    if do_raise and error_catcher:
-                        raise RunErrors(_errors=list(set(error_catcher)))
+            try:
+                async with runner as results:
+                    async for result in results:
+                        yield result
+            finally:
+                if do_raise and error_catcher:
+                    raise RunErrors(_errors=list(set(error_catcher)))
 
     class Runner:
         class Done:
+            pass
+
+        class Value:
+            pass
+
+        class Unsuccessful(Exception):
             pass
 
         def __init__(self, item, stop_fut, reference, sender, kwargs):
@@ -362,39 +372,23 @@ class FromGenerator(object):
             self.reference = reference
             self.sender = sender
 
-            self.ts = []
-            self.stop_fut = stop_fut
-            self.queue = hp.Queue(self.stop_fut, name="FromGenerator.Runner")
+            self.stop_fut = hp.ChildOfFuture(
+                stop_fut, name="FromGenerator.Runner::__init__(stop_fut)"
+            )
+
+            self.streamer = hp.ResultStreamer(
+                self.stop_fut, name="FromGenerator.Runner.getter", error_catcher=squash,
+            )
 
         async def __aenter__(self):
             return self
 
-        async def __aexit__(self, exc_typ, exc, tb):
+        async def __aexit__(self, exc_type, exc, tb):
             self.stop_fut.cancel()
+            await self.streamer.finish()
 
         def __aiter__(self):
-            return self.results()
-
-        async def results(self, ts):
-            task = ts.add(self.getter())
-
-            def pass_on_error(res):
-                if not res.cancelled():
-                    exc = res.exception()
-                    if exc:
-                        hp.add_error(self.error_catcher, exc)
-                self.stop_fut.cancel()
-
-            task.add_done_callback(pass_on_error)
-
-            try:
-                async for result in self.queue:
-                    yield result
-            finally:
-                await hp.wait_for_all_futures(
-                    hp.async_as_background(self.queue.finish()),
-                    name="FromGenerator.Runner.results.finally",
-                )
+            return self.getter()
 
         @property
         def error_catcher(self):
@@ -415,17 +409,14 @@ class FromGenerator(object):
 
         async def getter(self):
             gen = self.item.generator(self.generator_reference, self.sender, **self.kwargs)
+            await self.streamer.add_coroutine(self.consume(gen, self.streamer), context="consume")
+            self.streamer.no_more_work()
 
-            with hp.ChildOfFuture(self.stop_fut, name="FromGenerator.Runner.getter") as getter_fut:
-                async with hp.ResultStreamer(
-                    getter_fut, name="FromGenerator.Runner.getter"
-                ) as streamer:
-                    await streamer.add_coroutine(self.consume(gen, streamer))
-                    streamer.no_more_work()
-
-                    async for result in streamer:
-                        if not result.successful:
-                            raise result.value
+            async for result in self.streamer:
+                if not result.successful:
+                    hp.add_error(self.error_catcher, result.value)
+                elif result.context is self.Value:
+                    yield result.value
 
         async def consume(self, gen, streamer):
             complete = None
@@ -442,60 +433,61 @@ class FromGenerator(object):
                             break
 
                         complete = hp.create_future(name="FromGenerator.getter|complete")
-                        await streamer.add_coroutine(self.retrieve_all(msg, complete))
+                        await streamer.add_generator(
+                            self.retrieve_all(msg, complete), context=self.Value
+                        )
                     except StopAsyncIteration:
                         break
             finally:
-                await self.stop_gen(gen, complete)
+                exc_info = sys.exc_info()
+                if exc_info[0] not in (None, asyncio.CancelledError):
+                    hp.add_error(self.error_catcher, exc_info[1])
 
-        async def stop_gen(self, gen, complete):
-            async def final():
-                await gen.athrow(asyncio.CancelledError())
+                await hp.stop_async_generator(gen, complete, name="FromGenerator.Runner.stop_gen")
 
-                try:
-                    await gen.asend(complete)
-                except StopAsyncIteration:
-                    pass
-
-                await gen.aclose()
-
-            await hp.wait_for_all_futures(
-                hp.async_as_background(final()), name="FromGenerator.Runner.stop_gen"
-            )
+                if exc_info[0] is not asyncio.CancelledError:
+                    return False
 
         async def retrieve_all(self, msg, complete):
-            with hp.ChildOfFuture(
-                self.stop_fut, name="FromGenerator.Runner.retrieve_all"
-            ) as getter_fut:
+            try:
                 async with hp.ResultStreamer(
-                    getter_fut, name="FromGenerator.Runner.retrieve_all"
+                    self.stop_fut, name="FromGenerator.Runner.retrieve_all", error_catcher=squash,
                 ) as streamer:
                     for item in self.item.simplifier(msg):
-                        await streamer.add_coroutine(self.retrieve(item), context="retrieved")
+                        await streamer.add_generator(self.retrieve(item), context="retrieve")
                     streamer.no_more_work()
 
                     async for result in streamer:
+                        if result.value is hp.ResultStreamer.GeneratorComplete:
+                            continue
+
                         if not result.successful:
-                            raise result.value
-
-                        elif result.context == "retrieved":
-                            if not result.value and not complete.done():
+                            if not isinstance(result.value, self.Unsuccessful):
+                                hp.add_error(self.error_catcher, result.value)
+                            if not complete.done():
                                 complete.set_result(False)
-
+                        else:
+                            yield result.value
+            finally:
                 if not complete.done():
-                    complete.set_result(True)
+                    exc_info = sys.exc_info()
+                    if exc_info[0] is None:
+                        complete.set_result(True)
+                    else:
+                        complete.set_result(False)
 
         async def retrieve(self, item):
             i = {"success": True}
 
-            def pass_on_error(e):
+            def error(e):
                 i["success"] = False
                 hp.add_error(self.error_catcher, e)
 
             kwargs = dict(self.kwargs)
-            kwargs["error_catcher"] = pass_on_error
+            kwargs["error_catcher"] = error
 
             async for info in item.run(self.run_reference, self.sender, **kwargs):
-                self.queue.append(info)
+                yield info
 
-            return i["success"]
+            if not i["success"]:
+                raise self.Unsuccessful()
