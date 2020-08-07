@@ -65,7 +65,7 @@ class RetryOptions:
             final_future=final_future,
             max_time=timeout,
             min_wait=min_wait,
-            name=f"RetryOptions(tick.{self.name})",
+            name=f"RetryOptions({self.name})::tick[ticker]",
         )
 
         start = time.time()

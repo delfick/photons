@@ -25,7 +25,9 @@ class AnimationRunner:
         self.kwargs = kwargs
         self.reference = reference
         self.run_options = make_run_options(run_options, animation_options)
-        self.final_future = hp.ChildOfFuture(final_future)
+        self.final_future = hp.ChildOfFuture(
+            final_future, name="AnimationRunner::__init__[final_future]"
+        )
         self.original_canvas = Canvas()
 
         self.collected = {}
@@ -60,7 +62,7 @@ class AnimationRunner:
         self.combined_state = State(self.final_future)
 
         async with self.reinstate(), hp.TaskHolder(
-            self.final_future, name="AnimationRunner::run"
+            self.final_future, name="AnimationRunner::run[task_holder]"
         ) as ts:
             self.transfer_error(
                 ts, ts.add(self.animate(ts, cannon, self.combined_state, animations))
@@ -108,7 +110,9 @@ class AnimationRunner:
             except StopIteration:
                 break
 
-            with hp.ChildOfFuture(self.final_future) as animation_fut:
+            with hp.ChildOfFuture(
+                self.final_future, name="AnimationRunner::animate[animation_fut]"
+            ) as animation_fut:
                 animation = make_animation(animation_fut)
 
                 try:
@@ -132,7 +136,7 @@ class AnimationRunner:
         async for _ in hp.tick(
             self.run_options.rediscover_every,
             final_future=self.final_future,
-            name="AnimationRunner::collect_parts",
+            name="AnimationRunner::collect_parts[tick]",
         ):
             with hp.just_log_exceptions(log, reraise=[asyncio.CancelledError]):
                 serials = self.reference

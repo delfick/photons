@@ -481,17 +481,17 @@ class Device(dictobj.Spec):
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
         self.point_futures = {
-            e: hp.ResettableFuture(name=f"Device({self.serial}.point_futures[{e.name}])")
+            e: hp.ResettableFuture(name=f"Device({self.serial})::setup[point_futures.{e.name}]")
             for e in InfoPoints
         }
         self.point_futures[None] = hp.ResettableFuture(
-            name=f"Device({self.serial}.point_futures[None])"
+            name=f"Device::setup({self.serial})[point_futures.None]"
         )
-        self.refreshing = hp.ResettableFuture(name=f"Device({self.serial}.refreshing")
+        self.refreshing = hp.ResettableFuture(name=f"Device({self.serial})::[refreshing]")
 
     @hp.memoized_property
     def final_future(self):
-        return hp.create_future(name=f"DeviceFinder.Device({self.serial}).final_future")
+        return hp.create_future(name=f"Device({self.serial})::final_future")
 
     @property
     def property_fields(self):
@@ -646,7 +646,7 @@ class Device(dictobj.Spec):
             async for info in hp.tick(
                 1,
                 final_future=self.final_future,
-                name=f"Device::refresh_information_loop({self.serial})",
+                name=f"Device({self.serial})::refresh_information_loop[tick]",
             ):
                 if self.final_future.done():
                     return
@@ -708,7 +708,7 @@ class DeviceFinderDaemon:
 
         final_future = final_future or sender.stop_fut
         self.final_future = hp.ChildOfFuture(
-            final_future, name="DeviceFinderDaemon.__init__|final_future|"
+            final_future, name="DeviceFinderDaemon::__init__[final_future]"
         )
 
         self.own_finder = not bool(finder)
@@ -716,7 +716,8 @@ class DeviceFinderDaemon:
             self.sender, self.final_future, forget_after=forget_after, limit=limit
         )
 
-        self.ts = hp.TaskHolder(self.final_future)
+        self.ts = hp.TaskHolder(self.final_future, name="DeviceFinderDaemon::__init__[ts]")
+        self.hp_tick = hp.tick
 
     def reference(self, fltr):
         return DeviceFinder(fltr, finder=self.finder)
@@ -750,13 +751,12 @@ class DeviceFinderDaemon:
                 )
 
         async def ensure(streamer):
-            async for _ in hp.tick(self.search_interval, final_future=self.final_future):
-                await hp.wait_for_all_futures(
-                    await streamer.add_coroutine(add(streamer)),
-                    name="DeviceFinderDaemon.search_loop.ensure",
-                )
+            async for _ in self.hp_tick(self.search_interval, final_future=self.final_future):
+                await streamer.add_coroutine(add(streamer))
 
-        async with hp.ResultStreamer(self.final_future, name="search_loop") as streamer:
+        async with hp.ResultStreamer(
+            self.final_future, name="DeviceFinderDaemon::search_loop[streamer]"
+        ) as streamer:
             await streamer.add_coroutine(ensure(streamer))
             streamer.no_more_work()
 
@@ -787,9 +787,11 @@ class Finder:
 
         self.devices = {}
         self.last_seen = {}
-        self.searched = hp.ResettableFuture()
+        self.searched = hp.ResettableFuture(name="Finder::__init__[searched]")
         self.collections = Collections()
-        self.final_future = hp.ChildOfFuture(final_future or self.sender.stop_fut)
+        self.final_future = hp.ChildOfFuture(
+            final_future or self.sender.stop_fut, name="Finder::__init__[final_future]"
+        )
 
     async def find(self, fltr):
         if self.final_future.done():
@@ -799,13 +801,13 @@ class Finder:
         serials = await self._find_all_serials(refresh=refresh)
         removed = self._ensure_devices(serials)
 
-        async with hp.ResultStreamer(self.final_future, name="Finder::find") as streamer:
+        async with hp.ResultStreamer(self.final_future, name="Finder::find[streamer]") as streamer:
             for device in removed:
                 await streamer.add_coroutine(device.finish())
 
             for serial, device in list(self.devices.items()):
                 if fltr.matches_all:
-                    fut = hp.create_future(name="DeviceFinder.Finder.find.fltr_fut")
+                    fut = hp.create_future(name=f"Finder({serial})::find[fut]")
                     fut.set_result(True)
                     await streamer.add_task(fut, context=device)
                 else:
@@ -844,7 +846,7 @@ class Finder:
             self.final_future,
             error_catcher=error,
             exceptions_only_to_error_catcher=True,
-            name="Finder::info",
+            name="Finder::info[streamer]",
         )
 
         async with streamer:
@@ -867,8 +869,8 @@ class Finder:
         self.final_future.cancel()
 
         async with hp.TaskHolder(
-            hp.create_future(name="DeviceFinder.Finder.finish.task_holder_final"),
-            name="DeviceFinderFinder",
+            hp.create_future(name="Finder::finish[task_holder_final_future]"),
+            name="Finder::finish[task_holder]",
         ) as ts:
             for serial, device in sorted(self.devices.items()):
                 ts.add(device.finish())

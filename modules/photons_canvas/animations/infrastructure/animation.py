@@ -60,7 +60,7 @@ class Animation:
             if not isinstance(e, asyncio.CancelledError):
                 log.error(hp.lc(error=e, error_type=type(e)))
 
-        with hp.ChildOfFuture(self.final_future) as stop_fut:
+        with hp.ChildOfFuture(self.final_future, name="Animation::streamer[stop_fut]") as stop_fut:
             async with hp.ResultStreamer(
                 stop_fut,
                 error_catcher=errors,

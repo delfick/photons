@@ -373,11 +373,13 @@ class FromGenerator(object):
             self.sender = sender
 
             self.stop_fut = hp.ChildOfFuture(
-                stop_fut, name="FromGenerator.Runner::__init__(stop_fut)"
+                stop_fut, name="FromGenerator>Runner::__init__[stop_fut]"
             )
 
             self.streamer = hp.ResultStreamer(
-                self.stop_fut, name="FromGenerator.Runner.getter", error_catcher=squash,
+                self.stop_fut,
+                name="FromGenerator>Runner::__init__[streamer]",
+                error_catcher=squash,
             )
 
         async def __aenter__(self):
@@ -432,7 +434,7 @@ class FromGenerator(object):
                         if self.stop_fut.done():
                             break
 
-                        complete = hp.create_future(name="FromGenerator.getter|complete")
+                        complete = hp.create_future(name="FromGenerator>Runner::getter[complete]")
                         await streamer.add_generator(
                             self.retrieve_all(msg, complete), context=self.Value
                         )
@@ -443,7 +445,9 @@ class FromGenerator(object):
                 if exc_info[0] not in (None, asyncio.CancelledError):
                     hp.add_error(self.error_catcher, exc_info[1])
 
-                await hp.stop_async_generator(gen, complete, name="FromGenerator.Runner.stop_gen")
+                await hp.stop_async_generator(
+                    gen, complete, name="FromGenerator>Runner::consume[finally_stop_gen]"
+                )
 
                 if exc_info[0] is not asyncio.CancelledError:
                     return False
@@ -451,7 +455,9 @@ class FromGenerator(object):
         async def retrieve_all(self, msg, complete):
             try:
                 async with hp.ResultStreamer(
-                    self.stop_fut, name="FromGenerator.Runner.retrieve_all", error_catcher=squash,
+                    self.stop_fut,
+                    name="FromGenerator>Runner::retrieve_all[streamer]",
+                    error_catcher=squash,
                 ) as streamer:
                     for item in self.item.simplifier(msg):
                         await streamer.add_generator(self.retrieve(item), context="retrieve")

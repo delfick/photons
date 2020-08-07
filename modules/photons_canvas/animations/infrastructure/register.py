@@ -52,7 +52,7 @@ class Animator:
                 return animation
 
             # Make sure the options can be resolved
-            fut = hp.create_future(name="Animator.resolve_creator_validator")
+            fut = hp.create_future(name="Animator>Resolver::resolve[fut]")
             fut.cancel()
             make_animation(fut)
 

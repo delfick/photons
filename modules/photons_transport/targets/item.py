@@ -250,7 +250,7 @@ class Item(object):
         error_catcher = kwargs["error_catcher"]
 
         async with hp.ResultStreamer(
-            sender.stop_fut, error_catcher=silence_errors, name="Item::write_messages"
+            sender.stop_fut, error_catcher=silence_errors, name="Item::write_messages[streamer]"
         ) as streamer:
             count = 0
             for original, packet in packets:

@@ -24,16 +24,16 @@ describe "ChildOfFuture":
             assert fut.name is None
             assert isinstance(fut.fut, asyncio.Future)
 
-            assert fut.fut.name == "ChildOfFuture.None.fut.__init__"
-            assert repr(fut) == "<ChildOfFuture#None((pending))#!<Future final>(pending)!#>"
+            assert fut.fut.name == "ChildOfFuture(None)::__init__[fut]"
+            assert repr(fut) == "<ChildOfFuture#None((pending))<Future#final(pending)>>"
 
         with hp.ChildOfFuture(final_future, name="FUTZ") as fut:
             assert fut.original_fut is final_future
             assert fut.name == "FUTZ"
             assert isinstance(fut.fut, asyncio.Future)
 
-            assert fut.fut.name == "ChildOfFuture.FUTZ.fut.__init__"
-            assert repr(fut) == "<ChildOfFuture#FUTZ((pending))#!<Future final>(pending)!#>"
+            assert fut.fut.name == "ChildOfFuture(FUTZ)::__init__[fut]"
+            assert repr(fut) == "<ChildOfFuture#FUTZ((pending))<Future#final(pending)>>"
 
     async it "ensure_future returns the ResettableFuture as is", final_future:
         with hp.ChildOfFuture(final_future) as fut:

@@ -16,12 +16,12 @@ describe "ResettableFuture":
         fut = hp.ResettableFuture()
         assert isinstance(fut.fut, asyncio.Future)
         assert fut.name is None
-        assert fut.fut.name == "ResettableFuture.None.fut.__init__"
+        assert fut.fut.name == "ResettableFuture(None)::__init__[fut]"
 
         fut = hp.ResettableFuture(name="blah")
         assert fut.name == "blah"
         assert isinstance(fut.fut, asyncio.Future)
-        assert fut.fut.name == "ResettableFuture.blah.fut.__init__"
+        assert fut.fut.name == "ResettableFuture(blah)::__init__[fut]"
 
     async it "gets callbacks from the current future":
         fut = hp.ResettableFuture()
@@ -153,16 +153,10 @@ describe "ResettableFuture":
 
     async it "has a repr":
         fut = hp.ResettableFuture()
-        assert (
-            repr(fut)
-            == "<ResettableFuture: None: <Future ResettableFuture.None.fut.__init__>(pending)>"
-        )
+        assert repr(fut) == "<ResettableFuture#None((pending))>"
 
         fut = hp.ResettableFuture(name="hello")
-        assert (
-            repr(fut)
-            == "<ResettableFuture: hello: <Future ResettableFuture.hello.fut.__init__>(pending)>"
-        )
+        assert repr(fut) == "<ResettableFuture#hello((pending))>"
 
     describe "reset":
         async it "does nothing if the future hasn't been resolved yet":

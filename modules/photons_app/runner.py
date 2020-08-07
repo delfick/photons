@@ -53,7 +53,7 @@ def run(coro, photons_app, target_register):
 
     async def wait():
         await hp.wait_for_first_future(
-            final_future, graceful_future, task, name="photons_app::run::wait"
+            final_future, graceful_future, task, name="||run>wait[wait_for_program_exit]"
         )
 
         if task.done():
@@ -137,7 +137,7 @@ async def shutdown_asyncgens(loop):
     # the asyncio loop to think it's shutdown, so I have to do them one at a time
     for ag in closing_agens:
         try:
-            await hp.stop_async_generator(ag)
+            await hp.stop_async_generator(ag, name="||shutdown_asyncgens[wait_for_closing_agens]")
         except asyncio.CancelledError:
             pass
         except:

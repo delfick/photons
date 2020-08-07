@@ -93,7 +93,7 @@ async def run_prompt(daemon, final_future, loop):
     while True:
         write_prompt()
 
-        done = hp.create_future(name="device_finder.run_prompt.done")
+        done = hp.create_future(name="||run_prompt[done]")
 
         thread = threading.Thread(target=get_command, args=(done,))
         thread.daemon = True

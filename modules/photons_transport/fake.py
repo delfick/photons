@@ -209,7 +209,9 @@ class FakeDevice:
         self.attrs = Attrs(self)
         self.attrs.online = False
 
-        self.wait_for_reboot_fut = hp.ResettableFuture(name=f"FakeDevice.{serial}.wait_for_reboot")
+        self.wait_for_reboot_fut = hp.ResettableFuture(
+            name=f"FakeDevice({serial})::__init__[wait_for_reboot_fut]"
+        )
         self.wait_for_reboot_fut.set_result(True)
 
         self.reboots = []
@@ -332,7 +334,9 @@ class FakeDevice:
             if hasattr(responder, "shutdown"):
                 await responder.shutdown(self)
 
-        await hp.cancel_futures_and_wait(*self.write_tasks, name=f"FakeDevice.{self.serial}.finish")
+        await hp.cancel_futures_and_wait(
+            *self.write_tasks, name=f"FakeDevice({self.serial})::finish[wait_for_writes]"
+        )
 
     def set_intercept_got_message(self, interceptor):
         self.intercept_got_message = interceptor
@@ -433,7 +437,7 @@ class FakeDevice:
 
     def wait_for(self, source, kls):
         assert (source, kls) not in self.waiters
-        fut = hp.create_future(name="FakeDevice.wait_for_fut")
+        fut = hp.create_future(name=f"FakeDevice({self.serial})::wait_for[fut]")
         self.waiters[(source, kls)] = fut
         return fut
 

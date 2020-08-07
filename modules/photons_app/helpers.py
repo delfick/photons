@@ -51,7 +51,7 @@ def fut_to_string(f, with_name=True):
     else:
         s = ""
         if with_name:
-            s = f"<Future {getattr(f, 'name', None)}>"
+            s = f"<Future#{getattr(f, 'name', None)}"
         if not f.done():
             s = f"{s}(pending)"
         elif f.cancelled():
@@ -62,6 +62,8 @@ def fut_to_string(f, with_name=True):
                 s = f"{s}(exception:{type(exc).__name__}:{exc})"
             else:
                 s = f"{s}(result)"
+        if with_name:
+            s = f"{s}>"
     return s
 
 
@@ -154,10 +156,11 @@ class ATicker:
         self.handle = None
         self.expected = None
 
-        self.waiter = ResettableFuture(name=f"ATicker({self.name})")
+        self.waiter = ResettableFuture(name=f"ATicker({self.name})::__init__[waiter]")
         self.final_future = ChildOfFuture(
-            final_future or create_future(name=f"ATicker.{self.name}.__init__|owned_final_future|"),
-            name=f"ATicker.{self.name}.__init__|final_future|",
+            final_future
+            or create_future(name=f"ATicker({self.name})::__init__[owned_final_future]"),
+            name=f"ATicker({self.name})::__init__[final_future]",
         )
 
     async def __aenter__(self):
@@ -227,7 +230,9 @@ class ATicker:
 
         while True:
             await wait_for_first_future(
-                self.final_future, self.waiter, name=f"ATicker.{self.name}._tick"
+                self.final_future,
+                self.waiter,
+                name=f"ATicker({self.name})::_tick[wait_for_next_tick]",
             )
 
             self.waiter.reset()
@@ -355,11 +360,13 @@ class TaskHolder:
 
         self.ts = []
         self.final_future = ChildOfFuture(
-            final_future, name=f"TaskHolder.{self.name}.__init__|final_future|"
+            final_future, name=f"TaskHolder({self.name})::__init__[final_future]"
         )
 
         self._cleaner = None
-        self._cleaner_waiter = ResettableFuture(name="TaskHolder.__init__|cleaner_waiter|")
+        self._cleaner_waiter = ResettableFuture(
+            name="TaskHolder({self.name})::__init__[cleaner_waiter]"
+        )
 
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
@@ -396,11 +403,13 @@ class TaskHolder:
                         await wait_for_all_futures(
                             self.final_future,
                             *self.ts,
-                            name=f"TaskHolder({self.name})::finish_ff_done",
+                            name=f"TaskHolder({self.name})::finish[wait_for_all_tasks]",
                         )
                     else:
                         await wait_for_first_future(
-                            self.final_future, *self.ts, name=f"TaskHolder({self.name})::finish"
+                            self.final_future,
+                            *self.ts,
+                            name=f"TaskHolder({self.name})::finish[wait_for_another_task]",
                         )
 
                     self.ts = [t for t in self.ts if not t.done()]
@@ -408,9 +417,14 @@ class TaskHolder:
         finally:
             if self._cleaner:
                 self._cleaner.cancel()
-                await wait_for_all_futures(self._cleaner)
+                await wait_for_all_futures(
+                    self._cleaner, name=f"TaskHolder({self.name})::finish[finally_wait_for_cleaner]"
+                )
 
-            await wait_for_all_futures(async_as_background(self.clean()))
+            await wait_for_all_futures(
+                async_as_background(self.clean()),
+                name=f"TaskHolder({self.name})::finish[finally_wait_for_clean]",
+            )
 
     @property
     def pending(self):
@@ -436,7 +450,9 @@ class TaskHolder:
             else:
                 remaining.append(t)
 
-        await wait_for_all_futures(*destroyed)
+        await wait_for_all_futures(
+            *destroyed, name=f"TaskHolder({self.name})::clean[wait_for_destroyed]"
+        )
         self.ts = remaining
 
 
@@ -571,19 +587,21 @@ class ResultStreamer:
     ):
         self.name = name
         self.final_future = ChildOfFuture(
-            final_future, name=f"ResultStreamer.{self.name}.__init__|final_future|"
+            final_future, name=f"ResultStreamer({self.name})::__init__[final_future]"
         )
         self.error_catcher = error_catcher
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
         self.queue_future = ChildOfFuture(
-            final_future, name=f"ResultStreamer.{self.name}.__init__|queue_future|"
+            final_future, name=f"ResultStreamer({self.name})::__init__[queue_future]"
         )
         self.queue = Queue(
-            self.queue_future, empty_on_finished=True, name=f"ResultStreamer({self.name})",
+            self.queue_future,
+            empty_on_finished=True,
+            name=f"ResultStreamer({self.name})::__init__[queue]",
         )
 
-        self.ts = TaskHolder(self.final_future, name="ResultStreamer.__init__(ts)")
+        self.ts = TaskHolder(self.final_future, name=f"ResultStreamer({self.name})::__init__[ts]")
 
         self._registered = 0
         self.stop_on_completion = False
@@ -608,7 +626,7 @@ class ResultStreamer:
             finally:
                 await self.add_coroutine(
                     stop_async_generator(
-                        gen, name=f"ResultStreamer.{self.name}.add_generator.run.finish"
+                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]"
                     ),
                     context=self.GeneratorStopper,
                 )
@@ -620,11 +638,11 @@ class ResultStreamer:
 
         if self.final_future.done():
             await cancel_futures_and_wait(
-                task, name=f"ResultStreamer.{self.name}.add_generator_already_stopped.task"
+                task, name=f"ResultStreamer({self.name})::add_generator[already_stopped_task]"
             )
             await wait_for_first_future(
                 async_as_background(gen.aclose()),
-                name=f"ResultStreamer.{self.name}.add_generator_already_stopped.gen",
+                name=f"ResultStreamer({self.name})::add_generator[already_stopped_gen]",
             )
             return task
 
@@ -646,7 +664,7 @@ class ResultStreamer:
     async def add_task(self, task, *, context=None, on_done=None):
         if self.final_future.done():
             await cancel_futures_and_wait(
-                task, name=f"ResultStreamer.{self.name}.add_task_already_stopped"
+                task, name=f"ResultStreamer({self.name})::add_task[already_stopped]"
             )
             return task
 
@@ -889,7 +907,7 @@ async def async_with_timeout(coroutine, *, timeout=10, timeout_error=None, silen
 
         await hp.async_with_timeout(my_coroutine(), timeout=20)
     """
-    f = create_future(name=f"async_with_timeout.{name}|final|")
+    f = create_future(name=f"||async_with_timeout({name})[final]")
     t = async_as_background(coroutine, silent=silent)
 
     def pass_result(res):
@@ -944,7 +962,7 @@ async def wait_for_all_futures(*futs, name=None):
     if not futs:
         return
 
-    waiter = create_future(name=f"all_futures.{name}|waiter|")
+    waiter = create_future(name=f"||wait_for_all_futures({name})[waiter]")
 
     unique = {id(fut): fut for fut in futs}.values()
     complete = {}
@@ -971,7 +989,7 @@ async def wait_for_first_future(*futs, name=None):
     if not futs:
         return
 
-    waiter = create_future(name=f"first_future.{name}.waiter")
+    waiter = create_future(name=f"||wait_for_first_future({name})[waiter]")
     unique = {id(fut): fut for fut in futs}.values()
 
     def done(res):
@@ -1004,7 +1022,9 @@ async def cancel_futures_and_wait(*futs, name=None):
             fut.cancel()
             waiting.append(fut)
 
-    await wait_for_all_futures(*waiting, name=f"cancel_futures_and_wait.{name}")
+    await wait_for_all_futures(
+        *waiting, name=f"||cancel_futures_and_wait({name})[wait_for_everything]"
+    )
 
 
 class memoized_property(object):
@@ -1285,7 +1305,7 @@ class ResettableFuture(object):
 
     def __init__(self, name=None):
         self.name = name
-        self.fut = create_future(name=f"ResettableFuture.{self.name}.fut.__init__")
+        self.fut = create_future(name=f"ResettableFuture({self.name})::__init__[fut]")
 
     def reset(self, force=False):
         if force:
@@ -1294,7 +1314,7 @@ class ResettableFuture(object):
         if not self.fut.done():
             return
 
-        self.fut = create_future(name=f"ResettableFuture.{self.name}.fut.reset")
+        self.fut = create_future(name=f"ResettableFuture({self.name})::reset[fut]")
 
     @property
     def _callbacks(self):
@@ -1328,7 +1348,7 @@ class ResettableFuture(object):
         self.fut.remove_done_callback(func)
 
     def __repr__(self):
-        return f"<ResettableFuture: {self.name}: {fut_to_string(self.fut)}>"
+        return f"<ResettableFuture#{self.name}({fut_to_string(self.fut, with_name=False)})>"
 
     def __await__(self):
         return (yield from self.fut)
@@ -1363,7 +1383,7 @@ class ChildOfFuture(object):
 
     def __init__(self, original_fut, *, name=None):
         self.name = name
-        self.fut = create_future(name=f"ChildOfFuture.{self.name}.fut.__init__")
+        self.fut = create_future(name=f"ChildOfFuture({self.name})::__init__[fut]")
         self.original_fut = original_fut
 
         self.fut.add_done_callback(self.remove_parent_done)
@@ -1462,7 +1482,7 @@ class ChildOfFuture(object):
         self.fut.remove_done_callback(func)
 
     def __repr__(self):
-        return f"<ChildOfFuture#{self.name}({fut_to_string(self.fut, with_name=False)})#!{fut_to_string(self.original_fut)}!#>"
+        return f"<ChildOfFuture#{self.name}({fut_to_string(self.fut, with_name=False)}){fut_to_string(self.original_fut)}>"
 
     def __await__(self):
         return (yield from self.fut)
@@ -1497,7 +1517,7 @@ class SyncQueue:
         self.timeout = timeout
         self.collection = NormalQueue()
         self.final_future = ChildOfFuture(
-            final_future, name=f"SyncQueue.{self.name}.__init__|final_future|"
+            final_future, name=f"SyncQueue({self.name})::__init__[final_future]"
         )
         self.empty_on_finished = empty_on_finished
 
@@ -1569,10 +1589,10 @@ class Queue:
 
     def __init__(self, final_future, *, empty_on_finished=False, name=None):
         self.name = name
-        self.waiter = ResettableFuture(name=f"Queue({self.name})")
+        self.waiter = ResettableFuture(name=f"Queue({self.name})::__init__[waiter]")
         self.collection = deque()
         self.final_future = ChildOfFuture(
-            final_future, name=f"Queue.{self.name}.__init__|final_future|"
+            final_future, name=f"Queue({self.name})::__init__[final_future]"
         )
         self.empty_on_finished = empty_on_finished
 
@@ -1601,7 +1621,9 @@ class Queue:
             return
 
         await wait_for_first_future(
-            self.final_future, self.waiter, name=f"Queue.{self.name}._get_and_wait"
+            self.final_future,
+            self.waiter,
+            name=f"Queue({self.name})::_get_and_wait[wait_for_next_value]",
         )
 
         if self.waiter.done():
@@ -1698,7 +1720,7 @@ class ThreadToAsyncQueue(object):
         self.name = name
         self.loop = asyncio.get_event_loop()
         self.stop_fut = ChildOfFuture(
-            stop_fut, name=f"ThreadToAsyncQueue.{self.name}.__init__|stop_fut|"
+            stop_fut, name=f"ThreadToAsyncQueue({self.name})::__init__[stop_fut]"
         )
 
         self.queue = SyncQueue(
@@ -1726,7 +1748,7 @@ class ThreadToAsyncQueue(object):
         self.stop_fut.cancel()
         if self.future_setter:
             await wait_for_all_futures(
-                self.future_setter, name=f"ThreadToAsyncQueue.{self.name}.finish"
+                self.future_setter, name=f"ThreadToAsyncQueue({self.name})::finish"
             )
         self.queue.finish()
         await self.result_queue.finish()
@@ -1735,7 +1757,7 @@ class ThreadToAsyncQueue(object):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
         for thread_number, _ in enumerate(range(self.num_threads)):
-            fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.start|ready_fut|")
+            fut = create_future(name=f"ThreadToAsyncQueue({self.name})::start[ready_fut]")
             ready.append(fut)
             thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
             thread.start()
@@ -1770,12 +1792,12 @@ class ThreadToAsyncQueue(object):
             assert (await queue.request(action)) == "c"
         """
         if self.stop_fut.done():
-            fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.request|result_cancelled|")
+            fut = create_future(name=f"ThreadToAsyncQueue({self.name})::request[result_cancelled]")
             fut.cancel()
             return fut
 
         key = secrets.token_urlsafe(16)
-        fut = create_future(name=f"ThreadToAsyncQueue.{self.name}.request|result_fut|")
+        fut = create_future(name=f"ThreadToAsyncQueue({self.name})::request[result_fut]")
         self.futures[key] = fut
         self.queue.append((key, func))
         return fut

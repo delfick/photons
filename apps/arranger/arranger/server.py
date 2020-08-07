@@ -71,4 +71,6 @@ class Server(Server):
         )
 
     async def cleanup(self):
-        await hp.wait_for_all_futures(*self.wsconnections.values(), name="Server::cleanup")
+        await hp.wait_for_all_futures(
+            *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
+        )

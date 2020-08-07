@@ -56,11 +56,11 @@ class PhotonsApp(dictobj.Spec):
 
     @hp.memoized_property
     def final_future(self):
-        return hp.create_future(name="program_final_future", loop=self.loop)
+        return hp.create_future(name="PhotonsApp::final_future", loop=self.loop)
 
     @hp.memoized_property
     def graceful_final_future(self):
-        fut = hp.create_future(name="program_graceful_final_future", loop=self.loop)
+        fut = hp.create_future(name="PhotonsApp::graceful_final_future", loop=self.loop)
         fut.setup = False
         return fut
 
@@ -95,7 +95,7 @@ class PhotonsApp(dictobj.Spec):
             raise BadOption("The options after -- wasn't valid json", **kwargs)
 
     def separate_final_future(self, sleep=0):
-        other_future = hp.create_future(name="photons_app.separate_final_future")
+        other_future = hp.create_future(name="PhotonsApp::separate_final_future")
 
         def stop():
             other_future.cancel()

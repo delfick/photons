@@ -32,7 +32,9 @@ class NetworkSession(Communication):
         await super().finish()
 
         ts = [hp.async_as_background(t.close()) for t in self.broadcast_transports.values()]
-        await hp.cancel_futures_and_wait(*ts)
+        await hp.cancel_futures_and_wait(
+            *ts, name=f"{type(self).__name__}::finish[wait_for_broadcast_transports]"
+        )
 
         for t in ts:
             if not t.cancelled():
@@ -99,7 +101,7 @@ class NetworkSession(Communication):
     async def _search_retry_iterator(self, end_after):
         timeouts = [(0.6, 1.8), (1, 4)]
         async for info in RetryOptions(
-            timeouts=timeouts, name="NetworkSession::_search_retry_iterator"
+            timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_options]"
         ).tick(self.stop_fut, end_after):
             yield info
 

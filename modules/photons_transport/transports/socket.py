@@ -53,7 +53,9 @@ class Socket(Transport):
         for fut in self.socket_futs:
             close_existing(fut)
 
-        await hp.cancel_futures_and_wait(*self.socket_futs, name=f"{type(self).__name__}.close")
+        await hp.cancel_futures_and_wait(
+            *self.socket_futs, name=f"{type(self).__name__}::close[wait_for_sockets]"
+        )
 
     async def close_transport(self, transport):
         close_socket(transport)
@@ -64,7 +66,7 @@ class Socket(Transport):
         return not transport.is_closing()
 
     def make_socket_protocol(self):
-        fut = hp.ResettableFuture(name="Socket::make_socket_protocol")
+        fut = hp.ResettableFuture(name="Socket::make_socket_protocol[fut]")
         fut.add_done_callback(hp.reporter)
         self.socket_futs.append(fut)
         self.socket_futs = [t for t in self.socket_futs if not t.done()]
