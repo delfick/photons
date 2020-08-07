@@ -633,8 +633,8 @@ describe "ResultStreamer":
                 ("result", None, "func"),
                 ("cancelled", "gen"),
                 ("cancelled", "func3"),
-                ("catcher", gen_result),
                 ("catcher", func3_result),
+                ("catcher", gen_result),
             ]
 
             assert len(called) == len(expected)
@@ -1001,7 +1001,7 @@ describe "Using ResultStreamer":
             assert error_catcher == expected["errors"]
 
             print("+++++++ FINISHED TEST")
-            print("EXPECTED DONE")
+            print("DONE")
             for d in info["done"]:
                 print("\t", d)
 

@@ -532,6 +532,9 @@ class ResultStreamer:
     .. automethod:: finish
     """
 
+    class GeneratorStopper:
+        pass
+
     class GeneratorComplete:
         pass
 
@@ -596,11 +599,20 @@ class ResultStreamer:
 
     async def add_generator(self, gen, *, context=None, on_each=None, on_done=None):
         async def run():
-            async for result in gen:
-                result = self.Result(result, context, True)
-                self.queue.append(result)
-                if on_each:
-                    on_each(result)
+            try:
+                async for result in gen:
+                    result = self.Result(result, context, True)
+                    self.queue.append(result)
+                    if on_each:
+                        on_each(result)
+            finally:
+                await self.add_coroutine(
+                    stop_async_generator(
+                        gen, name=f"ResultStreamer.{self.name}.add_generator.run.finish"
+                    ),
+                    context=self.GeneratorStopper,
+                )
+
             return self.GeneratorComplete
 
         task = await self.add_coroutine(run(), context=context, on_done=on_done)
@@ -616,13 +628,6 @@ class ResultStreamer:
             )
             return task
 
-        async def close_gen():
-            try:
-                await task
-            finally:
-                await gen.aclose()
-
-        self.ts.add(close_gen(), silent=True)
         return task
 
     async def add_coroutine(self, coro, *, context=None, on_done=None):
@@ -690,6 +695,8 @@ class ResultStreamer:
         async for nxt in self.queue:
             if nxt is self.FinishedTask:
                 self._registered -= 1
+            elif nxt.context is self.GeneratorStopper:
+                continue
             else:
                 yield nxt
 
