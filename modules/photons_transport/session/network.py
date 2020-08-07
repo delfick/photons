@@ -31,13 +31,15 @@ class NetworkSession(Communication):
 
     async def finish(self):
         await super().finish()
-        for t in self.broadcast_transports.values():
-            try:
-                await t.close()
-            except asyncio.CancelledError:
-                pass
-            except Exception as error:
-                log.error(hp.lc("Failed to close broadcast transport", error=error))
+
+        ts = [hp.async_as_background(t.close()) for t in self.broadcast_transports.values()]
+        await hp.cancel_futures_and_wait(*ts)
+
+        for t in ts:
+            if not t.cancelled():
+                exc = t.exception()
+                if exc:
+                    log.error(hp.lc("Failed to close broadcast transport", error=exc))
 
     def retry_options_for(self, packet, transport):
         return UDPRetryOptions()
