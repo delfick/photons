@@ -347,7 +347,8 @@ class FutureDominoes:
             if self.before_next_domino:
                 self.before_next_domino(i)
 
-            self.futs[i + 1].set_result(True)
+            if not self.futs[i + 1].done():
+                self.futs[i + 1].set_result(True)
 
     async def _allow_real_loop(self):
         while True:

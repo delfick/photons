@@ -11,6 +11,7 @@ from photons_products import Products
 from unittest import mock
 import asyncio
 import pytest
+import time
 
 describe "DeviceFinderDaemon":
     it "takes in a sender":
@@ -157,48 +158,96 @@ describe "DeviceFinderDaemon":
 
         describe "search_loop":
 
-            async it "keeps doing a search", V, FakeTime:
+            async it "keeps doing a search", V, FakeTime, MockedCallLater:
                 called = []
                 finish_fut = hp.create_future()
 
                 with FakeTime() as t:
+                    async with MockedCallLater(t):
 
-                    async def find(fltr):
-                        assert fltr.matches_all
-                        assert fltr.refresh_discovery
+                        async def find(fltr):
+                            assert fltr.matches_all
+                            assert fltr.refresh_discovery
 
-                        called.append(("find", t.time))
-                        if len(called) == 4:
-                            finish_fut.set_result(True)
+                            called.append(("find", time.time()))
+                            if len(called) == 4:
+                                finish_fut.set_result(True)
 
-                        if False:
-                            yield
-
-                    find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
-
-                    with mock.patch.object(V.daemon.finder, "find", find):
-
-                        async def tick(every, final_future=None, name=None, min_wait=0.1):
-                            while True:
-                                t.add(every)
-                                await asyncio.sleep(0.001)
+                            if False:
                                 yield
 
-                        tick = pytest.helpers.MagicAsyncMock(name="tick", side_effect=tick)
+                        find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                        with mock.patch.object(hp, "tick", tick):
+                        with mock.patch.object(V.daemon.finder, "find", find):
                             async with V.daemon:
                                 await finish_fut
 
                 si = V.daemon.search_interval
                 assert called == [
+                    ("find", 0),
                     ("find", si),
                     ("find", si * 2),
                     ("find", si * 3),
-                    ("find", si * 4),
                 ]
 
-            async it "ensures devices have an information refreshing loop", V:
+            async it "does refresh information loops", V, FakeTime, MockedCallLater:
+                called = []
+                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                d1 = m("d073d5000001")
+                d2 = m("d073d5000002")
+
+                d1ril = pytest.helpers.AsyncMock(name="d1_refresh_information_loop")
+                d2ril = pytest.helpers.AsyncMock(name="d2_refresh_information_loop")
+
+                p1 = mock.patch.object(d1, "refresh_information_loop", d1ril)
+                p2 = mock.patch.object(d2, "refresh_information_loop", d2ril)
+
+                async def find(fltr):
+                    assert fltr.matches_all
+                    assert fltr.refresh_discovery
+
+                    called.append(1)
+
+                    yield d1
+                    yield d2
+
+                    assert len(d1ril.mock_calls) == len(called)
+                    assert len(d2ril.mock_calls) == len(called)
+
+                find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
+
+                wait = hp.create_future()
+
+                async def tick(every, final_future=None, name=None, min_wait=0.1):
+                    for i in range(5):
+                        if i == 4:
+                            wait.set_result(True)
+                        yield i, every
+
+                p3 = mock.patch.object(V.daemon.finder, "find", find)
+                p4 = mock.patch.object(V.daemon, "hp_tick", tick)
+
+                with FakeTime() as t:
+                    async with MockedCallLater(t):
+                        with p1, p2, p3, p4:
+
+                            async def run():
+                                async with V.daemon:
+                                    await hp.create_future()
+
+                            async with hp.TaskHolder(V.final_future) as ts:
+                                t = ts.add(run())
+                                await wait
+                                t.cancel()
+
+                for eril in (d1ril, d2ril):
+                    assert len(eril.mock_calls) >= 3
+
+                    assert eril.mock_calls[0] == mock.call(
+                        V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections,
+                    )
+
+            async it "keeps going if find fails", V:
                 called = []
                 async with pytest.helpers.FutureDominoes(expected=5) as futs:
 
@@ -213,30 +262,29 @@ describe "DeviceFinderDaemon":
                     p2 = mock.patch.object(d2, "refresh_information_loop", d2ril)
 
                     async def find(fltr):
-                        assert fltr.matches_all
-                        assert fltr.refresh_discovery
-
                         called.append(1)
 
                         yield d1
+
+                        if len(called) == 2:
+                            raise ValueError("NOPE")
+
                         yield d2
 
-                        assert len(d1ril.mock_calls) == len(called)
-                        assert len(d2ril.mock_calls) == len(called)
+                        if len(called) == 3:
+                            await futs[4]
 
                     find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                    original_tick = hp.tick
-
                     async def tick(every, final_future=None, name=None, min_wait=0.1):
-                        async for i, nxt in original_tick(0, min_wait=0):
-                            await futs[i]
-                            yield i, nxt
+                        for i in range(3):
+                            await futs[i + 1]
+                            yield i, every
 
                     tick = pytest.helpers.MagicAsyncMock(name="tick", side_effect=tick)
 
                     p3 = mock.patch.object(V.daemon.finder, "find", find)
-                    p4 = mock.patch.object(hp, "tick", tick)
+                    p4 = mock.patch.object(V.daemon, "hp_tick", tick)
 
                     with p1, p2, p3, p4:
 
@@ -246,76 +294,19 @@ describe "DeviceFinderDaemon":
 
                         async with hp.TaskHolder(V.final_future) as ts:
                             t = ts.add(run())
-                            await futs[4]
+                            await futs[5]
                             t.cancel()
 
-                    for eril in (d1ril, d2ril):
-                        assert len(eril.mock_calls) >= 3
+                    assert len(called) == 3
+                    assert len(d1ril.mock_calls) == 3
+                    assert len(d2ril.mock_calls) == 2
 
+                    for eril in (d1ril, d2ril):
                         assert eril.mock_calls[0] == mock.call(
                             V.daemon.sender,
                             V.daemon.time_between_queries,
                             V.daemon.finder.collections,
                         )
-
-                async it "keeps going if find fails", V:
-                    called = []
-                    async with pytest.helpers.FutureDominoes(expected=5) as futs:
-
-                        m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
-                        d1 = m("d073d5000001")
-                        d2 = m("d073d5000002")
-
-                        d1ril = pytest.helpers.AsyncMock(name="d1_refresh_information_loop")
-                        d2ril = pytest.helpers.AsyncMock(name="d2_refresh_information_loop")
-
-                        p1 = mock.patch.object(d1, "refresh_information_loop", d1ril)
-                        p2 = mock.patch.object(d2, "refresh_information_loop", d2ril)
-
-                        async def find(fltr):
-                            called.append(1)
-
-                            yield d1
-
-                            if len(called) == 2:
-                                raise ValueError("NOPE")
-
-                            yield d2
-
-                        find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
-
-                        async def tick(every, final_future=None, name=None, min_wait=0.1):
-                            i = 1
-                            while True:
-                                await futs[i]
-                                i += 1
-                                yield 1, 1
-
-                        tick = pytest.helpers.MagicAsyncMock(name="tick", side_effect=tick)
-
-                        p3 = mock.patch.object(V.daemon.finder, "find", find)
-                        p4 = mock.patch.object(hp, "tick", tick)
-
-                        with p1, p2, p3, p4:
-
-                            async def run():
-                                async with V.daemon:
-                                    await hp.create_future()
-
-                            async with hp.TaskHolder(V.final_future) as ts:
-                                t = ts.add(run())
-                                await futs[4]
-                                t.cancel()
-
-                        assert len(d1ril.mock_calls) == 4
-                        assert len(d2ril.mock_calls) == 3
-
-                        for eril in (d1ril, d2ril):
-                            assert eril.mock_calls[0] == mock.call(
-                                V.daemon.sender,
-                                V.daemon.time_between_queries,
-                                V.daemon.finder.collections,
-                            )
 
         describe "serials":
             async it "yields devices from finder.find", V:
