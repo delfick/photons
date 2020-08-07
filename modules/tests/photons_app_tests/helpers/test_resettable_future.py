@@ -52,7 +52,7 @@ describe "ResettableFuture":
         fut.set_result(True)
         assert fut.result() is True
 
-        with assertRaises(asyncio.exceptions.InvalidStateError):
+        with assertRaises(hp.InvalidStateError):
             fut.set_result(False)
 
         assert await fut is True
@@ -70,7 +70,7 @@ describe "ResettableFuture":
         fut.set_exception(error)
         assert fut.exception() is error
 
-        with assertRaises(asyncio.exceptions.InvalidStateError):
+        with assertRaises(hp.InvalidStateError):
             fut.set_exception(TypeError("HI"))
 
         with assertRaises(ValueError, "NOPE"):

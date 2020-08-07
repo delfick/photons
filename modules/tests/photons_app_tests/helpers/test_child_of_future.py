@@ -335,7 +335,7 @@ describe "ChildOfFuture":
             with hp.ChildOfFuture(final_future) as fut:
                 final_future.set_result(True)
 
-                with assertRaises(asyncio.exceptions.InvalidStateError):
+                with assertRaises(hp.InvalidStateError):
                     fut.set_result(True)
 
                 assert fut.done()
@@ -358,7 +358,7 @@ describe "ChildOfFuture":
             with hp.ChildOfFuture(final_future) as fut:
                 final_future.set_exception(error)
 
-                with assertRaises(asyncio.exceptions.InvalidStateError):
+                with assertRaises(hp.InvalidStateError):
                     fut.set_exception(error)
 
                 assert fut.exception() is error
