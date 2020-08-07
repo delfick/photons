@@ -31,6 +31,20 @@ class Nope:
     pass
 
 
+async def stop_async_generator(gen, provide=None, name=None):
+    try:
+        await gen.athrow(asyncio.CancelledError())
+
+        try:
+            await gen.asend(provide)
+        except StopAsyncIteration:
+            pass
+        except:
+            raise
+    finally:
+        await gen.aclose()
+
+
 def fut_to_string(f, with_name=True):
     if not isinstance(f, asyncio.Future):
         s = repr(f)
