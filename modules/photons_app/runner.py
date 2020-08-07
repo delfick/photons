@@ -137,7 +137,7 @@ async def shutdown_asyncgens(loop):
     # the asyncio loop to think it's shutdown, so I have to do them one at a time
     for ag in closing_agens:
         try:
-            await ag.aclose()
+            await hp.stop_async_generator(ag)
         except asyncio.CancelledError:
             pass
         except:
