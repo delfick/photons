@@ -95,16 +95,17 @@ class ATicker:
 
         done = 0
 
-        async for _ in ticker:
-            done += 1
-            if done == 3:
-                # This will mean the next tick will be 20 seconds after the last
-                # tick and future ticks will be 20 seconds apart
-                ticker.change_after(20)
-            elif done == 5:
-                # This will mean the next tick will be 40 seconds after the last
-                # tick, but ticks after that will go back to 20 seconds apart.
-                ticker.change_after(40, set_new_every=False)
+        async with ticker as ticks:
+            async for _ in ticks:
+                done += 1
+                if done == 3:
+                    # This will mean the next tick will be 20 seconds after the last
+                    # tick and future ticks will be 20 seconds apart
+                    ticker.change_after(20)
+                elif done == 5:
+                    # This will mean the next tick will be 40 seconds after the last
+                    # tick, but ticks after that will go back to 20 seconds apart.
+                    ticker.change_after(40, set_new_every=False)
 
     There are three other options:
 
@@ -144,6 +145,12 @@ class ATicker:
             final_future or create_future(name=f"ATicker.{self.name}.__init__|owned_final_future|"),
             name=f"ATicker.{self.name}.__init__|final_future|",
         )
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        self.stop()
 
     def __aiter__(self):
         return self.tick()
@@ -261,8 +268,9 @@ async def tick(
         "name": f"tick({name})",
     }
 
-    async for i in ATicker(every, **kwargs):
-        yield i
+    async with ATicker(every, **kwargs) as ticks:
+        async for i in ticks:
+            yield i
 
 
 class TaskHolder:

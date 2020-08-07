@@ -71,14 +71,15 @@ class RetryOptions:
         start = time.time()
         final_time = time.time() + timeout
 
-        async for _, nxt in ticker:
-            now = time.time()
+        async with ticker as ticks:
+            async for _, nxt in ticks:
+                now = time.time()
 
-            if end and now - start > end:
-                if timeouts:
-                    step, end = timeouts.pop(0)
-                    ticker.change_after(step)
-                else:
-                    end = None
+                if end and now - start > end:
+                    if timeouts:
+                        step, end = timeouts.pop(0)
+                        ticker.change_after(step)
+                    else:
+                        end = None
 
-            yield round(final_time - now, 3), nxt
+                yield round(final_time - now, 3), nxt

@@ -52,8 +52,9 @@ class Animation:
         del self.ticker
 
         async def tick():
-            async for result in self.ticker:
-                yield result
+            async with self.ticker as ticks:
+                async for result in ticks:
+                    yield result
 
         def errors(e):
             if not isinstance(e, asyncio.CancelledError):
