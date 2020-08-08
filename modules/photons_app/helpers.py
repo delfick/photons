@@ -644,9 +644,12 @@ class ResultStreamer:
                     if on_each:
                         on_each(result)
             finally:
+                exc_info = sys.exc_info()
                 await self.add_coroutine(
                     stop_async_generator(
-                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]"
+                        gen,
+                        name=f"ResultStreamer({self.name})::add_generator[stop_gen]",
+                        exc=exc_info[1],
                     ),
                     context=self.GeneratorStopper,
                 )

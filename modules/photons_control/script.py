@@ -446,7 +446,10 @@ class FromGenerator(object):
                     hp.add_error(self.error_catcher, exc_info[1])
 
                 await hp.stop_async_generator(
-                    gen, complete, name="FromGenerator>Runner::consume[finally_stop_gen]"
+                    gen,
+                    complete,
+                    name="FromGenerator>Runner::consume[finally_stop_gen]",
+                    exc=exc_info[1],
                 )
 
                 if exc_info[0] is not asyncio.CancelledError:
