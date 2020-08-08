@@ -7,7 +7,6 @@ from photons_transport.errors import FailedToFindDevice
 from delfick_project.norms import sb
 import asyncio
 import logging
-import time
 import sys
 
 log = logging.getLogger("photons_control.script")
@@ -174,28 +173,25 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
     """
 
     async def gen(reference, sender, **kwargs):
-        while True:
-            start = time.time()
-            f = yield msg
-            await f
-
-            if isinstance(reference, SpecialReference):
-                reference.reset()
-
-            if callable(on_done_loop):
+        async with hp.tick(
+            min_loop_time, min_wait=min_loop_time, final_future=sender.stop_fut
+        ) as ticks:
+            async for _ in ticks:
                 try:
-                    await on_done_loop()
-                except Repeater.Stop:
-                    break
-                except asyncio.CancelledError:
-                    raise
-                except Exception as error:
-                    hp.add_error(kwargs["error_catcher"], error)
+                    await (yield msg)
+                finally:
+                    if isinstance(reference, SpecialReference):
+                        reference.reset()
 
-            took = time.time() - start
-            diff = min_loop_time - took
-            if diff > 0:
-                await asyncio.sleep(diff)
+                    if callable(on_done_loop):
+                        try:
+                            await on_done_loop()
+                        except Repeater.Stop:
+                            return
+                        except asyncio.CancelledError:
+                            raise
+                        except Exception as error:
+                            hp.add_error(kwargs["error_catcher"], error)
 
     m = FromGenerator(gen, reference_override=True)
     m.repeater_msg = msg
