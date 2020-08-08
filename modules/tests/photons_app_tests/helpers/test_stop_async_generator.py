@@ -3,11 +3,71 @@
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from unittest import mock
 import asyncio
 import sys
 
 
 describe "stop_async_generator":
+    async it "can cancel a generator":
+        called = []
+        ready = hp.create_future()
+
+        async def d():
+            try:
+                called.append("wait")
+                ready.set_result(True)
+                yield 1
+            except:
+                called.append(sys.exc_info())
+                raise
+            finally:
+                called.append("finally")
+
+        gen = d()
+        assert await gen.asend(None) == 1
+
+        assert called == ["wait"]
+
+        with assertRaises(asyncio.CancelledError):
+            await hp.stop_async_generator(gen)
+
+        assert called == [
+            "wait",
+            (asyncio.CancelledError, mock.ANY, mock.ANY),
+            "finally",
+        ]
+
+    async it "can throw an arbitrary exception into the generator":
+        called = []
+        ready = hp.create_future()
+
+        async def d():
+            try:
+                called.append("wait")
+                ready.set_result(True)
+                yield 1
+            except:
+                called.append(sys.exc_info())
+                raise
+            finally:
+                called.append("finally")
+
+        gen = d()
+        assert await gen.asend(None) == 1
+
+        assert called == ["wait"]
+
+        error = ValueError("NOPE")
+        with assertRaises(ValueError, "NOPE"):
+            await hp.stop_async_generator(gen, exc=error)
+
+        assert called == [
+            "wait",
+            (ValueError, error, mock.ANY),
+            "finally",
+        ]
+
     async it "works if generator is already complete":
 
         async def d():

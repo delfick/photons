@@ -31,9 +31,9 @@ class Nope:
     pass
 
 
-async def stop_async_generator(gen, provide=None, name=None):
+async def stop_async_generator(gen, provide=None, name=None, exc=None):
     try:
-        await gen.athrow(asyncio.CancelledError())
+        await gen.athrow(exc or asyncio.CancelledError())
 
         try:
             await gen.asend(provide)
