@@ -400,15 +400,12 @@ class TaskHolder:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
+        await self.finish(exc_type, exc, tb)
+
+    async def finish(self, exc_type=None, exc=None, tb=None):
         if exc and not self.final_future.done():
             self.final_future.set_exception(exc)
 
-        try:
-            await self.finish()
-        finally:
-            self.final_future.cancel()
-
-    async def finish(self):
         try:
             while any(not t.done() for t in self.ts):
                 for t in self.ts:
@@ -432,16 +429,22 @@ class TaskHolder:
                     self.ts = [t for t in self.ts if not t.done()]
 
         finally:
-            if self._cleaner:
-                self._cleaner.cancel()
-                await wait_for_all_futures(
-                    self._cleaner, name=f"TaskHolder({self.name})::finish[finally_wait_for_cleaner]"
-                )
+            try:
+                await self._final()
+            finally:
+                self.final_future.cancel()
 
+    async def _final(self):
+        if self._cleaner:
+            self._cleaner.cancel()
             await wait_for_all_futures(
-                async_as_background(self.clean()),
-                name=f"TaskHolder({self.name})::finish[finally_wait_for_clean]",
+                self._cleaner, name=f"TaskHolder({self.name})::finish[finally_wait_for_cleaner]"
             )
+
+        await wait_for_all_futures(
+            async_as_background(self.clean()),
+            name=f"TaskHolder({self.name})::finish[finally_wait_for_clean]",
+        )
 
     @property
     def pending(self):
