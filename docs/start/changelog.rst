@@ -41,6 +41,16 @@ ChangeLog
             async for hp.tick(...) as ticks:
                 async for _ in ticks:
                     ...
+    * Make it possible to break a stream of packets.
+
+      .. code-block:: python
+
+        async with target.session() as sender:
+            async with sender(msg, reference) as pkts:
+                async for pkt in pkts:
+                    ...
+
+                    raise pkts.StopPacketStream()
 
 0.30.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the

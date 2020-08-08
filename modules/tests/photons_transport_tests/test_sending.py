@@ -3,23 +3,32 @@
 from photons_transport.targets import MemoryTarget
 from photons_transport.fake import FakeDevice
 
+from photons_app.errors import RunErrors, TimedOut
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, protocol_register
+from photons_control.script import FromGenerator
 from photons_control import test_helpers as chp
 from photons_products import Products
 
+from delfick_project.errors_pytest import assertSameError
 from collections import defaultdict
+from unittest import mock
+import asyncio
 import pytest
+import sys
 
 
 @pytest.fixture()
 async def _setup():
     device = FakeDevice("d073d5001337", chp.default_responders(Products.LCM2_A19), use_sockets=True)
-    async with device:
+    device2 = FakeDevice(
+        "d073d5001338", chp.default_responders(Products.LCM2_A19), use_sockets=True
+    )
+    async with device, device2:
         options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
-        target = MemoryTarget.create(options, {"devices": device})
-        yield target, device
+        target = MemoryTarget.create(options, {"devices": [device, device2]})
+        yield target, device, device2
 
 
 describe "Sending messages":
@@ -29,6 +38,7 @@ describe "Sending messages":
         class V:
             target = _setup[0]
             device = _setup[1]
+            device2 = _setup[2]
             device_port = device.services[0].state_service.port
 
         return V()
@@ -77,6 +87,293 @@ describe "Sending messages":
                 assert pkt.Information.sender_message is original
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
+
+        describe "breaking a stream":
+            async it "is possible to cleanly stop", V:
+                async with V.target.session() as sender:
+
+                    async def gen(sd, reference, **kwargs):
+                        async with hp.tick(0, min_wait=0) as ticks:
+                            async for _ in ticks:
+                                await (yield DeviceMessages.EchoRequest(echoing=b"hi"))
+
+                    msg = FromGenerator(gen, reference_override=True)
+
+                    got = []
+                    async with sender(msg, V.device.serial) as pkts:
+                        async for pkt in pkts:
+                            got.append(1)
+                            if len(got) == 5:
+                                raise pkts.StopPacketStream()
+
+                    assert len(got) == 5
+                    assert len(V.device.received) == 5
+                    V.device.compare_received(
+                        [DeviceMessages.EchoRequest(echoing=b"hi")] * 5, keep_duplicates=True
+                    )
+
+            async it "is possible to perform finally blocks in deep layers", V:
+                async with V.target.session() as sender:
+
+                    called = []
+
+                    async def gen(sd, reference, **kwargs):
+                        async with hp.tick(0, min_wait=0, name="test") as ticks:
+                            async for i, _ in ticks:
+                                try:
+                                    called.append(("start", i))
+                                    await (yield DeviceMessages.EchoRequest(echoing=b"hi"))
+                                except:
+                                    called.append(("except", i, sys.exc_info()))
+                                    raise
+                                finally:
+                                    called.append(("finally", i))
+
+                    msg = FromGenerator(gen, reference_override=True)
+
+                    got = []
+                    async with sender(msg, V.device.serial) as pkts:
+                        async for pkt in pkts:
+                            got.append(1)
+                            if len(got) == 5:
+                                raise pkts.StopPacketStream()
+
+                    assert len(got) == 5
+                    assert len(V.device.received) == 5
+                    V.device.compare_received(
+                        [DeviceMessages.EchoRequest(echoing=b"hi")] * 5, keep_duplicates=True
+                    )
+
+                    assert called == [
+                        ("start", 1),
+                        ("finally", 1),
+                        ("start", 2),
+                        ("finally", 2),
+                        ("start", 3),
+                        ("finally", 3),
+                        ("start", 4),
+                        ("finally", 4),
+                        ("start", 5),
+                        ("except", 5, (asyncio.CancelledError, mock.ANY, mock.ANY)),
+                        ("finally", 5),
+                    ]
+
+            async it "is possible to perform finally blocks in deeper layers", V, FakeTime, MockedCallLater:
+                async with V.target.session() as sender:
+
+                    called = []
+
+                    async def gen(sd, reference, **kwargs):
+                        async with hp.tick(0, max_iterations=3, name="test_m1") as ticks:
+                            async for i, _ in ticks:
+                                try:
+                                    called.append(("m1_start", i))
+                                    await (yield DeviceMessages.EchoRequest(echoing=b"bye"))
+                                except:
+                                    called.append(
+                                        ("m1_except", i, type(sys.exc_info()[1]).__name__)
+                                    )
+                                    raise
+                                finally:
+                                    called.append(("m1_finally", i))
+
+                    msg = FromGenerator(gen, reference_override=True)
+
+                    async def gen(sd, reference, **kwargs):
+                        async with hp.tick(0, min_wait=0, name="test_m2") as ticks:
+                            async for i, _ in ticks:
+                                try:
+                                    called.append(("m2_start", i))
+                                    await (yield [DeviceMessages.EchoRequest(echoing=b"hi"), msg])
+                                except:
+                                    called.append(
+                                        ("m2_except", i, type(sys.exc_info()[1]).__name__)
+                                    )
+                                    raise
+                                finally:
+                                    called.append(("m2_finally", i))
+
+                    msg2 = FromGenerator(gen, reference_override=True)
+
+                    got = []
+                    with FakeTime() as t:
+                        async with MockedCallLater(t):
+                            async with sender(msg2, V.device.serial) as pkts:
+                                async for pkt in pkts:
+                                    got.append(1)
+                                    if len(got) == 10:
+                                        raise pkts.StopPacketStream()
+
+                    assert len(got) == 10
+                    V.device.compare_received(
+                        [
+                            DeviceMessages.EchoRequest(echoing=b"hi"),
+                            DeviceMessages.EchoRequest(echoing=b"bye"),
+                        ]
+                    )
+
+                    assert called == [
+                        ("m2_start", 1),
+                        ("m1_start", 1),
+                        ("m1_finally", 1),
+                        ("m1_start", 2),
+                        ("m1_finally", 2),
+                        ("m1_start", 3),
+                        ("m1_finally", 3),
+                        ("m2_finally", 1),
+                        ("m2_start", 2),
+                        ("m1_start", 1),
+                        ("m1_finally", 1),
+                        ("m1_start", 2),
+                        ("m1_finally", 2),
+                        ("m1_start", 3),
+                        ("m1_finally", 3),
+                        ("m2_finally", 2),
+                        ("m2_start", 3),
+                        ("m1_start", 1),
+                        ("m2_except", 3, "CancelledError"),
+                        ("m2_finally", 3),
+                        ("m1_except", 1, "CancelledError"),
+                        ("m1_finally", 1),
+                    ]
+
+            async it "stop doesn't add to error_catcher", V:
+                async with V.target.session() as sender:
+
+                    async def gen(sd, reference, **kwargs):
+                        async with hp.tick(0, min_wait=0) as ticks:
+                            async for _ in ticks:
+                                await (yield DeviceMessages.EchoRequest(echoing=b"hi"))
+
+                    msg = FromGenerator(gen, reference_override=True)
+
+                    got = []
+                    errors = []
+                    async with sender(msg, V.device.serial, error_catcher=errors) as pkts:
+                        async for pkt in pkts:
+                            got.append(1)
+                            if len(got) == 5:
+                                raise pkts.StopPacketStream()
+
+                    assert not errors
+                    assert len(got) == 5
+                    V.device.compare_received(
+                        [DeviceMessages.EchoRequest(echoing=b"hi")] * 5, keep_duplicates=True
+                    )
+
+            async it "allows errors to go to an error catcher", V, FakeTime, MockedCallLater:
+                async with V.target.session() as sender:
+
+                    async def gen(sd, reference, **kwargs):
+                        assert await (
+                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
+                        )
+                        assert not await (
+                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
+                        )
+                        for i in range(5):
+                            assert await (
+                                yield DeviceMessages.EchoRequest(
+                                    echoing=b"hi", target=V.device.serial
+                                )
+                            )
+
+                    msg = FromGenerator(gen)
+
+                    got = []
+                    errors = []
+                    with FakeTime() as t:
+                        async with MockedCallLater(t):
+                            with V.device2.no_replies_for(DeviceMessages.EchoRequest):
+                                async with sender(
+                                    msg,
+                                    [V.device.serial, V.device2.serial],
+                                    message_timeout=2,
+                                    error_catcher=errors,
+                                ) as pkts:
+                                    async for pkt in pkts:
+                                        got.append(1)
+                                        if len(got) == 3:
+                                            raise pkts.StopPacketStream()
+
+                    assert len(errors) == 1
+                    assertSameError(
+                        errors[0],
+                        TimedOut,
+                        "Waiting for reply to a packet",
+                        {"serial": V.device2.serial, "sent_pkt_type": 58},
+                        [],
+                    )
+
+                    assert len(got) == 3
+                    assert len(V.device.received) == 3
+
+                    # Retries!
+                    assert len(V.device2.received) >= 3
+
+                    V.device.compare_received(
+                        [DeviceMessages.EchoRequest(echoing=b"hi")] * 3, keep_duplicates=True
+                    )
+                    V.device2.compare_received([DeviceMessages.EchoRequest(echoing=b"hi")])
+
+            async it "doesn't stop errors", V, FakeTime, MockedCallLater:
+                async with V.target.session() as sender:
+
+                    async def gen(sd, reference, **kwargs):
+                        assert await (
+                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
+                        )
+                        assert not await (
+                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
+                        )
+                        assert not await (
+                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
+                        )
+                        for i in range(5):
+                            assert await (
+                                yield DeviceMessages.EchoRequest(
+                                    echoing=b"hi", target=V.device.serial
+                                )
+                            )
+
+                    msg = FromGenerator(gen)
+
+                    got = []
+                    error = None
+                    with FakeTime() as t:
+                        async with MockedCallLater(t):
+                            try:
+                                with V.device2.no_replies_for(DeviceMessages.EchoRequest):
+                                    async with sender(
+                                        msg, [V.device.serial, V.device2.serial], message_timeout=2
+                                    ) as pkts:
+                                        async for pkt in pkts:
+                                            got.append(1)
+                                            if len(got) == 4:
+                                                raise pkts.StopPacketStream()
+                            except RunErrors as e:
+                                error = e
+
+                    assert isinstance(error, RunErrors)
+                    assert len(error.errors) == 2
+                    for e in error.errors:
+                        assertSameError(
+                            e,
+                            TimedOut,
+                            "Waiting for reply to a packet",
+                            {"serial": V.device2.serial, "sent_pkt_type": 58},
+                            [],
+                        )
+
+                    assert len(got) == 4
+                    assert len(V.device.received) == 4
+
+                    # Retries!
+                    assert len(V.device2.received) >= 3
+                    V.device.compare_received(
+                        [DeviceMessages.EchoRequest(echoing=b"hi")] * 4, keep_duplicates=True
+                    )
+                    V.device2.compare_received([DeviceMessages.EchoRequest(echoing=b"hi")])
 
     describe "run_with api":
         async it "works with the run_with api with sender", V:

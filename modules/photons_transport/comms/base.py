@@ -7,6 +7,7 @@ from photons_app import helpers as hp
 
 from photons_protocol.packets import Information
 from photons_protocol.messages import Messages
+from photons_transport import catch_errors
 
 import binascii
 import logging
@@ -124,6 +125,9 @@ def timeout_task(task, errf, serial):
 
 
 class Sender:
+    class StopPacketStream(Exception):
+        pass
+
     def __init__(self, session, msg, reference, **kwargs):
         self.msg = msg
         self.kwargs = kwargs
@@ -134,6 +138,10 @@ class Sender:
             self.kwargs.pop("session")
 
         self.script = self.session.transport_target.script(msg)
+
+    @hp.memoized_property
+    def gen(self):
+        return self.script.run(self.reference, self.session, **self.kwargs)
 
     def __await__(self):
         return (yield from self.all_packets().__await__())
@@ -156,8 +164,33 @@ class Sender:
         return self.stream_packets()
 
     async def stream_packets(self):
-        async for pkt in self.script.run(self.reference, self.session, **self.kwargs):
+        async for pkt in self.gen:
             yield pkt
+
+    async def __aenter__(self):
+        self.catcher = catch_errors(self.kwargs.get("error_catcher"))
+        self.kwargs["error_catcher"] = self.catcher.__enter__()
+        return self
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        if hasattr(self, "_gen"):
+            try:
+                await hp.stop_async_generator(
+                    self.gen, name="GenCatch::__aexit__[stop_gen]", exc=exc
+                )
+            except self.StopPacketStream:
+                pass
+
+        if exc_typ is not asyncio.CancelledError:
+            try:
+                self.catcher.__exit__(None, None, None)
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                raise error from None
+
+        if exc_typ is self.StopPacketStream:
+            return True
 
 
 class Communication:

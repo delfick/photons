@@ -245,6 +245,28 @@ well as the original packet that was sent to get this response:
 
                     print(f"{pkt.serial} responded from {ip} after I sent a {original_packet_name}")
 
+Stopping a stream of packets
+----------------------------
+
+If you want to stop a stream of packets you need to use the sender as a context
+manager and raise a special exception, otherwise cleanup activities will not
+run before the loop has exited.
+
+.. code-block:: python
+
+    from photons_messages import DeviceMessages
+
+
+    async def my_action(target):
+        async with target.session() as sender:
+            async with sender(DeviceMessages.GetPower(), reference) as pkts:
+                for pkt in pkts:
+                    if some_condition:
+                        raise pkts.StopPacketStream()
+
+Due to Python behaviour, it's not possible to catch a break statement as part of
+the async for loop and so doing that will cause problems.
+
 .. _sender_discovery:
 
 Discovery

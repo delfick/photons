@@ -1,7 +1,10 @@
 from photons_app.errors import RunErrors, BadRunWithResults
 
+from photons_app import helpers as hp
+
 from delfick_project.norms import sb
 import asyncio
+import sys
 
 
 class SenderWrapper:
@@ -66,8 +69,19 @@ class ScriptRunner:
             return
 
         async with SenderWrapper(self.target, sender, kwargs) as sender:
-            async for thing in self.script.run(reference, sender, **kwargs):
-                yield thing
+            gen = self.script.run(reference, sender, **kwargs)
+
+            try:
+                while True:
+                    try:
+                        nxt = await gen.asend(None)
+                    except StopAsyncIteration:
+                        break
+                    else:
+                        yield nxt
+            finally:
+                exc_info = sys.exc_info()
+                await hp.stop_async_generator(gen, exc=exc_info[1])
 
     # backwards compatibility
     run_with = run
