@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.3.1 - TBD
+0.31.0 - TBD
     * The ``photons_app.helpers.ATicker`` helper now yields
       ``(iteration, time_till_next)`` where ``iteration`` is the count of
       iterations starting from 1, and ``time_till_next`` is the number of seconds
