@@ -158,13 +158,15 @@ describe "Sending messages":
                         ("finally", 5),
                     ]
 
-            async it "is possible to perform finally blocks in deeper layers", V, FakeTime, MockedCallLater:
+            async it "is possible to perform finally blocks in deeper layers", V:
                 async with V.target.session() as sender:
 
                     called = []
 
                     async def gen(sd, reference, **kwargs):
-                        async with hp.tick(0, max_iterations=3, name="test_m1") as ticks:
+                        async with hp.tick(
+                            0, max_iterations=3, name="test_m1", min_wait=0
+                        ) as ticks:
                             async for i, _ in ticks:
                                 try:
                                     called.append(("m1_start", i))
@@ -196,13 +198,11 @@ describe "Sending messages":
                     msg2 = FromGenerator(gen, reference_override=True)
 
                     got = []
-                    with FakeTime() as t:
-                        async with MockedCallLater(t):
-                            async with sender(msg2, V.device.serial) as pkts:
-                                async for pkt in pkts:
-                                    got.append(1)
-                                    if len(got) == 10:
-                                        raise pkts.StopPacketStream()
+                    async with sender(msg2, V.device.serial) as pkts:
+                        async for pkt in pkts:
+                            got.append(1)
+                            if len(got) == 10:
+                                raise pkts.StopPacketStream()
 
                     assert len(got) == 10
                     V.device.compare_received(
