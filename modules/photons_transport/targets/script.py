@@ -72,13 +72,8 @@ class ScriptRunner:
             gen = self.script.run(reference, sender, **kwargs)
 
             try:
-                while True:
-                    try:
-                        nxt = await gen.asend(None)
-                    except StopAsyncIteration:
-                        break
-                    else:
-                        yield nxt
+                async for nxt in gen:
+                    yield nxt
             finally:
                 exc_info = sys.exc_info()
                 await hp.stop_async_generator(gen, exc=exc_info[1])
