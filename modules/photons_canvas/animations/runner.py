@@ -133,52 +133,53 @@ class AnimationRunner:
                     log.exception("Unexpected error running animation")
 
     async def collect_parts(self, ts):
-        async for _ in hp.tick(
+        async with hp.tick(
             self.run_options.rediscover_every,
             final_future=self.final_future,
             name="AnimationRunner::collect_parts[tick]",
-        ):
-            with hp.just_log_exceptions(log, reraise=[asyncio.CancelledError]):
-                serials = self.reference
-                if isinstance(serials, str):
-                    serials = [serials]
-                elif isinstance(serials, SpecialReference):
-                    self.reference.reset()
-                    try:
-                        _, serials = await self.reference.find(
-                            self.sender, timeout=self.kwargs.get("find_timeout", 10)
-                        )
-                    except asyncio.CancelledError:
-                        raise
-                    except FoundNoDevices:
-                        log.warning("Didn't find any devices")
+        ) as ticks:
+            async for _ in ticks:
+                with hp.just_log_exceptions(log, reraise=[asyncio.CancelledError]):
+                    serials = self.reference
+                    if isinstance(serials, str):
+                        serials = [serials]
+                    elif isinstance(serials, SpecialReference):
+                        self.reference.reset()
+                        try:
+                            _, serials = await self.reference.find(
+                                self.sender, timeout=self.kwargs.get("find_timeout", 10)
+                            )
+                        except asyncio.CancelledError:
+                            raise
+                        except FoundNoDevices:
+                            log.warning("Didn't find any devices")
+                            continue
+
+                    new = set(serials) - self.seen_serials
+                    if not new:
                         continue
 
-                new = set(serials) - self.seen_serials
-                if not new:
-                    continue
+                    devices = []
+                    collected = []
+                    async for device, parts in self.parts_from_serials(new):
+                        # Make sure the part isn't known by other animations currently running
+                        if device.serial not in self.used_serials:
+                            self.used_serials.add(device.serial)
+                            self.collected[device.serial] = parts
+                            devices.append(device)
 
-                devices = []
-                collected = []
-                async for device, parts in self.parts_from_serials(new):
-                    # Make sure the part isn't known by other animations currently running
-                    if device.serial not in self.used_serials:
-                        self.used_serials.add(device.serial)
-                        self.collected[device.serial] = parts
-                        devices.append(device)
+                            def process(res):
+                                if ts.pending == 0:
+                                    self.final_future.cancel()
 
-                        def process(res):
-                            if ts.pending == 0:
-                                self.final_future.cancel()
+                            self.original_canvas.add_parts(*parts, with_colors=True)
+                            collected.append(parts)
 
-                        self.original_canvas.add_parts(*parts, with_colors=True)
-                        collected.append(parts)
+                    yield collected
 
-                yield collected
-
-                for device in devices:
-                    t = ts.add(self.turn_on(device.serial))
-                    t.add_done_callback(process)
+                    for device in devices:
+                        t = ts.add(self.turn_on(device.serial))
+                        t.add_done_callback(process)
 
     def reinstate(self):
         class CM:

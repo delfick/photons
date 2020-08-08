@@ -12,10 +12,11 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for i, nxt in hp.tick(3):
-                    called.append((i, nxt, time.time()))
-                    if len(called) == 5:
-                        break
+                async with hp.tick(3) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
+                        if len(called) == 5:
+                            break
 
         assert called == [(1, 3, 0), (2, 3, 3), (3, 3, 6), (4, 3, 9), (5, 3, 12)]
         assert m.called_times == [3, 6, 9, 12]
@@ -25,12 +26,13 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for i, nxt in hp.tick(0, min_wait=0):
-                    called.append((i, nxt, time.time()))
-                    if i == 3:
-                        await m.add(2)
-                    elif i == 6:
-                        break
+                async with hp.tick(0, min_wait=0) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
+                        if i == 3:
+                            await m.add(2)
+                        elif i == 6:
+                            break
 
         assert called == [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 2.0), (5, 0, 2.0), (6, 0, 2.0)]
 
@@ -39,12 +41,13 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for i, nxt in hp.tick(0, min_wait=0.1):
-                    called.append((i, nxt, time.time()))
-                    if i == 3:
-                        await m.add(2)
-                    elif i == 6:
-                        break
+                async with hp.tick(0, min_wait=0.1) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
+                        if i == 3:
+                            await m.add(2)
+                        elif i == 6:
+                            break
 
         assert called == [
             (1, 0.1, 0),
@@ -60,8 +63,9 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t):
-                async for i, _ in hp.tick(3, max_iterations=5):
-                    called.append(i)
+                async with hp.tick(3, max_iterations=5) as ticks:
+                    async for i, _ in ticks:
+                        called.append(i)
 
         assert called == [1, 2, 3, 4, 5]
 
@@ -70,8 +74,9 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t):
-                async for i, _ in hp.tick(3, max_time=20):
-                    called.append((i, time.time()))
+                async with hp.tick(3, max_time=20) as ticks:
+                    async for i, _ in ticks:
+                        called.append((i, time.time()))
 
         assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12), (6, 15), (7, 18)]
 
@@ -81,8 +86,9 @@ describe "tick":
             async with MockedCallLater(t):
                 called = []
 
-                async for i, _ in hp.tick(3, max_iterations=5, max_time=20):
-                    called.append((i, time.time()))
+                async with hp.tick(3, max_iterations=5, max_time=20) as ticks:
+                    async for i, _ in ticks:
+                        called.append((i, time.time()))
 
                 assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12)]
 
@@ -90,8 +96,9 @@ describe "tick":
             async with MockedCallLater(t):
                 called = []
 
-                async for i, _ in hp.tick(3, max_iterations=10, max_time=20):
-                    called.append((i, time.time()))
+                async with hp.tick(3, max_iterations=10, max_time=20) as ticks:
+                    async for i, _ in ticks:
+                        called.append((i, time.time()))
 
                 assert called == [
                     (1, 0),
@@ -108,19 +115,20 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for i, _ in hp.tick(3):
-                    called.append((i, time.time()))
+                async with hp.tick(3) as ticks:
+                    async for i, _ in ticks:
+                        called.append((i, time.time()))
 
-                    await m.add(2)
+                        await m.add(2)
 
-                    if len(called) == 3:
-                        await m.add(3)
+                        if len(called) == 3:
+                            await m.add(3)
 
-                    if len(called) == 5:
-                        await m.add(7)
+                        if len(called) == 5:
+                            await m.add(7)
 
-                    if len(called) == 7:
-                        break
+                        if len(called) == 7:
+                            break
 
         #                     0       3       6        9       12       15       18
         assert called == [(1, 0), (2, 3), (3, 6), (4, 11), (5, 13), (6, 22), (7, 24)]
@@ -133,10 +141,11 @@ describe "tick":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                async for _ in hp.tick(3, final_future=final_future):
-                    called.append(time.time())
-                    if len(called) == 5:
-                        final_future.cancel()
+                async with hp.tick(3, final_future=final_future) as ticks:
+                    async for _ in ticks:
+                        called.append(time.time())
+                        if len(called) == 5:
+                            final_future.cancel()
 
         assert called == [0, 3, 6, 9, 12]
         assert m.called_times == [3, 6, 9, 12]
@@ -148,21 +157,21 @@ describe "ATicker":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                ticker = hp.ATicker(3)
-                async for i, nxt in ticker:
-                    called.append((i, nxt, time.time()))
+                async with hp.ATicker(3) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
 
-                    if len(called) == 3:
-                        ticker.change_after(5)
+                        if len(called) == 3:
+                            ticks.change_after(5)
 
-                    elif len(called) == 5:
-                        await m.add(8)
+                        elif len(called) == 5:
+                            await m.add(8)
 
-                    elif len(called) == 7:
-                        await m.add(1)
+                        elif len(called) == 7:
+                            await m.add(1)
 
-                    elif len(called) == 10:
-                        break
+                        elif len(called) == 10:
+                            break
 
         assert called == [
             (1, 3, 0),
@@ -183,15 +192,15 @@ describe "ATicker":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                ticker = hp.ATicker(3)
-                async for i, nxt in ticker:
-                    called.append((i, nxt, time.time()))
+                async with hp.ATicker(3) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
 
-                    if len(called) == 3:
-                        ticker.change_after(5, set_new_every=False)
+                        if len(called) == 3:
+                            ticks.change_after(5, set_new_every=False)
 
-                    elif len(called) == 6:
-                        break
+                        elif len(called) == 6:
+                            break
 
         assert called == [(1, 3, 0), (2, 3, 3), (3, 3, 6), (4, 1, 11), (5, 3, 12), (6, 3, 15)]
         assert m.called_times == [3, 6, 11, 12, 15]
@@ -201,15 +210,15 @@ describe "ATicker":
 
         with FakeTime() as t:
             async with MockedCallLater(t) as m:
-                ticker = hp.ATicker(5, min_wait=2)
-                async for i, nxt in ticker:
-                    called.append((i, nxt, time.time()))
+                async with hp.ATicker(5, min_wait=2) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
 
-                    if len(called) == 2:
-                        await m.add(9)
+                        if len(called) == 2:
+                            await m.add(9)
 
-                    elif len(called) == 4:
-                        break
+                        elif len(called) == 4:
+                            break
 
         assert called == [(1, 5, 0), (2, 5, 5), (3, 6, 14), (4, 5, 20)]
         assert m.called_times == [5, 10, 20]

@@ -218,14 +218,27 @@ describe "DeviceFinderDaemon":
 
                 wait = hp.create_future()
 
-                async def tick(every, final_future=None, name=None, min_wait=0.1):
-                    for i in range(5):
-                        if i == 4:
-                            wait.set_result(True)
-                        yield i, every
+                class Tick:
+                    def __init__(self, every, final_future=None, name=None, min_wait=0.1):
+                        self.every = every
+
+                    async def __aenter__(self):
+                        return self
+
+                    async def __aexit__(self, exc_typ, exc, tb):
+                        pass
+
+                    def __aiter__(self):
+                        return self.tick()
+
+                    async def tick(self):
+                        for i in range(5):
+                            if i == 4:
+                                wait.set_result(True)
+                            yield i, self.every
 
                 p3 = mock.patch.object(V.daemon.finder, "find", find)
-                p4 = mock.patch.object(V.daemon, "hp_tick", tick)
+                p4 = mock.patch.object(V.daemon, "hp_tick", Tick)
 
                 with FakeTime() as t:
                     async with MockedCallLater(t):
@@ -276,15 +289,26 @@ describe "DeviceFinderDaemon":
 
                     find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                    async def tick(every, final_future=None, name=None, min_wait=0.1):
-                        for i in range(3):
-                            await futs[i + 1]
-                            yield i, every
+                    class Tick:
+                        def __init__(self, every, final_future=None, name=None, min_wait=0.1):
+                            self.every = every
 
-                    tick = pytest.helpers.MagicAsyncMock(name="tick", side_effect=tick)
+                        async def __aenter__(self):
+                            return self
+
+                        async def __aexit__(self, exc_typ, exc, tb):
+                            pass
+
+                        def __aiter__(self):
+                            return self.tick()
+
+                        async def tick(self):
+                            for i in range(3):
+                                await futs[i + 1]
+                                yield i, self.every
 
                     p3 = mock.patch.object(V.daemon.finder, "find", find)
-                    p4 = mock.patch.object(V.daemon, "hp_tick", tick)
+                    p4 = mock.patch.object(V.daemon, "hp_tick", Tick)
 
                     with p1, p2, p3, p4:
 

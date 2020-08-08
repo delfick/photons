@@ -643,26 +643,27 @@ class Device(dictobj.Spec):
                 refreshes[e] = time_between_queries.get(e.name, e.value.refresh)
 
         async def gen(reference, sender, **kwargs):
-            async for info in hp.tick(
+            async with hp.tick(
                 1,
                 final_future=self.final_future,
                 name=f"Device({self.serial})::refresh_information_loop[tick]",
-            ):
-                if self.final_future.done():
-                    return
+            ) as ticks:
+                async for info in ticks:
+                    if self.final_future.done():
+                        return
 
-                e = next(points)
-                fut = self.point_futures[e]
+                    e = next(points)
+                    fut = self.point_futures[e]
 
-                if fut.done():
-                    refresh = refreshes[e]
-                    if refresh is None:
-                        continue
+                    if fut.done():
+                        refresh = refreshes[e]
+                        if refresh is None:
+                            continue
 
-                    if time.time() - fut.result() < refresh:
-                        continue
+                        if time.time() - fut.result() < refresh:
+                            continue
 
-                yield e.value.msg
+                    yield e.value.msg
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit):
@@ -751,8 +752,9 @@ class DeviceFinderDaemon:
                 )
 
         async def ensure(streamer):
-            async for _ in self.hp_tick(self.search_interval, final_future=self.final_future):
-                await streamer.add_coroutine(add(streamer))
+            async with self.hp_tick(self.search_interval, final_future=self.final_future) as ticks:
+                async for _ in ticks:
+                    await streamer.add_coroutine(add(streamer))
 
         async with hp.ResultStreamer(
             self.final_future, name="DeviceFinderDaemon::search_loop[streamer]"

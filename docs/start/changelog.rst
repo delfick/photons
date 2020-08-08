@@ -31,6 +31,16 @@ ChangeLog
                 ...
             finally:
                 fut.cancel()
+    * hp.tick must now be used as an async context manager
+
+        .. code-block:: python
+
+            from photons_app import helpers as hp
+
+
+            async for hp.tick(...) as ticks:
+                async for _ in ticks:
+                    ...
 
 0.30.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the

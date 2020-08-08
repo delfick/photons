@@ -326,29 +326,30 @@ class FutureDominoes:
             await self._tick
 
     async def tick(self):
-        async for i, _ in self.hp.tick(0, min_wait=0):
-            await self.hp.wait_for_all_futures(self.retrieved[i], self.futs[i])
-            print(f"Waited for Domino {i}")
+        async with self.hp.tick(0, min_wait=0) as ticks:
+            async for i, _ in ticks:
+                await self.hp.wait_for_all_futures(self.retrieved[i], self.futs[i])
+                print(f"Waited for Domino {i}")
 
-            self.upto = i
+                self.upto = i
 
-            await self._allow_real_loop()
+                await self._allow_real_loop()
 
-            if i >= self.expected:
-                print("Finished knocking over dominoes")
-                if not self.finished.done():
-                    self.finished.set_result(True)
+                if i >= self.expected:
+                    print("Finished knocking over dominoes")
+                    if not self.finished.done():
+                        self.finished.set_result(True)
 
-            if self.finished.done():
-                return
+                if self.finished.done():
+                    return
 
-            self.make(i + 1)
+                self.make(i + 1)
 
-            if self.before_next_domino:
-                self.before_next_domino(i)
+                if self.before_next_domino:
+                    self.before_next_domino(i)
 
-            if not self.futs[i + 1].done():
-                self.futs[i + 1].set_result(True)
+                if not self.futs[i + 1].done():
+                    self.futs[i + 1].set_result(True)
 
     async def _allow_real_loop(self):
         while True:

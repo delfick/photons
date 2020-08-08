@@ -137,6 +137,9 @@ class ATicker:
         limit
     """
 
+    class Stop(Exception):
+        pass
+
     def __init__(
         self,
         every,
@@ -164,21 +167,36 @@ class ATicker:
         )
 
     async def __aenter__(self):
+        self.gen = self.tick()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        self.stop()
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.stop(exc_typ, exc, tb)
 
     def __aiter__(self):
-        return self.tick()
+        if not hasattr(self, "gen"):
+            raise Exception(
+                "The ticker must be used as a context manager before being used as an async iterator"
+            )
+        return self.gen
 
-    def stop(self):
+    async def stop(self, exc_typ=None, exc=None, tb=None):
+        if hasattr(self, "gen"):
+            if exc is None:
+                exc = self.Stop()
+            try:
+                await stop_async_generator(self.gen, exc=exc)
+            except self.Stop:
+                pass
+
         self.final_future.cancel()
 
     async def tick(self):
         final_handle = None
         if self.max_time:
-            final_handle = asyncio.get_event_loop().call_later(self.max_time, self.stop)
+            final_handle = asyncio.get_event_loop().call_later(
+                self.max_time, self.final_future.cancel
+            )
 
         try:
             async for info in self._tick():
@@ -259,17 +277,16 @@ class ATicker:
             yield iteration, diff
 
 
-async def tick(
-    every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1, name=None
-):
+def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1, name=None):
     """
     .. code-block:: python
 
         from photons_app import helpers as hp
 
 
-        async for i in hp.tick(every):
-            yield i
+        async wit hp.tick(every) as ticks:
+            async for i in ticks:
+                yield i
 
         # Is a nicer way of saying
 
@@ -287,9 +304,7 @@ async def tick(
         "name": f"tick({name})",
     }
 
-    async with ATicker(every, **kwargs) as ticks:
-        async for i in ticks:
-            yield i
+    return ATicker(every, **kwargs)
 
 
 class TaskHolder:

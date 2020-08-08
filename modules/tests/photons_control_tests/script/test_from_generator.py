@@ -446,18 +446,20 @@ describe "FromGenerator":
         def make_secondary_msg(i, m):
             async def gen(reference, sender, **kwargs):
                 with alter_called(("secondary", i)):
-                    async for _ in hp.tick(0.1):
-                        called.append(("secondary", i))
-                        yield DeviceMessages.SetPower(level=0)
+                    async with hp.tick(0.1) as ticks:
+                        async for _ in ticks:
+                            called.append(("secondary", i))
+                            yield DeviceMessages.SetPower(level=0)
 
             return FromGenerator(gen, reference_override=True)
 
         def make_primary_msg(m):
             async def gen(reference, sender, **kwargs):
                 with alter_called("primary"):
-                    async for i, _ in hp.tick(0.3):
-                        called.append(("primary", i))
-                        yield make_secondary_msg(i, m)
+                    async with hp.tick(0.3) as ticks:
+                        async for i, _ in ticks:
+                            called.append(("primary", i))
+                            yield make_secondary_msg(i, m)
 
             return FromGenerator(gen, reference_override=True)
 
