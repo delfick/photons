@@ -42,7 +42,7 @@ def makeMemorySession(basedon):
                 self.received.append((time.time(), serial, error))
 
         def retry_options_for(self, packet, transport):
-            return MemoryRetryOptions()
+            return MemoryRetryOptions(name=f"{type(self).__name__}::retry_options_for")
 
         async def determine_needed_transport(self, packet, services):
             if MemoryService in services:

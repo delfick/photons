@@ -21,7 +21,7 @@ def final_future():
 describe "RetryOptions":
     it "can be given a different timeouts":
         timeouts = mock.Mock(name="timeouts")
-        options = RetryOptions(timeouts)
+        options = RetryOptions(timeouts=timeouts)
         assert options.timeouts is timeouts
 
     it "has some options":

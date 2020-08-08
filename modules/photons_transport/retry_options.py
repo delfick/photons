@@ -50,7 +50,7 @@ class RetryOptions:
 
     timeouts = [(0.2, 0.2), (0.1, 0.5), (0.2, 1), (1, 5)]
 
-    def __init__(self, timeouts=None, name=None):
+    def __init__(self, *, timeouts=None, name=None):
         self.name = name
         self.timeout = None
         self.timeout_item = None

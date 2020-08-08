@@ -185,7 +185,9 @@ class ATicker:
             if exc is None:
                 exc = self.Stop()
             try:
-                await stop_async_generator(self.gen, exc=exc)
+                await stop_async_generator(
+                    self.gen, exc=exc, name=f"ATicker({self.name})::stop[stop_gen]"
+                )
             except self.Stop:
                 pass
 
@@ -301,7 +303,7 @@ def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wa
         "max_iterations": max_iterations,
         "max_time": max_time,
         "min_wait": min_wait,
-        "name": f"tick({name})",
+        "name": f"||tick({name})",
     }
 
     return ATicker(every, **kwargs)
