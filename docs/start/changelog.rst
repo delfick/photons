@@ -10,8 +10,29 @@ ChangeLog
       till the next scheduled iteration.
     * Removed photons_app.helpers.async_as_normal. It wasn't possible to ensure
       sure the task created from that was cleaned up
+    * hp.ChildOfFuture is now a context manager to prevent memory leaks
 
-0.3.0 - 11 July 2020
+        .. code-block:: python
+            
+            from photons_app import helpers as hp
+
+            
+            with hp.ChildOfFuture(parent_fut) as fut:
+                ...
+
+        Or
+
+        .. code-block:: python
+
+            from photons_app import helpers as hp
+
+            fut = hp.ChildOfFuture(parent_fut)
+            try:
+                ...
+            finally:
+                fut.cancel()
+
+0.30.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the
     internal version of this library at LIFX was created over 4 years ago.
 
