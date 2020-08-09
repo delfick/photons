@@ -34,14 +34,15 @@ class Nope:
 
 async def stop_async_generator(gen, provide=None, name=None, exc=None):
     try:
-        await gen.athrow(exc or asyncio.CancelledError())
+        try:
+            await gen.athrow(exc or asyncio.CancelledError())
+        except StopAsyncIteration:
+            pass
 
         try:
             await gen.asend(provide)
         except StopAsyncIteration:
             pass
-        except:
-            raise
     finally:
         await gen.aclose()
 

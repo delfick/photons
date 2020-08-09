@@ -19,3 +19,7 @@ class InvalidBroadcast(PhotonsAppError):
 
 class UnknownService(PhotonsAppError):
     pass
+
+
+class StopPacketStream(Exception):
+    pass

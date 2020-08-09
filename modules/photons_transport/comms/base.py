@@ -1,4 +1,4 @@
-from photons_transport.errors import FailedToFindDevice
+from photons_transport.errors import FailedToFindDevice, StopPacketStream
 from photons_transport.comms.receiver import Receiver
 from photons_transport.comms.writer import Writer
 
@@ -125,9 +125,6 @@ def timeout_task(task, errf, serial):
 
 
 class Sender:
-    class StopPacketStream(Exception):
-        pass
-
     def __init__(self, session, msg, reference, **kwargs):
         self.msg = msg
         self.kwargs = kwargs
@@ -138,6 +135,7 @@ class Sender:
             self.kwargs.pop("session")
 
         self.script = self.session.transport_target.script(msg)
+        self.StopPacketStream = StopPacketStream
 
     @hp.memoized_property
     def gen(self):
@@ -178,7 +176,7 @@ class Sender:
                 await hp.stop_async_generator(
                     self.gen, name="GenCatch::__aexit__[stop_gen]", exc=exc
                 )
-            except self.StopPacketStream:
+            except StopPacketStream:
                 pass
 
         if exc_typ is not asyncio.CancelledError:
@@ -189,7 +187,7 @@ class Sender:
             except Exception as error:
                 raise error from None
 
-        if exc_typ is self.StopPacketStream:
+        if exc_typ is StopPacketStream:
             return True
 
 

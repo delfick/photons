@@ -8,6 +8,7 @@ or more connections to your devices that it uses to send a receive messages.
 
 from photons_app.errors import RunErrors, PhotonsAppError
 from photons_transport.retry_options import RetryOptions
+from photons_transport.errors import StopPacketStream
 from photons_app import helpers as hp
 
 from contextlib import contextmanager
@@ -26,6 +27,8 @@ def catch_errors(error_catcher=None):
         yield error_catcher
     except asyncio.CancelledError:
         raise
+    except StopPacketStream:
+        pass
     except Exception as error:
         if not isinstance(error, PhotonsAppError):
             log.exception(error)

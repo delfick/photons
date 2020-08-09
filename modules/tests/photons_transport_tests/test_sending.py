@@ -89,6 +89,21 @@ describe "Sending messages":
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
         describe "breaking a stream":
+            async it "is possible to cleanly stop when sending just a packet", V:
+                async with V.target.session() as sender:
+                    got = []
+                    msg = DeviceMessages.SetPower(level=0)
+                    async with sender(msg, [V.device.serial, V.device2.serial]) as pkts:
+                        async for pkt in pkts:
+                            got.append(1)
+                            raise pkts.StopPacketStream()
+
+                    assert len(got) == 1
+                    assert len(V.device.received) == 1
+                    V.device.compare_received(
+                        [DeviceMessages.SetPower(level=0)], keep_duplicates=True
+                    )
+
             async it "is possible to cleanly stop", V:
                 async with V.target.session() as sender:
 
