@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from collections import deque
 from functools import wraps
 import threading
+import traceback
 import tempfile
 import secrets
 import asyncio
@@ -649,12 +650,13 @@ class ResultStreamer:
                     if on_each:
                         on_each(result)
             finally:
-                exc_info = sys.exc_info()
+                exc = sys.exc_info()[1]
+                if exc:
+                    traceback.clear_frames(exc.__traceback__)
+
                 await self.add_coroutine(
                     stop_async_generator(
-                        gen,
-                        name=f"ResultStreamer({self.name})::add_generator[stop_gen]",
-                        exc=exc_info[1],
+                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]", exc=exc,
                     ),
                     context=self.GeneratorStopper,
                     force=True,

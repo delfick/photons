@@ -3,6 +3,7 @@ from photons_app.errors import RunErrors, BadRunWithResults
 from photons_app import helpers as hp
 
 from delfick_project.norms import sb
+import traceback
 import asyncio
 import sys
 
@@ -75,8 +76,10 @@ class ScriptRunner:
                 async for nxt in gen:
                     yield nxt
             finally:
-                exc_info = sys.exc_info()
-                await hp.stop_async_generator(gen, exc=exc_info[1])
+                exc = sys.exc_info()[1]
+                if exc:
+                    traceback.clear_frames(exc.__traceback__)
+                await hp.stop_async_generator(gen, exc=exc)
 
     # backwards compatibility
     run_with = run
