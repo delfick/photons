@@ -105,7 +105,14 @@ class HardCodedSerials(SpecialReference):
             if isinstance(serial, bytes):
                 serial = serial[:6]
             else:
-                serial = binascii.unhexlify(serial)[:6]
+                try:
+                    serial = binascii.unhexlify(serial)[:6]
+                except binascii.Error as error:
+                    raise PhotonsAppError(
+                        "Tried to treat a string as a serial but it wasn't valid hex",
+                        error=f'"{type(error).__name__}: {error}"',
+                        wanted=serial,
+                    )
             self.targets.append(serial)
 
         self.serials = [binascii.hexlify(target).decode() for target in self.targets]
