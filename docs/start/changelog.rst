@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.31.1 - TBD
+0.31.1 - 9 August 2020
     * Fix specifying range/rate options for animations
 
 0.31.0 - 9 August 2020
