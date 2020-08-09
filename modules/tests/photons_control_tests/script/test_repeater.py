@@ -137,7 +137,7 @@ describe "Repeater":
             #
             *[9.0, 9.0, 9.0, 9.0, 9.0, 9.0],
             #
-            *[12.5, 12.5, 12.5, 12.5, 12.5, 12.5],
+            *[10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
         ]
 
         assertReceived(
@@ -180,15 +180,15 @@ describe "Repeater":
                     (9.0, "d073d5000002", "SetColorPayload"),
                     (9.0, "d073d5000003", "SetColorPayload"),
                 ],
-                # The next loop after 7.5 is 10, but that's less than the min
-                # so we go to the next expected instead
+                # The next loop after 7.5 is 10
+                # It's less than min, but the repetition is based on the schedule
                 [
-                    (12.5, "d073d5000001", "SetPowerPayload"),
-                    (12.5, "d073d5000002", "SetPowerPayload"),
-                    (12.5, "d073d5000003", "SetPowerPayload"),
-                    (12.5, "d073d5000001", "SetColorPayload"),
-                    (12.5, "d073d5000002", "SetColorPayload"),
-                    (12.5, "d073d5000003", "SetColorPayload"),
+                    (10.0, "d073d5000001", "SetPowerPayload"),
+                    (10.0, "d073d5000002", "SetPowerPayload"),
+                    (10.0, "d073d5000003", "SetPowerPayload"),
+                    (10.0, "d073d5000001", "SetColorPayload"),
+                    (10.0, "d073d5000002", "SetColorPayload"),
+                    (10.0, "d073d5000003", "SetColorPayload"),
                 ],
             ],
         )

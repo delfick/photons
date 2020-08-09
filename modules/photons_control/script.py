@@ -95,7 +95,11 @@ def Pipeline(*messages, spread=0, short_circuit_on_error=False, synchronized=Fal
     """
 
     async def gen(reference, sender, **kwargs):
-        async with hp.tick(spread, min_wait=spread) as ticks:
+        min_wait = False
+        if spread <= 0:
+            min_wait = 0
+
+        async with hp.tick(spread, min_wait=False) as ticks:
             async for i, _ in ticks:
                 if i > len(messages):
                     return
@@ -174,10 +178,8 @@ def Repeater(msg, min_loop_time=30, on_done_loop=None):
     """
 
     async def gen(reference, sender, **kwargs):
-        async with hp.tick(
-            min_loop_time, min_wait=min_loop_time, final_future=sender.stop_fut
-        ) as ticks:
-            async for _ in ticks:
+        async with hp.tick(min_loop_time, min_wait=False, final_future=sender.stop_fut) as ticks:
+            async for i, _ in ticks:
                 try:
                     await (yield msg)
                 finally:
