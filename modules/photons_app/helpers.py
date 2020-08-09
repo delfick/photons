@@ -388,11 +388,15 @@ class TaskHolder:
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
 
+    def _set_cleaner_waiter(self, res):
+        self._cleaner_waiter.reset()
+        self._cleaner_waiter.set_result(True)
+
     def add_task(self, task):
         if not self._cleaner:
             self._cleaner = async_as_background(self.cleaner())
 
-        task.add_done_callback(lambda res: self._cleaner_waiter.reset())
+        task.add_done_callback(self._set_cleaner_waiter)
         self.ts.append(task)
         return task
 
@@ -459,6 +463,7 @@ class TaskHolder:
     async def cleaner(self):
         while True:
             await self._cleaner_waiter
+            self._cleaner_waiter.reset()
             await self.clean()
 
     async def clean(self):
