@@ -187,8 +187,8 @@ class Range:
     default_maximum_max = None
 
     def __init__(self, mn, mx, minimum_mn=None, maximum_mx=None, spec=None, multiplier=None):
-        self.mn = round(mn, 3)
-        self.mx = round(mx, 3)
+        self.mn = round(float(mn), 3)
+        self.mx = round(float(mx), 3)
         self.spec = (spec or self.default_normaliser)()
         self.multiplier = multiplier if multiplier is not None else self.default_multiplier
 
@@ -240,6 +240,8 @@ class range_spec(sb.Spec):
     def normalise_filled(self, meta, value):
         if isinstance(value, str):
             value = value.split("-")
+            if len(value) == 1:
+                value *= 2
         elif isinstance(value, (int, float)):
             value = (value, value)
 

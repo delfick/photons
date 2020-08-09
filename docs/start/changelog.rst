@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.31.1 - TBD
+    * Fix specifying range/rate options for animations
+
 0.31.0 - 9 August 2020
     * The ``photons_app.helpers.ATicker`` helper now yields
       ``(iteration, time_till_next)`` where ``iteration`` is the count of
