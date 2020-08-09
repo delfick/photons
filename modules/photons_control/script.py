@@ -42,7 +42,7 @@ async def find_serials(reference, sender, timeout):
     return serials, missing
 
 
-def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=False):
+def Pipeline(*messages, spread=0, short_circuit_on_error=False, synchronized=False):
     """
     This allows you to send messages in order, so that each message isn't sent
     until the previous message gets a reply or times out.
@@ -78,7 +78,7 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
     This also takes in the following keyword arguments:
 
     spread
-        Specify how much wait (in seconds) between each message per device
+        Specify the minimum time between sending each message
 
     short_circuit_on_error
         Stop trying to send messages to a device if we encounter an error.
@@ -95,21 +95,22 @@ def Pipeline(*children, spread=0, short_circuit_on_error=False, synchronized=Fal
     """
 
     async def gen(reference, sender, **kwargs):
-        for i, child in enumerate(children):
-            if i > 0:
-                await asyncio.sleep(spread)
+        async with hp.tick(spread, min_wait=spread) as ticks:
+            async for i, _ in ticks:
+                if i > len(messages):
+                    return
 
-            t = yield child
-            success = await t
-            if not success and short_circuit_on_error:
-                break
+                t = yield messages[i - 1]
+                success = await t
+                if not success and short_circuit_on_error:
+                    return
 
     if synchronized:
         m = FromGenerator(gen, reference_override=True)
     else:
         m = FromGeneratorPerSerial(gen)
 
-    m.pipeline_children = children
+    m.pipeline_messages = messages
     m.pipeline_spread = spread
     m.pipeline_short_circuit_on_error = short_circuit_on_error
 
