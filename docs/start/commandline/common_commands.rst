@@ -18,6 +18,15 @@ A full list of available tasks is returned by running ``lifx help``.
 
         $ lifx lan:find_ips
 
+    The ``find_ips`` action also comes with different output options. For example
+    to get the ips as a ``HARDCODED_DISCOVERY`` export command::
+
+        $ lifx lan:find_ips -- '{"env_output": true}'
+
+    And to get them as yaml you can put in your configuration::
+
+        $ lifx lan:find_ips -- '{"settings_output": true}'
+
 ``transform``
     This task changes the power and colour of the target devices over an
     optionally specified duration. It can also perform waveform-based

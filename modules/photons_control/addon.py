@@ -3,8 +3,9 @@ from photons_app.actions import an_action
 from photons_messages import Services
 
 from delfick_project.addons import addon_hook
-from delfick_project.norms import sb
+from delfick_project.norms import sb, Meta
 import binascii
+import json
 
 # Get us our actions
 from photons_control.device_finder import DeviceFinder
@@ -66,14 +67,62 @@ async def find_ips(collector, target, reference, artifact, **kwargs):
     You can specify a different broadcast address by saying::
 
         lifx lan:find_ips 192.168.0.255
+
+    Options include:
+
+    cli_output - default True
+        Print "{serial}: {ip}" for each device found
+
+        Note that if you choose settings_output or env_output then this will
+        default to False. Explicitly setting it to true will turn it on.
+
+    settings_output - default False
+        Print yaml output that you can copy into a lifx.yml
+
+    env_output - default False
+        Print an ENV variable you can copy into your terminal to set these
+        ips as a HARDCODED_DISCOVERY for future commands.
     """
     broadcast = True
     if artifact not in (None, "", sb.NotSpecified):
         broadcast = artifact
+
+    options = sb.set_options(
+        cli_output=sb.defaulted(sb.boolean(), None),
+        env_output=sb.defaulted(sb.boolean(), False),
+        settings_output=sb.defaulted(sb.boolean(), False),
+    ).normalise(Meta.empty(), collector.photons_app.extra_as_json)
+
+    if options["env_output"] is False and options["settings_output"] is False:
+        if options["cli_output"] is None:
+            options["cli_output"] = True
+
+    env_output = options["env_output"]
+    cli_output = options["cli_output"]
+    settings_output = options["settings_output"]
+
+    ips = {}
 
     async with target.session() as sender:
         found, serials = await reference.find(sender, timeout=20, broadcast=broadcast)
         for serial in serials:
             services = found[binascii.unhexlify(serial)]
             if Services.UDP in services:
-                print(f"{serial}: {services[Services.UDP].host}")
+                ip = services[Services.UDP].host
+                ips[serial] = ip
+                if cli_output:
+                    print(f"{serial}: {ip}")
+
+    if cli_output and (env_output or settings_output):
+        print()
+
+    if env_output:
+        print(f"export HARDCODED_DISCOVERY='{json.dumps(ips, sort_keys=True)}'")
+        if settings_output:
+            print()
+
+    if settings_output:
+        print("discovery_options:")
+        print("  hardcoded_discovery:")
+        for serial, ip in sorted(ips.items()):
+            print(f'    {serial}: "{ip}"')
