@@ -657,6 +657,7 @@ class ResultStreamer:
                         exc=exc_info[1],
                     ),
                     context=self.GeneratorStopper,
+                    force=True,
                 )
 
             return self.GeneratorComplete
@@ -676,11 +677,12 @@ class ResultStreamer:
 
         return task
 
-    async def add_coroutine(self, coro, *, context=None, on_done=None):
+    async def add_coroutine(self, coro, *, context=None, on_done=None, force=False):
         return await self.add_task(
             async_as_background(coro, silent=bool(self.error_catcher)),
             context=context,
             on_done=on_done,
+            force=force,
         )
 
     async def add_value(self, value, *, context=None, on_done=None):
@@ -689,11 +691,16 @@ class ResultStreamer:
 
         return await self.add_coroutine(return_value(), context=context, on_done=on_done)
 
-    async def add_task(self, task, *, context=None, on_done=None):
+    async def add_task(self, task, *, context=None, on_done=None, force=False):
         if self.final_future.done():
-            await cancel_futures_and_wait(
-                task, name=f"ResultStreamer({self.name})::add_task[already_stopped]"
-            )
+            if force:
+                await wait_for_all_futures(
+                    task, name=f"ResultStreamer({self.name})::add_task[force_already_stopped]"
+                )
+            else:
+                await cancel_futures_and_wait(
+                    task, name=f"ResultStreamer({self.name})::add_task[already_stopped]"
+                )
             return task
 
         def add_to_queue(res):

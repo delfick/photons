@@ -224,7 +224,7 @@ describe "ResultStreamer":
             with mock.patch.object(V.streamer, "add_task", add_task):
                 assert await V.streamer.add_coroutine(coro, context=ctx, on_done=on_done) is task
 
-            add_task.assert_called_once_with(mock.ANY, context=ctx, on_done=on_done)
+            add_task.assert_called_once_with(mock.ANY, context=ctx, on_done=on_done, force=False)
             task = add_task.mock_calls[0][1][0]
 
             assert isinstance(task, asyncio.Task)
@@ -243,7 +243,7 @@ describe "ResultStreamer":
             with mock.patch.object(V.streamer, "add_task", add_task):
                 assert await V.streamer.add_coroutine(coro) is task
 
-            add_task.assert_called_once_with(mock.ANY, context=None, on_done=None)
+            add_task.assert_called_once_with(mock.ANY, context=None, on_done=None, force=False)
 
     describe "add_value":
 
