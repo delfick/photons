@@ -241,6 +241,42 @@ describe "Control Commands":
                 device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
             device.reset_received()
 
+    async it "has power_toggle group command", fake, runner, asserter:
+        expected = {"results": {device.serial: "ok" for device in fake.devices}}
+
+        await runner.assertPUT(
+            asserter,
+            "/v1/lifx/command",
+            {"command": "power_toggle", "args": {"group": True}},
+            json_output=expected,
+        )
+
+        for device in fake.devices:
+            device.compare_received_set([LightMessages.SetLightPower(level=0, duration=1)])
+            device.reset_received()
+
+        await runner.assertPUT(
+            asserter,
+            "/v1/lifx/command",
+            {"command": "power_toggle", "args": {"duration": 2, "group": True}},
+            json_output=expected,
+        )
+
+        for device in fake.devices:
+            device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
+            device.reset_received()
+
+        await runner.assertPUT(
+            asserter,
+            "/v1/lifx/command",
+            {"command": "power_toggle", "args": {"duration": 3, "group": True}},
+            json_output=expected,
+        )
+
+        for device in fake.devices:
+            device.compare_received_set([LightMessages.SetLightPower(level=0, duration=3)])
+            device.reset_received()
+
     async it "has transform command", fake, runner, asserter:
         # Just power
         expected = {"results": {device.serial: "ok" for device in fake.devices}}

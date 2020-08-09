@@ -2,11 +2,12 @@
 
 from photons_control import test_helpers as chp
 
-from photons_control.transform import Transformer, PowerToggle
+from photons_control.transform import Transformer, PowerToggle, PowerToggleGroup
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.colour import ColourParser
 from photons_transport.fake import FakeDevice
 
+from unittest import mock
 import itertools
 import random
 import pytest
@@ -97,6 +98,16 @@ describe "PowerToggle":
 
             device.compare_received(expected[device])
 
+    async it "can return a PowerToggleGroup", runner:
+        a = mock.Mock(name="a")
+        ptg = mock.Mock(name="power_toggle_group_msg")
+        PowerToggleGroup = mock.Mock(name="PowerToggleGroup", return_value=ptg)
+
+        with mock.patch("photons_control.transform.PowerToggleGroup", PowerToggleGroup):
+            assert PowerToggle(duration=5, group=True, a=a) is ptg
+
+        PowerToggleGroup.assert_called_once_with(duration=5, a=a)
+
     async it "toggles the power", runner:
         expected = {
             light1: [
@@ -123,6 +134,56 @@ describe "PowerToggle":
             ],
         }
         await self.run_and_compare(runner, PowerToggle(duration=2), expected=expected)
+
+describe "PowerToggleGroup":
+
+    async def run_and_compare(self, runner, msg, *, expected):
+        await runner.sender(msg, runner.serials)
+
+        assert len(runner.devices) > 0
+
+        for device in runner.devices:
+            if device not in expected:
+                assert False, f"No expectation for {device.serial}"
+
+            device.compare_received(expected[device])
+
+    async it "toggles the power", runner:
+        expected = {
+            light1: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1),],
+            light2: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
+            light3: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
+        }
+        await self.run_and_compare(runner, PowerToggleGroup(), expected=expected)
+
+        for device in runner.devices:
+            device.received = []
+
+        expected = {
+            light1: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=2),
+            ],
+            light2: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=2),
+            ],
+            light3: [
+                DeviceMessages.GetPower(),
+                LightMessages.SetLightPower(level=65535, duration=2),
+            ],
+        }
+        await self.run_and_compare(runner, PowerToggleGroup(duration=2), expected=expected)
+
+        for device in runner.devices:
+            device.received = []
+
+        expected = {
+            light1: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=3)],
+            light2: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=3)],
+            light3: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=3)],
+        }
+        await self.run_and_compare(runner, PowerToggleGroup(duration=3), expected=expected)
 
 describe "Transformer":
 

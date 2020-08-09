@@ -54,6 +54,11 @@ ChangeLog
 
     * cleaned up some old code and removed memory leaks
 
+    * PowerToggle now has a ``group=True`` option (or you can use
+      PowerToggleGroup) that means the power toggle treats the lights as a group.
+      In this mode, if any light is turned on, then they are all turned off,
+      otherwise they are all turned on.
+
 0.30.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the
     internal version of this library at LIFX was created over 4 years ago.

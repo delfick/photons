@@ -3,7 +3,11 @@
 Changelog
 =========
 
-0.7.0 - TBD
+0.7.1 - TBD
+    * Removed the memory leaks
+    * Added ``group`` option to the ``power_toggle`` command
+
+0.7.0 - 11 July 2020
     * Import from https://photons-interactor.readthedocs.io/en/latest/
 
         * Cleaned up code

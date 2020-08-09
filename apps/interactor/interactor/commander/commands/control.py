@@ -73,12 +73,16 @@ class PowerToggleCommand(store.Command, DeviceChangeMixin):
     Toggle the power of the lights you specify
     """
 
-    duration = dictobj.NullableField(sb.float_spec)
+    duration = dictobj.NullableField(sb.float_spec, help="Duration of the toggle")
+
+    group = dictobj.NullableField(sb.boolean, help="Whether to treat the lights as a group")
 
     async def execute(self):
         kwargs = {}
         if self.duration:
             kwargs["duration"] = self.duration
+        if self.group is not None:
+            kwargs["group"] = self.group
         msg = PowerToggle(**kwargs)
         return await self.send(msg, add_replies=False)
 

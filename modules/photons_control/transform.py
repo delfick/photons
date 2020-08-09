@@ -9,9 +9,12 @@ from photons_control.colour import ColourParser
 from delfick_project.norms import sb, Meta
 
 
-def PowerToggle(duration=1, **kwargs):
+def PowerToggle(duration=1, group=False, **kwargs):
     """
     Returns a valid message that will toggle the power of devices used against it.
+
+    If group is True, then we return a PowerToggleGroup message and treat all
+    lights in the reference as a group.
 
     For example:
 
@@ -19,6 +22,9 @@ def PowerToggle(duration=1, **kwargs):
 
         await target.send(PowerToggle(), ["d073d5000001", "d073d5000001"])
     """
+
+    if group:
+        return PowerToggleGroup(duration=duration, **kwargs)
 
     async def gen(reference, sender, **kwargs):
         get_power = DeviceMessages.GetPower()
@@ -34,6 +40,38 @@ def PowerToggle(duration=1, **kwargs):
                     )
 
     return FromGenerator(gen)
+
+
+def PowerToggleGroup(duration=1, **kwargs):
+    """
+    Returns a valid message that will toggle the power of devices used against it.
+
+    This takes into account the whole group of lights so if any light is turned
+    on then all lights are turned off, otherwise they are all turned on
+
+    For example:
+
+    .. code-block:: python
+
+        await target.send(PowerToggle(), ["d073d5000001", "d073d5000001"])
+    """
+
+    async def gen(reference, sender, **kwargs):
+        get_power = DeviceMessages.GetPower()
+        turn_on = True
+        async with sender(get_power, reference, **kwargs) as pkts:
+            async for pkt in pkts:
+                if pkt | DeviceMessages.StatePower:
+                    if pkt.level != 0:
+                        turn_on = False
+                        raise pkts.StopPacketStream()
+
+        if turn_on:
+            yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration)
+        else:
+            yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration)
+
+    return FromGenerator(gen, reference_override=True)
 
 
 class Transformer(object):

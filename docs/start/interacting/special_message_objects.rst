@@ -120,6 +120,8 @@ Existing message objects
 
 .. autofunction:: photons_control.transform.PowerToggle
 
+.. autofunction:: photons_control.transform.PowerToggleGroup
+
 .. autofunction:: photons_control.multizone.SetZones
 
 .. autofunction:: photons_control.multizone.SetZonesEffect
