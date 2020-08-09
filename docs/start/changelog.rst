@@ -52,6 +52,8 @@ ChangeLog
 
                     raise pkts.StopPacketStream()
 
+    * cleaned up some old code and removed memory leaks
+
 0.30.0 - 11 July 2020
     This release is the biggest change to the programmatic interface since the
     internal version of this library at LIFX was created over 4 years ago.
