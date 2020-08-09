@@ -11,7 +11,7 @@ from delfick_project.logging import setup_logging
 
 async def doit(collector):
     lan_target = collector.resolve_target("lan")
-    color_msg = ColourParser.msg("blue")
+    color_msg = ColourParser.msg("green")
     on_msg = DeviceMessages.SetPower(level=65535)
     await lan_target.send([color_msg, on_msg], FoundSerials())
 
