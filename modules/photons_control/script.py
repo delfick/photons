@@ -441,11 +441,14 @@ class FromGenerator(object):
                 if exc_info[0] not in (None, asyncio.CancelledError):
                     hp.add_error(self.error_catcher, exc_info[1])
 
-                await hp.stop_async_generator(
-                    gen,
-                    complete,
-                    name="FromGenerator>Runner::consume[finally_stop_gen]",
-                    exc=exc_info[1],
+                await streamer.add_coroutine(
+                    hp.stop_async_generator(
+                        gen,
+                        complete,
+                        name="FromGenerator>Runner::consume[finally_stop_gen]",
+                        exc=exc_info[1],
+                    ),
+                    force=True,
                 )
 
                 if exc_info[0] is not asyncio.CancelledError:
