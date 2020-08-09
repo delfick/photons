@@ -49,6 +49,9 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+0.5.2 - 9 August 2020
+    * 0.5.1 had development assets in it, so I deleted it
+
 0.5.1 - 9 August 2020
     * Using new photons code, including fixing memory leaks
 
