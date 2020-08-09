@@ -222,3 +222,31 @@ describe "ATicker":
 
         assert called == [(1, 5, 0), (2, 5, 5), (3, 6, 14), (4, 5, 20)]
         assert m.called_times == [5, 10, 20]
+
+    async it "can be told to follow the schedule", FakeTime, MockedCallLater:
+        called = []
+
+        with FakeTime() as t:
+            async with MockedCallLater(t) as m:
+                async with hp.ATicker(5, min_wait=False) as ticks:
+                    async for i, nxt in ticks:
+                        called.append((i, nxt, time.time()))
+
+                        if len(called) == 2:
+                            await m.add(9)
+
+                        elif len(called) == 4:
+                            await m.add(12)
+
+                        elif len(called) == 6:
+                            break
+
+        assert called == [
+            (1, 5, 0),
+            (2, 5.0, 5.0),
+            (3, 1.0, 14.0),
+            (4, 5.0, 15.0),
+            (5, 3.0, 27.0),
+            (6, 5.0, 30.0),
+        ]
+        assert m.called_times == [5, 10, 14, 15, 20, 27, 30]

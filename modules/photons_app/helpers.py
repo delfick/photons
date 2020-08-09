@@ -137,6 +137,12 @@ class ATicker:
     max_time
         After this many iterations the loop will stop. By default there is no
         limit
+
+    min_wait
+        The minimum amount of time to wait after a tick.
+
+        If this is False then we will always just tick at the next expected time,
+        otherwise we ensure this amount of time at a minimum between ticks
     """
 
     class Stop(Exception):
@@ -155,8 +161,13 @@ class ATicker:
         self.name = name
         self.every = every
         self.max_time = max_time
-        self.min_wait = min_wait or 0
+        self.min_wait = min_wait
         self.max_iterations = max_iterations
+
+        if self.every <= 0:
+            self.every = 0
+            if self.min_wait is False:
+                self.min_wait = 0
 
         self.handle = None
         self.expected = None
@@ -268,17 +279,33 @@ class ATicker:
             if self.max_time is not None and now - start >= self.max_time:
                 return
 
-            diff = self.min_wait
-            if self.every > 0:
-                while self.expected - now < self.min_wait:
+            if self.min_wait is False:
+                diff = self.expected - now
+                if diff == 0:
                     self.expected += self.every
+                else:
+                    while diff <= -self.every:
+                        self.expected += self.every
+                        diff = self.expected - now
 
-                diff = round(self.expected - now, 3)
+                    while self.expected - now <= 0:
+                        self.expected += self.every
+            else:
+                diff = self.min_wait
+                if self.every > 0:
+                    while self.expected - now < self.min_wait:
+                        self.expected += self.every
+
+                    diff = round(self.expected - now, 3)
+
+            if diff == 0:
+                diff = self.expected - now
 
             self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
 
-            iteration += 1
-            yield iteration, diff
+            if self.min_wait is not False or diff > 0:
+                iteration += 1
+                yield iteration, max([diff, 0])
 
 
 def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1, name=None):
