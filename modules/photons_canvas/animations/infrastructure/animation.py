@@ -43,7 +43,7 @@ class Animation:
         return hp.ATicker(
             self.every,
             max_time=self.num_seconds,
-            min_wait=0.01,
+            min_wait=False,
             final_future=self.final_future,
             name=f"Animation({self.__class__.__name__})",
         )
