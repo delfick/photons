@@ -3,8 +3,8 @@
 Changelog
 =========
 
-0.7.1 - TBD
-    * Removed the memory leaks
+0.7.1 - 9 August 2020
+    * Using new photons code, including fixing memory leaks
     * Added ``group`` option to the ``power_toggle`` command
 
 0.7.0 - 11 July 2020

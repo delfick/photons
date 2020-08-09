@@ -49,5 +49,8 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
-0.5 - TBD
-    Initial import from https://photons-interactor.readthedocs.io/
+0.5.1 - 9 August 2020
+    * Using new photons code, including fixing memory leaks
+
+0.5 - 11 July 2020
+    * Initial import from https://photons-interactor.readthedocs.io/
