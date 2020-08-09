@@ -67,7 +67,8 @@ class SpecialReference:
 
             found = res.result()
             serials = [binascii.hexlify(key).decode() for key in found]
-            self.found.set_result((found, serials))
+            if not self.found.done():
+                self.found.set_result((found, serials))
 
         t.add_done_callback(transfer)
         return await self.found
