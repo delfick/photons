@@ -53,7 +53,7 @@ def PowerToggleGroup(duration=1, **kwargs):
 
     .. code-block:: python
 
-        await target.send(PowerToggle(), ["d073d5000001", "d073d5000001"])
+        await target.send(PowerToggle(group=True), ["d073d5000001", "d073d5000001"])
     """
 
     async def gen(reference, sender, **kwargs):
