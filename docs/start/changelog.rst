@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.31.2 - TBD
+    * Fixed a bug where the device_finder would cause all the CPU to be used
+    * Made retry for device discovery less agressive
+
 0.31.1 - 9 August 2020
     * Fix specifying range/rate options for animations
 
