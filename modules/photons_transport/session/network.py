@@ -100,7 +100,7 @@ class NetworkSession(Communication):
         return list(found_now)
 
     async def _search_retry_iterator(self, end_after):
-        timeouts = [(0.6, 1.8), (1, 4)]
+        timeouts = [(0.6, 1.8), (1, 2), (2, 6), (4, 10), (5, 20)]
         async for info in RetryOptions(
             timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_options]"
         ).tick(self.stop_fut, end_after):
