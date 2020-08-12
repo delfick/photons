@@ -831,7 +831,15 @@ class Finder:
             return
 
         refresh = False if fltr is None else fltr.refresh_discovery
-        serials = await self._find_all_serials(refresh=refresh)
+
+        try:
+            serials = await self._find_all_serials(refresh=refresh)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Failed to find serials")
+            serials = []
+
         removed = self._ensure_devices(serials)
 
         catcher = partial(log_errors, "Failed to determine if device matched filter")
@@ -909,7 +917,11 @@ class Finder:
         if self.searched.done() and not refresh:
             serials = self.searched.result()
         else:
-            _, serials = await FoundSerials().find(self.sender, timeout=5)
+            try:
+                _, serials = await FoundSerials().find(self.sender, timeout=5)
+            except FoundNoDevices:
+                serials = []
+
             self.searched.reset()
             self.searched.set_result(serials)
 
