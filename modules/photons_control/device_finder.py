@@ -686,10 +686,14 @@ class Device(dictobj.Spec):
                         if time.time() - fut.result() < refresh:
                             continue
 
-                    yield e.value.msg
+                    if self.serial not in sender.found:
+                        break
+
+                    t = yield e.value.msg
+                    await t
 
         msg = FromGenerator(gen, reference_override=self.serial)
-        async for pkt in sender(msg, self.serial, limit=self.limit):
+        async for pkt in sender(msg, self.serial, limit=self.limit, find_timeout=5):
             point = self.set_from_pkt(pkt, collections)
             self.point_futures[point].reset()
             self.point_futures[point].set_result(time.time())
