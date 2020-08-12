@@ -763,9 +763,15 @@ class DeviceFinderDaemon:
             await self.finder.finish()
 
     async def search_loop(self):
+        refreshing = hp.ResettableFuture(name="DeviceFinderDaemon::search_loop[refreshing]")
         refresh_discovery_fltr = Filter.empty(refresh_discovery=True)
 
         async def add(streamer):
+            if refreshing.done():
+                return
+
+            refreshing.set_result(True)
+
             async for device in self.finder.find(refresh_discovery_fltr):
                 await streamer.add_coroutine(
                     device.refresh_information_loop(
@@ -774,10 +780,10 @@ class DeviceFinderDaemon:
                     context=device,
                 )
 
-        async def ensure(streamer):
+        async def ticks():
             async with self.hp_tick(self.search_interval, final_future=self.final_future) as ticks:
-                async for _ in ticks:
-                    await streamer.add_coroutine(add(streamer))
+                async for info in ticks:
+                    yield info
 
         catcher = partial(log_errors, "Something went wrong in a search")
 
@@ -786,11 +792,13 @@ class DeviceFinderDaemon:
             name="DeviceFinderDaemon::search_loop[streamer]",
             error_catcher=catcher,
         ) as streamer:
-            await streamer.add_coroutine(ensure(streamer))
+            await streamer.add_generator(ticks(), context="finder_tick")
             streamer.no_more_work()
 
             async for result in streamer:
-                pass
+                if result.successful and result.context == "finder_tick":
+                    refreshing.reset()
+                    await streamer.add_coroutine(add(streamer))
 
     async def serials(self, fltr):
         async for device in self.finder.find(fltr):

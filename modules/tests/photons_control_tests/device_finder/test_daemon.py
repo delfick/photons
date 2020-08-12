@@ -219,8 +219,9 @@ describe "DeviceFinderDaemon":
                 wait = hp.create_future()
 
                 class Tick:
-                    def __init__(self, every, final_future=None, name=None, min_wait=0.1):
-                        self.every = every
+                    def __init__(self, *args, **kwargs):
+                        self.args = args
+                        self.kwargs = kwargs
 
                     async def __aenter__(self):
                         return self
@@ -232,10 +233,11 @@ describe "DeviceFinderDaemon":
                         return self.tick()
 
                     async def tick(self):
-                        for i in range(5):
-                            if i == 4:
-                                wait.set_result(True)
-                            yield i, self.every
+                        async with hp.tick(*self.args, **self.kwargs) as ticks:
+                            async for i, nxt_time in ticks:
+                                if i == 4:
+                                    wait.set_result(True)
+                                yield i, nxt_time
 
                 p3 = mock.patch.object(V.daemon.finder, "find", find)
                 p4 = mock.patch.object(V.daemon, "hp_tick", Tick)
