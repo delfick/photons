@@ -5,7 +5,7 @@ from photons_transport.transports.udp import UDP
 
 from photons_app import helpers as hp
 
-from photons_messages import DiscoveryMessages, Services
+from photons_messages import DiscoveryMessages, Services, DiscoveryMessages
 
 import binascii
 import logging
@@ -85,10 +85,11 @@ class NetworkSession(Communication):
             kwargs["message_timeout"] = time_till_next
 
             async for pkt in self(get_service, **kwargs):
-                if discovery_options.want(pkt.serial):
-                    addr = pkt.Information.remote_addr
-                    found_now.add(pkt.target[:6])
-                    await self.add_service(pkt.serial, pkt.service, host=addr[0], port=pkt.port)
+                if pkt | DiscoveryMessages.StateService:
+                    if discovery_options.want(pkt.serial):
+                        addr = pkt.Information.remote_addr
+                        found_now.add(pkt.target[:6])
+                        await self.add_service(pkt.serial, pkt.service, host=addr[0], port=pkt.port)
 
             if serials is None:
                 if found_now:
