@@ -13,7 +13,7 @@ setup(
     , python_requires = ">= 3.6"
 
     , install_requires =
-      [ "lifx-photons-core>=0.31.0"
+      [ "lifx-photons-core>=0.31.2"
       , "tornado>=5.1.1"
       , "SQLAlchemy==1.3.3"
       , "alembic==1.3.2"
