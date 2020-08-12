@@ -1,5 +1,5 @@
+from photons_app.errors import PhotonsAppError, FoundNoDevices, RunErrors
 from photons_app.special import FoundSerials, SpecialReference
-from photons_app.errors import PhotonsAppError
 from photons_app.actions import an_action
 from photons_app import helpers as hp
 
@@ -9,6 +9,8 @@ from photons_products import Products
 
 from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
 from urllib.parse import parse_qs
+from functools import partial
+import traceback
 import itertools
 import binascii
 import logging
@@ -20,6 +22,27 @@ import enum
 import re
 
 log = logging.getLogger("photons_control.device_finder")
+
+
+def log_errors(msg, result):
+    e = result.value
+    traceback.clear_frames(e.__traceback__)
+
+    if isinstance(e, RunErrors) and len(e.errors) == 1:
+        e = e.errors[0]
+
+    if isinstance(e, asyncio.CancelledError):
+        return
+
+    exc_info = None
+    if not isinstance(e, PhotonsAppError):
+        exc_info = (type(e), e, e.__traceback__)
+
+    lc = hp.lc
+    if exc_info is None:
+        lc = lc.using(exc_type=type(e).__name__, error=e)
+
+    log.error(lc(msg), exc_info=exc_info)
 
 
 async def make_device_finder(sender, make_reference, reference, extra):
@@ -756,18 +779,18 @@ class DeviceFinderDaemon:
                 async for _ in ticks:
                     await streamer.add_coroutine(add(streamer))
 
+        catcher = partial(log_errors, "Something went wrong in a search")
+
         async with hp.ResultStreamer(
-            self.final_future, name="DeviceFinderDaemon::search_loop[streamer]"
+            self.final_future,
+            name="DeviceFinderDaemon::search_loop[streamer]",
+            error_catcher=catcher,
         ) as streamer:
             await streamer.add_coroutine(ensure(streamer))
             streamer.no_more_work()
 
             async for result in streamer:
-                if not result.successful:
-                    log.exception(
-                        "Something went wrong in a search",
-                        exc_info=(type(result.value), result.value, result.value.__traceback__),
-                    )
+                pass
 
     async def serials(self, fltr):
         async for device in self.finder.find(fltr):
@@ -803,7 +826,11 @@ class Finder:
         serials = await self._find_all_serials(refresh=refresh)
         removed = self._ensure_devices(serials)
 
-        async with hp.ResultStreamer(self.final_future, name="Finder::find[streamer]") as streamer:
+        catcher = partial(log_errors, "Failed to determine if device matched filter")
+
+        async with hp.ResultStreamer(
+            self.final_future, name="Finder::find[streamer]", error_catcher=catcher
+        ) as streamer:
             for device in removed:
                 await streamer.add_coroutine(device.finish())
 
@@ -821,19 +848,11 @@ class Finder:
 
             async with streamer:
                 async for result in streamer:
-                    if not result.successful:
-                        log.exception(
-                            "Failed to determine if device matched filter",
-                            exc_info=(type(result.value), result.value, result.value.__traceback__),
-                        )
-                    elif result.value and result.context:
+                    if result.successful and result.value and result.context:
                         yield result.context
 
     async def info(self, fltr):
-        def error(e):
-            log.error(
-                hp.lc("Failed to find information for device", error=e, error_type=type(e).__name__)
-            )
+        catcher = partial(log_errors, "Failed to find information for device")
 
         async def find():
             async for device in self.find(fltr):
@@ -845,10 +864,7 @@ class Finder:
                 )
 
         streamer = hp.ResultStreamer(
-            self.final_future,
-            error_catcher=error,
-            exceptions_only_to_error_catcher=True,
-            name="Finder::info[streamer]",
+            self.final_future, error_catcher=catcher, name="Finder::info[streamer]",
         )
 
         async with streamer:
@@ -857,10 +873,6 @@ class Finder:
 
             async for result in streamer:
                 if not result.successful:
-                    log.exception(
-                        "Failed to find information for device",
-                        exc_info=(type(result.value), result.value, result.value.__traceback__),
-                    )
                     if result.context is True:
                         raise result.value
 
