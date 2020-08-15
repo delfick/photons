@@ -25,6 +25,9 @@ class Character:
         self.height = len(self.rows)
 
     def pairs(self, left_x, top_y, fill_color):
+        top_y = round(top_y)
+        left_x = round(left_x)
+
         bounds = (
             (left_x, left_x + self.width),
             (top_y, top_y - self.height),
@@ -56,6 +59,9 @@ class Characters:
         self.width = sum(ch.width for ch in self.characters)
 
     def pairs(self, left_x, top_y, fill_color):
+        top_y = round(top_y)
+        left_x = round(left_x)
+
         for character in self.characters:
             for point, pixel in character.pairs(left_x, top_y, fill_color):
                 yield point, pixel
