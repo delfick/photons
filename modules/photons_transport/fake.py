@@ -356,16 +356,16 @@ class FakeDevice:
         self.write_tasks.append(task)
         return task
 
-    async def write(self, source, received_data, bts):
+    async def write(self, source, received_data, bts, addr=None):
         if not self.attrs.online:
             return
 
-        addr = None
-        for service in self.services:
-            a = service.address(source)
-            if a:
-                addr = a
-                break
+        if addr is None:
+            for service in self.services:
+                a = service.address(source)
+                if a:
+                    addr = a
+                    break
 
         if addr is None:
             log.warning(
@@ -382,6 +382,7 @@ class FakeDevice:
         )
 
         pkt = Messages.create(bts, self.protocol_register, unknown_ok=True)
+        pkt.Information.update(remote_addr=addr, sender_message=None)
         if pkt.serial not in ("000000000000", self.serial):
             return
 
@@ -451,6 +452,7 @@ class FakeDevice:
                 "Got packet",
                 source=source,
                 pkt=pkt.__class__.__name__,
+                ip=pkt.Information.remote_addr,
                 payload=payload_repr,
                 pkt_source=pkt.source,
                 serial=self.serial,
@@ -545,7 +547,7 @@ class FakeDevice:
                 async def received_data(bts, a):
                     sp.udp_transport.sendto(bts, addr)
 
-                self.sync_write("udp", received_data, data)
+                self.sync_write("udp", received_data, data, addr)
 
             def error_received(sp, exc):
                 log.error(hp.lc("Error on udp transport", error=exc))
