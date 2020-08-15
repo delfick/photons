@@ -74,6 +74,7 @@ class SetZonesPlan(Plan):
     :class:`photons_control.multizone.SetZones` message instead.
     """
 
+    default_refresh = True
     dependant_info = {"c": CapabilityPlan()}
 
     def setup(self, colors, zone_index=0, duration=1, overrides=None, **kwargs):
