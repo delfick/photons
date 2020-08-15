@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.31.3 - TBD
+    * Fix bug in marquee based animations
+    * Make sure the SetZonesPlan always applies even if it was recently applied.
+
 0.31.2 - 12 August 2020
     * Fixed a bug where the device_finder would cause all the CPU to be used
     * Made retry for device discovery less agressive
