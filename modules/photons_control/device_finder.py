@@ -134,7 +134,7 @@ class Collection(dictobj.Spec):
         return isinstance(other, Collection) and self.typ == other.typ and self.uuid == other.uuid
 
 
-class Collections(object):
+class Collections:
     """
     A collection of collections!
 
@@ -448,7 +448,7 @@ class DeviceFinder(SpecialReference):
         return DeviceFinder(Filter.from_options(options), finder=finder)
 
 
-class Point(object):
+class Point:
     """Used as the value in the InfoPoints enum"""
 
     def __init__(self, msg, keys, refresh):

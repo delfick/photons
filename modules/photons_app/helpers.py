@@ -1092,7 +1092,7 @@ async def cancel_futures_and_wait(*futs, name=None):
     )
 
 
-class memoized_property(object):
+class memoized_property:
     """
     Decorator to make a descriptor that memoizes it's value
 
@@ -1344,7 +1344,7 @@ def find_and_apply_result(final_fut, available_futs):
     return False
 
 
-class ResettableFuture(object):
+class ResettableFuture:
     """
     A future object with a ``reset()`` function that resets it
 
@@ -1421,7 +1421,7 @@ class ResettableFuture(object):
     __iter__ = __await__
 
 
-class ChildOfFuture(object):
+class ChildOfFuture:
     """
     Create a future that also considers the status of it's parent.
 
@@ -1726,7 +1726,7 @@ class Queue:
             yield self.collection.popleft()
 
 
-class ThreadToAsyncQueue(object):
+class ThreadToAsyncQueue:
     """
     A Queue for requesting data from some thread:
 

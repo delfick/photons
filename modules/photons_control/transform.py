@@ -74,7 +74,7 @@ def PowerToggleGroup(duration=1, **kwargs):
     return FromGenerator(gen, reference_override=True)
 
 
-class Transformer(object):
+class Transformer:
     """
     This is responsible for creating the messages to send to a device for a
     transformation

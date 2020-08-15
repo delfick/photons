@@ -234,7 +234,7 @@ def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     return FromGenerator(gen)
 
 
-class FromGenerator(object):
+class FromGenerator:
     """
     FromGenerator let's you determine what messages to send in an async generator.
 

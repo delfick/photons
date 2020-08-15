@@ -166,7 +166,7 @@ describe "Type":
                 def clone(s, cloned=True):
                     setd = {}
 
-                    class Clone(object):
+                    class Clone:
                         def __setattr__(s, name, val):
                             assert name not in setd
                             setd[name] = val

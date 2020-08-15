@@ -7,7 +7,7 @@ import asyncio
 log = logging.getLogger("photons_transport.comms.receiver")
 
 
-class Receiver(object):
+class Receiver:
     """Hold onto and routes replies from the bridge"""
 
     message_catcher = NotImplemented

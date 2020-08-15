@@ -49,7 +49,7 @@ class NoLimit:
 no_limit = NoLimit()
 
 
-class Item(object):
+class Item:
     def __init__(self, parts):
         self.parts = parts
         if type(self.parts) is not list:

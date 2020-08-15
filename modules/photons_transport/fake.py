@@ -75,7 +75,7 @@ class Service:
         self.state_service = state_service
 
 
-class WithDevices(object):
+class WithDevices:
     def __init__(self, devices):
         self.devices = devices
 

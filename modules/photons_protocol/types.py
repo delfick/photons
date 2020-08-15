@@ -38,7 +38,7 @@ regexes = {
 }
 
 
-class Type(object):
+class Type:
     """
     A specification of how to pack and unpack bits from/to a packet
 

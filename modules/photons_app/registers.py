@@ -39,7 +39,7 @@ class Target(dictobj.Spec):
     options = dictobj.Field(sb.dictionary_spec)
 
 
-class TargetRegister(object):
+class TargetRegister:
     """
     A register of target types and concrete instances of those targets.
 
@@ -144,7 +144,7 @@ class TargetRegister(object):
         self.targets[name] = make
 
 
-class MessagesRegister(object):
+class MessagesRegister:
     """
     A register for Photons Protocol Messages classes.
 
@@ -176,7 +176,7 @@ class MessagesRegister(object):
         return iter(self.message_classes)
 
 
-class ProtocolRegister(object):
+class ProtocolRegister:
     """
     A register for Photons Protocol Messages classes.
 
@@ -222,7 +222,7 @@ class ProtocolRegister(object):
         pass
 
 
-class ReferenceResolerRegister(object):
+class ReferenceResolerRegister:
     """
     A register for special reference resolvers
 

@@ -6,7 +6,7 @@ from photons_app.actions import available_actions, all_tasks
 from photons_app.errors import BadTask
 
 
-class TaskFinder(object):
+class TaskFinder:
     def __init__(self, collector):
         self.tasks = all_tasks
         self.collector = collector

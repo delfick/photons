@@ -189,7 +189,7 @@ class PhotonsApp(dictobj.Spec):
                 log.error(exc_info[1], exc_info=exc_info)
 
 
-class PhotonsAppSpec(object):
+class PhotonsAppSpec:
     """Knows about photons_app specific configuration"""
 
     @hp.memoized_property

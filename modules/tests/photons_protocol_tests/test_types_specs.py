@@ -383,7 +383,7 @@ describe "bitmask_spec":
 
         it "complains if bitmask is not an Enum", meta, pkt:
 
-            class Kls(object):
+            class Kls:
                 def __init__(s, pkt):
                     pass
 
@@ -548,7 +548,7 @@ describe "enum_spec":
 
         it "complains if enum is not an Enum", meta, pkt:
 
-            class Kls(object):
+            class Kls:
                 def __init__(s, pkt):
                     pass
 

@@ -28,7 +28,7 @@ describe "ThreadToAsyncQueue":
         def ttaq(num_threads):
             ttaq = hp.ThreadToAsyncQueue(stop_fut, num_threads, mock.Mock(name="onerror"))
 
-            class ACM(object):
+            class ACM:
                 async def __aenter__(s):
                     await ttaq.start()
                     return ttaq
@@ -181,7 +181,7 @@ describe "ThreadToAsyncQueuewith custom args":
 
             ttaq = Queue(stop_fut, num_threads, mock.Mock(name="onerror"))
 
-            class ACM(object):
+            class ACM:
                 async def __aenter__(s):
                     await ttaq.start()
                     return ttaq, create_args

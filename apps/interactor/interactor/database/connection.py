@@ -7,7 +7,7 @@ import logging
 log = logging.getLogger("interactor.database.connection")
 
 
-class Base(object):
+class Base:
     # Metadata gets set by Sqlalchemy
     metadata = None
 
@@ -34,7 +34,7 @@ Base = declarative_base(cls=Base)
 ########################
 
 
-class DatabaseConnection(object):
+class DatabaseConnection:
     """
     The wrapper to sqlalchemy for interacting with the database. Usage looks like:
 
@@ -167,7 +167,7 @@ class DatabaseConnection(object):
 ########################
 
 
-class QueryHelper(object):
+class QueryHelper:
     """
     Object to abstract getting stuff from the database
 

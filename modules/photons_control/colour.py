@@ -142,7 +142,7 @@ def split_color_string(color_string):
     return [thing for thing in regexes["whitespace"].split(color_string) if thing]
 
 
-class ColourParser(object):
+class ColourParser:
     """
     This knows how to convert valid colour specifiers into a
     :ref:`SetWaveformOptional <LightMessages.SetWaveformOptional>` you can
@@ -479,7 +479,7 @@ def effect(func):
     return func
 
 
-class Effects(object):
+class Effects:
     """
     This has the logic used by the ``ColourParser`` to create waveform effects
     on your devices.

@@ -142,7 +142,7 @@ class FieldInfo(dictobj):
         return b
 
 
-class PacketPacking(object):
+class PacketPacking:
     @classmethod
     def fields_in(kls, pkt, parent, serial):
         for name, typ in pkt.Meta.all_field_types:
