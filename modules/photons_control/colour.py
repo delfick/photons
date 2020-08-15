@@ -322,7 +322,9 @@ class ColourParser(object):
 
     def parse_hsb_component(self, groups):
         return [
-            self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360),
+            self.parse_decimal_string(
+                groups[1], label="hue", minimum=0, maximum=360, is_integer=True
+            ),
             self.parse_string(groups[2], label="saturation"),
             self.parse_string(groups[3], label="brightness"),
             None,
@@ -377,11 +379,15 @@ class ColourParser(object):
     def parse_random_component(self, groups):
         return [random.randrange(0, 360), 1, None, None]
 
-    def parse_decimal_string(self, s, label=None, minimum=0, maximum=1):
+    def parse_decimal_string(self, s, label=None, minimum=0, maximum=1, is_integer=False):
         if s is None:
             raise InvalidColor("Decimal was provided as empty")
 
-        value = float(s)
+        if is_integer:
+            value = int(s)
+        else:
+            value = float(s)
+
         if value < minimum or value > maximum:
             raise ValueOutOfRange(
                 "Value was not within bounds",
