@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.31.3 - TBD
+0.31.3 - 15 August 2020
     * Fix bug in marquee based animations
     * Make sure the SetZonesPlan always applies even if it was recently applied.
 
