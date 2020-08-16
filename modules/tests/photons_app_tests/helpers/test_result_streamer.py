@@ -402,6 +402,56 @@ describe "ResultStreamer":
                 on_done.assert_called_once_with(result)
                 error_catcher.assert_called_once_with(result)
 
+        async it "Result Streamer only gives cancelled errors to catcher if we only give exceptions", make_streamer:
+            error = AttributeError("nup")
+            on_done = mock.Mock(name="on_done")
+
+            async def sleeper():
+                await asyncio.sleep(20)
+
+            async def func(sleeper_task):
+                sleeper_task.cancel()
+                raise error
+
+            error_catcher = mock.Mock(name="error_catcher")
+            async with make_streamer(
+                error_catcher=error_catcher, exceptions_only_to_error_catcher=True
+            ) as streamer:
+                sleeper_task = await streamer.add_coroutine(sleeper(), on_done=on_done)
+                await streamer.add_coroutine(func(sleeper_task), on_done=on_done)
+
+                started, runner = await self.retrieve(streamer)
+                await started
+
+                other_result = hp.ResultStreamer.Result(error, None, False)
+                sleeper_result = hp.ResultStreamer.Result(C(), None, False)
+
+                assert (await runner) == [other_result, sleeper_result]
+
+                assert on_done.mock_calls == [mock.call(other_result), mock.call(sleeper_result)]
+                assert error_catcher.mock_calls == [mock.call(error)]
+
+            on_done.reset_mock()
+            error_catcher.reset_mock()
+
+            async with make_streamer(error_catcher=error_catcher) as streamer:
+                sleeper_task = await streamer.add_coroutine(sleeper(), on_done=on_done)
+                await streamer.add_coroutine(func(sleeper_task), on_done=on_done)
+
+                started, runner = await self.retrieve(streamer)
+                await started
+
+                other_result = hp.ResultStreamer.Result(error, None, False)
+                sleeper_result = hp.ResultStreamer.Result(C(), None, False)
+
+                assert (await runner) == [other_result, sleeper_result]
+
+                assert on_done.mock_calls == [mock.call(other_result), mock.call(sleeper_result)]
+                assert error_catcher.mock_calls == [
+                    mock.call(other_result),
+                    mock.call(sleeper_result),
+                ]
+
         async it "can be told to only give exceptions to error_catcher", make_streamer:
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
@@ -417,10 +467,8 @@ describe "ResultStreamer":
             async with make_streamer(
                 error_catcher=error_catcher, exceptions_only_to_error_catcher=True
             ) as streamer:
-                sleeper_task = await streamer.add_task(
-                    hp.async_as_background(sleeper()), on_done=on_done
-                )
-                await streamer.add_task(hp.async_as_background(func(sleeper_task)), on_done=on_done)
+                sleeper_task = await streamer.add_coroutine(sleeper(), on_done=on_done)
+                await streamer.add_coroutine(func(sleeper_task), on_done=on_done)
 
                 started, runner = await self.retrieve(streamer)
                 await started
@@ -430,8 +478,8 @@ describe "ResultStreamer":
 
                 assert (await runner) == [other_result, sleeper_result]
 
-                on_done.mock_calls == [mock.call(other_result), mock.call(sleeper_result)]
-                error_catcher.mock_calls == [mock.call(error), mock.call(C())]
+                assert on_done.mock_calls == [mock.call(other_result), mock.call(sleeper_result)]
+                assert error_catcher.mock_calls == [mock.call(error)]
 
         async it "can put successful results onto the queue", make_streamer:
             make_return = hp.create_future()

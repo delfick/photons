@@ -752,7 +752,8 @@ class ResultStreamer:
             if value is not self.GeneratorComplete:
                 if not successful:
                     v = value if self.exceptions_only_to_error_catcher else result
-                    add_error(self.error_catcher, v)
+                    if not isinstance(v, asyncio.CancelledError):
+                        add_error(self.error_catcher, v)
 
                 self.queue.append(result)
 
