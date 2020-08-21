@@ -344,19 +344,11 @@ class Communication:
         return await self.send_single(packet, **kwargs)
 
     async def send_single(
-        self,
-        original,
-        packet,
-        *,
-        timeout,
-        no_retry=False,
-        transport=None,
-        broadcast=False,
-        connect_timeout=10,
+        self, original, packet, *, timeout, no_retry=False, broadcast=False, connect_timeout=10,
     ):
 
         transport, is_broadcast = await self._transport_for_send(
-            transport, packet, original, broadcast, connect_timeout
+            None, packet, original, broadcast, connect_timeout
         )
 
         retry_options = self.retry_options_for(original, transport)
@@ -374,17 +366,37 @@ class Communication:
 
         results = []
 
-        with hp.ChildOfFuture(
-            self.stop_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
-        ) as tick_fut:
+        unlimited = False
+        if hasattr(original, "Meta"):
+            unlimited = original.Meta.multi == -1
+
+        async def wait_for_remainders(tick_fut, streamer_fut):
+            try:
+                await hp.wait_for_all_futures(tick_fut)
+            finally:
+                if unlimited and any(result.wait_for_result() for result in results):
+                    await hp.wait_for_first_future(*results)
+                streamer_fut.cancel()
+
+        tick_fut = hp.ChildOfFuture(
+            self.stop_fut,
+            name=f"SendPacket({original.pkt_type, packet.serial})::send_single[tick_fut]",
+        )
+        streamer_fut = hp.ChildOfFuture(
+            self.stop_fut,
+            name=f"SendPacket({original.pkt_type, packet.serial})::send_single[streamer_fut]",
+        )
+
+        with tick_fut, streamer_fut:
             async with hp.ResultStreamer(
-                tick_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
+                streamer_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
             ) as streamer:
                 await streamer.add_generator(
                     retry_options.tick(tick_fut, timeout),
                     context="tick",
                     on_done=lambda res: tick_fut.cancel(),
                 )
+                await streamer.add_coroutine(wait_for_remainders(tick_fut, streamer_fut))
                 streamer.no_more_work()
 
                 async for result in streamer:
@@ -392,7 +404,7 @@ class Communication:
                         raise result.value
 
                     if result.context == "tick":
-                        if not any(result.wait_for_result() for result in results):
+                        if not no_retry or not results:
                             result = await writer()
                             results.append(result)
                             await streamer.add_task(result, context="write")

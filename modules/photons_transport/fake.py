@@ -629,7 +629,19 @@ class FakeDevice:
 
         for kls, msgs in self.set_replies.items():
             if msgs and pkt | kls:
-                return msgs.pop()
+                sr = msgs.pop()
+                if callable(sr):
+                    res = await sr(pkt, source)
+                    msg = res
+                    persist = False
+                    if isinstance(res, tuple):
+                        persist, msg = res
+                    if persist:
+                        msgs.append(sr)
+                    if msg is not None:
+                        return msg
+                else:
+                    return sr
 
         for responder in self.all_responders:
             res = []
