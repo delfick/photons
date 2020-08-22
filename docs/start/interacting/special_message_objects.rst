@@ -139,7 +139,7 @@ Making your own message objects
 
 To make your own message objects you use the
 :class:`FromGenerater <photons_control.script.FromGenerator>` helper mentioned
-below, or the related helper ``photons_control.script.FromGeneratorPerSerial``.
+above, or the related helper ``photons_control.script.FromGeneratorPerSerial``.
 
 ``FromGeneratorPerSerial`` works exactly like
 :class:`FromGenerater <photons_control.script.FromGenerator>` except that the
