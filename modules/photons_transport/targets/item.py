@@ -234,7 +234,10 @@ class Item:
         """Search for the devices we want to send to"""
         serials = list(set([p.serial for _, p in packets if p.target is not None]))
 
-        if (found and accept_found) or (found and all(serial in found for serial in serials)):
+        if accept_found or (found and all(serial in found for serial in serials)):
+            if found is None:
+                found = sender.found
+
             missing = [serial for serial in serials if serial not in found]
             return found, missing
 

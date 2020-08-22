@@ -308,30 +308,6 @@ describe "Item":
                     a=V.a,
                 )
 
-            async it "uses find_specific_serials if found is None and accept_found is True", V:
-                found = mock.Mock(name="found")
-                missing = mock.Mock(name="missing")
-                V.find_specific_serials.return_value = (found, missing)
-
-                f, missing = await V.search(None, True, find_timeout=20)
-                assert f is found
-                assert missing is missing
-
-                class L:
-                    def __init__(s, want):
-                        s.want = want
-
-                    def __eq__(s, other):
-                        return sorted(other) == sorted(s.want)
-
-                V.find_specific_serials.assert_called_once_with(
-                    L([V.serial1, V.serial2]),
-                    broadcast=V.broadcast_address,
-                    raise_on_none=False,
-                    timeout=20,
-                    a=V.a,
-                )
-
             async it "uses find_specific_serials if found is not None and don't have all serials", V:
                 found = mock.Mock(name="found")
                 missing = mock.Mock(name="missing")
