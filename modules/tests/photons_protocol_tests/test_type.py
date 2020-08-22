@@ -1,8 +1,8 @@
 # coding: spec
 
 from photons_protocol.types import Type, Optional, static_conversion_from_spec, json_spec
+from photons_protocol.types import Type as T, UnknownEnum
 from photons_protocol.errors import BadConversion
-from photons_protocol.types import Type as T
 
 from photons_app.errors import ProgrammerError
 from photons_app import helpers as hp
@@ -14,6 +14,7 @@ from bitarray import bitarray
 from unittest import mock
 import pytest
 import json
+import enum
 
 describe "the json spec":
     it "can match just static types":
@@ -203,7 +204,25 @@ describe "Type":
                 em = mock.Mock(name="enum")
                 with V.clone() as (res, setd):
                     assert V.t.enum(em) is res
-                assert setd == {"_enum": em, "_unknown_enum_values": False}
+                assert setd == {"_enum": em, "_unknown_enum_values": True}
+
+            it "allows unknown enums by default", V:
+
+                class E(enum.Enum):
+                    ONE = 1
+                    TWO = 2
+
+                field = V.t.Uint8.enum(E)
+                spec = field.spec(mock.Mock(name="pkt"), unpacking=True)
+
+                value = spec.normalise(Meta.empty(), 6)
+                assert value == UnknownEnum(6)
+
+                value = spec.normalise(Meta.empty(), 1)
+                assert value == E.ONE
+
+                value = spec.normalise(Meta.empty(), E.ONE)
+                assert value == E.ONE
 
             it "sets _unknown_enum_values to the allow_unknown value passed in", V:
                 em = mock.Mock(name="enum")

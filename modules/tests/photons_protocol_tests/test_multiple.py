@@ -1,12 +1,13 @@
 # coding: spec
 
+from photons_protocol.types import Type as T, UnknownEnum
 from photons_protocol.errors import BadConversion
 from photons_protocol.packets import dictobj
-from photons_protocol.types import Type as T
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue, Meta
 from bitarray import bitarray
+from functools import partial
 import enum
 import json
 
@@ -225,32 +226,37 @@ describe "The multiple modifier":
 
         class Thing(dictobj.PacketSpec):
             fields = [
-                ("one", T.Uint8.enum(E).multiple(3).default(E.ZERO)),
+                ("one", T.Uint8.enum(E).multiple(4).default(E.ZERO)),
                 ("two", T.Int32.multiple(3).default(0)),
                 ("three", T.String(32).multiple(3)),
                 ("four", T.Bytes(8).multiple(1, kls=Other)),
+                ("five", T.Uint8.enum(E, allow_unknown=False).multiple(3).default(E.ZERO)),
             ]
 
         thing = Thing(one=["MEH", E.BLAH], two=[1, 2, 3], three=["on", "two", "thre"])
 
-        def test_thing(thing):
-            assert thing.one == [E.MEH, E.BLAH, E.ZERO]
+        def test_thing(last_one_enum, thing):
+            assert thing.one == [E.MEH, E.BLAH, E.ZERO, last_one_enum]
             assert thing.two == [1, 2, 3]
             assert thing.three == ["on", "two", "thre"]
             assert thing.four == [Other(one=False)]
 
-        test_thing(thing)
+        test_thing(E.ZERO, thing)
+
+        # By default enums allow unknowns
+        thing.one[-1] = 6
+        assert thing.one[-1] == UnknownEnum(6)
 
         with assertRaises(BadConversion, "Value is not a valid value of the enum"):
-            thing.one[-1] = 6
+            thing.five[1] = 6
         with assertRaises(BadSpecValue, "Expected an integer"):
             thing.two[0] = "asdf"
         with assertRaises(
-            BadSpecValue, "BoolInts must be True, False, 0 or 1", meta=Meta.empty().at("one"),
+            BadSpecValue, "BoolInts must be True, False, 0 or 1", meta=Meta.empty().at("one")
         ):
             thing.four[0] = {"one": "asdf"}
 
-        self.assertProperties(thing, test_thing)
+        self.assertProperties(thing, partial(test_thing, UnknownEnum(6)))
 
     it "can set as bytes":
 

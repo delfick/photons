@@ -128,7 +128,7 @@ class Type:
         res._version_number = True
         return res
 
-    def enum(self, enum, allow_unknown=False):
+    def enum(self, enum, allow_unknown=True):
         """Set the _enum option"""
         res = self.S(self.size_bits)
         res._enum = enum

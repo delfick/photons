@@ -289,7 +289,7 @@ describe "MessagesMixin":
             assert pkt.payload == binascii.unhexlify("AA")
             assert pkt.pack() == bts
 
-        it "unpacks PacketKls if we have one", protocol_register:
+        it "creates PacketKls if we have one", protocol_register:
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             kls.create.return_value = res
@@ -305,7 +305,7 @@ describe "MessagesMixin":
             kls.create.assert_called_once_with(data)
             get_packet_type.assert_called_once_with(data, protocol_register)
 
-        it "unpacks Packet if we no PacketKls", protocol_register:
+        it "creates Packet if we no PacketKls", protocol_register:
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             kls.create.return_value = res
