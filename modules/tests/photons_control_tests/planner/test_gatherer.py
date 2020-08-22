@@ -308,8 +308,8 @@ describe "Gatherer":
                 called,
                 [
                     (light1.serial, {"label": "bob"}),
-                    (light1.serial, {"level": 0}),
                     (light2.serial, {"label": "sam"}),
+                    (light1.serial, {"level": 0}),
                     (light2.serial, {"level": 65535}),
                     ("info", light1.serial),
                     ("info", light2.serial),
@@ -368,8 +368,8 @@ describe "Gatherer":
                 called,
                 [
                     ("process", light1.serial),
-                    ("process", light1.serial),
                     ("process", light2.serial),
+                    ("process", light1.serial),
                     ("process", light2.serial),
                 ],
             )

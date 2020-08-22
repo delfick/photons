@@ -63,7 +63,8 @@ describe "MockedCalledLater":
 
                 await m.add(1)
                 assert time.time() == 1.3
-                assert not waiter.done()
+                assert waiter.done()
+                waiter.reset()
 
                 nxt(2, waiter.set_result, True)
                 await m.add(1.5)

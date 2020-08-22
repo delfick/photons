@@ -164,6 +164,11 @@ class MockedCallLaterImpl:
     async def add(self, amount):
         await self._run(iterations=round(amount / 0.1))
 
+    async def resume_after(self, amount):
+        fut = self.hp.create_future()
+        asyncio.get_event_loop().call_later(amount, fut.set_result, True)
+        await fut
+
     @property
     def hp(self):
         return __import__("photons_app").helpers
@@ -179,6 +184,8 @@ class MockedCallLaterImpl:
                 self.called_times.append(time.time())
                 func(*args)
 
+        caller.original = func
+
         class Handle:
             def cancel(s):
                 info["cancelled"] = True
@@ -186,12 +193,12 @@ class MockedCallLaterImpl:
         self.funcs.append((round(time.time() + when, 3), caller))
         return Handle()
 
-    async def _allow_real_loop(self):
+    async def _allow_real_loop(self, until=0):
         while True:
             ready = asyncio.get_event_loop()._ready
             ready_len = len(ready)
             await asyncio.sleep(0)
-            if ready_len == 0:
+            if ready_len <= until:
                 return
 
     async def _calls(self):
@@ -216,6 +223,7 @@ class MockedCallLaterImpl:
                 else:
                     executed = True
                     f()
+                    await self._allow_real_loop(until=1)
 
             self.funcs = remaining
 

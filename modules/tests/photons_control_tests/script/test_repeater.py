@@ -170,15 +170,16 @@ describe "Repeater":
                     (5.0, "d073d5000002", "SetColorPayload"),
                     (5.0, "d073d5000003", "SetColorPayload"),
                 ],
-                # We took 4 seconds in that block, so we don't have to wait
-                # any more to be over the next loop of 7.5
+                # We took 4 seconds in that block, but we had already sent the next round of messages
+                # So the messages are sent at 7.5, but we don't get them in the loop till 9.0
+                # As seen in the assertion above this
                 [
-                    (9.0, "d073d5000001", "SetPowerPayload"),
-                    (9.0, "d073d5000002", "SetPowerPayload"),
-                    (9.0, "d073d5000003", "SetPowerPayload"),
-                    (9.0, "d073d5000001", "SetColorPayload"),
-                    (9.0, "d073d5000002", "SetColorPayload"),
-                    (9.0, "d073d5000003", "SetColorPayload"),
+                    (7.5, "d073d5000001", "SetPowerPayload"),
+                    (7.5, "d073d5000002", "SetPowerPayload"),
+                    (7.5, "d073d5000003", "SetPowerPayload"),
+                    (7.5, "d073d5000001", "SetColorPayload"),
+                    (7.5, "d073d5000002", "SetColorPayload"),
+                    (7.5, "d073d5000003", "SetColorPayload"),
                 ],
                 # The next loop after 7.5 is 10
                 # It's less than min, but the repetition is based on the schedule
