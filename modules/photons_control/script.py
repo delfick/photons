@@ -99,7 +99,7 @@ def Pipeline(*messages, spread=0, short_circuit_on_error=False, synchronized=Fal
         if spread <= 0:
             min_wait = 0
 
-        async with hp.tick(spread, min_wait=False) as ticks:
+        async with hp.tick(spread, min_wait=min_wait) as ticks:
             async for i, _ in ticks:
                 if i > len(messages):
                     return
