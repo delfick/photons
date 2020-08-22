@@ -31,12 +31,14 @@ def print_packet_difference(one, two, ignore_unspecified_expected=True):
     return different
 
 
-def assert_payloads_equals(payload, expected):
+def assert_payloads_equals(payload, expected, allow_missing=False):
     dct = payload.as_dict()
 
     different = []
     for k, v in expected.items():
-        if v != dct[k]:
+        if not allow_missing and k not in dct:
+            assert False, f"{k} was not in the payload: {dct}"
+        if k in dct and v != dct[k]:
             different.append([k, dct[k], v])
 
     for k, got, want in different:

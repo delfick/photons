@@ -26,6 +26,18 @@ from unittest import mock
 import pytest
 
 
+class Match:
+    def __init__(self, against):
+        self.against = against
+
+    def __eq__(self, other):
+        Empty = type("Empty", (), {})
+        return all(other.get(k, Empty) == self.against[k] for k in self.against)
+
+    def __repr__(self):
+        return repr(self.against)
+
+
 class Partial:
     def __init__(s, index, item):
         s.index = index
@@ -34,7 +46,7 @@ class Partial:
 
     def __eq__(s, other):
         print(f"Item {s.index}")
-        assert_payloads_equals(other, s.item)
+        assert_payloads_equals(other, s.item, allow_missing=True)
         s.equal = other
         return True
 
@@ -280,6 +292,10 @@ describe "Default Plans":
     describe "CapabilityPlan":
 
         async it "gets the power", runner:
+
+            def make_version(vendor, product):
+                return DeviceMessages.StateVersion.create(vendor=vendor, product=product).payload
+
             l1c = {
                 "cap": Products.LCM3_TILE.cap(3, 50),
                 "product": Products.LCM3_TILE,
@@ -288,11 +304,13 @@ describe "Default Plans":
                     "version_major": 3,
                     "version_minor": 50,
                 },
+                "state_version": make_version(1, 55),
             }
             l2c = {
                 "cap": Products.LMB_MESH_A21.cap(2, 2),
                 "product": Products.LMB_MESH_A21,
-                "firmware": {"build": 1448861477000000000, "version_major": 2, "version_minor": 2,},
+                "firmware": {"build": 1448861477000000000, "version_major": 2, "version_minor": 2},
+                "state_version": make_version(1, 1),
             }
             slcm1c = {
                 "cap": Products.LCM1_Z.cap(1, 22),
@@ -302,6 +320,7 @@ describe "Default Plans":
                     "version_major": 1,
                     "version_minor": 22,
                 },
+                "state_version": make_version(1, 31),
             }
             slcm2nec = {
                 "cap": Products.LCM2_Z.cap(2, 70),
@@ -311,6 +330,7 @@ describe "Default Plans":
                     "version_major": 2,
                     "version_minor": 70,
                 },
+                "state_version": make_version(1, 32),
             }
             slcm2ec = {
                 "cap": Products.LCM2_Z.cap(2, 77),
@@ -320,6 +340,7 @@ describe "Default Plans":
                     "version_major": 2,
                     "version_minor": 77,
                 },
+                "state_version": make_version(1, 32),
             }
 
             got = await self.gather(runner, runner.serials, "capability")
@@ -380,17 +401,14 @@ describe "Default Plans":
         async it "gets the version", runner:
             got = await self.gather(runner, runner.serials, "version")
             assert got == {
-                light1.serial: (True, {"version": {"product": 55, "vendor": 1, "version": 0}}),
-                light2.serial: (True, {"version": {"product": 1, "vendor": 1, "version": 0}}),
-                striplcm1.serial: (True, {"version": {"product": 31, "vendor": 1, "version": 0}},),
+                light1.serial: (True, {"version": Match({"product": 55, "vendor": 1})}),
+                light2.serial: (True, {"version": Match({"product": 1, "vendor": 1})}),
+                striplcm1.serial: (True, {"version": Match({"product": 31, "vendor": 1})}),
                 striplcm2noextended.serial: (
                     True,
-                    {"version": {"product": 32, "vendor": 1, "version": 0}},
+                    {"version": Match({"product": 32, "vendor": 1})},
                 ),
-                striplcm2extended.serial: (
-                    True,
-                    {"version": {"product": 32, "vendor": 1, "version": 0}},
-                ),
+                striplcm2extended.serial: (True, {"version": Match({"product": 32, "vendor": 1})},),
             }
 
     describe "ZonesPlan":

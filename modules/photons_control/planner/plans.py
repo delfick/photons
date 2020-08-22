@@ -775,7 +775,12 @@ class CapabilityPlan(Plan):
         async def info(self):
             product = Products[self.version.vendor, self.version.product]
             cap = product.cap(self.firmware.version_major, self.firmware.version_minor)
-            return {"cap": cap, "product": product, "firmware": self.firmware}
+            return {
+                "cap": cap,
+                "product": product,
+                "firmware": self.firmware,
+                "state_version": self.version.payload,
+            }
 
 
 @a_plan("firmware")
