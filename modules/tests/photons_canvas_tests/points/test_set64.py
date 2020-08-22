@@ -33,6 +33,10 @@ def assertSame(real, simple):
     for name in real.Meta.all_names:
         if "reserved" in name:
             continue
+
+        if not hasattr(simple, name):
+            continue
+
         if name == "target":
             assert real.serial == simple.serial
         else:
