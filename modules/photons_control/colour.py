@@ -322,9 +322,7 @@ class ColourParser:
 
     def parse_hsb_component(self, groups):
         return [
-            self.parse_decimal_string(
-                groups[1], label="hue", minimum=0, maximum=360, is_integer=True
-            ),
+            self.parse_decimal_string(groups[1], label="hue", minimum=0, maximum=360),
             self.parse_string(groups[2], label="saturation"),
             self.parse_string(groups[3], label="brightness"),
             None,
