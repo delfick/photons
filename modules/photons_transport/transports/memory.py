@@ -1,5 +1,7 @@
 from photons_transport.transports.base import Transport
 
+from photons_app import helpers as hp
+
 import logging
 
 log = logging.getLogger("photons_transport.transports.memory")
@@ -10,6 +12,8 @@ class Memory(Transport):
 
     def setup(self, writer):
         self.writer = writer
+        self.ts_fut = hp.ChildOfFuture(self.session.stop_fut)
+        self.ts = hp.TaskHolder(self.ts_fut)
 
     def clone_for(self, session):
         return self.__class__(session, self.writer)
@@ -21,10 +25,11 @@ class Memory(Transport):
         return True
 
     async def close_transport(self, transport):
-        pass
+        self.ts_fut.cancel()
+        await self.ts.finish()
 
     async def spawn_transport(self, timeout):
         return self.writer
 
     async def write(self, transport, bts, original_message):
-        await self.writer(self.session.received_data, bts)
+        self.ts.add(self.writer(self.session.received_data, bts))
