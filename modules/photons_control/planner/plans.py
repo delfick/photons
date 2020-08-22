@@ -750,12 +750,17 @@ class ChainPlan(Plan):
 @a_plan("capability")
 class CapabilityPlan(Plan):
     """
-    Return ``{"cap": <capability>, "product": <product>}`` for this device
+    Return capability information for this device::
 
-    Where capability is from the product and has the firmware of the device set
-    on it
+        {
+          "cap": <capability object with filled out firmware version>,
+          "product": <product object>,
+          "firmware": <object with build/version_major/version_minor attributes>,
+          "state_version": <the StateVersion packet we received from the device>
+        }
 
-    And product is from the Photons :ref:`registry <products_root>`.
+    The capability and product objects come from the
+    :ref:`registry <products_root>`.
     """
 
     messages = [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]

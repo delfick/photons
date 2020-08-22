@@ -4,8 +4,17 @@ ChangeLog
 =========
 
 0.31.4 - TBD
+    * Fixed discovery so it doesn't take 4 seconds
+      * The way discovery happens means that it was retrying sending discovery
+        packets even though it already had results because the timeout for each
+        attempt to find devices was less than the time it took to get back all
+        the results.
     * No longer raise an exception when we receive a state packet from a device
       with an unrecognised enum value
+    * A ResultStreamer with an error catcher that gets plain exceptions will
+      no longer be called when a task on the result streamer is cancelled.
+    * The CapabilityPlan will now return a ``state_version`` property with the
+      ``StateVersion`` packet it received from the device.
 
 0.31.3 - 15 August 2020
     * Fix bug in marquee based animations
