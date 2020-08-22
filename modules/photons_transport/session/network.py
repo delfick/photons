@@ -5,7 +5,7 @@ from photons_transport.transports.udp import UDP
 
 from photons_app import helpers as hp
 
-from photons_messages import DiscoveryMessages, Services, DiscoveryMessages
+from photons_messages import DiscoveryMessages, Services
 
 import binascii
 import logging
