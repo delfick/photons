@@ -373,7 +373,9 @@ class ColourParser:
             None,
             0,
             None,
-            self.parse_decimal_string(groups[1], label="kelvin", minimum=1500, maximum=9000),
+            self.parse_decimal_string(
+                groups[1], label="kelvin", minimum=1500, maximum=9000, is_integer=True
+            ),
         ]
 
     def parse_random_component(self, groups):
