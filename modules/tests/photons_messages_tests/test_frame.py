@@ -223,7 +223,7 @@ describe "LIFXPacket":
 
             Two.Payload.Meta.protocol = 1024
 
-            # These values are already there if it's been unpacked from bytes for example
+            # These values are already there if it's been created from bytes for example
             # In this case we don't want to go through the __getattr__ mechanism on the packet
             # Because that is slow!
             payloadone = One(pkt_type=32, protocol=1024)

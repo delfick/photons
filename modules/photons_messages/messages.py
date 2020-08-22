@@ -105,7 +105,7 @@ class DeviceMessages(Messages):
     StateVersion = msg(33
         , ("vendor", T.Uint32)
         , ("product", T.Uint32)
-        , ("version", T.Uint32)
+        , ("version", T.Uint32.default(0))
         )
 
     GetInfo = msg(34)

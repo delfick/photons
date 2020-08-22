@@ -215,6 +215,11 @@ changes:
   DeviceStateService:
     namespace: discovery
 
+  DeviceStateVersion:
+    fields:
+      Version:
+        default: "0"
+
   DeviceEchoRequest:
     fields:
       Payload:
