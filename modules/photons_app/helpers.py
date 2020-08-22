@@ -1672,31 +1672,6 @@ class Queue:
     async def finish(self):
         self.final_future.cancel()
 
-    async def _get_and_wait(self):
-        if self.final_future.done():
-            yield self.Done
-            return
-
-        for nxt in self.remaining():
-            yield nxt
-            if self.final_future.done():
-                break
-
-        if self.final_future.done():
-            yield self.Done
-            return
-
-        await wait_for_first_future(
-            self.final_future,
-            self.waiter,
-            name=f"Queue({self.name})::_get_and_wait[wait_for_next_value]",
-        )
-
-        if self.waiter.done():
-            await self.waiter
-
-        self.waiter.reset()
-
     def append(self, item):
         self.collection.append(item)
         if not self.waiter.done():
@@ -1706,21 +1681,33 @@ class Queue:
         return self.get_all()
 
     async def get_all(self):
-        self.waiter.reset()
+        if not self.collection:
+            self.waiter.reset()
 
         while True:
-            stop = False
-            async for nxt in self._get_and_wait():
-                if nxt is self.Done:
-                    stop = True
-                    break
-                yield nxt
-            if stop:
+            await wait_for_first_future(
+                self.final_future,
+                self.waiter,
+                name=f"Queue({self.name})::_get_and_wait[wait_for_next_value]",
+            )
+
+            if self.final_future.done() and not self.empty_on_finished:
                 break
 
-        if self.final_future.done() and self.empty_on_finished:
-            for nxt in self.remaining():
-                yield nxt
+            if self.final_future.done() and not self.collection:
+                break
+
+            if not self.collection:
+                continue
+
+            nxt = self.collection.popleft()
+            if nxt is self.Done:
+                break
+
+            if not self.collection:
+                self.waiter.reset()
+
+            yield nxt
 
     def remaining(self):
         while self.collection:

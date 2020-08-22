@@ -53,29 +53,6 @@ describe "Queue":
 
         assert queue.waiter.done()
 
-    async it "can append items", final_future:
-        queue = hp.Queue(final_future)
-        assert not queue.waiter.done()
-
-        queue.append(1)
-        assert queue.waiter.done()
-
-        queue.append(2)
-        assert queue.waiter.done()
-
-        found = []
-        async for item in queue._get_and_wait():
-            found.append(item)
-        assert found == [1, 2]
-        assert not queue.waiter.done()
-
-        queue.append(3)
-        assert queue.waiter.done()
-        found = []
-        async for item in queue._get_and_wait():
-            found.append(item)
-        assert found == [3]
-
     async it "can get remaining items", final_future:
         queue = hp.Queue(final_future)
         assert not queue.waiter.done()
