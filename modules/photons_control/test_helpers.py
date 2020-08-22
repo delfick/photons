@@ -278,6 +278,7 @@ class ZonesResponder(Responder):
         if index >= len(device.attrs.zones):
             return
 
+        device.attrs.zones = list(device.attrs.zones)
         device.attrs.zones[index] = Color(hue, saturation, brightness, kelvin)
 
     async def respond(self, device, pkt, source):
