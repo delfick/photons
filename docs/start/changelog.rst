@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.31.4 - TBD
+0.31.4 - 23 August 2020
     * Fixed discovery so it doesn't take 4 seconds
       * The way discovery happens means that it was retrying sending discovery
         packets even though it already had results because the timeout for each

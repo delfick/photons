@@ -49,6 +49,9 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+0.5.4 - 23 August 2020
+    * Upgrade photons-core to fix discovery bug
+
 0.5.3 - 12 August 2020
     * Fixed bug where the program can enter a state of using all your CPU
 

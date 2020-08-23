@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.3 - 23 August 2020
+    * Upgrade photons-core to fix discovery bug
+
 0.7.2 - 12 August 2020
     * Fixed bug where the program can enter a state of using all your CPU
 
