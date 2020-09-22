@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.4 - 22 September 2020
+    * Reduced size of the docker image #22
+
 0.7.3 - 23 August 2020
     * Upgrade photons-core to fix discovery bug
 
