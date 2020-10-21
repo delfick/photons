@@ -220,3 +220,14 @@ describe "Capability":
             if k not in expected:
                 del dct[k]
         assert dct == expected
+
+    it "has items for non light products":
+        product = mock.Mock(name="product")
+
+        class cap(registry.NonLightCapability):
+            has_relays = True
+
+        c = cap(product, firmware_major=3, firmware_minor=81)
+        assert not c.is_light
+
+        assert dict(c.items()) == {"has_relays": True, "has_buttons": False}

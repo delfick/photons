@@ -14,15 +14,24 @@ zones
     of zones (Tile and Candle)
 
 has_ir
-    Does this device output infrared light (the LIFX+ range)
+    Does this device output infrared light (the Night Vision range)
+
+has_hev
+    Does this device output High Energy Visible light (the Clean range)
+
+has_chain
+    Does this device have child devices. At this time that is only the LIFX
+    Tile
 
 has_color
     Does this device support different colours? If this is ``False``, then the
     device only supports shades of white.
 
-has_chain
-    Does this device have child devices. At this time that is only the LIFX
-    Tile
+has_relays
+    Does this device have physical relays (The Switch range)
+
+has_buttons
+    Does this device have physical buttons (The Switch range)
 
 has_variable_color_temp
     Does this device have a range of Kelvin values. Some LIFX products can

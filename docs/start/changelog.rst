@@ -5,10 +5,12 @@ ChangeLog
 
 0.31.4 - 23 August 2020
     * Fixed discovery so it doesn't take 4 seconds
+
       * The way discovery happens means that it was retrying sending discovery
         packets even though it already had results because the timeout for each
         attempt to find devices was less than the time it took to get back all
         the results.
+
     * No longer raise an exception when we receive a state packet from a device
       with an unrecognised enum value
     * A ResultStreamer with an error catcher that gets plain exceptions will
