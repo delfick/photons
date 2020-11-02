@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.31.5 - TBD
+    * Synced the product registry
+
 0.31.4 - 23 August 2020
     * Fixed discovery so it doesn't take 4 seconds
 
