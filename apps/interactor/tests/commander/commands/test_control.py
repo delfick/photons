@@ -7,7 +7,6 @@ from photons_control.colour import ColourParser
 
 from unittest import mock
 import pytest
-import json
 
 
 @pytest.fixture(scope="module")
@@ -17,80 +16,62 @@ def store_clone():
 
 
 @pytest.fixture(scope="module")
-async def wrapper(store_clone, server_wrapper):
-    async with server_wrapper(store_clone) as wrapper:
-        yield wrapper
+async def server(store_clone, server_wrapper):
+    async with server_wrapper(store_clone) as server:
+        yield server
 
 
 @pytest.fixture(autouse=True)
-async def wrap_tests(wrapper):
-    async with wrapper.test_wrap():
+async def wrap_tests(server):
+    async with server.per_test():
         yield
-
-
-@pytest.fixture()
-def runner(wrapper):
-    return wrapper.runner
 
 
 describe "Control Commands":
 
-    async it "has discovery commands", fake, runner, asserter, responses:
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "discover"},
-            json_output=responses.discovery_response,
+    async it "has discovery commands", fake, server, responses:
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "discover"}, json_output=responses.discovery_response,
         )
 
-        res = await runner.assertPUT(
-            asserter, "/v1/lifx/command", {"command": "discover", "args": {"just_serials": True}}
+        serials = await server.assertCommand(
+            "/v1/lifx/command", {"command": "discover", "args": {"just_serials": True}}
         )
-        serials = json.loads(res.decode())
         assert sorted(serials) == sorted(device.serial for device in fake.devices)
 
-        res = await runner.assertPUT(
-            asserter,
+        serials = await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover", "args": {"matcher": {"group_name": "Living Room"}}},
         )
-        j = json.loads(res.decode())
         wanted = {
             device.serial: responses.discovery_response[device.serial]
             for device in fake.devices
             if device.attrs.group_label == "Living Room"
         }
         assert len(wanted) == 2
-        assert j == wanted
+        assert serials == wanted
 
-        res = await runner.assertPUT(
-            asserter,
+        serials = await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover", "args": {"just_serials": True, "matcher": "label=kitchen"}},
         )
-        serials = json.loads(res.decode())
         assert serials == [fake.for_attribute("label", "kitchen")[0].serial]
 
-        res = await runner.assertPUT(
-            asserter,
+        serials = await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover", "args": {"just_serials": True, "matcher": "label=lamp"}},
         )
-        serials = json.loads(res.decode())
         assert serials == [d.serial for d in fake.for_attribute("label", "lamp", 2)]
 
-        res = await runner.assertPUT(
-            asserter,
+        serials = await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover", "args": {"just_serials": True, "matcher": "label=blah"}},
             status=200,
         )
-        j = json.loads(res.decode())
-        assert j == []
+        assert serials == []
 
-    async it "has query commands", fake, runner, asserter, responses:
-        await runner.assertPUT(
-            asserter,
+    async it "has query commands", fake, server, responses:
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "query", "args": {"pkt_type": 101}},
             json_output=responses.light_state_responses,
@@ -101,8 +82,7 @@ describe "Control Commands":
             device.serial: results[device.serial]
             for device in fake.for_attribute("power", 65535, expect=6)
         }
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "query", "args": {"pkt_type": 101, "matcher": "power=on"}},
             json_output={"results": expected},
@@ -120,8 +100,7 @@ describe "Control Commands":
                 "error_code": "TimedOut",
                 "status": 400,
             }
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {
                     "command": "query",
@@ -130,15 +109,13 @@ describe "Control Commands":
                 json_output={"results": expected},
             )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "query", "args": {"pkt_type": "GetLabel"}},
             json_output=responses.label_state_responses,
         )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {
                 "command": "query",
@@ -151,11 +128,10 @@ describe "Control Commands":
             json_output=responses.multizone_state_responses,
         )
 
-    async it "has set commands", fake, runner, asserter:
+    async it "has set commands", fake, server:
         expected = {"results": {device.serial: "ok" for device in fake.devices}}
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "set", "args": {"pkt_type": "SetPower", "pkt_args": {"level": 0}}},
             json_output=expected,
@@ -179,8 +155,7 @@ describe "Control Commands":
                 "status": 400,
             }
 
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {
                     "command": "set",
@@ -198,8 +173,7 @@ describe "Control Commands":
         kitchen_light = fake.for_attribute("label", "kitchen", expect=1)[0]
         expected = {"results": {kitchen_light.serial: "ok"}}
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {
                 "command": "set",
@@ -213,11 +187,11 @@ describe "Control Commands":
             if device is not kitchen_light:
                 device.expect_no_set_messages()
 
-    async it "has power_toggle command", fake, runner, asserter:
+    async it "has power_toggle command", fake, server:
         expected = {"results": {device.serial: "ok" for device in fake.devices}}
 
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", {"command": "power_toggle"}, json_output=expected,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "power_toggle"}, json_output=expected,
         )
 
         for device in fake.devices:
@@ -227,8 +201,7 @@ describe "Control Commands":
                 device.compare_received_set([LightMessages.SetLightPower(level=0, duration=1)])
             device.reset_received()
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "power_toggle", "args": {"duration": 2}},
             json_output=expected,
@@ -241,11 +214,10 @@ describe "Control Commands":
                 device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
             device.reset_received()
 
-    async it "has power_toggle group command", fake, runner, asserter:
+    async it "has power_toggle group command", fake, server:
         expected = {"results": {device.serial: "ok" for device in fake.devices}}
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "power_toggle", "args": {"group": True}},
             json_output=expected,
@@ -255,8 +227,7 @@ describe "Control Commands":
             device.compare_received_set([LightMessages.SetLightPower(level=0, duration=1)])
             device.reset_received()
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "power_toggle", "args": {"duration": 2, "group": True}},
             json_output=expected,
@@ -266,8 +237,7 @@ describe "Control Commands":
             device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
             device.reset_received()
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "power_toggle", "args": {"duration": 3, "group": True}},
             json_output=expected,
@@ -277,12 +247,11 @@ describe "Control Commands":
             device.compare_received_set([LightMessages.SetLightPower(level=0, duration=3)])
             device.reset_received()
 
-    async it "has transform command", fake, runner, asserter:
+    async it "has transform command", fake, server:
         # Just power
         expected = {"results": {device.serial: "ok" for device in fake.devices}}
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "transform", "args": {"transform": {"power": "off"}}},
             json_output=expected,
@@ -293,8 +262,7 @@ describe "Control Commands":
             device.reset_received()
 
         # Just color
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "transform", "args": {"transform": {"color": "red", "effect": "sine"}}},
             json_output=expected,
@@ -325,8 +293,7 @@ describe "Control Commands":
                 "error_code": "TimedOut",
                 "status": 400,
             }
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {
                     "command": "transform",
@@ -375,8 +342,7 @@ describe "Control Commands":
                 "error_code": "TimedOut",
                 "status": 400,
             }
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {
                     "command": "transform",

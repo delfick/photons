@@ -16,25 +16,20 @@ def store_clone():
 
 
 @pytest.fixture(scope="module")
-async def wrapper(server_wrapper, store_clone):
-    async with server_wrapper(store=store_clone) as wrapper:
-        yield wrapper
+async def server(store_clone, server_wrapper):
+    async with server_wrapper(store_clone) as server:
+        yield server
 
 
 @pytest.fixture(autouse=True)
-async def wrap_tests(wrapper):
-    async with wrapper.test_wrap():
+async def wrap_tests(server):
+    async with server.per_test():
         yield
 
 
 @pytest.fixture()
-def runner(wrapper):
-    return wrapper.runner
-
-
-@pytest.fixture()
-def sender(wrapper):
-    return wrapper.server.sender
+def sender(server):
+    return server.server.sender
 
 
 @pytest.fixture()
@@ -301,16 +296,12 @@ def results(effects_running_status, effects_stopped_status, success_result):
 
 describe "Effect commands":
 
-    async it "can start effects", fake, runner, asserter, results:
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+    async it "can start effects", fake, server, results:
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {
                 "command": "effects/run",
@@ -319,27 +310,20 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_running,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
         )
 
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
         )
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
-    async it "can apply a theme first", fake, runner, asserter, results:
-        await runner.assertPUT(
-            asserter,
+    async it "can apply a theme first", fake, server, results:
+        await server.assertCommand(
             "/v1/lifx/command",
             {
                 "command": "effects/run",
@@ -352,16 +336,12 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-    async it "can start just matrix effects", fake, runner, asserter, results:
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+    async it "can start just matrix effects", fake, server, results:
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "effects/run", "args": {"matrix_animation": "FLAME"}},
             json_output=results.success,
@@ -379,34 +359,24 @@ describe "Effect commands":
 
         results.effects_running["results"]["d073d5000007"]["effect"]["type"] = "FLAME"
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_running,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
         )
 
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
         )
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
-    async it "can start just linear effects", fake, runner, asserter, results:
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+    async it "can start just linear effects", fake, server, results:
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "effects/run", "args": {"linear_animation": "MOVE"}},
             json_output=results.success,
@@ -417,26 +387,20 @@ describe "Effect commands":
         results.effects_running["results"]["d073d5000007"]["effect"]["type"] = "OFF"
         results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"] = []
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_running,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
         )
 
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
         )
 
-        await runner.assertPUT(
-            asserter,
-            "/v1/lifx/command",
-            {"command": "effects/status"},
-            json_output=results.effects_stopped,
+        await server.assertCommand(
+            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
         )
 
     @pytest.mark.async_timeout(1.5)
-    async it "works if devices are offline", fake, runner, asserter, results, sender:
+    async it "works if devices are offline", fake, server, results, sender:
         offline1 = fake.for_serial("d073d5000001").offline()
         offline5 = fake.for_serial("d073d5000005").offline()
         offline7 = fake.for_serial("d073d5000007").offline()
@@ -458,15 +422,13 @@ describe "Effect commands":
             r["results"]["d073d5000007"] = fail
 
         with offline1, offline5, offline7:
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status", "args": {"timeout": 0.1}},
                 json_output=results.effects_stopped,
             )
 
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {
                     "command": "effects/run",
@@ -479,22 +441,19 @@ describe "Effect commands":
                 json_output=results.success,
             )
 
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status", "args": {"timeout": 0.1}},
                 json_output=results.effects_running,
             )
 
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/stop", "args": {"timeout": 0.1}},
                 json_output=results.success,
             )
 
-            await runner.assertPUT(
-                asserter,
+            await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status", "args": {"timeout": 0.1}},
                 json_output=results.effects_stopped,

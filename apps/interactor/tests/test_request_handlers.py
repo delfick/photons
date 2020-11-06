@@ -50,18 +50,14 @@ describe "SimpleWebSocketBase":
                 return ihp.ResultBuilder(serials=["d073d5000001"])
 
         async with server_maker(Handler) as server:
-            runner = server.runner
-            connection = await runner.ws_connect()
+            connection = await server.ws_connect()
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(connection, {"path": "/thing", "body": {}, "message_id": msg_id})
-            assert await runner.ws_read(connection) == {
+            await server.ws_write(connection, {"path": "/thing", "body": {}, "message_id": msg_id})
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {"results": {"d073d5000001": "ok"}},
             }
-
-            connection.close()
-            assert await runner.ws_read(connection) is None
 
     async it "can process replies", server_maker:
         replies = []
@@ -104,17 +100,16 @@ describe "SimpleWebSocketBase":
                     raise error4
 
         async with server_maker(Handler) as server:
-            runner = server.runner
-            connection = await runner.ws_connect()
+            connection = await server.ws_connect()
 
             ##################
             ### NO_ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(
+            await server.ws_write(
                 connection, {"path": "/no_error", "body": {}, "message_id": msg_id}
             )
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {"success": True},
             }
@@ -123,10 +118,10 @@ describe "SimpleWebSocketBase":
             ### INTERNAL_ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(
+            await server.ws_write(
                 connection, {"path": "/internal_error", "body": {}, "message_id": msg_id}
             )
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {
                     "error": "Internal Server Error",
@@ -139,15 +134,15 @@ describe "SimpleWebSocketBase":
             ### BUILDER_ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(
+            await server.ws_write(
                 connection, {"path": "/builder_error", "body": {}, "message_id": msg_id}
             )
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {"progress": {"error": "progress"}},
             }
 
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {
                     "results": {"d073d5000001": "ok"},
@@ -165,11 +160,11 @@ describe "SimpleWebSocketBase":
             ### BUILDER_SERIAL_ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(
+            await server.ws_write(
                 connection, {"path": "/builder_serial_error", "body": {}, "message_id": msg_id}
             )
 
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {
                     "results": {
@@ -186,10 +181,10 @@ describe "SimpleWebSocketBase":
             ### BUILDER_INTERNAL_ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(
+            await server.ws_write(
                 connection, {"path": "/builder_internal_error", "body": {}, "message_id": msg_id},
             )
-            assert await runner.ws_read(connection) == {
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {
                     "results": {"d073d5000001": "ok"},
@@ -207,8 +202,8 @@ describe "SimpleWebSocketBase":
             ### ERROR
 
             msg_id = str(uuid.uuid1())
-            await runner.ws_write(connection, {"path": "/error", "body": {}, "message_id": msg_id})
-            assert await runner.ws_read(connection) == {
+            await server.ws_write(connection, {"path": "/error", "body": {}, "message_id": msg_id})
+            assert await server.ws_read(connection) == {
                 "message_id": msg_id,
                 "reply": {
                     "error": {"message": "Blah"},
@@ -216,9 +211,6 @@ describe "SimpleWebSocketBase":
                     "status": 400,
                 },
             }
-
-            connection.close()
-            assert await runner.ws_read(connection) is None
 
         class ATraceback:
             def __eq__(s, other):

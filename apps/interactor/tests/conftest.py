@@ -2,43 +2,47 @@ from interactor.options import Options
 from interactor.server import Server
 
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.errors import BadRun
 from photons_app import helpers as hp
 
+from photons_transport.targets import MemoryTarget
 from photons_control import test_helpers as chp
+from photons_messages import protocol_register
 from photons_transport.fake import FakeDevice
 from photons_products import Products
 
-from whirlwind import test_helpers as wthp
 from unittest import mock
 import tempfile
+import aiohttp
 import logging
 import asyncio
 import pytest
 import shutil
 import uuid
+import sys
 
 log = logging.getLogger("interactor.test_helpers")
 
 
-class Asserter:
-    def assertEqual(s, a, b, msg=None):
-        __tracebackhide__ = True
-        if msg:
-            assert a == b, msg
-        else:
-            assert a == b
+class AsyncCMMixin:
+    async def __aenter__(self):
+        try:
+            return await self.start()
+        finally:
+            # aexit doesn't run if aenter raises an exception
+            exc_info = sys.exc_info()
+            if exc_info[1] is not None:
+                await self.__aexit__(*exc_info)
+                raise
 
-    def assertIs(s, a, b, msg=None):
-        __tracebackhide__ = True
-        if msg:
-            assert a is b, msg
-        else:
-            assert a is b
+    async def start(self):
+        raise NotImplementedError()
 
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.finish(exc_typ, exc, tb)
 
-@pytest.fixture(scope="session")
-def asserter():
-    return Asserter()
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        raise NotImplementedError()
 
 
 @pytest.fixture(scope="session")
@@ -79,99 +83,178 @@ def make_options(host=None, port=None, database=None, memory=True):
     return Options.FieldSpec(formatter=MergedOptionStringFormatter).empty_normalise(**options)
 
 
-async def make_server_runner(store, target_register=None, **kwargs):
-    final_future = hp.create_future(name="server_runner.final_future")
+class WSTester(AsyncCMMixin):
+    def __init__(self, port, path="/v1/ws"):
+        self.path = path
+        self.port = port
+        self.message_id = None
 
-    options = make_options("127.0.0.1", wthp.free_port(), **kwargs)
+    async def start(self):
+        self.session = aiohttp.ClientSession()
+        self.ws = await self.session.ws_connect(f"ws://127.0.0.1:{self.port}{self.path}")
 
-    targetrunner = chp.MemoryTargetRunner(final_future, fakery.devices)
-    await targetrunner.start()
+        class IsNum:
+            def __eq__(self, value):
+                self.got = value
+                return type(value) is float
 
-    cleaners = []
-    server = Server(final_future, store=store)
+            def __repr__(self):
+                if hasattr(self, "got"):
+                    return repr(self.got)
+                else:
+                    return "<NOVALUE_COMPARED>"
 
-    runner = ServerRunner(
-        final_future, options.port, server, None, fakery, options, targetrunner.sender, cleaners,
-    )
-    return runner, server, options
+        await self.check_reply(IsNum(), message_id="__server_time__")
+        return self
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        try:
+            if hasattr(self, "ws"):
+                await self.ws.close()
+                await self.ws.receive() is None
+        finally:
+            if hasattr(self, "session"):
+                await self.session.close()
+
+    async def create(self, path, body):
+        self.message_id = str(uuid.uuid1())
+        msg = {"path": path, "body": body, "message_id": self.message_id}
+        await self.ws.send_json(msg)
+
+    async def check_reply(self, reply, message_id=None):
+        got = await self.ws.receive_json()
+        wanted = {
+            "reply": reply,
+            "message_id": self.message_id if message_id is None else message_id,
+        }
+        return pytest.helpers.assertComparison(got, wanted, is_json=True)["reply"]
 
 
-class ServerRunner(wthp.ServerRunner):
-    def setup(self, fake, *args, **kwargs):
-        self.fake = fake
-        self.options = args[0]
-        super().setup(*args, **kwargs)
+class ServerWrapper(AsyncCMMixin):
+    def __init__(self, store, **kwargs):
+        self.store = store
+        self.kwargs = kwargs
+        self.cleaners = []
 
-    async def after_close(self, exc_typ, exc, tb):
+    def per_test(self):
+        class PerTest(AsyncCMMixin):
+            async def start(s):
+                for device in fakery.devices:
+                    await device.reset()
+
+            async def finish(s, exc_typ=None, exc=None, tb=None):
+                for device in fakery.devices:
+                    await device.wait_for_reboot_fut
+
+        return PerTest()
+
+    def ws_stream(self, path="/v1/ws"):
+        return WSTester(self.port, path=path)
+
+    async def ws_connect(self):
+        if hasattr(self, "ws"):
+            await self.ws.finish(None, None, None)
+        self.ws = await WSTester(self.port, "/v1/ws").start()
+        return self.ws
+
+    async def ws_read(self, connection):
+        return await self.ws.ws.receive_json()
+
+    async def ws_write(self, connection, msg):
+        return await self.ws.ws.send_json(msg)
+
+    async def command(self, path, body, *, expect_status):
+        async with aiohttp.ClientSession() as session:
+            content = None
+            try:
+                async with session.put(
+                    f"http://127.0.0.1:{self.port}{path}", json=body
+                ) as response:
+                    content = await response.read()
+                    if "json" in response.headers.get("Content-Type", ""):
+                        content = await response.json()
+                    assert response.status == expect_status, content
+                    return content
+            except aiohttp.ClientResponseError as error:
+                raise BadRun("Failed to get a result", error=error, content=content)
+
+    async def assertCommand(self, path, command, status=200, json_output=None, text_output=None):
+        try:
+            got = await self.command(path, command, expect_status=status)
+            return got
+        except BadRun as error:
+            assert error.kwargs["status"] == status
+            if json_output is not None:
+                assert error.kwargs["content"] == json_output
+            if text_output is not None:
+                assert error.kwargs["content"] == text_output
+        else:
+            if json_output is not None:
+                assert got == json_output
+            if text_output is not None:
+                assert got == text_output
+
+    @hp.memoized_property
+    def final_future(self):
+        return hp.create_future()
+
+    @hp.memoized_property
+    def server(self):
+        return Server(self.final_future, self.store)
+
+    async def start(self):
+        self.port = self.kwargs.get("port", None) or pytest.helpers.free_port()
+        await pytest.helpers.wait_for_no_port(self.port)
+
+        self.options = make_options(**{**self.kwargs, "port": self.port})
+
+        self.Wrapped = fakery(self.options, self.final_future)
+        await self.Wrapped.__aenter__()
+
+        self.sender = await self.options.lan.make_sender()
+
+        self._task = hp.async_as_background(
+            self.server.serve(
+                "127.0.0.1", self.options.port, self.options, self.sender, self.cleaners
+            )
+        )
+
+        await pytest.helpers.wait_for_port(self.port)
+
+        return self
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        self.final_future.cancel()
+        if hasattr(self, "_task"):
+            await asyncio.wait([self._task])
+
         if hasattr(self.server.finder.finish, "mock_calls"):
             assert len(self.server.finder.finish.mock_calls) == 0
 
-        for thing in self.server.cleaners:
-            try:
-                await thing()
-            except:
-                pass
+        waited = []
+        async with hp.TaskHolder(hp.create_future()) as ts:
+            for cleaner in self.cleaners:
+                waited.append(ts.add(cleaner()))
+
+        async with hp.TaskHolder(hp.create_future()) as ts:
+            if hasattr(self, "Wrapped"):
+                waited.append(ts.add(self.Wrapped.__aexit__(exc_typ, exc, tb)))
+
+            waited.append(ts.add(pytest.helpers.wait_for_no_port(self.port)))
+            waited.append(ts.add(self.options.lan.close_sender(self.sender)))
+
+            if hasattr(self, "ws"):
+                waited.append(ts.add(self.ws.__aexit__(None, None, None)))
+
+        # make sure none failed
+        for w in waited:
+            await w
 
         # Prevent coroutine not awaited error
         await asyncio.sleep(0.01)
 
         if hasattr(self.server.finder.finish, "mock_calls"):
             self.server.finder.finish.assert_called_once_with()
-
-
-class ServerWrapper:
-    def __init__(self, store, **kwargs):
-        self.store = store
-        self.kwargs = kwargs
-
-    async def __aenter__(self):
-        return await self.start()
-
-    async def start(self):
-        self.runner, self.server, self.options = await make_server_runner(self.store, **self.kwargs)
-        await self.runner.start()
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.finish()
-
-    async def finish(self):
-        await hp.wait_for_all_futures(hp.async_as_background(self.runner.close(None, None, None)))
-
-    def test_wrap(self):
-        class Wrap:
-            async def __aenter__(s):
-                for device in fakery.devices:
-                    await device.reset()
-
-            async def __aexit__(s, exc_typ, exc, tb):
-                pass
-
-        return Wrap()
-
-    def ws_stream(self):
-        class WSStream(wthp.WSStream):
-            async def start(s, command, serial, **other_args):
-                s.message_id = str(uuid.uuid1())
-                body = {"command": command, "args": {"serial": serial, **other_args}}
-                await s.server.ws_write(
-                    s.connection,
-                    {"path": "/v1/lifx/command", "body": body, "message_id": s.message_id},
-                )
-
-        return WSStream(self.runner, Asserter())
-
-    async def assertCommand(
-        self, command, status=200, json_output=None, text_output=None, timeout=None
-    ):
-        return await self.runner.assertPUT(
-            Asserter(),
-            "/v1/lifx/command",
-            command,
-            status=status,
-            json_output=json_output,
-            text_output=text_output,
-        )
 
 
 identifier = lambda: str(uuid.uuid4()).replace("-", "")
@@ -316,6 +399,12 @@ class Fakery:
     def __init__(self):
         self.devices = [a19_1, a19_2, color1000, white800, strip1, strip2, candle]
 
+    def for_serial(self, serial):
+        for d in self.devices:
+            if d.serial == serial:
+                return d
+        assert False, f"Expected one device with serial {serial}"
+
     def for_attribute(self, key, value, expect=1):
         got = []
         for d in self.devices:
@@ -324,14 +413,34 @@ class Fakery:
         assert len(got) == expect, f"Expected {expect} devices, got {len(got)}: {got}"
         return got
 
-    def for_serial(self, serial):
-        for d in self.devices:
-            if d.serial == serial:
-                return d
-        assert False, f"Expected one device with serial {serial}"
+    def __call__(self, options, final_future):
+        configuration = {
+            "final_future": final_future,
+            "protocol_register": protocol_register,
+        }
+
+        options.lan = MemoryTarget.create(configuration, {"devices": self.devices})
+        options.fake_devices = self.devices
+
+        class Call(AsyncCMMixin):
+            async def start(s):
+                for device in fakery.devices:
+                    await device.start()
+                return s
+
+            async def finish(s, exc_typ=None, exc=None, tb=None):
+                for device in fakery.devices:
+                    await device.finish()
+
+        return Call()
 
 
 fakery = Fakery()
+
+
+@pytest.fixture()
+def fake():
+    return fakery
 
 
 class Around:
@@ -681,11 +790,6 @@ multizone_state_responses = {
         ],
     }
 }
-
-
-@pytest.fixture(scope="session")
-def fake():
-    return fakery
 
 
 @pytest.fixture(scope="session")

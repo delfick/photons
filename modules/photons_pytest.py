@@ -7,7 +7,9 @@ import tempfile
 import asyncio
 import socket
 import shutil
+import errno
 import time
+import json
 import sys
 import re
 import os
@@ -28,17 +30,75 @@ except:
     pytest = FakePytest()
 
 
-def _port_connected(port):
+class AsyncCMMixin:
     """
-    Return whether something is listening on this port
+    Copied from photons_app.helpers
+    because it's important to not import photons in this file
     """
-    s = socket.socket()
-    s.settimeout(5)
-    try:
-        s.connect(("127.0.0.1", port))
-        s.close()
-        return True
-    except Exception:
+
+    async def __aenter__(self):
+        try:
+            return await self.start()
+        finally:
+            # aexit doesn't run if aenter raises an exception
+            exc_info = sys.exc_info()
+            if exc_info[1] is not None:
+                await self.__aexit__(*exc_info)
+                raise
+
+    async def start(self):
+        raise NotImplementedError()
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        await self.finish(exc_typ, exc, tb)
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        raise NotImplementedError()
+
+
+class PortHelpers:
+    def free_port(self):
+        """
+        Return an unused port number
+        """
+        with socket.socket() as s:
+            s.bind(("", 0))
+            return s.getsockname()[1]
+
+    async def wait_for_port(self, port, timeout=3, gap=0.01):
+        """
+        Wait for a port to have something behind it
+        """
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.port_connected(port):
+                break
+            await asyncio.sleep(gap)
+        assert self.port_connected(port)
+
+    async def wait_for_no_port(self, port, timeout=3, gap=0.01):
+        """
+        Wait for a port to not have something behind it
+        """
+        start = time.time()
+        while time.time() - start < timeout:
+            if not self.port_connected(port):
+                break
+            await asyncio.sleep(gap)
+        assert not self.port_connected(port)
+
+    def port_connected(self, port):
+        """
+        Return whether something is listening on this port
+        """
+        with socket.socket() as sock:
+            res = int(sock.connect_ex(("127.0.0.1", port)))
+
+        if res == 0:
+            return True
+
+        error = errno.errorcode[res]
+        assert res is errno.ECONNREFUSED, (error, port)
         return False
 
 
@@ -52,7 +112,7 @@ def run_pytest():
                     "-o",
                     "console_output_style=classic",
                     "-o",
-                    "default_alt_async_timeout=1",
+                    "default_alt_async_timeout=1.5",
                     "-W",
                     "ignore:Using or importing the ABCs:DeprecationWarning",
                     "--log-level=INFO",
@@ -75,7 +135,7 @@ def a_temp_dir():
             self.d = tempfile.mkdtemp()
             return self.d, self.make_file
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(self, exc_typ, exc, tb):
             if hasattr(self, "d") and os.path.exists(self.d):
                 shutil.rmtree(self.d)
 
@@ -109,6 +169,9 @@ class FakeTimeImpl:
         self.time = round(self.time + t, 3)
 
     def __enter__(self):
+        return self.start()
+
+    def start(self):
         self.patches.append(mock.patch("time.time", self))
 
         if self.mock_sleep:
@@ -121,7 +184,10 @@ class FakeTimeImpl:
 
         return self
 
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(self, exc_typ, exc, tb):
+        self.finish(exc_typ, exc, tb)
+
+    def finish(self, exc_typ=None, exc=None, tb=None):
         for p in self.patches:
             p.stop()
 
@@ -136,7 +202,7 @@ class FakeTimeImpl:
         await self.original_async_sleep(0.001)
 
 
-class MockedCallLaterImpl:
+class MockedCallLaterImpl(AsyncCMMixin):
     def __init__(self, t):
         self.t = t
         self.loop = asyncio.get_event_loop()
@@ -149,13 +215,13 @@ class MockedCallLaterImpl:
         self.called_times = []
         self.have_call_later = self.hp.ResettableFuture()
 
-    async def __aenter__(self):
+    async def start(self):
         self.task = self.hp.async_as_background(self._calls())
         self.call_later_patch = mock.patch.object(self.loop, "call_later", self._call_later)
         self.call_later_patch.start()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if self.call_later_patch:
             self.call_later_patch.stop()
         if self.task:
@@ -246,7 +312,7 @@ def FakeTime():
     return FakeTimeImpl
 
 
-class FutureDominoes:
+class FutureDominoes(AsyncCMMixin):
     """
     A helper to start a domino of futures.
 
@@ -319,12 +385,12 @@ class FutureDominoes:
         for i in range(self.expected):
             self.make(i + 1)
 
-    async def __aenter__(self):
+    async def start(self):
         self._tick = self.hp.async_as_background(self.tick())
         self._tick.add_done_callback(self.hp.transfer_result(self.finished))
         return self
 
-    async def __aexit__(self, exc_typ, exc, tb):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "_tick"):
             if exc and not self._tick.done():
                 self._tick.cancel()
@@ -435,41 +501,16 @@ def pytest_configure(config):
         pytest.fail("\n".join(lines))
 
     @pytest.helpers.register
-    def free_port():
-        """
-        Return an unused port number
-        """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("0.0.0.0", 0))
-            return s.getsockname()[1]
-
-    @pytest.helpers.register
-    async def wait_for_port(port, timeout=3, gap=0.01):
-        """
-        Wait for a port to have something behind it
-        """
-        start = time.time()
-        while time.time() - start < timeout:
-            if _port_connected(port):
-                break
-            await asyncio.sleep(gap)
-        assert _port_connected(port)
-
-    @pytest.helpers.register
-    def port_connected(port):
-        return _port_connected(port)
-
-    @pytest.helpers.register
     def AsyncMock(*args, **kwargs):
         if sys.version_info < (3, 8):
-            return __import__("asynctest.mock").mock.CoroutineMock(*args, **kwargs)
+            return __import__("mock").AsyncMock(*args, **kwargs)
         else:
             return mock.AsyncMock(*args, **kwargs)
 
     @pytest.helpers.register
     def MagicAsyncMock(*args, **kwargs):
         if sys.version_info < (3, 8):
-            return __import__("asynctest").MagicMock(*args, **kwargs)
+            return __import__("mock").MagicMock(*args, **kwargs)
         else:
             return mock.MagicMock(*args, **kwargs)
 
@@ -492,8 +533,33 @@ def pytest_configure(config):
 
         return Compare()
 
+    @pytest.helpers.register
+    def assertComparison(got, wanted, *, is_json):
+        if got != wanted:
+            print("!" * 80)
+            print("Got:")
+            if is_json:
+                got = json.dumps(got, sort_keys=True, indent="  ", default=lambda o: repr(o))
+            for line in got.split("\n"):
+                print(f"> {line}")
 
-class MemoryDevicesRunner:
+            print("Wanted:")
+            if is_json:
+                wanted = json.dumps(wanted, sort_keys=True, indent="  ", default=lambda o: repr(o))
+            for line in wanted.split("\n"):
+                print(f"> {line}")
+
+        assert got == wanted
+        return got
+
+    port_helpers = PortHelpers()
+    pytest.helpers.register(port_helpers.free_port)
+    pytest.helpers.register(port_helpers.wait_for_port)
+    pytest.helpers.register(port_helpers.wait_for_no_port)
+    pytest.helpers.register(port_helpers.port_connected)
+
+
+class MemoryDevicesRunner(AsyncCMMixin):
     def __init__(self, devices):
         self.final_future = __import__("photons_app").helpers.create_future()
 
@@ -507,14 +573,14 @@ class MemoryDevicesRunner:
         self.target = MemoryTarget.create(options)
         self.devices = devices
 
-    async def __aenter__(self):
+    async def start(self):
         for device in self.devices:
             await device.start()
 
         self.sender = await self.target.make_sender()
         return self
 
-    async def __aexit__(self, typ, exc, tb):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "sender"):
             await self.target.close_sender(self.sender)
 

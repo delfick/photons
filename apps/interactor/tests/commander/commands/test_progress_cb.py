@@ -52,20 +52,15 @@ class TError(store.Command):
 
 
 @pytest.fixture(scope="module")
-async def wrapper(server_wrapper):
-    async with server_wrapper(store) as wrapper:
-        yield wrapper
+async def server(server_wrapper):
+    async with server_wrapper(store) as server:
+        yield server
 
 
 @pytest.fixture(autouse=True)
-async def wrap_tests(wrapper):
-    async with wrapper.test_wrap():
+async def wrap_tests(server):
+    async with server.per_test():
         yield
-
-
-@pytest.fixture()
-def runner(wrapper):
-    return wrapper.runner
 
 
 describe "Commands":
@@ -75,41 +70,41 @@ describe "Commands":
         cmd = {"command": command, "args": {"serial": serial}}
         return cmd, serial
 
-    async it "has progress cb functionality for http", runner, asserter:
+    async it "has progress cb functionality for http", server:
         command, serial = self.command("test_no_error")
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", command, status=200, json_output={"serial": serial}
+        await server.assertCommand(
+            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
         )
 
         command, serial = self.command("test_error")
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", command, status=200, json_output={"serial": serial}
+        await server.assertCommand(
+            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
         )
 
         command, serial = self.command("test_done_progress")
-        await runner.assertPUT(
-            asserter, "/v1/lifx/command", command, status=200, json_output={"serial": serial}
+        await server.assertCommand(
+            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
         )
 
-    async it "has progress cb functionality for websockets", runner, asserter:
-        async with runner.ws_stream(asserter) as stream:
+    async it "has progress cb functionality for websockets", server:
+        async with server.ws_stream() as stream:
 
             # Done progress
             command, serial = self.command("test_done_progress")
-            await stream.start("/v1/lifx/command", command)
+            await stream.create("/v1/lifx/command", command)
             await stream.check_reply({"progress": {"done": True, "serial": serial}})
             await stream.check_reply({"serial": serial})
 
             # No error
             command, serial = self.command("test_no_error")
-            await stream.start("/v1/lifx/command", command)
+            await stream.create("/v1/lifx/command", command)
             await stream.check_reply({"progress": {"info": "hello", "serial": serial}})
             await stream.check_reply({"progress": {"info": "there"}})
             await stream.check_reply({"serial": serial})
 
             # With error
             command, serial = self.command("test_error")
-            await stream.start("/v1/lifx/command", command)
+            await stream.create("/v1/lifx/command", command)
             await stream.check_reply(
                 {"progress": {"error": "Nope", "error_code": "Exception", "serial": serial}}
             )

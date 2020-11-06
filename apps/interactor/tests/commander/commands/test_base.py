@@ -45,24 +45,19 @@ def store_clone():
 
 
 @pytest.fixture(scope="module")
-async def wrapper(store_clone, server_wrapper):
-    async with server_wrapper(store_clone) as wrapper:
-        yield wrapper
+async def server(store_clone, server_wrapper):
+    async with server_wrapper(store_clone) as server:
+        yield server
 
 
 @pytest.fixture(autouse=True)
-async def wrap_tests(wrapper):
-    async with wrapper.test_wrap():
+async def wrap_tests(server):
+    async with server.per_test():
         yield
 
 
-@pytest.fixture()
-def runner(wrapper):
-    return wrapper.runner
-
-
 describe "commands":
-    async it "has a help command", runner, asserter:
+    async it "has a help command", server:
         want = dedent(
             """
         Command test
@@ -83,16 +78,14 @@ describe "commands":
         """
         ).lstrip()
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "help", "args": {"command": "test"}},
             text_output=want.encode(),
         )
 
-    async it "has a test command", runner, asserter:
-        await runner.assertPUT(
-            asserter,
+    async it "has a test command", server:
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "test"},
             status=400,
@@ -112,17 +105,16 @@ describe "commands":
             },
         )
 
-        await runner.assertPUT(
-            asserter,
+        await server.assertCommand(
             "/v1/lifx/command",
             {"command": "test", "args": {"one": 1, "two": "TWO", "three": True}},
             json_output={"one": 1, "two": "TWO", "three": True},
         )
 
-    async it "has websocket commands", runner, asserter, responses:
-        async with runner.ws_stream(asserter) as stream:
+    async it "has websocket commands", server, responses:
+        async with server.ws_stream() as stream:
             # Invalid path
-            await stream.start("/blah", {"stuff": True})
+            await stream.create("/blah", {"stuff": True})
             error = "Specified path is invalid"
             await stream.check_reply(
                 {
@@ -134,7 +126,7 @@ describe "commands":
             )
 
             # invalid command
-            await stream.start("/v1/lifx/command", {"command": "nope"})
+            await stream.create("/v1/lifx/command", {"command": "nope"})
             reply = await stream.check_reply(mock.ANY)
             assert "test" in reply["error"]["available"]
             reply["error"]["available"] = ["test"]
@@ -152,9 +144,11 @@ describe "commands":
 
             # valid command
             args = {"one": 1, "two": "TWO", "three": True}
-            await stream.start("/v1/lifx/command", {"command": "test", "args": args})
+            await stream.create("/v1/lifx/command", {"command": "test", "args": args})
             await stream.check_reply(args)
 
             # another valid command
-            await stream.start("/v1/lifx/command", {"command": "query", "args": {"pkt_type": 101}})
+            await stream.create(
+                "/v1/lifx/command", {"command": "query", "args": {"pkt_type": 101}},
+            )
             await stream.check_reply(responses.light_state_responses)
