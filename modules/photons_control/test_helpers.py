@@ -383,7 +383,7 @@ class ProductResponder(Responder):
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.GetVersion:
             yield DeviceMessages.StateVersion(
-                vendor=device.attrs.vendor_id, product=device.attrs.product_id, version=0
+                vendor=device.attrs.vendor_id, product=device.attrs.product_id
             )
 
         elif pkt | DeviceMessages.GetHostFirmware:

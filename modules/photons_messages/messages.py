@@ -105,7 +105,7 @@ class DeviceMessages(Messages):
     StateVersion = msg(33
         , ("vendor", T.Uint32)
         , ("product", T.Uint32)
-        , ("version", T.Uint32.default(0))
+        , ("reserved6", T.Reserved(32))
         )
 
     GetInfo = msg(34)
@@ -141,6 +141,10 @@ class DeviceMessages(Messages):
         )
 
     EchoResponse = EchoRequest.using(59)
+
+    StateUnhandled = msg(223
+        , ("unhandled_type", T.Uint16)
+        )
 
 ########################
 ###   LIGHT
@@ -274,6 +278,25 @@ class MultiZoneMessages(Messages):
         )
 
 ########################
+###   RELAY
+########################
+
+class RelayMessages(Messages):
+    GetPower = msg(816
+        , ("relay_index", T.Uint8)
+        )
+
+    SetPower = msg(817
+        , ("relay_index", T.Uint8)
+        , ("level", T.Uint16)
+        )
+
+    StatePower = msg(818
+        , ("relay_index", T.Uint8)
+        , ("level", T.Uint16)
+        )
+
+########################
 ###   TILE
 ########################
 
@@ -342,5 +365,6 @@ __all__ = [
     "DeviceMessages",
     "LightMessages",
     "MultiZoneMessages",
+    "RelayMessages",
     "TileMessages",
 ]

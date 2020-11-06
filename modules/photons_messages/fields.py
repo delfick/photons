@@ -102,12 +102,12 @@ tile_state_device = [
     , ("reserved7", T.Reserved(8))
     , ("device_version_vendor", T.Uint32)
     , ("device_version_product", T.Uint32)
-    , ("device_version_version", T.Uint32.default(0))
+    , ("reserved8", T.Reserved(32))
     , ("firmware_build", T.Uint64)
-    , ("reserved8", T.Reserved(64))
+    , ("reserved9", T.Reserved(64))
     , ("firmware_version_minor", T.Uint16)
     , ("firmware_version_major", T.Uint16)
-    , ("reserved9", T.Reserved(32))
+    , ("reserved10", T.Reserved(32))
     ]
 
 class Tile(dictobj.PacketSpec):

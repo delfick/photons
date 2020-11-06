@@ -438,14 +438,8 @@ changes:
 
   TileSetEffect:
     rename: SetTileEffect
-    fields:
-      Reserved0:
-        rename: reserved8
-      Reserved1:
-        rename: reserved9
+    reserved_start: 8
 
   TileStateEffect:
     rename: StateTileEffect
-    fields:
-      Reserved0:
-        rename: reserved8
+    reserved_start: 8

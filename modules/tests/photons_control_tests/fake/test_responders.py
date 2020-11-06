@@ -648,7 +648,7 @@ describe "Responders":
 
                 await device.assertResponse(
                     DeviceMessages.GetVersion(),
-                    [DeviceMessages.StateVersion(vendor=1, product=22, version=0)],
+                    [DeviceMessages.StateVersion(vendor=1, product=22)],
                 )
 
             device, assertProduct = self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 0))
@@ -656,7 +656,7 @@ describe "Responders":
                 assertProduct()
                 await device.assertResponse(
                     DeviceMessages.GetVersion(),
-                    [DeviceMessages.StateVersion(vendor=1, product=55, version=0)],
+                    [DeviceMessages.StateVersion(vendor=1, product=55)],
                 )
 
         async it "responds to GetHostFirmware":

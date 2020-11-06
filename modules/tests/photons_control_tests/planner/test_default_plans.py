@@ -294,7 +294,12 @@ describe "Default Plans":
         async it "gets the power", runner:
 
             def make_version(vendor, product):
-                return DeviceMessages.StateVersion.create(vendor=vendor, product=product).payload
+                msg = DeviceMessages.StateVersion.create(
+                    vendor=vendor, product=product, source=1, sequence=1, target=None
+                )
+                # in the future, I don't have to do this trick to ensure reserved fields have values
+                # Which matters in the test
+                return DeviceMessages.StateVersion.create(msg.pack()).payload
 
             l1c = {
                 "cap": Products.LCM3_TILE.cap(3, 50),
