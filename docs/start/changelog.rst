@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.31.5 - TBD
+0.31.5 - 6 November 2020
     * Synced the product registry
     * Synced the protocol repository
 

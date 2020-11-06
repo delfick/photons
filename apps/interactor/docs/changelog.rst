@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.5 - 6 November 2020
+    * Updated photons-core for new products/protocol
+
 0.7.4 - 22 September 2020
     * Reduced size of the docker image #22
 
