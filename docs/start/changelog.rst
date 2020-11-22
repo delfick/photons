@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.32.0 - TBD
+0.32.0 - 22 November 2020
     * Update dependencies for python3.9 compatibility
 
 0.31.5 - 6 November 2020

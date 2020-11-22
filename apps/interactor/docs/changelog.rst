@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.6 - 22 November 2020
+    * Update dependencies for python3.9 compatibility
+
 0.7.5 - 6 November 2020
     * Updated photons-core for new products/protocol
 

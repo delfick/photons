@@ -49,6 +49,9 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+0.5.5 - 22 November 2020
+    * Update dependencies for python3.9 compatibility
+
 0.5.4 - 23 August 2020
     * Upgrade photons-core to fix discovery bug
 
