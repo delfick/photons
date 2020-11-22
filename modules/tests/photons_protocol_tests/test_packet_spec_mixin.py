@@ -55,7 +55,7 @@ describe "PacketSpecMixin":
                 V.packing_kls.pack.return_value = res
 
                 r = packet.pack(
-                    payload=V.payload, parent=V.parent, serial=V.serial, packing_kls=V.packing_kls,
+                    payload=V.payload, parent=V.parent, serial=V.serial, packing_kls=V.packing_kls
                 )
 
                 assert r is res

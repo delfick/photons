@@ -189,7 +189,7 @@ describe "ResultStreamer":
                 ("on_each", R(2, ctx, True)),
                 ("on_each", R(3, ctx, True)),
                 "gen_finished",
-                ("on_done", R(hp.ResultStreamer.GeneratorComplete, ctx, True),),
+                ("on_done", R(hp.ResultStreamer.GeneratorComplete, ctx, True)),
             ]
 
     describe "add_coroutine":

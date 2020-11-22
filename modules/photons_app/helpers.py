@@ -684,7 +684,7 @@ class ResultStreamer:
 
                 await self.add_coroutine(
                     stop_async_generator(
-                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]", exc=exc,
+                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]", exc=exc
                     ),
                     context=self.GeneratorStopper,
                     force=True,

@@ -848,7 +848,7 @@ describe "FakeDevice":
                 message_source = mock.Mock(name="message_source")
 
                 with mock.patch.multiple(
-                    device, ack_for=ack_for, response_for=response_for, process_reply=process_reply,
+                    device, ack_for=ack_for, response_for=response_for, process_reply=process_reply
                 ):
                     async for m in device.got_message(pkt, message_source):
                         got.append(m)

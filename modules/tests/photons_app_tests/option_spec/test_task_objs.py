@@ -65,7 +65,7 @@ describe "Task run":
             ):
                 assert (
                     await V.task.run(
-                        V.target, V.collector, V.available_actions, V.tasks, one=one, two=3,
+                        V.target, V.collector, V.available_actions, V.tasks, one=one, two=3
                     )
                 ) is final
 
@@ -114,7 +114,7 @@ describe "Task run":
             ):
                 assert (
                     await V.task.run(
-                        V.target, V.collector, V.available_actions, V.tasks, one=one, two=3,
+                        V.target, V.collector, V.available_actions, V.tasks, one=one, two=3
                     )
                 ) is final
 

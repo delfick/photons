@@ -281,7 +281,7 @@ describe "run":
         )
 
         self.assertRunnerBehaviour(
-            script, f"CANCELLED<class '{cancelled_error_name}'>", expected_stdout, expected_stderr,
+            script, f"CANCELLED<class '{cancelled_error_name}'>", expected_stdout, expected_stderr
         )
 
     it "says the program was cancelled if the program quits with asyncio.CancelledError":

@@ -413,7 +413,7 @@ describe "Default Plans":
                     True,
                     {"version": Match({"product": 32, "vendor": 1})},
                 ),
-                striplcm2extended.serial: (True, {"version": Match({"product": 32, "vendor": 1})},),
+                striplcm2extended.serial: (True, {"version": Match({"product": 32, "vendor": 1})}),
             }
 
     describe "ZonesPlan":

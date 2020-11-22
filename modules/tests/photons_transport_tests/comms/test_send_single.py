@@ -60,7 +60,7 @@ async def _setup():
     device = FakeDevice(
         "d073d5001337",
         chp.default_responders(
-            Products.LCM2_Z, zones=[chp.Color(i, 1, 1, 3500) for i in range(22)],
+            Products.LCM2_Z, zones=[chp.Color(i, 1, 1, 3500) for i in range(22)]
         ),
     )
     async with device:

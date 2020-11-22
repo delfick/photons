@@ -168,8 +168,13 @@ describe "NetworkSession":
             return mocks
 
         async it "can use hard coded discovery", V:
-            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
-                hardcoded_discovery={"d073d5000001": "192.168.0.1", "d073d5000002": "192.168.0.2"}
+            V.transport_target.discovery_options = (
+                NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+                    hardcoded_discovery={
+                        "d073d5000001": "192.168.0.1",
+                        "d073d5000002": "192.168.0.2",
+                    }
+                )
             )
 
             assert V.session.found == Found()
@@ -278,8 +283,8 @@ describe "NetworkSession":
                 yield s3
 
             assert V.session.found == Found()
-            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
-                serial_filter=["d073d5000001"]
+            V.transport_target.discovery_options = (
+                NoEnvDiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5000001"])
             )
 
             a = mock.Mock(name="a")

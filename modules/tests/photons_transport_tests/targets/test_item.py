@@ -591,7 +591,7 @@ describe "Item":
                 assert m == []
 
                 assert called == [
-                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout},),
+                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout}),
                     ("missing", found),
                 ]
 
@@ -615,7 +615,7 @@ describe "Item":
                 assert m == ["d073d5000001"]
 
                 assert called == [
-                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout},),
+                    ("find", (V.sender,), {"broadcast": V.broadcast, "timeout": V.timeout}),
                     ("missing", found),
                 ]
 

@@ -17,9 +17,7 @@ class Color:
         return color in kls.EMPTIES or color[2] == 0
 
     @classmethod
-    def override(
-        kls, color, hue=None, saturation=None, brightness=None, kelvin=None,
-    ):
+    def override(kls, color, hue=None, saturation=None, brightness=None, kelvin=None):
         if hue is None and saturation is None and brightness is None and kelvin is None:
             return color
 

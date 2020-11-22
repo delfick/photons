@@ -186,5 +186,5 @@ describe "main lines":
             run("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 
         fake_main.assert_called_once_with(
-            ["lan:transform", "--", '{"power": "on"}'], default_activate=["core"],
+            ["lan:transform", "--", '{"power": "on"}'], default_activate=["core"]
         )

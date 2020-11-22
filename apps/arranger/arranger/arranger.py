@@ -349,7 +349,7 @@ class Arranger:
         part.update(new_user_x, new_user_y, part.width, part.height)
 
         msg = TileMessages.SetUserPosition(
-            tile_index=part.part_number, user_x=part.user_x, user_y=part.user_y, res_required=False,
+            tile_index=part.part_number, user_x=part.user_x, user_y=part.user_y, res_required=False
         )
 
         await self.sender(msg, part.device.serial, message_timeout=2)

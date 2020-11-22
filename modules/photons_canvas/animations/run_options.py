@@ -53,9 +53,7 @@ class noisy_network_spec(sb.Spec):
 class animation_spec(sb.Spec):
     def normalise_filled(self, meta, val):
         if not val:
-            raise BadSpecValue(
-                "Animation option must be non empty", meta=meta,
-            )
+            raise BadSpecValue("Animation option must be non empty", meta=meta)
 
         if isinstance(val, str):
             val = [val]
@@ -114,7 +112,7 @@ class RunOptions(dictobj.Spec):
     )
 
     reinstate_duration = dictobj.Field(
-        sb.float_spec, default=1, help="The duration used when reinstating state",
+        sb.float_spec, default=1, help="The duration used when reinstating state"
     )
 
     noisy_network = dictobj.Field(

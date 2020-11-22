@@ -569,7 +569,7 @@ class PartsPlan(Plan):
             for i, t in enumerate(self.chain):
                 parts.append(
                     cont.Part(
-                        t.user_x, t.user_y, t.width, t.height, i, self.orientations[i], device,
+                        t.user_x, t.user_y, t.width, t.height, i, self.orientations[i], device
                     )
                 )
 

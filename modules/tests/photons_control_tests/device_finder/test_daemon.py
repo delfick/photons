@@ -259,7 +259,7 @@ describe "DeviceFinderDaemon":
                     assert len(eril.mock_calls) >= 3
 
                     assert eril.mock_calls[0] == mock.call(
-                        V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections,
+                        V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections
                     )
 
             async it "keeps going if find fails", V:

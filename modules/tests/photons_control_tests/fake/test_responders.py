@@ -308,7 +308,7 @@ describe "Responders":
 
         async it "doesn't respond to tile messages if the product doesn't have chain":
             device = Device(
-                chp.ProductResponder.from_product(Products.LCMV4_A19_COLOR), chp.MatrixResponder(),
+                chp.ProductResponder.from_product(Products.LCMV4_A19_COLOR), chp.MatrixResponder()
             )
 
             async with device:
@@ -326,7 +326,7 @@ describe "Responders":
 
         def make_device(self, enum, firmware, zones=None):
             return Device(
-                chp.ProductResponder.from_product(enum, firmware), chp.ZonesResponder(zones=zones),
+                chp.ProductResponder.from_product(enum, firmware), chp.ZonesResponder(zones=zones)
             )
 
         async it "complains if you try to set too many zones":

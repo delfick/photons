@@ -150,7 +150,7 @@ describe "PowerToggleGroup":
 
     async it "toggles the power", runner:
         expected = {
-            light1: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1),],
+            light1: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
             light2: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
             light3: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=1)],
         }
@@ -390,7 +390,7 @@ describe "Transformer":
                     LightMessages.GetColor(),
                     light1_reset,
                     LightMessages.SetLightPower(level=65535, duration=10),
-                    ColourParser.msg("blue ", overrides={"brightness": 0.3, "duration": 10},),
+                    ColourParser.msg("blue ", overrides={"brightness": 0.3, "duration": 10}),
                 ],
                 light2: [
                     LightMessages.GetColor(),

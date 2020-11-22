@@ -375,8 +375,8 @@ describe "Session":
                 @hp.memoized_property
                 def starting_filled(s):
                     return {
-                        s.plankeya: {s.serial1: (1, s.result1a), s.serial2: (2, s.result2a),},
-                        s.plankeyb: {s.serial1: (5, s.result1b), s.serial2: (10, s.result2b),},
+                        s.plankeya: {s.serial1: (1, s.result1a), s.serial2: (2, s.result2a)},
+                        s.plankeyb: {s.serial1: (5, s.result1b), s.serial2: (10, s.result2b)},
                     }
 
                 def __init__(s):

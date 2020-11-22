@@ -206,7 +206,7 @@ describe "expand_spec":
         it "complains if not bitarray, bytes or instance of kls", meta, subject, kls:
             for thing in (0, 1, False, True, [], [1], None, "adsf", lambda: True):
                 with assertRaises(
-                    BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls,
+                    BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls
                 ):
                     subject.normalise(meta, thing)
 

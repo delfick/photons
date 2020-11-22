@@ -382,7 +382,7 @@ describe "Part":
                 with FakeTime() as t:
                     t.set(2)
                     part = V.make_part(
-                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors,
+                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors
                     )
                     assert part.next_force_send == 1
 
@@ -419,7 +419,7 @@ describe "Part":
                 with FakeTime() as t:
                     t.set(2)
                     part = V.make_part(
-                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors,
+                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors
                     )
                     assert part.next_force_send == 1
 

@@ -87,9 +87,7 @@ class Canvas:
 
         return True
 
-    def override(
-        self, point, hue=None, saturation=None, brightness=None, kelvin=None,
-    ):
+    def override(self, point, hue=None, saturation=None, brightness=None, kelvin=None):
         return php.Color.override(
             self[point] or (0, 0, 0, 0),
             hue=hue,

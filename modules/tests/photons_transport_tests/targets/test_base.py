@@ -27,7 +27,7 @@ def final_future():
 
 @pytest.fixture()
 def target(final_future):
-    return Target.create({"protocol_register": protocol_register, "final_future": final_future,})
+    return Target.create({"protocol_register": protocol_register, "final_future": final_future})
 
 
 describe "Target":

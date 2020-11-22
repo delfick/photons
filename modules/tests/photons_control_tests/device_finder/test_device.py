@@ -310,7 +310,7 @@ describe "Device":
             assert device.point_futures == expect
 
             class IP(enum.Enum):
-                ONE = Point("msg1", ["attr1", "attr2", "attr3"], 10,)
+                ONE = Point("msg1", ["attr1", "attr2", "attr3"], 10)
                 TWO = Point("msg2", ["attr4"], None)
                 THREE = Point("msg3", ["attr5", "attr6"], 300)
 

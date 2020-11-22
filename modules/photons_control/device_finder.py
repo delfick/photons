@@ -884,7 +884,7 @@ class Finder:
                 )
 
         streamer = hp.ResultStreamer(
-            self.final_future, error_catcher=catcher, name="Finder::info[streamer]",
+            self.final_future, error_catcher=catcher, name="Finder::info[streamer]"
         )
 
         async with streamer:

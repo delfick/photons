@@ -209,9 +209,7 @@ describe "Device":
             assert V.device.info == info
 
             await hp.wait_for_all_futures(Futs.color)
-            V.received(
-                LightMessages.GetColor(), keep_duplicates=True,
-            )
+            V.received(LightMessages.GetColor(), keep_duplicates=True)
             assert V.t.time == 11
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
@@ -228,9 +226,7 @@ describe "Device":
 
             assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
             await hp.wait_for_all_futures(Futs.color)
-            V.received(
-                LightMessages.GetColor(), keep_duplicates=True,
-            )
+            V.received(LightMessages.GetColor(), keep_duplicates=True)
             # 61 + 10 = 71
             assert V.t.time == 71
 
@@ -358,9 +354,7 @@ describe "Device":
             assert V.device.info == info
 
             await hp.wait_for_all_futures(Futs.color)
-            V.received(
-                LightMessages.GetColor(), keep_duplicates=True,
-            )
+            V.received(LightMessages.GetColor(), keep_duplicates=True)
             assert V.t.time == 11
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)

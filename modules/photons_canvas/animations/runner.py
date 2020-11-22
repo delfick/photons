@@ -75,9 +75,7 @@ class AnimationRunner:
                     else:
                         state = State(self.final_future)
                         await state.add_collected(collected)
-                        self.transfer_error(
-                            ts, ts.add(self.animate(ts, cannon, state, animations)),
-                        )
+                        self.transfer_error(ts, ts.add(self.animate(ts, cannon, state, animations)))
                 except asyncio.CancelledError:
                     raise
                 except Finish:

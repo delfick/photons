@@ -344,7 +344,7 @@ class Communication:
         return await self.send_single(packet, **kwargs)
 
     async def send_single(
-        self, original, packet, *, timeout, no_retry=False, broadcast=False, connect_timeout=10,
+        self, original, packet, *, timeout, no_retry=False, broadcast=False, connect_timeout=10
     ):
 
         transport, is_broadcast = await self._transport_for_send(

@@ -208,7 +208,7 @@ class Range:
 
     def choose_range(self):
         choice = random.randrange(self.mn * self.multiplier, self.mx * self.multiplier)
-        return self.spec.normalise(self.meta, choice / self.multiplier,)
+        return self.spec.normalise(self.meta, choice / self.multiplier)
 
     @property
     def rate(self):

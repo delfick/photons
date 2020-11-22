@@ -70,7 +70,7 @@ describe "pktkeys":
 
     it "knows to zero instanceid":
         msg = MultiZoneMessages.SetMultiZoneEffect.create(
-            source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={},
+            source=1, sequence=2, target="d073d511", reserved6=b"hell", parameters={}
         )
 
         assert msg.instanceid > 0
