@@ -104,6 +104,10 @@ def sources_for(kls):
 
     try:
         src = inspect.getsource(kls)
+    except SyntaxError:
+        # Likely the tests
+        # Seems inspect.getsource doesn't look at coding in python3.9
+        return
     except OSError as error:
         if error.args and error.args[0] == "could not find class definition":
             log.warning("Couldn't find source code for kls\tkls={0}".format(kls))

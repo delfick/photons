@@ -38,14 +38,14 @@ setup(
 
     , install_requires =
       [ "delfick_project==0.7.5"
-      , "ruamel.yaml==0.15.87"
+      , "ruamel.yaml==0.16.12"
       , "rainbow_logging_handler==2.2.2"
 
       # photons-tile-messages
       , "lru-dict==1.1.6"
 
       # photons-protocol
-      , "bitarray==1.0.1"
+      , "bitarray==1.6.1"
     
       # photons-canvas
       , "kdtree==0.16"
@@ -53,8 +53,8 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti==2.0.1"
-        , "pytest==5.3.4"
+        [ "noseOfYeti==2.0.2"
+        , "pytest==6.1.2"
         , "mock==4.0.2"
         , "alt-pytest-asyncio==0.5.3"
         , "pytest-helpers-namespace==2019.1.8"

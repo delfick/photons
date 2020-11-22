@@ -2,7 +2,6 @@
 
 from photons_protocol.messages import Messages, PacketTypeExtractor, sources_for
 from photons_protocol.errors import BadConversion
-from photons_protocol.types import Type as T
 
 from photons_app.registers import ProtocolRegister
 
@@ -16,20 +15,6 @@ import binascii
 import pytest
 
 msg = LIFXPacket.message
-
-
-class M(Messages):
-    # fmt:off
-    One = msg(78
-        , ("one", T.String(16))
-        )
-
-    Two = msg(99)
-
-    Three = msg(98
-        , ("three", T.Int8.transform(lambda _, v: v + 5, lambda _, v: v - 5))
-        )
-    # fmt:on
 
 
 def ba(thing):
@@ -173,9 +158,8 @@ describe "PacketTypeExtractor":
             assert pkt_type == 78
 
 describe "sources_for":
-    it "can get the source for packets":
-        result = list(sources_for(M))
-
+    it "can get the source for packets", TestMessages:
+        result = list(sources_for(TestMessages))
         assert len(result) == 3
 
         assert result[0][0] == "One"
@@ -205,21 +189,21 @@ describe "sources_for":
 describe "MessagesMixin":
 
     @pytest.fixture()
-    def protocol_register(self):
+    def protocol_register(self, TestMessages):
         protocol_register = ProtocolRegister()
         protocol_register.add(1024, LIFXPacket)
-        protocol_register.message_register(1024).add(M)
+        protocol_register.message_register(1024).add(TestMessages)
         return protocol_register
 
     describe "get_packet_type":
 
-        it "can get us information about our data", protocol_register:
+        it "can get us information about our data", protocol_register, TestMessages:
             data = mock.Mock(name="data")
             packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
-                assert info == (1024, 78, LIFXPacket, M.One, data)
+                assert info == (1024, 78, LIFXPacket, TestMessages.One, data)
 
             packet_type.assert_called_once_with(data)
 
@@ -228,7 +212,7 @@ describe "MessagesMixin":
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
-                assert info == (1024, 99, LIFXPacket, M.Two, data)
+                assert info == (1024, 99, LIFXPacket, TestMessages.Two, data)
 
             packet_type.assert_called_once_with(data)
 
@@ -259,23 +243,23 @@ describe "MessagesMixin":
 
             packet_type.assert_called_once_with(data)
 
-        it "converts str to bytes", protocol_register:
+        it "converts str to bytes", protocol_register, TestMessages:
             data = "AA"
             asbytes = binascii.unhexlify(data)
             packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
 
             with mock.patch.object(PacketTypeExtractor, "packet_type", packet_type):
                 info = Messages.get_packet_type(data, protocol_register)
-                assert info == (1024, 78, LIFXPacket, M.One, asbytes)
+                assert info == (1024, 78, LIFXPacket, TestMessages.One, asbytes)
 
             packet_type.assert_called_once_with(asbytes)
 
     describe "create":
-        it "works", protocol_register:
-            bts = M.One(source=1, sequence=2, target="d073d5000001", one="bl").pack()
+        it "works", protocol_register, TestMessages:
+            bts = TestMessages.One(source=1, sequence=2, target="d073d5000001", one="bl").pack()
             pkt = Messages.create(bts, protocol_register)
 
-            assert pkt | M.One, pkt.__class__
+            assert pkt | TestMessages.One, pkt.__class__
             assert pkt.one == "bl"
             assert pkt.pack() == bts
 
@@ -335,14 +319,14 @@ describe "MessagesMixin":
             get_packet_type.assert_called_once_with(data, protocol_register)
 
     describe "pack_payload":
-        it "works", protocol_register:
-            bts = M.One(one="sh").payload.pack()
+        it "works", protocol_register, TestMessages:
+            bts = TestMessages.One(one="sh").payload.pack()
 
             data = {"one": "sh"}
             mr = protocol_register.message_register(1024)
             assert Messages.pack_payload(78, data, mr) == bts
 
-            assert M.pack_payload(78, data) == bts
+            assert TestMessages.pack_payload(78, data) == bts
 
         it "complains if the message_type is unknown", protocol_register:
             data = mock.Mock(name="data")
@@ -350,7 +334,7 @@ describe "MessagesMixin":
                 Messages.pack_payload(87, data, protocol_register.message_register(1024))
 
     describe "pack":
-        it "works", protocol_register:
+        it "works", protocol_register, TestMessages:
             data = {
                 "protocol": 1024,
                 "pkt_type": 78,
@@ -359,7 +343,7 @@ describe "MessagesMixin":
                 "sequence": 1,
                 "target": "d073d5000001",
             }
-            bts = M.One.create(**data).pack()
+            bts = TestMessages.One.create(**data).pack()
             assert Messages.pack(data, protocol_register) == bts
 
         it "works with unknown packet", protocol_register:

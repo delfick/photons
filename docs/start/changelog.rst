@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.32.0 - TBD
+    * Update dependencies for python3.9 compatibility
+
 0.31.5 - 6 November 2020
     * Synced the product registry
     * Synced the protocol repository
