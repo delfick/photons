@@ -195,11 +195,9 @@ class ATicker:
 
     async def stop(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "gen"):
-            if exc is None:
-                exc = self.Stop()
             try:
                 await stop_async_generator(
-                    self.gen, exc=exc, name=f"ATicker({self.name})::stop[stop_gen]"
+                    self.gen, exc=exc or self.Stop(), name=f"ATicker({self.name})::stop[stop_gen]"
                 )
             except self.Stop:
                 pass
@@ -411,7 +409,7 @@ class TaskHolder:
 
         self._cleaner = None
         self._cleaner_waiter = ResettableFuture(
-            name="TaskHolder({self.name})::__init__[cleaner_waiter]"
+            name=f"TaskHolder({self.name})::__init__[cleaner_waiter]"
         )
 
     def add(self, coro, *, silent=False):
@@ -424,6 +422,14 @@ class TaskHolder:
     def add_task(self, task):
         if not self._cleaner:
             self._cleaner = async_as_background(self.cleaner())
+
+            t = self._cleaner
+
+            def remove_cleaner(res):
+                if self._cleaner is t:
+                    self._cleaner = None
+
+            t.add_done_callback(remove_cleaner)
 
         task.add_done_callback(self._set_cleaner_waiter)
         self.ts.append(task)
@@ -678,13 +684,11 @@ class ResultStreamer:
                     if on_each:
                         on_each(result)
             finally:
-                exc = sys.exc_info()[1]
-                if exc:
-                    traceback.clear_frames(exc.__traceback__)
-
                 await self.add_coroutine(
                     stop_async_generator(
-                        gen, name=f"ResultStreamer({self.name})::add_generator[stop_gen]", exc=exc
+                        gen,
+                        name=f"ResultStreamer({self.name})::add_generator[stop_gen]",
+                        exc=sys.exc_info()[1],
                     ),
                     context=self.GeneratorStopper,
                     force=True,
@@ -737,10 +741,12 @@ class ResultStreamer:
             successful = False
 
             if res.cancelled():
-                exc = asyncio.CancelledError()
                 value = asyncio.CancelledError()
             else:
                 exc = res.exception()
+                if exc:
+                    traceback.clear_frames(exc.__traceback__)
+
                 if exc:
                     value = exc
                 else:
