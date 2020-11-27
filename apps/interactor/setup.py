@@ -14,7 +14,7 @@ setup(
 
     , install_requires =
       [ "lifx-photons-core>=0.32.0"
-      , "tornado>=5.1.1"
+      , "tornado>=6.1"
       , "SQLAlchemy==1.3.3"
       , "alembic==1.3.2"
       , "whirlwind-web>=0.9.0"
