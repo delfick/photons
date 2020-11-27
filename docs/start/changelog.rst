@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.32.1 - 28 November 2020
+    * Fix some more memory leaks
+
 0.32.0 - 22 November 2020
     * Update dependencies for python3.9 compatibility
 

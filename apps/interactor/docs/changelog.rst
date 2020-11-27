@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.7 - 28 November 2020
+    * Fixed some memory leaks in photons
+
 0.7.6 - 22 November 2020
     * Update dependencies for python3.9 compatibility
 
