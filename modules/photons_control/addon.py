@@ -4,6 +4,7 @@ from photons_messages import Services
 
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb, Meta
+import ipaddress
 import binascii
 import json
 
@@ -110,19 +111,24 @@ async def find_ips(collector, target, reference, artifact, **kwargs):
             if Services.UDP in services:
                 ip = services[Services.UDP].host
                 ips[serial] = ip
-                if cli_output:
-                    print(f"{serial}: {ip}")
+
+    sorted_ips = sorted(ips.items(), key=lambda item: ipaddress.ip_address(item[1]))
+
+    if cli_output:
+        for serial, ip in sorted_ips:
+            print(f"{serial}: {ip}")
 
     if cli_output and (env_output or settings_output):
         print()
 
     if env_output:
-        print(f"export HARDCODED_DISCOVERY='{json.dumps(ips, sort_keys=True)}'")
+        print(f"export HARDCODED_DISCOVERY='{json.dumps(sorted_ips)}'")
         if settings_output:
             print()
 
     if settings_output:
         print("discovery_options:")
         print("  hardcoded_discovery:")
-        for serial, ip in sorted(ips.items()):
+
+        for serial, ip in sorted_ips:
             print(f'    {serial}: "{ip}"')
