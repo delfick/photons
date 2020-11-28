@@ -36,56 +36,6 @@ Alternatively you may use tox to run the tests:
 The tests are written using http://noseofyeti.readthedocs.io which is a project
 that uses python codecs to create a basic RSpec style DSL for writing tests.
 
-We also use the ``photons_app.test_helpers`` package so that tests look like:
-
-.. code-block:: python
-
-    # coding: spec
-
-    # (the "coding: spec" is necessary to activate the codec that transforms the
-    #  dsl at import time into python that then gets executed)
-
-    from photons_app.test_helpers import TestCase, AsyncTestCase
-
-    # These are necessary for the before_each, after_each, async before_each and async_after_each
-    # helpers on the describes (they map to setUp and tearDown methods on unittest.TestCase)
-    # You don't need to import them if you don't use before_each or after_each
-    from noseOfYeti.tokeniser.async_support import async_noy_sup_setUp, async_noy_sup_tearDown
-    from noseOfYeti.tokeniser.support import noy_sup_setUp, noy_sup_tearDown
-
-    describe TestCase, "non async example":
-        before_each:
-            # Anything that needs to happen before every test
-            self.something = 1
-
-        after_each:
-            # anything that needs to happen at the end of every test
-
-        it "has tests":
-            assert True
-
-        describe "and as many nested describes as you want":
-            it "subclasses from unittest.TestCase":
-                # self is the instance of this class
-                # And because of photons_app.test_helpers.TestCase
-                # we have all the assert methods from unittest.TestCase
-                self.assertEqual(self.something, 1)
-
-    describe AsyncTestCase, "async example":
-        async before_each:
-            # same as before_each in the non async example, but with async!
-
-        async after_each:
-            # same as after_each but with async
-
-        async it "needs async in front of every it":
-            await asyncio.sleep(1)
-            self.assertGreater(2, 1)
-
-        describe "we can have nested describes here as well":
-            async it "works":
-                assert True
-
 Tests are grouped by their module inside the ``tests`` folder. Note that we name
 each folder as "<module>_tests" so that import statements for that module don't
 get clobbered by these test files.
@@ -150,20 +100,94 @@ In VSCode you will need the following options to enable formatting on save:
 .. code-block:: json
 
    "editor.formatOnSave": true,
-   "python.formatting.blackPath": "/path/to/photons/extra/black/vscode_black",
+   "python.formatting.blackPath": "/path/to/photons/tools/black/vscode_black",
    "python.formatting.provider": "black",
    "python.linting.pylamaArgs": ["-o", "/path/to/photons/pylama.ini"],
    "editor.formatOnSaveTimeout": 5000
 
 The formatOnSaveTimeout is so that black has enough time to format the test files.
 
+Import statement groups
++++++++++++++++++++++++
+
+I group import blocks into groups and then by length of line within the group.
+
+.. code-block:: plain
+
+    <imports from to the current module>
+
+    <imports from photons_app>
+
+    <imports from other photons modules>
+
+    <other imports>
+
+For example, inside ``photons_socket``:
+
+.. code-block:: python
+
+    from photons_socket.connection import Sockets
+
+    from photons_app.errors import TimedOut, FoundNoDevices
+
+    from photons_transport.base import TransportItem, TransportBridge, TransportTarget
+    from photons_messages import DiscoveryMessages, Services
+    from photons_protocol.messages import Messages
+
+    from delfick_project.norms import dictobj, sb
+    import logging
+
+Using import as
++++++++++++++++
+
+I tend to import things directly, but I do tend to shortcut photons_app.helpers
+
+.. code-block:: python
+
+    from photons_app import helpers as hp
+
 Linting
 -------
 
-I use pylama as my code linter, just run::
+I use pylama as my code linter and can be run from::
 
    $ ./lint
 
-If you don't want the "too complicated" warnings, then run::
+Commits
+-------
 
-   $ ./lint -i C901
+Please follow Linus'
+`guide <https://github.com/torvalds/subsurface-for-dirk/blob/a48494d2fbed58c751e9b7e8fbff88582f9b2d02/README#L88>`_
+for good commit messages.
+
+
+So, for example::
+
+    [maintenance] Fix some memory leaks
+
+    It's possible for python to hold onto frame objects via exceptions so I
+    need to be more careful about holding onto those
+
+Here the short description starts with a tag of sorts in square brackets and
+a short sentence of what. Followed by a paragraph with how and why.
+
+Comments
+--------
+
+Comments in code should explain why something is done more than what is being
+done.
+
+Exception is when code is very complicated and it may be difficult to understand
+what is happening.
+
+Variable names
+--------------
+
+It's incredibly important to try your best to name things consistently. No types
+means when changes are made, this makes it a lot easy/possible to ensure that
+you find all instances of something that must be changed.
+
+Commented out code
+------------------
+
+Please do not commit commented out code. Delete it. It's in git history.
