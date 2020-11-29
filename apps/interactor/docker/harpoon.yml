@@ -13,19 +13,20 @@ images:
     commands:
       - FROM python:3.8.1-slim
 
-      - ADD apps/interactor/command /project/
       - ADD apps/interactor /project/interactor
       - ADD modules /project/modules
 
       - WORKDIR /project/config
 
       - - RUN
-        - apt-get update
-          && apt-get install gcc -y
+        - ln -s /project/interactor/command /project/command
+          && apt-get update
+          && apt-get install curl gcc -y
           && pip install pip -U && pip install /project/modules /project/interactor
           && apt-get purge -y gcc
           && apt-get autoremove -y
           && rm -rf /var/lib/apt/lists/*
 
       - ENV INTERACTOR_HOST 0.0.0.0
-      - CMD lifx lan:interactor
+      - HEALTHCHECK CMD lifx interactor_healthcheck --silent || exit 1
+      - CMD ["lifx", "lan:interactor"]
