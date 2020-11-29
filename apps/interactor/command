@@ -6,7 +6,7 @@ if [[ -z $1 ]]; then
 fi
 
 ARGS=$(printf '{"command": "%s"}' "$1")
-if [[ ! -z $2 ]]; then
+if [[ -n $2 ]]; then
   ARGS=$(printf '{"command": "%s", "args": %s}' "$1" "$2")
 fi
 

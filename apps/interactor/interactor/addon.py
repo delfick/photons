@@ -1,3 +1,4 @@
+from interactor.errors import InteractorError
 from interactor.options import Options
 from interactor.server import Server
 
@@ -6,8 +7,9 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.actions import an_action
 
 from delfick_project.addons import addon_hook
-import logging
+import aiohttp
 import asyncio
+import logging
 
 log = logging.getLogger("interactor.addon")
 
@@ -61,3 +63,26 @@ async def migrate(collector, extra=None, **kwargs):
     if extra is None:
         extra = collector.configuration["photons_app"].extra
     await database.migrate(collector.configuration["interactor"].database, extra)
+
+
+@an_action(label="Interactor")
+async def interactor_healthcheck(collector, **kwargs):
+    """
+    Returns the current status of Interactor via exit code.
+
+    An exit code of 0 indicates the status command returned successfully.
+    An exit code of any other value indicates a failure.
+    """
+    options = collector.configuration["interactor"]
+    uri = f'http://{options.host}:{options.port}/v1/lifx/command'
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.put(uri, json={"command": "status"}) as response:
+                if response.status != 200:
+                    raise InteractorError(
+                        f"Healthcheck failed: {response.status}: {(await response.content.read()).decode()}"
+                    )
+
+        except aiohttp.client_exceptions.ClientConnectorError as error:
+            raise InteractorError(f"Healthcheck failed: {error}")
