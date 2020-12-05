@@ -82,7 +82,7 @@ more specific broadcast address.
 
             # This is the backoff times for retrying messages.
             # So with this setting, we retry at 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, etc
-            timeouts: [(0.2, 0.2), (0.1, 0.5), (0.2, 1), (1, 5)]
+            timeouts: [[0.2, 0.2], [0.1, 0.5], [0.2, 1], [1, 5]]
 
 A custom target can also be defined:
 
