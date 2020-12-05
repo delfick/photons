@@ -15,12 +15,12 @@ images:
 
       - ADD apps/interactor /project/interactor
       - ADD modules /project/modules
+      - RUN ln -s /project/interactor/command /project/command
 
       - WORKDIR /project/config
 
       - - RUN
-        - ln -s /project/interactor/command /project/command
-          && apt-get update
+        - apt-get update
           && apt-get install curl gcc -y
           && pip install pip -U && pip install /project/modules /project/interactor
           && apt-get purge -y gcc
