@@ -3,7 +3,7 @@
 Changelog
 =========
 
-0.7.8 - TBD
+0.7.8 - 5 December 2020
     * Update photons
     * Introduce a health check for the docker container
 
