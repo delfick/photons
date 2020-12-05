@@ -44,6 +44,10 @@ task, run ``lifx help <task>``, e.g. ``lifx help transform``.
 
           $ lifx lan:transform -- file://options.json
 
+Photons will output a lot of information by default which you can make go away
+with a ``--silent`` option or by setting ``PHOTONS_SILENCE=1`` in your
+environment where you are running photons commands.
+
 Running CLI commands on Windows
 -------------------------------
 

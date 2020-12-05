@@ -7,6 +7,8 @@ ChangeLog
     * Sort find_ips output by ip address
     * Make retry gaps configurable on a target
     * ``photons_transport.RetryOptions`` is now ``photons_transport.RetryTicker``
+    * You may now set ``PHOTONS_SILENCE=1`` in your environment to default a
+      ``--silent`` option
 
 0.32.1 - 28 November 2020
     * Fix some more memory leaks
