@@ -335,7 +335,7 @@ class Communication:
     async def make_broadcast_transport(self, broadcast):
         raise NotImplementedError()
 
-    def retry_options_for(self, packet, transport):
+    def retry_gaps(self, packet, transport):
         raise NotImplementedError()
 
     async def broadcast(self, packet, broadcast, **kwargs):
@@ -351,7 +351,7 @@ class Communication:
             None, packet, original, broadcast, connect_timeout
         )
 
-        retry_options = self.retry_options_for(original, transport)
+        retry_gaps = self.retry_gaps(original, transport)
 
         writer = Writer(
             self,
@@ -359,7 +359,7 @@ class Communication:
             self.receiver,
             original,
             packet,
-            retry_options,
+            retry_gaps,
             did_broadcast=is_broadcast,
             connect_timeout=connect_timeout,
         )
@@ -387,12 +387,16 @@ class Communication:
             name=f"SendPacket({original.pkt_type, packet.serial})::send_single[streamer_fut]",
         )
 
+        retry_ticker = retry_gaps.retry_ticker(
+            name=f"{type(self).__name__}({type(transport).__name__})::retry_ticker"
+        )
+
         with tick_fut, streamer_fut:
             async with hp.ResultStreamer(
                 streamer_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
             ) as streamer:
                 await streamer.add_generator(
-                    retry_options.tick(tick_fut, timeout),
+                    retry_ticker.tick(tick_fut, timeout),
                     context="tick",
                     on_done=lambda res: tick_fut.cancel(),
                 )

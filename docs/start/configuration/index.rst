@@ -68,6 +68,22 @@ more specific broadcast address.
         options:
           default_broadcast: 192.168.1.255
 
+          # These options are all optional, below are the defaults
+          gaps:
+            # Some messages, like that used for discovery has an "unbound" number of results
+            # We stop waiting for results this gap plus 0.05 seconds before giving up waiting
+            # for more results
+            # In practise, with the default value, discovery will take a minimum 0.45 seconds to complete
+            gap_between_results: 0.4
+
+            # If we need both an acknowledgement and a result from a device, we wait this many seconds
+            # after getting an acknowledgement before retrying a message if we haven't got a reply yet
+            gap_between_ack_and_res: 0.2
+
+            # This is the backoff times for retrying messages.
+            # So with this setting, we retry at 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1, etc
+            timeouts: [(0.2, 0.2), (0.1, 0.5), (0.2, 1), (1, 5)]
+
 A custom target can also be defined:
 
 .. code-block:: yaml

@@ -1,4 +1,3 @@
-from photons_transport.retry_options import RetryOptions
 from photons_transport.transports.memory import Memory
 
 from photons_protocol.messages import Messages
@@ -20,11 +19,6 @@ class MemoryService(metaclass=MemoryServiceMeta):
     pass
 
 
-class MemoryRetryOptions(RetryOptions):
-    timeouts = [(0.2, 0.2)]
-    finish_multi_gap = 0.1
-
-
 def makeMemorySession(basedon):
     class MemorySession(basedon):
         def setup(self):
@@ -40,9 +34,6 @@ def makeMemorySession(basedon):
                 self.received.append((time.time(), serial, Payload, msg.payload))
             except Exception as error:
                 self.received.append((time.time(), serial, error))
-
-        def retry_options_for(self, packet, transport):
-            return MemoryRetryOptions(name=f"{type(self).__name__}::retry_options_for")
 
         async def determine_needed_transport(self, packet, services):
             if MemoryService in services:

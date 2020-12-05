@@ -106,7 +106,7 @@ method:
 
     from photons_app.errors import DevicesNotFound
 
-    from photons_transport import RetryOptions
+    from photons_transport import RetryTicker
 
     import binascii
 
@@ -126,7 +126,7 @@ method:
 
             # Just keep retrying every 0.5 seconds until it's been 2 seconds,
             # And then retry every second after that.
-            retrier = RetryOptions(timeouts=[[0.5, 2], [1, 2]])
+            retrier = RetryTicker(timeouts=[[0.5, 2], [1, 2]])
 
             async for time_left, _ in retrier.tick(sender.stop_fut, timeout):
                 if len(serials) >= self.upto:

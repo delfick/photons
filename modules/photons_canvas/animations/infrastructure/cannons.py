@@ -124,8 +124,8 @@ class NoisyNetworkCannon(Cannon):
             result = None
             if i == 0:
                 msg.ack_required = True
-                retry_options = self.afr.retry_options_for(msg, t)
-                result = Result(msg, False, retry_options)
+                retry_gaps = self.afr.retry_gaps(msg, t)
+                result = Result(msg, False, retry_gaps)
                 self.afr.receiver.register(msg, result, msg)
 
             yield partial(writer.write, msg), result

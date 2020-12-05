@@ -17,7 +17,7 @@ describe "Writer":
             receiver = mock.Mock(name="receiver")
             original = mock.Mock(name="original")
             packet = mock.Mock(name="packet")
-            retry_options = mock.Mock(name="retry_options")
+            retry_gaps = mock.Mock(name="retry_gaps")
             did_broadcast = mock.Mock(name="did_broadcast")
             connect_timeout = mock.Mock(name="connect_timeout")
 
@@ -29,7 +29,7 @@ describe "Writer":
                     s.receiver,
                     s.original,
                     s.packet,
-                    s.retry_options,
+                    s.retry_gaps,
                     did_broadcast=s.did_broadcast,
                     connect_timeout=s.connect_timeout,
                 )
@@ -43,7 +43,7 @@ describe "Writer":
         assert V.writer.original == V.original
         assert V.writer.receiver == V.receiver
         assert V.writer.transport == V.transport
-        assert V.writer.retry_options == V.retry_options
+        assert V.writer.retry_gaps == V.retry_gaps
         assert V.writer.did_broadcast == V.did_broadcast
         assert V.writer.connect_timeout == V.connect_timeout
 
@@ -108,7 +108,7 @@ describe "Writer":
                 assert V.writer.register() is result
 
             result.done.assert_called_once_with()
-            FakeResult.assert_called_once_with(V.original, V.did_broadcast, V.retry_options)
+            FakeResult.assert_called_once_with(V.original, V.did_broadcast, V.retry_gaps)
             assert len(V.receiver.register.mock_calls) == 0
 
         async it "registers if the Result is not already done", V:
@@ -120,7 +120,7 @@ describe "Writer":
                 assert V.writer.register() is result
 
             result.done.assert_called_once_with()
-            FakeResult.assert_called_once_with(V.original, V.did_broadcast, V.retry_options)
+            FakeResult.assert_called_once_with(V.original, V.did_broadcast, V.retry_gaps)
             V.receiver.register.assert_called_once_with(V.writer.clone, result, V.original)
             result.add_done_callback.assert_called_once_with(hp.silent_reporter)
 

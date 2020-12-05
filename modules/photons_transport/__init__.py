@@ -6,8 +6,8 @@ way. You use these targets to create one or more sessions, which each have one
 or more connections to your devices that it uses to send a receive messages.
 """
 
+from photons_transport.retry_options import RetryTicker, Gaps
 from photons_app.errors import RunErrors, PhotonsAppError
-from photons_transport.retry_options import RetryOptions
 from photons_transport.errors import StopPacketStream
 from photons_app import helpers as hp
 
@@ -46,4 +46,4 @@ def catch_errors(error_catcher=None):
         raise RunErrors(_errors=error_catcher)
 
 
-__all__ = ["RetryOptions", "catch_errors"]
+__all__ = ["RetryTicker", "Gaps", "catch_errors"]

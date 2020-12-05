@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+0.32.2 - TBD
+    * Sort find_ips output by ip address
+    * Make retry gaps configurable on a target
+    * ``photons_transport.RetryOptions`` is now ``photons_transport.RetryTicker``
+
 0.32.1 - 28 November 2020
     * Fix some more memory leaks
 

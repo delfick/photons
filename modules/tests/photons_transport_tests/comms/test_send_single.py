@@ -14,7 +14,6 @@ from photons_messages import (
     Services,
     protocol_register,
 )
-from photons_transport.session.memory import MemoryRetryOptions
 from photons_control import test_helpers as chp
 from photons_products import Products
 
@@ -430,13 +429,9 @@ describe "Sending a single messages":
 
         async it "does wait beyond timeout for unlimited reply messages that have any replies after timeout", send_single, sender, device, FakeTime, MockedCallLater:
             original = DiscoveryMessages.GetService()
+            sender.transport_target.gaps.gap_between_results = 0.55
 
-            class RO(MemoryRetryOptions):
-                finish_multi_gap = 0.6
-
-            retry_options_for = mock.Mock(name="retry_options_for", return_value=RO())
-            patch = mock.patch.object(sender, "retry_options_for", retry_options_for)
-            with patch, FakeTime() as t:
+            with FakeTime() as t:
 
                 async with MockedCallLater(t) as m:
 

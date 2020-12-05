@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport import RetryOptions
+from photons_transport import RetryTicker
 
 from photons_app import helpers as hp
 
@@ -18,35 +18,15 @@ def final_future():
         fut.cancel()
 
 
-describe "RetryOptions":
-    it "can be given a different timeouts":
+describe "RetryTicker":
+    it "Must be given timeouts":
         timeouts = mock.Mock(name="timeouts")
-        options = RetryOptions(timeouts=timeouts)
+        options = RetryTicker(timeouts=timeouts)
         assert options.timeouts is timeouts
-
-    it "has some options":
-        options = RetryOptions()
-        for attr in (
-            "finish_multi_gap",
-            "gap_between_results",
-            "gap_between_ack_and_res",
-            "next_check_after_wait_for_result",
-        ):
-            assert type(getattr(options, attr)) == float
-            assert getattr(options, attr) > 0
-
-        assert type(options.timeouts) == list
-        for i, thing in enumerate(options.timeouts):
-            assert type(thing) == tuple, f"Item {i} is not a tuple: {thing}"
-            assert len(thing) == 2, f"Item {i} is not length two: {thing}"
-            assert all(type(t) in (float, int) for t in thing), f"Item {i} has not numbers: {thing}"
-
-        assert options.timeout is None
-        assert options.timeout_item is None
 
     describe "tick":
         async it "yields till the timeout", final_future, FakeTime, MockedCallLater:
-            options = RetryOptions(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
+            options = RetryTicker(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []
             with FakeTime() as t:
@@ -72,7 +52,7 @@ describe "RetryOptions":
             ]
 
         async it "takes into account how long the block takes", final_future, FakeTime, MockedCallLater:
-            options = RetryOptions(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
+            options = RetryTicker(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []
             with FakeTime() as t:

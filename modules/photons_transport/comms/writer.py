@@ -16,7 +16,7 @@ class Writer:
         receiver,
         original,
         packet,
-        retry_options,
+        retry_gaps,
         did_broadcast=False,
         connect_timeout=10,
     ):
@@ -26,7 +26,7 @@ class Writer:
         self.original = original
         self.receiver = receiver
         self.transport = transport
-        self.retry_options = retry_options
+        self.retry_gaps = retry_gaps
         self.did_broadcast = did_broadcast
         self.connect_timeout = connect_timeout
 
@@ -56,7 +56,7 @@ class Writer:
         self.sent += 1
 
     def register(self):
-        result = Result(self.original, self.did_broadcast, self.retry_options)
+        result = Result(self.original, self.did_broadcast, self.retry_gaps)
         if not result.done():
             result.add_done_callback(hp.silent_reporter)
             self.receiver.register(self.clone, result, self.original)

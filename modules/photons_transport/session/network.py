@@ -1,5 +1,5 @@
 from photons_transport.errors import InvalidBroadcast, UnknownService, NoDesiredService
-from photons_transport.retry_options import RetryOptions
+from photons_transport.retry_options import RetryTicker
 from photons_transport.comms.base import Communication
 from photons_transport.transports.udp import UDP
 
@@ -11,10 +11,6 @@ import binascii
 import logging
 
 log = logging.getLogger("photons_transport.session.network")
-
-
-class UDPRetryOptions(RetryOptions):
-    pass
 
 
 class NetworkSession(Communication):
@@ -42,8 +38,8 @@ class NetworkSession(Communication):
                 if exc:
                     log.error(hp.lc("Failed to close broadcast transport", error=exc))
 
-    def retry_options_for(self, packet, transport):
-        return UDPRetryOptions(name=f"{type(self).__name__}::retry_options_for")
+    def retry_gaps(self, packet, transport):
+        return self.transport_target.gaps
 
     async def determine_needed_transport(self, packet, services):
         return [Services.UDP]
@@ -101,8 +97,8 @@ class NetworkSession(Communication):
 
     async def _search_retry_iterator(self, end_after):
         timeouts = [(0.6, 1.8), (1, 2), (2, 6), (4, 10), (5, 20)]
-        async for info in RetryOptions(
-            timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_options]"
+        async for info in RetryTicker(
+            timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_ticker]"
         ).tick(self.stop_fut, end_after):
             yield info
 

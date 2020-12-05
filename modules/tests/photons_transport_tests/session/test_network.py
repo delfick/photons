@@ -2,8 +2,9 @@
 
 from photons_transport.session.discovery_options import NoDiscoveryOptions, NoEnvDiscoveryOptions
 from photons_transport.errors import NoDesiredService, UnknownService, InvalidBroadcast
-from photons_transport.session.network import NetworkSession, UDPRetryOptions
+from photons_transport.session.network import NetworkSession
 from photons_transport.transports.udp import UDP
+from photons_transport.retry_options import Gaps
 from photons_transport.comms.base import Found
 
 from photons_app import helpers as hp
@@ -28,8 +29,15 @@ describe "NetworkSession":
             def transport_target(s):
                 transport_target = mock.Mock(
                     name="target",
-                    spec=["script", "final_future", "default_broadcast", "discovery_options"],
+                    spec=[
+                        "script",
+                        "final_future",
+                        "default_broadcast",
+                        "discovery_options",
+                        "gaps",
+                    ],
                 )
+                transport_target.gaps = s.gaps
                 transport_target.final_future = s.final_future
                 transport_target.default_broadcast = s.default_broadcast
                 transport_target.discovery_options = (
@@ -40,6 +48,12 @@ describe "NetworkSession":
             @hp.memoized_property
             def session(s):
                 return NetworkSession(s.transport_target)
+
+            @hp.memoized_property
+            def gaps(s):
+                return Gaps(
+                    gap_between_ack_and_res=0.2, gap_between_results=0.35, timeouts=[(1, 1)]
+                )
 
         return V()
 
@@ -75,21 +89,16 @@ describe "NetworkSession":
             b2.close.assert_called_once_with()
             b3.close.assert_called_once_with()
 
-    describe "retry_options_for":
-        async it "returns a UDPRetryOptions if it's a UDP transport", V:
+    describe "retry_gaps":
+        async it "returns the retry gaps", V:
             kwargs = {"host": "192.168.0.3", "port": 56700}
             transport = await V.session.make_transport("d073d5", Services.UDP, kwargs)
             assert isinstance(transport, UDP)
 
             packet = mock.NonCallableMock(name="packet", spec=[])
 
-            uro1 = V.session.retry_options_for(packet, transport)
-            assert isinstance(uro1, UDPRetryOptions)
-
-            uro2 = V.session.retry_options_for(packet, transport)
-            assert isinstance(uro2, UDPRetryOptions)
-
-            assert uro1 is not uro2
+            uro1 = V.session.retry_gaps(packet, transport)
+            assert uro1 is V.transport_target.gaps
 
     describe "determine_needed_transport":
         async it "says udp", V:

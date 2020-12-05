@@ -1,7 +1,7 @@
 # coding: spec
 
 from photons_transport.comms.result import Result
-from photons_transport import RetryOptions
+from photons_transport import Gaps
 
 from photons_app import helpers as hp
 
@@ -30,12 +30,22 @@ def V():
             request.res_required = True
             return request
 
+        @hp.memoized_property
+        def gaps(s):
+            return Gaps(
+                gap_between_ack_and_res=0.2, gap_between_results=0.1, timeouts=[(1, 1)]
+            ).empty_normalise()
+
     return V()
 
 
+gaps = Gaps(
+    gap_between_ack_and_res=0.2, gap_between_results=0.2, timeouts=[(0.1, 0.1)]
+).empty_normalise()
+
 describe "Result":
     async it "is a future", V:
-        result = Result(V.request, False, RetryOptions())
+        result = Result(V.request, False, gaps)
         assert isinstance(result, asyncio.Future)
         assert not result.done()
         result.set_result([])
@@ -43,12 +53,11 @@ describe "Result":
 
     async it "sets options", V:
         did_broadcast = mock.Mock(name="did_broadcast")
-        retry_options = RetryOptions()
 
-        result = Result(V.request, did_broadcast, retry_options)
+        result = Result(V.request, did_broadcast, gaps)
         assert result.request is V.request
+        assert result.retry_gaps is gaps
         assert result.did_broadcast is did_broadcast
-        assert result.retry_options is retry_options
 
         assert result.results == []
         assert result.last_ack_received is None
@@ -58,12 +67,12 @@ describe "Result":
         for ack_req, res_req in [(True, False), (False, True), (True, True)]:
             V.request.ack_required = ack_req
             V.request.res_required = res_req
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             assert not result.done(), (ack_req, res_req)
 
         V.request.ack_required = False
         V.request.res_required = False
-        result = Result(V.request, False, RetryOptions())
+        result = Result(V.request, False, V.gaps)
         assert (await result) == []
 
     describe "add_packet":
@@ -77,7 +86,7 @@ describe "Result":
 
                 @hp.memoized_property
                 def result(s):
-                    return Result(s.request, False, RetryOptions())
+                    return Result(s.request, False, s.gaps)
 
             return V()
 
@@ -128,7 +137,7 @@ describe "Result":
                 schedule_finisher = mock.Mock(name="shcedule_finisher")
 
                 with mock.patch("time.time", t):
-                    result = Result(V.request, did_broadcast, RetryOptions())
+                    result = Result(V.request, did_broadcast, V.gaps)
 
                     if already_done is not False:
                         if already_done is True:
@@ -228,7 +237,7 @@ describe "Result":
 
                 with mock.patch("time.time", t):
                     with mock.patch.object(Result, "num_results", expected_num):
-                        result = Result(V.request, False, RetryOptions())
+                        result = Result(V.request, False, V.gaps)
                         result.results = list(results)
 
                         if already_done is not False:
@@ -332,10 +341,7 @@ describe "Result":
     describe "schedule_finisher":
         async it "calls maybe_finish after finish_multi_gap with the current value for attr", V:
 
-            class Options(RetryOptions):
-                finish_multi_gap = 0.1
-
-            result = Result(V.request, False, Options())
+            result = Result(V.request, False, V.gaps)
             last_ack_received = mock.Mock(name="last_ack_received")
             result.last_ack_received = last_ack_received
 
@@ -359,21 +365,21 @@ describe "Result":
 
     describe "maybe_finish":
         async it "does nothing if the result is already done", V:
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, mock.Mock(name="gaps", spec=[]))
             result.set_result([])
             result.maybe_finish(1, "last_ack_received")
 
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, mock.Mock(name="gaps", spec=[]))
             result.set_exception(ValueError("Nope"))
             result.maybe_finish(1, "last_ack_received")
 
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, mock.Mock(name="gaps", spec=[]))
             result.cancel()
             result.maybe_finish(1, "last_ack_received")
 
         async it "sets result if last is same as what it is now", V:
             results = mock.Mock(name="results")
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             result.results = results
 
             result.last_ack_received = 1
@@ -383,7 +389,7 @@ describe "Result":
 
         async it "does not set result if last is different as what it is now", V:
             results = mock.Mock(name="results")
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             result.results = results
 
             result.last_ack_received = 2
@@ -398,22 +404,22 @@ describe "Result":
         async it "says -1 if we are did_broadcasting this packet", V:
             multi = mock.Mock(name="multi")
             V.request.Meta.multi = multi
-            result = Result(V.request, True, RetryOptions())
+            result = Result(V.request, True, V.gaps)
             assert result._determine_num_results() == -1
 
         async it "says 1 if multi is None", V:
             V.request.Meta.multi = None
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             assert result._determine_num_results() == 1
 
         async it "says -1 if multi is -1", V:
             V.request.Meta.multi = -1
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             assert result._determine_num_results() == -1
 
         async it "uses _num_results if that is already set", V:
             V.request.Meta.multi = mock.NonCallableMock(name="multi", spec=[])
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
 
             num_results = mock.Mock(name="num_results")
             result._num_results = num_results
@@ -431,7 +437,7 @@ describe "Result":
 
             PacketOne = Packet(1, 10)
 
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             result.results = [(PacketOne, None, None), (PacketOne, None, None)]
 
             assert result._determine_num_results() == -1
@@ -458,7 +464,7 @@ describe "Result":
             )
             V.request.Meta.multi = MultiOptions(determine_res_packet, adjust_expected_number)
 
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             result.results = [(PacketOne, None, None), (PacketTwo, None, None)]
 
             got = result._determine_num_results()
@@ -490,7 +496,7 @@ describe "Result":
             )
             V.request.Meta.multi = MultiOptions(determine_res_packet, adjust_expected_number)
 
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
             result.results = [(PacketTwo, None, None), (PacketOne, None, None)]
 
             got = result._determine_num_results()
@@ -505,7 +511,7 @@ describe "Result":
         async it "returns as is if _determine_num_results returns an integer", V:
             for val in (-1, 1, 2):
                 _determine_num_results = mock.Mock(name="_determine_num_results", return_value=val)
-                result = Result(V.request, False, RetryOptions())
+                result = Result(V.request, False, V.gaps)
                 with mock.patch.object(result, "_determine_num_results", _determine_num_results):
                     assert result.num_results is val
                 _determine_num_results.assert_called_once_with()
@@ -514,7 +520,7 @@ describe "Result":
             count = mock.Mock(name="count")
             res = mock.Mock(name="res", return_value=count)
             _determine_num_results = mock.Mock(name="_determine_num_results", return_value=res)
-            result = Result(V.request, False, RetryOptions())
+            result = Result(V.request, False, V.gaps)
 
             with mock.patch.object(result, "_determine_num_results", _determine_num_results):
                 for results in [[1, 2], [], [1], [1, 2, 3]]:
@@ -534,7 +540,7 @@ describe "Result":
             def wait_on_result(
                 ack_required,
                 res_required,
-                retry_options,
+                retry_gaps,
                 now,
                 last_ack_received,
                 last_res_received,
@@ -544,11 +550,17 @@ describe "Result":
                 V.request.ack_required = ack_required
                 V.request.res_required = res_required
 
-                retry_options = mock.NonCallableMock(
-                    name="retry_options", spec=retry_options.keys(), **retry_options
-                )
+                retry_gaps = Gaps(
+                    **{
+                        "gap_between_ack_and_res": 10,
+                        "gap_between_results": 10,
+                        "timeouts": [(10, 10)],
+                        **retry_gaps,
+                    }
+                ).empty_normalise()
+
                 with mock.patch.object(Result, "num_results", num_results):
-                    result = Result(V.request, False, retry_options)
+                    result = Result(V.request, False, retry_gaps)
                     result.results = results
                     result.last_ack_received = last_ack_received
                     result.last_res_received = last_res_received
@@ -597,14 +609,14 @@ describe "Result":
             async it "says yes if time since last res is less than gap_between_results and num_results greater than -1", wait_on_result:
                 now = time.time()
                 last = now - 0.1
-                retry_options = {"gap_between_results": 0.2}
-                assert wait_on_result(False, True, retry_options, now, None, last, [], 1)
+                retry_gaps = {"gap_between_results": 0.2}
+                assert wait_on_result(False, True, retry_gaps, now, None, last, [], 1)
 
             async it "says no if time since last res is greater than gap_between_results and num_results greater than -1", wait_on_result:
                 now = time.time()
                 last = now - 0.3
-                retry_options = {"gap_between_results": 0.2}
-                assert not wait_on_result(False, True, retry_options, now, None, last, [], 1)
+                retry_gaps = {"gap_between_results": 0.2}
+                assert not wait_on_result(False, True, retry_gaps, now, None, last, [], 1)
 
         describe "with just ack_required":
             async it "says no if we haven't had an ack yet", wait_on_result:
@@ -625,17 +637,15 @@ describe "Result":
             async it "says yes if it's been less than gap_between_ack_and_res since ack and no results", wait_on_result:
                 now = time.time()
                 last = time.time() - 0.1
-                retry_options = {"gap_between_ack_and_res": 0.2}
+                retry_gaps = {"gap_between_ack_and_res": 0.2}
                 for num_results in (-1, 0, 1):
-                    assert wait_on_result(
-                        True, True, retry_options, now, last, None, [], num_results
-                    )
+                    assert wait_on_result(True, True, retry_gaps, now, last, None, [], num_results)
 
             async it "says yes if it's been greater than gap_between_ack_and_res since ack and no results", wait_on_result:
                 now = time.time()
                 last = time.time() - 0.3
-                retry_options = {"gap_between_ack_and_res": 0.2}
+                retry_gaps = {"gap_between_ack_and_res": 0.2}
                 for num_results in (-1, 0, 1):
                     assert not wait_on_result(
-                        True, True, retry_options, now, last, None, [], num_results
+                        True, True, retry_gaps, now, last, None, [], num_results
                     )
