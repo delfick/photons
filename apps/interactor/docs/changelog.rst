@@ -3,6 +3,10 @@
 Changelog
 =========
 
+0.7.8 - TBD
+    * Update photons
+    * Introduce a health check for the docker container
+
 0.7.7 - 28 November 2020
     * Fixed some memory leaks in photons
 

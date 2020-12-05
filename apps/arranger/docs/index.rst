@@ -49,6 +49,10 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+0.5.7 - TBD
+    * Update photons
+    * Upgraded all the JavaScript dependencies
+
 0.5.6 - 28 November 2020
     * Fixed some memory leaks in photons
 
