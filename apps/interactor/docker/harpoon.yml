@@ -11,7 +11,7 @@ images:
       parent_dir: "{config_root}/../../../"
 
     commands:
-      - FROM python:3.8.1-slim
+      - FROM python:3.9-slim
 
       - ADD apps/interactor /project/interactor
       - ADD modules /project/modules
