@@ -115,7 +115,10 @@ class State:
                 async for result in self.animation.stream(self):
                     async with self.ensure_error_event():
                         if not result.successful:
-                            raise result.value
+                            try:
+                                raise result.value
+                            finally:
+                                del result
 
                         if result.context is AnimationEvent.Types.TICK:
                             if not self:

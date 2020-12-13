@@ -403,7 +403,10 @@ class Communication:
 
                 async for result in streamer:
                     if not result.successful:
-                        raise result.value
+                        try:
+                            raise result.value
+                        finally:
+                            del result
 
                     if result.context == "tick":
                         if not no_retry or not results:

@@ -886,7 +886,10 @@ class Finder(hp.AsyncCMMixin):
             async for result in streamer:
                 if not result.successful:
                     if result.context is True:
-                        raise result.value
+                        try:
+                            raise result.value
+                        finally:
+                            del result
 
                 elif result.value and result.context:
                     yield result.context
