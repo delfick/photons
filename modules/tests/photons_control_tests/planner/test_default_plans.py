@@ -257,19 +257,19 @@ describe "Default Plans":
 
         async it "gets the power", runner:
             state1 = {
-                "hue": 99.9990844586862,
-                "saturation": 0.49999237048905165,
-                "brightness": 0.49999237048905165,
-                "kelvin": 4500,
+                "hue": light1.attrs.color.hue,
+                "saturation": light1.attrs.color.saturation,
+                "brightness": light1.attrs.color.brightness,
+                "kelvin": light1.attrs.color.kelvin,
                 "label": "bob",
                 "power": 0,
             }
 
             state2 = {
-                "hue": 199.9981689173724,
-                "saturation": 0.29999237048905164,
-                "brightness": 1.0,
-                "kelvin": 9000,
+                "hue": light2.attrs.color.hue,
+                "saturation": light2.attrs.color.saturation,
+                "brightness": light2.attrs.color.brightness,
+                "kelvin": light2.attrs.color.kelvin,
                 "label": "sam",
                 "power": 65535,
             }

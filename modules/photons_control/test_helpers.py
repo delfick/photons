@@ -1,5 +1,4 @@
 from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
 
 from photons_messages import (
     LightMessages,
@@ -8,23 +7,49 @@ from photons_messages import (
     TileMessages,
     MultiZoneEffectType,
     TileEffectType,
-    protocol_register,
     fields,
 )
-from photons_transport.targets import MemoryTarget
 from photons_products import Products, Family
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
 
 from delfick_project.norms import dictobj, sb, Meta
 import logging
-import asyncio
 
 log = logging.getLogger("photons_control.test_helpers")
 
 
-def Color(hue, saturation, brightness, kelvin):
-    return fields.Color(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
+class Color(fields.Color):
+    def __init__(self, hue, saturation, brightness, kelvin):
+        super().__init__(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
+
+    def clone(self):
+        return Color(self.hue, self.saturation, self.brightness, self.kelvin)
+
+    def __eq__(self, other):
+        if isinstance(other, tuple):
+            if len(other) != 4:
+                return False
+
+            other = Color(*other)
+
+        if not isinstance(other, (fields.Color, dict)) and not hasattr(other, "as_dict"):
+            return False
+
+        if not isinstance(other, fields.Color):
+            if hasattr(other, "as_dict"):
+                other = other.as_dict()
+
+            if set(other) != set(["hue", "saturation", "brightness", "kelvin"]):
+                return False
+
+            other = fields.Color(**other)
+
+        for k in ("hue", "saturation", "brightness", "kelvin"):
+            if k not in other or round(self[k], 4) != round(other[k], 4):
+                return False
+
+        return True
 
 
 class TileChild(dictobj.Spec):

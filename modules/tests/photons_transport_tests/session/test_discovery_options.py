@@ -64,7 +64,7 @@ describe "hardcoded_discovery_spec":
         with modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
             for v in (sb.NotSpecified, None, {"three": "four"}):
                 assert spec.normalise(meta, v) is ret
-                fake_spec.normalise.called_once_with(meta, {"one": "two"})
+                fake_spec.normalise.assert_called_once_with(mock.ANY, {"one": "two"})
                 fake_spec.normalise.reset_mock()
 
         with modified_env(HARDCODED_DISCOVERY="null"):

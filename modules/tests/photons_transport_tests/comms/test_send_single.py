@@ -18,7 +18,6 @@ from photons_control import test_helpers as chp
 from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import pytest
 import time
 

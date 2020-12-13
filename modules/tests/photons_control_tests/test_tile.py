@@ -14,12 +14,7 @@ import pytest
 
 
 def convert(c):
-    c2 = {}
-    c2["hue"] = int(c["hue"] / 360 * 65535) / 65535 * 360
-    c2["saturation"] = int(c["saturation"] * 65535) / 65535
-    c2["brightness"] = int(c["brightness"] * 65535) / 65535
-    c2["kelvin"] = c["kelvin"]
-    return c2
+    return chp.Color(c["hue"], c["saturation"], c["brightness"], c["kelvin"]).as_dict()
 
 
 default_tile_palette = [convert(c) for c in default_tile_palette]

@@ -1,6 +1,7 @@
 # coding: spec
 
 from photons_control.colour import split_color_string, ColourParser, InvalidColor, ValueOutOfRange
+from photons_control import test_helpers as chp
 
 from photons_app.test_helpers import assert_payloads_equals
 
@@ -213,6 +214,8 @@ describe "ColourParser":
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")
 
+            c = chp.Color(h, s, 0, k)
+
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components)
                 assert msg | LightMessages.SetWaveformOptional
@@ -220,10 +223,10 @@ describe "ColourParser":
                     msg.payload,
                     {
                         "transient": 0,
-                        "hue": 240.0,
-                        "saturation": 0.09999237048905166,
-                        "brightness": 0.0,
-                        "kelvin": 2500,
+                        "hue": c.hue,
+                        "saturation": c.saturation,
+                        "brightness": c.brightness,
+                        "kelvin": c.kelvin,
                         "period": 0.0,
                         "cycles": 1.0,
                         "skew_ratio": 0.0,
@@ -243,6 +246,8 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"transient": 1, "period": 1}
 
+            c = chp.Color(h, s, 0, k)
+
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
@@ -250,10 +255,10 @@ describe "ColourParser":
                     msg.payload,
                     {
                         "transient": 1,
-                        "hue": 240.0,
-                        "saturation": 0.09999237048905166,
-                        "brightness": 0.0,
-                        "kelvin": 2500,
+                        "hue": c.hue,
+                        "saturation": c.saturation,
+                        "brightness": c.brightness,
+                        "kelvin": c.kelvin,
                         "period": 1,
                         "cycles": 1.0,
                         "skew_ratio": 0.0,
@@ -273,6 +278,8 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"effect": "sine"}
 
+            c = chp.Color(h, s, 0, k)
+
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
@@ -280,10 +287,10 @@ describe "ColourParser":
                     msg.payload,
                     {
                         "transient": 1,
-                        "hue": 240.0,
-                        "saturation": 0.09999237048905166,
-                        "brightness": 0.0,
-                        "kelvin": 2500,
+                        "hue": c.hue,
+                        "saturation": c.saturation,
+                        "brightness": c.brightness,
+                        "kelvin": c.kelvin,
                         "period": 1.0,
                         "cycles": 1.0,
                         "skew_ratio": 0.49999237048905165,
@@ -303,6 +310,8 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"effect": "sine", "waveform": Waveform.PULSE, "skew_ratio": 0.2}
 
+            c = chp.Color(h, s, 0, k)
+
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
@@ -310,10 +319,10 @@ describe "ColourParser":
                     msg.payload,
                     {
                         "transient": 1,
-                        "hue": 240.0,
-                        "saturation": 0.09999237048905166,
-                        "brightness": 0.0,
-                        "kelvin": 2500,
+                        "hue": c.hue,
+                        "saturation": c.saturation,
+                        "brightness": c.brightness,
+                        "kelvin": c.kelvin,
                         "period": 1.0,
                         "cycles": 1.0,
                         "skew_ratio": 0.2,

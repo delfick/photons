@@ -60,10 +60,10 @@ def fill(color):
 
     if h <= 0:
         hb = ZERO
-    elif h >= 0xFFFF:
+    elif h >= 0x10000:
         hb = FULL
     else:
-        hb = uint16_packer.pack(int(0xFFFF * (h / 360)))
+        hb = uint16_packer.pack(int(0x10000 * (h / 360)) % 0x10000)
 
     if s <= 0:
         sb = ZERO
@@ -223,6 +223,8 @@ class Set64:
     @source.setter
     def source(self, value):
         self.set_source = True
+        if isinstance(value, tuple):
+            value = value[1]
         self[4:8] = uint32_packer.pack(value)
 
     @property

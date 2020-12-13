@@ -37,13 +37,13 @@ extended_duration_type = T.Uint64.default(0).transform(
     ).allow_float()
 
 scaled_hue = T.Uint16.transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)) / 360)
-    , lambda _, v: float(v) * 360 / 65535
+      lambda _, v: int(round(0x10000 * (0 if v is sb.NotSpecified else float(v)) / 360)) % 0x10000
+    , lambda _, v: round(float(v) * 360 / 0x10000, 2)
     ).allow_float()
 
 scaled_to_65535 = T.Uint16.transform(
-      lambda _, v: int(65535 * (0 if v is sb.NotSpecified else float(v)))
-    , lambda _, v: float(v) / 65535
+      lambda _, v: int(round(0xFFFF * (0 if v is sb.NotSpecified else float(v))))
+    , lambda _, v: round(float(v) / 0xFFFF, 4)
     ).allow_float()
 
 nano_to_seconds = T.Uint64.transform(

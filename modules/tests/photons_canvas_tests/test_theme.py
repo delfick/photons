@@ -82,9 +82,13 @@ async def reset_runner(runner):
     await runner.per_test()
 
 
+@pytest.fixture(autouse=True)
+def set_async_timeout(request):
+    request.applymarker(pytest.mark.async_timeout(3))
+
+
 describe "ApplyTheme":
 
-    @pytest.mark.async_timeout(1.5)
     async it "can apply a theme", runner:
         msg = ApplyTheme.msg({})
         await runner.sender(msg, FoundSerials())
@@ -113,7 +117,6 @@ describe "ApplyTheme":
 
         assert len(non_zero_hues) > 200
 
-    @pytest.mark.async_timeout(1.5)
     async it "can have options", runner:
         msg = ApplyTheme.msg({"power_on": False, "overrides": {"saturation": 0.2}})
         await runner.sender(msg, FoundSerials())

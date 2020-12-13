@@ -23,6 +23,11 @@ light3 = FakeDevice(
 )
 
 
+@pytest.fixture(autouse=True)
+def set_async_timeout(request):
+    request.applymarker(pytest.mark.async_timeout(3))
+
+
 @pytest.fixture(scope="module")
 async def runner(memory_devices_runner):
     async with memory_devices_runner([light1, light2, light3]) as runner:
