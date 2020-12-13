@@ -20,6 +20,12 @@ log = logging.getLogger("photons_app.helpers")
 # Make vim be quiet
 lc = lc
 
+if sys.version_info >= (3, 7):
+    from contextlib import asynccontextmanager
+else:
+    from photons_app.polyfill import asynccontextmanager
+
+
 if hasattr(asyncio, "exceptions"):
     InvalidStateError = asyncio.exceptions.InvalidStateError
 else:
