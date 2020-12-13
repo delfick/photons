@@ -11,7 +11,6 @@ from photons_app import VERSION
 from delfick_project.app import App, OptionalFileType
 from delfick_project.norms import sb
 import sys
-import os
 
 
 def library_setup(
@@ -89,6 +88,8 @@ class App(App):
         ("--artifact", sb.NotSpecified),
     ]
 
+    silent_by_default_environ_name = "PHOTONS_SILENT_BY_DEFAULT"
+
     def mainline(self, argv=None, print_errors_to=sys.stdout, **execute_args):
         original_argv = argv
         if argv is None:
@@ -131,11 +132,6 @@ class App(App):
         collector.configuration["target_register"].add_targets(collector.configuration["targets"])
 
         return collector
-
-    def setup_logging(self, args_obj, log=None, only_message=False):
-        if "PHOTONS_SILENCE" in os.environ and not args_obj.verbose and not args_obj.debug:
-            args_obj.silent = True
-        return super().setup_logging(args_obj, log=log, only_message=only_message)
 
     def execute(
         self,

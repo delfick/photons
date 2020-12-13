@@ -3,12 +3,16 @@
 ChangeLog
 =========
 
+0.32.3 - TBD
+    * You may now set ``PHOTONS_SILENT_BY_DEFAULT=1`` in your environment to have a
+      ``--unsilent`` option instead of ``--silent`` option to make logs appear.
+
+      This is the same as not having that environment variable and setting ``--silent``
+
 0.32.2 - 5 December 2020
     * Sort find_ips output by ip address
     * Make retry gaps configurable on a target
     * ``photons_transport.RetryOptions`` is now ``photons_transport.RetryTicker``
-    * You may now set ``PHOTONS_SILENCE=1`` in your environment to default a
-      ``--silent`` option
 
 0.32.1 - 28 November 2020
     * Fix some more memory leaks
