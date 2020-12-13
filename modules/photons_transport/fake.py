@@ -75,19 +75,6 @@ class Service:
         self.state_service = state_service
 
 
-class WithDevices:
-    def __init__(self, devices):
-        self.devices = devices
-
-    async def __aenter__(self):
-        for device in self.devices:
-            await device.start()
-
-    async def __aexit__(self, exc_type, exc, tb):
-        for device in self.devices:
-            await device.finish()
-
-
 def pktkeys(msgs, keep_duplicates=False):
     keys = []
     for msg in msgs:

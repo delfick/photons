@@ -1,51 +1,13 @@
 # coding: spec
 
-from photons_transport.fake import WithDevices, pktkeys
+from photons_transport.fake import pktkeys
 
 from photons_messages import DeviceMessages, MultiZoneMessages
 
-from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from unittest import mock
-import pytest
 import json
 
-describe "WithDevices":
-    async it "is an asynchronous context manager for devices":
-        device1 = mock.Mock(name="device1")
-        device2 = mock.Mock(name="device2")
-        devices = [device1, device2]
-
-        for d in devices:
-            d.start = pytest.helpers.AsyncMock(name="start")
-            d.finish = pytest.helpers.AsyncMock(name="finish")
-
-        async with WithDevices(devices):
-            for d in devices:
-                d.start.assert_called_once_with()
-                assert len(d.finish.mock_calls) == 0
-
-        for d in devices:
-            d.finish.assert_called_once_with()
-
-    async it "finishes even on error":
-        device1 = mock.Mock(name="device1")
-        device2 = mock.Mock(name="device2")
-        devices = [device1, device2]
-
-        for d in devices:
-            d.start = pytest.helpers.AsyncMock(name="start")
-            d.finish = pytest.helpers.AsyncMock(name="finish")
-
-        with assertRaises(ValueError, "NOPE"):
-            async with WithDevices(devices):
-                for d in devices:
-                    d.start.assert_called_once_with()
-                    assert len(d.finish.mock_calls) == 0
-                raise ValueError("NOPE")
-
-        for d in devices:
-            d.finish.assert_called_once_with()
 
 describe "pktkeys":
     it "can get us deduped keys to represent the packets":
