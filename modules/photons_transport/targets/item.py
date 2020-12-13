@@ -33,7 +33,7 @@ class NoLimit:
     async def __aenter__(self):
         pass
 
-    async def __aexit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_typ, exc, tb):
         pass
 
     async def acquire(self):

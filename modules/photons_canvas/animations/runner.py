@@ -17,7 +17,7 @@ import asyncio
 log = logging.getLogger("photons_canvas.animations.runner")
 
 
-class AnimationRunner:
+class AnimationRunner(hp.AsyncCMMixin):
     def __init__(
         self, sender, reference, run_options, *, final_future, animation_options=None, **kwargs
     ):
@@ -35,13 +35,10 @@ class AnimationRunner:
         self.seen_serials = set()
         self.used_serials = set()
 
-    async def __aenter__(self):
+    async def start(self):
         return self
 
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.finish()
-
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "final_future"):
             self.final_future.cancel()
 
@@ -179,19 +176,16 @@ class AnimationRunner:
                         t = ts.add(self.turn_on(device.serial))
                         t.add_done_callback(process)
 
-    def reinstate(self):
-        class CM:
-            async def __aenter__(s):
+    @hp.asynccontextmanager
+    async def reinstate(self):
+        try:
+            yield
+        finally:
+            if not self.run_options.reinstate_on_end:
                 return
-
-            async def __aexit__(s, exc_typ, exc, tb):
-                if not self.run_options.reinstate_on_end:
-                    return
-                await self.sender(
-                    list(self.original_canvas.restore_msgs()), message_timeout=1, errors=[]
-                )
-
-        return CM()
+            await self.sender(
+                list(self.original_canvas.restore_msgs()), message_timeout=1, errors=[]
+            )
 
     async def turn_on(self, serial):
         msg = LightMessages.SetLightPower(level=65535, duration=1)

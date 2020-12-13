@@ -38,6 +38,66 @@ class Nope:
     pass
 
 
+def ensure_aexit(instance):
+    """
+    Used to make sure a manual async context manager calls ``__aexit__`` if
+    ``__aenter__`` fails.
+
+    Turns out if ``__aenter__`` raises an exception, then ``__aexit__`` doesn't
+    get called, which is not how I thought that worked for a lot of context
+    managers.
+
+    Usage is as follows:
+
+    .. code-block:: python
+
+        from photons_app import helpers as hp
+
+
+        class MyCM:
+            async def __aenter__(self):
+                async with hp.ensure_aexit(self):
+                    return await self.start()
+
+            async def start(self):
+                ...
+
+            async def __aexit__(self, exc_typ, exc, tb):
+                await self.finish(exc_typ, exc, tb)
+
+            async def finish(exc_typ=None, exc=None, tb=None):
+                ...
+    """
+
+    @asynccontextmanager
+    async def ensure_aexit_cm():
+        try:
+            yield
+        finally:
+            # aexit doesn't run if aenter raises an exception
+            exc_info = sys.exc_info()
+            if exc_info[1] is not None:
+                await instance.__aexit__(*exc_info)
+                raise
+
+    return ensure_aexit_cm()
+
+
+class AsyncCMMixin:
+    async def __aenter__(self):
+        async with ensure_aexit(self):
+            return await self.start()
+
+    async def start(self):
+        raise NotImplementedError()
+
+    async def __aexit__(self, exc_typ, exc, tb):
+        return await self.finish(exc_typ, exc, tb)
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        raise NotImplementedError()
+
+
 async def stop_async_generator(gen, provide=None, name=None, exc=None):
     try:
         try:
@@ -75,7 +135,7 @@ def fut_to_string(f, with_name=True):
     return s
 
 
-class ATicker:
+class ATicker(AsyncCMMixin):
     """
     This object gives you an async generator that yields every ``every``
     seconds, taking into account how long it takes for your code to finish
@@ -185,12 +245,9 @@ class ATicker:
             name=f"ATicker({self.name})::__init__[final_future]",
         )
 
-    async def __aenter__(self):
+    async def start(self):
         self.gen = self.tick()
         return self
-
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.stop(exc_typ, exc, tb)
 
     def __aiter__(self):
         if not hasattr(self, "gen"):
@@ -199,7 +256,7 @@ class ATicker:
             )
         return self.gen
 
-    async def stop(self, exc_typ=None, exc=None, tb=None):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "gen"):
             try:
                 await stop_async_generator(
@@ -342,7 +399,7 @@ def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wa
     return ATicker(every, **kwargs)
 
 
-class TaskHolder:
+class TaskHolder(AsyncCMMixin):
     """
     An object for managing asynchronous coroutines.
 
@@ -441,13 +498,10 @@ class TaskHolder:
         self.ts.append(task)
         return task
 
-    async def __aenter__(self):
+    async def start(self):
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.finish(exc_type, exc, tb)
-
-    async def finish(self, exc_type=None, exc=None, tb=None):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if exc and not self.final_future.done():
             self.final_future.set_exception(exc)
 
@@ -472,7 +526,6 @@ class TaskHolder:
                         )
 
                     self.ts = [t for t in self.ts if not t.done()]
-
         finally:
             try:
                 await self._final()
@@ -522,7 +575,7 @@ class TaskHolder:
         self.ts = remaining
 
 
-class ResultStreamer:
+class ResultStreamer(AsyncCMMixin):
     """
     An async generator you can add tasks to and results will be streamed as they
     become available.
@@ -573,6 +626,7 @@ class ResultStreamer:
             print(error_result)
 
         streamer = hp.ResultStreamer(final_future, error_catcher=error_catcher)
+        await streamer.start()
 
         async def coro_function():
             await something
@@ -672,11 +726,8 @@ class ResultStreamer:
         self._registered = 0
         self.stop_on_completion = False
 
-    async def __aenter__(self):
+    async def start(self):
         return self
-
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.finish()
 
     def __aiter__(self):
         return self.retrieve()
@@ -799,11 +850,11 @@ class ResultStreamer:
             if self.stop_on_completion and not self.ts.pending and self._registered <= 0:
                 return
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
 
         try:
-            await self.ts.finish()
+            await self.ts.finish(exc_typ, exc, tb)
         finally:
             if not self._registered:
                 self.queue_future.cancel()
@@ -1602,7 +1653,7 @@ class SyncQueue:
     def append(self, item):
         self.collection.put(item)
 
-    def finish(self):
+    def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
 
     def __iter__(self):
@@ -1681,7 +1732,7 @@ class Queue:
         self.waiter.reset()
         self.waiter.set_result(True)
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
 
     def append(self, item):
@@ -1726,7 +1777,7 @@ class Queue:
             yield self.collection.popleft()
 
 
-class ThreadToAsyncQueue:
+class ThreadToAsyncQueue(AsyncCMMixin):
     """
     A Queue for requesting data from some thread:
 
@@ -1801,6 +1852,7 @@ class ThreadToAsyncQueue:
         self.setup(*args, **kwargs)
 
         self.future_setter = None
+        self.finish_futures = []
 
     def setup(self, *args, **kwargs):
         """
@@ -1808,7 +1860,7 @@ class ThreadToAsyncQueue:
         keyword arguments from instantiating this class.
         """
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         """Signal to the tasks to stop at the next available moment"""
         self.stop_fut.cancel()
         if self.future_setter:
@@ -1817,14 +1869,17 @@ class ThreadToAsyncQueue:
             )
         self.queue.finish()
         await self.result_queue.finish()
+        await wait_for_all_futures(*self.finish_futures)
 
     def start(self, impl=None):
         """Start tasks to listen for requests made with the ``request`` method"""
         ready = []
         for thread_number, _ in enumerate(range(self.num_threads)):
             fut = create_future(name=f"ThreadToAsyncQueue({self.name})::start[ready_fut]")
+            ffut = create_future(name=f"ThreadToAsyncQueue({self.name})::start[finish_fut]")
+            self.finish_futures.append(ffut)
             ready.append(fut)
-            thread = threading.Thread(target=self.listener, args=(thread_number, fut, impl))
+            thread = threading.Thread(target=self.listener, args=(thread_number, fut, ffut, impl))
             thread.start()
         self.future_setter = async_as_background(self.set_futures())
         return asyncio.gather(*ready)
@@ -1923,11 +1978,14 @@ class ThreadToAsyncQueue:
                 )
             )
 
-    def listener(self, thread_number, ready_fut, impl=None):
+    def listener(self, thread_number, ready_fut, finish_fut, impl=None):
         """Start the thread!"""
         args = self.create_args(thread_number, existing=None)
         self.loop.call_soon_threadsafe(ready_fut.set_result, True)
-        self._listener(thread_number, impl, args)
+        try:
+            self._listener(thread_number, impl, args)
+        finally:
+            self.loop.call_soon_threadsafe(finish_fut.set_result, True)
 
     def create_args(self, thread_number, existing):
         """

@@ -103,7 +103,7 @@ describe "DeviceFinderDaemon":
             assert ref.finder is V.daemon.finder
 
         async it "can be used as an async context manager", V:
-            start = pytest.helpers.AsyncMock(name="start")
+            start = pytest.helpers.AsyncMock(name="start", return_value=V.daemon)
             finish = pytest.helpers.AsyncMock(name="finish")
 
             with mock.patch.multiple(V.daemon, start=start, finish=finish):
@@ -111,7 +111,8 @@ describe "DeviceFinderDaemon":
                     assert d is V.daemon
                     start.assert_called_once_with()
                     finish.assert_not_called()
-                finish.assert_called_once_with()
+
+            finish.assert_called_once_with(None, None, None)
 
         async it "can create and close the search loop", V:
             called = []
@@ -141,7 +142,7 @@ describe "DeviceFinderDaemon":
             with mock.patch.object(V.daemon.finder, "finish", finish):
                 await V.daemon.finish()
 
-            finish.assert_called_once_with()
+            finish.assert_called_once_with(None, None, None)
 
         async it "will not finish the finder if one is provided", V:
             finder = mock.Mock(name="finder")

@@ -87,8 +87,9 @@ describe "ResultStreamer":
             try:
                 yield v
             finally:
+                exc_info = sys.exc_info()
                 v.final_future.cancel()
-                await v.streamer.finish()
+                await v.streamer.finish(*exc_info)
 
         async it "adds it as a coroutine", V:
 
@@ -309,21 +310,20 @@ describe "ResultStreamer":
 
         @pytest.fixture()
         async def make_streamer(self):
-            class MakeStreamer:
-                def __init__(s, **kwargs):
-                    s.kwargs = kwargs
-                    s.final_future = hp.create_future()
+            @hp.asynccontextmanager
+            async def make_streamer(**kwargs):
+                streamer = None
+                final_future = hp.create_future()
 
-                async def __aenter__(s):
-                    s.streamer = hp.ResultStreamer(s.final_future, **s.kwargs)
-                    return s.streamer
+                try:
+                    streamer = hp.ResultStreamer(final_future, **kwargs)
+                    yield streamer
+                finally:
+                    final_future.cancel()
+                    if streamer:
+                        await streamer.finish()
 
-                async def __aexit__(s, exc_typ, exc, tb):
-                    s.final_future.cancel()
-                    if hasattr(s, "streamer"):
-                        await s.streamer.finish()
-
-            return MakeStreamer
+            return make_streamer
 
         async def retrieve(self, streamer):
             streamer.no_more_work()
@@ -545,35 +545,37 @@ describe "ResultStreamer":
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
-            finish = pytest.helpers.AsyncMock(name="finish")
+            finish = pytest.helpers.AsyncMock(name="finish", return_value=None)
 
             with mock.patch.object(streamer, "finish", finish):
                 async with streamer as s:
                     assert s is streamer
                     finish.assert_not_called()
 
-            finish.assert_called_once_with()
+            finish.assert_called_once_with(None, None, None)
 
         async it "calls finish on unsuccessful exit":
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
-            finish = pytest.helpers.AsyncMock(name="finish")
+            finish = pytest.helpers.AsyncMock(name="finish", return_value=None)
+
+            err = ValueError("goodbye")
 
             with assertRaises(ValueError, "goodbye"):
                 with mock.patch.object(streamer, "finish", finish):
                     async with streamer as s:
                         assert s is streamer
                         finish.assert_not_called()
-                        raise ValueError("goodbye")
+                        raise err
 
-            finish.assert_called_once_with()
+            finish.assert_called_once_with(ValueError, err, mock.ANY)
 
         async it "calls finish on cancellation":
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
-            finish = pytest.helpers.AsyncMock(name="finish")
+            finish = pytest.helpers.AsyncMock(name="finish", return_value=None)
             cancel_me_now = hp.create_future()
 
             async def run_it():
@@ -592,7 +594,7 @@ describe "ResultStreamer":
             with assertRaises(asyncio.CancelledError):
                 await task
 
-            finish.assert_called_once_with()
+            finish.assert_called_once_with(asyncio.CancelledError, mock.ANY, mock.ANY)
 
     describe "finishing by final_future":
 

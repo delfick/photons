@@ -65,7 +65,7 @@ describe "DeviceFinder":
                         assert f is V.finder
                         V.finder.finish.assert_not_called()
 
-                V.finder.finish.assert_called_once_with()
+                V.finder.finish.assert_called_once_with(None, None, None)
                 FakeFinder.assert_called_once_with(V.sender)
 
         describe "finish":

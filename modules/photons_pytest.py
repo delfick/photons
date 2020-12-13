@@ -585,7 +585,7 @@ class MemoryDevicesRunner(AsyncCMMixin):
             await self.target.close_sender(self.sender)
 
         for device in self.target.devices:
-            await device.finish()
+            await device.finish(exc_typ, exc, tb)
 
         self.final_future.cancel()
 

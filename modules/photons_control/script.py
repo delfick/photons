@@ -355,7 +355,7 @@ class FromGenerator:
                 if do_raise and error_catcher:
                     raise RunErrors(_errors=list(set(error_catcher)))
 
-    class Runner:
+    class Runner(hp.AsyncCMMixin):
         class Done:
             pass
 
@@ -381,12 +381,13 @@ class FromGenerator:
                 error_catcher=squash,
             )
 
-        async def __aenter__(self):
+        async def start(self):
+            await self.streamer.start()
             return self
 
-        async def __aexit__(self, exc_type, exc, tb):
+        async def finish(self, exc_typ=None, exc=None, tb=None):
             self.stop_fut.cancel()
-            await self.streamer.finish()
+            await self.streamer.finish(exc_typ, exc, tb)
 
         def __aiter__(self):
             return self.getter()

@@ -94,7 +94,8 @@ class PhotonsApp(dictobj.Spec):
                 kwargs["read_from"] = location
             raise BadOption("The options after -- wasn't valid json", **kwargs)
 
-    def separate_final_future(self, sleep=0):
+    @hp.asynccontextmanager
+    async def separate_final_future(self, sleep=0):
         other_future = hp.create_future(name="PhotonsApp::separate_final_future")
 
         def stop():
@@ -103,16 +104,12 @@ class PhotonsApp(dictobj.Spec):
         self.loop.remove_signal_handler(signal.SIGTERM)
         self.loop.add_signal_handler(signal.SIGTERM, stop)
 
-        class CM:
-            async def __aenter__(s):
-                return other_future
-
-            async def __aexit__(s, exc_typ, exc, tb):
-                if sleep > 0:
-                    await asyncio.sleep(sleep)
-                self.final_future.cancel()
-
-        return CM()
+        try:
+            yield other_future
+        finally:
+            if sleep > 0:
+                await asyncio.sleep(sleep)
+            self.final_future.cancel()
 
     @contextmanager
     def using_graceful_future(self):

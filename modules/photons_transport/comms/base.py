@@ -124,7 +124,7 @@ def timeout_task(task, errf, serial):
         task.cancel()
 
 
-class Sender:
+class Sender(hp.AsyncCMMixin):
     def __init__(self, session, msg, reference, **kwargs):
         self.msg = msg
         self.kwargs = kwargs
@@ -165,17 +165,15 @@ class Sender:
         async for pkt in self.gen:
             yield pkt
 
-    async def __aenter__(self):
+    async def start(self):
         self.catcher = catch_errors(self.kwargs.get("error_catcher"))
         self.kwargs["error_catcher"] = self.catcher.__enter__()
         return self
 
-    async def __aexit__(self, exc_typ, exc, tb):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "_gen"):
             try:
-                await hp.stop_async_generator(
-                    self.gen, name="GenCatch::__aexit__[stop_gen]", exc=exc
-                )
+                await hp.stop_async_generator(self.gen, name="GenCatch::finish[stop_gen]", exc=exc)
             except StopPacketStream:
                 pass
 
@@ -220,7 +218,7 @@ class Communication:
     def gatherer(self):
         return __import__("photons_control.planner").planner.Gatherer(self)
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.stop_fut.cancel()
         for serial in self.found.serials:
             try:
@@ -228,7 +226,7 @@ class Communication:
             except Exception as error:
                 log.error(hp.lc("Failed to close transport", error=error, serial=serial))
 
-        await self.received_data_tasks.finish()
+        await self.received_data_tasks.finish(exc_typ, exc, tb)
 
     @hp.memoized_property
     def source(self):

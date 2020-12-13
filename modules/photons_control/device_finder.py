@@ -19,6 +19,7 @@ import asyncio
 import json
 import time
 import enum
+import sys
 import re
 
 log = logging.getLogger("photons_control.device_finder")
@@ -40,7 +41,7 @@ def log_errors(msg, result):
 
     lc = hp.lc
     if exc_info is None:
-        lc = lc.using(exc_type=type(e).__name__, error=e)
+        lc = lc.using(exc_typ=type(e).__name__, error=e)
 
     log.error(lc(msg), exc_info=exc_info)
 
@@ -377,23 +378,20 @@ class DeviceFinder(SpecialReference):
         self.finder = finder
         super().__init__()
 
-    def a_finder(self, sender):
-        class AFinder:
-            def __init__(s):
-                s.info = {}
+    @hp.asynccontextmanager
+    async def a_finder(self, sender):
+        finder = None
+        try:
+            if self.finder:
+                yield self.finder
+            else:
+                finder = Finder(sender)
+                yield finder
+        finally:
+            exc_info = sys.exc_info()
 
-            async def __aenter__(s):
-                if self.finder:
-                    return self.finder
-
-                s.info["finder"] = Finder(sender)
-                return s.info["finder"]
-
-            async def __aexit__(s, exc_typ, exc, tb):
-                if "finder" in s.info:
-                    await s.info["finder"].finish()
-
-        return AFinder()
+            if finder:
+                await finder.finish(*exc_info)
 
     async def find_serials(self, sender, *, timeout, broadcast=True):
         targets = []
@@ -414,7 +412,7 @@ class DeviceFinder(SpecialReference):
             async for device in finder.find(self.fltr):
                 yield device
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         pass
 
     @classmethod
@@ -638,7 +636,7 @@ class Device(dictobj.Spec):
                         self.point_futures[e].reset()
                 yield e
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
         del self.final_future
 
@@ -718,7 +716,7 @@ class Device(dictobj.Spec):
         return self.matches_fltr(fltr)
 
 
-class DeviceFinderDaemon:
+class DeviceFinderDaemon(hp.AsyncCMMixin):
     def __init__(
         self,
         sender,
@@ -750,21 +748,15 @@ class DeviceFinderDaemon:
     def reference(self, fltr):
         return DeviceFinder(fltr, finder=self.finder)
 
-    async def __aenter__(self):
-        await self.start()
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.finish()
-
     async def start(self):
         self.ts.add(self.search_loop())
+        return self
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
-        await self.ts.finish()
+        await self.ts.finish(exc_typ, exc, tb)
         if self.own_finder:
-            await self.finder.finish()
+            await self.finder.finish(exc_typ, exc, tb)
 
     async def search_loop(self):
         refreshing = hp.ResettableFuture(name="DeviceFinderDaemon::search_loop[refreshing]")
@@ -813,7 +805,7 @@ class DeviceFinderDaemon:
             yield device
 
 
-class Finder:
+class Finder(hp.AsyncCMMixin):
     def __init__(self, sender, final_future=None, *, forget_after=30, limit=30):
         self.sender = sender
         self.forget_after = forget_after
@@ -899,7 +891,7 @@ class Finder:
                 elif result.value and result.context:
                     yield result.context
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         self.final_future.cancel()
 
         async with hp.TaskHolder(
@@ -907,14 +899,11 @@ class Finder:
             name="Finder::finish[task_holder]",
         ) as ts:
             for serial, device in sorted(self.devices.items()):
-                ts.add(device.finish())
+                ts.add(device.finish(exc_typ, exc, tb))
                 del self.devices[serial]
 
-    async def __aenter__(self):
+    async def start(self):
         return self
-
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.finish()
 
     async def _find_all_serials(self, *, refresh):
         serials = None

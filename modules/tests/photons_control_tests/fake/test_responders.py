@@ -4,6 +4,7 @@ from photons_control import test_helpers as chp
 
 from photons_app.test_helpers import print_packet_difference
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from photons_products import Products
 from photons_messages import (
@@ -21,7 +22,7 @@ from delfick_project.errors_pytest import assertRaises
 import pytest
 
 
-class Device:
+class Device(hp.AsyncCMMixin):
     def __init__(self, *responders):
         self.device = FakeDevice("d073d5000001", responders)
 
@@ -31,12 +32,12 @@ class Device:
             return getattr(device, key)
         return object.__getattribute__(self, key)
 
-    async def __aenter__(self):
+    async def start(self):
         await self.device.start()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.device.finish()
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        await self.device.finish(exc_typ, exc, tb)
 
     def assertAttrs(self, **attrs):
         for key, val in attrs.items():

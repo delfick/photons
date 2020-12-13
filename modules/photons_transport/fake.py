@@ -185,7 +185,7 @@ class EchoResponder(Responder):
             yield DeviceMessages.EchoResponse(echoing=pkt.echoing)
 
 
-class FakeDevice:
+class FakeDevice(hp.AsyncCMMixin):
     def __init__(
         self,
         serial,
@@ -236,12 +236,6 @@ class FakeDevice:
 
     def setup(self):
         pass
-
-    async def __aenter__(self):
-        await self.start()
-
-    async def __aexit__(self, exc_type, exc, tb):
-        await self.finish()
 
     @property
     def all_responders(self):
@@ -325,7 +319,7 @@ class FakeDevice:
             if hasattr(responder, "start"):
                 await responder.start(self)
 
-    async def finish(self):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         for service in self.services:
             await service.closer()
         self.services = []

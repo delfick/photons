@@ -99,7 +99,7 @@ describe "Task run":
             resolve_artifact = mock.Mock(name="resolve_artifact", return_value=artifact)
 
             class Reference(SpecialReference):
-                async def finish(s):
+                async def finish(s, exc_typ=None, exc=None, tb=None):
                     called.append("finish")
 
             reference = Reference()

@@ -46,34 +46,28 @@ class State:
     def __bool__(self):
         return self.canvas is not None and bool(self.canvas.parts)
 
-    def ensure_error_event(self):
-        class CM:
-            async def __aenter__(s):
-                return
+    @hp.asynccontextmanager
+    async def ensure_error_event(self):
+        try:
+            yield
+        except (Finish, asyncio.CancelledError):
+            raise
+        except:
+            exc_typ, exc, tb = sys.exc_info()
 
-            async def __aexit__(s, exc_typ, exc, tb):
-                if (
-                    exc is not None
-                    and exc_typ is asyncio.CancelledError
-                    or not isinstance(exc_typ, Exception)
-                ):
-                    return False
+            handled = False
 
-                handled = False
-                if exc is not None and exc_typ is not Finish:
-                    try:
-                        handled = await self.process_event(AnimationEvent.Types.ERROR, exc)
-                    except asyncio.CancelledError:
-                        raise
-                    except:
-                        log.exception("Failed to process event")
-                        raise Finish("Failed to process error")
+            try:
+                handled = await self.process_event(AnimationEvent.Types.ERROR, exc)
+            except asyncio.CancelledError:
+                raise
+            except:
+                log.exception("Failed to process event")
+                raise Finish("Failed to process error")
 
-                if exc_typ is not Finish and exc is not None and not handled:
-                    log.exception("unhandled error", exc_info=(exc_typ, exc, tb))
-                    raise Finish("Unhandled error")
-
-        return CM()
+            if not handled:
+                log.exception("unhandled error", exc_info=(exc_typ, exc, tb))
+                raise Finish("Unhandled error")
 
     async def add_collected(self, collected):
         for parts in collected:

@@ -104,7 +104,7 @@ describe "FakeDevice":
                 async with device:
                     start.assert_called_once_with()
                     assert len(finish.mock_calls) == 0
-                finish.assert_called_once_with()
+                finish.assert_called_once_with(None, None, None)
 
         async it "can get all responders", device:
             responder1 = mock.Mock(name="responder1")

@@ -24,8 +24,8 @@ class NetworkSession(Communication):
     def setup(self):
         self.broadcast_transports = {}
 
-    async def finish(self):
-        await super().finish()
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        await super().finish(exc_typ, exc, tb)
 
         ts = [hp.async_as_background(t.close()) for t in self.broadcast_transports.values()]
         await hp.cancel_futures_and_wait(

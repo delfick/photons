@@ -27,7 +27,7 @@ class FakeDevice:
             ServerProtocol, local_addr=("0.0.0.0", self.port)
         )
 
-    async def finish(self):
+    async def finish(self, exc_type=None, exc=None, tb=None):
         self.remote.close()
 
 

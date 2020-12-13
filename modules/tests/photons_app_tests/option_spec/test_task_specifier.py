@@ -42,7 +42,7 @@ describe "task_specifier_spec":
                         )
                         s.patch.start()
 
-                def __exit__(s, exc_type, exc, tb):
+                def __exit__(s, exc_typ, exc, tb):
                     if hasattr(s, "patch"):
                         s.patch.stop()
 

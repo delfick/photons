@@ -83,7 +83,7 @@ describe "Finder":
                     assert f is V.finder
                     finish.assert_not_called()
 
-            finish.assert_called_once_with()
+            finish.assert_called_once_with(None, None, None)
 
         async it "cleans up it's devices on finish", V:
             serials = {
@@ -105,12 +105,12 @@ describe "Finder":
                 called = []
                 s1fut = hp.create_future()
 
-                async def s3finish():
+                async def s3finish(exc_typ=None, exc=None, tb=None):
                     called.append("s3finish")
                     s1fut.set_result(True)
                     called.append("s3finish_done")
 
-                async def s1finish():
+                async def s1finish(exc_typ=None, exc=None, tb=None):
                     called.append("s1finish")
                     await s1fut
                     called.append("s1finish_done")
@@ -125,7 +125,7 @@ describe "Finder":
                 assert V.finder.devices == {}
 
                 for f in serials.values():
-                    f.assert_called_once_with()
+                    f.assert_called_once_with(None, None, None)
 
                 assert called == ["s1finish", "s3finish", "s3finish_done", "s1finish_done"]
             finally:
@@ -207,7 +207,7 @@ describe "Finder":
                         async def match(*args, **kwargs):
                             raise NotImplementedError()
 
-                        async def finish():
+                        async def finish(exc_typ=None, exc=None, tb=None):
                             raise NotImplementedError()
 
                         for d in s.devices:

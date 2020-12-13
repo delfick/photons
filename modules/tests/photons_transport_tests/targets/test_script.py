@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_transport.targets.script import SenderWrapper, ScriptRunner
+from photons_transport.targets.script import sender_wrapper, ScriptRunner
 
 from photons_app.errors import PhotonsAppError, BadRunWithResults
 from photons_app import helpers as hp
@@ -19,7 +19,7 @@ class Sem:
         return isinstance(other, asyncio.Semaphore) and other._value == self.limit
 
 
-describe "SenderWrapper":
+describe "sender_wrapper":
 
     @pytest.fixture()
     def V(self):
@@ -62,7 +62,7 @@ describe "SenderWrapper":
         kwargs = {"b": a, "limit": None}
         sender = mock.NonCallableMock(name="sender")
 
-        async with SenderWrapper(V.target, sender, kwargs) as result:
+        async with sender_wrapper(V.target, sender, kwargs) as result:
             assert result is sender
 
         assert kwargs == {"b": a, "limit": None}
@@ -73,7 +73,7 @@ describe "SenderWrapper":
         kwargs = {"b": a, "limit": 50}
         sender = mock.NonCallableMock(name="sender")
 
-        async with SenderWrapper(V.target, sender, kwargs) as result:
+        async with sender_wrapper(V.target, sender, kwargs) as result:
             assert result is sender
 
         assert kwargs == {"b": a, "limit": Sem(50)}
@@ -85,7 +85,7 @@ describe "SenderWrapper":
         kwargs = {"b": a, "limit": limit}
         sender = mock.NonCallableMock(name="sender")
 
-        async with SenderWrapper(V.target, sender, kwargs) as result:
+        async with sender_wrapper(V.target, sender, kwargs) as result:
             assert result is sender
 
         assert kwargs == {"b": a, "limit": limit}
@@ -97,7 +97,7 @@ describe "SenderWrapper":
         kwargs = {"b": a, "limit": limit}
         sender = mock.NonCallableMock(name="sender")
 
-        async with SenderWrapper(V.target, sender, kwargs) as result:
+        async with sender_wrapper(V.target, sender, kwargs) as result:
             assert result is sender
 
         assert kwargs == {"b": a, "limit": limit}
@@ -107,7 +107,7 @@ describe "SenderWrapper":
         a = mock.Mock(name="a")
         kwargs = {"b": a}
 
-        async with SenderWrapper(V.target, sb.NotSpecified, kwargs) as sender:
+        async with sender_wrapper(V.target, sb.NotSpecified, kwargs) as sender:
             assert sender is V.sender
             V.called.append(("middle", kwargs))
 

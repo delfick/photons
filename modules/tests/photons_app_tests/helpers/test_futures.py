@@ -589,3 +589,72 @@ describe "cancel futures and wait":
         await asyncio.sleep(0.01)
         await hp.cancel_futures_and_wait(fut1, fut2, fut3)
         assert sorted(called) == ["run1", "run2"]
+
+describe "ensuring aexit":
+    async it "ensures __aexit__ is called on exception":
+        error = Exception("NOPE")
+        called = []
+
+        class Thing:
+            async def __aenter__(s):
+                called.append("aenter")
+                await s.start()
+
+            async def start(s):
+                raise error
+
+            async def __aexit__(s, exc_typ, exc, tb):
+                called.append("aexit")
+                assert exc is error
+
+        with assertRaises(Exception, "NOPE"):
+            async with Thing():
+                called.append("inside")
+
+        assert called == ["aenter"]
+        called.clear()
+
+        # But with our special context manager
+
+        error = Exception("NOPE")
+        called = []
+
+        class Thing:
+            async def __aenter__(s):
+                called.append("aenter")
+                async with hp.ensure_aexit(s):
+                    await s.start()
+
+            async def start(self):
+                raise error
+
+            async def __aexit__(s, exc_typ, exc, tb):
+                called.append("aexit")
+                assert exc is error
+
+        with assertRaises(Exception, "NOPE"):
+            async with Thing():
+                called.append("inside")
+
+        assert called == ["aenter", "aexit"]
+
+    async it "doesn't call exit twice on success":
+        called = []
+
+        class Thing:
+            async def __aenter__(s):
+                called.append("aenter")
+                async with hp.ensure_aexit(s):
+                    await s.start()
+
+            async def start(self):
+                called.append("start")
+
+            async def __aexit__(s, exc_typ, exc, tb):
+                called.append("aexit")
+                assert exc is None
+
+        async with Thing():
+            called.append("inside")
+
+        assert called == ["aenter", "start", "inside", "aexit"]

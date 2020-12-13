@@ -8,29 +8,25 @@ import asyncio
 import sys
 
 
-class SenderWrapper:
-    def __init__(self, target, sender, kwargs=None):
-        self.kwargs = kwargs
-        self.target = target
-        self.sender = sender
-        self.owns_sender = self.sender is sb.NotSpecified
+@hp.asynccontextmanager
+async def sender_wrapper(target, sender=sb.NotSpecified, kwargs=None):
+    owns_sender = sender is sb.NotSpecified
 
-    async def __aenter__(self):
-        if self.owns_sender:
-            self.sender = await self.target.make_sender()
+    try:
+        if owns_sender:
+            sender = await target.make_sender()
 
-        if self.kwargs is not None:
-            if "limit" not in self.kwargs:
-                self.kwargs["limit"] = 30
+        if kwargs is not None:
+            if "limit" not in kwargs:
+                kwargs["limit"] = 30
 
-            if self.kwargs["limit"] is not None and not hasattr(self.kwargs["limit"], "acquire"):
-                self.kwargs["limit"] = asyncio.Semaphore(self.kwargs["limit"])
+            if kwargs["limit"] is not None and not hasattr(kwargs["limit"], "acquire"):
+                kwargs["limit"] = asyncio.Semaphore(kwargs["limit"])
 
-        return self.sender
-
-    async def __aexit__(self, exc_type, exc, tb):
-        if self.owns_sender:
-            await self.target.close_sender(self.sender)
+        yield sender
+    finally:
+        if owns_sender:
+            await target.close_sender(sender)
 
 
 class ScriptRunner:
@@ -69,7 +65,7 @@ class ScriptRunner:
         if self.script is None:
             return
 
-        async with SenderWrapper(self.target, sender, kwargs) as sender:
+        async with sender_wrapper(self.target, sender, kwargs) as sender:
             gen = self.script.run(reference, sender, **kwargs)
 
             try:

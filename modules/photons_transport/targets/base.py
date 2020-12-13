@@ -2,6 +2,7 @@ from photons_transport.targets.script import ScriptRunner
 from photons_transport.targets.item import Item
 
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app import helpers as hp
 
 from photons_control.script import FromGenerator
 
@@ -72,19 +73,15 @@ class Target(dictobj.Spec):
             items = items[0]
         return self.script_runner_kls(items, target=self)
 
-    def session(self):
-        info = {}
-
-        class Session:
-            async def __aenter__(s):
-                session = info["session"] = await self.make_sender()
-                return session
-
-            async def __aexit__(s, exc_type, exc, tb):
-                if "session" in info:
-                    await self.close_sender(info["session"])
-
-        return Session()
+    @hp.asynccontextmanager
+    async def session(self):
+        session = None
+        try:
+            session = await self.make_sender()
+            yield session
+        finally:
+            if session:
+                await self.close_sender(session)
 
     async def make_sender(self):
         """Create an instance of the sender. This is designed to be shared."""

@@ -10,6 +10,7 @@ import asyncio
 import pytest
 import time
 import uuid
+import sys
 
 
 @pytest.fixture()
@@ -28,20 +29,16 @@ describe "ThreadToAsyncQueue":
         def ttaq(num_threads):
             ttaq = hp.ThreadToAsyncQueue(stop_fut, num_threads, mock.Mock(name="onerror"))
 
-            class ACM:
-                async def __aenter__(s):
+            @hp.asynccontextmanager
+            async def acm():
+                try:
                     await ttaq.start()
-                    return ttaq
+                    yield ttaq
+                finally:
+                    exc_info = sys.exc_info()
+                    await ttaq.finish(*exc_info)
 
-                async def __aexit__(s, exc_type, exc, tb):
-                    await ttaq.finish()
-
-                    if exc:
-                        exc.__traceback__ = tb
-                        # Make sure the error gets risen
-                        return False
-
-            return ACM()
+            return acm()
 
         return ttaq
 
@@ -181,20 +178,16 @@ describe "ThreadToAsyncQueuewith custom args":
 
             ttaq = Queue(stop_fut, num_threads, mock.Mock(name="onerror"))
 
-            class ACM:
-                async def __aenter__(s):
+            @hp.asynccontextmanager
+            async def acm():
+                try:
                     await ttaq.start()
-                    return ttaq, create_args
+                    yield ttaq, create_args
+                finally:
+                    exc_info = sys.exc_info()
+                    await ttaq.finish(*exc_info)
 
-                async def __aexit__(s, exc_type, exc, tb):
-                    await ttaq.finish()
-
-                    if exc:
-                        exc.__traceback__ = tb
-                        # Make sure the error gets risen
-                        return False
-
-            return ACM()
+            return acm()
 
         return ttaq
 
