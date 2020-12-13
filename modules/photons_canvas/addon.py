@@ -84,6 +84,9 @@ async def animate(collector, target, reference, artifact, **kwargs):
         run_options = MergedOptions.using(layered, run_options).as_dict()
 
     def errors(e):
+        if isinstance(e, KeyboardInterrupt):
+            return
+
         if not isinstance(e, PhotonsAppError):
             log.exception(e)
         else:
