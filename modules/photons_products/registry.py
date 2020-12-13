@@ -146,6 +146,17 @@ class Capability(Capability, metaclass=capability_metaclass):
         for attr in attrs:
             yield attr, getattr(self, attr)
 
+    def check_firmware(self, min_fw):
+        """Return whether our firmware is greater than min_fw"""
+        if min_fw is None:
+            return False
+
+        desired_major, desired_minor = min_fw
+        if self.firmware_major > desired_major:
+            return True
+
+        return self.firmware_major >= desired_major and self.firmware_minor >= desired_minor
+
     @property
     def has_extended_multizone(self):
         """
@@ -158,14 +169,7 @@ class Capability(Capability, metaclass=capability_metaclass):
             cap = capability(firmware_major=2, firmware_minor=77)
             assert cap.has_extended_multizone
         """
-        if self.min_extended_fw is None:
-            return False
-
-        desired_major, desired_minor = self.min_extended_fw
-        if self.firmware_major > desired_major:
-            return True
-
-        return self.firmware_major >= desired_major and self.firmware_minor >= desired_minor
+        return self.check_firmware(self.min_extended_fw)
 
     @property
     def has_multizone(self):
