@@ -91,6 +91,18 @@ def pktkeys(msgs, keep_duplicates=False):
     return keys
 
 
+def safe_packet_repr(pkt, *, limit=None):
+    try:
+        payload_repr = repr(pkt.payload)
+    except Exception as error:
+        payload_repr = f"<Failed repr ({error.__class__.__name__}): {pkt.__class__.__name__}>"
+
+    if limit and len(payload_repr) > limit:
+        payload_repr = f"{payload_repr[:limit]}..."
+
+    return payload_repr
+
+
 class Responder:
     _fields = []
 
@@ -424,17 +436,13 @@ class FakeDevice(hp.AsyncCMMixin):
         return fut
 
     async def got_message(self, pkt, source):
-        payload_repr = repr(pkt.payload)
-        if len(payload_repr) > 300:
-            payload_repr = f"{payload_repr[:300]}..."
-
         log.info(
             hp.lc(
                 "Got packet",
                 source=source,
                 pkt=pkt.__class__.__name__,
                 ip=pkt.Information.remote_addr,
-                payload=payload_repr,
+                payload=safe_packet_repr(pkt, limit=300),
                 pkt_source=pkt.source,
                 serial=self.serial,
             )
@@ -457,12 +465,13 @@ class FakeDevice(hp.AsyncCMMixin):
                 res.sequence = pkt.sequence
                 res.source = pkt.source
                 res.target = self.serial
+
                 log.info(
                     hp.lc(
                         "Created response",
                         source=source,
                         pkt=res.__class__.__name__,
-                        payload=res.payload,
+                        payload=safe_packet_repr(res, limit=300),
                         pkt_source=res.source,
                         pkt_sequence=res.sequence,
                         serial=self.serial,
@@ -639,17 +648,12 @@ class FakeDevice(hp.AsyncCMMixin):
         if extra:
             return extra
 
-        try:
-            payload_repr = repr(pkt.payload)
-        except Exception:
-            payload_repr = pkt.__class__.__name__
-
         log.info(
             hp.lc(
                 "Message wasn't handled",
                 source=source,
                 pkt=pkt.__class__.__name__,
-                payload=payload_repr,
+                payload=safe_packet_repr(pkt, limit=300),
                 serial=self.serial,
             )
         )
