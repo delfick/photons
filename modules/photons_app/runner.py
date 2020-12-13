@@ -12,7 +12,7 @@ log = logging.getLogger("photons_app.runner")
 
 
 def transfer_result(complete, pending):
-    if complete.cancelled():
+    if complete is None or complete.cancelled():
         if not pending.done():
             pending.cancel()
         return
@@ -110,7 +110,7 @@ def run(coro, photons_app, target_register):
             # Now make sure final_future is done
             task.cancel()
             graceful_future.cancel()
-            transfer_result(task, final_future)
+            transfer_result(None if not task.done() else task, final_future)
             transfer_result(graceful_future, final_future)
 
             # Cancel everything left

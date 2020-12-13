@@ -576,6 +576,11 @@ describe "run":
         }
 
     describe "transfer_result":
+        it "cancels final_future if complete is not done":
+            fut = hp.create_future()
+            transfer_result(None, fut)
+            assert fut.cancelled()
+
         it "sets exception on final future if one is risen":
             final_future = hp.create_future()
 
