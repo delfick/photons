@@ -77,6 +77,11 @@ class TargetRegister:
     def used_targets(self):
         return [m()[1] for m in self.targets.values() if m.resolved]
 
+    def find_target_name(self, target):
+        for name, m in self.targets.items():
+            if m.resolved and m()[1] is target:
+                return name
+
     def type_for(self, name):
         """Given the name of a target, return it's type as a string"""
         if name is sb.NotSpecified:
