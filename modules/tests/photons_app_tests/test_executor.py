@@ -1,5 +1,6 @@
 # coding: spec
 
+from photons_app.test_helpers import modified_env
 from photons_app.registers import TargetRegister
 from photons_app.collector import Collector
 from photons_app import helpers as hp
@@ -9,6 +10,7 @@ from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
 from textwrap import dedent
 from unittest import mock
+import os
 
 describe "App":
     describe "setup_collector":
@@ -113,16 +115,17 @@ describe "App":
             call_list = original_mainline.mock_calls[0].call_list()[0][1]
             return call_list[0]
 
-        it "adds --silent to the argv if there are no options":
-            used_args = self.using_argv([])
-            assert used_args == ["--silent"]
+        it "adds PHOTONS_SILENT_BY_DEFAULT if there are no options":
+            with modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
+                assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ
+                used_args = self.using_argv([])
+                assert used_args == []
+                assert os.environ["PHOTONS_SILENT_BY_DEFAULT"] == "1"
 
-        it "adds --silent if the task is list_tasks or help":
+        it "adds PHOTONS_SILENT_BY_DEFAULT if the task is list_tasks or help":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
-                used_args = self.using_argv([attempt])
-                assert used_args == [attempt, "--silent"]
-
-        it "adds --silent before any --":
-            for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
-                used_args = self.using_argv([attempt, "--", "other"])
-                assert used_args == [attempt, "--silent", "--", "other"]
+                with modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
+                    assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ
+                    used_args = self.using_argv([attempt])
+                    assert used_args == [attempt]
+                    assert os.environ["PHOTONS_SILENT_BY_DEFAULT"] == "1"

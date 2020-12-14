@@ -11,6 +11,7 @@ from photons_app import VERSION
 from delfick_project.app import App, OptionalFileType
 from delfick_project.norms import sb
 import sys
+import os
 
 
 def library_setup(
@@ -96,7 +97,7 @@ class App(App):
             argv = sys.argv[1:]
 
         if len(argv) == 0:
-            original_argv = ["--silent"]
+            os.environ["PHOTONS_SILENT_BY_DEFAULT"] = "1"
 
         elif len(argv) >= 1:
             task = argv[0]
@@ -104,17 +105,7 @@ class App(App):
                 task = task.split(":", 1)[1]
 
             if task in ("list_tasks", "help"):
-                original_argv = []
-                for a in argv:
-                    if (
-                        a == "--"
-                        and "--silent" not in original_argv
-                        and "--debug" not in original_argv
-                    ):
-                        original_argv.append("--silent")
-                    original_argv.append(a)
-                if "--silent" not in original_argv and "--debug" not in original_argv:
-                    original_argv.append("--silent")
+                os.environ["PHOTONS_SILENT_BY_DEFAULT"] = "1"
 
         super(App, self).mainline(original_argv, print_errors_to, **execute_args)
 
