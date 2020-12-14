@@ -33,10 +33,6 @@ def Gaps(*, gap_between_results, gap_between_ack_and_res, timeouts):
             When a packet has an unbound number of results we uses this number to
             determine when we have enough results. Essentially the answer is yes if
             it's been this long since the last result
-
-            It is a good idea to make this number less than finish_multi_gap so that
-            when we check after a finish_multi_gap amount of time in the future we
-            can mark the result as done
             """,
         )
 
