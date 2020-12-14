@@ -1,4 +1,4 @@
-VERSION = "0.5.7"
+VERSION = "0.5.8"
 
 
 def run_pytest():

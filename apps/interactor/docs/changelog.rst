@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.7.9 - 14 December 2020
+    * update photons
+
 0.7.8 - 5 December 2020
     * Update photons
     * Introduce a health check for the docker container

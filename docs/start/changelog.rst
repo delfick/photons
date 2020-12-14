@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.32.3 - TBD
+0.32.3 - 14 December 2020
     * You may now set ``PHOTONS_SILENT_BY_DEFAULT=1`` in your environment to have a
       ``--unsilent`` option instead of ``--silent`` option to make logs appear.
 
