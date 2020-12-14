@@ -381,22 +381,20 @@ class Arranger:
                     )
                     return new_position
 
-    def add_stream(self, progress_cb):
-        class CM:
-            async def __aenter__(s):
-                log.info("Adding stream")
-                self.progress_cbs.append(progress_cb)
-                progress_cb.instructions = {}
-                self.parts_info.start_instruction(progress_cb)
-                await self.animation_event("have_stream")
-
-            async def __aexit__(s, exc_typ, exc, tb):
-                log.info("Removing stream")
-                self.progress_cbs = [pc for pc in self.progress_cbs if pc != progress_cb]
-                if not self.progress_cbs and self.animation_fut:
-                    self.animation_fut.cancel()
-
-        return CM()
+    @hp.asynccontextmanager
+    async def add_stream(self, progress_cb):
+        log.info("Adding stream")
+        try:
+            self.progress_cbs.append(progress_cb)
+            progress_cb.instructions = {}
+            self.parts_info.start_instruction(progress_cb)
+            await self.animation_event("have_stream")
+            yield
+        finally:
+            log.info("Removing stream")
+            self.progress_cbs = [pc for pc in self.progress_cbs if pc != progress_cb]
+            if not self.progress_cbs and self.animation_fut:
+                self.animation_fut.cancel()
 
     async def run(self):
         if self.running or self.final_future.done():

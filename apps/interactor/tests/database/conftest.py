@@ -8,12 +8,12 @@ import pytest
 import os
 
 
-class DBRunner:
+class DBRunner(hp.AsyncCMMixin):
     def __init__(self, start_db_queue=False):
         self.final_future = hp.create_future(name="DBRunner.final_future")
         self.start_db_queue = start_db_queue
 
-    async def __aenter__(self):
+    async def start(self):
         self.tmpfile = tempfile.NamedTemporaryFile(delete=False)
         self.filename = self.tmpfile.name
 
@@ -27,7 +27,7 @@ class DBRunner:
 
         return self
 
-    async def __aexit__(self, exc_typ, exc, tb):
+    async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "final_future"):
             self.final_future.cancel()
 

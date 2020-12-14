@@ -19,30 +19,8 @@ import asyncio
 import pytest
 import shutil
 import uuid
-import sys
 
 log = logging.getLogger("interactor.test_helpers")
-
-
-class AsyncCMMixin:
-    async def __aenter__(self):
-        try:
-            return await self.start()
-        finally:
-            # aexit doesn't run if aenter raises an exception
-            exc_info = sys.exc_info()
-            if exc_info[1] is not None:
-                await self.__aexit__(*exc_info)
-                raise
-
-    async def start(self):
-        raise NotImplementedError()
-
-    async def __aexit__(self, exc_typ, exc, tb):
-        await self.finish(exc_typ, exc, tb)
-
-    async def finish(self, exc_typ=None, exc=None, tb=None):
-        raise NotImplementedError()
 
 
 @pytest.fixture(scope="session")
@@ -83,7 +61,7 @@ def make_options(host=None, port=None, database=None, memory=True):
     return Options.FieldSpec(formatter=MergedOptionStringFormatter).empty_normalise(**options)
 
 
-class WSTester(AsyncCMMixin):
+class WSTester(hp.AsyncCMMixin):
     def __init__(self, port, path="/v1/ws"):
         self.path = path
         self.port = port
@@ -130,23 +108,21 @@ class WSTester(AsyncCMMixin):
         return pytest.helpers.assertComparison(got, wanted, is_json=True)["reply"]
 
 
-class ServerWrapper(AsyncCMMixin):
+class ServerWrapper(hp.AsyncCMMixin):
     def __init__(self, store, **kwargs):
         self.store = store
         self.kwargs = kwargs
         self.cleaners = []
 
-    def per_test(self):
-        class PerTest(AsyncCMMixin):
-            async def start(s):
-                for device in fakery.devices:
-                    await device.reset()
-
-            async def finish(s, exc_typ=None, exc=None, tb=None):
-                for device in fakery.devices:
-                    await device.wait_for_reboot_fut
-
-        return PerTest()
+    @hp.asynccontextmanager
+    async def per_test(self):
+        try:
+            for device in fakery.devices:
+                await device.reset()
+            yield
+        finally:
+            for device in fakery.devices:
+                await device.wait_for_reboot_fut
 
     def ws_stream(self, path="/v1/ws"):
         return WSTester(self.port, path=path)
@@ -413,7 +389,8 @@ class Fakery:
         assert len(got) == expect, f"Expected {expect} devices, got {len(got)}: {got}"
         return got
 
-    def __call__(self, options, final_future):
+    @hp.asynccontextmanager
+    async def __call__(self, options, final_future):
         configuration = {
             "final_future": final_future,
             "protocol_register": protocol_register,
@@ -422,17 +399,13 @@ class Fakery:
         options.lan = MemoryTarget.create(configuration, {"devices": self.devices})
         options.fake_devices = self.devices
 
-        class Call(AsyncCMMixin):
-            async def start(s):
-                for device in fakery.devices:
-                    await device.start()
-                return s
-
-            async def finish(s, exc_typ=None, exc=None, tb=None):
-                for device in fakery.devices:
-                    await device.finish()
-
-        return Call()
+        try:
+            for device in fakery.devices:
+                await device.start()
+            yield
+        finally:
+            for device in fakery.devices:
+                await device.finish()
 
 
 fakery = Fakery()

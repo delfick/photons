@@ -5,6 +5,7 @@ from interactor.commander import helpers as ihp
 from interactor.server import Server
 
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from unittest import mock
 import pytest
@@ -14,11 +15,11 @@ import uuid
 
 @pytest.fixture()
 def server_maker(server_wrapper):
-    class Maker:
+    class Maker(hp.AsyncCMMixin):
         def __init__(self, Handler):
             self.Handler = Handler
 
-        async def __aenter__(self):
+        async def start(self):
             original_tornado_routes = Server.tornado_routes
 
             def tornado_routes(s):
@@ -33,7 +34,7 @@ def server_maker(server_wrapper):
             await self.wrapper.start()
             return self.wrapper
 
-        async def __aexit__(self, exc_type, exc, tb):
+        async def finish(self, exc_typ=None, exc=None, tb=None):
             if hasattr(self, "wrapper"):
                 await self.wrapper.finish()
             if hasattr(self, "patch"):
@@ -182,7 +183,8 @@ describe "SimpleWebSocketBase":
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
-                connection, {"path": "/builder_internal_error", "body": {}, "message_id": msg_id},
+                connection,
+                {"path": "/builder_internal_error", "body": {}, "message_id": msg_id},
             )
             assert await server.ws_read(connection) == {
                 "message_id": msg_id,
