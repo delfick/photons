@@ -8,6 +8,11 @@ ChangeLog
       ``--unsilent`` option instead of ``--silent`` option to make logs appear.
 
       This is the same as not having that environment variable and setting ``--silent``
+    * HSBK values are now rounded
+    * Introduced a polyfill hp.asynccontextmanager
+    * Introduced a helper to fix async context managers made in photons
+    * Fixed a small race condition in shutting down photons
+    * Removed some more memory leaks
 
 0.32.2 - 5 December 2020
     * Sort find_ips output by ip address
