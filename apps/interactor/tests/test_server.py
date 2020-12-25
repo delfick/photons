@@ -55,13 +55,16 @@ async def wrap_tests(server):
 
 describe "Server":
     async it "starts things correctly", V, server:
+        tasks = server.ts
         server = server.server
+        assert server.tasks is tasks
         assert isinstance(server.daemon, DeviceFinderDaemon)
         assert isinstance(server.finder, Finder)
         assert server.daemon.finder is server.finder
 
         V.FakeCommander.assert_called_once_with(
             store,
+            tasks=server.tasks,
             sender=server.sender,
             finder=server.finder,
             db_queue=V.db_queue,

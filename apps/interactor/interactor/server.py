@@ -38,10 +38,13 @@ class Server(Server):
             ),
         ]
 
-    async def setup(self, server_options, sender, cleaners):
+    async def setup(self, server_options, *, tasks, sender, cleaners):
         self.sender = sender
         self.cleaners = cleaners
         self.server_options = server_options
+
+        self.tasks = tasks
+        self.tasks._merged_options_formattable = True
 
         self.db_queue = __import__("interactor.database.db_queue").database.db_queue.DBQueue(
             self.final_future, 5, lambda exc: 1, self.server_options.database.uri
@@ -59,6 +62,7 @@ class Server(Server):
 
         self.commander = Commander(
             self.store,
+            tasks=self.tasks,
             sender=self.sender,
             finder=self.finder,
             db_queue=self.db_queue,
