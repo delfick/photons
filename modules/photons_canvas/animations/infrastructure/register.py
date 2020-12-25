@@ -66,6 +66,7 @@ class an_animation:
 
     def __call__(self, Animation):
         self.Animation = Animation
+        Animation.__registered_name__ = self.name
         animations[self.name] = Animator(Animation, self.Options, name=self.name)
         return Animation
 
