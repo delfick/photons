@@ -175,6 +175,10 @@ class ServerWrapper(hp.AsyncCMMixin):
         return hp.create_future()
 
     @hp.memoized_property
+    def ts(self):
+        return hp.TaskHolder(self.final_future)
+
+    @hp.memoized_property
     def server(self):
         return Server(self.final_future, self.store)
 
@@ -191,7 +195,12 @@ class ServerWrapper(hp.AsyncCMMixin):
 
         self._task = hp.async_as_background(
             self.server.serve(
-                "127.0.0.1", self.options.port, self.options, self.sender, self.cleaners
+                "127.0.0.1",
+                self.options.port,
+                self.options,
+                tasks=self.ts,
+                sender=self.sender,
+                cleaners=self.cleaners,
             )
         )
 
@@ -221,6 +230,8 @@ class ServerWrapper(hp.AsyncCMMixin):
 
             if hasattr(self, "ws"):
                 waited.append(ts.add(self.ws.__aexit__(None, None, None)))
+
+        await self.ts.finish()
 
         # make sure none failed
         for w in waited:

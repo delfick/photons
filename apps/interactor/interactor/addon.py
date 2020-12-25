@@ -5,6 +5,7 @@ from interactor.server import Server
 from photons_app.errors import UserQuit, ApplicationCancelled, ApplicationStopped
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.actions import an_action
+from photons_app import helpers as hp
 
 from delfick_project.addons import addon_hook
 import aiohttp
@@ -28,10 +29,17 @@ async def interactor(collector, target, **kwargs):
     options = collector.configuration["interactor"]
     photons_app = collector.photons_app
     with photons_app.using_graceful_future() as final_future:
-        async with target.session() as sender:
+        async with target.session() as sender, hp.TaskHolder(
+            final_future, name="cli_arrange"
+        ) as ts:
             try:
                 await Server(final_future).serve(
-                    options.host, options.port, options, sender, photons_app.cleaners,
+                    options.host,
+                    options.port,
+                    options,
+                    tasks=ts,
+                    sender=sender,
+                    cleaners=photons_app.cleaners,
                 )
             except asyncio.CancelledError:
                 raise
@@ -74,7 +82,7 @@ async def interactor_healthcheck(collector, **kwargs):
     An exit code of any other value indicates a failure.
     """
     options = collector.configuration["interactor"]
-    uri = f'http://{options.host}:{options.port}/v1/lifx/command'
+    uri = f"http://{options.host}:{options.port}/v1/lifx/command"
 
     async with aiohttp.ClientSession() as session:
         try:
