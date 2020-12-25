@@ -209,6 +209,9 @@ class ATicker(AsyncCMMixin):
 
         If this is False then we will always just tick at the next expected time,
         otherwise we ensure this amount of time at a minimum between ticks
+
+    pauser
+        If not None, we use this as a semaphore in an async with to pause the ticks
     """
 
     class Stop(Exception):
@@ -222,10 +225,12 @@ class ATicker(AsyncCMMixin):
         max_iterations=None,
         max_time=None,
         min_wait=0.1,
+        pauser=None,
         name=None,
     ):
         self.name = name
         self.every = every
+        self.pauser = pauser
         self.max_time = max_time
         self.min_wait = min_wait
         self.max_iterations = max_iterations
@@ -315,6 +320,26 @@ class ATicker(AsyncCMMixin):
         self.waiter.reset()
         self.waiter.set_result(True)
 
+    async def _wait_for_next(self):
+        if self.pauser is None or not self.pauser.locked():
+            return await wait_for_first_future(
+                self.final_future,
+                self.waiter,
+                name=f"ATicker({self.name})::_wait_for_next[without_pause]",
+            )
+
+        async def pause():
+            async with self.pauser:
+                pass
+
+        ts_final_future = ChildOfFuture(
+            self.final_future, name=f"ATicker({self.name})::_wait_for_next[with_pause]"
+        )
+
+        async with TaskHolder(ts_final_future) as ts:
+            ts.add(pause())
+            ts.add_task(self.waiter)
+
     async def _tick(self):
         start = time.time()
         iteration = 0
@@ -323,11 +348,7 @@ class ATicker(AsyncCMMixin):
         self._waited()
 
         while True:
-            await wait_for_first_future(
-                self.final_future,
-                self.waiter,
-                name=f"ATicker({self.name})::_tick[wait_for_next_tick]",
-            )
+            await self._wait_for_next()
 
             self.waiter.reset()
             if self.final_future.done():
@@ -369,14 +390,23 @@ class ATicker(AsyncCMMixin):
                 yield iteration, max([diff, 0])
 
 
-def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wait=0.1, name=None):
+def tick(
+    every,
+    *,
+    final_future=None,
+    max_iterations=None,
+    max_time=None,
+    min_wait=0.1,
+    name=None,
+    pauser=None,
+):
     """
     .. code-block:: python
 
         from photons_app import helpers as hp
 
 
-        async wit hp.tick(every) as ticks:
+        async with hp.tick(every) as ticks:
             async for i in ticks:
                 yield i
 
@@ -393,6 +423,7 @@ def tick(every, *, final_future=None, max_iterations=None, max_time=None, min_wa
         "max_iterations": max_iterations,
         "max_time": max_time,
         "min_wait": min_wait,
+        "pauser": pauser,
         "name": f"||tick({name})",
     }
 

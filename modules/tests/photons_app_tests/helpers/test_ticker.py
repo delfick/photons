@@ -2,6 +2,7 @@
 
 from photons_app import helpers as hp
 
+import asyncio
 import time
 
 
@@ -250,3 +251,56 @@ describe "ATicker":
             (6, 5.0, 30.0),
         ]
         assert m.called_times == [5, 10, 14, 15, 20, 27, 30]
+
+    describe "with a pauser":
+        async it "can be paused", FakeTime, MockedCallLater:
+            called = []
+
+            pauser = asyncio.Semaphore()
+
+            with FakeTime() as t:
+                async with MockedCallLater(t) as m:
+                    async with hp.ATicker(5, min_wait=False, pauser=pauser) as ticks:
+                        async for i, nxt in ticks:
+                            called.append((i, nxt, time.time()))
+
+                            if len(called) == 2:
+                                await pauser.acquire()
+                                asyncio.get_event_loop().call_later(28, pauser.release)
+
+                            elif len(called) == 6:
+                                break
+
+            assert called == [
+                (1, 5, 0),
+                (2, 5.0, 5.0),
+                (3, 2.0, 33.0),
+                (4, 5.0, 35.0),
+                (5, 5.0, 40.0),
+                (6, 5.0, 45.0),
+            ]
+            assert m.called_times == [5.0, 10.0, 33.0, 33.0, 35.0, 40.0, 45.0]
+
+        async it "cancelled final_future not stopped by pauser", FakeTime, MockedCallLater:
+            called = []
+
+            pauser = asyncio.Semaphore()
+
+            with FakeTime() as t:
+                async with MockedCallLater(t) as m:
+                    async with hp.ATicker(5, min_wait=False, pauser=pauser) as ticks:
+                        async for i, nxt in ticks:
+                            called.append((i, nxt, time.time()))
+
+                            if len(called) == 2:
+                                await pauser.acquire()
+                                asyncio.get_event_loop().call_later(14, ticks.final_future.cancel)
+
+                assert time.time() == 19
+
+            assert pauser.locked()
+            assert called == [
+                (1, 5, 0),
+                (2, 5.0, 5.0),
+            ]
+            assert m.called_times == [5.0, 10.0, 19.0]
