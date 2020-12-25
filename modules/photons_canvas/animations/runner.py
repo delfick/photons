@@ -108,7 +108,7 @@ class AnimationRunner(hp.AsyncCMMixin):
             with hp.ChildOfFuture(
                 self.final_future, name="AnimationRunner::animate[animation_fut]"
             ) as animation_fut:
-                animation = make_animation(animation_fut)
+                animation = make_animation(animation_fut, self.run_options.pauser)
 
                 try:
                     await state.set_animation(animation, background)

@@ -32,7 +32,8 @@ class Animation:
         "skip_next_transition",
     ]
 
-    def __init__(self, final_future, options):
+    def __init__(self, final_future, options, pauser=None):
+        self.pauser = pauser
         self.options = options
         self.final_future = final_future
 
@@ -44,6 +45,7 @@ class Animation:
             self.every,
             max_time=self.num_seconds,
             min_wait=False,
+            pauser=self.pauser,
             final_future=self.final_future,
             name=f"Animation({self.__class__.__name__})",
         )

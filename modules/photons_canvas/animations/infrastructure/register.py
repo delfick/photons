@@ -42,9 +42,9 @@ class Animator:
             self.background = background
 
         def resolve(self):
-            def make_animation(final_future):
+            def make_animation(final_future, pauser=None):
                 options = self.animator.Options.FieldSpec().normalise(Meta.empty(), self.options)
-                animation = self.animator.Animation(final_future, options)
+                animation = self.animator.Animation(final_future, options, pauser=pauser)
                 if self.options is not sb.NotSpecified:
                     for attr in animation.overridable:
                         if attr in self.options:

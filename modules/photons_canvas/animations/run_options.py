@@ -3,6 +3,7 @@ from photons_canvas.animations.infrastructure.register import resolve
 from photons_app.formatter import MergedOptionStringFormatter
 
 from delfick_project.norms import dictobj, sb, BadSpecValue, Meta
+import asyncio
 import random
 import os
 
@@ -100,7 +101,20 @@ class TransitionOptions(dictobj.Spec):
     )
 
 
+class semaphore_spec(sb.Spec):
+    def normalise_empty(self, meta):
+        return asyncio.Semaphore()
+
+    def normalise_filled(self, meta, val):
+        return val
+
+
 class RunOptions(dictobj.Spec):
+    pauser = dictobj.Field(
+        semaphore_spec,
+        help="A semaphore that when set will pause the animation",
+    )
+
     combined = dictobj.Field(
         sb.boolean, default=True, help="Whether to join all found tiles into one animation"
     )
