@@ -13,6 +13,7 @@ from photons_messages import LightMessages
 from collections import defaultdict
 import logging
 import asyncio
+import time
 
 log = logging.getLogger("photons_canvas.animations.runner")
 
@@ -30,10 +31,30 @@ class AnimationRunner(hp.AsyncCMMixin):
         )
         self.original_canvas = Canvas()
 
+        self.started = None
         self.collected = {}
+        self.animations_ran = 0
+        self.current_animation = None
 
         self.seen_serials = set()
         self.used_serials = set()
+
+    @property
+    def info(self):
+        current_animation = None
+        if self.current_animation is not None:
+            current_animation = self.current_animation.info
+
+        options = self.run_options.as_dict()
+        if "animations" in options:
+            del options["animations"]
+
+        return {
+            "started": self.started,
+            "current_animation": current_animation,
+            "animations_ran": self.animations_ran,
+            "options": options,
+        }
 
     async def start(self):
         return self
@@ -54,6 +75,7 @@ class AnimationRunner(hp.AsyncCMMixin):
 
     async def run(self):
         cannon = self.make_cannon()
+        self.started = time.time()
 
         animations = self.run_options.animations_iter
         self.combined_state = State(self.final_future)
@@ -100,6 +122,8 @@ class AnimationRunner(hp.AsyncCMMixin):
         animation = None
 
         while True:
+            self.animations_ran += 1
+
             try:
                 make_animation, background = ans.send(animation)
             except StopIteration:
@@ -109,6 +133,7 @@ class AnimationRunner(hp.AsyncCMMixin):
                 self.final_future, name="AnimationRunner::animate[animation_fut]"
             ) as animation_fut:
                 animation = make_animation(animation_fut, self.run_options.pauser)
+                self.current_animation = animation
 
                 try:
                     await state.set_animation(animation, background)

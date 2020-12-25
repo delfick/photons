@@ -8,10 +8,16 @@ class ZeroColor:
     def __init__(self):
         self.color = None
 
+    def __repr__(self):
+        return "[ZeroColor]"
+
 
 class OneColor:
     def __init__(self, hue, saturation, brightness, kelvin):
         self.color = (hue, saturation, brightness, kelvin)
+
+    def __repr__(self):
+        return str(self.color)
 
 
 class OneColorRange:
@@ -24,6 +30,9 @@ class OneColorRange:
     @property
     def color(self):
         return (self.hue, self.saturation, self.brightness, int(self.kelvin))
+
+    def __repr__(self):
+        return str((self.hs, self.ss, self.bb, self.kk))
 
     @property
     def hue(self):
@@ -82,6 +91,9 @@ class ManyColor:
         if len(colors) == 0:
             colors = [ZeroColor()]
         self.colors = colors
+
+    def __repr__(self):
+        return f"<ManyColor:{self.colors}>"
 
     @property
     def color(self):
@@ -206,6 +218,9 @@ class Range:
         if self.mn == self.mx:
             self.constant = self.mn
 
+    def __repr__(self):
+        return f"<Range {self.mn} -> {self.mx}>"
+
     def choose_range(self):
         choice = random.randrange(self.mn * self.multiplier, self.mx * self.multiplier)
         return self.spec.normalise(self.meta, choice / self.multiplier)
@@ -226,6 +241,9 @@ class Rate(Range):
 
     default_minimum_min = 0.01
     default_maximum_max = 1
+
+    def __repr__(self):
+        return f"<Rate {self.mn} -> {self.mx}>"
 
 
 class range_spec(sb.Spec):

@@ -5,6 +5,7 @@ from photons_app import helpers as hp
 
 import logging
 import asyncio
+import time
 
 log = logging.getLogger("photons_canvas.animations.infrastructure.animation")
 
@@ -37,7 +38,15 @@ class Animation:
         self.options = options
         self.final_future = final_future
 
+        self.started = None
         self.setup()
+
+    @property
+    def info(self):
+        name = self.__class__.__name__
+        if hasattr(self, "__registered_name__"):
+            name = self.__registered_name__
+        return {"name": name, "started": self.started, "options": self.options}
 
     @hp.memoized_property
     def ticker(self):
@@ -51,6 +60,7 @@ class Animation:
         )
 
     async def stream(self, animation_state):
+        self.started = time.time()
         del self.ticker
 
         async def tick():
