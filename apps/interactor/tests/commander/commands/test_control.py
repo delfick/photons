@@ -31,7 +31,9 @@ describe "Control Commands":
 
     async it "has discovery commands", fake, server, responses:
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "discover"}, json_output=responses.discovery_response,
+            "/v1/lifx/command",
+            {"command": "discover"},
+            json_output=responses.discovery_response,
         )
 
         serials = await server.assertCommand(
@@ -80,7 +82,7 @@ describe "Control Commands":
         results = responses.light_state_responses["results"]
         expected = {
             device.serial: results[device.serial]
-            for device in fake.for_attribute("power", 65535, expect=6)
+            for device in fake.for_attribute("power", 65535, expect=7)
         }
         await server.assertCommand(
             "/v1/lifx/command",
@@ -191,7 +193,9 @@ describe "Control Commands":
         expected = {"results": {device.serial: "ok" for device in fake.devices}}
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "power_toggle"}, json_output=expected,
+            "/v1/lifx/command",
+            {"command": "power_toggle"},
+            json_output=expected,
         )
 
         for device in fake.devices:
@@ -364,7 +368,11 @@ describe "Control Commands":
                 )
             else:
                 device_reset = ColourParser.msg(
-                    "blue", overrides={"brightness": 0, "res_required": False,},
+                    "blue",
+                    overrides={
+                        "brightness": 0,
+                        "res_required": False,
+                    },
                 )
                 device_reset.set_hue = 0
                 device_reset.set_saturation = 0

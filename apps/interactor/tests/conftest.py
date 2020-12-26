@@ -18,7 +18,9 @@ import logging
 import asyncio
 import pytest
 import shutil
+import json
 import uuid
+import sys
 
 log = logging.getLogger("interactor.test_helpers")
 
@@ -164,11 +166,33 @@ class ServerWrapper(hp.AsyncCMMixin):
                 assert error.kwargs["content"] == json_output
             if text_output is not None:
                 assert error.kwargs["content"] == text_output
-        else:
-            if json_output is not None:
-                assert got == json_output
-            if text_output is not None:
-                assert got == text_output
+        finally:
+            if sys.exc_info()[1] is None:
+                if isinstance(got, bytes):
+                    result = got.decode()
+                elif isinstance(got, str):
+                    result = got
+                else:
+                    result = json.dumps(got, sort_keys=True, indent="  ", default=lambda o: repr(o))
+
+                result = "\n".join([f"  {line}" for line in result.split("\n")])
+                desc = f"GOT :\n{result}"
+
+                if json_output is not None:
+                    if got != json_output:
+                        print(desc)
+                        wanted = json.dumps(
+                            json_output, sort_keys=True, indent="  ", default=lambda o: repr(o)
+                        )
+                        wanted = "\n".join([f"  {line}" for line in wanted.split("\n")])
+                        print(f"WANT:\n{wanted}")
+                    assert got == json_output
+                if text_output is not None:
+                    if got != text_output:
+                        print(desc)
+                        wanted = "\n".join([f"  {line}" for line in text_output.split("\n")])
+                        print(f"WANT:\n{wanted}")
+                    assert got == text_output
 
     @hp.memoized_property
     def final_future(self):
@@ -381,10 +405,24 @@ candle = FakeDevice(
     ),
 )
 
+tile = FakeDevice(
+    "d073d5000008",
+    chp.default_responders(
+        Products.LCM3_TILE,
+        label="wall",
+        power=65535,
+        group_label=group_three_label,
+        group_uuid=group_three_uuid,
+        location_label=location_two_label,
+        location_uuid=location_two_uuid,
+        firmware=chp.Firmware(3, 50, 1548977726000000000),
+    ),
+)
+
 
 class Fakery:
     def __init__(self):
-        self.devices = [a19_1, a19_2, color1000, white800, strip1, strip2, candle]
+        self.devices = [a19_1, a19_2, color1000, white800, strip1, strip2, candle, tile]
 
     def for_serial(self, serial):
         for d in self.devices:
@@ -587,6 +625,23 @@ discovery_response = {
         "saturation": 1.0,
         "serial": "d073d5000007",
     },
+    "d073d5000008": {
+        "brightness": 1.0,
+        "cap": ["chain", "color", "matrix", "not_ir", "not_multizone", "variable_color_temp"],
+        "firmware_version": "3.50",
+        "group_id": mock.ANY,
+        "group_name": "desk",
+        "hue": 0.0,
+        "kelvin": 3500,
+        "label": "wall",
+        "location_id": mock.ANY,
+        "location_name": "Work",
+        "power": "on",
+        "product_id": 55,
+        "product_identifier": "lifx_tile",
+        "saturation": 1.0,
+        "serial": "d073d5000008",
+    },
 }
 
 light_state_responses = {
@@ -675,6 +730,18 @@ light_state_responses = {
             "pkt_name": "LightState",
             "pkt_type": 107,
         },
+        "d073d5000008": {
+            "payload": {
+                "brightness": 1.0,
+                "hue": 0.0,
+                "kelvin": 3500,
+                "label": "wall",
+                "power": 65535,
+                "saturation": 1.0,
+            },
+            "pkt_name": "LightState",
+            "pkt_type": 107,
+        },
     }
 }
 
@@ -691,6 +758,7 @@ label_state_responses = {
         "d073d5000005": {"payload": {"label": "desk"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000006": {"payload": {"label": "tv"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000007": {"payload": {"label": "pretty"}, "pkt_name": "StateLabel", "pkt_type": 25},
+        "d073d5000008": {"payload": {"label": "wall"}, "pkt_name": "StateLabel", "pkt_type": 25},
     }
 }
 

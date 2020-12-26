@@ -88,6 +88,18 @@ def effects_running_status():
                 },
                 "product": {"cap": mock.ANY, "name": "LCM3_CANDLE", "pid": 57, "vid": 1},
             },
+            "d073d5000008": {
+                "effect": {
+                    "options": {
+                        "duration": 0.0,
+                        "instanceid": mock.ANY,
+                        "palette": [],
+                        "speed": 5.0,
+                    },
+                    "type": "OFF",
+                },
+                "product": {"cap": mock.ANY, "name": "LCM3_TILE", "pid": 55, "vid": 1},
+            },
         }
     }
 
@@ -264,6 +276,36 @@ def effects_stopped_status():
                     "vid": 1,
                 },
             },
+            "d073d5000008": {
+                "effect": {
+                    "options": {
+                        "duration": 0.0,
+                        "instanceid": mock.ANY,
+                        "palette": [],
+                        "speed": 5.0,
+                    },
+                    "type": "OFF",
+                },
+                "product": {
+                    "cap": {
+                        "has_chain": True,
+                        "has_color": True,
+                        "has_extended_multizone": False,
+                        "has_hev": False,
+                        "has_ir": False,
+                        "has_matrix": True,
+                        "has_multizone": False,
+                        "has_variable_color_temp": True,
+                        "max_kelvin": 9000,
+                        "min_extended_fw": None,
+                        "min_kelvin": 2500,
+                        "zones": "MATRIX",
+                    },
+                    "name": "LCM3_TILE",
+                    "pid": 55,
+                    "vid": 1,
+                },
+            },
         }
     }
 
@@ -279,6 +321,7 @@ def success_result():
             "d073d5000005": "ok",
             "d073d5000006": "ok",
             "d073d5000007": "ok",
+            "d073d5000008": "ok",
         }
     }
 
@@ -297,8 +340,14 @@ def results(effects_running_status, effects_stopped_status, success_result):
 describe "Effect commands":
 
     async it "can start effects", fake, server, results:
+        results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "MORPH"
+        palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"]
+        results.effects_running["results"]["d073d5000008"]["effect"]["options"]["palette"] = palette
+
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
         await server.assertCommand(
@@ -311,15 +360,21 @@ describe "Effect commands":
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_running,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+            "/v1/lifx/command",
+            {"command": "effects/stop"},
+            json_output=results.success,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
     async it "can apply a theme first", fake, server, results:
@@ -338,7 +393,9 @@ describe "Effect commands":
 
     async it "can start just matrix effects", fake, server, results:
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
         await server.assertCommand(
@@ -358,22 +415,34 @@ describe "Effect commands":
         ]
 
         results.effects_running["results"]["d073d5000007"]["effect"]["type"] = "FLAME"
+        results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "FLAME"
+
+        palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"]
+        results.effects_running["results"]["d073d5000008"]["effect"]["options"]["palette"] = palette
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_running,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+            "/v1/lifx/command",
+            {"command": "effects/stop"},
+            json_output=results.success,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
     async it "can start just linear effects", fake, server, results:
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
         await server.assertCommand(
@@ -388,15 +457,21 @@ describe "Effect commands":
         results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"] = []
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_running,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_running,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/stop"}, json_output=results.success,
+            "/v1/lifx/command",
+            {"command": "effects/stop"},
+            json_output=results.success,
         )
 
         await server.assertCommand(
-            "/v1/lifx/command", {"command": "effects/status"}, json_output=results.effects_stopped,
+            "/v1/lifx/command",
+            {"command": "effects/status"},
+            json_output=results.effects_stopped,
         )
 
     @pytest.mark.async_timeout(1.5)
@@ -420,11 +495,14 @@ describe "Effect commands":
             r["results"]["d073d5000001"] = fail
             r["results"]["d073d5000005"] = fail
             r["results"]["d073d5000007"] = fail
+            del r["results"]["d073d5000008"]
+
+        matcher = {"cap": "not_chain"}
 
         with offline1, offline5, offline7:
             await server.assertCommand(
                 "/v1/lifx/command",
-                {"command": "effects/status", "args": {"timeout": 0.1}},
+                {"command": "effects/status", "args": {"timeout": 0.1, "matcher": matcher}},
                 json_output=results.effects_stopped,
             )
 
@@ -436,6 +514,7 @@ describe "Effect commands":
                         "matrix_animation": "MORPH",
                         "linear_animation": "MOVE",
                         "timeout": 0.1,
+                        "matcher": matcher,
                     },
                 },
                 json_output=results.success,
@@ -443,18 +522,18 @@ describe "Effect commands":
 
             await server.assertCommand(
                 "/v1/lifx/command",
-                {"command": "effects/status", "args": {"timeout": 0.1}},
+                {"command": "effects/status", "args": {"timeout": 0.1, "matcher": matcher}},
                 json_output=results.effects_running,
             )
 
             await server.assertCommand(
                 "/v1/lifx/command",
-                {"command": "effects/stop", "args": {"timeout": 0.1}},
+                {"command": "effects/stop", "args": {"timeout": 0.1, "matcher": matcher}},
                 json_output=results.success,
             )
 
             await server.assertCommand(
                 "/v1/lifx/command",
-                {"command": "effects/status", "args": {"timeout": 0.1}},
+                {"command": "effects/status", "args": {"timeout": 0.1, "matcher": matcher}},
                 json_output=results.effects_stopped,
             )
