@@ -3,6 +3,8 @@ from photons_messages.enums import Services
 
 from photons_app import helpers as hp
 
+from photons_transport.session.memory import MemoryService
+
 from collections import defaultdict
 from functools import partial
 import asyncio
@@ -80,7 +82,13 @@ class Cannon:
 
     async def fire(self, ts, serial, msgs):
         if serial not in self.writers:
-            self.writers[serial] = Writer(self.afr.found[serial][Services.UDP])
+            services = self.afr.found[serial]
+            if Services.UDP not in services:
+                service = services[MemoryService]
+            else:
+                service = services[Services.UDP]
+
+            self.writers[serial] = Writer(service)
 
         if self.sem.should_drop(serial):
             return
