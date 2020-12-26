@@ -96,6 +96,11 @@ class Empty:
 
 
 class Payload:
+    message_type = 715
+
+    class Meta:
+        protocol = 1024
+
     def __init__(self, bts):
         self._bts = bts
 
@@ -112,6 +117,8 @@ class Payload:
 
 
 class Set64:
+    Payload = Payload
+
     def __init__(self, *, bts=None, set_source=False, **kwargs):
         if bts:
             self._bts = bts
