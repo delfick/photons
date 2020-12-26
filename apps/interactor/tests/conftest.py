@@ -203,6 +203,10 @@ class ServerWrapper(hp.AsyncCMMixin):
         return hp.TaskHolder(self.final_future)
 
     @hp.memoized_property
+    def animation_options(self):
+        return {}
+
+    @hp.memoized_property
     def server(self):
         return Server(self.final_future, self.store)
 
@@ -225,6 +229,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                 tasks=self.ts,
                 sender=self.sender,
                 cleaners=self.cleaners,
+                animation_options=self.animation_options,
             )
         )
 

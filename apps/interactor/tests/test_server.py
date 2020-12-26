@@ -1,5 +1,6 @@
 # coding: spec
 
+from interactor.commander.animations import Animations
 from interactor.commander.store import store
 
 from photons_app import helpers as hp
@@ -62,12 +63,18 @@ describe "Server":
         assert isinstance(server.finder, Finder)
         assert server.daemon.finder is server.finder
 
+        assert isinstance(server.animations, Animations)
+        assert server.animations.tasks is server.tasks
+        assert server.animations.sender is server.sender
+        assert server.animations.final_future is server.final_future
+
         V.FakeCommander.assert_called_once_with(
             store,
             tasks=server.tasks,
             sender=server.sender,
             finder=server.finder,
             db_queue=V.db_queue,
+            animations=server.animations,
             final_future=server.final_future,
             server_options=server.server_options,
         )
