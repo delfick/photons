@@ -70,6 +70,8 @@ describe "set64":
         assert msg | TileMessages.Set64
         assert not msg | TileMessages.State64
 
+        assert msg | Set64
+
         assert msg.simplify() is msg
         assert not msg.is_dynamic
 
