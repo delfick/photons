@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-0.32.4 - TBD
+0.32.4 - 26 December 2020
     * Add the ability to pause a hp.ATicker
 
 0.32.3 - 14 December 2020
