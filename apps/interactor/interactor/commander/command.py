@@ -3,7 +3,7 @@ from interactor.commander.store import store
 
 from photons_app import helpers as hp
 
-from photons_control.device_finder import Filter
+from photons_control.device_finder import Filter, DeviceFinder
 
 from delfick_project.norms import dictobj, sb
 
@@ -38,6 +38,10 @@ class DeviceChangeMixin(dictobj.Spec):
     @hp.memoized_property
     def filter(self):
         return self.make_filter(self.matcher)
+
+    @hp.memoized_property
+    def device_finder(self):
+        return DeviceFinder(self.filter, finder=self.finder)
 
     def make_filter(self, matcher):
         if matcher is None:

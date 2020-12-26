@@ -3,6 +3,10 @@
 Changelog
 =========
 
+0.8.0 - TBD
+    * Update photons
+    * Add commands for controlling animations
+
 0.7.9 - 14 December 2020
     * update photons
 

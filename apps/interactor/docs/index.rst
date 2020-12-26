@@ -34,9 +34,7 @@ The server currently supports:
 * Capturing, changing and applying scenes on devices
 * Transforming the devices in a similar way to the
   `LIFX HTTP API <https://api.developer.lifx.com/docs/set-state>`_.
-
-.. note:: Currently there is no command to start tile animations from the server
-    But this will be added in the near future.
+* Controlling tile animations
 
 Each command comes with the ability to target specific devices.
 

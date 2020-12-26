@@ -40,6 +40,7 @@ async def interactor(collector, target, **kwargs):
                     tasks=ts,
                     sender=sender,
                     cleaners=photons_app.cleaners,
+                    animation_options=collector.configuration.get("animation_options", {}),
                 )
             except asyncio.CancelledError:
                 raise
