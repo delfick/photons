@@ -30,7 +30,7 @@ All the available tiles can be seen with the ``help`` option::
 
 To list the options for an animation, run::
 
-    $ lifx lan:animation help falling
+    $ lifx lan:animate help falling
 
 Providing Animation options
 ---------------------------
