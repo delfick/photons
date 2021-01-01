@@ -49,6 +49,9 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+0.5.9 - TBD
+    * Adding LICENSE file to the package on pypi
+
 0.5.8 - 12 December 2020
     * update photons
 

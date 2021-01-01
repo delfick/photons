@@ -3,6 +3,9 @@
 Changelog
 =========
 
+0.8.1 - TBD
+    * Adding LICENSE file to the package on pypi
+
 0.8.0 - 26 December 2020
     * Update photons
     * Add commands for controlling animations
