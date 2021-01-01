@@ -3,6 +3,9 @@
 ChangeLog
 =========
 
+0.32.5 - TBD
+    * Adding LICENSE file to the package on pypi
+
 0.32.4 - 26 December 2020
     * Add the ability to pause a hp.ATicker
 
