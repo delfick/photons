@@ -1,0 +1,55 @@
+on:
+  - workflow_dispatch
+
+name: Release Photons core
+
+jobs:
+  build:
+    name: Create the package
+    runs-on: ubuntu-latest
+    environment: github_release
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - id: sdist
+        run: cd modules && python setup.py sdist
+
+      - id: version
+        run: >
+          printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'])")
+
+      - id: package
+        run: >
+          printf "::set-output name=package::lifx-photons-core-${{ steps.version.outputs.version}}.tar.gz"
+
+      - id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        with:
+          tag_name: "release-core-${{ steps.version.outputs.version }}"
+          release_name: Photons Core ${{ steps.version.outputs.version }}
+          body: "http://photons.delfick.com/changelog.html#release-core-${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: false
+
+      - id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "modules/dist/${{ steps.package.outputs.package }}"
+          asset_name: ${{ steps.package.outputs.package }}
+          asset_content_type: application/tar+gzip
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN_CORE }}
+          packages_dir: modules/dist
