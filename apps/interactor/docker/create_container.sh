@@ -3,8 +3,18 @@
 set -e
 
 if [[ $CI != "true" ]]; then
-    echo "Not on CI"
-    exit 0
+  echo "Not on CI"
+  exit 1
+fi
+
+if [[ -z $DOCKER_TOKEN ]]; then
+  echo "You don't have a DOCKER_TOKEN in your environment"
+  exit 1
+fi
+
+if [[ -z $DOCKER_USERNAME ]]; then
+  echo "You don't have a DOCKER_USERNAME in your environment"
+  exit 1
 fi
 
 _folder=$(git rev-parse --show-toplevel)/apps/interactor
@@ -12,13 +22,13 @@ cd $_folder
 
 _found=0
 for tag in $(git tag --points-at HEAD); do
-    if [[ $tag =~ "interactor-" ]]; then
-        _found=1
-    fi
+  if [[ $tag =~ "interactor-" ]]; then
+    _found=1
+  fi
 done
 if (($_found == 0)); then
-    echo "This commit is not an interactor tag, exiting"
-    exit 0
+  echo "This commit is not an interactor tag, exiting"
+  exit 0
 fi
 
 echo "This is an interactor tag, will build the container"
@@ -28,15 +38,8 @@ cleanup() { rm -rf $staging; }
 trap cleanup EXIT
 
 cd $staging
-pip3 install venvstarter
 
 $_folder/docker/harpoon get_docker_context lifx-photons-interactor
-
-curl -fsSL https://get.docker.com | sh
-echo '{"experimental":"enabled"}' | sudo tee /etc/docker/daemon.json
-mkdir -p $HOME/.docker
-echo '{"experimental":"enabled"}' | sudo tee $HOME/.docker/config.json
-sudo service docker start
 
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 docker buildx create --name xbuilder --use
