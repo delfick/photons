@@ -339,7 +339,8 @@ describe "Result":
             assert len(schedule_finisher.mock_calls) == 0
 
     describe "schedule_finisher":
-        async it "calls maybe_finish after finish_multi_gap with the current value for attr", V:
+
+        async it "calls maybe_finish after finish_multi_gap with the current value for attr", V, FakeTime, MockedCallLater:
 
             result = Result(V.request, False, V.gaps)
             last_ack_received = mock.Mock(name="last_ack_received")
@@ -354,14 +355,13 @@ describe "Result":
 
             maybe_finish = mock.Mock(name="maybe_finish", side_effect=maybe_finish)
 
-            now = time.time()
-            with mock.patch.object(result, "maybe_finish", maybe_finish):
-                result.schedule_finisher("last_ack_received")
+            with FakeTime() as t:
+                async with MockedCallLater(t):
+                    with mock.patch.object(result, "maybe_finish", maybe_finish):
+                        result.schedule_finisher("last_ack_received")
 
-            await fut
-            diff = time.time() - now
-            assert diff < 0.2
-            assert diff > 0.1
+                    await fut
+                    assert time.time() == 0.2
 
     describe "maybe_finish":
         async it "does nothing if the result is already done", V:
