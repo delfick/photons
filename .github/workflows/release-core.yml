@@ -19,8 +19,9 @@ jobs:
         run: cd modules && python setup.py sdist
 
       - id: version
-        run: >
+        run: |
           printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'])")
+          printf "::set-output name=versiondash::%s\n" $(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'].replace('.', '-'))")
 
       - id: package
         run: >
@@ -34,7 +35,7 @@ jobs:
         with:
           tag_name: "release-core-${{ steps.version.outputs.version }}"
           release_name: Photons Core ${{ steps.version.outputs.version }}
-          body: "http://photons.delfick.com/changelog.html#release-core-${{ steps.version.outputs.version }}"
+          body: "http://photons.delfick.com/changelog.html#release-core-${{ steps.version.outputs.versiondash }}"
           draft: false
           prerelease: false
 

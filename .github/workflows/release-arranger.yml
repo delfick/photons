@@ -19,8 +19,9 @@ jobs:
         run: cd apps/arranger && python setup.py sdist
 
       - id: version
-        run: >
+        run: |
           printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('apps/arranger/arranger/__init__.py')['VERSION'])")
+          printf "::set-output name=versiondash::%s\n" $(python -c "import runpy; print(runpy.run_path('apps/arranger/arranger/__init__.py')['VERSION'].replace('.', '-'))")
 
       - id: package
         run: >
@@ -34,7 +35,7 @@ jobs:
         with:
           tag_name: "release-arranger-${{ steps.version.outputs.version }}"
           release_name: Photons Arranger ${{ steps.version.outputs.version }}
-          body: "https://photons.delfick.com/apps/arranger/index.html#release-arranger-${{ steps.version.outputs.version }}"
+          body: "https://photons.delfick.com/apps/arranger/index.html#release-arranger-${{ steps.version.outputs.versiondash }}"
           draft: false
           prerelease: false
 
