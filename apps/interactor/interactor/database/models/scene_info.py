@@ -10,6 +10,4 @@ class SceneInfo(Base):
 
     def as_dict(self, ignore=None):
         dct = {"uuid": self.uuid, "label": self.label, "description": self.description}
-        return {
-            k: v for k, v in dct.items() if v is not None and (ignore is None or k not in ignore)
-        }
+        return {k: v for k, v in dct.items() if v is not None and k not in (ignore or ())}

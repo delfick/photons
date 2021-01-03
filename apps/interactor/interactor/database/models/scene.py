@@ -32,7 +32,7 @@ class Scene(Base):
         return {
             k: v
             for k, v in self.as_object().as_dict().items()
-            if v is not None and (ignore is None or k not in ignore)
+            if v is not None and k not in (ignore or ())
         }
 
     @classmethod
