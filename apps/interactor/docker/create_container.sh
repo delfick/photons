@@ -20,19 +20,6 @@ fi
 _folder=$(git rev-parse --show-toplevel)/apps/interactor
 cd $_folder
 
-_found=0
-for tag in $(git tag --points-at HEAD); do
-  if [[ $tag =~ "interactor-" ]]; then
-    _found=1
-  fi
-done
-if (($_found == 0)); then
-  echo "This commit is not an interactor tag, exiting"
-  exit 0
-fi
-
-echo "This is an interactor tag, will build the container"
-
 staging=$(mktemp -d)
 cleanup() { rm -rf $staging; }
 trap cleanup EXIT
