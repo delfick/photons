@@ -7,7 +7,7 @@ jobs:
   build:
     name: Create the package
     runs-on: ubuntu-latest
-    environment: github_release
+    environment: docker
     steps:
       - uses: actions/checkout@v2
 
@@ -63,7 +63,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN_INTERACTOR }}
+          password: ${{ secrets.PYPI_INTERACTOR }}
           packages_dir: apps/interactor/dist
 
       - name: Create the container
