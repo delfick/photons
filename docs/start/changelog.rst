@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0.32.5:
 
-0.32.5 - TBD
+0.32.5 - 3 January 2020
     * Adding LICENSE file to the package on pypi
 
 .. _release-core-0.32.4:
