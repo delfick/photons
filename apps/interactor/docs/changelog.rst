@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0.8.1:
 
-0.8.1 - TBD
+0.8.1 - 3 January 2021
     * Adding LICENSE file to the package on pypi
 
 .. _release-interactor-0.8.0:

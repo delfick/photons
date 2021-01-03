@@ -18,7 +18,7 @@ The following may be used::
         --net=host \
         -e TZ=Australia/Melbourne \
         -v $PWD/configdir:/project/config \
-        delfick/lifx-photons-interactor:0.8.0
+        delfick/lifx-photons-interactor:0.8.1
 
 Replace ``Australia/Melbourne`` with the appropriate
 `TZ database name <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>`_.

@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0.5.9:
 
-0.5.9 - TBD
+0.5.9 - 3 January 2021
     * Adding LICENSE file to the package on pypi
 
 .. _release-arranger-0.5.8:
