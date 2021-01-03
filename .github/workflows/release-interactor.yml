@@ -1,5 +1,9 @@
 on:
-  - workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      skippypi:
+        description: 'Skip making pypi package'     
+        default: '0'
 
 name: Release Photons Interactor
 
@@ -41,6 +45,7 @@ jobs:
 
       - id: create_release
         uses: actions/create-release@v1
+        if: github.event.inputs == '0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,6 +58,7 @@ jobs:
 
       - id: upload-release-asset 
         uses: actions/upload-release-asset@v1
+        if: github.event.inputs == '0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -62,6 +68,7 @@ jobs:
           asset_content_type: application/tar+gzip
 
       - uses: pypa/gh-action-pypi-publish@v1.4.1
+        if: github.event.inputs == '0'
         with:
           user: __token__
           password: ${{ secrets.PYPI_INTERACTOR }}
