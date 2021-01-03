@@ -1,0 +1,76 @@
+on:
+  - workflow_dispatch
+
+name: Release Photons Interactor
+
+jobs:
+  build:
+    name: Create the package
+    runs-on: ubuntu-latest
+    environment: github_release
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - run: python3 -m pip install venvstarter
+
+      - name: Enable experimental features for the Docker daemon and CLI
+        run: |
+          echo $'{\n  "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          mkdir -p ~/.docker
+          echo $'{\n  "experimental": "enabled"\n}' | sudo tee ~/.docker/config.json
+          sudo service docker restart
+          docker version -f '{{.Client.Experimental}}'
+          docker version -f '{{.Server.Experimental}}'
+          docker buildx version
+
+      - id: sdist
+        run: cd apps/interactor && python setup.py sdist
+
+      - id: version
+        run: >
+          printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'])")
+
+      - id: package
+        run: >
+          printf "::set-output name=package::lifx-photons-interactor-${{ steps.version.outputs.version}}.tar.gz"
+
+      - id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        with:
+          tag_name: "release-interactor-${{ steps.version.outputs.version }}"
+          release_name: Photons Interactor ${{ steps.version.outputs.version }}
+          body: "https://photons.delfick.com/apps/interactor/changelog.html#release-interactor-${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: false
+
+      - id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "apps/interactor/dist/${{ steps.package.outputs.package }}"
+          asset_name: ${{ steps.package.outputs.package }}
+          asset_content_type: application/tar+gzip
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN_INTERACTOR }}
+          packages_dir: apps/interactor/dist
+
+      - name: Create the container
+        run: ./apps/interactor/docker/create_container.sh
+        env:
+          CYPRESS_VIDEO: false
+          DOCKER_PLATFORM: linux/386,linux/arm64,linux/amd64,linux/arm/v7,linux/arm/v6 
+          TARGET_IMAGE: delfick/lifx-photons-interactor
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}

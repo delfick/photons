@@ -49,33 +49,53 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0.5.9:
+
 0.5.9 - TBD
     * Adding LICENSE file to the package on pypi
 
+.. _release-arranger-0.5.8:
+
 0.5.8 - 12 December 2020
     * update photons
+
+.. _release-arranger-0.5.7:
 
 0.5.7 - 5 December 2020
     * Update photons
     * Upgraded all the JavaScript dependencies
 
+.. _release-arranger-0.5.6:
+
 0.5.6 - 28 November 2020
     * Fixed some memory leaks in photons
+
+.. _release-arranger-0.5.5:
 
 0.5.5 - 22 November 2020
     * Update dependencies for python3.9 compatibility
 
+.. _release-arranger-0.5.4:
+
 0.5.4 - 23 August 2020
     * Upgrade photons-core to fix discovery bug
+
+.. _release-arranger-0.5.3:
 
 0.5.3 - 12 August 2020
     * Fixed bug where the program can enter a state of using all your CPU
 
+.. _release-arranger-0.5.2:
+
 0.5.2 - 9 August 2020
     * 0.5.1 had development assets in it, so I deleted it
 
+.. _release-arranger-0.5.1:
+
 0.5.1 - 9 August 2020
     * Using new photons code, including fixing memory leaks
+
+.. _release-arranger-0.5:
 
 0.5 - 11 July 2020
     * Initial import from https://photons-interactor.readthedocs.io/
