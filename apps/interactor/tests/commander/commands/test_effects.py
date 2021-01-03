@@ -32,6 +32,11 @@ def sender(server):
     return server.server.sender
 
 
+@pytest.fixture(autouse=True)
+def set_async_timeout(request):
+    request.applymarker(pytest.mark.async_timeout(3))
+
+
 @pytest.fixture()
 def effects_running_status():
     return {
@@ -474,7 +479,6 @@ describe "Effect commands":
             json_output=results.effects_stopped,
         )
 
-    @pytest.mark.async_timeout(3)
     async it "works if devices are offline", fake, server, results, sender:
         offline1 = fake.for_serial("d073d5000001").offline()
         offline5 = fake.for_serial("d073d5000005").offline()

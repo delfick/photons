@@ -75,7 +75,7 @@ describe "run":
                 if sig is not None:
                     try:
                         s.accept()
-                        time.sleep(0.1)
+                        time.sleep(0.2)
                     except socket.timeout:
                         pass
 
