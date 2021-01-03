@@ -1,0 +1,51 @@
+---
+
+name: Lint
+
+on: push
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - run: python -m pip install pip venvstarter -U
+
+      - run: ./tools/pylama --help
+
+      - name: Ensure linter is happy
+        run: ./lint
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - run: python -m pip install pip venvstarter -U
+
+      - run: ./tools/black/setup_venv
+
+      - name: Ensure code is formatted
+        run: |
+          ./format
+
+          # Complain if there were changes
+          if [[ ! -z "$(git status --porcelain)" ]]; then
+            echo "=========================================="
+            echo "Found changes!"
+            echo "Please run ./format before committing code"
+            echo "=========================================="
+            git diff
+            exit 1
+          fi
