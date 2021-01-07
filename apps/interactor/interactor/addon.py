@@ -89,8 +89,9 @@ async def interactor_healthcheck(collector, **kwargs):
         try:
             async with session.put(uri, json={"command": "status"}) as response:
                 if response.status != 200:
+                    content = (await response.content.read()).decode()
                     raise InteractorError(
-                        f"Healthcheck failed: {response.status}: {(await response.content.read()).decode()}"
+                        f"Healthcheck failed: {response.status}: {content}"
                     )
 
         except aiohttp.client_exceptions.ClientConnectorError as error:
