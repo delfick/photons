@@ -14,7 +14,7 @@ log = logging.getLogger("interactor.server")
 
 
 class Server(Server):
-    def __init__(self, final_future, store=None):
+    def __init__(self, server_future, final_future, store=None):
         if store is None:
             from interactor.commander.store import store, load_commands
 
@@ -22,7 +22,11 @@ class Server(Server):
 
         self.store = store
         self.final_future = final_future
+        self.server_future = server_future
         self.wsconnections = {}
+
+    async def wait_for_end(self):
+        await self.server_future
 
     def tornado_routes(self):
         return [
@@ -33,7 +37,7 @@ class Server(Server):
                 {
                     "commander": self.commander,
                     "server_time": time.time(),
-                    "final_future": self.final_future,
+                    "final_future": self.server_future,
                     "wsconnections": self.wsconnections,
                 },
             ),

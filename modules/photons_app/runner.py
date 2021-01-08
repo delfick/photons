@@ -43,8 +43,12 @@ def run(coro, photons_app, target_register):
     if platform.system() != "Windows":
 
         def stop_final_fut():
-            if not final_future.done():
-                final_future.set_exception(ApplicationStopped())
+            significant_future = final_future
+            if graceful_future.setup:
+                significant_future = graceful_future
+
+            if not significant_future.done():
+                significant_future.set_exception(ApplicationStopped())
 
         loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
@@ -59,7 +63,7 @@ def run(coro, photons_app, target_register):
         if task.done():
             await task
         elif graceful_future.done():
-            await graceful_future
+            await hp.wait_for_all_futures(graceful_future, name="run->wait")
         else:
             await final_future
 

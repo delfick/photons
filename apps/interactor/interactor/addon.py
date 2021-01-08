@@ -28,12 +28,12 @@ async def interactor(collector, target, **kwargs):
 
     options = collector.configuration["interactor"]
     photons_app = collector.photons_app
-    with photons_app.using_graceful_future() as final_future:
+    with photons_app.using_graceful_future() as graceful_final_future:
         async with target.session() as sender, hp.TaskHolder(
-            final_future, name="cli_arrange"
+            photons_app.final_future, name="cli_arrange"
         ) as ts:
             try:
-                await Server(final_future).serve(
+                await Server(graceful_final_future, photons_app.final_future).serve(
                     options.host,
                     options.port,
                     options,
@@ -46,6 +46,12 @@ async def interactor(collector, target, **kwargs):
                 raise
             except (UserQuit, ApplicationCancelled, ApplicationStopped):
                 pass
+            finally:
+                try:
+                    await photons_app.cleanup(collector.configuration["target_register"].used_targets)
+                finally:
+                    photons_app.cleaners = []
+                    photons_app.final_future.cancel()
 
 
 @an_action(label="Interactor")
