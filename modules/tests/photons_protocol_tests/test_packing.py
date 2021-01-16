@@ -270,6 +270,11 @@ describe "FieldInfo":
 
             struct_format.assert_called_once_with("<b", val)
 
+        it "turns Optional into a False", info:
+            info.typ.struct_format = bool
+            info.val = Optional
+            assert info.to_bitarray() == bitarray("0")
+
         it "complains if fmt is bool but value is not", info:
             for val in (0, 1, None, "", "adsf", b"asf", [], [1], {1: 2}, lambda: 1):
                 with assertRaises(BadConversion, "Trying to convert a non boolean into 1 bit"):

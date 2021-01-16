@@ -108,6 +108,9 @@ class FieldInfo(dictobj):
             return self.struct_format(fmt, val)
 
         elif fmt is bool:
+            if val is Optional:
+                val = False
+
             if type(val) is not bool:
                 raise BadConversion(
                     "Trying to convert a non boolean into 1 bit",
