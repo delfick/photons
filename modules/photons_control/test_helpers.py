@@ -46,7 +46,12 @@ class Color(fields.Color):
             other = fields.Color(**other)
 
         for k in ("hue", "saturation", "brightness", "kelvin"):
-            if k not in other or round(self[k], 4) != round(other[k], 4):
+            # for brightness and saturation a step is 1/65535 so 4 digits is fine
+            # for hue a step is 360/65535 so its only accurate to within 0.0055
+            # In practise, the firmware does truncate values such that 0.0055 becomes
+            # 0.011 and so we should only compare to one decimal for hue here.
+            r = 1 if k == "hue" else 4
+            if k not in other or round(self[k], r) != round(other[k], r):
                 return False
 
         return True
