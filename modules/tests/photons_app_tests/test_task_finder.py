@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.task_finder import TaskFinder
+from photons_app.collector import TaskFinder
 from photons_app.actions import all_tasks
 from photons_app.errors import BadTask
 from photons_app import helpers as hp
@@ -67,7 +67,7 @@ describe "TaskFinder":
 
             available_actions = mock.Mock(name="available_actions")
 
-            with mock.patch("photons_app.task_finder.available_actions", available_actions):
+            with mock.patch("photons_app.collector.available_actions", available_actions):
                 assert await V.task_finder.task_runner(V.target, "one") is res
 
             V.one_task.run.assert_called_once_with(
@@ -81,7 +81,7 @@ describe "TaskFinder":
 
             available_actions = mock.Mock(name="available_actions")
 
-            with mock.patch("photons_app.task_finder.available_actions", available_actions):
+            with mock.patch("photons_app.collector.available_actions", available_actions):
                 assert await V.task_finder.task_runner(V.target, "one", one=one, two=3) is res
 
             V.one_task.run.assert_called_once_with(

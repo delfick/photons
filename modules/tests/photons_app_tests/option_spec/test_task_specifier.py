@@ -1,7 +1,7 @@
 # coding: spec
 
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.task_specifier import task_specifier_spec
+from photons_app.tasks import task_specifier_spec
 from photons_app.errors import TargetNotFound
 from photons_app.collector import Collector
 from photons_app import helpers as hp
