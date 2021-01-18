@@ -4,9 +4,9 @@ Here we define the yaml specification for photons_app options and task options
 The specifications are responsible for sanitation, validation and normalisation.
 """
 from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
-from photons_app.option_spec.task_specifier import task_specifier_spec
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, ApplicationStopped
+from photons_app.task_specifier import task_specifier_spec
 from photons_app import helpers as hp
 
 from delfick_project.norms import sb, dictobj, va

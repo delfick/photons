@@ -8,8 +8,8 @@ from photons_app.registers import (
     ReferenceResolerRegister,
 )
 from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
-from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import TargetNotFound, ResolverNotFound
+from photons_app.photons_app import PhotonsAppSpec
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions

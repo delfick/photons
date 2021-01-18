@@ -3,10 +3,12 @@
 ChangeLog
 =========
 
-.. _release-core-0-32-6:
+.. _release-core-0-40-0:
 
-0.32.6 - TBD
+0.40.0 - TBD
     * Rename Power in RelayMessages to RPower.
+    * Moved some imports from photons_app.options_spec. You're unlikely to
+      currently be using these directly.
 
 .. _release-core-0-32-5:
 

@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_app.option_spec.task_objs import Task
 from photons_app.actions import an_action
 from photons_app import helpers as hp
+from photons_app.tasks import Task
 
 from unittest import mock
 import pytest

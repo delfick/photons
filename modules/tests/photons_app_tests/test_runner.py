@@ -1,10 +1,10 @@
 # coding: spec
 
 from photons_app.errors import ApplicationCancelled, ApplicationStopped
-from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.runner import run, transfer_result
 from photons_app.test_helpers import modified_env
+from photons_app.photons_app import PhotonsApp
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises

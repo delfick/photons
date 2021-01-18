@@ -1,6 +1,6 @@
-from photons_app.option_spec.photons_app_spec import PhotonsAppSpec
 from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.photons_app import PhotonsAppSpec
 from photons_app.task_finder import TaskFinder
 from photons_app import helpers as hp
 from photons_app.runner import run

@@ -1,8 +1,8 @@
 # coding: spec
 
 from photons_app.registers import Target, TargetRegister, ProtocolRegister, ReferenceResolerRegister
-from photons_app.option_spec.photons_app_spec import PhotonsApp
 from photons_app.errors import BadYaml, BadConfiguration
+from photons_app.photons_app import PhotonsApp
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 

@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.option_spec.photons_app_spec import PhotonsAppSpec, PhotonsApp
+from photons_app.photons_app import PhotonsAppSpec, PhotonsApp
 from photons_app.registers import TargetRegister
 from photons_app.registers import Target
 from photons_app import helpers as hp
