@@ -282,16 +282,16 @@ class MultiZoneMessages(Messages):
 ########################
 
 class RelayMessages(Messages):
-    GetPower = msg(816
+    GetRPower = msg(816
         , ("relay_index", T.Uint8)
         )
 
-    SetPower = msg(817
+    SetRPower = msg(817
         , ("relay_index", T.Uint8)
         , ("level", T.Uint16)
         )
 
-    StatePower = msg(818
+    StateRPower = msg(818
         , ("relay_index", T.Uint8)
         , ("level", T.Uint16)
         )

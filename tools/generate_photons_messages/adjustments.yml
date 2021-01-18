@@ -401,6 +401,15 @@ changes:
       Index:
         rename: zone_index
 
+  RelayGetPower:
+    rename: GetRPower
+
+  RelaySetPower:
+    rename: SetRPower
+
+  RelayStatePower:
+    rename: StateRPower
+
   TileStateDevice:
     multi_options:
       name: Tile

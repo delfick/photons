@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-32-6:
+
+0.32.6 - TBD
+    * Rename Power in RelayMessages to RPower.
+
 .. _release-core-0-32-5:
 
 0.32.5 - 3 January 2020
