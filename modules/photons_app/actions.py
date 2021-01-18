@@ -1,6 +1,6 @@
-from photons_app.option_spec.task_specifier import task_specifier_spec
-from photons_app.option_spec.task_objs import Task
+from photons_app.task_specifier import task_specifier_spec
 from photons_app.errors import PhotonsAppError
+from photons_app.tasks import Task
 
 from delfick_project.norms import sb, Meta
 from collections import defaultdict
