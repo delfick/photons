@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-40-0:
+
+0.40.0 - TBD
+    * Moved some imports from photons_app.options_spec. You're unlikely to
+      currently be using these directly.
+
 .. _release-core-0-33-0:
 
 0.33.0 - 15 March 2021
@@ -15,7 +21,6 @@ ChangeLog
     * The device finder now supports finding by ``relays``, ``hev`` and
       ``buttons`` capabilities.
     * Pulled in new HEV messages.
-    * Rename Power in RelayMessages to RPower.
 
 .. _release-core-0-32-5:
 
