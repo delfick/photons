@@ -1,7 +1,7 @@
-from photons_app.errors import BadYaml, BadConfiguration, UserQuit
+from photons_app.errors import BadYaml, BadConfiguration, UserQuit, BadTask
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.actions import available_actions, all_tasks
 from photons_app.photons_app import PhotonsAppSpec
-from photons_app.task_finder import TaskFinder
 from photons_app import helpers as hp
 from photons_app.runner import run
 
@@ -73,6 +73,20 @@ class extra_files_spec(sb.Spec):
             val[key] = result
 
         return self.extras_spec.normalise(meta, val)
+
+
+class TaskFinder:
+    def __init__(self, collector):
+        self.tasks = all_tasks
+        self.collector = collector
+
+    async def task_runner(self, target, task, **kwargs):
+        if task not in self.tasks:
+            raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
+
+        return await self.tasks[task].run(
+            target, self.collector, available_actions, self.tasks, **kwargs
+        )
 
 
 class Collector(Collector):
