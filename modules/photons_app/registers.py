@@ -9,9 +9,34 @@ from photons_app.special import (
     HardCodedSerials,
     FoundSerials,
 )
-from photons_app.errors import TargetNotFound, ResolverNotFound
+from photons_app.errors import TargetNotFound, ResolverNotFound, TargetNotAllowed
 
 from delfick_project.norms import sb, dictobj, Meta
+
+
+class TargetRestriction:
+    @classmethod
+    def create(kls, restriction):
+        if isinstance(restriction, TargetRestriction):
+            return restriction
+        return kls(restriction)
+
+    def __init__(self, restriction):
+        self.restriction = restriction
+
+    def if_allowed(self, register, name):
+        if self.is_allowed(register, name):
+            return register.targets[name]()[1]
+
+        raise TargetNotAllowed(
+            restriction=self.restriction, available=register.targets_restricted_to(self)
+        )
+
+    def is_allowed(self, register, name):
+        return True
+
+    def matches_restriction(self, restriction):
+        return self.restriction in (None, restriction)
 
 
 class Target(dictobj.Spec):
@@ -77,6 +102,13 @@ class TargetRegister:
     def used_targets(self):
         return [m()[1] for m in self.targets.values() if m.resolved]
 
+    def targets_restricted_to(self, restriction):
+        available = []
+        for name in self.targets:
+            if restriction.is_allowed(self, name):
+                available.append(name)
+        return available
+
     def find_target_name(self, target):
         for name, m in self.targets.items():
             if m.resolved and m()[1] is target:
@@ -100,11 +132,13 @@ class TargetRegister:
         """Tell the register about a new target type"""
         self.types[name] = target
 
-    def resolve(self, name):
+    def resolve(self, name, *, restriction=None):
         """Given the name of a target, return an instantiated copy of the target"""
         if name not in self.targets:
             raise TargetNotFound(name=name, available=list(self.targets.keys()))
-        return self.targets[name]()[1]
+
+        restriction = TargetRestriction.create(restriction)
+        return restriction.if_allowed(self, name)
 
     def add_targets(self, targets):
         """

@@ -11,6 +11,7 @@ from delfick_project.addons import addon_hook
 import aiohttp
 import asyncio
 import logging
+import sys
 
 log = logging.getLogger("interactor.addon")
 
@@ -28,12 +29,13 @@ async def interactor(collector, target, **kwargs):
 
     options = collector.configuration["interactor"]
     photons_app = collector.photons_app
-    with photons_app.using_graceful_future() as final_future:
+    with photons_app.using_graceful_future() as graceful_final_future:
         async with target.session() as sender, hp.TaskHolder(
-            final_future, name="cli_arrange"
+            photons_app.final_future, name="cli_arrange"
         ) as ts:
+            server = Server(photons_app.final_future, server_end_future=graceful_final_future)
             try:
-                await Server(final_future).serve(
+                await server.serve(
                     options.host,
                     options.port,
                     options,
@@ -46,6 +48,41 @@ async def interactor(collector, target, **kwargs):
                 raise
             except (UserQuit, ApplicationCancelled, ApplicationStopped):
                 pass
+            finally:
+                exc_info = sys.exc_info()
+                try:
+                    await photons_app.cleanup(
+                        collector.configuration["target_register"].used_targets
+                    )
+                except asyncio.CancelledError:
+                    photons_app.final_future.cancel()
+                except:
+                    pass
+                finally:
+                    photons_app.cleaners = []
+                    if exc_info[1] is not None and not photons_app.final_future.done():
+                        photons_app.final_future.set_exception(exc_info[1])
+
+                if not photons_app.final_future.done():
+                    exc_info = None
+                    try:
+                        await server.wait_for_requests()
+                    except asyncio.CancelledError:
+                        photons_app.final_future.cancel()
+                    except:
+                        exc_info = sys.exc_info()
+                    finally:
+                        if (
+                            exc_info is not None
+                            and exc_info[1] is not None
+                            and not photons_app.final_future.done()
+                        ):
+                            photons_app.final_future.set_exception(exc_info[1])
+
+                if not photons_app.final_future.done():
+                    photons_app.final_future.cancel()
+                else:
+                    await photons_app.final_future
 
 
 @an_action(label="Interactor")

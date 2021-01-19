@@ -104,3 +104,7 @@ class ResolverNotFound(PhotonsAppError):
 
 class DevicesNotFound(PhotonsAppError):
     desc = "Failed to find some devices"
+
+
+class TargetNotAllowed(PhotonsAppError):
+    desc = "The chosen target is not valid"

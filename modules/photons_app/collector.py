@@ -1,7 +1,7 @@
-from photons_app.errors import BadYaml, BadConfiguration, UserQuit, BadTask
+from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.actions import available_actions, all_tasks
 from photons_app.photons_app import PhotonsAppSpec
+from photons_app.tasks import task_register
 from photons_app import helpers as hp
 from photons_app.runner import run
 
@@ -75,20 +75,6 @@ class extra_files_spec(sb.Spec):
         return self.extras_spec.normalise(meta, val)
 
 
-class TaskFinder:
-    def __init__(self, collector):
-        self.tasks = all_tasks
-        self.collector = collector
-
-    async def task_runner(self, target, task, **kwargs):
-        if task not in self.tasks:
-            raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
-
-        return await self.tasks[task].run(
-            target, self.collector, available_actions, self.tasks, **kwargs
-        )
-
-
 class Collector(Collector):
     """
     This is based off the delfick project
@@ -144,6 +130,18 @@ class Collector(Collector):
         await self.photons_app.cleanup(targets)
         self.photons_app.final_future.cancel()
         self.photons_app.graceful_final_future.cancel()
+
+    def fill_photons_task(self, task, *, target=None, **kwargs):
+        """
+        Resolve our task and target and return a filled Task object
+        """
+        if isinstance(target, str):
+            target = self.resolve_target(target)
+
+        if isinstance(task, str):
+            task = task_register.find(task, target)
+
+        return task.create(self, target, **kwargs)
 
     def extra_prepare(self, configuration, args_dict):
         """
@@ -270,10 +268,6 @@ class Collector(Collector):
         # Post register our addons
         extra_args = {"lifx.photons": {}}
         self.register.post_register(extra_args)
-
-        # Make the task finder
-        task_finder = TaskFinder(self)
-        configuration["task_runner"] = task_finder.task_runner
 
     def home_dir_configuration_location(self):
         return os.path.expanduser("~/.photons_apprc.yml")
