@@ -167,11 +167,11 @@ describe "task_specifier_spec":
             meta = self.meta(config)
 
             target_register = meta.everything["collector"].configuration["target_register"]
-            original = list(target_register.targets)
+            original = list(target_register.registered)
             assert "lan" in original, original
 
             result = spec.normalise(meta, "lan(default_broadcast='9.8.7.6'):amazing_task")
-            assert len(target_register.targets) == len(original) + 1
+            assert len(target_register.registered) == len(original) + 1
 
             assert result == (mock.ANY, "amazing_task")
             assert result[0].startswith("lan_"), result[0]
@@ -216,11 +216,11 @@ describe "task_specifier_spec":
             meta = self.meta(config, extra_prepare=extra_prepare)
             target_register = meta.everything["collector"].configuration["target_register"]
 
-            original = list(target_register.targets)
+            original = list(target_register.registered)
             assert "con" in original, original
 
             result = spec.normalise(meta, "con(network='{targets.lan2}'):amazing_task")
-            assert len(target_register.targets) == len(original) + 1
+            assert len(target_register.registered) == len(original) + 1
 
             assert result == (mock.ANY, "amazing_task")
             assert result[0].startswith("con_"), result[0]

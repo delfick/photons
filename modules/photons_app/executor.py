@@ -56,7 +56,6 @@ def library_setup(
 
     collector = Collector()
     collector.prepare(config_filename, {"photons_app": photons_app}, extra_files=extra_files)
-    collector.configuration["target_register"].add_targets(collector.configuration["targets"])
     return collector
 
 
@@ -119,9 +118,6 @@ class App(App):
         collector.prepare(config_name, args_dict, extra_files=extra_files)
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
-
-        collector.configuration["target_register"].add_targets(collector.configuration["targets"])
-
         return collector
 
     def execute(

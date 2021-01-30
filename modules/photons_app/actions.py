@@ -110,15 +110,18 @@ async def help(collector, tasks, reference, target, **kwargs):
     if task_name == "help":
         task_name = sb.NotSpecified
 
-    if task_name in target_register.targets or task_name in target_register.types:
+    if task_name in target_register.registered or task_name in target_register.types:
         target_name = task_name
         task_name = sb.NotSpecified
 
     if target_name is not sb.NotSpecified:
-        if target_name in target_register.targets or target_name in target_register.types:
+        if target_name in target_register.registered or target_name in target_register.types:
             kwargs["specific_target"] = target_name
 
-        if target_name not in target_register.targets and target_name not in target_register.types:
+        if (
+            target_name not in target_register.registered
+            and target_name not in target_register.types
+        ):
             raise PhotonsAppError(
                 "Sorry, cannot find help for non existing target", wanted=target_name
             )
@@ -142,7 +145,7 @@ async def list_tasks(
     found = defaultdict(list)
     max_target_length = 0
 
-    for target in target_register.targets:
+    for target in target_register.registered:
         if specific_target in (sb.NotSpecified, target, target_register.type_for(target)):
             typ = target_register.type_for(target)
             desc = target_register.desc_for(target)

@@ -70,6 +70,10 @@ class TargetNotFound(PhotonsAppError):
     desc = "Unknown target"
 
 
+class TargetTypeNotFound(PhotonsAppError):
+    desc = "Unknown type of target"
+
+
 class TimedOut(PhotonsAppError):
     desc = "Timed out"
 

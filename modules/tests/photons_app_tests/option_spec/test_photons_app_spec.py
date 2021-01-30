@@ -67,7 +67,6 @@ describe "PhotonsAppSpec":
         it "gets us a TargetRegister", V:
             register = V.spec.target_register_spec.normalise(V.meta.at("target_register"), {})
             assert isinstance(register, TargetRegister)
-            assert register.collector is V.collector
 
     describe "targets spec":
         it "gets us a dictionary of targets", V:

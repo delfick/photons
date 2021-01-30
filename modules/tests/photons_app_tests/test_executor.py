@@ -1,6 +1,5 @@
 # coding: spec
 
-from photons_app.registers import TargetRegister
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 from photons_app.executor import App
@@ -84,24 +83,6 @@ describe "App":
                 )
 
             setup_logging_theme.assert_called_once_with(logging_handler, colors="light")
-
-        it "sets up the target register":
-            add_targets = mock.Mock(name="add_targets")
-
-            with mock.patch.object(TargetRegister, "add_targets", add_targets):
-                location, args_dict, logging_handler, collector = self.from_config(
-                    """
-                    ---
-
-                    targets:
-                      one:
-                        type: thing
-                        options: {1: 2}
-                """
-                )
-
-            assert "one" in collector.configuration["targets"]
-            add_targets.assert_called_once_with(collector.configuration["targets"])
 
     describe "mainline":
 

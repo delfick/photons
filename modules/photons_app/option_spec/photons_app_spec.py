@@ -206,12 +206,7 @@ class PhotonsAppSpec:
         """
         Make a TargetRegister object
         """
-        return sb.create_spec(
-            TargetRegister,
-            collector=sb.formatted(
-                sb.overridden("{collector}"), formatter=MergedOptionStringFormatter
-            ),
-        )
+        return sb.create_spec(TargetRegister)
 
     @hp.memoized_property
     def reference_resolver_register_spec(self):

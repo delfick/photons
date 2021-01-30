@@ -70,8 +70,10 @@ class task_specifier_spec(sb.Spec):
         return tokens
 
     def parse_overridden_target(self, meta, val, collector, target_register, target_name, tokens):
-        if target_name not in target_register.targets:
-            raise TargetNotFound(name=target_name, available=list(target_register.targets.keys()))
+        if target_name not in target_register.registered:
+            raise TargetNotFound(
+                name=target_name, available=list(target_register.registered.keys())
+            )
 
         if tokens[0].string != "(" or tokens[-1].string != ")":
             raise BadSpecValue("target with options should have options in parenthesis", got=val)
@@ -83,7 +85,7 @@ class task_specifier_spec(sb.Spec):
         target = self.parse_target(meta, parent_target_options, target_name, tokens)
 
         name = f"{target_name}_{uuid.uuid4().hex}"
-        target_register.add_target(name, target)
+        collector.add_targets(target_register, {name: target})
 
         return name
 

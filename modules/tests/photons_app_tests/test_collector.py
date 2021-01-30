@@ -1,8 +1,8 @@
 # coding: spec
 
 from photons_app.registers import Target, TargetRegister, ProtocolRegister, ReferenceResolerRegister
+from photons_app.errors import BadYaml, BadConfiguration, TargetNotFound
 from photons_app.option_spec.photons_app_spec import PhotonsApp
-from photons_app.errors import BadYaml, BadConfiguration
 from photons_app.collector import Collector
 from photons_app import helpers as hp
 
@@ -28,14 +28,17 @@ describe "Collector":
         assert collector.photons_app is collector.configuration["photons_app"]
 
     it "has a shortcut to resolve a target":
-        collector = Collector()
-        collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
 
         class Target(dictobj.Spec):
             pass
 
-        collector.configuration["target_register"].register_type("lan", Target.FieldSpec())
-        collector.configuration["target_register"].add_targets(collector.configuration["targets"])
+        class C(Collector):
+            def add_targets(s, target_register, targets):
+                target_register.register_type("lan", Target.FieldSpec())
+                super().add_targets(target_register, targets)
+
+        collector = C()
+        collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
 
         lan = collector.configuration["target_register"].resolve("lan")
         assert collector.resolve_target("lan") is lan
@@ -341,8 +344,21 @@ describe "Collector":
             final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
-            configuration = {"photons_app": photons_app}
+            configuration = MergedOptions.using({"photons_app": photons_app}, dont_prefix=[dictobj])
             args_dict = mock.Mock(name="args_dict")
+
+            # Necessary setup for extra_prepare_after_activation
+            collector.extra_configuration_collection(configuration)
+            collector.register_converters(
+                {
+                    "photons_app": sb.any_spec(),
+                },
+                configuration=configuration,
+            )
+            configuration.converters._converters.insert(
+                0, configuration.converters._converters.pop()
+            )
+            configuration.converters.activate()
 
             collector.extra_prepare_after_activation(configuration, args_dict)
             assert configuration["final_future"] is final_future
@@ -353,7 +369,7 @@ describe "Collector":
             final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
-            configuration = {"photons_app": photons_app}
+            configuration = MergedOptions.using({"photons_app": photons_app}, dont_prefix=[dictobj])
             args_dict = mock.Mock(name="args_dict")
 
             collector = Collector()
@@ -362,11 +378,71 @@ describe "Collector":
             task_finder = mock.Mock(name="task_finder")
             FakeTaskFinder = mock.Mock(name="TaskFinder", return_value=task_finder)
 
+            # Necessary setup for extra_prepare_after_activation
+            collector.extra_configuration_collection(configuration)
+            collector.register_converters(
+                {
+                    "photons_app": sb.any_spec(),
+                },
+                configuration=configuration,
+            )
+            configuration.converters._converters.insert(
+                0, configuration.converters._converters.pop()
+            )
+            configuration.converters.activate()
+
             with mock.patch("photons_app.collector.TaskFinder", FakeTaskFinder):
                 collector.extra_prepare_after_activation(configuration, args_dict)
 
             assert configuration["task_runner"] is task_finder.task_runner
             collector.register.post_register.assert_called_once_with(mock.ANY)
+
+        it "sets up targets":
+            final_future = hp.create_future()
+            photons_app = mock.Mock(name="photons_app", final_future=final_future)
+
+            configuration = MergedOptions.using(
+                {"photons_app": photons_app, "targets": {"l": {"type": "joke", "options": {}}}},
+                dont_prefix=[dictobj],
+            )
+            args_dict = mock.Mock(name="args_dict")
+
+            collector = Collector()
+            collector.register = mock.Mock(name="register")
+
+            # Necessary setup for extra_prepare_after_activation
+            collector.extra_configuration_collection(configuration)
+            collector.register_converters(
+                {
+                    "photons_app": sb.any_spec(),
+                },
+                configuration=configuration,
+            )
+            configuration.converters._converters.insert(
+                0, configuration.converters._converters.pop()
+            )
+            configuration.converters.activate()
+
+            add_targets = mock.Mock(name="add_targets")
+            with mock.patch.object(collector, "add_targets", add_targets):
+                collector.extra_prepare_after_activation(configuration, args_dict)
+
+            collector.configuration = configuration
+
+            add_targets.assert_called_once_with(
+                configuration["target_register"], configuration["targets"]
+            )
+
+            target_register = configuration["target_register"]
+            with assertRaises(TargetNotFound):
+                target_register.resolve("l")
+
+            class Target(dictobj.Spec):
+                pass
+
+            target_register.register_type("joke", Target.FieldSpec())
+            collector.add_targets(target_register, configuration["targets"])
+            assert isinstance(target_register.resolve("l"), Target)
 
     describe "home_dir_configuration_location":
         it "returns location to a .photons_apprc.yml":
@@ -750,9 +826,6 @@ describe "Collector":
             collector = Collector()
             collector.prepare(
                 None, {}, extra_files=[{"photons_app": {"addons": {"lifx.photons": ["transport"]}}}]
-            )
-            collector.configuration["target_register"].add_targets(
-                collector.configuration["targets"]
             )
             target = collector.resolve_target("lan")
 
