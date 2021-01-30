@@ -9,9 +9,9 @@ from photons_app.special import (
     HardCodedSerials,
     FoundSerials,
 )
-from photons_app.errors import TargetNotFound, ResolverNotFound
+from photons_app.errors import TargetNotFound, ResolverNotFound, TargetTypeNotFound, ProgrammerError
 
-from delfick_project.norms import sb, dictobj, Meta
+from delfick_project.norms import sb, dictobj
 
 
 class Target(dictobj.Spec):
@@ -58,43 +58,50 @@ class TargetRegister:
 
     Note the ``post_register=True``. This is required to be able to access the
     instantiated target_register.
+
+    Once you have a setup target_register, you may resolve a target on it. For
+    example, if in your configuration you've defined a ``lan`` target called
+    ``home_lan``, then you may get one of these by saying:
+
+    .. code-block:: python
+
+        home_lan_target = collector.resolve_target("home_lan")
+
+        # Which will do this for you on the known target_register
+        home_lan_target = target_register.resolve("home_lan")
+
+    Note the result will be cached and multiple calls to this will return the
+    same target object.
     """
 
-    # Tell delfick_project.option_merge not to wrap this in a MergedOptions when we get
-    # it from a MergedOptions instance
     _merged_options_formattable = True
 
-    def __init__(self, collector):
+    def __init__(self):
         self.types = {}
-        self.targets = {}
-        self.collector = collector
+        self.created = {}
+        self.registered = {}
 
-    @property
-    def target_values(self):
-        return [m()[1] for m in self.targets.values()]
+    def __getitem__(self, name):
+        """Return a registered target template, or complain if one is not available under this name"""
+        if not isinstance(name, str):
+            raise ProgrammerError(f"Targets are key'd by their name but using {name}")
+
+        if name in (None, sb.NotSpecified) or name not in self.registered:
+            raise TargetNotFound(wanted=name, available=sorted(self.registered))
+        return self.registered[name]
 
     @property
     def used_targets(self):
-        return [m()[1] for m in self.targets.values() if m.resolved]
-
-    def find_target_name(self, target):
-        for name, m in self.targets.items():
-            if m.resolved and m()[1] is target:
-                return name
+        return list(self.created.values())
 
     def type_for(self, name):
         """Given the name of a target, return it's type as a string"""
-        if name is sb.NotSpecified:
-            return None
-        if name not in self.targets:
-            return None
-        return self.targets[name]()[0]
+        return self[name][0]
 
     def desc_for(self, name):
         """Get us the description of a target, given it's name"""
-        if name is sb.NotSpecified:
-            return None
-        return getattr(self.targets[name]()[1], "description", "")
+        t = self.resolve(name)
+        return getattr(t, "description", "") or t.__doc__ or ""
 
     def register_type(self, name, target):
         """Tell the register about a new target type"""
@@ -102,20 +109,19 @@ class TargetRegister:
 
     def resolve(self, name):
         """Given the name of a target, return an instantiated copy of the target"""
-        if name not in self.targets:
-            raise TargetNotFound(name=name, available=list(self.targets.keys()))
-        return self.targets[name]()[1]
+        if name in self.created.values():
+            return name
 
-    def add_targets(self, targets):
-        """
-        Register options for new targets
+        if not isinstance(name, str):
+            raise TargetNotFound(wanted=name, available=sorted(self.registered))
 
-        This is a shortcut to calling self.add_target(name, target) for all targets.items()
-        """
-        for name, target in targets.items():
-            self.add_target(name, target)
+        if name not in self.created:
+            typ, target, creator = self[name]
+            self.created[name] = creator(name, self.types[typ], target)
 
-    def add_target(self, name, target):
+        return self.created[name]
+
+    def add_target(self, name, target, creator):
         """
         Each target must reference a type that exists or be marked as optional
 
@@ -125,28 +131,13 @@ class TargetRegister:
         if target.type not in self.types:
             if target.optional:
                 return
-            raise TargetNotFound(
-                "Unknown type specified for target",
-                name=name,
-                specified=target.type,
-                available=list(self.types.keys()),
+            raise TargetTypeNotFound(
+                target=name,
+                wanted=target.type,
+                available_types=sorted(self.types),
             )
 
-        cache = {"info": None}
-
-        def make():
-            if cache["info"] is None:
-                make.resolved = True
-                meta = Meta(self.collector.configuration, []).at("targets").at(name).at("options")
-                cache["info"] = (
-                    target.type,
-                    self.types[target.type].normalise(meta, target.options),
-                )
-            return cache["info"]
-
-        make.resolved = False
-
-        self.targets[name] = make
+        self.registered[name] = (target.type, target, creator)
 
 
 class MessagesRegister:

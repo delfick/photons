@@ -261,6 +261,17 @@ class Collector(Collector):
         task_finder = TaskFinder(self)
         configuration["task_runner"] = task_finder.task_runner
 
+        # Register the targets from configuration
+        self.add_targets(configuration["target_register"], configuration["targets"])
+
+    def add_targets(self, target_register, targets):
+        def creator(name, typ, target):
+            meta = Meta(self.configuration, []).at("targets").at(name).at("options")
+            return typ.normalise(meta, target.options)
+
+        for name, target in targets.items():
+            target_register.add_target(name, target, creator)
+
     def home_dir_configuration_location(self):
         return os.path.expanduser("~/.photons_apprc.yml")
 

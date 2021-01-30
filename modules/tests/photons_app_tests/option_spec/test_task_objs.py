@@ -337,30 +337,20 @@ describe "Task":
 
     describe "resolve_target":
 
-        @pytest.fixture()
-        def V(self, V):
-            class V(V.__class__):
-                def __init__(s):
-                    s.target_register = mock.Mock(name="target_register")
-                    s.collector.configuration["target_register"] = s.target_register
-                    s.collector.configuration.converters._converters = [
-                        conv
-                        for conv in s.collector.configuration.converters
-                        if conv.convert_path != ("target_register",)
-                    ]
-
-            return V()
-
         it "returns NotSpecified if target is empty", V:
             for target in ("", None, sb.NotSpecified):
                 assert V.task.resolve_target(V.collector, target) is sb.NotSpecified
 
         it "resolves the target if not empty", V:
             resolved = mock.Mock(name="resolved")
-            V.target_register.resolve.return_value = resolved
-            assert V.task.resolve_target(V.collector, "targetname") is resolved
+            resolve = mock.Mock(name="resolve", return_value=resolved)
 
-            V.target_register.resolve.assert_called_once_with("targetname")
+            with mock.patch.object(
+                V.collector.configuration["target_register"], "resolve", resolve
+            ):
+                assert V.task.resolve_target(V.collector, "targetname") is resolved
+
+            resolve.assert_called_once_with("targetname")
 
     describe "resolve_artfiact":
         it "returns from the photons_app optios":
