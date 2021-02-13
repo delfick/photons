@@ -38,15 +38,19 @@ describe "TargetRegister":
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[None]
 
-            reg.registered[None] = mock.Mock(name="info")
+            reg._registered[None] = ("typ", mock.Mock(name="target"), mock.Mock(name="creator"))
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[None]
 
-        it "complains if we ask for db.NotSpecified", reg:
+        it "complains if we ask for sb.NotSpecified", reg:
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[sb.NotSpecified]
 
-            reg.registered[sb.NotSpecified] = mock.Mock(name="info")
+            reg._registered[sb.NotSpecified] = (
+                "name",
+                mock.Mock(name="target"),
+                mock.Mock(name="creator"),
+            )
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[sb.NotSpecified]
 
@@ -54,14 +58,63 @@ describe "TargetRegister":
             with assertRaises(TargetNotFound, wanted="thing"):
                 reg["thing"]
 
-            thing = mock.Mock(name="info")
-            reg.registered["thing"] = thing
+            thing = ("n", mock.Mock(name="target"), mock.Mock(name="creator"))
+            reg._registered["thing"] = thing
             assert reg["thing"] is thing
 
         it "retrieves from registered", reg:
-            thing = mock.Mock(name="info")
-            reg.registered["thing"] = thing
+            thing = ("o", mock.Mock(name="target"), mock.Mock(name="creator"))
+            reg._registered["thing"] = thing
             assert reg["thing"] is thing
+
+    describe "contains":
+        it "says no if empty", reg:
+            assert "" not in reg
+            assert None not in reg
+            assert sb.NotSpecified not in reg
+
+            reg._registered[None] = ("typ", mock.Mock(name="target"), mock.Mock(name="creator"))
+            reg._registered[""] = ("typ", mock.Mock(name="target"), mock.Mock(name="creator"))
+            reg._registered[sb.NotSpecified] = (
+                "typ",
+                mock.Mock(name="target"),
+                mock.Mock(name="creator"),
+            )
+
+            assert "" not in reg
+            assert None not in reg
+            assert sb.NotSpecified not in reg
+
+        it "says no if the name or target doesn't exist", reg:
+            road = mock.Mock(
+                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
+            )
+            assert road not in reg
+            assert "road" not in reg
+
+            InfraTarget = mock.Mock(name="InfraTarget")
+            infratarget = Target.FieldSpec().empty_normalise(type="infrastructure")
+
+            reg.register_type("infrastructure", InfraTarget)
+            road = mock.Mock(
+                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
+            )
+
+            roadcreator = mock.Mock(name="roadcreator", return_value=road)
+            reg.add_target("road", infratarget, roadcreator)
+
+            assert "road" in reg
+            assert "house" not in reg
+
+            # Target not in there till it's resolved
+            assert road not in reg
+            assert reg.resolve("road") is road
+            assert road in reg
+
+            restricted = reg.restricted(target_types=["hero"])
+            assert road not in restricted
+            assert road in restricted.created.values()
+            assert "road" not in restricted
 
     describe "used_targets":
         it "returns targets that were resolved", reg:
@@ -146,13 +199,25 @@ describe "TargetRegister":
             assert reg.types == {"one": OneTarget2, "two": TwoTarget}
 
     describe "resolve":
-        it "will use already created target if one exists", reg:
+        it "will only use already created target if exists and isn't restricted", reg:
+            HeroTarget = mock.Mock(name="HeroTarget")
             made = mock.Mock(name="made")
-            reg.created["one"] = made
-            assert reg.resolve("one") is made
+            target = Target.FieldSpec().empty_normalise(type="hero")
+            creator = mock.Mock(name="creator", spec=[], return_value=made)
 
-            reg.created["one"] = made
+            reg.register_type("hero", HeroTarget)
+            reg.add_target("superman", target, creator)
+
+            with assertRaises(TargetNotFound):
+                reg.resolve(made)
+
+            assert reg.resolve("superman") is made
             assert reg.resolve(made) is made
+
+            with assertRaises(TargetNotFound):
+                reg.restricted(target_names=["batman"]).resolve(made)
+
+            reg.restricted(target_names=["superman"]).resolve(made)
 
         it "will complain if the name doesn't exists", reg:
             with assertRaises(TargetNotFound, wanted="things"):
@@ -203,4 +268,98 @@ describe "TargetRegister":
             assert reg.registered == {
                 "superman": ("hero", target, creator),
                 "batman": ("hero", target2, creator2),
+            }
+
+    describe "creating a restriction":
+        it "changes underlying data", reg:
+            HeroTarget = mock.Mock(name="HeroTarget")
+            reg.register_type("hero", HeroTarget)
+            restricted = reg.restricted(target_types=["hero"])
+
+            superman = mock.Mock(name="resolvedsuperman")
+            target = Target.FieldSpec().empty_normalise(type="hero")
+            creator = mock.Mock(name="creator", return_value=superman)
+            restricted.add_target("superman", target, creator)
+            assert restricted.registered == {"superman": ("hero", target, creator)}
+
+            batman = mock.Mock(name="resolvedbatman")
+            target2 = Target.FieldSpec().empty_normalise(type="hero")
+            creator2 = mock.Mock(name="creator2", return_value=batman)
+            reg.add_target("batman", target2, creator2)
+            assert reg.registered == {
+                "superman": ("hero", target, creator),
+                "batman": ("hero", target2, creator2),
+            }
+
+            assert reg.created == {}
+            assert restricted.created == {}
+            r1 = reg.resolve("superman")
+            assert r1 is superman
+            assert reg.created == {"superman": r1}
+            assert restricted.created == {"superman": r1}
+
+            assert restricted.registered == {
+                "superman": ("hero", target, creator),
+                "batman": ("hero", target2, creator2),
+            }
+
+            VillianTarget = mock.Mock(name="VillianTarget")
+            restricted.register_type("villian", VillianTarget)
+
+            target3 = Target.FieldSpec().empty_normalise(type="villian")
+            creator3 = mock.Mock(name="creator3")
+            reg.add_target("licorice", target3, creator3)
+            assert reg.registered == {
+                "superman": ("hero", target, creator),
+                "batman": ("hero", target2, creator2),
+                "licorice": ("villian", target3, creator3),
+            }
+            assert restricted.registered == {
+                "superman": ("hero", target, creator),
+                "batman": ("hero", target2, creator2),
+            }
+            assert restricted.restricted(target_types=["villian"]).registered == {
+                "licorice": ("villian", target3, creator3),
+            }
+
+            r2 = restricted.resolve("batman")
+            assert r2 is batman
+            assert reg.created == {"superman": r1, "batman": r2}
+            assert restricted.created == {"superman": r1, "batman": r2}
+            assert restricted.restricted().created == {"superman": r1, "batman": r2}
+
+            with assertRaises(TargetNotFound, wanted="licorice", available=["batman", "superman"]):
+                restricted["licorice"]
+
+            assert reg["licorice"] == ("villian", target3, creator3)
+            assert restricted.restricted()["licorice"] == ("villian", target3, creator3)
+
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered["one"] = 1
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered.pop("one")
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered.pop("licorice")
+            with assertRaises(KeyError, "This dictionary is read only"):
+                del reg.registered["one"]
+            with assertRaises(KeyError, "This dictionary is read only"):
+                del reg.registered["licorice"]
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered.clear()
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered.popitem()
+            with assertRaises(KeyError, "This dictionary is read only"):
+                reg.registered.update({"one": 1})
+
+            assert reg.restricted(target_names=["batman"]).registered == {
+                "batman": ("hero", target2, creator2)
+            }
+            assert reg.restricted(target_names=["batman", "licorice"]).registered == {
+                "licorice": ("villian", target3, creator3),
+                "batman": ("hero", target2, creator2),
+            }
+            assert reg.restricted(
+                target_names=["batman", "licorice"], target_types=["villian"]
+            ).registered == {
+                "licorice": ("villian", target3, creator3),
             }
