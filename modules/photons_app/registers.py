@@ -14,6 +14,45 @@ from photons_app.errors import TargetNotFound, ResolverNotFound, TargetTypeNotFo
 from delfick_project.norms import sb, dictobj
 
 
+class ReadOnlyDictionary(dict):
+    """
+    Used to get a dictionary that cannot be modified once it is
+    locked by setting ``_lock`` to ``True``.
+    """
+
+    _lock = False
+
+    def __setitem__(self, name, value):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().__setitem__(name, value)
+
+    def __delitem__(self, name):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().__delitem__(name)
+
+    def clear(self):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().clear()
+
+    def pop(self, name):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().pop(name)
+
+    def popitem(self):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().popitem()
+
+    def update(self, dict=None):
+        if self._lock:
+            raise KeyError("This dictionary is read only")
+        super().update(dict=dict)
+
+
 class Target(dictobj.Spec):
     """
     Represent the info required for specifying how to get messages to a device
@@ -72,14 +111,66 @@ class TargetRegister:
 
     Note the result will be cached and multiple calls to this will return the
     same target object.
+
+    You may restrict what types of targets you can add and access using a restriction.
+
+    For example:
+
+    .. code-block:: python
+
+        restricted_register = target_register.restricted(target_types=["http"])
+
+    This restricted_register will operate on the same underlying data structures but
+    make it appear like you only have targets of the type ``http``.
     """
 
     _merged_options_formattable = True
 
-    def __init__(self):
-        self.types = {}
-        self.created = {}
-        self.registered = {}
+    class Restriction:
+        """
+        Used to filter out restricted targets based on the name or type of the target
+        """
+
+        def __init__(self, *, target_types=None, target_names=None):
+            self.target_types = target_types
+            self.target_names = target_names
+
+        def __repr__(self):
+            if self.target_types is None and self.target_names is None:
+                return "<Unrestricted>"
+
+            restrictions = []
+            if self.target_types is not None:
+                restrictions.append(
+                    f"restricted_types='{','.join(str(t) for t in self.target_types)}'"
+                )
+            if self.target_names is not None:
+                restrictions.append(
+                    f"restricted_names='{','.join(str(n) for n in self.target_names)}'"
+                )
+
+            return f"<Restrictions {' '.join(restrictions)}>"
+
+        def allows(self, name, typ, target, creator):
+            if self.target_names is not None and name not in self.target_names:
+                return False
+
+            if self.target_types is not None and target.type not in self.target_types:
+                return False
+
+            return True
+
+    def __init__(self, clone_from=None):
+        if clone_from is not None:
+            self.types = clone_from.types
+            self.created = clone_from.created
+            self._registered = clone_from._registered
+        else:
+            self.types = {}
+            self.created = {}
+            self._registered = {}
+
+        self.restriction = self.Restriction()
 
     def __getitem__(self, name):
         """Return a registered target template, or complain if one is not available under this name"""
@@ -88,10 +179,47 @@ class TargetRegister:
 
         if name in (None, sb.NotSpecified) or name not in self.registered:
             raise TargetNotFound(wanted=name, available=sorted(self.registered))
+
         return self.registered[name]
+
+    def __contains__(self, name):
+        if name in ("", None, sb.NotSpecified):
+            return False
+
+        for n, v in self.created.items():
+            if v is name:
+                name = n
+                break
+
+        return name in self.registered
+
+    @property
+    def registered(self):
+        """Return our registered targets, taking the restriction into account"""
+        # It is important this dictionary isn't modified as if we
+        # were actually registered targets
+        ret = ReadOnlyDictionary()
+
+        for name, target in self._registered.items():
+            if self.restriction.allows(name, *target):
+                ret[name] = target
+
+        ret._lock = True
+        return ret
+
+    def restricted(self, **restrictions):
+        """
+        Return this target register but with a different restriction
+
+        Note this replaces the restriction rather than adding to it
+        """
+        register = self.__class__(clone_from=self)
+        register.restriction = self.Restriction(**restrictions)
+        return register
 
     @property
     def used_targets(self):
+        """Return the target objects that have been resolved"""
         return list(self.created.values())
 
     def type_for(self, name):
@@ -109,10 +237,12 @@ class TargetRegister:
 
     def resolve(self, name):
         """Given the name of a target, return an instantiated copy of the target"""
-        if name in self.created.values():
-            return name
+        for n, v in self.created.items():
+            if v is name:
+                name = n
+                break
 
-        if not isinstance(name, str):
+        if not isinstance(name, str) or name not in self:
             raise TargetNotFound(wanted=name, available=sorted(self.registered))
 
         if name not in self.created:
@@ -137,7 +267,7 @@ class TargetRegister:
                 available_types=sorted(self.types),
             )
 
-        self.registered[name] = (target.type, target, creator)
+        self._registered[name] = (target.type, target, creator)
 
 
 class MessagesRegister:
