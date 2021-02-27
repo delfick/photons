@@ -10,6 +10,8 @@ ChangeLog
     * Removed the identifier property from the products registry. There's no
       official list of these identifiers and they were too arbitrary
       to be useful.
+    * Product registry now recognises different kelvin values from updated
+      firmware on devices.
 
 .. _release-core-0-32-6:
 

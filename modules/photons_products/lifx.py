@@ -1,5 +1,5 @@
+from photons_products.base import Product, Capability, CapabilityValue
 from photons_products.enums import VendorRegistry, Zones
-from photons_products.base import Product, Capability
 
 
 class Product(Product):
@@ -41,9 +41,8 @@ class Capability(Capability):
     .. attribute:: max_kelvin
         The max kelvin of this product
 
-    .. attribute:: min_extended_fw
-        A tuple of (firmware_major, firmware_minor) that says when this product got
-        extended multizone capability. If this product never got that, then this is None
+    .. attribute:: has_extended_multizone
+        Does this device/firmware support the extended multizone messages.
 
     .. attribute:: product
         The product class associate with this capability
@@ -58,34 +57,27 @@ class Capability(Capability):
 
     .. autoattribute:: photons_products.registry.Capability.has_matrix
     .. autoattribute:: photons_products.registry.Capability.has_multizone
-    .. autoattribute:: photons_products.registry.Capability.has_extended_multizone
     """
 
     is_light = True
 
-    zones = Zones.SINGLE
+    zones = CapabilityValue(Zones.SINGLE)
 
-    has_ir = False
-    has_hev = False
-    has_color = False
-    has_chain = False
-    has_variable_color_temp = True
-    has_relays = False
-    has_buttons = False
+    has_ir = CapabilityValue(False)
+    has_hev = CapabilityValue(False)
+    has_color = CapabilityValue(False)
+    has_chain = CapabilityValue(False)
+    has_relays = CapabilityValue(False)
+    has_buttons = CapabilityValue(False)
+    has_extended_multizone = CapabilityValue(False)
+    has_variable_color_temp = CapabilityValue(True)
 
-    min_kelvin = 2500
-    max_kelvin = 9000
+    min_kelvin = CapabilityValue(2500)
+    max_kelvin = CapabilityValue(9000)
 
-    min_extended_fw = None
-
-    product = NotImplemented
-    firmware_major = 0
-    firmware_minor = 0
-
-    def items(self):
-        """Yield (attr, value) for all the relevant capabilities"""
+    def capabilities_for_display(self):
         if self.is_light:
-            attrs = [
+            return [
                 "zones",
                 "has_ir",
                 "has_hev",
@@ -97,38 +89,9 @@ class Capability(Capability):
                 "has_variable_color_temp",
                 "min_kelvin",
                 "max_kelvin",
-                "min_extended_fw",
             ]
         else:
-            attrs = ["has_relays", "has_buttons"]
-
-        for attr in attrs:
-            yield attr, getattr(self, attr)
-
-    def check_firmware(self, min_fw):
-        """Return whether our firmware is greater than min_fw"""
-        if min_fw is None:
-            return False
-
-        desired_major, desired_minor = min_fw
-        if self.firmware_major > desired_major:
-            return True
-
-        return self.firmware_major >= desired_major and self.firmware_minor >= desired_minor
-
-    @property
-    def has_extended_multizone(self):
-        """
-        Return whether this product has extended_multizone
-
-        Note you may need to first do something like:
-
-        .. code-block:: python
-
-            cap = capability(firmware_major=2, firmware_minor=77)
-            assert cap.has_extended_multizone
-        """
-        return self.check_firmware(self.min_extended_fw)
+            return ["has_relays", "has_buttons"]
 
     @property
     def has_multizone(self):
@@ -143,6 +106,7 @@ class Capability(Capability):
 
 class NonLightCapability(Capability):
     is_light = False
+
     has_chain = None
     has_color = None
     has_matrix = None

@@ -59,17 +59,16 @@ class ShowProductsDirective(Directive):
         yield from make_table(found)
 
         found = []
-        for attr, val in product.cap.items():
-            if attr == "min_extended_fw":
-                continue
+        max_value = 0
+        for attr, val in sorted(product.cap.Meta.capabilities.items()):
+            found.append((f"cap.{attr}", val._value))
+            max_value = max([max_value, len(str(val._value))])
 
-            v = rr(val)
-            if attr == "has_extended_multizone":
-                if product.cap.has_multizone and product.cap.min_extended_fw:
-                    v = f"After {product.cap.min_extended_fw}"
-            found.append((f"cap.{attr}", v))
+            for ma, mi, becomes in val.upgrades:
+                found.append((f"cap({ma}, {mi}).{attr}", becomes))
+                max_value = max([max_value, len(str(becomes))])
 
-        yield from make_table(found, max_value=len("After (2, 77)"), extra_name="====")
+        yield from make_table(found, max_value=max_value, extra_name="====")
 
 
 def setup(app):

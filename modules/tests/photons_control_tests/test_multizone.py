@@ -349,28 +349,57 @@ describe "SetZonesPlan":
     async it "can create messages to send back", specifier:
         plan = SetZonesPlan(specifier)
 
-        def make(options):
-            return type("Capability", (Capability,), options)
+        def make(device, options):
+            product = chp.ProductResponder.capability(device).product
+            return type("Capability", (Capability,), options)(product)
 
         instance1 = plan.Instance(
             light1.serial,
             plan,
-            {"c": {"cap": make({"has_multizone": False, "has_extended_multizone": False})}},
+            {
+                "c": {
+                    "cap": make(
+                        light1,
+                        {"has_multizone": False, "has_extended_multizone": False},
+                    )
+                }
+            },
         )
         instance2 = plan.Instance(
             striplcm1.serial,
             plan,
-            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": False})}},
+            {
+                "c": {
+                    "cap": make(
+                        striplcm1,
+                        {"has_multizone": True, "has_extended_multizone": False},
+                    )
+                }
+            },
         )
         instance3 = plan.Instance(
             striplcm2noextended.serial,
             plan,
-            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": False})}},
+            {
+                "c": {
+                    "cap": make(
+                        striplcm2noextended,
+                        {"has_multizone": True, "has_extended_multizone": False},
+                    )
+                }
+            },
         )
         instance4 = plan.Instance(
             striplcm2extended.serial,
             plan,
-            {"c": {"cap": make({"has_multizone": True, "has_extended_multizone": True})}},
+            {
+                "c": {
+                    "cap": make(
+                        striplcm2extended,
+                        {"has_multizone": True, "has_extended_multizone": True},
+                    )
+                }
+            },
         )
 
         assert instance1.messages is Skip
