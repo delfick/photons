@@ -98,10 +98,6 @@ product_id
     The product id of the device as an integer. You can see the hex product id
     of each device type in the ``photons_products`` module.
 
-product_identifier
-    A string identifying the product type of the device. You can find these in
-    the ``photons_products`` module.
-
 cap
     A list of strings of capabilities this device has.
 
@@ -120,11 +116,10 @@ against any of the items in the array.
 And a filter with multiple properties will only match devices that match against
 all those properties.
 
-Label properties ``product_identifier``, ``label``, ``location_name``,
-``group_name`` are matched with globs. So if you have device1 with
-product_identifier of ``lifx_a19_plus`` and device2 with a product_identifier
-of ``lifx_br30_plus`` you can choose both of them by using
-``Filter.from_kwargs(product_identifier="*_plus")``
+Label properties ``label``, ``location_name``, ``group_name`` are matched with
+globs. So if you have device1 with label of ``hallway_1`` and device2 with a label
+of ``hallway_2`` you can choose both of them by using
+``Filter.from_kwargs(label="hallway_*")``
 
 Sharing gathered data
 ---------------------

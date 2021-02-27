@@ -18,33 +18,6 @@ describe "LIFXProduct":
 
         assert P.vendor is VendorRegistry.LIFX
 
-    it "modifies identifier":
-        examples = [
-            ("LCMV4_THINGO", "lifx_thingo"),
-            ("LCM1_BLAH", "lifx_blah"),
-            ("LCM2_STUFF_YEAP", "lifx_stuff_yeap"),
-            ("LCM3_BOUNCY_BALL", "lifx_bouncy_ball"),
-            ("LCM3_16_THING", "lifx_thing"),
-            ("LCM3_32_THING", "lifx_thing"),
-        ]
-
-        class capability(registry.Capability):
-            pass
-
-        for n, want in examples:
-            P = type(
-                n, (registry.LIFXProduct,), {"pid": 1, "family": Family.LCM3, "cap": capability}
-            )
-            assert P.identifier == want
-
-        class Stuff(registry.LIFXProduct):
-            pid = 1
-            family = Family.LCM1
-            identifier = "other"
-            cap = capability
-
-        assert Stuff.identifier == "lifx_other"
-
     it "modifies friendly":
         examples = [
             ("LCMV4_THINGO", "LIFX Thingo"),

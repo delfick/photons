@@ -443,5 +443,4 @@ describe "Getting devices from the daemon":
                     "group_name": "g1",
                     "location_id": "bb000000000000000000000000000000",
                     "location_name": "l1",
-                    "product_identifier": "lifx_a19",
                 }

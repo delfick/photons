@@ -21,7 +21,7 @@ describe "Filter":
 
         it "defaults everything to NotSpecified":
             filtr = Filter.empty()
-            assert len(filtr.fields) == 17
+            assert len(filtr.fields) == 16
             self.assertFltrMatches(filtr, {})
 
         describe "from_json_str":
@@ -201,7 +201,6 @@ describe "Filter":
                 "group_name",
                 "location_id",
                 "location_name",
-                "product_identifier",
                 "firmware_version",
             ):
                 filtr = Filter.from_options({field: ["one", "two"]})
@@ -241,7 +240,6 @@ describe "Filter":
         it "has a pre-filled list":
             filtr = Filter.empty()
             assert filtr.label_fields == (
-                "product_identifier",
                 "label",
                 "location_name",
                 "group_name",

@@ -96,10 +96,6 @@ The ``match`` :term:`reference` has the following options:
       The product ID of the device as an integer. For example LIFX Tiles have the
       product ID of 55.
 
-   product_identifier
-      The identifier of the type of device. A list of available identifer strings
-      is available on the :ref:`products <products>` page.
-
    cap
       A list of capability strings, i.e.
 

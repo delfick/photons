@@ -42,7 +42,6 @@ async def info(collector, target, reference, **kwargs):
                 if key == "capability":
                     specs = [
                         ("name", val["product"].name),
-                        ("identifier", val["product"].identifier),
                         ("family", val["product"].family.value),
                     ]
                     for k, v in val["cap"].items():

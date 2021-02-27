@@ -65,7 +65,7 @@ async def device_finder_serials(collector, target, reference, **kwargs):
     """
     Find serials that match the provided filter
 
-    ``find_with_filter -- '{"label": ["kitchen", "loungeroom"], "product_identifier": "lifx_z"}'``
+    ``find_with_filter -- '{"label": ["kitchen", "loungeroom"], "location_name": "home"}'``
 
     Not providing options after the ``--`` will find all devices on the network.
     """
@@ -85,7 +85,7 @@ async def device_finder_info(collector, target, reference, **kwargs):
     """
     Print information about devices from the device finder
 
-    ``device_finder_info -- '{"label": ["kitchen", "loungeroom"], "product_identifier": "lifx_z"}'``
+    ``device_finder_info -- '{"label": ["kitchen", "loungeroom"], "location_name": "office"}'``
 
     Not providing options after the ``--`` will find all devices on the network.
     """
@@ -230,7 +230,6 @@ class Filter(dictobj.Spec):
     firmware_version = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
     product_id = dictobj.Field(sb.listof(sb.integer_spec()), wrapper=sb.optional_spec)
-    product_identifier = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
     cap = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
@@ -369,7 +368,7 @@ class Filter(dictobj.Spec):
 
     @property
     def label_fields(self):
-        return ("product_identifier", "label", "location_name", "group_name")
+        return ("label", "location_name", "group_name")
 
 
 class DeviceFinder(SpecialReference):
@@ -465,7 +464,7 @@ class InfoPoints(enum.Enum):
         ["label", "power", "hue", "saturation", "brightness", "kelvin"],
         10,
     )
-    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "product_identifier", "cap"], None)
+    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"], 60)
@@ -495,7 +494,6 @@ class Device(dictobj.Spec):
     firmware_version = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
 
     product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
-    product_identifier = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
 
     cap = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
@@ -610,7 +608,6 @@ class Device(dictobj.Spec):
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
             product = Products[pkt.vendor, pkt.product]
-            self.product_identifier = product.identifier
             cap = []
             for prop in (
                 "has_ir",

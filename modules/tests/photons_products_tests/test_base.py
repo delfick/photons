@@ -97,7 +97,7 @@ describe "Product":
         assert isinstance(P.cap, P.cap_kls)
         assert P.cap.product == P
 
-    it "sets a default for friendly and identifier":
+    it "sets a default for friendly":
 
         class LCM9_AMAZE_SPHERE(base.Product):
             pid = 1
@@ -108,7 +108,6 @@ describe "Product":
                 pass
 
         assert LCM9_AMAZE_SPHERE.friendly == "lcm9 amaze sphere"
-        assert LCM9_AMAZE_SPHERE.identifier == "lcm9_amaze_sphere"
 
     it "uses modifier methods on the baseclass if they exist":
 
@@ -133,7 +132,6 @@ describe "Product":
 
         assert LCM9_AMAZE_SPHERE.family == "lcm9"
         assert LCM9_AMAZE_SPHERE.friendly == "sphere"
-        assert LCM9_AMAZE_SPHERE.identifier == "lcm9_amaze_sphere"
 
     it "has company":
 
@@ -246,7 +244,6 @@ describe "Product":
             "cap": {"one": "blah", "two": "other"},
             "family": Family.LCM2,
             "friendly": "lcm2 monitor stand",
-            "identifier": "lcm2_monitor_stand",
             "name": "LCM2_MONITOR_STAND",
             "pid": 29,
             "vendor": VendorRegistry.LIFX,

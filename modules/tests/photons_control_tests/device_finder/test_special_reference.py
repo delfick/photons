@@ -397,7 +397,6 @@ describe "finding devices":
                 "group_name": "g1",
                 "location_id": "bb000000000000000000000000000000",
                 "location_name": "l1",
-                "product_identifier": "lifx_a19",
             }
 
             for device in V.devices:
@@ -515,7 +514,6 @@ describe "finding devices":
                 "saturation": V.d3.attrs.color.saturation,
                 "brightness": V.d3.attrs.color.brightness,
                 "product_id": 27,
-                "product_identifier": "lifx_a19",
             }
 
             for device in V.devices:
@@ -549,7 +547,6 @@ describe "finding devices":
                 "group_name": "g1",
                 "location_id": "bb000000000000000000000000000000",
                 "location_name": "l1",
-                "product_identifier": "lifx_a19",
             }
 
             for device in V.devices:
