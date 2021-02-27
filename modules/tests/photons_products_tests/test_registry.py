@@ -12,38 +12,13 @@ describe "LIFXProduct":
         class P(registry.LIFXProduct):
             pid = 3
             family = Family.LCM3
+            friendly = "P"
 
             class cap(registry.Capability):
                 pass
 
         assert P.vendor is VendorRegistry.LIFX
 
-    it "modifies friendly":
-        examples = [
-            ("LCMV4_THINGO", "LIFX Thingo"),
-            ("LCM1_BLAH", "LIFX Blah"),
-            ("LCM2_STUFF_YEAP", "LIFX Stuff Yeap"),
-            ("LCM3_BOUNCY_BALL", "LIFX Bouncy Ball"),
-            ("LCM3_16_THING", "LIFX Thing"),
-            ("LCM3_32_THING", "LIFX Thing"),
-        ]
-
-        class capability(registry.Capability):
-            pass
-
-        for n, want in examples:
-            P = type(
-                n, (registry.LIFXProduct,), {"pid": 1, "family": Family.LCM3, "cap": capability}
-            )
-            assert P.friendly == want
-
-        class Stuff(registry.LIFXProduct):
-            pid = 1
-            family = Family.LCM1
-            friendly = "Other"
-            cap = capability
-
-        assert Stuff.friendly == "LIFX Other"
 
 describe "Capability":
     it "complains if min_extended_fw is wrong":

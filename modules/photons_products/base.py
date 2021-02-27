@@ -49,17 +49,8 @@ class product_metaclass(type):
             dflt = getattr(parent, attr)
             val = getattr(kls, attr, NotImplemented)
 
-            if val is NotImplemented:
-                if attr == "friendly":
-                    val = classname.lower().replace("_", " ")
-                    setattr(kls, attr, val)
-
             if dflt is NotImplemented and val is NotImplemented:
                 raise IncompleteProduct("Attribute wasn't overridden", attr=attr, name=kls.name)
-
-            modifier = getattr(parent, f"_modify_{attr}", None)
-            if modifier:
-                setattr(kls, attr, modifier(val))
 
         instance = kls()
         kls.cap = kls.cap(instance)
@@ -127,6 +118,7 @@ def make_unknown_product(vd, pd, Capability):
         pid = pd
         vendor = VendorRegistry.choose(vd)
         family = Family.UNKNOWN
+        friendly = "<<Unknown>>"
 
         class cap(Capability):
             pass
