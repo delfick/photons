@@ -1,58 +1,39 @@
 # coding: spec
 
-from photons_products import registry, VendorRegistry, Family, Zones
+from photons_products import registry, VendorRegistry, Family, Zones, lifx
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue
 from unittest import mock
 
-describe "LIFXProduct":
+describe "lifx.Product":
     it "has default vendor":
 
-        class P(registry.LIFXProduct):
+        class P(lifx.Product):
             pid = 3
             family = Family.LCM3
             friendly = "P"
 
-            class cap(registry.Capability):
+            class cap(lifx.Capability):
                 pass
 
         assert P.vendor is VendorRegistry.LIFX
 
 
 describe "Capability":
-    it "complains if min_extended_fw is wrong":
-
-        with assertRaises(BadSpecValue, "Expected a tuple", got=str):
-
-            class cap(registry.Capability):
-                min_extended_fw = "WAT"
-
-        with assertRaises(
-            BadSpecValue, "Expected tuple to be of a particular length", got=3, expected=2
-        ):
-
-            class cap2(registry.Capability):
-                min_extended_fw = (1, 2, 1)
-
-        with assertRaises(BadSpecValue, "Expected a tuple", got=list):
-
-            class cap3(registry.Capability):
-                min_extended_fw = [1, 2]
-
     it "understands correct min_extended_fw":
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             min_extended_fw = (1, 2)
 
         assert cap.min_extended_fw == (1, 2)
 
-        class cap2(registry.Capability):
+        class cap2(lifx.Capability):
             min_extended_fw = None
 
         assert cap2.min_extended_fw is None
 
-        class cap3(registry.Capability):
+        class cap3(lifx.Capability):
             pass
 
         assert cap3.min_extended_fw is None
@@ -60,17 +41,17 @@ describe "Capability":
     it "has has_matrix":
         product = mock.Mock(name="product")
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.MATRIX
 
         assert cap(product).has_matrix
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.LINEAR
 
         assert not cap(product).has_matrix
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.SINGLE
 
         assert not cap(product).has_matrix
@@ -78,17 +59,17 @@ describe "Capability":
     it "has has_multizone":
         product = mock.Mock(name="product")
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.MATRIX
 
         assert not cap(product).has_multizone
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.LINEAR
 
         assert cap(product).has_multizone
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             zones = Zones.SINGLE
 
         assert not cap(product).has_multizone
@@ -96,7 +77,7 @@ describe "Capability":
     it "has has_extended_multizone":
         product = mock.Mock(name="product")
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             pass
 
         c = cap(product)
@@ -104,7 +85,7 @@ describe "Capability":
         assert not c.has_extended_multizone
         assert not c(firmware_major=2, firmware_minor=77).has_extended_multizone
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             min_extended_fw = (2, 77)
 
         c = cap(product)
@@ -118,7 +99,7 @@ describe "Capability":
     it "has items":
         product = mock.Mock(name="product")
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             pass
 
         c = cap(product, firmware_major=3, firmware_minor=77)
@@ -142,7 +123,7 @@ describe "Capability":
                 del dct[k]
         assert dct == expected
 
-        class cap(registry.Capability):
+        class cap(lifx.Capability):
             min_extended_fw = (3, 60)
             has_color = True
             zones = Zones.LINEAR
@@ -172,7 +153,7 @@ describe "Capability":
     it "has items for non light products":
         product = mock.Mock(name="product")
 
-        class cap(registry.NonLightCapability):
+        class cap(lifx.NonLightCapability):
             has_relays = True
 
         c = cap(product, firmware_major=3, firmware_minor=81)
