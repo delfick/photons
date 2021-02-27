@@ -191,7 +191,6 @@ describe "Device":
                     "kelvin": 3500,
                     "firmware_version": "2.80",
                     "product_id": 27,
-                    "product_identifier": "lifx_a19",
                     "cap": [
                         "color",
                         "not_chain",
@@ -336,7 +335,6 @@ describe "Device":
                     "kelvin": 3500,
                     "firmware_version": "2.80",
                     "product_id": 27,
-                    "product_identifier": "lifx_a19",
                     "cap": [
                         "color",
                         "not_chain",

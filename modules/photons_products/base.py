@@ -53,9 +53,6 @@ class product_metaclass(type):
                 if attr == "friendly":
                     val = classname.lower().replace("_", " ")
                     setattr(kls, attr, val)
-                elif attr == "identifier":
-                    val = classname.lower()
-                    setattr(kls, attr, val)
 
             if dflt is NotImplemented and val is NotImplemented:
                 raise IncompleteProduct("Attribute wasn't overridden", attr=attr, name=kls.name)
@@ -88,9 +85,6 @@ class Product(metaclass=product_metaclass):
 
     .. attribute:: friendly
         A friendly name for the product
-
-    .. attribute:: identifier
-        The identifier of the product
     """
 
     name = NotImplemented
@@ -99,7 +93,6 @@ class Product(metaclass=product_metaclass):
     vendor = NotImplemented
     family = NotImplemented
     friendly = NotImplemented
-    identifier = NotImplemented
 
     @property
     def company(self):

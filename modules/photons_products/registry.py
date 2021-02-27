@@ -8,19 +8,6 @@ class LIFXProduct(Product):
     vendor = VendorRegistry.LIFX
 
     @classmethod
-    def _modify_identifier(kls, val):
-        if val.startswith("lcmv4_") and len(val) > 6:
-            val = val[6:]
-
-        if val[:5] in ("lcm1_", "lcm2_", "lcm3_") and len(val) > 5:
-            val = val[5:]
-
-        if val.startswith("16_") or val.startswith("32_") and len(val) > 3:
-            val = val[3:]
-
-        return f"lifx_{val}"
-
-    @classmethod
     def _modify_friendly(kls, val):
         if val.startswith("lcmv4 ") and len(val) > 6:
             val = val[6:]
@@ -200,7 +187,6 @@ class ProductRegistry:
         pid = 1
         family = Family.LMB
         friendly = "Original 1000"
-        identifier = "original_a21"
 
         class cap(Capability):
             has_color = True
@@ -209,7 +195,6 @@ class ProductRegistry:
         pid = 3
         family = Family.LMBG
         friendly = "Color 650"
-        identifier = "gu10_color"
 
         class cap(Capability):
             has_color = True
@@ -218,7 +203,6 @@ class ProductRegistry:
         pid = 10
         family = Family.LCM1
         friendly = "White 800 (Low Voltage)"
-        identifier = "a19_white"
 
         class cap(Capability):
             has_color = False
@@ -230,7 +214,6 @@ class ProductRegistry:
         pid = 11
         family = Family.LCM1
         friendly = "White 800 (High Voltage)"
-        identifier = "a19_white"
 
         class cap(Capability):
             has_color = False
@@ -250,7 +233,6 @@ class ProductRegistry:
         pid = 18
         family = Family.LCM1
         friendly = "White 900 BR30 (Low Voltage)"
-        identifier = "br30_white"
 
         class cap(Capability):
             has_color = False
@@ -260,7 +242,6 @@ class ProductRegistry:
         pid = 19
         family = Family.LCM1
         friendly = "White 900 BR30 (High Voltage)"
-        identifier = "br30_white"
 
         class cap(Capability):
             has_color = False
@@ -270,7 +251,6 @@ class ProductRegistry:
         pid = 20
         family = Family.LCM1
         friendly = "Color 1000 BR30"
-        identifier = "br30_color"
 
         class cap(Capability):
             has_color = True
@@ -279,7 +259,6 @@ class ProductRegistry:
         pid = 22
         family = Family.LCM1
         friendly = "Color 1000"
-        identifier = "a19_color"
 
         class cap(Capability):
             has_color = True

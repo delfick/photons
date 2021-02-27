@@ -5,8 +5,11 @@ ChangeLog
 
 .. _release-core-0-32-7:
 
-0.32.7 - TBD
+0.33.0 - TBD
     * Allow --debug when ``PHOTONS_SILENT_BY_DEFAULT=1``
+    * Removed the identifier property from the products registry. There's no
+      official list of these identifiers and they were too arbitrary
+      to be useful.
 
 .. _release-core-0-32-6:
 

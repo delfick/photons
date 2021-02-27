@@ -98,6 +98,3 @@ cap
 
 friendly
     A friendly name for the product
-
-identifier
-    The identifier of the product

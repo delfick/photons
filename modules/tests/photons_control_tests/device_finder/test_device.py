@@ -58,7 +58,6 @@ describe "Device":
             "kelvin": 2500,
             "firmware_version": "1.2",
             "product_id": 22,
-            "product_identifier": "color_a19",
             "cap": ["multizone", "color"],
         }
 
@@ -71,9 +70,6 @@ describe "Device":
 
             for k in values:
                 if k.startswith(field):
-                    if field == "product_id" and k == "product_identifier":
-                        continue
-
                     info[k] = values[k]
                     expected[k] = values[k]
 
@@ -95,7 +91,6 @@ describe "Device":
         assertChange("kelvin", 2500)
         assertChange("firmware_version", "1.2")
         assertChange("product_id", 22)
-        assertChange("product_identifier", "color_a19")
         assertChange("cap", ["multizone", "color"])
 
         assert device.info == values
@@ -276,7 +271,6 @@ describe "Device":
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 
             assert device.product_id == 22
-            assert device.product_identifier == Products[1, 22].identifier
             assert device.cap == [
                 "color",
                 "not_chain",
