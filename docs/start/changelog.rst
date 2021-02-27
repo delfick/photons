@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-32-7:
+
+0.32.7 - TBD
+    * Allow --debug when ``PHOTONS_SILENT_BY_DEFAULT=1``
+
 .. _release-core-0-32-6:
 
 0.32.6 - TBD
