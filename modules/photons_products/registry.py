@@ -7,23 +7,6 @@ from delfick_project.norms import sb, Meta
 class LIFXProduct(Product):
     vendor = VendorRegistry.LIFX
 
-    @classmethod
-    def _modify_friendly(kls, val):
-        if val.startswith("lcmv4 ") and len(val) > 6:
-            val = val[6:]
-
-        if val[:5] in ("lcm1 ", "lcm2 ", "lcm3 ") and len(val) > 5:
-            val = val[5:]
-
-        if val.startswith("16 ") or val.startswith("32 ") and len(val) > 3:
-            val = val[3:]
-
-        def capital(v):
-            return f"{v[0].upper()}{v[1:]}"
-
-        val = " ".join(capital(v) for v in val.split(" "))
-        return f"LIFX {val}"
-
 
 class capability_metaclass(type):
     def __new__(*args, **kwargs):
@@ -186,7 +169,7 @@ class ProductRegistry:
     class LMB_MESH_A21(LIFXProduct):
         pid = 1
         family = Family.LMB
-        friendly = "Original 1000"
+        friendly = "LIFX Original 1000"
 
         class cap(Capability):
             has_color = True
@@ -194,7 +177,7 @@ class ProductRegistry:
     class LMBG_MESH_GU10(LIFXProduct):
         pid = 3
         family = Family.LMBG
-        friendly = "Color 650"
+        friendly = "LIFX Color 650"
 
         class cap(Capability):
             has_color = True
@@ -202,7 +185,7 @@ class ProductRegistry:
     class LCMV4_A19_WHITE_LV(LIFXProduct):
         pid = 10
         family = Family.LCM1
-        friendly = "White 800 (Low Voltage)"
+        friendly = "LIFX White 800 (Low Voltage)"
 
         class cap(Capability):
             has_color = False
@@ -213,7 +196,7 @@ class ProductRegistry:
     class LCMV4_A19_WHITE_HV(LIFXProduct):
         pid = 11
         family = Family.LCM1
-        friendly = "White 800 (High Voltage)"
+        friendly = "LIFX White 800 (High Voltage)"
 
         class cap(Capability):
             has_color = False
@@ -224,7 +207,7 @@ class ProductRegistry:
     class LCMV4_A21_COLOR(LIFXProduct):
         pid = 15
         family = Family.LCM1
-        friendly = "Color 1000"
+        friendly = "LIFX Color 1000"
 
         class cap(Capability):
             has_color = True
@@ -232,7 +215,7 @@ class ProductRegistry:
     class LCMV4_BR30_WHITE_LV(LIFXProduct):
         pid = 18
         family = Family.LCM1
-        friendly = "White 900 BR30 (Low Voltage)"
+        friendly = "LIFX White 900 BR30 (Low Voltage)"
 
         class cap(Capability):
             has_color = False
@@ -241,7 +224,7 @@ class ProductRegistry:
     class LCMV4_BR30_WHITE_HV(LIFXProduct):
         pid = 19
         family = Family.LCM1
-        friendly = "White 900 BR30 (High Voltage)"
+        friendly = "LIFX White 900 BR30 (High Voltage)"
 
         class cap(Capability):
             has_color = False
@@ -250,7 +233,7 @@ class ProductRegistry:
     class LCMV4_BR30_COLOR(LIFXProduct):
         pid = 20
         family = Family.LCM1
-        friendly = "Color 1000 BR30"
+        friendly = "LIFX Color 1000 BR30"
 
         class cap(Capability):
             has_color = True
@@ -258,7 +241,7 @@ class ProductRegistry:
     class LCMV4_A19_COLOR(LIFXProduct):
         pid = 22
         family = Family.LCM1
-        friendly = "Color 1000"
+        friendly = "LIFX Color 1000"
 
         class cap(Capability):
             has_color = True
@@ -266,7 +249,7 @@ class ProductRegistry:
     class LCM2_A19(LIFXProduct):
         pid = 27
         family = Family.LCM2
-        friendly = "A19"
+        friendly = "LIFX A19"
 
         class cap(Capability):
             has_color = True
@@ -274,7 +257,7 @@ class ProductRegistry:
     class LCM2_BR30(LIFXProduct):
         pid = 28
         family = Family.LCM2
-        friendly = "BR30"
+        friendly = "LIFX BR30"
 
         class cap(Capability):
             has_color = True
@@ -282,7 +265,7 @@ class ProductRegistry:
     class LCM2_A19_PLUS(LIFXProduct):
         pid = 29
         family = Family.LCM2
-        friendly = "A19 Night Vision"
+        friendly = "LIFX A19 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -291,7 +274,7 @@ class ProductRegistry:
     class LCM2_BR30_PLUS(LIFXProduct):
         pid = 30
         family = Family.LCM2
-        friendly = "BR30 Night Vision"
+        friendly = "LIFX BR30 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -300,7 +283,7 @@ class ProductRegistry:
     class LCM1_Z(LIFXProduct):
         pid = 31
         family = Family.LCM1
-        friendly = "Z"
+        friendly = "LIFX Z"
 
         class cap(Capability):
             zones = Zones.LINEAR
@@ -309,7 +292,7 @@ class ProductRegistry:
     class LCM2_Z(LIFXProduct):
         pid = 32
         family = Family.LCM2
-        friendly = "Z"
+        friendly = "LIFX Z"
 
         class cap(Capability):
             zones = Zones.LINEAR
@@ -319,7 +302,7 @@ class ProductRegistry:
     class LCM2_DOWNLIGHT_OL(LIFXProduct):
         pid = 36
         family = Family.LCM2
-        friendly = "Downlight"
+        friendly = "LIFX Downlight"
 
         class cap(Capability):
             has_color = True
@@ -327,7 +310,7 @@ class ProductRegistry:
     class LCM2_DOWNLIGHT_NL(LIFXProduct):
         pid = 37
         family = Family.LCM2
-        friendly = "Downlight"
+        friendly = "LIFX Downlight"
 
         class cap(Capability):
             has_color = True
@@ -335,7 +318,7 @@ class ProductRegistry:
     class LCM2_BEAM(LIFXProduct):
         pid = 38
         family = Family.LCM2
-        friendly = "Beam"
+        friendly = "LIFX Beam"
 
         class cap(Capability):
             zones = Zones.LINEAR
@@ -345,7 +328,7 @@ class ProductRegistry:
     class LCM2_DOWNLIGHT_WW_IC4(LIFXProduct):
         pid = 39
         family = Family.LCM2
-        friendly = "Downlight White to Warm"
+        friendly = "LIFX Downlight White to Warm"
 
         class cap(Capability):
             has_color = False
@@ -356,7 +339,7 @@ class ProductRegistry:
     class LCM2_DOWNLIGHT_COLOR_IC4(LIFXProduct):
         pid = 40
         family = Family.LCM2
-        friendly = "Downlight"
+        friendly = "LIFX Downlight"
 
         class cap(Capability):
             has_color = True
@@ -364,7 +347,7 @@ class ProductRegistry:
     class LCM2_A19_HK(LIFXProduct):
         pid = 43
         family = Family.LCM2
-        friendly = "A19"
+        friendly = "LIFX A19"
 
         class cap(Capability):
             has_color = True
@@ -372,7 +355,7 @@ class ProductRegistry:
     class LCM2_BR30_HK(LIFXProduct):
         pid = 44
         family = Family.LCM2
-        friendly = "BR30"
+        friendly = "LIFX BR30"
 
         class cap(Capability):
             has_color = True
@@ -380,7 +363,7 @@ class ProductRegistry:
     class LCM2_A19_PLUS_HK(LIFXProduct):
         pid = 45
         family = Family.LCM2
-        friendly = "A19 Night Vision"
+        friendly = "LIFX A19 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -389,7 +372,7 @@ class ProductRegistry:
     class LCM2_BR30_PLUS_HK(LIFXProduct):
         pid = 46
         family = Family.LCM2
-        friendly = "BR30 Night Vision"
+        friendly = "LIFX BR30 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -398,7 +381,7 @@ class ProductRegistry:
     class LCM3_MINI_COLOR(LIFXProduct):
         pid = 49
         family = Family.LCM3
-        friendly = "Mini Color"
+        friendly = "LIFX Mini Color"
 
         class cap(Capability):
             has_color = True
@@ -406,7 +389,7 @@ class ProductRegistry:
     class LCM3_MINI_WW(LIFXProduct):
         pid = 50
         family = Family.LCM3
-        friendly = "Mini White to Warm"
+        friendly = "LIFX Mini White to Warm"
 
         class cap(Capability):
             has_color = False
@@ -417,7 +400,7 @@ class ProductRegistry:
     class LCM3_MINI_WHITE(LIFXProduct):
         pid = 51
         family = Family.LCM3
-        friendly = "Mini White"
+        friendly = "LIFX Mini White"
 
         class cap(Capability):
             has_color = False
@@ -428,7 +411,7 @@ class ProductRegistry:
     class LCM3_GU10_COLOR(LIFXProduct):
         pid = 52
         family = Family.LCM3
-        friendly = "GU10"
+        friendly = "LIFX GU10"
 
         class cap(Capability):
             has_color = True
@@ -436,14 +419,14 @@ class ProductRegistry:
     class LCM3_GU10_ST(LIFXProduct):
         pid = 53
         family = Family.LCM3
-        friendly = "GU10"
+        friendly = "LIFX GU10"
 
         class cap(Capability):
             has_color = True
 
     class LCM3_TILE(LIFXProduct):
         pid = 55
-        friendly = "Tile"
+        friendly = "LIFX Tile"
         family = Family.LCM3
 
         class cap(Capability):
@@ -454,7 +437,7 @@ class ProductRegistry:
     class LCM3_CANDLE(LIFXProduct):
         pid = 57
         family = Family.LCM3
-        friendly = "Candle"
+        friendly = "LIFX Candle"
 
         class cap(Capability):
             zones = Zones.MATRIX
@@ -466,7 +449,7 @@ class ProductRegistry:
     class LCM3_MINI2_COLOR(LIFXProduct):
         pid = 59
         family = Family.LCM3
-        friendly = "Mini Color"
+        friendly = "LIFX Mini Color"
 
         class cap(Capability):
             has_color = True
@@ -474,7 +457,7 @@ class ProductRegistry:
     class LCM3_MINI2_WW(LIFXProduct):
         pid = 60
         family = Family.LCM3
-        friendly = "Mini White to Warm"
+        friendly = "LIFX Mini White to Warm"
 
         class cap(Capability):
             has_color = False
@@ -485,7 +468,7 @@ class ProductRegistry:
     class LCM3_MINI2_WHITE(LIFXProduct):
         pid = 61
         family = Family.LCM3
-        friendly = "Mini White"
+        friendly = "LIFX Mini White"
 
         class cap(Capability):
             has_color = False
@@ -496,7 +479,7 @@ class ProductRegistry:
     class LCM3_A19(LIFXProduct):
         pid = 62
         family = Family.LCM3
-        friendly = "A19"
+        friendly = "LIFX A19"
 
         class cap(Capability):
             has_color = True
@@ -504,7 +487,7 @@ class ProductRegistry:
     class LCM3_BR30(LIFXProduct):
         pid = 63
         family = Family.LCM3
-        friendly = "BR30"
+        friendly = "LIFX BR30"
 
         class cap(Capability):
             has_color = True
@@ -512,7 +495,7 @@ class ProductRegistry:
     class LCM3_A19_PLUS(LIFXProduct):
         pid = 64
         family = Family.LCM3
-        friendly = "A19 Night Vision"
+        friendly = "LIFX A19 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -521,7 +504,7 @@ class ProductRegistry:
     class LCM3_BR30_PLUS(LIFXProduct):
         pid = 65
         family = Family.LCM3
-        friendly = "BR30 Night Vision"
+        friendly = "LIFX BR30 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -530,7 +513,7 @@ class ProductRegistry:
     class LCM3_MINI2_WHITE_INT(LIFXProduct):
         pid = 66
         family = Family.LCM3
-        friendly = "Mini White"
+        friendly = "LIFX Mini White"
 
         class cap(Capability):
             has_color = False
@@ -541,7 +524,7 @@ class ProductRegistry:
     class LCM3_CANDLE_CA(LIFXProduct):
         pid = 68
         family = Family.LCM3
-        friendly = "Candle"
+        friendly = "LIFX Candle"
 
         class cap(Capability):
             zones = Zones.MATRIX
@@ -554,7 +537,7 @@ class ProductRegistry:
     class LCM3_16_SWITCH(LIFXProduct):
         pid = 70
         family = Family.LCM3
-        friendly = "Switch"
+        friendly = "LIFX Switch"
 
         class cap(NonLightCapability):
             has_relays = True
@@ -563,7 +546,7 @@ class ProductRegistry:
     class LCM3_32_CANDLE_WW(LIFXProduct):
         pid = 81
         family = Family.LCM3
-        friendly = "Candle White to Warm"
+        friendly = "LIFX Candle White to Warm"
 
         class cap(Capability):
             zones = Zones.SINGLE
@@ -576,7 +559,7 @@ class ProductRegistry:
     class LCM3_FILAMENT_ST64_CLEAR_US(LIFXProduct):
         pid = 82
         family = Family.LCM3
-        friendly = "Filament Clear"
+        friendly = "LIFX Filament Clear"
 
         class cap(Capability):
             has_color = False
@@ -587,7 +570,7 @@ class ProductRegistry:
     class LCM3_FILAMENT_ST64_AMBER_US(LIFXProduct):
         pid = 85
         family = Family.LCM3
-        friendly = "Filament Amber"
+        friendly = "LIFX Filament Amber"
 
         class cap(Capability):
             has_color = False
@@ -598,7 +581,7 @@ class ProductRegistry:
     class LCM3_MINI_WHITE_INTL(LIFXProduct):
         pid = 88
         family = Family.LCM3
-        friendly = "Mini White"
+        friendly = "LIFX Mini White"
 
         class cap(Capability):
             has_color = False
@@ -609,7 +592,7 @@ class ProductRegistry:
     class LCM3_32_SWITCH_I(LIFXProduct):
         pid = 89
         family = Family.LCM3
-        friendly = "Switch"
+        friendly = "LIFX Switch"
 
         class cap(NonLightCapability):
             has_relays = True
@@ -618,7 +601,7 @@ class ProductRegistry:
     class LCM3_A19_CLEAN(LIFXProduct):
         pid = 90
         family = Family.LCM3
-        friendly = "Clean"
+        friendly = "LIFX Clean"
 
         class cap(Capability):
             has_hev = True
@@ -627,7 +610,7 @@ class ProductRegistry:
     class LCM3_32_MINI_COLOR_US(LIFXProduct):
         pid = 91
         family = Family.LCM3
-        friendly = "Color"
+        friendly = "LIFX Color"
 
         class cap(Capability):
             has_color = True
@@ -635,7 +618,7 @@ class ProductRegistry:
     class LCM3_32_MINI_COLOR_INTL(LIFXProduct):
         pid = 92
         family = Family.LCM3
-        friendly = "Color"
+        friendly = "LIFX Color"
 
         class cap(Capability):
             has_color = True
@@ -643,7 +626,7 @@ class ProductRegistry:
     class LCM3_32_BR30_US(LIFXProduct):
         pid = 94
         family = Family.LCM3
-        friendly = "BR30"
+        friendly = "LIFX BR30"
 
         class cap(Capability):
             has_color = True
@@ -651,7 +634,7 @@ class ProductRegistry:
     class LCM3_32_CANDLE_WW_INTL(LIFXProduct):
         pid = 96
         family = Family.LCM3
-        friendly = "Candle White to Warm"
+        friendly = "LIFX Candle White to Warm"
 
         class cap(Capability):
             zones = Zones.SINGLE
@@ -664,7 +647,7 @@ class ProductRegistry:
     class LCM3_32_A19_INTL(LIFXProduct):
         pid = 97
         family = Family.LCM3
-        friendly = "A19"
+        friendly = "LIFX A19"
 
         class cap(Capability):
             has_color = True
@@ -672,7 +655,7 @@ class ProductRegistry:
     class LCM3_32_BR30_INTL(LIFXProduct):
         pid = 98
         family = Family.LCM3
-        friendly = "BR30"
+        friendly = "LIFX BR30"
 
         class cap(Capability):
             has_color = True
@@ -680,7 +663,7 @@ class ProductRegistry:
     class LCM3_A19_CLEAN_INTL(LIFXProduct):
         pid = 99
         family = Family.LCM3
-        friendly = "Clean"
+        friendly = "LIFX Clean"
 
         class cap(Capability):
             has_hev = True
@@ -689,7 +672,7 @@ class ProductRegistry:
     class LCM3_FILAMENT_ST64_CLEAR_INTL(LIFXProduct):
         pid = 100
         family = Family.LCM3
-        friendly = "Filament Clear"
+        friendly = "LIFX Filament Clear"
 
         class cap(Capability):
             has_color = False
@@ -700,7 +683,7 @@ class ProductRegistry:
     class LCM3_FILAMENT_ST64_AMBER_INTL(LIFXProduct):
         pid = 101
         family = Family.LCM3
-        friendly = "Filament Amber"
+        friendly = "LIFX Filament Amber"
 
         class cap(Capability):
             has_color = False
@@ -711,7 +694,7 @@ class ProductRegistry:
     class LCM3_32_A19_PLUS_US(LIFXProduct):
         pid = 109
         family = Family.LCM3
-        friendly = "A19 Night Vision"
+        friendly = "LIFX A19 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -720,7 +703,7 @@ class ProductRegistry:
     class LCM3_32_BR30_PLUS_US(LIFXProduct):
         pid = 110
         family = Family.LCM3
-        friendly = "BR30 Night Vision"
+        friendly = "LIFX BR30 Night Vision"
 
         class cap(Capability):
             has_ir = True
@@ -729,7 +712,7 @@ class ProductRegistry:
     class LCM3_32_A19_PLUS_INTL(LIFXProduct):
         pid = 111
         family = Family.LCM3
-        friendly = "A19 Night Vision"
+        friendly = "LIFX A19 Night Vision"
 
         class cap(Capability):
             has_ir = True

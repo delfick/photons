@@ -90,6 +90,7 @@ describe "Product":
             pid = 1
             family = Family.LCM1
             vendor = VendorRegistry.LIFX
+            friendly = "P"
 
             class cap(base.Capability):
                 pass
@@ -97,41 +98,18 @@ describe "Product":
         assert isinstance(P.cap, P.cap_kls)
         assert P.cap.product == P
 
-    it "sets a default for friendly":
+    it "does not set a default for friendly":
 
-        class LCM9_AMAZE_SPHERE(base.Product):
-            pid = 1
-            family = Family.LCM1
-            vendor = VendorRegistry.LIFX
+        msg = "Attribute wasn't overridden"
+        with assertRaises(IncompleteProduct, msg, attr="friendly"):
 
-            class cap(base.Capability):
-                pass
+            class LCM9_AMAZE_SPHERE(base.Product):
+                pid = 1
+                family = Family.LCM1
+                vendor = VendorRegistry.LIFX
 
-        assert LCM9_AMAZE_SPHERE.friendly == "lcm9 amaze sphere"
-
-    it "uses modifier methods on the baseclass if they exist":
-
-        class Product(base.Product):
-            @classmethod
-            def _modify_family(s, val):
-                assert val is Family.LCM2
-                return "lcm9"
-
-            @classmethod
-            def _modify_friendly(s, val):
-                assert val == "lcm9 amaze sphere"
-                return "sphere"
-
-        class LCM9_AMAZE_SPHERE(Product):
-            pid = 1
-            family = Family.LCM2
-            vendor = VendorRegistry.LIFX
-
-            class cap(base.Capability):
-                pass
-
-        assert LCM9_AMAZE_SPHERE.family == "lcm9"
-        assert LCM9_AMAZE_SPHERE.friendly == "sphere"
+                class cap(base.Capability):
+                    pass
 
     it "has company":
 
@@ -139,6 +117,7 @@ describe "Product":
             pid = 1
             family = Family.LCM3
             vendor = VendorRegistry.LIFX
+            friendly = "Cube"
 
             class cap(base.Capability):
                 pass
@@ -155,24 +134,28 @@ describe "Product":
             family = Family.LCM1
             vendor = VendorRegistry.LIFX
             cap = capability
+            friendly = "P1"
 
         class P2(base.Product):
             pid = 1
             family = Family.LCM2
             vendor = VendorRegistry.LIFX
             cap = capability
+            friendly = "P2"
 
         class P3(base.Product):
             pid = 2
             family = Family.LCM2
             vendor = VendorRegistry.LIFX
             cap = capability
+            friendly = "P3"
 
         class P4(base.Product):
             pid = 1
             family = Family.LCM2
             vendor = VendorRegistry.choose(5)
             cap = capability
+            friendly = "P4"
 
         assert P1 == P1
         assert P1 == P2
@@ -191,6 +174,7 @@ describe "Product":
             pid = 29
             family = Family.LCM1
             vendor = VendorRegistry.LIFX
+            friendly = "P1"
 
             class cap(base.Capability):
                 pass
@@ -210,18 +194,21 @@ describe "Product":
             family = Family.LCM1
             vendor = VendorRegistry.LIFX
             cap = capability
+            friendly = "Bouncy Ball"
 
         class LCM2_DESK(base.Product):
             pid = 1
             family = Family.LCM2
             vendor = VendorRegistry.LIFX
             cap = capability
+            friendly = "Desk"
 
         class LCM2_MONITOR_STAND(base.Product):
             pid = 29
             family = Family.LCM2
             vendor = VendorRegistry.choose(5)
             cap = capability
+            friendly = "Monitor Stand"
 
         assert repr(LCM1_BOUNCY_BALL) == "<Product 1(LIFX):1(LCM1_BOUNCY_BALL)>"
         assert repr(LCM2_DESK) == "<Product 1(LIFX):1(LCM2_DESK)>"
@@ -233,6 +220,7 @@ describe "Product":
             pid = 29
             family = Family.LCM2
             vendor = VendorRegistry.choose(1)
+            friendly = "Monitor Stand"
 
             class cap(base.Capability):
                 def items(s):
@@ -243,7 +231,7 @@ describe "Product":
         assert dct == {
             "cap": {"one": "blah", "two": "other"},
             "family": Family.LCM2,
-            "friendly": "lcm2 monitor stand",
+            "friendly": "Monitor Stand",
             "name": "LCM2_MONITOR_STAND",
             "pid": 29,
             "vendor": VendorRegistry.LIFX,
@@ -280,18 +268,21 @@ describe "ProductsHolder":
                 family = Family.LCM1
                 vendor = VendorRegistry.LIFX
                 cap = default_capability_kls
+                friendly = "Bouncy Ball"
 
             class LCM2_DESK(base.Product):
                 pid = 3
                 family = Family.LCM2
                 vendor = VendorRegistry.LIFX
                 cap = default_capability_kls
+                friendly = "Desk"
 
             class LCM2_MONITOR_STAND(base.Product):
                 pid = 29
                 family = Family.LCM2
                 vendor = VendorRegistry.choose(5)
                 cap = default_capability_kls
+                friendly = "Monitor Stand"
 
         return ProductRegistry
 
