@@ -1,8 +1,98 @@
 from photons_products.enums import VendorRegistry, Family
 from photons_products.errors import IncompleteProduct
 
+from photons_app.errors import ProgrammerError
 
-class Capability:
+
+class CapabilityValue:
+    def __init__(self, value):
+        self._value = value
+        self.upgrades = []
+
+    def __repr__(self):
+        upgrades = [f"({ma}, {mi}, {becomes})" for ma, mi, becomes in self.upgrades]
+        if upgrades:
+            return f"<CapabilityValue ({self._value}) -> {' -> '.join(upgrades)}>"
+        else:
+            return f"<CapabilityValue ({self._value})>"
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, CapabilityValue)
+            and self._value == other._value
+            and self.upgrades == other.upgrades
+        )
+
+    def value(self, cap):
+        value = self._value
+        for ma, mi, becomes in self.upgrades:
+            if (cap.firmware_major, cap.firmware_minor) >= (ma, mi):
+                value = becomes
+
+        return value
+
+    def until(self, major, minor, *, becomes):
+        if any((ma, mi) >= (major, minor) for ma, mi, _ in self.upgrades):
+            raise ProgrammerError("Each .until must be for a greater version number")
+
+        self.upgrades.append((major, minor, becomes))
+        return self
+
+
+class CapabilityRange(CapabilityValue):
+    """
+    The way this is used means that the metaclass gets two CapabilityValue objects
+    """
+
+    def __init__(self, value):
+        if not isinstance(value, tuple) or len(value) != 2:
+            raise ProgrammerError("Values in a capability range must be a tuple of two values")
+
+        super().__init__(value)
+
+    def value(self, cap):
+        raise ProgrammerError("CapabilityRange should only ever be present during definition time")
+
+    def __iter__(self):
+        low, high = CapabilityValue(self._value[0]), CapabilityValue(self._value[1])
+        for ma, mi, becomes in self.upgrades:
+            low.until(ma, mi, becomes=becomes[0])
+            high.until(ma, mi, becomes=becomes[1])
+        yield from (low, high)
+
+
+class CapabilityDefinition(type):
+    """Used to create a definition for capabilities"""
+
+    def __new__(metaname, classname, baseclasses, attrs):
+        caps = {}
+        for kls in baseclasses:
+            if hasattr(kls, "Meta") and hasattr(kls.Meta, "capabilities"):
+                caps.update(kls.Meta.capabilities)
+
+        for name in list(attrs):
+            value = attrs[name]
+            if isinstance(value, CapabilityValue):
+                attrs.pop(name)
+                caps[name] = value
+            elif name in caps:
+                attrs.pop(name)
+                caps[name] = CapabilityValue(value)
+
+        instance = type.__new__(metaname, classname, baseclasses, attrs)
+
+        with_meta = [kls for kls in baseclasses if hasattr(kls, "Meta")]
+
+        if with_meta:
+            Meta = with_meta[-1].Meta
+        else:
+            Meta = type("Meta", (), {"capabilities": {}})
+
+        instance.Meta = type("Meta", (Meta,), {"capabilities": caps})
+        return instance
+
+
+class Capability(metaclass=CapabilityDefinition):
     def __init__(self, product, firmware_major=0, firmware_minor=0):
         self.product = product
         self.firmware_major = firmware_major
@@ -24,10 +114,24 @@ class Capability:
         )
 
     def items(self):
-        return []
+        for capability in self.capabilities_for_display():
+            yield capability, getattr(self, capability)
+
+    def __getattribute__(self, key):
+        Meta = object.__getattribute__(self, "Meta")
+        if key in Meta.capabilities:
+            return Meta.capabilities[key].value(self)
+        else:
+            return object.__getattribute__(self, key)
+
+    def capabilities_for_display(self):
+        return self.Meta.capabilities
 
     def as_dict(self):
         return dict(self.items())
+
+    class Meta:
+        capabilities = {}
 
 
 class product_metaclass(type):

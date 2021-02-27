@@ -1,9 +1,8 @@
 # coding: spec
 
-from photons_products import registry, VendorRegistry, Family, Zones, lifx
+from photons_products import VendorRegistry, Family, Zones, lifx
+from photons_products.base import CapabilityValue
 
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import BadSpecValue
 from unittest import mock
 
 describe "lifx.Product":
@@ -21,23 +20,6 @@ describe "lifx.Product":
 
 
 describe "Capability":
-    it "understands correct min_extended_fw":
-
-        class cap(lifx.Capability):
-            min_extended_fw = (1, 2)
-
-        assert cap.min_extended_fw == (1, 2)
-
-        class cap2(lifx.Capability):
-            min_extended_fw = None
-
-        assert cap2.min_extended_fw is None
-
-        class cap3(lifx.Capability):
-            pass
-
-        assert cap3.min_extended_fw is None
-
     it "has has_matrix":
         product = mock.Mock(name="product")
 
@@ -77,6 +59,8 @@ describe "Capability":
     it "has has_extended_multizone":
         product = mock.Mock(name="product")
 
+        print("TEST", lifx.Capability.Meta.capabilities["has_extended_multizone"].upgrades)
+
         class cap(lifx.Capability):
             pass
 
@@ -86,7 +70,7 @@ describe "Capability":
         assert not c(firmware_major=2, firmware_minor=77).has_extended_multizone
 
         class cap(lifx.Capability):
-            min_extended_fw = (2, 77)
+            has_extended_multizone = CapabilityValue(False).until(2, 77, becomes=True)
 
         c = cap(product)
 
@@ -115,7 +99,6 @@ describe "Capability":
             "has_variable_color_temp": True,
             "min_kelvin": 2500,
             "max_kelvin": 9000,
-            "min_extended_fw": None,
         }
 
         for k in list(dct):
@@ -124,7 +107,7 @@ describe "Capability":
         assert dct == expected
 
         class cap(lifx.Capability):
-            min_extended_fw = (3, 60)
+            has_extended_multizone = CapabilityValue(False).until(3, 60, becomes=True)
             has_color = True
             zones = Zones.LINEAR
 
@@ -142,7 +125,6 @@ describe "Capability":
             "has_variable_color_temp": True,
             "min_kelvin": 2500,
             "max_kelvin": 9000,
-            "min_extended_fw": (3, 60),
         }
 
         for k in list(dct):

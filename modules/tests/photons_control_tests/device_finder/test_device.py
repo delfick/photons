@@ -5,7 +5,6 @@ from photons_control.device_finder import Device, Collection, Collections, Filte
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
-from photons_products import Products
 
 from delfick_project.norms import sb
 from unittest import mock
