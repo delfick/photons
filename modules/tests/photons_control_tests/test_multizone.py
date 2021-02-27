@@ -14,8 +14,8 @@ from photons_control.colour import ColourParser
 from photons_app.errors import PhotonsAppError
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
-from photons_products.registry import Capability
 from photons_transport.fake import FakeDevice
+from photons_products.lifx import Capability
 from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
