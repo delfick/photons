@@ -12,6 +12,8 @@ ChangeLog
       to be useful.
     * Product registry now recognises different kelvin values from updated
       firmware on devices.
+    * The device finder now supports finding by ``relays`` and ``buttons``
+      capabilities.
 
 .. _release-core-0-32-6:
 

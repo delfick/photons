@@ -378,10 +378,12 @@ describe "finding devices":
             assert found[0].info == {
                 "cap": [
                     "color",
+                    "not_buttons",
                     "not_chain",
                     "not_ir",
                     "not_matrix",
                     "not_multizone",
+                    "not_relays",
                     "variable_color_temp",
                 ],
                 "firmware_version": "2.80",
@@ -500,10 +502,12 @@ describe "finding devices":
             assert found[0].info == {
                 "cap": [
                     "color",
+                    "not_buttons",
                     "not_chain",
                     "not_ir",
                     "not_matrix",
                     "not_multizone",
+                    "not_relays",
                     "variable_color_temp",
                 ],
                 "hue": V.d3.attrs.color.hue,
@@ -528,10 +532,12 @@ describe "finding devices":
             assert found[0].info == {
                 "cap": [
                     "color",
+                    "not_buttons",
                     "not_chain",
                     "not_ir",
                     "not_matrix",
                     "not_multizone",
+                    "not_relays",
                     "variable_color_temp",
                 ],
                 "firmware_version": "2.80",

@@ -424,10 +424,12 @@ describe "Getting devices from the daemon":
                 assert found[0].info == {
                     "cap": [
                         "color",
+                        "not_buttons",
                         "not_chain",
                         "not_ir",
                         "not_matrix",
                         "not_multizone",
+                        "not_relays",
                         "variable_color_temp",
                     ],
                     "firmware_version": "2.80",

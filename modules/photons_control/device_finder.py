@@ -613,7 +613,9 @@ class Device(dictobj.Spec):
                 "has_ir",
                 "has_color",
                 "has_chain",
+                "has_relays",
                 "has_matrix",
+                "has_buttons",
                 "has_multizone",
                 "has_variable_color_temp",
             ):

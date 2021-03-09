@@ -272,10 +272,12 @@ describe "Device":
             assert device.product_id == 22
             assert device.cap == [
                 "color",
+                "not_buttons",
                 "not_chain",
                 "not_ir",
                 "not_matrix",
                 "not_multizone",
+                "not_relays",
                 "variable_color_temp",
             ]
 
