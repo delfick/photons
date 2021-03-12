@@ -14,6 +14,7 @@ ChangeLog
       firmware on devices.
     * The device finder now supports finding by ``relays`` and ``buttons``
       capabilities.
+    * Pulled in new HEV messages.
 
 .. _release-core-0-32-6:
 
