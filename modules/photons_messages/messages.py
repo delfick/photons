@@ -212,6 +212,37 @@ class LightMessages(Messages):
         , ("brightness", T.Uint16)
         )
 
+    GetHevCycle = msg(142)
+
+    SetHevCycle = msg(143
+        , ("enable", T.BoolInt)
+        , ("duration_s", T.Uint32)
+        )
+
+    StateHevCycle = msg(144
+        , ("duration_s", T.Uint32)
+        , ("remaining_s", T.Uint32)
+        , ("last_power", T.BoolInt)
+        )
+
+    GetHevCycleConfiguration = msg(145)
+
+    SetHevCycleConfiguration = msg(146
+        , ("indication", T.BoolInt)
+        , ("duration_s", T.Uint32)
+        )
+
+    StateHevCycleConfiguration = msg(147
+        , ("indication", T.BoolInt)
+        , ("duration_s", T.Uint32)
+        )
+
+    GetLastHevCycleResult = msg(148)
+
+    StateLastHevCycleResult = msg(149
+        , ("result", T.Uint8.enum(enums.LightLastHevCycleResult))
+        )
+
 ########################
 ###   MULTI_ZONE
 ########################

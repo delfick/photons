@@ -24,6 +24,16 @@ class Waveform(Enum):
     PULSE = 4
 
 
+class LightLastHevCycleResult(Enum):
+    SUCCESS = 0
+    BUSY = 1
+    INTERRUPTED_BY_RESET = 2
+    INTERRUPTED_BY_HOMEKIT = 3
+    INTERRUPTED_BY_LAN = 4
+    INTERRUPTED_BY_CLOUD = 5
+    NONE = 255
+
+
 class MultiZoneApplicationRequest(Enum):
     NO_APPLY = 0
     APPLY = 1
