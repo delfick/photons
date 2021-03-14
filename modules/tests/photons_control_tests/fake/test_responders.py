@@ -2,7 +2,6 @@
 
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import print_packet_difference
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
@@ -58,7 +57,9 @@ class Device(hp.AsyncCMMixin):
                     if e | TileMessages.StateTileEffect and g | TileMessages.StateTileEffect:
                         e.instanceid = g.instanceid
                     if g != e:
-                        print_packet_difference(g, e, ignore_unspecified_expected=True)
+                        pytest.helpers.print_packet_difference(
+                            g, e, ignore_unspecified_expected=True
+                        )
 
                     # Make sure message can be packed
                     g.source = 1

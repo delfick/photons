@@ -1,10 +1,10 @@
 # coding: spec
 
-from photons_app.test_helpers import assertFutCallbacks
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
 import asyncio
+import pytest
 
 
 describe "ResettableFuture":
@@ -26,7 +26,7 @@ describe "ResettableFuture":
     async it "gets callbacks from the current future":
         fut = hp.ResettableFuture()
         assert len(fut._callbacks) == 1
-        assertFutCallbacks(fut, hp.silent_reporter)
+        pytest.helpers.assertFutCallbacks(fut, hp.silent_reporter)
         assert fut._callbacks == fut.fut._callbacks
 
     async it "knows if the future is done":
@@ -170,23 +170,23 @@ describe "ResettableFuture":
 
             cb = lambda res: called.append("DONE1")
             fut.add_done_callback(cb)
-            assertFutCallbacks(f, cb, hp.silent_reporter)
-            assertFutCallbacks(fut, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)
 
             fut.reset()
-            assertFutCallbacks(f, cb, hp.silent_reporter)
-            assertFutCallbacks(fut, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)
 
             await asyncio.sleep(0)
             assert called == []
-            assertFutCallbacks(f, cb, hp.silent_reporter)
-            assertFutCallbacks(fut, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)
 
             fut.set_result(True)
             await asyncio.sleep(0)
             assert called == ["DONE1"]
-            assertFutCallbacks(f)
-            assertFutCallbacks(fut)
+            pytest.helpers.assertFutCallbacks(f)
+            pytest.helpers.assertFutCallbacks(fut)
 
         async it "can force the future to be closed":
             fut = hp.ResettableFuture()
@@ -195,12 +195,12 @@ describe "ResettableFuture":
             called = []
             cb = lambda res: called.append("DONE1")
             fut.add_done_callback(cb)
-            assertFutCallbacks(f, cb, hp.silent_reporter)
-            assertFutCallbacks(fut, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)
 
             fut.reset(force=True)
             await asyncio.sleep(0)
             assert fut.fut is not f
             assert called == ["DONE1"]
-            assertFutCallbacks(fut.fut, hp.silent_reporter)
-            assertFutCallbacks(fut, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut.fut, hp.silent_reporter)
+            pytest.helpers.assertFutCallbacks(fut, hp.silent_reporter)

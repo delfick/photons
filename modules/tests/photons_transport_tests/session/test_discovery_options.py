@@ -2,8 +2,6 @@
 
 from photons_transport.session import discovery_options as do
 
-from photons_app.test_helpers import modified_env
-
 from photons_messages import Services
 
 from delfick_project.norms import Meta, sb, BadSpecValue
@@ -61,13 +59,13 @@ describe "hardcoded_discovery_spec":
     it "uses HARDCODED_DISCOVERY environment variable if it exists", meta, spec, ret, fake_spec:
         spec.spec = fake_spec
 
-        with modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
+        with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
             for v in (sb.NotSpecified, None, {"three": "four"}):
                 assert spec.normalise(meta, v) is ret
                 fake_spec.normalise.assert_called_once_with(mock.ANY, {"one": "two"})
                 fake_spec.normalise.reset_mock()
 
-        with modified_env(HARDCODED_DISCOVERY="null"):
+        with pytest.helpers.modified_env(HARDCODED_DISCOVERY="null"):
             for v in (sb.NotSpecified, None, {"three": "four"}):
                 assert spec.normalise(meta, v) is None
                 assert len(fake_spec.normalise.mock_calls) == 0
@@ -223,17 +221,17 @@ describe "serial_filter_spec":
         return do.serial_filter_spec()
 
     it "uses SERIAL_FILTER environment variable if available", meta, spec:
-        with modified_env(SERIAL_FILTER="d073d5001337"):
+        with pytest.helpers.modified_env(SERIAL_FILTER="d073d5001337"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = spec.normalise(meta, v)
                 assert res == ["d073d5001337"]
 
-        with modified_env(SERIAL_FILTER="d073d5001337,d073d5001338"):
+        with pytest.helpers.modified_env(SERIAL_FILTER="d073d5001337,d073d5001338"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = spec.normalise(meta, v)
                 assert res == ["d073d5001337", "d073d5001338"]
 
-        with modified_env(SERIAL_FILTER="null"):
+        with pytest.helpers.modified_env(SERIAL_FILTER="null"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = spec.normalise(meta, v)
                 assert res is None
@@ -259,7 +257,7 @@ describe "serial_filter_spec":
             got="e073d5001337",
             meta=meta.at("${SERIAL_FILTER}").indexed_at(0),
         )
-        with modified_env(SERIAL_FILTER="e073d5001337"):
+        with pytest.helpers.modified_env(SERIAL_FILTER="e073d5001337"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 kwargs = {"meta": meta.at("${SERIAL_FILTER}"), "_errors": [e]}
                 with assertRaises(BadSpecValue, **kwargs):
@@ -274,7 +272,7 @@ describe "serial_filter_spec":
 
 describe "DiscoveryOptions":
     async it "has serial_filter and hardcoded_discovery":
-        with modified_env(
+        with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.DiscoveryOptions.FieldSpec().empty_normalise()
@@ -369,7 +367,7 @@ describe "DiscoveryOptions":
 
 describe "NoDiscoveryOptions":
     it "overrides serial_filter and hardcoded_discovery with None":
-        with modified_env(
+        with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
@@ -397,7 +395,7 @@ describe "NoDiscoveryOptions":
 
 describe "NoEnvDiscoveryOptions":
     it "does not care about environment variables":
-        with modified_env(
+        with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
             options = do.NoEnvDiscoveryOptions.FieldSpec().empty_normalise()

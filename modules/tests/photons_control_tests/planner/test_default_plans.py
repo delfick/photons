@@ -3,7 +3,6 @@
 from photons_control.planner import Skip, PacketPlan
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import assert_payloads_equals, print_packet_difference
 from photons_app.special import FoundSerials
 
 from photons_messages import (
@@ -46,7 +45,7 @@ class Partial:
 
     def __eq__(s, other):
         print(f"Item {s.index}")
-        assert_payloads_equals(other, s.item, allow_missing=True)
+        pytest.helpers.assertPayloadsEquals(other, s.item, allow_missing=True)
         s.equal = other
         return True
 
@@ -156,10 +155,10 @@ describe "Default Plans":
                 light2.serial: (True, {"result": mock.ANY}),
             }
 
-            print_packet_difference(
+            pytest.helpers.print_packet_difference(
                 got[light1.serial][1]["result"], DeviceMessages.StatePower(level=0)
             )
-            print_packet_difference(
+            pytest.helpers.print_packet_difference(
                 got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535)
             )
 

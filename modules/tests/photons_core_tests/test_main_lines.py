@@ -2,8 +2,6 @@
 
 from photons_core import run, CommandSplitter
 
-from photons_app.test_helpers import modified_env
-
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
 import pytest
@@ -28,7 +26,7 @@ describe "CommandSplitter":
             CommandSplitter({"argv": ["my_script"]}, command).split()
 
     it "can complain if an environment variable is needed but doesn't exist":
-        with modified_env(THING=None):
+        with pytest.helpers.modified_env(THING=None):
             with assertRaises(
                 SystemExit, "This script requires you have a 'THING' variable in your environment"
             ):
@@ -36,7 +34,7 @@ describe "CommandSplitter":
                 CommandSplitter({"argv": ["my_script"]}, command).split()
 
     it "doesn't complain if the environment variable exists but is empty":
-        with modified_env(THING=""):
+        with pytest.helpers.modified_env(THING=""):
             command = "thing={THING:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing="]
 
@@ -44,7 +42,7 @@ describe "CommandSplitter":
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == []
 
     it "can have default values for environment variables":
-        with modified_env(THING=None):
+        with pytest.helpers.modified_env(THING=None):
             command = "thing={THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing=stuff"]
 
@@ -52,7 +50,7 @@ describe "CommandSplitter":
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["stuff"]
 
     it "doesn't use default if env variable exists but is empty":
-        with modified_env(THING=""):
+        with pytest.helpers.modified_env(THING=""):
             command = "thing={THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing="]
 
@@ -61,7 +59,7 @@ describe "CommandSplitter":
 
     it "complains if there is not enough argv entries":
         with assertRaises(SystemExit, "Needed greater than 2 arguments to the script"):
-            with modified_env(THING=""):
+            with pytest.helpers.modified_env(THING=""):
                 command = "{@:2}"
                 CommandSplitter({"argv": ["my_script"]}, command).split()
 
@@ -158,7 +156,7 @@ describe "main lines":
         V.main.assert_called_once_with(V.split, default_activate=["core"])
 
     it "run formats correctly", fake_main:
-        with modified_env(LAN_TARGET="well"):
+        with pytest.helpers.modified_env(LAN_TARGET="well"):
             run(
                 "{LAN_TARGET:env}:get_attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
@@ -170,7 +168,7 @@ describe "main lines":
         )
 
     it "can have defaults for environment", fake_main:
-        with modified_env(LAN_TARGET=None):
+        with pytest.helpers.modified_env(LAN_TARGET=None):
             run(
                 "{LAN_TARGET|lan:env}:get_attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
@@ -182,7 +180,7 @@ describe "main lines":
         )
 
     it "will not format json dictionary", fake_main:
-        with modified_env(LAN_TARGET=None):
+        with pytest.helpers.modified_env(LAN_TARGET=None):
             run("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 
         fake_main.assert_called_once_with(

@@ -2,7 +2,6 @@
 
 from interactor.database.models import scene_spec
 
-from photons_app.test_helpers import print_packet_difference
 from photons_app import helpers as hp
 
 from photons_messages import LightMessages, MultiZoneMessages, TileMessages
@@ -338,7 +337,7 @@ describe "make_spec":
                         for i, (w, m) in enumerate(zip(want, msgs)):
                             if w != m:
                                 print(f"Message {i}:")
-                                print_packet_difference(w, m)
+                                pytest.helpers.print_packet_difference(w, m)
 
                     assert len(want) == len(msgs)
                     assert list(want) == msgs
@@ -649,7 +648,7 @@ describe "make_spec":
                         for i, (w, m) in enumerate(zip(want, msgs)):
                             if w != m:
                                 print(f"Message {i}:")
-                                print_packet_difference(w, m)
+                                pytest.helpers.print_packet_difference(w, m)
 
                     assert len(want) == len(msgs)
                     assert list(want) == msgs

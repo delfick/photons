@@ -1,6 +1,5 @@
 # coding: spec
 
-from photons_app.test_helpers import modified_env
 from photons_app.registers import TargetRegister
 from photons_app.collector import Collector
 from photons_app import helpers as hp
@@ -10,6 +9,7 @@ from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
 from textwrap import dedent
 from unittest import mock
+import pytest
 import os
 
 describe "App":
@@ -116,7 +116,7 @@ describe "App":
             return call_list[0]
 
         it "adds PHOTONS_SILENT_BY_DEFAULT if there are no options":
-            with modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
+            with pytest.helpers.modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
                 assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ
                 used_args = self.using_argv([])
                 assert used_args == []
@@ -124,7 +124,7 @@ describe "App":
 
         it "adds PHOTONS_SILENT_BY_DEFAULT if the task is list_tasks or help":
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
-                with modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
+                with pytest.helpers.modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
                     assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ
                     used_args = self.using_argv([attempt])
                     assert used_args == [attempt]

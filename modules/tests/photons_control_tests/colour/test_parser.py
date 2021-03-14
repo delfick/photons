@@ -3,12 +3,11 @@
 from photons_control.colour import split_color_string, ColourParser, InvalidColor, ValueOutOfRange
 from photons_control import test_helpers as chp
 
-from photons_app.test_helpers import assert_payloads_equals
-
 from photons_messages import LightMessages, Waveform
 
 from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+import pytest
 
 describe "split_color_string":
     it "returns empty list if not color_string":
@@ -219,7 +218,7 @@ describe "ColourParser":
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components)
                 assert msg | LightMessages.SetWaveformOptional
-                assert_payloads_equals(
+                pytest.helpers.assertPayloadsEquals(
                     msg.payload,
                     {
                         "transient": 0,
@@ -251,7 +250,7 @@ describe "ColourParser":
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                assert_payloads_equals(
+                pytest.helpers.assertPayloadsEquals(
                     msg.payload,
                     {
                         "transient": 1,
@@ -283,7 +282,7 @@ describe "ColourParser":
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                assert_payloads_equals(
+                pytest.helpers.assertPayloadsEquals(
                     msg.payload,
                     {
                         "transient": 1,
@@ -315,7 +314,7 @@ describe "ColourParser":
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
                 assert msg | LightMessages.SetWaveformOptional
-                assert_payloads_equals(
+                pytest.helpers.assertPayloadsEquals(
                     msg.payload,
                     {
                         "transient": 1,

@@ -2,9 +2,8 @@
 
 from photons_messages import Services, DiscoveryMessages, protocol_register
 
-from photons_app.test_helpers import print_packet_difference
-
 import binascii
+import pytest
 
 describe "DiscoveryMessages":
     it "can unpack":
@@ -35,7 +34,7 @@ describe "DiscoveryMessages":
             }
         )
 
-        different = print_packet_difference(unpackd, expected)
+        different = pytest.helpers.print_packet_difference(unpackd, expected)
         assert not different
 
         assert binascii.hexlify(expected.pack().tobytes()).decode() == hexd

@@ -1,6 +1,5 @@
 # coding: spec
 
-from photons_app.test_helpers import assertFutCallbacks
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
@@ -114,7 +113,7 @@ describe "async_as_background":
             return "{0}.{1}.{2}".format(one, two, three)
 
         t = hp.async_as_background(func(6, 5, three=9))
-        assertFutCallbacks(t, hp.reporter)
+        pytest.helpers.assertFutCallbacks(t, hp.reporter)
         assert isinstance(t, asyncio.Task)
         assert await t == "6.5.9"
 
@@ -124,7 +123,7 @@ describe "async_as_background":
             return "{0}.{1}.{2}".format(one, two, three)
 
         t = hp.async_as_background(func(6, 5, three=9), silent=True)
-        assertFutCallbacks(t, hp.silent_reporter)
+        pytest.helpers.assertFutCallbacks(t, hp.silent_reporter)
         assert isinstance(t, asyncio.Task)
         assert await t == "6.5.9"
 
