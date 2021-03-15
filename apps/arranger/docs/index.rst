@@ -1,4 +1,4 @@
-.. _app_tile_arranger:
+ .. _app_tile_arranger:
 
 Tile arranger
 =============
@@ -48,6 +48,11 @@ Once the tiles are given their correct positions, photons can be used to run
 
 Changelog
 ---------
+
+.. _release-arranger-0-5-11:
+
+0.5.11 - 15 March 2021
+    * Updating photons
 
 .. _release-arranger-0-5-10:
 

@@ -5,8 +5,9 @@ Changelog
 
 .. _release-interactor-0-8-2:
 
-0.8.2 - TBD
+0.8.2 - 15 March 2021
     * Update aiohttp dependency
+    * Update Photons
 
 .. _release-interactor-0-8-1:
 
