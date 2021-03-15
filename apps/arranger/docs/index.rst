@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-5-12:
+
+0.5.12 - 15 March 2021
+    * Seems my fix to avoid a release without JS didn't work properly
+
 .. _release-arranger-0-5-11:
 
 0.5.11 - 15 March 2021
