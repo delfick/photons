@@ -478,6 +478,28 @@ def pytest_configure(config):
     pytest.helpers.register(FutureDominoes)
 
     @pytest.helpers.register
+    def has_caps_list(*have):
+        want = [
+            "buttons",
+            "color",
+            "chain",
+            "ir",
+            "hev",
+            "matrix",
+            "multizone",
+            "relays",
+            "variable_color_temp",
+        ]
+
+        result = []
+        for a in want:
+            if a in have:
+                result.append(a)
+            else:
+                result.append(f"not_{a}")
+        return sorted(result)
+
+    @pytest.helpers.register
     def assertRegex(regex, value):
         __tracebackhide__ = True
 

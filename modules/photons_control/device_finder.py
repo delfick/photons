@@ -611,6 +611,7 @@ class Device(dictobj.Spec):
             cap = []
             for prop in (
                 "has_ir",
+                "has_hev",
                 "has_color",
                 "has_chain",
                 "has_relays",

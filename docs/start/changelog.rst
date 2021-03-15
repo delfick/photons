@@ -12,8 +12,8 @@ ChangeLog
       to be useful.
     * Product registry now recognises different kelvin values from updated
       firmware on devices.
-    * The device finder now supports finding by ``relays`` and ``buttons``
-      capabilities.
+    * The device finder now supports finding by ``relays``, ``hev`` and
+      ``buttons`` capabilities.
     * Pulled in new HEV messages.
 
 .. _release-core-0-32-6:

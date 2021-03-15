@@ -422,16 +422,7 @@ describe "Getting devices from the daemon":
                     found.append(device)
                 assert [f.serial for f in found] == [V.d3.serial]
                 assert found[0].info == {
-                    "cap": [
-                        "color",
-                        "not_buttons",
-                        "not_chain",
-                        "not_ir",
-                        "not_matrix",
-                        "not_multizone",
-                        "not_relays",
-                        "variable_color_temp",
-                    ],
+                    "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
                     "firmware_version": "2.80",
                     "hue": V.d3.attrs.color.hue,
                     "label": "kitchen",

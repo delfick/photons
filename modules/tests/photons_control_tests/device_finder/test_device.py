@@ -274,6 +274,7 @@ describe "Device":
                 "color",
                 "not_buttons",
                 "not_chain",
+                "not_hev",
                 "not_ir",
                 "not_matrix",
                 "not_multizone",
