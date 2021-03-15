@@ -4,6 +4,9 @@ on:
       skippypi:
         description: 'Skip making pypi package'     
         default: '0'
+      skipdocker:
+        description: 'Skip making docker image'     
+        default: '0'
 
 name: Release Photons Interactor
 
@@ -45,7 +48,7 @@ jobs:
 
       - id: create_release
         uses: actions/create-release@v1
-        if: github.event.inputs == '0'
+        if: github.event.inputs.skippypi == '0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,7 +61,7 @@ jobs:
 
       - id: upload-release-asset 
         uses: actions/upload-release-asset@v1
-        if: github.event.inputs == '0'
+        if: github.event.inputs.skippypi == '0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -68,7 +71,7 @@ jobs:
           asset_content_type: application/tar+gzip
 
       - uses: pypa/gh-action-pypi-publish@v1.4.1
-        if: github.event.inputs == '0'
+        if: github.event.inputs.skippypi == '0'
         with:
           user: __token__
           password: ${{ secrets.PYPI_INTERACTOR }}
@@ -93,6 +96,7 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v2
+        if: github.event.inputs.skipdocker == '0'
         with:
           context: staging
           file: ./staging/Dockerfile
