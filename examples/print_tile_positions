@@ -58,6 +58,9 @@ async def print_tile_positions(collector, target, reference, **kwargs):
     await target.send(FromGenerator(gen), reference, error_catcher=e)
 
     skip = {}
+    if not canvas:
+        return
+
     for row in php.Points.rows(canvas.bounds):
         for point in row:
             parts = sorted(canvas.point_to_parts[point])

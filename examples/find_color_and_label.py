@@ -27,7 +27,7 @@ async def doit(collector):
             info[pkt.serial]["hsbk"] = hsbk
 
     for serial, details in info.items():
-        print(f"{serial}: {details['label']}: {details['hsbk']}")
+        print(f"{serial}: {details.get('label')}: {details.get('hsbk')}")
 
 
 if __name__ == "__main__":

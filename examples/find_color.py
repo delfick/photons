@@ -14,11 +14,12 @@ async def doit(collector):
 
     msg = LightMessages.GetColor()
     async for pkt in lan_target.send(msg, FoundSerials()):
-        hsbk = " ".join(
-            "{0}={1}".format(key, pkt.payload[key])
-            for key in ("hue", "saturation", "brightness", "kelvin")
-        )
-        print("{0}: {1}".format(pkt.serial, hsbk))
+        if pkt | LightMessages.LightState:
+            hsbk = " ".join(
+                "{0}={1}".format(key, pkt.payload[key])
+                for key in ("hue", "saturation", "brightness", "kelvin")
+            )
+            print("{0}: {1}".format(pkt.serial, hsbk))
 
 
 if __name__ == "__main__":
