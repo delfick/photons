@@ -15,10 +15,6 @@ ChangeLog
     * The device finder now supports finding by ``relays``, ``hev`` and
       ``buttons`` capabilities.
     * Pulled in new HEV messages.
-
-.. _release-core-0-32-6:
-
-0.32.6 - TBD
     * Rename Power in RelayMessages to RPower.
 
 .. _release-core-0-32-5:
