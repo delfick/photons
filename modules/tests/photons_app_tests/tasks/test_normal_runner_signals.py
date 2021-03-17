@@ -187,7 +187,7 @@ class TestNormalRunnerSignals:
         expected_stderr = r"""
         Traceback \(most recent call last\):
           <REDACTED>
-        KeyboardInterrupt
+        delfick_project.errors.UserQuit: "User Quit"
         """
 
         expected_output = '"User Quit"'
@@ -255,7 +255,7 @@ class TestNormalRunnerSignals:
         expected_stderr = r"""
         Traceback \(most recent call last\):
           <REDACTED>
-        KeyboardInterrupt
+        delfick_project.errors.UserQuit: "User Quit"
         """
 
         expected_output = "CANCELLED<class 'asyncio.exceptions.CancelledError'>"

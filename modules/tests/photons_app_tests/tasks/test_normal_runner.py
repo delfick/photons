@@ -85,6 +85,7 @@ describe "NormalRunner":
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
     it "cleans up after we finish task if it's cancelled outside", collector:
+
         called = []
 
         class T(Task):
