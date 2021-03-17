@@ -1,7 +1,7 @@
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, BadTarget, BadTask
-from photons_app.tasks.runner import NormalRunner
 from photons_app.special import SpecialReference
+from photons_app.tasks.runner import Runner
 
 from delfick_project.norms import dictobj, sb, Meta
 
@@ -42,7 +42,7 @@ class NewTask(dictobj.Spec):
         return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, kwargs)
 
     def run_loop(self, **kwargs):
-        return NormalRunner(self, kwargs).run_loop()
+        return Runner(self, kwargs).run_loop()
 
     async def run(self, **kwargs):
         try:
@@ -55,6 +55,17 @@ class NewTask(dictobj.Spec):
 
     async def post(self):
         pass
+
+
+class GracefulTask(NewTask):
+    """
+    Responsible for managing the life cycle of a photons program that uses the graceful future
+    """
+
+    def run_loop(self, **kwargs):
+        with self.photons_app.using_graceful_future() as graceful:
+            kwargs["graceful_final_future"] = graceful
+            super().run_loop(**kwargs)
 
 
 class Task(dictobj):

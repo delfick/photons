@@ -11,7 +11,7 @@ import sys
 log = logging.getLogger("photons_app.tasks.runner")
 
 
-class NormalRunner:
+class Runner:
     def __init__(self, task, kwargs):
         self.task = task
         self.kwargs = kwargs
@@ -31,9 +31,13 @@ class NormalRunner:
 
         @property
         def significant_future(self):
+            graceful_future = self.photons_app.graceful_final_future
+            if graceful_future.setup:
+                return graceful_future
             return self.photons_app.final_future
 
         def run(self):
+            self.photons_app.final_future.add_done_callback(hp.silent_reporter)
             self.significant_future.add_done_callback(hp.silent_reporter)
             self.register_sigterm_handler(self.significant_future)
 
@@ -104,6 +108,9 @@ class NormalRunner:
             raise error
 
         def transfer_result(self, complete, pending):
+            if not complete.done():
+                return
+
             if complete is None or complete.cancelled():
                 if not pending.done():
                     pending.cancel()
@@ -130,7 +137,10 @@ class NormalRunner:
         def wait_for_main_task(self, task):
             log.debug("Waiting for main task to finish")
 
-            task.cancel()
+            # If we're not using the graceful future then we assume the task won't stop by itself
+            # The graceful future is about saying the task will stop by itself when you resolve graceful
+            if not self.photons_app.graceful_final_future.setup:
+                task.cancel()
 
             try:
                 self.loop.run_until_complete(
@@ -138,15 +148,20 @@ class NormalRunner:
                 )
             except KeyboardInterrupt:
                 pass
+            except:
+                pass
             finally:
                 task.cancel()
 
         def wait_for_waiter(self, waiter):
             log.debug("Waiting for waiter task to finish")
             waiter.cancel()
-            self.loop.run_until_complete(
-                asyncio.tasks.gather(waiter, loop=self.loop, return_exceptions=True)
-            )
+            try:
+                self.loop.run_until_complete(
+                    asyncio.tasks.gather(waiter, loop=self.loop, return_exceptions=True)
+                )
+            except:
+                pass
 
         def run_cleanup(self):
             log.debug("Running cleaners")
@@ -155,6 +170,9 @@ class NormalRunner:
 
         def ensure_finished_futures(self, task, waiter):
             self.transfer_result(None if not task.done() else task, self.photons_app.final_future)
+
+            if not self.significant_future.done():
+                self.significant_future.cancel()
             self.transfer_result(self.significant_future, self.photons_app.final_future)
 
         def ensure_all_tasks_cancelled(self):

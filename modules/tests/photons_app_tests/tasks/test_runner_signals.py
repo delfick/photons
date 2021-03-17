@@ -1,5 +1,5 @@
 from photons_app.errors import ApplicationStopped, PhotonsAppError
-from photons_app.tasks.tasks import NewTask as Task
+from photons_app.tasks.tasks import NewTask as Task, GracefulTask
 from photons_app import helpers as hp
 
 from contextlib import ExitStack
@@ -20,7 +20,11 @@ else:
 
 
 class RunAsExternal:
-    def __init__(self, task_kls, basekls="from photons_app.tasks.tasks import NewTask as Task"):
+    def __init__(
+        self,
+        task_kls,
+        basekls="from photons_app.tasks.tasks import NewTask as Task",
+    ):
         self.script = (
             basekls
             + "\n"
@@ -29,7 +33,7 @@ class RunAsExternal:
             + dedent(
                 """
             from photons_app.errors import ApplicationCancelled, ApplicationStopped, UserQuit, PhotonsAppError
-            from photons_app.tasks.runner import NormalRunner
+            from photons_app.tasks.runner import Runner
             from photons_app.collector import Collector
             from photons_app import helpers as hp
 
@@ -43,10 +47,7 @@ class RunAsExternal:
 
             collector = Collector()
             collector.prepare(None, {})
-            task = T.create(collector)
-            NormalRunner(
-                task, {"collector": collector, "notify": notify, "output": sys.argv[1]}
-            ).run_loop()
+            T.create(collector).run_loop(collector=collector, notify=notify, output=sys.argv[1])
         """
             )
         )
@@ -69,7 +70,14 @@ class RunAsExternal:
         if hasattr(self, "exit_stack"):
             self.exit_stack.__exit__(exc_typ, exc, tb)
 
-    async def run(self, sig=None, expected_stdout=None, expected_stderr=None, expected_output=None):
+    async def run(
+        self,
+        sig=None,
+        expected_stdout=None,
+        expected_stderr=None,
+        expected_output=None,
+        extra_argv=None,
+    ):
 
         fut = hp.create_future()
 
@@ -80,7 +88,13 @@ class RunAsExternal:
 
         pipe = subprocess.PIPE
         p = subprocess.Popen(
-            [sys.executable, self.fle.name, self.out.name, str(os.getpid())],
+            [
+                sys.executable,
+                self.fle.name,
+                self.out.name,
+                str(os.getpid()),
+                *[str(a) for a in (extra_argv or [])],
+            ],
             stdout=pipe,
             stderr=pipe,
         )
@@ -129,21 +143,32 @@ class RunAsExternal:
             if regex is None:
                 return
 
+            regex = dedent(regex).strip()
+
             out = out.strip()
             regex = regex.strip()
             assert len(out.split("\n")) == len(regex.split("\n"))
             pytest.helpers.assertRegex(f"(?m){regex}", out)
 
         if expected_output is not None:
-            with open(self.out.name) as o:
-                got = o.read()
-            assert got.strip() == expected_output.strip()
+            got = None
+            if os.path.exists(self.out.name):
+                with open(self.out.name) as o:
+                    got = o.read().strip()
+            assert got == expected_output.strip()
 
-        assertOutput(got_stdout.strip(), dedent(expected_stdout.strip()))
-        assertOutput(got_stderr.strip(), dedent(expected_stderr).strip())
+        assertOutput(got_stdout.strip(), expected_stdout)
+        assertOutput(got_stderr.strip(), expected_stderr)
+
+        return got_stdout, got_stderr
 
 
-class TestNormalRunnerSignals:
+class RunAsExternalGraceful(RunAsExternal):
+    def __init__(self, task_kls, basekls="from photons_app.tasks.tasks import GracefulTask"):
+        super().__init__(task_kls, basekls=basekls)
+
+
+class TestRunnerSignals:
     """
     I want to inspect.getsource on the `T` classes in these tests
 
@@ -342,4 +367,106 @@ class TestNormalRunnerSignals:
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
                 sig=signal.SIGTERM,
+            )
+
+
+class TestGracefulRunnerSignals:
+    """
+    I want to inspect.getsource on the `T` classes in these tests
+
+    But I can't do that if I'm using noseOfYeti, sigh
+    """
+
+    async def test_it_works(self):
+        class T(GracefulTask):
+            """Run inside an external script during test via subprocess"""
+
+            async def execute_task(self, notify, output, **kwargs):
+                notify()
+                with open(output, "w") as fle:
+                    fle.write("HI")
+
+        expected_stdout = ""
+        expected_stderr = ""
+        expected_output = "HI"
+
+        with RunAsExternalGraceful(T) as assertRuns:
+            await assertRuns(
+                expected_output=expected_output,
+                expected_stdout=expected_stdout,
+                expected_stderr=expected_stderr,
+            )
+
+    @pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM, None])
+    async def test_it_doesnt_kill_task_when_graceful_happens(self, sig):
+        class T(GracefulTask):
+            """Run inside an external script during test via subprocess"""
+
+            async def execute_task(
+                self, collector, notify, output, graceful_final_future, **kwargs
+            ):
+                notify()
+                if sys.argv[3] == "None":
+                    graceful_final_future.cancel()
+                await hp.wait_for_all_futures(graceful_final_future)
+                assert not collector.photons_app.final_future.done()
+                with open(output, "w") as fle:
+                    fle.write("still ran!")
+
+        expected_output = "still ran!"
+
+        with RunAsExternalGraceful(T) as assertRuns:
+            stdout, stderr = await assertRuns(
+                expected_output=expected_output,
+                sig=sig,
+                extra_argv=[str(sig)],
+            )
+
+            for word in ("asyncio", "RuntimeError", "InvalidState"):
+                assert word not in stdout
+                assert word not in stderr
+
+    async def test_it_passes_on_exception_when_task_raises_exception(self):
+        class T(GracefulTask):
+            """Run inside an external script during test via subprocess"""
+
+            def run_loop(self, **kwargs):
+                try:
+                    super().run_loop(**kwargs)
+                finally:
+                    output = kwargs["output"]
+                    with open(output, "w") as fle:
+                        print("ran", file=fle)
+                    assert not self._final_future.cancelled(), "final future was cancelled"
+                    assert self._graceful.cancelled()
+                    assert (
+                        self._final_future.exception() is self._error
+                    ), "final future has wrong error"
+                    with open(output, "a") as fle:
+                        print("All good!", file=fle)
+
+            async def execute_task(
+                self, collector, notify, output, graceful_final_future, **kwargs
+            ):
+                self._final_future = collector.photons_app.final_future
+                self._graceful = graceful_final_future
+                self._error = PhotonsAppError("HI")
+                notify()
+                raise self._error
+
+        expected_stdout = ""
+
+        expected_output = "ran\nAll good!"
+
+        expected_stderr = r"""
+        Traceback \(most recent call last\):
+          <REDACTED>
+        photons_app.errors.PhotonsAppError: "HI"
+        """
+
+        with RunAsExternalGraceful(T) as assertRuns:
+            await assertRuns(
+                expected_output=expected_output,
+                expected_stdout=expected_stdout,
+                expected_stderr=expected_stderr,
             )

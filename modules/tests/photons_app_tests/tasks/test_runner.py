@@ -17,7 +17,7 @@ def collector():
     return collector
 
 
-describe "NormalRunner":
+describe "Runner":
     it "runs cleanup functions when done", collector:
         called = []
 
