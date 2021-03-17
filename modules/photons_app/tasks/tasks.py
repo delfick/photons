@@ -1,13 +1,55 @@
-"""
-We have here the object representing a task.
-
-Tasks contain a reference to the functionality it provides (in ``photons_app.actions``)
-"""
-
+from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, BadTarget, BadTask
+from photons_app.tasks.runner import NormalRunner
 from photons_app.special import SpecialReference
 
-from delfick_project.norms import sb, dictobj
+from delfick_project.norms import dictobj, sb, Meta
+
+
+class photons_app_spec(sb.Spec):
+    def normalise(self, meta, val):
+        return meta.everything["collector"].photons_app
+
+
+class NewTask(dictobj.Spec):
+    """
+    Responsible for managing the life cycle of a photons program
+    """
+
+    instantiated_name = dictobj.Field(sb.string_spec)
+
+    collector = dictobj.Field(
+        sb.overridden("{collector}"),
+        format_into=lambda: sb.typed(__import__("photons_app.collector").collector.Collector),
+    )
+
+    photons_app = dictobj.Field(
+        sb.overridden("{photons_app}"),
+        format_into=lambda: sb.typed(__import__("photons_app.photons_app").photons_app.PhotonsApp),
+    )
+
+    @classmethod
+    def create(kls, where, instantiated_name, collector, **kwargs):
+        configuration = collector.configuration.wrapped()
+        kwargs.update({"instantiated_name": instantiated_name})
+        configuration.update(kwargs)
+        meta = Meta(configuration, []).at(where)
+        return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, kwargs)
+
+    def run_loop(self, **kwargs):
+        return NormalRunner(self, kwargs).run_loop()
+
+    async def run(self, **kwargs):
+        try:
+            return await self.execute_task(**kwargs)
+        finally:
+            await self.post()
+
+    async def execute_task(self, **kwargs):
+        raise NotImplementedError()
+
+    async def post(self):
+        pass
 
 
 class Task(dictobj):
