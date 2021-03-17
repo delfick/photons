@@ -29,7 +29,12 @@ class NewTask(dictobj.Spec):
     )
 
     @classmethod
-    def create(kls, where, instantiated_name, collector, **kwargs):
+    def create(kls, collector, where=None, instantiated_name=None, **kwargs):
+        if where is None:
+            where = "<Task.create>"
+        if instantiated_name is None:
+            instantiated_name = kls.__name__
+
         configuration = collector.configuration.wrapped()
         kwargs.update({"instantiated_name": instantiated_name})
         configuration.update(kwargs)

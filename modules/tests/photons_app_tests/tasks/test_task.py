@@ -18,7 +18,7 @@ describe "Task":
         photons_app = collector.configuration["photons_app"]
         assert isinstance(photons_app, PhotonsApp)
 
-        task = Task.create("in_tests", "MyAmazingTask", collector)
+        task = Task.create(collector, instantiated_name="MyAmazingTask")
         assert task.collector is collector
         assert task.photons_app is photons_app
         assert task.instantiated_name == "MyAmazingTask"
@@ -26,13 +26,13 @@ describe "Task":
         class T(Task):
             thing = dictobj.Field(sb.listof(sb.string_spec()))
 
-        t2 = T.create("in_tests", "MyAmazingTask", collector)
+        t2 = T.create(collector, instantiated_name="MyAmazingTask", where="in_tests")
         assert t2.collector is collector
         assert t2.photons_app is photons_app
         assert t2.instantiated_name == "MyAmazingTask"
         assert t2.thing == []
 
-        t3 = T.create("in_tests", "MyAmazingerTask", collector, thing="one")
+        t3 = T.create(collector, instantiated_name="MyAmazingerTask", thing="one")
         assert t3.collector is collector
         assert t3.photons_app is photons_app
         assert t3.instantiated_name == "MyAmazingerTask"
@@ -45,7 +45,7 @@ describe "Task":
 
         collector = Collector()
         collector.prepare(None, {})
-        task = Task.create("in_tests", "MyAmazingTask", collector)
+        task = Task.create(collector, instantiated_name="MyAmazingTask")
 
         post = pytest.helpers.AsyncMock(name="post")
         execute_task = pytest.helpers.AsyncMock(name="execute_task", return_value=d)
@@ -78,7 +78,7 @@ describe "Task":
         collector = Collector()
         collector.prepare(None, {})
 
-        task = T.create("in_tests", "Thing", collector)
+        task = T.create(collector, instantiated_name="Thing")
         task.run_loop(wat=1, blah=2)
 
         assert got == [{"wat": 1, "blah": 2}]
