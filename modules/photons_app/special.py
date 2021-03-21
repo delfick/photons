@@ -25,9 +25,6 @@ class SpecialReference:
         """Must be implemented by the subclass, return ``found`` from this function"""
         raise NotImplementedError()
 
-    async def finish(self, exc_typ=None, exc=None, tb=None):
-        """Hook for cleanup"""
-
     def missing(self, found):
         """Hook for saying if anything is missing from found"""
         return []

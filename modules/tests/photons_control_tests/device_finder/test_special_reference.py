@@ -68,12 +68,6 @@ describe "DeviceFinder":
                 V.finder.finish.assert_called_once_with(None, None, None)
                 FakeFinder.assert_called_once_with(V.sender)
 
-        describe "finish":
-            async it "does nothing", V:
-                await DeviceFinder(V.fltr).finish()
-                await DeviceFinder(V.fltr, finder=V.finder).finish()
-                V.finder.finish.assert_not_called()
-
         describe "info":
             async it "yields devices from the finder", V:
                 called = []

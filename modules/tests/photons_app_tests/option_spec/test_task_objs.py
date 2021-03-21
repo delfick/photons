@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
+from photons_app.special import FoundSerials, HardCodedSerials
 from photons_app.errors import BadTask, BadTarget, BadOption
 from photons_app.registers import ReferenceResolerRegister
 from photons_app.collector import Collector
@@ -78,57 +78,6 @@ describe "Task run":
                 one=one,
                 two=3,
             )
-
-        async it "finishes the reference if it's a SpecialReference", V:
-            called = []
-
-            one = mock.Mock(name="one")
-            final = mock.Mock(name="final")
-
-            async def task_func(*args, **kwargs):
-                called.append("task")
-                return final
-
-            task_func = pytest.helpers.AsyncMock(name="task_func", side_effect=task_func)
-            resolve_task_func = mock.Mock(name="resolve_task_func", return_value=task_func)
-
-            target = mock.Mock(name="target")
-            resolve_target = mock.Mock(name="resolve_target", return_value=target)
-
-            artifact = mock.Mock(name="artifact")
-            resolve_artifact = mock.Mock(name="resolve_artifact", return_value=artifact)
-
-            class Reference(SpecialReference):
-                async def finish(s, exc_typ=None, exc=None, tb=None):
-                    called.append("finish")
-
-            reference = Reference()
-            resolve_reference = mock.Mock(name="resolve_reference", return_value=reference)
-
-            with mock.patch.multiple(
-                V.task,
-                resolve_task_func=resolve_task_func,
-                resolve_target=resolve_target,
-                resolve_artifact=resolve_artifact,
-                resolve_reference=resolve_reference,
-            ):
-                assert (
-                    await V.task.run(
-                        V.target, V.collector, V.available_actions, V.tasks, one=one, two=3
-                    )
-                ) is final
-
-            task_func.assert_called_once_with(
-                V.collector,
-                target=target,
-                reference=reference,
-                artifact=artifact,
-                tasks=V.tasks,
-                one=one,
-                two=3,
-            )
-
-            assert called == ["task", "finish"]
 
 describe "Task":
     it "takes in action and label":
