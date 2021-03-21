@@ -47,9 +47,10 @@ class RunAsExternal:
 
             collector = Collector()
             collector.prepare(None, {})
-            T.create(collector).run_loop(collector=collector, notify=notify, output=sys.argv[1])
         """
             )
+            + "\n"
+            + f"{task_kls.__name__}.create(collector).run_loop(collector=collector, notify=notify, output=sys.argv[1])"
         )
 
     def __enter__(self):
@@ -87,14 +88,16 @@ class RunAsExternal:
         signal.signal(signal.SIGUSR1, ready)
 
         pipe = subprocess.PIPE
+        cmd = [
+            sys.executable,
+            self.fle.name,
+            self.out.name,
+            str(os.getpid()),
+            *[str(a) for a in (extra_argv or [])],
+        ]
+
         p = subprocess.Popen(
-            [
-                sys.executable,
-                self.fle.name,
-                self.out.name,
-                str(os.getpid()),
-                *[str(a) for a in (extra_argv or [])],
-            ],
+            cmd,
             stdout=pipe,
             stderr=pipe,
         )
@@ -176,7 +179,7 @@ class TestRunnerSignals:
     """
 
     async def test_it_works(self):
-        class T(Task):
+        class A(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, notify, output, **kwargs):
@@ -188,7 +191,7 @@ class TestRunnerSignals:
         expected_stderr = ""
         expected_output = "HI"
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(A) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -196,7 +199,7 @@ class TestRunnerSignals:
             )
 
     async def test_it_puts_UserQuit_on_final_future_on_SIGINT(self):
-        class T(Task):
+        class B(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, collector, notify, output, **kwargs):
@@ -217,7 +220,7 @@ class TestRunnerSignals:
 
         expected_output = '"User Quit"'
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(B) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -226,7 +229,7 @@ class TestRunnerSignals:
             )
 
     async def test_ensures_with_statements_get_cleaned_up_when_we_have_an_exception(self):
-        class T(Task):
+        class C(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, notify, output, **kwargs):
@@ -247,7 +250,7 @@ class TestRunnerSignals:
 
         expected_output = "FINALLY"
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(C) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -255,7 +258,7 @@ class TestRunnerSignals:
             )
 
     async def test_ensures_async_generates_are_closed_on_sigint(self):
-        class T(Task):
+        class D(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, notify, output, **kwargs):
@@ -283,9 +286,9 @@ class TestRunnerSignals:
         delfick_project.errors.UserQuit: "User Quit"
         """
 
-        expected_output = "CANCELLED<class 'asyncio.exceptions.CancelledError'>"
+        expected_output = f"CANCELLED<class '{cancelled_error_name}'>"
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(D) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -294,7 +297,7 @@ class TestRunnerSignals:
             )
 
     async def test_it_says_the_program_was_cancelled_if_quit_with_CancelledError(self):
-        class T(Task):
+        class E(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, notify, output, **kwargs):
@@ -321,7 +324,7 @@ class TestRunnerSignals:
 
         expected_output = f"CANCELLED<class '{cancelled_error_name}'>"
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(E) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -332,7 +335,7 @@ class TestRunnerSignals:
         if platform.system() == "Windows":
             return
 
-        class T(Task):
+        class F(Task):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, collector, notify, output, **kwargs):
@@ -361,7 +364,7 @@ class TestRunnerSignals:
 
         expected_output = "STOPPED<class 'photons_app.errors.ApplicationStopped'>"
 
-        with RunAsExternal(T) as assertRuns:
+        with RunAsExternal(F) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -378,7 +381,7 @@ class TestGracefulRunnerSignals:
     """
 
     async def test_it_works(self):
-        class T(GracefulTask):
+        class G(GracefulTask):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(self, notify, output, **kwargs):
@@ -390,7 +393,7 @@ class TestGracefulRunnerSignals:
         expected_stderr = ""
         expected_output = "HI"
 
-        with RunAsExternalGraceful(T) as assertRuns:
+        with RunAsExternalGraceful(G) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
@@ -399,7 +402,7 @@ class TestGracefulRunnerSignals:
 
     @pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM, None])
     async def test_it_doesnt_kill_task_when_graceful_happens(self, sig):
-        class T(GracefulTask):
+        class H(GracefulTask):
             """Run inside an external script during test via subprocess"""
 
             async def execute_task(
@@ -415,7 +418,7 @@ class TestGracefulRunnerSignals:
 
         expected_output = "still ran!"
 
-        with RunAsExternalGraceful(T) as assertRuns:
+        with RunAsExternalGraceful(H) as assertRuns:
             stdout, stderr = await assertRuns(
                 expected_output=expected_output,
                 sig=sig,
@@ -427,7 +430,7 @@ class TestGracefulRunnerSignals:
                 assert word not in stderr
 
     async def test_it_passes_on_exception_when_task_raises_exception(self):
-        class T(GracefulTask):
+        class J(GracefulTask):
             """Run inside an external script during test via subprocess"""
 
             def run_loop(self, **kwargs):
@@ -464,7 +467,7 @@ class TestGracefulRunnerSignals:
         photons_app.errors.PhotonsAppError: "HI"
         """
 
-        with RunAsExternalGraceful(T) as assertRuns:
+        with RunAsExternalGraceful(J) as assertRuns:
             await assertRuns(
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
