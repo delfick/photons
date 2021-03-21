@@ -411,9 +411,6 @@ class DeviceFinder(SpecialReference):
             async for device in finder.find(self.fltr):
                 yield device
 
-    async def finish(self, exc_typ=None, exc=None, tb=None):
-        pass
-
     @classmethod
     def from_json_str(kls, s, finder=None):
         return DeviceFinder(Filter.from_json_str(s), finder=finder)

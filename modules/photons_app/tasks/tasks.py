@@ -1,6 +1,5 @@
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, BadTarget, BadTask
-from photons_app.special import SpecialReference
 from photons_app.tasks.runner import Runner
 
 from delfick_project.norms import dictobj, sb, Meta
@@ -96,18 +95,9 @@ class Task(dictobj):
         artifact = self.resolve_artifact(collector)
         reference = self.resolve_reference(collector, task_func)
 
-        try:
-            return await task_func(
-                collector,
-                target=target,
-                reference=reference,
-                tasks=tasks,
-                artifact=artifact,
-                **extras
-            )
-        finally:
-            if isinstance(reference, SpecialReference):
-                await reference.finish()
+        return await task_func(
+            collector, target=target, reference=reference, tasks=tasks, artifact=artifact, **extras
+        )
 
     def resolve_task_func(self, collector, target, available_actions):
         """

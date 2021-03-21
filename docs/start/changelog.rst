@@ -8,6 +8,8 @@ ChangeLog
 0.40.0 - TBD
     * Moved some imports from photons_app.options_spec. You're unlikely to
       currently be using these directly.
+    * ``photons_app.special.SpecialReference`` objects no longer guarantee getting
+      ``finish`` called on them at the end of the program
 
 .. _release-core-0-33-0:
 
