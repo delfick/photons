@@ -37,7 +37,6 @@ async def server(store_clone, server_wrapper, FakeTime, MockedCallLater):
 
 describe "Animation Commands":
 
-    @pytest.mark.focus
     async it "can get info and help", fake, server:
         async with server() as (server, m):
             await server.assertCommand(
