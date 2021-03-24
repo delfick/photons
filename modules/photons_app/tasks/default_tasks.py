@@ -9,14 +9,19 @@ from textwrap import dedent
 from io import StringIO
 import sys
 
+task = task_register
 
-@task_register.from_function()
-async def nop(collector, **kwargs):
+
+@task
+class nop(task.Task):
     """Literally do nothing"""
 
+    async def execute_task(self, **kwargs):
+        pass
 
-@task_register.from_function()
-async def help(collector, reference, target, **kwargs):
+
+@task
+class help(task.Task):
     """
     Display more help information for specified target:task
 
@@ -35,156 +40,163 @@ async def help(collector, reference, target, **kwargs):
     You can also be tricky and do something like ``<target>:help`` instead
     of ``help <target>``
     """
-    task_name = sb.NotSpecified
-    target_name = target
 
-    if reference is not sb.NotSpecified:
-        if ":" in reference:
-            target_name, task_name = task_specifier_spec().normalise(Meta.empty(), reference)
-        else:
-            task_name = reference
+    target = task.provides_target()
+    reference = task.provides_reference()
 
-    target_register = collector.configuration["target_register"]
-
-    if task_name in target_register.registered or task_name in target_register.types:
-        target_name = task_name
+    async def execute_task(self, **kwargs):
         task_name = sb.NotSpecified
+        target_name = self.target
 
-    for name, target in target_register.created.items():
-        if target is target_name:
-            target_name = name
-            break
+        if self.reference is not sb.NotSpecified:
+            if ":" in self.reference:
+                target_name, task_name = task_specifier_spec().normalise(
+                    Meta.empty(), self.reference
+                )
+            else:
+                task_name = self.reference
 
-    if target_name is not sb.NotSpecified:
-        if target_name in target_register.registered or target_name in target_register.types:
-            kwargs["specific_target"] = target_name
+        target_register = self.collector.configuration["target_register"]
 
-        if (
-            target_name not in target_register.registered
-            and target_name not in target_register.types
-        ):
-            raise PhotonsAppError(
-                "Sorry, cannot find help for non existing target", wanted=target_name
-            )
+        if task_name in target_register.registered or task_name in target_register.types:
+            target_name = task_name
+            task_name = sb.NotSpecified
 
-    if task_name is not sb.NotSpecified:
-        kwargs["specific_task"] = task_name
-        if task_name not in task_register:
-            raise PhotonsAppError(
-                "Sorry, cannot find help for non existing task",
-                wanted=task_name,
-                available=task_register.names,
-            )
+        for name, target in target_register.created.items():
+            if target is target_name:
+                target_name = name
+                break
 
-    await list_tasks(collector, **kwargs)
+        if target_name is not sb.NotSpecified:
+            if target_name in target_register.registered or target_name in target_register.types:
+                kwargs["specific_target"] = target_name
+
+            if (
+                target_name not in target_register.registered
+                and target_name not in target_register.types
+            ):
+                raise PhotonsAppError(
+                    "Sorry, cannot find help for non existing target", wanted=target_name
+                )
+
+        if task_name is not sb.NotSpecified:
+            kwargs["specific_task"] = task_name
+            if task_name not in task_register:
+                raise PhotonsAppError(
+                    "Sorry, cannot find help for non existing task",
+                    wanted=task_name,
+                    available=task_register.names,
+                )
+
+        await task_register.fill_task(self.collector, list_tasks, **kwargs).run()
 
 
-@task_register.from_function()
-async def list_tasks(
-    collector,
-    specific_target=sb.NotSpecified,
-    specific_task=sb.NotSpecified,
-    output=sys.stdout,
-    **kwargs,
-):
+@task
+class list_tasks(task.Task):
     """List the available_tasks"""
 
-    def p(s=""):
-        print(s, file=output)
+    output = task.Field(sb.any_spec, default=sys.stdout)
+    specific_task = task.Field(sb.any_spec, wrapper=sb.optional_spec)
+    specific_target = task.Field(sb.any_spec, wrapper=sb.optional_spec)
 
-    p("Usage: (<target>:)<task> <options> -- <extra>")
+    def __call__(self, s=""):
+        print(s, file=self.output)
 
-    original_target_register = collector.configuration["target_register"]
-    target_register = original_target_register
-    initial_restrictions = {}
-    if specific_target is not sb.NotSpecified:
-        initial_restrictions.update(dict(target_names=[specific_target]))
-        target_register = target_register.restricted(**initial_restrictions)
+    @property
+    def target_register(self):
+        return self.collector.configuration["target_register"]
 
-    targets_by_name = defaultdict(list)
-    for name, target in target_register.registered.items():
-        typ = target_register.type_for(name)
-        desc = target_register.desc_for(name)
-        targets_by_name[name] = (typ, desc)
+    async def execute_task(self, **kwargs):
+        self("Usage: (<target>:)<task> <options> -- <extra>")
 
-    tasks = []
-    for task in task_register.registered:
-        if specific_task is sb.NotSpecified or task.name == specific_task:
-            restrictions = getattr(task, "target_restrictions", {})
-            if not restrictions:
-                tasks.append((task, restrictions))
-                continue
+        target_register = self.target_register
+        initial_restrictions = {}
+        if self.specific_target is not sb.NotSpecified:
+            initial_restrictions.update(dict(target_names=[self.specific_target]))
+            target_register = target_register.restricted(**initial_restrictions)
 
-            restrict = MergedOptions.using(initial_restrictions, restrictions).as_dict()
-            reg = target_register.restricted(**restrict)
-            if reg.registered:
-                tasks.append((task, restrictions))
+        targets_by_name = defaultdict(list)
+        for name, target in target_register.registered.items():
+            typ = target_register.type_for(name)
+            desc = target_register.desc_for(name)
+            targets_by_name[name] = (typ, desc)
 
-    if len(tasks) == 1:
-        p()
-        print_one_task(p, original_target_register, targets_by_name, *tasks[0])
-    elif tasks:
-        p()
-        print_tasks(p, original_target_register, targets_by_name, tasks)
-    else:
-        p("Found no tasks to print help for...")
+        tasks = []
+        for task in task_register.registered:
+            if self.specific_task is sb.NotSpecified or task.name == self.specific_task:
+                restrictions = getattr(task, "target_restrictions", {})
+                if not restrictions:
+                    tasks.append((task, restrictions))
+                    continue
 
+                restrict = MergedOptions.using(initial_restrictions, restrictions).as_dict()
+                reg = target_register.restricted(**restrict)
+                if reg.registered:
+                    tasks.append((task, restrictions))
 
-def print_one_task(p, target_register, targets_by_name, t, restriction):
-    p("=" * 80)
-    p(t.name)
-    p("-" * 80)
-    print_target_restrictions(p, target_register, targets_by_name, restriction)
-    p("-" * 80)
-    p("\n".join(f"  {line}" for line in dedent(t.task.__doc__ or "").split("\n")))
-    p()
+        if len(tasks) == 1:
+            self()
+            self.print_one_task(targets_by_name, *tasks[0])
+        elif tasks:
+            self()
+            self.print_tasks(targets_by_name, tasks)
+        else:
+            self("Found no tasks to print help for...")
 
+    def print_one_task(self, targets_by_name, t, restriction):
+        self("=" * 80)
+        self(t.name)
+        self("-" * 80)
+        self.print_target_restrictions(targets_by_name, restriction)
+        self("-" * 80)
+        self("\n".join(f"  {line}" for line in dedent(t.task.__doc__ or "").split("\n")))
+        self()
 
-def print_target_restrictions(p, target_register, targets_by_name, restriction):
-    if restriction:
-        p("- Can be used with only specific targets")
-        for n, v in sorted(restriction.items()):
-            p(f"  * {n} = {v}")
-        for name in target_register.restricted(**restriction).registered:
-            p(f"  : {name} - ({targets_by_name[name][0]}) - {targets_by_name[name][1]}")
-    else:
-        p("- Can be used with any target")
+    def print_target_restrictions(self, targets_by_name, restriction):
+        if restriction:
+            self("- Can be used with only specific targets")
+            for n, v in sorted(restriction.items()):
+                self(f"  * {n} = {v}")
+            for name in self.target_register.restricted(**restriction).registered:
+                self(f"  : {name} - ({targets_by_name[name][0]}) - {targets_by_name[name][1]}")
+        else:
+            self("- Can be used with any target")
 
+    def print_tasks(self, targets_by_name, tasks):
+        by_restriction = defaultdict(list)
+        for t, restriction in tasks:
+            doc = (t.task.__doc__ or "").strip()
+            if doc:
+                doc = doc.split("\n")[0]
 
-def print_tasks(p, target_register, targets_by_name, tasks):
-    by_restriction = defaultdict(list)
-    for t, restriction in tasks:
-        doc = (t.task.__doc__ or "").strip()
-        if doc:
-            doc = doc.split("\n")[0]
+            o = StringIO()
+            task_register.fill_task(
+                self.collector, self.__class__, output=o
+            ).print_target_restrictions(targets_by_name, restriction)
+            o.flush()
+            o.seek(0)
+            by_restriction[o.read()].append((t.name, t.task_group, doc))
 
-        o = StringIO()
-        pp = lambda s="": print(s, file=o)
-        print_target_restrictions(pp, target_register, targets_by_name, restriction)
-        o.flush()
-        o.seek(0)
-        by_restriction[o.read()].append((t.name, t.task_group, doc))
+        for restriction, tasks in by_restriction.items():
+            self("=" * 80)
+            self(restriction)
+            self("  " * 10 + "-" * 40)
+            self()
 
-    for restriction, tasks in by_restriction.items():
-        p("=" * 80)
-        p(restriction)
-        p("  " * 10 + "-" * 40)
-        p()
+            by_label = defaultdict(list)
+            for name, label, doc in tasks:
+                by_label[label].append((name, doc))
 
-        by_label = defaultdict(list)
-        for name, label, doc in tasks:
-            by_label[label].append((name, doc))
+            for label, ts in by_label.items():
+                t = f"  {label}::"
+                self(t)
+                self("  " + "#" * (len(t) - 2))
+                max_length = 0
+                for name, _ in ts:
+                    max_length = max([max_length, len(name) + 1])
 
-        for label, ts in by_label.items():
-            t = f"  {label}::"
-            p(t)
-            p("  " + "#" * (len(t) - 2))
-            max_length = 0
-            for name, _ in ts:
-                max_length = max([max_length, len(name) + 1])
-
-            for i, (name, doc) in enumerate(sorted(ts)):
-                p(f"    {name:{max_length}}: {doc}")
-                if i != 0 and i % 5 == 0:
-                    p()
-            p()
+                for i, (name, doc) in enumerate(sorted(ts)):
+                    self(f"    {name:{max_length}}: {doc}")
+                    if i != 0 and i % 5 == 0:
+                        self()
+                self()
