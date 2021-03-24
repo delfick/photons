@@ -5,6 +5,7 @@ the argument parsing and for starting up the App.
 This class is extended in Photons Apps to provide custom startup functionalities.
 """
 
+from photons_app.tasks import task_register
 from photons_app.collector import Collector
 from photons_app import VERSION
 
@@ -56,6 +57,7 @@ def library_setup(
 
     collector = Collector()
     collector.prepare(config_filename, {"photons_app": photons_app}, extra_files=extra_files)
+
     return collector
 
 
@@ -118,6 +120,7 @@ class App(App):
         collector.prepare(config_name, args_dict, extra_files=extra_files)
         if "term_colors" in collector.configuration:
             self.setup_logging_theme(logging_handler, colors=collector.configuration["term_colors"])
+
         return collector
 
     def execute(
@@ -136,10 +139,18 @@ class App(App):
 
         collector = self.setup_collector(args_dict, logging_handler, extra_files)
 
-        task_runner = collector.configuration["task_runner"]
+        artifact = collector.photons_app.artifact
+        reference = collector.photons_app.reference
+        target_name, task_name = collector.photons_app.task_specifier()
 
-        target, task = collector.photons_app.task_specifier()
-        collector.run_coro_as_main(task_runner(target, task), catch_delfick_error=False)
+        task_register.fill_task(
+            collector,
+            task_name,
+            path="CLI|",
+            target=target_name,
+            reference=reference,
+            artifact=artifact,
+        ).run_loop()
 
     def specify_other_args(self, parser, defaults):
         parser.add_argument(

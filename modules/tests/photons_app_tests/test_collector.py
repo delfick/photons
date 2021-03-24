@@ -45,17 +45,21 @@ describe "Collector":
 
     it "has a shortcut to the run helper":
         coro = mock.Mock(name="coro")
-        run = mock.Mock(name="run")
         collector = Collector()
         collector.prepare(None, {})
+
+        run = mock.Mock(name="run", spec=[])
+        Run = mock.Mock(name="Run", return_value=mock.Mock("RunInstance", run=run))
+        Runner = mock.Mock(name="Runner", Run=Run, spec=["Run"])
 
         photons_app = collector.photons_app
         target_register = collector.configuration["target_register"]
 
-        with mock.patch("photons_app.collector.run", run):
+        with mock.patch("photons_app.collector.Runner", Runner):
             collector.run_coro_as_main(coro)
 
-        run.assert_called_once_with(coro, photons_app, target_register)
+        Run.assert_called_once_with(coro, photons_app, target_register)
+        run.assert_called_once_with()
 
     it "can be cloned":
         collector = Collector()
@@ -375,9 +379,6 @@ describe "Collector":
             collector = Collector()
             collector.register = mock.Mock(name="register")
 
-            task_finder = mock.Mock(name="task_finder")
-            FakeTaskFinder = mock.Mock(name="TaskFinder", return_value=task_finder)
-
             # Necessary setup for extra_prepare_after_activation
             collector.extra_configuration_collection(configuration)
             collector.register_converters(
@@ -391,10 +392,7 @@ describe "Collector":
             )
             configuration.converters.activate()
 
-            with mock.patch("photons_app.collector.TaskFinder", FakeTaskFinder):
-                collector.extra_prepare_after_activation(configuration, args_dict)
-
-            assert configuration["task_runner"] is task_finder.task_runner
+            collector.extra_prepare_after_activation(configuration, args_dict)
             collector.register.post_register.assert_called_once_with(mock.ANY)
 
         it "sets up targets":

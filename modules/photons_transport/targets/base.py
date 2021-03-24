@@ -37,6 +37,7 @@ class Sender:
 
 
 class Target(dictobj.Spec):
+    instantiated_name = dictobj.Field(sb.string_spec)
     protocol_register = dictobj.Field(sb.overridden("{protocol_register}"), formatted=True)
     final_future = dictobj.Field(sb.overridden("{final_future}"), formatted=True)
     description = dictobj.Field(sb.string_spec, default="Base transport functionality")

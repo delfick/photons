@@ -1,9 +1,8 @@
-from photons_app.errors import BadYaml, BadConfiguration, UserQuit, BadTask
+from photons_app.errors import BadYaml, BadConfiguration, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.actions import available_actions, all_tasks
 from photons_app.photons_app import PhotonsAppSpec
+from photons_app.tasks.runner import Runner
 from photons_app import helpers as hp
-from photons_app.runner import run
 
 from photons_messages import protocol_register
 
@@ -75,20 +74,6 @@ class extra_files_spec(sb.Spec):
         return self.extras_spec.normalise(meta, val)
 
 
-class TaskFinder:
-    def __init__(self, collector):
-        self.tasks = all_tasks
-        self.collector = collector
-
-    async def task_runner(self, target, task, **kwargs):
-        if task not in self.tasks:
-            raise BadTask("Unknown task", task=task, available=sorted(list(self.tasks.keys())))
-
-        return await self.tasks[task].run(
-            target, self.collector, available_actions, self.tasks, **kwargs
-        )
-
-
 class Collector(Collector):
     """
     This is based off the delfick project
@@ -121,7 +106,7 @@ class Collector(Collector):
         conf = self.configuration
         try:
             try:
-                return run(coro, conf["photons_app"], conf["target_register"])
+                return Runner.Run(coro, conf["photons_app"], conf["target_register"]).run()
             except KeyboardInterrupt:
                 raise UserQuit()
         except DelfickError as error:
@@ -254,12 +239,6 @@ class Collector(Collector):
         """
         Called after the configuration.converters are activated
 
-        We also put a ``task_runner`` in the configuration for running tasks.
-
-        .. code-block:: python
-
-            await collector.configuration["task_runner"]("lan:find_devices", "d073d500000")
-
         This will determine the target and artifact for you given the
         configuration in the collector.
         """
@@ -271,17 +250,15 @@ class Collector(Collector):
         extra_args = {"lifx.photons": {}}
         self.register.post_register(extra_args)
 
-        # Make the task finder
-        task_finder = TaskFinder(self)
-        configuration["task_runner"] = task_finder.task_runner
-
         # Register the targets from configuration
         self.add_targets(configuration["target_register"], configuration["targets"])
 
     def add_targets(self, target_register, targets):
         def creator(name, typ, target):
             meta = Meta(self.configuration, []).at("targets").at(name).at("options")
-            return typ.normalise(meta, target.options)
+            t = typ.normalise(meta, target.options)
+            t.instantiated_name = name
+            return t
 
         for name, target in targets.items():
             target_register.add_target(name, target, creator)
