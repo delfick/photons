@@ -201,7 +201,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = True
-            min_kelvin, max_kelvin = CapabilityRange((1500, 9000)).until(
+            min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
 
