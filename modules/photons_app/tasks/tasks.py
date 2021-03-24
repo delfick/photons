@@ -32,6 +32,7 @@ class NewTask(dictobj.Spec):
     def create(kls, collector, where=None, instantiated_name=None, **kwargs):
         if where is None:
             where = "<Task.create>"
+
         if instantiated_name is None:
             instantiated_name = kls.__name__
 
@@ -39,7 +40,21 @@ class NewTask(dictobj.Spec):
         kwargs.update({"instantiated_name": instantiated_name})
         configuration.update(kwargs)
         meta = Meta(configuration, []).at(where)
-        return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, kwargs)
+
+        # Make errors follow nice order for errors on cli
+        spec = kls.FieldSpec(MergedOptionStringFormatter).make_spec(meta)
+        transfer_set = {}
+        transfer_create = {}
+        for key in ("target", "reference", "artifact"):
+            if key in spec.expected:
+                transfer_set[key] = spec.expected.pop(key)
+                transfer_create[key] = spec.expected_spec.options.pop(key)
+        transfer_set.update(spec.expected)
+        transfer_create.update(spec.expected_spec.options)
+        spec.expected_spec.options = transfer_set
+        spec.expected = transfer_create
+
+        return spec.normalise(meta, kwargs)
 
     @hp.memoized_property
     def task_holder(self):
