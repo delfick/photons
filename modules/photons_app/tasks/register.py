@@ -1,5 +1,5 @@
-from photons_app.tasks.tasks import NewTask as Task, GracefulTask
 from photons_app.errors import BadTarget, BadOption, BadTask
+from photons_app.tasks.tasks import Task, GracefulTask
 
 from delfick_project.norms import sb, dictobj
 from collections import namedtuple

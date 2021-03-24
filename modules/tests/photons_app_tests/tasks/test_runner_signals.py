@@ -1,5 +1,5 @@
 from photons_app.errors import ApplicationStopped, PhotonsAppError
-from photons_app.tasks.tasks import NewTask as Task, GracefulTask
+from photons_app.tasks.tasks import Task, GracefulTask
 from photons_app import helpers as hp
 
 from contextlib import ExitStack
@@ -23,7 +23,7 @@ class RunAsExternal:
     def __init__(
         self,
         task_kls,
-        basekls="from photons_app.tasks.tasks import NewTask as Task",
+        basekls="from photons_app.tasks.tasks import Task",
     ):
         self.script = (
             basekls
