@@ -1,4 +1,5 @@
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks import task_register as task
 from photons_app.actions import an_action
 
 from delfick_project.addons import addon_hook
@@ -19,8 +20,14 @@ def __lifx__(collector, *args, **kwargs):
     collector.register_converters({"wat": Wat.FieldSpec(formatter=MergedOptionStringFormatter)})
 
 
+@task
+class do_the_thing(task.Task):
+    async def execute_task(self, **kwargs):
+        print(self.collector.configuration["wat"].thing)
+
+
 @an_action()
-async def do_the_thing(collector, target, reference, artifact, **kwargs):
+async def do_the_thing_with_old_an_action(collector, target, reference, artifact, **kwargs):
     print(collector.configuration["wat"].thing)
 
 
