@@ -10,6 +10,8 @@ ChangeLog
       currently be using these directly.
     * ``photons_app.special.SpecialReference`` objects no longer guarantee getting
       ``finish`` called on them at the end of the program
+    * ``photons_canvas.animations.actions.animation_action`` has been replaced in favour
+      of a ``AnimationTask`` in the same module and the new task register.
 
 .. _release-core-0-33-0:
 
