@@ -1,6 +1,6 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 
 from photons_canvas import Canvas, rearrange, font, point_helpers as php
 from photons_control.script import FromGenerator
@@ -12,49 +12,53 @@ import logging
 log = logging.getLogger("tile_dice")
 
 
-@an_action(needs_target=True, special_reference=True)
-async def tile_dice(collector, target, reference, **kwargs):
+@task
+class tile_dice(task.Task):
     """
     Display dice on your tiles
 
     ``tile_dice d073d5000001,d073d5000002``
     """
 
-    def e(error):
-        log.error(error)
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("parts")
-        async for serial, _, info in sender.gatherer.gather_per_serial(
-            plans, reference, **kwargs
-        ):
-            parts = info["parts"]
-            if not parts:
-                continue
+    async def execute_task(self, **kwargs):
+        def e(error):
+            log.error(error)
 
-            device = parts[0].device
+        async def gen(reference, sender, **kwargs):
+            plans = sender.make_plans("parts")
+            async for serial, _, info in sender.gatherer.gather_per_serial(
+                plans, reference, **kwargs
+            ):
+                parts = info["parts"]
+                if not parts:
+                    continue
 
-            if device.cap.has_chain:
-                canvas = Canvas()
-                canvas.add_parts(*parts, zero_color=(0, 0, 0, 3500))
-                
-                canvas = rearrange.rearrange(canvas, rearrange.Straight())
-                parts = canvas.parts
+                device = parts[0].device
 
-                characters = font.Characters(*[dice_8[n+1] for n in range(len(parts))])
-                characters_layer = characters.layer(0, 0, (0, 0, 1, 3500))
+                if device.cap.has_chain:
+                    canvas = Canvas()
+                    canvas.add_parts(*parts, zero_color=(0, 0, 0, 3500))
 
-                def layer(point, canvas):
-                    parts = list(canvas.point_to_parts[point])
-                    if parts:
-                        if point[1] == parts[0].bottom+1:
-                            return (0, 1, 0.2, 3500)
-                    return characters_layer(point, canvas)
+                    canvas = rearrange.rearrange(canvas, rearrange.Straight())
+                    parts = canvas.parts
 
-                yield DeviceMessages.SetPower(level=65535, target=device.serial)
-                yield list(canvas.msgs(layer, canvas))
+                    characters = font.Characters(*[dice_8[n + 1] for n in range(len(parts))])
+                    characters_layer = characters.layer(0, 0, (0, 0, 1, 3500))
 
-    await target.send(FromGenerator(gen), reference, error_catcher=e)
+                    def layer(point, canvas):
+                        parts = list(canvas.point_to_parts[point])
+                        if parts:
+                            if point[1] == parts[0].bottom + 1:
+                                return (0, 1, 0.2, 3500)
+                        return characters_layer(point, canvas)
+
+                    yield DeviceMessages.SetPower(level=65535, target=device.serial)
+                    yield list(canvas.msgs(layer, canvas))
+
+        await self.target.send(FromGenerator(gen), self.reference, error_catcher=e)
 
 
 if __name__ == "__main__":

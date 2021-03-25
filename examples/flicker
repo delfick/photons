@@ -1,6 +1,6 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 from photons_app import helpers as hp
 
 from photons_canvas.animations import AnimationRunner, Animation
@@ -210,8 +210,8 @@ def Flicker(
     return FromGeneratorPerSerial(gen)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def flicker(collector, target, reference, **kwargs):
+@task
+class flicker(task.Task):
     """
     Run a flicker animation on one or more devices at the same time.
 
@@ -220,7 +220,7 @@ async def flicker(collector, target, reference, **kwargs):
         ./flicker
 
     To run against a particular device::
-        
+
         ./flicker d073d5001337
 
     Or use the device finder::
@@ -228,7 +228,7 @@ async def flicker(collector, target, reference, **kwargs):
         ./flicker match:label=kitchen
 
     You may specify options, for example::
-        
+
         ./flicker -- '{"candle_color": true}'
 
     The options are:
@@ -251,39 +251,44 @@ async def flicker(collector, target, reference, **kwargs):
         If specified, we set the initial brightness to this value.
     """
 
-    # Create a spec for turning extra options into the keyword arguments that
-    # the flicker script takes in
-    spec = sb.set_options(
-        gap=sb.defaulted(sb.float_spec(), 0.25),
-        candle_color=sb.optional_spec(sb.boolean()),
-        power_on=sb.optional_spec(sb.boolean()),
-        max_brightness_drop=sb.optional_spec(between_0_and_1()),
-        start_brightness=sb.optional_spec(between_0_and_1()),
-    )
-    extra = collector.configuration["photons_app"].extra_as_json
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    # Create kwargs for instantiating Flicker with. We include only the options
-    # that were specified
-    kwargs = {
-        k: v for k, v in spec.normalise(Meta.empty(), extra).items() if v is not sb.NotSpecified
-    }
+    async def execute_task(self, **kwargs):
 
-    def e(error):
-        """Error catcher that just debug prints errors"""
-        log.debug(hp.lc("Failed to send a message", error=error))
+        # Create a spec for turning extra options into the keyword arguments that
+        # the flicker script takes in
+        spec = sb.set_options(
+            gap=sb.defaulted(sb.float_spec(), 0.25),
+            candle_color=sb.optional_spec(sb.boolean()),
+            power_on=sb.optional_spec(sb.boolean()),
+            max_brightness_drop=sb.optional_spec(between_0_and_1()),
+            start_brightness=sb.optional_spec(between_0_and_1()),
+        )
+        extra = self.collector.configuration["photons_app"].extra_as_json
 
-    with collector.photons_app.using_graceful_future() as final_future:
-        async with hp.TaskHolder(final_future, name="cli_flicker") as ts:
-            ts.add_task(
-                asyncio.ensure_future(
-                    target.send(
-                        Flicker(animation_final_future=final_future, **kwargs),
-                        reference,
-                        message_timeout=kwargs["gap"],
-                        error_catcher=e,
+        # Create kwargs for instantiating Flicker with. We include only the options
+        # that were specified
+        kwargs = {
+            k: v for k, v in spec.normalise(Meta.empty(), extra).items() if v is not sb.NotSpecified
+        }
+
+        def e(error):
+            """Error catcher that just debug prints errors"""
+            log.debug(hp.lc("Failed to send a message", error=error))
+
+        with self.collector.photons_app.using_graceful_future() as final_future:
+            async with hp.TaskHolder(final_future, name="cli_flicker") as ts:
+                ts.add_task(
+                    asyncio.ensure_future(
+                        self.target.send(
+                            Flicker(animation_final_future=final_future, **kwargs),
+                            self.reference,
+                            message_timeout=kwargs["gap"],
+                            error_catcher=e,
+                        )
                     )
                 )
-            )
 
 
 if __name__ == "__main__":

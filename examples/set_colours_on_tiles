@@ -1,6 +1,6 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 
 from photons_control.script import FromGenerator
 from photons_messages import DeviceMessages
@@ -12,8 +12,8 @@ import random
 log = logging.getLogger("info")
 
 
-@an_action(needs_target=True, special_reference=True)
-async def set_colors(collector, target, reference, **kwargs):
+@task
+class set_colors(task.Task):
     """
     Set any matrix devices we find on the network to specific colors
 
@@ -26,27 +26,31 @@ async def set_colors(collector, target, reference, **kwargs):
     ``set_colours_on_tiles match:group_name=kitchen``
     """
 
-    def e(error):
-        log.error(error)
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    def layer(point, canvas):
-        return (random.randint(0, 360), 1, 0.2, 3500)
+    async def execute_task(self, **kwargs):
+        def e(error):
+            log.error(error)
 
-    canvas = Canvas()
+        def layer(point, canvas):
+            return (random.randint(0, 360), 1, 0.2, 3500)
 
-    async def gen(reference, sender, **kwargs):
-        plans = sender.make_plans("parts")
-        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
-            for part in info:
-                if not part.device.cap.has_matrix:
-                    continue
-                canvas.add_parts(part)
+        canvas = Canvas()
 
-            yield DeviceMessages.SetPower(level=65535, target=serial, res_required=False)
-            for msg in canvas.msgs(layer, acks=True):
-                yield msg
+        async def gen(reference, sender, **kwargs):
+            plans = sender.make_plans("parts")
+            async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+                for part in info:
+                    if not part.device.cap.has_matrix:
+                        continue
+                    canvas.add_parts(part)
 
-    await target.send(FromGenerator(gen), reference, error_catcher=e)
+                yield DeviceMessages.SetPower(level=65535, target=serial, res_required=False)
+                for msg in canvas.msgs(layer, acks=True):
+                    yield msg
+
+        await self.target.send(FromGenerator(gen), self.reference, error_catcher=e)
 
 
 if __name__ == "__main__":

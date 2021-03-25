@@ -1,6 +1,6 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.script import Pipeline, Repeater
@@ -10,8 +10,8 @@ import logging
 log = logging.getLogger("repeater")
 
 
-@an_action(needs_target=True, special_reference=True)
-async def repeater(collector, target, reference, **kwargs):
+@task
+class repeater(task.Task):
     """
     Do a never ending loop getting information from your devices
 
@@ -24,26 +24,30 @@ async def repeater(collector, target, reference, **kwargs):
     Will find the product type, current firmware, group, location and label for your devices.
     """
 
-    async def on_done_loop():
-        log.info("loop done")
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    getter = [
-        DeviceMessages.GetVersion(),
-        DeviceMessages.GetGroup(),
-        DeviceMessages.GetLocation(),
-        DeviceMessages.GetHostFirmware(),
-        LightMessages.GetColor(),
-    ]
-    pipeline = Pipeline(*getter, spread=1)
-    repeater = Repeater(pipeline, min_loop_time=10, on_done_loop=on_done_loop)
+    async def execute_task(self, **kwargs):
+        async def on_done_loop():
+            log.info("loop done")
 
-    def error_catcher(e):
-        log.error(e)
+        getter = [
+            DeviceMessages.GetVersion(),
+            DeviceMessages.GetGroup(),
+            DeviceMessages.GetLocation(),
+            DeviceMessages.GetHostFirmware(),
+            LightMessages.GetColor(),
+        ]
+        pipeline = Pipeline(*getter, spread=1)
+        repeater = Repeater(pipeline, min_loop_time=10, on_done_loop=on_done_loop)
 
-    async for pkt in target.send(
-        repeater, reference, error_catcher=error_catcher, message_timeout=5
-    ):
-        print(pkt.serial, repr(pkt.payload))
+        def error_catcher(e):
+            log.error(e)
+
+        async for pkt in self.target.send(
+            repeater, self.reference, error_catcher=error_catcher, message_timeout=5
+        ):
+            print(pkt.serial, repr(pkt.payload))
 
 
 if __name__ == "__main__":
