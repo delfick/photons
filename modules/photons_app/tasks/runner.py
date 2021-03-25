@@ -41,7 +41,7 @@ class Runner:
             self.significant_future.add_done_callback(hp.silent_reporter)
             self.register_sigterm_handler(self.significant_future)
 
-            task, waiter = self.make_waiter(self.photons_app.final_future, self.significant_future)
+            task, waiter = self.make_waiter()
 
             try:
                 self.loop.run_until_complete(waiter)
@@ -68,17 +68,34 @@ class Runner:
 
                 self.loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
-        def make_waiter(self, *futs):
+        def make_waiter(self):
             task = self.loop.create_task(self.coro)
             task.add_done_callback(hp.silent_reporter)
 
             async def wait():
-                wait = [*futs, task]
+                wait = [self.photons_app.final_future, self.significant_future, task]
                 await hp.wait_for_first_future(*wait, name="||run>wait[wait_for_program_exit]")
 
-                for f in wait:
-                    if f.done():
-                        await f
+                if task.done():
+                    await task
+
+                if self.photons_app.final_future.done():
+                    await self.photons_app.final_future
+
+                if self.significant_future is self.photons_app.graceful_final_future:
+                    if (
+                        self.photons_app.graceful_final_future.setup
+                        and self.significant_future.done()
+                    ):
+                        if self.significant_future.cancelled():
+                            return
+
+                        exc = self.significant_future.exception()
+                        if isinstance(exc, ApplicationStopped):
+                            return
+
+                if self.significant_future.done():
+                    await self.significant_future
 
             waiter = self.loop.create_task(wait())
             waiter.add_done_callback(hp.silent_reporter)
