@@ -1,6 +1,7 @@
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, BadTarget, BadTask
 from photons_app.tasks.runner import Runner
+from photons_app import helpers as hp
 
 from delfick_project.norms import dictobj, sb, Meta
 
@@ -40,19 +41,26 @@ class NewTask(dictobj.Spec):
         meta = Meta(configuration, []).at(where)
         return kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(meta, kwargs)
 
+    @hp.memoized_property
+    def task_holder(self):
+        return hp.TaskHolder(
+            self.photons_app.final_future, name=f"Task({self.__class__.__name__})::task_holder"
+        )
+
     def run_loop(self, **kwargs):
         return Runner(self, kwargs).run_loop()
 
     async def run(self, **kwargs):
-        try:
-            return await self.execute_task(**kwargs)
-        finally:
-            await self.post()
+        async with self.task_holder:
+            try:
+                return await self.execute_task(**kwargs)
+            finally:
+                await self.post(**kwargs)
 
     async def execute_task(self, **kwargs):
         raise NotImplementedError()
 
-    async def post(self):
+    async def post(self, **kwargs):
         pass
 
 
