@@ -1,8 +1,14 @@
-from photons_app.actions import an_action
-from functools import wraps
+from photons_canvas.animations.infrastructure.finish import Finish
+from photons_canvas.animations.runner import AnimationRunner
+
+from photons_app.tasks import task_register as task
+
 from textwrap import dedent
+import logging
 import sys
 import os
+
+log = logging.getLogger("photons_canvas.animations.action")
 
 special_descriptions = {
     ":color_range:": """
@@ -146,21 +152,47 @@ def print_help(*, animation_kls=None, animation_name=None, output=sys.stdout):
     expand(dedent(animation_kls.__doc__ or "").strip(), output=output)
 
 
-class animation_action:
-    def __init__(self, animation_kls, *, name=None):
-        self.name = name
-        self.animation_kls = animation_kls
+class AnimationTask(task.Task):
+    target = task.requires_target()
+    artifact = task.provides_artifact()
+    reference = task.provides_reference()
 
-    def __call__(self, func):
-        @wraps(func)
-        async def wrapped(collector, target, reference, **kwargs):
-            if reference == "help":
-                print_help(
-                    animation_kls=self.animation_kls, animation_name=self.name or func.__name__
-                )
-                return
+    animation_kls = NotImplemented
+    animation_name = None
 
-            reference = collector.reference_object(reference)
-            return await func(collector, target, reference, **kwargs)
+    async def execute_task(self, **kwargs):
+        if self.reference == "help":
+            print_help(animation_kls=self.animation_kls, animation_name=self.animation_name)
+            return
 
-        return an_action(needs_target=True)(wrapped)
+        self.reference = self.collector.reference_object(self.reference)
+        return await self.run_animation(**kwargs)
+
+    @property
+    def run_options(self):
+        return {}
+
+    @property
+    def message_timeout(self):
+        return 1
+
+    def error_catcher(self, e):
+        log.error(e)
+
+    async def run_animation(self, **kwargs):
+        try:
+            with self.collector.photons_app.using_graceful_future() as final_future:
+                async with self.target.session() as sender:
+                    runner = AnimationRunner(
+                        sender,
+                        self.reference,
+                        self.run_options,
+                        final_future=final_future,
+                        message_timeout=self.message_timeout,
+                        error_catcher=self.error_catcher,
+                    )
+
+                    async with runner:
+                        await runner.run()
+        except Finish:
+            pass
