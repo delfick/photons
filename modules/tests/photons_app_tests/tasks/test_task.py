@@ -8,7 +8,9 @@ from photons_app import helpers as hp
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb
 from unittest import mock
+import asyncio
 import pytest
+import time
 
 
 describe "Task":
@@ -53,7 +55,7 @@ describe "Task":
         with mock.patch.multiple(task, post=post, execute_task=execute_task):
             assert (await task.run(a=a, c=b)) is d
             execute_task.assert_called_once_with(a=a, c=b)
-            post.assert_called_once_with()
+            post.assert_called_once_with(a=a, c=b)
 
             post.reset_mock()
             execute_task.reset_mock()
@@ -63,7 +65,7 @@ describe "Task":
                 await task.run(a=a, c=b)
 
             execute_task.assert_called_once_with(a=a, c=b)
-            post.assert_called_once_with()
+            post.assert_called_once_with(a=a, c=b)
 
     it "has a shortcut to run in a loop":
         got = []
@@ -82,3 +84,82 @@ describe "Task":
         task.run_loop(wat=1, blah=2)
 
         assert got == [{"wat": 1, "blah": 2}]
+
+    it "has order of cleanup and execution", FakeTime, MockedCallLater:
+
+        got = []
+        m = None
+
+        with FakeTime() as t:
+
+            class T(Task):
+                async def run(s, **kwargs):
+                    global m
+                    m = MockedCallLater(t)
+                    await m.start()
+                    try:
+                        with mock.patch.object(s.photons_app.loop, "call_later", m._call_later):
+                            await super().run(**kwargs)
+                    finally:
+                        s.photons_app.cleaners.append(m.finish)
+
+                async def execute_task(s, **kwargs):
+                    fut = hp.create_future()
+                    got.append((time.time(), "first"))
+
+                    async def wait():
+                        try:
+                            got.append((time.time(), "wait"))
+                            await fut
+                        except asyncio.CancelledError:
+                            got.append((time.time(), "wait stopped"))
+
+                    s.task_holder.add(wait())
+
+                    async def sleeper():
+                        await asyncio.sleep(2)
+                        got.append((time.time(), "blink"))
+                        await asyncio.sleep(8)
+                        got.append((time.time(), "rested"))
+
+                    s.task_holder.add(sleeper())
+
+                    async def cleaner1():
+                        got.append((time.time(), "cleaner1"))
+
+                    s.photons_app.cleaners.append(cleaner1)
+
+                    async def cleaner2():
+                        await asyncio.sleep(1)
+                        got.append((time.time(), "cleaner2"))
+
+                    s.photons_app.cleaners.append(cleaner2)
+
+                    await asyncio.sleep(3)
+                    got.append((time.time(), "wait now"))
+
+                    s.photons_app.loop.call_later(0.5, fut.cancel)
+
+                async def post(s, **kwargs):
+                    got.append((time.time(), "post"))
+                    await asyncio.sleep(1)
+                    got.append((time.time(), "post sleep"))
+
+            collector = Collector()
+            collector.prepare(None, {})
+
+            task = T.create(collector, instantiated_name="Thing")
+            task.run_loop()
+
+            assert got == [
+                (0, "first"),
+                (0, "wait"),
+                (2.0, "blink"),
+                (3.0, "wait now"),
+                (3.0, "post"),
+                (3.5, "wait stopped"),
+                (4.0, "post sleep"),
+                (10.0, "rested"),
+                (10.0, "cleaner1"),
+                (11.0, "cleaner2"),
+            ]
