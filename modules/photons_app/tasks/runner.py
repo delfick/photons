@@ -154,6 +154,11 @@ class Runner:
         def wait_for_main_task(self, task):
             log.debug("Waiting for main task to finish")
 
+            # If we exited because final future is done but graceful is not
+            # Then the task won't end, so let's tell graceful we're done now
+            if self.photons_app.final_future.done() and not self.significant_future.done():
+                self.transfer_result(self.photons_app.final_future, self.significant_future)
+
             # If we're not using the graceful future then we assume the task won't stop by itself
             # The graceful future is about saying the task will stop by itself when you resolve graceful
             if not self.photons_app.graceful_final_future.setup:
