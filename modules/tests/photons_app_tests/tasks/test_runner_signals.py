@@ -511,3 +511,36 @@ class TestGracefulRunnerSignals:
                 sig=signal.SIGTERM,
                 code=0,
             )
+
+    async def test_finishing_final_future_finishes_graceful_future(self):
+        class L(GracefulTask):
+            """Run inside an external script during test via subprocess"""
+
+            async def execute_task(self, notify, graceful_final_future, output, **kwargs):
+                notify()
+                self.collector.photons_app.loop.call_soon(
+                    self.collector.photons_app.final_future.set_exception, ValueError("NOPE")
+                )
+                with open(output, "a") as fle:
+                    print("before", file=fle)
+                await hp.wait_for_all_futures(graceful_final_future)
+                with open(output, "a") as fle:
+                    print("after", file=fle)
+
+        expected_stdout = ""
+
+        expected_output = "before\nafter"
+
+        expected_stderr = r"""
+        Traceback \(most recent call last\):
+          <REDACTED>
+        ValueError: NOPE
+        """
+
+        with RunAsExternalGraceful(L) as assertRuns:
+            await assertRuns(
+                expected_output=expected_output,
+                expected_stdout=expected_stdout,
+                expected_stderr=expected_stderr,
+                code=1,
+            )
