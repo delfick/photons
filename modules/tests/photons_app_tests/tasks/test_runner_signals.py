@@ -78,6 +78,8 @@ class RunAsExternal:
         expected_stderr=None,
         expected_output=None,
         extra_argv=None,
+        *,
+        code,
     ):
 
         fut = hp.create_future()
@@ -163,6 +165,8 @@ class RunAsExternal:
         assertOutput(got_stdout.strip(), expected_stdout)
         assertOutput(got_stderr.strip(), expected_stderr)
 
+        assert p.returncode == code
+
         return got_stdout, got_stderr
 
 
@@ -196,6 +200,7 @@ class TestRunnerSignals:
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
+                code=0,
             )
 
     async def test_it_puts_UserQuit_on_final_future_on_SIGINT(self):
@@ -226,6 +231,7 @@ class TestRunnerSignals:
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
                 sig=signal.SIGINT,
+                code=1,
             )
 
     async def test_ensures_with_statements_get_cleaned_up_when_we_have_an_exception(self):
@@ -255,6 +261,7 @@ class TestRunnerSignals:
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
+                code=1,
             )
 
     async def test_ensures_async_generates_are_closed_on_sigint(self):
@@ -294,6 +301,7 @@ class TestRunnerSignals:
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
                 sig=signal.SIGINT,
+                code=1,
             )
 
     async def test_it_says_the_program_was_cancelled_if_quit_with_CancelledError(self):
@@ -329,6 +337,7 @@ class TestRunnerSignals:
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
+                code=1,
             )
 
     async def test_stops_the_program_on_SIGTERM(self):
@@ -370,6 +379,7 @@ class TestRunnerSignals:
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
                 sig=signal.SIGTERM,
+                code=1,
             )
 
 
@@ -398,6 +408,7 @@ class TestGracefulRunnerSignals:
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
+                code=0,
             )
 
     @pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM, None])
@@ -423,6 +434,7 @@ class TestGracefulRunnerSignals:
                 expected_output=expected_output,
                 sig=sig,
                 extra_argv=[str(sig)],
+                code=0 if sig in (signal.SIGTERM, None) else 1,
             )
 
             for word in ("asyncio", "RuntimeError", "InvalidState"):
@@ -472,4 +484,30 @@ class TestGracefulRunnerSignals:
                 expected_output=expected_output,
                 expected_stdout=expected_stdout,
                 expected_stderr=expected_stderr,
+                code=1,
+            )
+
+    async def test_interupting_graceful_is_exit_code_0(self):
+        class K(GracefulTask):
+            """Run inside an external script during test via subprocess"""
+
+            async def execute_task(self, notify, graceful_final_future, output, **kwargs):
+                notify()
+                await hp.wait_for_all_futures(graceful_final_future)
+                with open(output, "a") as fle:
+                    print(graceful_final_future.exception(), file=fle)
+
+        expected_stdout = ""
+
+        expected_output = '"The application itself was stopped"'
+
+        expected_stderr = ""
+
+        with RunAsExternalGraceful(K) as assertRuns:
+            await assertRuns(
+                expected_output=expected_output,
+                expected_stdout=expected_stdout,
+                expected_stderr=expected_stderr,
+                sig=signal.SIGTERM,
+                code=0,
             )
