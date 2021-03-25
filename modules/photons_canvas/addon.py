@@ -1,8 +1,8 @@
 from photons_canvas.animations import register, AnimationRunner, print_help
 from photons_canvas.theme import ApplyTheme
 
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 
 from delfick_project.option_merge import MergedOptions
 from delfick_project.addons import addon_hook
@@ -21,8 +21,8 @@ def __lifx__(collector, *args, **kwargs):
     __import__("photons_canvas.animations.addon")
 
 
-@an_action(needs_target=True, special_reference=True)
-async def apply_theme(collector, target, reference, artifact, **kwargs):
+@task
+class apply_theme(task.Task):
     """
     Apply a theme to specified device
 
@@ -41,69 +41,85 @@ async def apply_theme(collector, target, reference, artifact, **kwargs):
     ``brightness`` and ``kelvin`` to override the specified colors.
     """
 
-    def errors(e):
-        log.error(e)
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    msg = ApplyTheme.msg(collector.photons_app.extra_as_json)
-    await target.send(msg, reference, error_catcher=errors, message_timeout=2)
-
-
-@an_action(needs_target=True)
-async def animate(collector, target, reference, artifact, **kwargs):
-    if reference == "help":
-        if artifact in register.animations:
-            print_help(
-                animation_kls=register.animations[artifact].Animation, animation_name=artifact
-            )
-        else:
-            print_help()
-        return
-
-    if reference in register.available_animations():
-        ref = artifact
-        artifact = reference
-        reference = ref
-
-    extra = collector.photons_app.extra_as_json
-    reference = collector.reference_object(reference)
-
-    options = {}
-    specific_animation = artifact not in (None, "", sb.NotSpecified)
-
-    if specific_animation:
-        options = extra
-        run_options = extra.pop("run_options", {})
-    else:
-        run_options = extra
-        if isinstance(run_options, list):
-            run_options = {"animations": run_options}
-
-    if specific_animation:
-        background = sb.NotSpecified
-        layered = {"animations": [[artifact, background, options]], "animation_limit": 1}
-        run_options = MergedOptions.using(layered, run_options).as_dict()
-
-    def errors(e):
-        if isinstance(e, KeyboardInterrupt):
-            return
-
-        if not isinstance(e, PhotonsAppError):
-            log.exception(e)
-        else:
+    async def execute_task(self, **kwargs):
+        def errors(e):
             log.error(e)
 
-    conf = collector.configuration
-    photons_app = conf["photons_app"]
+        msg = ApplyTheme.msg(self.collector.photons_app.extra_as_json)
+        await self.target.send(msg, self.reference, error_catcher=errors, message_timeout=2)
 
-    with photons_app.using_graceful_future() as final_future:
-        async with target.session() as sender:
-            runner = AnimationRunner(
-                sender,
-                reference,
-                run_options,
-                final_future=final_future,
-                error_catcher=errors,
-                animation_options=conf.get("animation_options", {}),
-            )
-            async with runner:
-                await runner.run()
+
+@task
+class animate(task.Task):
+    """
+    Run animations on LIFX tile sets.
+
+    Run `lifx lan:animate help` for more information
+    """
+
+    target = task.requires_target()
+    artifact = task.provides_reference()
+    reference = task.provides_reference()
+
+    async def execute_task(self, **kwargs):
+        if self.reference == "help":
+            if self.artifact in register.animations:
+                print_help(
+                    animation_kls=register.animations[self.artifact].Animation,
+                    animation_name=self.artifact,
+                )
+            else:
+                print_help()
+            return
+
+        if self.reference in register.available_animations():
+            ref = self.artifact
+            artifact = self.reference
+            reference = ref
+
+        extra = self.collector.photons_app.extra_as_json
+        reference = self.collector.reference_object(self.reference)
+
+        options = {}
+        specific_animation = self.artifact not in (None, "", sb.NotSpecified)
+
+        if specific_animation:
+            options = extra
+            run_options = extra.pop("run_options", {})
+        else:
+            run_options = extra
+            if isinstance(run_options, list):
+                run_options = {"animations": run_options}
+
+        if specific_animation:
+            background = sb.NotSpecified
+            layered = {"animations": [[artifact, background, options]], "animation_limit": 1}
+            run_options = MergedOptions.using(layered, run_options).as_dict()
+
+        def errors(e):
+            if isinstance(e, KeyboardInterrupt):
+                return
+
+            if not isinstance(e, PhotonsAppError):
+                log.exception(e)
+            else:
+                log.error(e)
+
+        conf = self.collector.configuration
+        photons_app = conf["photons_app"]
+
+        with photons_app.using_graceful_future() as final_future:
+            async with self.target.session() as sender:
+                runner = AnimationRunner(
+                    sender,
+                    reference,
+                    run_options,
+                    final_future=final_future,
+                    error_catcher=errors,
+                    animation_options=conf.get("animation_options", {}),
+                )
+                async with runner:
+                    await runner.run()
