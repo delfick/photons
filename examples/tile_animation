@@ -1,6 +1,13 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_canvas.animations import Animation, Finish, AnimationRunner, options, animation_action
+from photons_app.tasks import task_register as task
+
+from photons_canvas.animations import (
+    Animation,
+    Finish,
+    options,
+    AnimationTask,
+)
 from photons_canvas import point_helpers as php
 
 from delfick_project.norms import dictobj, sb
@@ -87,6 +94,7 @@ class State:
 #
 # This file is self contained, so registering it wouldn't make much difference
 
+
 class Animation(Animation):
     """
     An example animation similar to the built in "dots" animation.
@@ -101,6 +109,7 @@ class Animation(Animation):
         will use a percentage of the remaining area on the tiles, but for
         simplicity this example just has an absolute number
     """
+
     align_parts_straight = True
 
     def setup(self):
@@ -179,37 +188,25 @@ class Animation(Animation):
             return event.state.layer
 
 
-# Note that we use the ``animation_action`` instead of ``photons_app.actions.an_action``
-# like we would elsewhere. This action is special in that if you run this file
-# with the first argument of "help", then the docstring of the Animation class
-# specified will be printed instead of the animation being started.
-@animation_action(Animation, name="example dots")
-async def tile_animation(collector, target, reference, **kwargs):
-    # We provide the Animation class and the Options class associated with that animation
-    # The last argument is options to create the Options object with, here we
-    # we have no non default options.
-    # We could instead specify options, for example ``{"color": "red"}``
-    run_options = {"animations": [[(Animation, Options), None]], "animation_limit": 1}
+# Note that we use the ``AnimationTask`` instead of ``task.Task``
+# like we would elsewhere. This task is special and does most of the work for us
+# We need to tell it our animation class
+# And optionally a name for the animation, run_options, error_catcher and message_timeout
+#
+# If you give a reference as "help" then it'll take the help output from our animation class
+# And print that to the terminal
+@task
+class tile_animation(AnimationTask):
+    animation_kls = Animation
+    animation_name = "example dots"
 
-    def error(e):
-        log.error(e)
-
-    try:
-        with collector.photons_app.using_graceful_future() as final_future:
-            async with target.session() as sender:
-                runner = AnimationRunner(
-                    sender,
-                    reference,
-                    run_options,
-                    final_future=final_future,
-                    message_timeout=1,
-                    error_catcher=error,
-                )
-
-                async with runner:
-                    await runner.run()
-    except Finish:
-        pass
+    @property
+    def run_options(self, **kwargs):
+        # We provide the Animation class and the Options class associated with that animation
+        # The last argument is options to create the Options object with, here we
+        # we have no non default options.
+        # We could instead specify options, for example ``{"color": "red"}``
+        return {"animations": [[(Animation, Options), None]], "animation_limit": 1}
 
 
 if __name__ == "__main__":
