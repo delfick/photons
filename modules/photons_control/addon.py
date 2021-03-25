@@ -2,19 +2,22 @@ from photons_app.actions import an_action
 
 from photons_messages import Services
 
+from photons_control.device_finder import DeviceFinder
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb, Meta
 import ipaddress
 import binascii
 import json
+import os
 
 # Get us our actions
-from photons_control.device_finder import DeviceFinder
-import photons_control.attributes  # noqa
-import photons_control.multizone  # noqa
-import photons_control.transform  # noqa
-import photons_control.payloads  # noqa
-import photons_control.tile  # noqa
+for filename in os.listdir(os.path.dirname(__file__)):
+    if not filename.endswith(".py") or filename.startswith("_") or filename.startswith("."):
+        continue
+    if filename == "addon.py":
+        continue
+
+    __import__(f"photons_control.{filename[:-3]}")
 
 
 @addon_hook(extras=[("lifx.photons", "transport")])
