@@ -1,6 +1,6 @@
 #!/usr/bin/python -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 
 from photons_control.planner import Skip
 from photons_products import Zones
@@ -22,57 +22,61 @@ def make_list(infos):
     return val
 
 
-@an_action(needs_target=True, special_reference=True)
-async def info(collector, target, reference, **kwargs):
-    def error(e):
-        log.error(e)
+@task
+class info(task.Task):
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    async with target.session() as sender:
-        plans = sender.make_plans("state", "address", "capability", "zones", "firmware")
+    async def execute_task(self, **kwargs):
+        def error(e):
+            log.error(e)
 
-        async for serial, complete, info in sender.gatherer.gather_per_serial(
-            plans, reference, error_catcher=error, find_timeout=30
-        ):
-            infos = []
+        async with self.target.session() as sender:
+            plans = sender.make_plans("state", "address", "capability", "zones", "firmware")
 
-            for key, val in sorted(info.items()):
-                if val is Skip:
-                    continue
+            async for serial, complete, info in sender.gatherer.gather_per_serial(
+                plans, self.reference, error_catcher=error, find_timeout=30
+            ):
+                infos = []
 
-                if key == "capability":
-                    specs = [
-                        ("name", val["product"].name),
-                        ("family", val["product"].family.value),
-                    ]
-                    for k, v in val["cap"].items():
-                        if k.startswith("has") and v:
-                            specs.append(k[4:])
-                        else:
-                            if isinstance(v, Zones):
-                                v = v.name
-                            if v:
-                                specs.append((k, v))
-                    val = make_list(specs)
+                for key, val in sorted(info.items()):
+                    if val is Skip:
+                        continue
 
-                elif key == "zones":
-                    vl = []
-                    for zi, color in val:
-                        vl.append(f"      Zone {zi}: {repr(color)}")
-                    val = "\n{}".format("\n".join(vl))
+                    if key == "capability":
+                        specs = [
+                            ("name", val["product"].name),
+                            ("family", val["product"].family.value),
+                        ]
+                        for k, v in val["cap"].items():
+                            if k.startswith("has") and v:
+                                specs.append(k[4:])
+                            else:
+                                if isinstance(v, Zones):
+                                    v = v.name
+                                if v:
+                                    specs.append((k, v))
+                        val = make_list(specs)
 
-                elif key == "address":
-                    val = make_list(zip(("ip", "port"), val))
+                    elif key == "zones":
+                        vl = []
+                        for zi, color in val:
+                            vl.append(f"      Zone {zi}: {repr(color)}")
+                        val = "\n{}".format("\n".join(vl))
 
-                else:
-                    val = make_list(sorted(val.items()))
+                    elif key == "address":
+                        val = make_list(zip(("ip", "port"), val))
 
-                if key == "capability":
-                    key = "product"
+                    else:
+                        val = make_list(sorted(val.items()))
 
-                infos.append(f"{key}: {val}")
+                    if key == "capability":
+                        key = "product"
 
-            info_string = "\n    {0}".format("\n    ".join(infos))
-            print(f"{serial}: {info_string}\n")
+                    infos.append(f"{key}: {val}")
+
+                info_string = "\n    {0}".format("\n    ".join(infos))
+                print(f"{serial}: {info_string}\n")
 
 
 if __name__ == "__main__":
