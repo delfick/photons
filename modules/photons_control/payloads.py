@@ -1,65 +1,74 @@
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 
 from photons_protocol.messages import Messages
+from photons_messages import protocol_register
 
 import binascii
 import base64
 
 
-@an_action()
-async def pack(collector, **kwargs):
+@task
+class pack(task.Task):
     """
     Pack json found after the ``--`` into hexlified string
 
-    ``pack -- '{"frame_address": {"ack_required": true, "res_required": true, "reserved2": "000000000000", "reserved3": "00", "sequence": 1, "target": "0000000000000000"}, "frame_header": {"addressable": true, "protocol": 1024, "reserved1": "00", "size": 68, "source": 591976603, "tagged": false}, "payload": {}, "protocol_header": {"pkt_type": 45, "reserved4": "0000000000000000", "reserved5": "0000"}}'``
-    """  # noqa
-    extra = collector.photons_app.extra_as_json
-    protocol_register = collector.configuration["protocol_register"]
+    ``lifx pack -- '{"protocol": 1024, "source": 2, "sequence": 1, "target": "d073d5000001", "pkt_type": 21, "level": 0}'``
+    """
 
-    if "extra_payload_kwargs" in kwargs:
-        extra.update(kwargs["extra_payload_kwargs"])
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra_as_json
 
-    packd = Messages.pack(extra, protocol_register, unknown_ok=True)
-    print(binascii.hexlify(packd.tobytes()).decode())
+        if "extra_payload_kwargs" in kwargs:
+            extra.update(kwargs["extra_payload_kwargs"])
+
+        packd = Messages.pack(extra, protocol_register, unknown_ok=True)
+        print(binascii.hexlify(packd.tobytes()).decode())
 
 
-@an_action()
-async def pack_payload(collector, reference, **kwargs):
+@task
+class pack_payload(task.Task):
     """
     Pack json found after the ``--`` into hexlified string
 
-    ``pack_payload 117 -- '{"level": 65535, "duration": 10}'``
+    ``pack_payload 21 -- '{"level": 65535}'``
     """
-    extra = collector.photons_app.extra_as_json
-    protocol_register = collector.configuration["protocol_register"]
-    message_register = protocol_register.message_register(1024)
 
-    if "extra_payload_kwargs" in kwargs:
-        extra.update(kwargs["extra_payload_kwargs"])
+    reference = task.provides_reference()
 
-    packd = Messages.pack_payload(reference, extra, message_register)
-    print(binascii.hexlify(packd.tobytes()).decode())
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra_as_json
+        message_register = protocol_register.message_register(1024)
+
+        if "extra_payload_kwargs" in kwargs:
+            extra.update(kwargs["extra_payload_kwargs"])
+
+        packd = Messages.pack_payload(self.reference, extra, message_register)
+        print(binascii.hexlify(packd.tobytes()).decode())
 
 
-@an_action()
-async def unpack(collector, **kwargs):
+@task
+class unpack(task.Task):
     """
     Unpack hexlified string found after the ``--`` into a json dictionary
 
     ``unpack -- 310000148205ed33d073d51261e20000000000000000030100000000000000006600000000f4690000ffffac0d00000000``
     """
-    bts = binascii.unhexlify(collector.photons_app.extra)
-    pkt = Messages.create(bts, collector.configuration["protocol_register"], unknown_ok=True)
-    print(repr(pkt))
+
+    async def execute_task(self, **kwargs):
+        bts = binascii.unhexlify(self.photons_app.extra)
+        pkt = Messages.create(bts, protocol_register, unknown_ok=True)
+        print(repr(pkt))
 
 
-@an_action()
-async def unpack_base64(collector, **kwargs):
+@task
+class unpack_base64(task.Task):
     """
     Unpack base64 string found after the ``--`` into a json dictionary
 
     ``unpack_base64 -- MQAAFIIF7TPQc9USYeIAAAAAAAAAAAMBAAAAAAAAAABmAAAAAPRpAAD//6wNAAAAAA==``
     """
-    bts = base64.b64decode(collector.photons_app.extra)
-    pkt = Messages.create(bts, collector.configuration["protocol_register"], unknown_ok=True)
-    print(repr(pkt))
+
+    async def execute_task(self, **kwargs):
+        bts = base64.b64decode(self.photons_app.extra)
+        pkt = Messages.create(bts, protocol_register, unknown_ok=True)
+        print(repr(pkt))

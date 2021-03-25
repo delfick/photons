@@ -1,6 +1,6 @@
 from photons_app.errors import PhotonsAppError, FoundNoDevices, RunErrors
 from photons_app.special import FoundSerials, SpecialReference
-from photons_app.actions import an_action
+from photons_app.tasks import task_register as task
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
@@ -46,22 +46,26 @@ def log_errors(msg, result):
     log.error(lc(msg), exc_info=exc_info)
 
 
-async def make_device_finder(sender, make_reference, reference, extra):
-    if reference not in ("", None, sb.NotSpecified):
-        reference = make_reference(reference)
-    else:
-        reference = DeviceFinder.from_options(extra)
+class DeviceFinderTask(task.Task):
+    target = task.requires_target()
+    reference = task.provides_reference()
 
-    if not isinstance(reference, DeviceFinder):
-        found, serials = await reference.find(sender, timeout=5)
-        reference.raise_on_missing(found)
-        reference = DeviceFinder.from_options({"serial": serials})
+    async def make_device_finder(self, sender):
+        if self.reference is not sb.NotSpecified:
+            reference = self.collector.reference_object(self.reference)
+        else:
+            reference = DeviceFinder.from_options(self.photons_app.extra_as_json)
 
-    return reference
+        if not isinstance(reference, DeviceFinder):
+            found, serials = await reference.find(sender, timeout=5)
+            reference.raise_on_missing(found)
+            reference = DeviceFinder.from_options({"serial": serials})
+
+        return reference
 
 
-@an_action(needs_target=True)
-async def device_finder_serials(collector, target, reference, **kwargs):
+@task
+class device_finder_serials(DeviceFinderTask):
     """
     Find serials that match the provided filter
 
@@ -69,19 +73,19 @@ async def device_finder_serials(collector, target, reference, **kwargs):
 
     Not providing options after the ``--`` will find all devices on the network.
     """
-    async with target.session() as sender:
-        reference = await make_device_finder(
-            sender, collector.reference_object, reference, collector.photons_app.extra_as_json
-        )
 
-        _, serials = await reference.find(sender, timeout=5)
+    async def execute_task(self, **kwargs):
+        async with self.target.session() as sender:
+            device_finder = await self.make_device_finder(sender)
 
-        for serial in serials:
-            print(serial)
+            _, serials = await device_finder.find(sender, timeout=5)
+
+            for serial in serials:
+                print(serial)
 
 
-@an_action(needs_target=True)
-async def device_finder_info(collector, target, reference, **kwargs):
+@task
+class device_finder_info(DeviceFinderTask):
     """
     Print information about devices from the device finder
 
@@ -89,19 +93,19 @@ async def device_finder_info(collector, target, reference, **kwargs):
 
     Not providing options after the ``--`` will find all devices on the network.
     """
-    async with target.session() as sender:
-        reference = await make_device_finder(
-            sender, collector.reference_object, reference, collector.photons_app.extra_as_json
-        )
 
-        async for device in reference.info(sender):
-            print(device.serial)
-            print(
-                "\n".join(
-                    f"  {line}"
-                    for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")
+    async def execute_task(self, **kwargs):
+        async with self.target.session() as sender:
+            device_finder = await self.make_device_finder(sender)
+
+            async for device in device_finder.info(sender):
+                print(device.serial)
+                print(
+                    "\n".join(
+                        f"  {line}"
+                        for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")
+                    )
                 )
-            )
 
 
 regexes = {"key_value": re.compile(r"^(?P<key>[\w_]+)=(?P<value>.+)")}
