@@ -1,7 +1,7 @@
 from photons_control.script import FromGenerator, Pipeline
 
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 
 from photons_messages import LightMessages, DeviceMessages
 from photons_control.colour import ColourParser
@@ -210,8 +210,8 @@ class Transformer:
         return FromGenerator(gen)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def transform(collector, target, reference, **kwargs):
+@task
+class transform(task.Task):
     """
     Do a http-api like transformation over whatever target you specify
 
@@ -231,25 +231,30 @@ async def transform(collector, target, reference, **kwargs):
         to be on. This defaults to False, which means it will appear to turn on
         with the new color
     """
-    extra = collector.photons_app.extra_as_json
-    extra = sb.dictionary_spec().normalise(Meta.empty(), extra)
 
-    transform_options = sb.set_options(transform_options=sb.dictionary_spec()).normalise(
-        Meta.empty(), extra
-    )["transform_options"]
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    msg = Transformer.using(extra, **transform_options)
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra_as_json
+        extra = sb.dictionary_spec().normalise(Meta.empty(), extra)
 
-    if not msg:
-        raise PhotonsAppError(
-            'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
-        )
+        transform_options = sb.set_options(transform_options=sb.dictionary_spec()).normalise(
+            Meta.empty(), extra
+        )["transform_options"]
 
-    await target.send(msg, reference)
+        msg = Transformer.using(extra, **transform_options)
+
+        if not msg:
+            raise PhotonsAppError(
+                'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
+            )
+
+        await self.target.send(msg, self.reference)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def power_toggle(collector, target, reference, **kwargs):
+@task
+class power_toggle(task.Task):
     """
     Toggle the power of devices.
 
@@ -258,6 +263,11 @@ async def power_toggle(collector, target, reference, **kwargs):
     It takes in a ``duration`` field that is the seconds of the duration. This defaults
     to 1 second.
     """
-    extra = collector.photons_app.extra_as_json
-    msg = PowerToggle(**extra)
-    await target.send(msg, reference)
+
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
+
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra_as_json
+        msg = PowerToggle(**extra)
+        await self.target.send(msg, self.reference)

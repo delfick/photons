@@ -1,7 +1,7 @@
 from photons_control.colour import make_hsbks
 
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 
 from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessages
 from photons_control.planner import Skip, Plan, NoMessages
@@ -288,20 +288,25 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
     return FromGenerator(gen)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def get_zones(collector, target, reference, artifact, **kwargs):
+@task
+class get_zones(task.Task):
     """
     Get the zones colors from a multizone device
     """
-    async with target.session() as sender:
-        async for serial, zones in zones_from_reference(reference, sender):
-            print(serial)
-            for zone, color in zones:
-                print("\tZone {0}: {1}".format(zone, repr(color)))
+
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
+
+    async def execute_task(self, **kwargs):
+        async with self.target.session() as sender:
+            async for serial, zones in zones_from_reference(self.reference, sender):
+                print(serial)
+                for zone, color in zones:
+                    print("\tZone {0}: {1}".format(zone, repr(color)))
 
 
-@an_action(needs_target=True, special_reference=True)
-async def set_zones(collector, target, reference, artifact, **kwargs):
+@task
+class set_zones(task.Task):
     """
     Set the zones colors on a multizone device
 
@@ -312,18 +317,23 @@ async def set_zones(collector, target, reference, artifact, **kwargs):
     In that example the device will have the first 10 zones set to red, then 3
     blue zones and then 5 green zones
     """
-    options = collector.photons_app.extra_as_json
 
-    if "colors" not in options:
-        raise PhotonsAppError(
-            """Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`"""
-        )
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    await target.send(SetZones(**options), reference)
+    async def execute_task(self, **kwargs):
+        options = self.photons_app.extra_as_json
+
+        if "colors" not in options:
+            raise PhotonsAppError(
+                """Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`"""
+            )
+
+        await self.target.send(SetZones(**options), self.reference)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def multizone_effect(collector, target, reference, artifact, **kwargs):
+@task
+class multizone_effect(task.Task):
     """
     Set an animation on your multizone device
 
@@ -342,9 +352,15 @@ async def multizone_effect(collector, target, reference, artifact, **kwargs):
     - speed
     - duration
     """
-    options = collector.photons_app.extra_as_json
 
-    if artifact in ("", None, sb.NotSpecified):
-        raise PhotonsAppError("Please specify type of effect with --artifact")
+    target = task.requires_target()
+    artifact = task.provides_artifact()
+    reference = task.provides_reference(special=True)
 
-    await target.send(SetZonesEffect(artifact, **options), reference)
+    async def execute_task(self, **kwargs):
+        options = self.photons_app.extra_as_json
+
+        if self.artifact is sb.NotSpecified:
+            raise PhotonsAppError("Please specify type of effect with --artifact")
+
+        await self.target.send(SetZonesEffect(self.artifact, **options), self.reference)

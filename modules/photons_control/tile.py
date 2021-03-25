@@ -2,8 +2,8 @@ from photons_canvas.orientation import nearest_orientation
 from photons_control.script import FromGenerator
 from photons_control.colour import make_hsbks
 
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 
 from photons_messages import TileMessages, TileEffectType, LightMessages
 
@@ -118,51 +118,67 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
     return FromGenerator(gen)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def get_device_chain(collector, target, reference, **kwargs):
+@task
+class get_device_chain(task.Task):
     """
     Get the devices in your chain
     """
 
-    async def gen(reference, sender, **kwargs):
-        ps = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
-            if info["cap"].has_matrix:
-                yield TileMessages.GetDeviceChain(target=serial)
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    async for pkt in target.send(FromGenerator(gen), reference):
-        print(pkt.serial)
-        for tile in tiles_from(pkt):
-            print("    ", repr(tile))
+    async def execute_task(self, **kwargs):
+        async def gen(reference, sender, **kwargs):
+            ps = sender.make_plans("capability")
+            async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
+                if info["cap"].has_matrix:
+                    yield TileMessages.GetDeviceChain(target=serial)
+
+        async for pkt in self.target.send(FromGenerator(gen), self.reference):
+            print(pkt.serial)
+            for tile in tiles_from(pkt):
+                print("    ", repr(tile))
 
 
-@an_action(needs_target=True, special_reference=True)
-async def get_chain_state(collector, target, reference, **kwargs):
+@task
+class get_chain_state(task.Task):
     """
     Get the colors of the tiles in your chain
     """
 
-    async with target.session() as sender:
-        plans = sender.make_plans("parts_and_colors")
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-        def error(e):
-            log.error(e)
+    async def execute_task(self, **kwargs):
 
-        async for serial, _, parts in sender.gatherer.gather(plans, reference, error_catcher=error):
-            if not parts or not parts[0].device.cap.has_matrix:
-                continue
+        async with self.target.session() as sender:
+            plans = sender.make_plans("parts_and_colors")
 
-            print(serial)
-            for part in parts:
-                print(f"    Tile {part.part_number}")
-                for i, color in enumerate(part.colors):
-                    color = (round(color[0], 3), round(color[1], 3), round(color[2], 3), color[3])
-                    print(f"        color {i:<2d}", repr(color))
-                print("")
+            def error(e):
+                log.error(e)
+
+            async for serial, _, parts in sender.gatherer.gather(
+                plans, self.reference, error_catcher=error
+            ):
+                if not parts or not parts[0].device.cap.has_matrix:
+                    continue
+
+                print(serial)
+                for part in parts:
+                    print(f"    Tile {part.part_number}")
+                    for i, color in enumerate(part.colors):
+                        color = (
+                            round(color[0], 3),
+                            round(color[1], 3),
+                            round(color[2], 3),
+                            color[3],
+                        )
+                        print(f"        color {i:<2d}", repr(color))
+                    print("")
 
 
-@an_action(needs_target=True, special_reference=True)
-async def tile_effect(collector, target, reference, artifact, **kwargs):
+@task
+class tile_effect(task.Task):
     """
     Set an animation on your tile!
 
@@ -187,12 +203,18 @@ async def tile_effect(collector, target, reference, artifact, **kwargs):
 
     or as ``["red", "hue:100 saturation:1", "blue"]``
     """
-    options = collector.photons_app.extra_as_json
 
-    if artifact in ("", None, sb.NotSpecified):
-        raise PhotonsAppError("Please specify type of effect with --artifact")
+    target = task.requires_target()
+    artifact = task.provides_artifact()
+    reference = task.provides_reference(special=True)
 
-    await target.send(SetTileEffect(artifact, **options), reference)
+    async def execute_task(self, **kwargs):
+        options = self.photons_app.extra_as_json
+
+        if self.artifact is sb.NotSpecified:
+            raise PhotonsAppError("Please specify type of effect with --artifact")
+
+        await self.target.send(SetTileEffect(self.artifact, **options), self.reference)
 
 
 class list_spec(sb.Spec):
@@ -218,105 +240,148 @@ class list_spec(sb.Spec):
         return res
 
 
-@an_action(needs_target=True, special_reference=True)
-async def set_chain_state(collector, target, reference, artifact, **kwargs):
+@task
+class set_chain_state(task.Task):
     """
     Set the state of colors on your tile
 
-    ``lan:set_chain_state d073d5f09124 -- '{"colors": [[[0, 0, 0, 3500], [0, 0, 0, 3500], ...], [[0, 0, 1, 3500], ...], ...], "tile_index": 1, "length": 1, "x": 0, "y": 0, "width": 8}'``
+    So say you have state.json::
+
+        {
+            "colors": [[[0, 1, 0, 3500], [0, 1, 0, 3500]], [[100, 0, 1, 3500], ...], ...],
+            "tile_index": 0,
+            "length": 1,
+            "x": 0,
+            "y": 0
+        }
+
+    ``lan:set_chain_state d073d5f09124 -- file://state.json``
 
     Where the colors is a grid of 8 rows of 8 ``[h, s, b, k]`` values.
-    """  # noqa
-    options = collector.photons_app.extra_as_json
 
-    if "colors" in options:
-        spec = sb.listof(
-            sb.listof(
-                list_spec(sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec())
+    Rows with less than 8 will fill out with zero values for that row and if there are less
+    than 8 rows, then remaining values up to the 64 on the device will be zeroed out.
+    """
+
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
+
+    async def execute_task(self, **kwargs):
+        options = self.photons_app.extra_as_json
+
+        width = options.get("width", 8)
+        options["width"] = width
+
+        if "colors" in options:
+            spec = sb.listof(
+                sb.listof(
+                    list_spec(
+                        sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec()
+                    )
+                )
             )
-        )
-        colors = spec.normalise(Meta.empty().at("colors"), options["colors"])
+            colors = spec.normalise(Meta.empty().at("colors"), options["colors"])
 
-        row_lengths = [len(row) for row in colors]
-        if len(set(row_lengths)) != 1:
-            raise PhotonsAppError(
-                "Please specify colors as a grid with the same length rows", got=row_lengths
-            )
-
-        num_cells = sum(len(row) for row in colors)
-        if num_cells != 64:
-            raise PhotonsAppError("Please specify 64 colors", got=num_cells)
-
-        cells = []
-        for row in colors:
-            for col in row:
-                cells.append(
-                    {"hue": col[0], "saturation": col[1], "brightness": col[2], "kelvin": col[3]}
+            row_lengths = [len(row) for row in colors]
+            if len(set(row_lengths)) != 1:
+                raise PhotonsAppError(
+                    "Please specify colors as a grid with the same length rows", got=row_lengths
                 )
 
-        options["colors"] = cells
-    else:
-        raise PhotonsAppError("Please specify colors in options after -- as a grid of [h, s, b, k]")
+            cells = []
+            for row in colors:
+                while len(row) < width:
+                    row.append(None)
 
-    missing = []
-    for field in TileMessages.Set64.Payload.Meta.all_names:
-        if field not in options and field not in ("duration", "reserved6"):
-            missing.append(field)
+                for col in row:
+                    if col is None:
+                        cells.append({"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 3500})
+                        continue
 
-    if missing:
-        raise PhotonsAppError("Missing options for the SetTileState message", missing=missing)
+                    cells.append(
+                        {
+                            "hue": col[0],
+                            "saturation": col[1],
+                            "brightness": col[2],
+                            "kelvin": col[3],
+                        }
+                    )
 
-    options["res_required"] = False
-    msg = TileMessages.Set64.create(**options)
-    await target.send(msg, reference)
+            options["colors"] = cells
+        else:
+            raise PhotonsAppError(
+                "Please specify colors in options after -- as a grid of [h, s, b, k]"
+            )
+
+        missing = []
+        for field in TileMessages.Set64.Payload.Meta.all_names:
+            if field not in options and field not in ("duration", "reserved6"):
+                missing.append(field)
+
+        if missing:
+            raise PhotonsAppError("Missing options for the SetTileState message", missing=missing)
+
+        options["res_required"] = False
+        msg = TileMessages.Set64.create(**options)
+        await self.target.send(msg, self.reference)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def set_tile_positions(collector, target, reference, **kwargs):
+@task
+class set_tile_positions(task.Task):
     """
     Set the positions of the tiles in your chain.
 
     ``lan:set_tile_positions d073d5f09124 -- '[[0, 0], [-1, 0], [-1, 1]]'``
     """
-    extra = collector.photons_app.extra_as_json
-    positions = sb.listof(sb.listof(sb.float_spec())).normalise(Meta.empty(), extra)
-    if any(len(position) != 2 for position in positions):
-        raise PhotonsAppError(
-            "Please enter positions as a list of two item lists of user_x, user_y"
-        )
 
-    async def gen(reference, sender, **kwargs):
-        ps = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
-            if info["cap"].has_matrix:
-                for i, (user_x, user_y) in enumerate(positions):
-                    yield TileMessages.SetUserPosition(
-                        tile_index=i,
-                        user_x=user_x,
-                        user_y=user_y,
-                        res_required=False,
-                        target=serial,
-                    )
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    await target.send(FromGenerator(gen), reference)
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra_as_json
+        positions = sb.listof(sb.listof(sb.float_spec())).normalise(Meta.empty(), extra)
+
+        if any(len(position) != 2 for position in positions):
+            raise PhotonsAppError(
+                "Please enter positions as a list of two item lists of user_x, user_y"
+            )
+
+        async def gen(reference, sender, **kwargs):
+            ps = sender.make_plans("capability")
+            async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
+                if info["cap"].has_matrix:
+                    for i, (user_x, user_y) in enumerate(positions):
+                        yield TileMessages.SetUserPosition(
+                            tile_index=i,
+                            user_x=user_x,
+                            user_y=user_y,
+                            res_required=False,
+                            target=serial,
+                        )
+
+        await self.target.send(FromGenerator(gen), self.reference)
 
 
-@an_action(needs_target=True, special_reference=True)
-async def get_tile_positions(collector, target, reference, **kwargs):
+@task
+class get_tile_positions(task.Task):
     """
     Get the positions of the tiles in your chain.
 
     ``lan:get_tile_positions d073d5f09124``
     """
 
-    async def gen(reference, sender, **kwargs):
-        ps = sender.make_plans("capability")
-        async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
-            if info["cap"].has_matrix:
-                yield TileMessages.GetDeviceChain(target=serial)
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-    async for pkt in target.send(FromGenerator(gen), reference):
-        print(pkt.serial)
-        for tile in tiles_from(pkt):
-            print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")
-        print("")
+    async def execute_task(self, **kwargs):
+        async def gen(reference, sender, **kwargs):
+            ps = sender.make_plans("capability")
+            async for serial, _, info in sender.gatherer.gather(ps, reference, **kwargs):
+                if info["cap"].has_matrix:
+                    yield TileMessages.GetDeviceChain(target=serial)
+
+        async for pkt in self.target.send(FromGenerator(gen), self.reference):
+            print(pkt.serial)
+            for tile in tiles_from(pkt):
+                print(f"\tuser_x: {tile.user_x}, user_y: {tile.user_y}")
+            print("")

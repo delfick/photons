@@ -108,3 +108,7 @@ class ResolverNotFound(PhotonsAppError):
 
 class DevicesNotFound(PhotonsAppError):
     desc = "Failed to find some devices"
+
+
+class DeprecatedTask(PhotonsAppError):
+    desc = "This task has been deprecated"

@@ -1,5 +1,5 @@
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 
 from photons_messages import LightMessages, Waveform
 
@@ -25,8 +25,8 @@ regexes = {
 }
 
 
-@an_action(needs_target=True, special_reference=True)
-async def set_color(collector, target, reference, artifact, **kwargs):
+@task
+class set_color(task.Task):
     """
     Change specified bulb to specified colour
 
@@ -37,13 +37,19 @@ async def set_color(collector, target, reference, artifact, **kwargs):
 
     The color may be any valid color specifier.
     """
-    overrides = collector.photons_app.extra_as_json
 
-    if artifact in (None, "", sb.NotSpecified):
-        raise PhotonsAppError("Please specify a color as artifact")
+    target = task.requires_target()
+    artifact = task.provides_artifact()
+    reference = task.provides_reference(special=True)
 
-    msg = ColourParser.msg(artifact, overrides)
-    await target.send(msg, reference)
+    async def execute_task(self, **kwargs):
+        overrides = self.photons_app.extra_as_json
+
+        if self.artifact is sb.NotSpecified:
+            raise PhotonsAppError("Please specify a color as artifact")
+
+        msg = ColourParser.msg(self.artifact, overrides)
+        await self.target.send(msg, self.reference)
 
 
 class NoSuchEffect(PhotonsAppError):
