@@ -14,15 +14,19 @@ log = logging.getLogger("interactor.server")
 
 
 class Server(Server):
-    def __init__(self, final_future, store=None):
+    def __init__(self, final_future, *, server_end_future, store=None):
+        super().__init__(final_future, server_end_future=server_end_future)
+
         if store is None:
             from interactor.commander.store import store, load_commands
 
             load_commands()
 
         self.store = store
-        self.final_future = final_future
         self.wsconnections = {}
+
+    async def wait_for_end(self):
+        await hp.wait_for_all_futures(self.server_end_future, name="Server::wait_for_end")
 
     def tornado_routes(self):
         return [
@@ -33,7 +37,7 @@ class Server(Server):
                 {
                     "commander": self.commander,
                     "server_time": time.time(),
-                    "final_future": self.final_future,
+                    "final_future": self.server_end_future,
                     "wsconnections": self.wsconnections,
                 },
             ),
@@ -66,7 +70,6 @@ class Server(Server):
             self.final_future, self.tasks, self.sender, self.animation_options
         )
         self.animations._merged_options_formattable = True
-        self.cleaners.append(self.animations.stop)
 
         self.commander = Commander(
             self.store,
@@ -80,6 +83,7 @@ class Server(Server):
         )
 
     async def cleanup(self):
+        self.tasks.add(self.animations.stop())
         await hp.wait_for_all_futures(
             *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
         )

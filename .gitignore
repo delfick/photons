@@ -11,3 +11,4 @@ examples/.lifx/
 modules/dist/
 modules/pip-wheel-metadata/
 modules/build/
+interactor.db
