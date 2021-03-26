@@ -1,10 +1,9 @@
 from arranger.options import Options
 from arranger.server import Server
 
-from photons_app.errors import UserQuit, ApplicationCancelled, ApplicationStopped
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
-from photons_app.actions import an_action
 from photons_app import helpers as hp
 
 from delfick_project.addons import addon_hook
@@ -13,10 +12,8 @@ import pkg_resources
 import webbrowser
 import subprocess
 import logging
-import asyncio
 import socket
 import shlex
-import time
 import os
 
 log = logging.getLogger("arranger.addon")
@@ -43,82 +40,93 @@ def port_connected(port):
         return False
 
 
-@an_action(label="Arranger", needs_target=True, special_reference=True)
-async def arrange(collector, target, reference, **kwargs):
-    conf = collector.configuration
-    options = conf["arranger"]
-    photons_app = collector.photons_app
+@task.register(task_group="Arranger")
+class arrange(task.GracefulTask):
+    """
+    Start a web GUI you can use to change the positions of the panels in your tile sets
+    such that the tile sets know where they are relative to each other.
 
-    with photons_app.using_graceful_future() as final_future:
-        async with target.session() as sender, hp.TaskHolder(
-            final_future, name="cli_arrange"
-        ) as ts:
+    Your web browser will automatically open to this GUI unless you have ``NO_WEB_OPEN=1``
+    in your environment.
+    """
 
-            async def run():
-                try:
-                    await Server(final_future).serve(
-                        options.host,
-                        options.port,
-                        conf["arranger"],
-                        ts,
-                        sender,
-                        reference,
-                        conf["photons_app"].cleaners,
-                    )
-                except asyncio.CancelledError:
-                    raise
-                except (UserQuit, ApplicationCancelled, ApplicationStopped):
-                    pass
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
 
-            ts.add(run())
+    @property
+    def options(self):
+        return self.collector.configuration["arranger"]
 
-            start = time.time()
-            while not port_connected(options.port) and time.time() - start < 3:
-                await asyncio.sleep(0.1)
+    async def open_browser(self):
+        async with hp.tick(0.1, max_time=3) as ticker:
+            async for _ in ticker:
+                if port_connected(self.options.port):
+                    break
 
-            if not port_connected(options.port):
-                final_future.set_exception(PhotonsAppError("Failed to start the server"))
+        if not port_connected(self.options.port):
+            self.photons_app.final_future.set_exception(
+                PhotonsAppError("Failed to start the server")
+            )
+            return
+
+        if "NO_WEB_OPEN" not in os.environ:
+            webbrowser.open(f"http://{self.options.host}:{self.options.port}")
+
+    async def execute_task(self, graceful_final_future, **kwargs):
+        self.task_holder.add(self.open_browser())
+
+        async with self.target.session() as sender:
+            await Server(
+                self.photons_app.final_future, server_end_future=graceful_final_future
+            ).serve(
+                self.options.host,
+                self.options.port,
+                self.options,
+                self.task_holder,
+                sender,
+                self.reference,
+                self.photons_app.cleaners,
+            )
+
+
+class arranger_assets(task.Task):
+    reference = task.provides_reference()
+
+    async def execute_task(self, **kwargs):
+        extra = self.photons_app.extra
+        assets = self.collector.configuration["arranger"].assets
+        available = ["run", "add", "static", "watch"]
+
+        if self.reference is sb.NotSpecified:
+            raise PhotonsAppError("Please specify what command to run", available=available)
+
+        assets.ensure_yarn()
+
+        try:
+            if self.reference == "add":
+                assets.run("add", *shlex.split(extra))
                 return
 
-            if "NO_WEB_OPEN" not in os.environ:
-                webbrowser.open(f"http://{options.host}:{options.port}")
+            if self.reference == "run":
+                assets.run(*shlex.split(extra))
+                return
 
+            if assets.needs_install:
+                assets.run("install")
 
-async def arranger_assets(collector, reference, **kwargs):
-    extra = collector.photons_app.extra
-    assets = collector.configuration["arranger"].assets
-    available = ["run", "add", "static", "watch"]
+            if self.reference == "static":
+                assets.run("run", "build")
 
-    if reference in (None, "", sb.NotSpecified):
-        raise PhotonsAppError("Please specify what command to run", available=available)
+            elif self.reference == "watch":
+                assets.run("run", "generate")
 
-    assets.ensure_yarn()
-
-    try:
-        if reference == "add":
-            assets.run("add", *shlex.split(extra))
-            return
-
-        if reference == "run":
-            assets.run(*shlex.split(extra))
-            return
-
-        if assets.needs_install:
-            assets.run("install")
-
-        if reference == "static":
-            assets.run("run", "build")
-
-        elif reference == "watch":
-            assets.run("run", "generate")
-
-        else:
-            raise PhotonsAppError(
-                "Didn't get a recognised command", want=reference, available=available
-            )
-    except subprocess.CalledProcessError as error:
-        raise PhotonsAppError("Failed to run command", error=error)
+            else:
+                raise PhotonsAppError(
+                    "Didn't get a recognised command", want=self.reference, available=available
+                )
+        except subprocess.CalledProcessError as error:
+            raise PhotonsAppError("Failed to run command", error=error)
 
 
 if os.path.exists(pkg_resources.resource_filename("arranger", "static/js")):
-    an_action(label="Arranger")(arranger_assets)
+    task.register(task_group="Arranger")(arranger_assets)

@@ -27,7 +27,7 @@ class PixelBrightness:
         )
 
     def ensure(self):
-        if hasattr(self, "return_handle"):
+        if getattr(self, "return_handle", None):
             self.return_handle.cancel()
 
         self.returning = False

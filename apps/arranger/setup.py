@@ -15,7 +15,7 @@ setup(
     , install_requires =
       [ "lifx-photons-core>=0.33.0"
       , "tornado>=5.1.1"
-      , "whirlwind-web>=0.9.0"
+      , "whirlwind-web>=0.11.0"
       ]
 
     , entry_points =
