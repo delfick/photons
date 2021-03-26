@@ -399,7 +399,7 @@ class DeviceFinder(SpecialReference):
             async for device in finder.find(self.fltr):
                 targets.append(binascii.unhexlify(device.serial)[:6])
 
-        return {target: sender.found[target] for target in targets}
+        return {target: sender.found[target] for target in targets if target in sender.found}
 
     async def info(self, sender):
         async with self.a_finder(sender) as finder:
