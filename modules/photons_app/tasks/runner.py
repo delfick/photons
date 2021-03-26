@@ -131,12 +131,12 @@ class Runner:
             return error
 
         def transfer_result(self, complete, pending):
-            if not complete.done():
-                return
-
             if complete is None or complete.cancelled():
                 if not pending.done():
                     pending.cancel()
+                return
+
+            if not complete.done():
                 return
 
             exc = complete.exception()
