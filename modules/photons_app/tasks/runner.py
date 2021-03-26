@@ -201,6 +201,14 @@ class Runner:
 
             if not self.significant_future.done():
                 self.significant_future.cancel()
+
+            if self.photons_app.graceful_final_future.setup:
+                if self.significant_future.cancelled() or isinstance(
+                    self.significant_future.exception(),
+                    (UserQuit, ApplicationStopped, ApplicationCancelled),
+                ):
+                    self.photons_app.final_future.cancel()
+
             self.transfer_result(self.significant_future, self.photons_app.final_future)
 
         def ensure_all_tasks_cancelled(self):
