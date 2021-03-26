@@ -18,15 +18,19 @@ class NoCacheStaticFileHandler(StaticFileHandler):
 
 
 class Server(Server):
-    def __init__(self, final_future, store=None):
+    def __init__(self, final_future, *, server_end_future, store=None):
+        super().__init__(final_future, server_end_future=server_end_future)
+
         if store is None:
             from arranger.commander.store import store, load_commands
 
             load_commands()
 
         self.store = store
-        self.final_future = final_future
         self.wsconnections = {}
+
+    async def wait_for_end(self):
+        await hp.wait_for_all_futures(self.server_end_future, name="Server::wait_for_end")
 
     def tornado_routes(self):
         return [
@@ -36,7 +40,7 @@ class Server(Server):
                 {
                     "commander": self.commander,
                     "server_time": time.time(),
-                    "final_future": self.final_future,
+                    "final_future": self.server_end_future,
                     "wsconnections": self.wsconnections,
                 },
             ),
@@ -54,7 +58,6 @@ class Server(Server):
 
         self.tasks = ts
         self.tasks._merged_options_formattable = True
-        self.cleaners.append(self.tasks.finish)
 
         self.arranger = Arranger(
             self.final_future, self.sender, reference, server_options.animation_options, cleaners
