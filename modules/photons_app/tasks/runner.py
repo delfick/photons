@@ -43,21 +43,27 @@ class Runner:
 
             task, waiter = self.make_waiter()
 
-            try:
-                self.loop.run_until_complete(waiter)
-            except KeyboardInterrupt as error:
-                self.got_keyboard_interrupt(error)
-                raise
-            except asyncio.CancelledError as error:
-                self.got_cancelled(error)
-                raise
-            finally:
-                log.debug("CLEANING UP")
+            override = None
 
+            try:
                 try:
-                    self.final(task, waiter)
+                    self.loop.run_until_complete(waiter)
+                except KeyboardInterrupt as error:
+                    override = self.got_keyboard_interrupt(error)
+                    raise
+                except asyncio.CancelledError as error:
+                    override = self.got_cancelled(error)
+                    raise
                 finally:
-                    self.final_close()
+                    log.debug("CLEANING UP")
+
+                    try:
+                        self.final(task, waiter)
+                    finally:
+                        self.final_close()
+            finally:
+                if override is not None:
+                    raise override from None
 
         def register_sigterm_handler(self, final_future):
             if platform.system() != "Windows":
@@ -111,7 +117,7 @@ class Runner:
                 except RuntimeError:
                     pass
 
-            raise error
+            return error
 
         def got_cancelled(self, error):
             error = ApplicationCancelled()
@@ -122,7 +128,7 @@ class Runner:
                 except RuntimeError:
                     pass
 
-            raise error
+            return error
 
         def transfer_result(self, complete, pending):
             if not complete.done():
