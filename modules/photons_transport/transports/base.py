@@ -46,7 +46,7 @@ class Transport:
             t = self.transport
             self.transport = None
 
-            if t.cancelled() or t.exception():
+            if not t or t.cancelled() or t.exception():
                 return
 
             await self.close_transport(t.result())
