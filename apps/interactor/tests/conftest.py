@@ -208,7 +208,7 @@ class ServerWrapper(hp.AsyncCMMixin):
 
     @hp.memoized_property
     def server(self):
-        return Server(self.final_future, self.store)
+        return Server(self.final_future, server_end_future=self.final_future, store=self.store)
 
     async def start(self):
         self.port = self.kwargs.get("port", None) or pytest.helpers.free_port()

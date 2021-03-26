@@ -17,7 +17,7 @@ setup(
       , "tornado>=6.1"
       , "SQLAlchemy==1.3.3"
       , "alembic==1.3.2"
-      , "whirlwind-web>=0.9.0"
+      , "whirlwind-web>=0.11.0"
       , "aiohttp==3.7.4"
       ]
 
