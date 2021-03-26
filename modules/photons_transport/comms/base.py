@@ -101,7 +101,8 @@ class Found:
                             await transport.close()
                         except Exception as error:
                             log.error(hp.lc("Failed to close transport", error=error))
-                    del self[target]
+                    if target in self:
+                        del self[target]
 
     def __iter__(self):
         return iter(self.found)
@@ -255,7 +256,7 @@ class Communication:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                log.error(
+                log.exception(
                     hp.lc("Failed to close transport", service=service, error=error, serial=serial)
                 )
 
