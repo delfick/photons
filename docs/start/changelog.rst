@@ -16,6 +16,7 @@ ChangeLog
       of a ``AnimationTask`` in the same module and the new task register.
     * Shuffled the ``photons_app`` module a little. It is unlikely any of the
       changed imports will impact users of Photons.
+    * deprecated ``get_attr`` and ``set_attr`` tasks. Please use ``attr`` instead.
 
 .. _release-core-0-33-0:
 

@@ -16,11 +16,11 @@ uses that to target packets for each device.
 
 For example, get the current color of the device with serial ``d073d5001337``::
 
-    $ lifx lan:get_attr d073d5001337 color
+    $ lifx lan:attr d073d5001337 GetColor
 
 Set the power of these two devices::
 
-    $ lifx lan:set_attr d073d5000001,d073d500adb8 power -- '{"level": 65535}'
+    $ lifx lan:attr d073d5000001,d073d500adb8 SetPower -- '{"level": 65535}'
 
 Photons provides some special references including ``_`` which is a shortcut
 for all discovered devices on the network and the
