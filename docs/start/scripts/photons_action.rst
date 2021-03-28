@@ -1,70 +1,62 @@
 .. _photons_action:
 
-Registering a Photons action
-============================
+Registering a Photons task
+==========================
 
-All the tasks available to the Photons ``lifx`` program are actions that
-are registered in one of the Photons modules. An action is a
-function that takes in objects that represent the arguments provided
-on the command line.
+All the tasks available to the Photons ``lifx`` program are registered onto the
+``photons_app.tasks.task_register`` object and are responsible for specifying how
+we transform instructions from the commandline into objects for use in the task.
 
 For example, the ``power_toggle`` action is defined as:
 
 .. code-block:: python
 
-    from photons_app.actions import an_action
+    from photons_app.tasks import task_register as task
 
     from photons_control.transform import PowerToggle
 
 
-    @an_action(needs_target=True, special_reference=True)
-    async def power_toggle(collector, target, reference, artifact, **kwargs):
+    @task
+    class power_toggle(task.Task):
         """
         Toggle the power of devices.
 
         ``target:power_toggle match:group_label=kitchen -- '{"duration": 2}'``
 
-        It takes in a ``duration`` field that is the seconds of the duration.
-        This defaults to 1 second.
+        It takes in a ``duration`` field that is the seconds of the duration. This defaults
+        to 1 second.
         """
-        extra = collector.photons_app.extra_as_json
-        msg = PowerToggle(**extra)
-        await target.send(msg, reference)
 
-This definition is detailed as follows:
+        target = task.requires_target()
+        reference = task.provides_reference(special=True)
 
-* :ref:`an_action <an_action>` takes in a few arguments
+        async def execute_task(self, **kwargs):
+            extra = self.photons_app.extra_as_json
+            msg = PowerToggle(**extra)
+            await self.target.send(msg, self.reference)
 
-  * ``needs_reference=True`` means Photons throws an error if the ``<reference>``
-    argument is not specified
-  * ``special_reference=True`` means the ``reference`` variable provided must
-    be is a :ref:`Special Reference <cli_references>`
-  * ``needs_target=True`` means a ``<target>`` must be specified.
-
-* The :ref:`collector <collector_root>` is the entry point to all functionality
-  registered by the Photons modules.
-* The ``target`` is the object that :ref:`sends messages <interacting_root>`.
-  The ``artifact`` (which is not used above) is the last argument
-  given on the command line.
-* The JSON options string provided on the command line is available
-  as the ``collector.photons_app.extra_as_json`` attribute.
-* All arguments to an action must be provided as keyword arguments. If
-  you do not specify a keyword, the unused arguments will be consumed by
-  the ``**kwargs`` argument.
-
-Create a script that registers and runs an action:
+The tasks seen in the ``lifx`` program are registered when each Photons module
+is activated. A standalone script that has it's own tasks can be written using
+the ``photons_core.run`` function:
 
 .. code-block:: python
 
-    from photons_app.actions import an_action
+    from photons_app.tasks import task_register as task
 
     from photons_messages import DeviceMessages
 
 
-    @an_action(needs_target=True, special_reference=True)
-    async def display_label(collector, target, reference, **kwargs):
-        async for pkt in target.send(DeviceMessages.GetLabel(), reference):
-            print(f"{pkt.serial}: {pkt.label}")
+    @task
+    class display_label(task.Task):
+        """Display the label for specific devices"""
+
+        target = task.requires_target()
+        reference = task.provides_reference(special=True)
+
+        async def execute_task(self, **kwargs):
+            async for pkt in target.send(DeviceMessages.GetLabel(), reference):
+                print(f"{pkt.serial}: {pkt.label}")
+
 
     if __name__ == "__main__":
         __import__("photons_core").run('lan:display_label {@:1:}')
@@ -74,6 +66,44 @@ including the :ref:`references <cli_references>`::
 
     $ python my_script.py match:group_name=kitchen --silent
 
+The fields on the class uses the data normalisation functionality provided in
+`delfick_project.norms <https://delfick-project.readthedocs.io/en/latest/api/norms/index.html>`_.
+
+When the ``lifx`` program creates the task it does the following:
+
+.. code-block:: python
+
+    artifact = collector.photons_app.artifact
+    reference = collector.photons_app.reference
+    target_name, task_name = collector.photons_app.task_specifier()
+
+    task_register.fill_task(
+        collector,
+        task_name,
+        path="CLI|",
+        target=target_name,
+        reference=reference,
+        artifact=artifact,
+    ).run_loop()
+
+So for example if the command was::
+
+    > lifx lan:attr d073d5000001 Color
+
+    # OR
+    > lifx --task lan:attr --reference d073d5000001 --artifact Color
+
+Then the ``attr`` task is created with::
+
+    target: "lan"
+    artifact: "Color":
+    reference: "d073d5000001"
+
+And will have available in the ``meta`` object the
+:ref:`Collector <collector_root>` available.
+
+See :ref:`photons_task_class` for more information on how the ``Task``
+class works.
 
 photons_core.run
 ----------------
@@ -111,9 +141,30 @@ loaded with ``default_activate=["other_module"]``. Not specifying a
 if it's desirable to load all Photons modules found in the environment, then
 the special ``__all__`` module can be used.
 
-.. _an_action:
+.. _legacy_actions:
 
-The ``an_action`` decorator
----------------------------
+Legacy Function based Actions
+-----------------------------
 
-.. autoclass:: photons_app.actions.an_action
+The original way that Photons defined tasks was via functions rather than
+classes. This can still be done using either:
+
+.. code-block:: python
+
+    from photons_app.tasks import task_register as task
+
+    @task.from_function(needs_target=True, special_reference=True)
+    async def power_toggle(collector, target, reference, artifact, **kwargs):
+        ...
+
+Or, for backwards compatible, with the original import:
+
+.. code-block:: python
+
+    from photons_app.actions import an_action
+
+    @an_action(needs_target=True, special_reference=True)
+    async def power_toggle(collector, target, reference, artifact, **kwargs):
+        ...
+
+.. automethod:: photons_app.tasks.task_register.from_function

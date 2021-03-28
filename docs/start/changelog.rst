@@ -6,12 +6,16 @@ ChangeLog
 .. _release-core-0-40-0:
 
 0.40.0 - TBD
-    * Moved some imports from photons_app.options_spec. You're unlikely to
-      currently be using these directly.
+    * ``photons_app.actions.an_action`` has been replaced with
+      ``photons_app.tasks.task_register`` and a new class based way of defining
+      tasks. New documentation for this new infrastructure can be found at
+      https://photons.delfick.com/scripts/photons_action.html
     * ``photons_app.special.SpecialReference`` objects no longer guarantee getting
       ``finish`` called on them at the end of the program
     * ``photons_canvas.animations.actions.animation_action`` has been replaced in favour
       of a ``AnimationTask`` in the same module and the new task register.
+    * Shuffled the ``photons_app`` module a little. It is unlikely any of the
+      changed imports will impact users of Photons.
 
 .. _release-core-0-33-0:
 

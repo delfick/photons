@@ -61,6 +61,7 @@ class TaskRegister:
     GracefulTask = GracefulTask
 
     Field = dictobj.Field
+    NullableField = dictobj.NullableField
 
     def __init__(self):
         self.registered = []
@@ -80,10 +81,14 @@ class TaskRegister:
         needs_target=False,
         label="Project",
     ):
-        """
-        Creates a reference to a function that may be used as a task
+        '''
+        Registers a function as a task. The name of the task will be the name
+        of the function. When the function is called it will be provided
+        ``collector``, ``target``, ``reference``, ``artifact`` and any other
+        keyword arguments that were provided when the task was invoked.
 
-        It takes in:
+        The decorator has the following options for changing the values provided
+        to the function:
 
         target
             The ``type`` of the target that applies to this action. For example
@@ -107,7 +112,38 @@ class TaskRegister:
 
         label
             A string used by the help tasks to sort the actions into groups.
-        """
+
+        For example:
+
+        .. code-block:: python
+
+            from photons_app.tasks import task_register as task
+
+
+            @task.from_function(target="lan", special_reference=True)
+            def my_amazing_task(collector, target, reference, **kwargs):
+                """This task does cool things"""
+                ...
+
+        Is equivalent to:
+
+        .. code-block:: python
+
+            from photons_app.tasks import task_register as task
+
+
+            @task
+            class my_amazing_task(task.Task):
+                """This task does cool things"""
+
+                target = task.requires_target(target_types=["lan"])
+                reference = task.provides_reference(special=True)
+
+                async def execute_task(self, **kwargs):
+                    ...
+
+        It is recommended you create tasks rather than functions for tasks.
+        '''
         kwargs = {}
 
         restrictions = {}

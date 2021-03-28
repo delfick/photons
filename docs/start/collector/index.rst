@@ -24,7 +24,7 @@ photons_app
 
     ``using_graceful_future()``
         A context manager that yields a graceful future.
-        :ref:`long_running_server` provides more information.
+        This is used by the :ref:`GracefulTask <photons_task_class>`.
 
     extra
         The JSON string provided after the ``--`` on the command line.
