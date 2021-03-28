@@ -44,6 +44,8 @@ class help(task.Task):
     target = task.provides_target()
     reference = task.provides_reference()
 
+    specific_task_groups = task.NullableField(sb.tupleof(sb.string_spec()))
+
     async def execute_task(self, **kwargs):
         task_name = sb.NotSpecified
         target_name = self.target
@@ -88,7 +90,9 @@ class help(task.Task):
                     available=task_register.names,
                 )
 
-        await task_register.fill_task(self.collector, list_tasks, **kwargs).run()
+        await task_register.fill_task(
+            self.collector, list_tasks, specific_task_groups=self.specific_task_groups, **kwargs
+        ).run()
 
 
 @task
@@ -98,6 +102,8 @@ class list_tasks(task.Task):
     output = task.Field(sb.any_spec, default=sys.stdout)
     specific_task = task.Field(sb.any_spec, wrapper=sb.optional_spec)
     specific_target = task.Field(sb.any_spec, wrapper=sb.optional_spec)
+
+    specific_task_groups = task.NullableField(sb.tupleof(sb.string_spec()))
 
     def __call__(self, s=""):
         print(s, file=self.output)
@@ -123,6 +129,12 @@ class list_tasks(task.Task):
 
         tasks = []
         for task in task_register.registered:
+            if (
+                self.specific_task_groups is not None
+                and task.task_group not in self.specific_task_groups
+            ):
+                continue
+
             if self.specific_task is sb.NotSpecified or task.name == self.specific_task:
                 restrictions = getattr(task, "target_restrictions", {})
                 if not restrictions:
