@@ -20,7 +20,7 @@ def __lifx__(collector, *args, **kwargs):
 
 
 @task.register(task_group="Interactor")
-class interact(task.GracefulTask):
+class interactor(task.GracefulTask):
     """
     Start a daemon that will watch your network for LIFX lights and interact with them
     """
