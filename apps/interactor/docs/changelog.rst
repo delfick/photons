@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-8-4:
+
+0.8.4 - 28 March 2021
+    * Making the ``interactor`` task back to being called ``interactor``. It
+      had been accidentally renamed in 0.8.3
+
 .. _release-interactor-0-8-3:
 
 0.8.3 - 28 March 2021
