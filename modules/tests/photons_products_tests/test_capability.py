@@ -1,6 +1,7 @@
 # coding: spec
 
 from photons_products.base import Product, Capability, CapabilityValue, CapabilityRange
+from photons_products import conditions as cond
 
 from photons_app.errors import ProgrammerError
 
@@ -12,7 +13,6 @@ import pytest
 def product():
     class P(Product):
         pid = 1
-        name = "P"
         vendor = 1
         family = "computer"
         friendly = "P"
@@ -52,6 +52,74 @@ describe "CapabilityValue":
         assert cv.value(cap(3, 90)) == 5
         assert cv.value(cap(4, 60)) == 5
 
+    it "can have upgrades with conditions":
+
+        cv = (
+            CapabilityValue(1)
+            .until(1, 40, cond.Family("laptop"), becomes=2)
+            .until(1, 40, cond.Family("desktop"), becomes=3)
+            .until(2, 50, cond.Capability(has_lots_of_fan_noise=True), becomes=4)
+            .until(2, 60, cond.NameHas("INTEL"), becomes=6)
+            .until(3, 70, becomes=10)
+        )
+
+        class LAPTOP_ARM(Product):
+            pid = 1
+            vendor = 1
+            family = "laptop"
+            friendly = "Laptop ARM"
+
+            class cap(Capability):
+                has_lots_of_fan_noise = CapabilityValue(False)
+
+        assert cv.value(LAPTOP_ARM.cap) == 1
+        assert cv.value(LAPTOP_ARM.cap(1, 30)) == 1
+        assert cv.value(LAPTOP_ARM.cap(1, 40)) == 2
+        assert cv.value(LAPTOP_ARM.cap(2, 51)) == 2
+        assert cv.value(LAPTOP_ARM.cap(2, 60)) == 2
+        assert cv.value(LAPTOP_ARM.cap(2, 61)) == 2
+        assert cv.value(LAPTOP_ARM.cap(2, 90)) == 2
+        assert cv.value(LAPTOP_ARM.cap(3, 90)) == 10
+        assert cv.value(LAPTOP_ARM.cap(4, 60)) == 10
+
+        class LAPTOP_INTEL(Product):
+            pid = 1
+            vendor = 1
+            family = "laptop"
+            friendly = "Laptop Intel"
+
+            class cap(Capability):
+                has_lots_of_fan_noise = CapabilityValue(True)
+
+        assert cv.value(LAPTOP_INTEL.cap) == 1
+        assert cv.value(LAPTOP_INTEL.cap(1, 30)) == 1
+        assert cv.value(LAPTOP_INTEL.cap(1, 40)) == 2
+        assert cv.value(LAPTOP_INTEL.cap(2, 51)) == 4
+        assert cv.value(LAPTOP_INTEL.cap(2, 60)) == 6
+        assert cv.value(LAPTOP_INTEL.cap(2, 61)) == 6
+        assert cv.value(LAPTOP_INTEL.cap(2, 90)) == 6
+        assert cv.value(LAPTOP_INTEL.cap(3, 90)) == 10
+        assert cv.value(LAPTOP_INTEL.cap(4, 60)) == 10
+
+        class DESKTOP_INTEL(Product):
+            pid = 1
+            vendor = 1
+            family = "desktop"
+            friendly = "Desktop Intel"
+
+            class cap(Capability):
+                has_lots_of_fan_noise = CapabilityValue(True)
+
+        assert cv.value(DESKTOP_INTEL.cap) == 1
+        assert cv.value(DESKTOP_INTEL.cap(1, 30)) == 1
+        assert cv.value(DESKTOP_INTEL.cap(1, 40)) == 3
+        assert cv.value(DESKTOP_INTEL.cap(2, 51)) == 4
+        assert cv.value(DESKTOP_INTEL.cap(2, 60)) == 6
+        assert cv.value(DESKTOP_INTEL.cap(2, 61)) == 6
+        assert cv.value(DESKTOP_INTEL.cap(2, 90)) == 6
+        assert cv.value(DESKTOP_INTEL.cap(3, 90)) == 10
+        assert cv.value(DESKTOP_INTEL.cap(4, 60)) == 10
+
     it "complains if you give upgrades out of order":
         with assertRaises(ProgrammerError, "Each .until must be for a greater version number"):
             CapabilityValue(1).until(1, 40, becomes=2).until(2, 60, becomes=4).until(
@@ -69,6 +137,32 @@ describe "CapabilityValue":
         assert cv1 != cv3
         assert cv3 == cv4
         assert cv3 != cv5
+
+    it "has equality with conditions":
+        cv1 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
+        cv2 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
+        cv3 = CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20)
+        cv4 = (
+            CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20).until(3, 60, becomes=10)
+        )
+        cv5 = (
+            CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
+        )
+        cv6 = (
+            CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
+        )
+        cv7 = (
+            CapabilityValue(1)
+            .until(2, 70, cond.Family("two"), cond.Capability(things=1), becomes=20)
+            .until(3, 60, becomes=10)
+        )
+
+        assert cv1 == cv2
+        assert cv1 != cv3
+        assert cv3 != cv4
+        assert cv4 != cv5
+        assert cv5 == cv6
+        assert cv5 != cv7
 
 describe "CapabilityRange":
     it "can create two CapabilityValue objects":

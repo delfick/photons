@@ -117,11 +117,13 @@ def effects_stopped_status():
                 "effect": {"type": "SKIP"},
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
                         "has_ir": False,
+                        "has_relays": False,
                         "has_matrix": False,
                         "has_multizone": False,
                         "has_variable_color_temp": True,
@@ -138,10 +140,12 @@ def effects_stopped_status():
                 "effect": {"type": "SKIP"},
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
@@ -159,10 +163,12 @@ def effects_stopped_status():
                 "effect": {"type": "SKIP"},
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
@@ -180,10 +186,12 @@ def effects_stopped_status():
                 "effect": {"type": "SKIP"},
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": False,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
@@ -204,10 +212,12 @@ def effects_stopped_status():
                 },
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": True,
@@ -228,10 +238,12 @@ def effects_stopped_status():
                 },
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": True,
@@ -257,10 +269,12 @@ def effects_stopped_status():
                 },
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": False,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": True,
                         "has_multizone": False,
@@ -286,10 +300,12 @@ def effects_stopped_status():
                 },
                 "product": {
                     "cap": {
+                        "has_buttons": False,
                         "has_chain": True,
                         "has_color": True,
                         "has_extended_multizone": False,
                         "has_hev": False,
+                        "has_relays": False,
                         "has_ir": False,
                         "has_matrix": True,
                         "has_multizone": False,

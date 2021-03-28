@@ -1,5 +1,6 @@
 from photons_products.base import Product, Capability, CapabilityValue
-from photons_products.enums import VendorRegistry, Zones
+from photons_products.enums import VendorRegistry, Zones, Family
+from photons_products import conditions as cond
 
 
 class Product(Product):
@@ -26,23 +27,23 @@ class Capability(Capability):
     .. attribute:: has_chain
         Do we have a chain of devices
 
-    .. attribute:: has_variable_color_temp
-        Do we have variable kelvin
-
     .. attribute:: has_relays
         Does this device have relays
 
     .. attribute:: has_buttons
         Does this device have physical buttons
 
+    .. attribute:: has_extended_multizone
+        This product supports extended multizone messages
+
+    .. attribute:: has_variable_color_temp
+        Do we have variable kelvin
+
     .. attribute:: min_kelvin
         The min kelvin of this product
 
     .. attribute:: max_kelvin
         The max kelvin of this product
-
-    .. attribute:: has_extended_multizone
-        Does this device/firmware support the extended multizone messages.
 
     .. attribute:: product
         The product class associate with this capability
@@ -55,8 +56,8 @@ class Capability(Capability):
         the firmware_major associated with this product
         You can create an instance of this capability with your own firmware_minor by calling this instance
 
-    .. autoattribute:: photons_products.registry.Capability.has_matrix
-    .. autoattribute:: photons_products.registry.Capability.has_multizone
+    .. autoattribute:: photons_products.lifx.Capability.has_matrix
+    .. autoattribute:: photons_products.lifx.Capability.has_multizone
     """
 
     is_light = True
@@ -69,7 +70,11 @@ class Capability(Capability):
     has_chain = CapabilityValue(False)
     has_relays = CapabilityValue(False)
     has_buttons = CapabilityValue(False)
-    has_extended_multizone = CapabilityValue(False)
+
+    has_extended_multizone = CapabilityValue(False).until(
+        2, 77, cond.Family(Family.LCM2), cond.Capability(has_multizone=True), becomes=True
+    )
+
     has_variable_color_temp = CapabilityValue(True)
 
     min_kelvin = CapabilityValue(2500)
@@ -84,6 +89,8 @@ class Capability(Capability):
                 "has_color",
                 "has_chain",
                 "has_matrix",
+                "has_relays",
+                "has_buttons",
                 "has_multizone",
                 "has_extended_multizone",
                 "has_variable_color_temp",
@@ -107,8 +114,10 @@ class Capability(Capability):
 class NonLightCapability(Capability):
     is_light = False
 
-    has_chain = None
+    has_ir = None
+    has_hev = None
     has_color = None
+    has_chain = None
     has_matrix = None
     has_multizone = None
     has_extended_multizone = None

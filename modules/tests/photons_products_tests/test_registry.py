@@ -3,8 +3,6 @@
 from photons_products import VendorRegistry, Family, Zones, lifx
 from photons_products.base import CapabilityValue
 
-from unittest import mock
-
 describe "lifx.Product":
     it "has default vendor":
 
@@ -21,50 +19,72 @@ describe "lifx.Product":
 
 describe "Capability":
     it "has has_matrix":
-        product = mock.Mock(name="product")
+
+        class P(lifx.Product):
+            pid = 1
+            name = "Product"
+            family = Family.LCM3
+            friendly = "Product"
+
+            class cap(lifx.Capability):
+                pass
 
         class cap(lifx.Capability):
             zones = Zones.MATRIX
 
-        assert cap(product).has_matrix
+        assert cap(P).has_matrix
 
         class cap(lifx.Capability):
             zones = Zones.LINEAR
 
-        assert not cap(product).has_matrix
+        assert not cap(P).has_matrix
 
         class cap(lifx.Capability):
             zones = Zones.SINGLE
 
-        assert not cap(product).has_matrix
+        assert not cap(P).has_matrix
 
     it "has has_multizone":
-        product = mock.Mock(name="product")
+
+        class P(lifx.Product):
+            pid = 1
+            name = "Product"
+            family = Family.LCM3
+            friendly = "Product"
+
+            class cap(lifx.Capability):
+                pass
 
         class cap(lifx.Capability):
             zones = Zones.MATRIX
 
-        assert not cap(product).has_multizone
+        assert not cap(P).has_multizone
 
         class cap(lifx.Capability):
             zones = Zones.LINEAR
 
-        assert cap(product).has_multizone
+        assert cap(P).has_multizone
 
         class cap(lifx.Capability):
             zones = Zones.SINGLE
 
-        assert not cap(product).has_multizone
+        assert not cap(P).has_multizone
 
     it "has has_extended_multizone":
-        product = mock.Mock(name="product")
 
-        print("TEST", lifx.Capability.Meta.capabilities["has_extended_multizone"].upgrades)
+        class P(lifx.Product):
+            pid = 1
+            name = "Product"
+            family = Family.LCM3
+            friendly = "Product"
+
+            class cap(lifx.Capability):
+                pass
 
         class cap(lifx.Capability):
             pass
 
-        c = cap(product)
+        c = cap(P)
 
         assert not c.has_extended_multizone
         assert not c(firmware_major=2, firmware_minor=77).has_extended_multizone
@@ -72,7 +92,7 @@ describe "Capability":
         class cap(lifx.Capability):
             has_extended_multizone = CapabilityValue(False).until(2, 77, becomes=True)
 
-        c = cap(product)
+        c = cap(P)
 
         assert not c.has_extended_multizone
         assert c(firmware_major=2, firmware_minor=77).has_extended_multizone
@@ -81,12 +101,20 @@ describe "Capability":
         assert c(firmware_major=3, firmware_minor=60).has_extended_multizone
 
     it "has items":
-        product = mock.Mock(name="product")
+
+        class P(lifx.Product):
+            pid = 1
+            name = "Product"
+            family = Family.LCM3
+            friendly = "Product"
+
+            class cap(lifx.Capability):
+                pass
 
         class cap(lifx.Capability):
             pass
 
-        c = cap(product, firmware_major=3, firmware_minor=77)
+        c = cap(P, firmware_major=3, firmware_minor=77)
 
         dct = dict(c.items())
         expected = {
@@ -111,7 +139,7 @@ describe "Capability":
             has_color = True
             zones = Zones.LINEAR
 
-        c = cap(product, firmware_major=3, firmware_minor=77)
+        c = cap(P, firmware_major=3, firmware_minor=77)
 
         dct = dict(c.items())
 
@@ -133,12 +161,20 @@ describe "Capability":
         assert dct == expected
 
     it "has items for non light products":
-        product = mock.Mock(name="product")
+
+        class P(lifx.Product):
+            pid = 1
+            name = "Product"
+            family = Family.LCM3
+            friendly = "Product"
+
+            class cap(lifx.Capability):
+                pass
 
         class cap(lifx.NonLightCapability):
             has_relays = True
 
-        c = cap(product, firmware_major=3, firmware_minor=81)
+        c = cap(P, firmware_major=3, firmware_minor=81)
         assert not c.is_light
 
         assert dict(c.items()) == {"has_relays": True, "has_buttons": False}

@@ -10,7 +10,10 @@ class CapabilityValue:
         self.upgrades = []
 
     def __repr__(self):
-        upgrades = [f"({ma}, {mi}, {becomes})" for ma, mi, becomes in self.upgrades]
+        upgrades = [
+            f"({ma}, {mi}, {becomes}, conditions:({', '.join(repr(c) for c in conditions)}))"
+            for ma, mi, becomes, conditions in self.upgrades
+        ]
         if upgrades:
             return f"<CapabilityValue ({self._value}) -> {' -> '.join(upgrades)}>"
         else:
@@ -25,17 +28,22 @@ class CapabilityValue:
 
     def value(self, cap):
         value = self._value
-        for ma, mi, becomes in self.upgrades:
+        for ma, mi, becomes, conditions in self.upgrades:
+            if any(not condition(cap) for condition in conditions):
+                continue
+
             if (cap.firmware_major, cap.firmware_minor) >= (ma, mi):
                 value = becomes
 
         return value
 
-    def until(self, major, minor, *, becomes):
-        if any((ma, mi) >= (major, minor) for ma, mi, _ in self.upgrades):
+    def until(self, major, minor, *conditions, becomes):
+        if any(
+            (ma, mi) >= (major, minor) and conditions == conds for ma, mi, _, conds in self.upgrades
+        ):
             raise ProgrammerError("Each .until must be for a greater version number")
 
-        self.upgrades.append((major, minor, becomes))
+        self.upgrades.append((major, minor, becomes, conditions))
         return self
 
 
@@ -55,9 +63,9 @@ class CapabilityRange(CapabilityValue):
 
     def __iter__(self):
         low, high = CapabilityValue(self._value[0]), CapabilityValue(self._value[1])
-        for ma, mi, becomes in self.upgrades:
-            low.until(ma, mi, becomes=becomes[0])
-            high.until(ma, mi, becomes=becomes[1])
+        for ma, mi, becomes, conditions in self.upgrades:
+            low.until(ma, mi, *conditions, becomes=becomes[0])
+            high.until(ma, mi, *conditions, becomes=becomes[1])
         yield from (low, high)
 
 

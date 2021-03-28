@@ -1,4 +1,4 @@
-from photons_products.base import CapabilityRange, CapabilityValue, ProductsHolder
+from photons_products.base import CapabilityRange, ProductsHolder
 from photons_products.enums import Zones, Family
 from photons_products import lifx
 
@@ -11,6 +11,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LMBG_MESH_GU10(lifx.Product):
@@ -20,6 +21,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCMV4_A19_WHITE_LV(lifx.Product):
@@ -29,8 +31,9 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = False
-            min_kelvin, max_kelvin = (2700, 6500)
             has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (2700, 6500)
 
     class LCMV4_A19_WHITE_HV(lifx.Product):
         pid = 11
@@ -39,8 +42,9 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = False
-            min_kelvin, max_kelvin = (2700, 6500)
             has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (2700, 6500)
 
     class LCMV4_A21_COLOR(lifx.Product):
         pid = 15
@@ -49,6 +53,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCMV4_BR30_WHITE_LV(lifx.Product):
@@ -59,6 +64,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCMV4_BR30_WHITE_HV(lifx.Product):
@@ -68,8 +74,9 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = False
-            min_kelvin, max_kelvin = (2500, 9000)
             has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (2500, 9000)
 
     class LCMV4_BR30_COLOR(lifx.Product):
         pid = 20
@@ -78,6 +85,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCMV4_A19_COLOR(lifx.Product):
@@ -87,6 +95,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCM2_A19(lifx.Product):
@@ -96,6 +105,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -107,6 +117,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -119,6 +130,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -131,6 +143,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -143,6 +156,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             zones = Zones.LINEAR
             has_color = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCM2_Z(lifx.Product):
@@ -153,7 +167,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             zones = Zones.LINEAR
             has_color = True
-            has_extended_multizone = CapabilityValue(False).until(2, 77, becomes=True)
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -165,6 +179,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -176,6 +191,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -188,7 +204,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             zones = Zones.LINEAR
             has_color = True
-            has_extended_multizone = CapabilityValue(False).until(2, 77, becomes=True)
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -201,6 +217,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -212,6 +229,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -223,6 +241,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -234,6 +253,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -246,6 +266,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -258,6 +279,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = CapabilityRange((2500, 9000)).until(
                 2, 80, becomes=(1500, 9000)
             )
@@ -269,6 +291,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_MINI_WW(lifx.Product):
@@ -279,6 +302,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = CapabilityRange((1500, 6500)).until(
                 3, 70, becomes=(1500, 9000)
             )
@@ -291,6 +315,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2700, 2700)
 
     class LCM3_GU10_COLOR(lifx.Product):
@@ -300,6 +325,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_GU10_ST(lifx.Product):
@@ -309,17 +335,19 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_TILE(lifx.Product):
         pid = 55
-        friendly = "LIFX Tile"
         family = Family.LCM3
+        friendly = "LIFX Tile"
 
         class cap(lifx.Capability):
             zones = Zones.MATRIX
             has_color = True
             has_chain = True
+
             min_kelvin, max_kelvin = (2500, 9000)
 
     class LCM3_CANDLE(lifx.Product):
@@ -331,6 +359,7 @@ class ProductRegistry:
             zones = Zones.MATRIX
             has_chain = False
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_MINI2_COLOR(lifx.Product):
@@ -340,6 +369,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_MINI2_WW(lifx.Product):
@@ -350,6 +380,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = CapabilityRange((1500, 6500)).until(
                 3, 70, becomes=(1500, 9000)
             )
@@ -362,6 +393,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2700, 2700)
 
     class LCM3_A19(lifx.Product):
@@ -371,6 +403,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_BR30(lifx.Product):
@@ -380,6 +413,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_A19_PLUS(lifx.Product):
@@ -390,6 +424,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_BR30_PLUS(lifx.Product):
@@ -400,6 +435,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_MINI2_WHITE_INT(lifx.Product):
@@ -410,6 +446,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2700, 2700)
 
     class LCM3_CANDLE_CA(lifx.Product):
@@ -422,6 +459,7 @@ class ProductRegistry:
             has_chain = False
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_16_SWITCH(lifx.Product):
@@ -436,7 +474,7 @@ class ProductRegistry:
     class LCM3_16_SWITCH_I(lifx.Product):
         pid = 71
         family = Family.LCM3
-        friendly = "Switch"
+        friendly = "LIFX Switch"
 
         class cap(lifx.NonLightCapability):
             has_relays = True
@@ -452,6 +490,7 @@ class ProductRegistry:
             has_chain = False
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = (2200, 6500)
 
     class LCM3_FILAMENT_ST64_CLEAR_US(lifx.Product):
@@ -462,6 +501,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2100, 2100)
 
     class LCM3_FILAMENT_ST64_AMBER_US(lifx.Product):
@@ -472,16 +512,18 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2000, 2000)
 
     class LCM3_MINI_WHITE_US(lifx.Product):
         pid = 87
         family = Family.LCM3
-        friendly = "Mini White"
+        friendly = "LIFX Mini White"
 
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2700, 2700)
 
     class LCM3_MINI_WHITE_INTL(lifx.Product):
@@ -492,6 +534,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2700, 2700)
 
     class LCM3_32_SWITCH_I(lifx.Product):
@@ -511,6 +554,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_hev = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_MINI_COLOR_US(lifx.Product):
@@ -520,6 +564,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_MINI_COLOR_INTL(lifx.Product):
@@ -529,6 +574,17 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_A19_US(lifx.Product):
+        pid = 93
+        family = Family.LCM3
+        friendly = "LIFX A19 US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_BR30_US(lifx.Product):
@@ -538,6 +594,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_CANDLE_WW_INTL(lifx.Product):
@@ -550,6 +607,7 @@ class ProductRegistry:
             has_chain = False
             has_color = False
             has_variable_color_temp = True
+
             min_kelvin, max_kelvin = (2200, 6500)
 
     class LCM3_32_A19_INTL(lifx.Product):
@@ -559,6 +617,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_BR30_INTL(lifx.Product):
@@ -568,6 +627,7 @@ class ProductRegistry:
 
         class cap(lifx.Capability):
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_A19_CLEAN_INTL(lifx.Product):
@@ -578,6 +638,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_hev = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_FILAMENT_ST64_CLEAR_INTL(lifx.Product):
@@ -588,6 +649,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2100, 2100)
 
     class LCM3_FILAMENT_ST64_AMBER_INTL(lifx.Product):
@@ -598,6 +660,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_color = False
             has_variable_color_temp = False
+
             min_kelvin, max_kelvin = (2000, 2000)
 
     class LCM3_32_A19_PLUS_US(lifx.Product):
@@ -608,6 +671,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_BR30_PLUS_US(lifx.Product):
@@ -618,6 +682,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
     class LCM3_32_A19_PLUS_INTL(lifx.Product):
@@ -628,6 +693,41 @@ class ProductRegistry:
         class cap(lifx.Capability):
             has_ir = True
             has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_BR30_PLUS_INTL(lifx.Product):
+        pid = 112
+        public = True
+        family = Family.LCM3
+        friendly = "LIFX BR30 Plus Intl"
+
+        class cap(lifx.Capability):
+            has_ir = True
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_MINI_WW_US(lifx.Product):
+        pid = 113
+        family = Family.LCM3
+        friendly = "LIFX Mini WW US"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_MINI_WW_INTL(lifx.Product):
+        pid = 114
+        family = Family.LCM3
+        friendly = "LIFX Mini WW Intl"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
 
