@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-5-13:
+
+0.5.13 - 28 March 2021
+    * Upgrade Photons and implement more graceful shutdown
+
 .. _release-arranger-0-5-12:
 
 0.5.12 - 15 March 2021

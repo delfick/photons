@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-40-0:
 
-0.40.0 - TBD
+0.40.0 - 28 March 2021
     * ``photons_app.actions.an_action`` has been replaced with
       ``photons_app.tasks.task_register`` and a new class based way of defining
       tasks. New documentation for this new infrastructure can be found at

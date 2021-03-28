@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-8-3:
+
+0.8.3 - 28 March 2021
+    * Update Photons and implement more graceful shutdown
+
 .. _release-interactor-0-8-2:
 
 0.8.2 - 15 March 2021
