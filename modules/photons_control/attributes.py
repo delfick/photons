@@ -32,9 +32,7 @@ class attr(task.Task):
     """
     Send a message to your bulb and print out all the replies.
 
-    This is the same as the get_attr and set_attr commands but doesn't prefix the wanted message with get or set
-
-    ``target:attr d073d5000000 get_host_firmware``
+    ``target:attr d073d5000000 GetHostFirmware``
     """
 
     target = task.requires_target()
@@ -46,7 +44,7 @@ class attr(task.Task):
 
         if self.artifact is sb.NotSpecified:
             raise BadOption(
-                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:get_attr <reference> <attr_to_get>"
+                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr <reference> <attr_to_get>"
             )
 
         kls = find_packet(protocol_register, self.artifact, "")
@@ -80,7 +78,7 @@ class attr_actual(task.Task):
 
         if self.artifact is sb.NotSpecified:
             raise BadOption(
-                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:get_attr <reference> <attr_to_get>"
+                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr_actual <reference> <attr_to_get>"
             )
 
         kls = find_packet(protocol_register, self.artifact, "")

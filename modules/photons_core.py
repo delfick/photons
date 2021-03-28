@@ -32,8 +32,8 @@ class CommandSplitter(MergedOptionStringFormatter):
     .. code-block:: python
 
         command = "{TARGET|lan:env}:{@:1} {@:2:}"
-        result = CommandSplitter({"argv": ["my_script", "get_attr", "--silent"]}, command).split()
-        assert result == ["lan:get_attr", "--silent"]
+        result = CommandSplitter({"argv": ["my_script", "attr", "--silent"]}, command).split()
+        assert result == ["lan:attr", "--silent"]
 
     Note that if when running that there was a ``TARGET`` variable in your
     environment then it would use that instead of the default ``lan`` specified.

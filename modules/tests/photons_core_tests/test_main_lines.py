@@ -158,24 +158,24 @@ describe "main lines":
     it "run formats correctly", fake_main:
         with pytest.helpers.modified_env(LAN_TARGET="well"):
             run(
-                "{LAN_TARGET:env}:get_attr {@:1} {@:2:}",
+                "{LAN_TARGET:env}:attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
             )
 
         fake_main.assert_called_once_with(
-            ["well:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
+            ["well:attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
             default_activate=["core"],
         )
 
     it "can have defaults for environment", fake_main:
         with pytest.helpers.modified_env(LAN_TARGET=None):
             run(
-                "{LAN_TARGET|lan:env}:get_attr {@:1} {@:2:}",
+                "{LAN_TARGET|lan:env}:attr {@:1} {@:2:}",
                 argv=["match:cap=chain", "--silent", "--", '{"one": "two"}'],
             )
 
         fake_main.assert_called_once_with(
-            ["lan:get_attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
+            ["lan:attr", "match:cap=chain", "--silent", "--", '{"one": "two"}'],
             default_activate=["core"],
         )
 
