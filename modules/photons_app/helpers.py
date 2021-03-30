@@ -2016,7 +2016,10 @@ class ThreadToAsyncQueue(AsyncCMMixin):
         try:
             self._listener(thread_number, impl, args)
         finally:
-            self.loop.call_soon_threadsafe(finish_fut.set_result, True)
+            try:
+                self.loop.call_soon_threadsafe(finish_fut.set_result, True)
+            except RuntimeError:
+                pass
 
     def create_args(self, thread_number, existing):
         """
