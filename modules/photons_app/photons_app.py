@@ -20,7 +20,7 @@ import json
 import sys
 import os
 
-log = logging.getLogger("photons_app.options_spec.photons_app_spec")
+log = logging.getLogger("photons_app.photons_app")
 
 
 class PhotonsApp(dictobj.Spec):
