@@ -153,8 +153,8 @@ class Runner:
         def final(self, task, waiter):
             self.wait_for_main_task(task)
             self.wait_for_waiter(waiter)
-            self.run_cleanup()
             self.ensure_finished_futures(task, waiter)
+            self.run_cleanup()
             self.ensure_all_tasks_cancelled()
 
         def wait_for_main_task(self, task):
