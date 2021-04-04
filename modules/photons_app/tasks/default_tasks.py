@@ -122,9 +122,9 @@ class list_tasks(task.Task):
             target_register = target_register.restricted(**initial_restrictions)
 
         targets_by_name = defaultdict(list)
-        for name, target in target_register.registered.items():
-            typ = target_register.type_for(name)
-            desc = target_register.desc_for(name)
+        for name, target in self.target_register.registered.items():
+            typ = self.target_register.type_for(name)
+            desc = self.target_register.desc_for(name)
             targets_by_name[name] = (typ, desc)
 
         tasks = []
@@ -136,7 +136,7 @@ class list_tasks(task.Task):
                 continue
 
             if self.specific_task is sb.NotSpecified or task.name == self.specific_task:
-                restrictions = getattr(task, "target_restrictions", {})
+                _, restrictions = task_register.determine_target_restrictions(task.task)
                 if not restrictions:
                     tasks.append((task, restrictions))
                     continue
@@ -189,26 +189,33 @@ class list_tasks(task.Task):
             o.seek(0)
             by_restriction[o.read()].append((t.name, t.task_group, doc))
 
-        for restriction, tasks in by_restriction.items():
-            self("=" * 80)
-            self(restriction)
-            self("  " * 10 + "-" * 40)
-            self()
+        for show_those_without_restriction in (False, True):
+            for restriction, tasks in by_restriction.items():
+                if (
+                    restriction.startswith("- Can be used with any target")
+                    ^ show_those_without_restriction
+                ):
+                    continue
 
-            by_label = defaultdict(list)
-            for name, label, doc in tasks:
-                by_label[label].append((name, doc))
-
-            for label, ts in by_label.items():
-                t = f"  {label}::"
-                self(t)
-                self("  " + "#" * (len(t) - 2))
-                max_length = 0
-                for name, _ in ts:
-                    max_length = max([max_length, len(name) + 1])
-
-                for i, (name, doc) in enumerate(sorted(ts)):
-                    self(f"    {name:{max_length}}: {doc}")
-                    if i != 0 and i % 5 == 0:
-                        self()
+                self("=" * 80)
+                self(restriction)
+                self("  " * 10 + "-" * 40)
                 self()
+
+                by_label = defaultdict(list)
+                for name, label, doc in tasks:
+                    by_label[label].append((name, doc))
+
+                for label, ts in by_label.items():
+                    t = f"  {label}::"
+                    self(t)
+                    self("  " + "#" * (len(t) - 2))
+                    max_length = 0
+                    for name, _ in ts:
+                        max_length = max([max_length, len(name) + 1])
+
+                    for i, (name, doc) in enumerate(sorted(ts)):
+                        self(f"    {name:{max_length}}: {doc}")
+                        if i != 0 and i % 5 == 0:
+                            self()
+                    self()

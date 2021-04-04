@@ -232,6 +232,18 @@ class TaskRegister:
     def provides_artifact(self):
         return dictobj.Field(self.provides_artifact_spec())
 
+    def determine_target_restrictions(self, task):
+        mandatory = False
+        target_restrictions = {}
+        if isinstance(task, type) and issubclass(task, Task) and "target" in task.fields:
+            mandatory = task.fields["target"].spec.mandatory
+            target_restrictions = task.fields["target"].spec.restrictions
+        elif hasattr(task, "target_restrictions"):
+            mandatory = True
+            target_restrictions = getattr(task, "target_restrictions", {})
+
+        return mandatory, target_restrictions
+
     def find(self, target_register, task, target):
         found = False
         choices = []
@@ -243,19 +255,7 @@ class TaskRegister:
             if r.name == task:
                 found = True
 
-                mandatory = False
-                target_restrictions = {}
-                if (
-                    isinstance(r.task, type)
-                    and issubclass(r.task, Task)
-                    and "target" in r.task.fields
-                ):
-                    mandatory = r.task.fields["target"].spec.mandatory
-                    target_restrictions = r.task.fields["target"].spec.restrictions
-                elif hasattr(r.task, "target_restrictions"):
-                    mandatory = True
-                    target_restrictions = getattr(r.task, "target_restrictions", {})
-
+                mandatory, target_restrictions = self.determine_target_restrictions(r.task)
                 if target_restrictions:
                     restrictions.append(target_restrictions)
 
