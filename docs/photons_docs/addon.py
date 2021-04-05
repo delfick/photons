@@ -3,20 +3,18 @@ from photons_app.tasks.default_tasks import list_tasks, help
 from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
 
-from sphinx.util.docutils import docutils_namespace
-from sphinx.cmdline import handle_exception
-from sphinx.application import Sphinx
-
 from tornado.web import StaticFileHandler, Application
 from delfick_project.addons import addon_hook
 from delfick_project.norms import dictobj, sb
 from tornado.httpserver import HTTPServer
+from sphinx.cmd.build import build_main
 import pkg_resources
 import webbrowser
 import logging
 import asyncio
 import socket
 import shutil
+import shlex
 import time
 import sys
 import os
@@ -122,53 +120,24 @@ class build_docs(task.Task):
     async def execute_task(self, **kwargs):
         options = self.collector.configuration["documentation"]
 
-        out = options.out
-        tags = []
-        jobs = 1
         srcdir = options.src
+        outdir = os.path.join(options.out, "result")
         confdir = pkg_resources.resource_filename("photons_docs", "config")
-        builder = "html"
-        verbosity = 0
-        confoverrides = {}
-        warningiserror = False
+        doctreedir = os.path.join(options.out, "doctree")
 
-        outdir = os.path.join(out, "result")
-        doctreedir = os.path.join(out, "doctree")
-
-        if self.is_fresh and os.path.exists(out):
-            shutil.rmtree(out)
+        if self.is_fresh and os.path.exists(options.out):
+            shutil.rmtree(options.out)
 
         for d in (outdir, doctreedir):
             if not os.path.exists(d):
                 os.makedirs(d)
 
-        app = None
-        try:
-            with docutils_namespace():
-                app = Sphinx(
-                    srcdir,
-                    confdir,
-                    outdir,
-                    doctreedir,
-                    builder,
-                    confoverrides,
-                    sys.stdout,
-                    sys.stderr,
-                    self.is_fresh,
-                    warningiserror,
-                    tags,
-                    verbosity,
-                    jobs,
-                )
-                app.build(self.force_all, [])
-                if app.statuscode != 0:
-                    sys.exit(app.statuscode)
-        except (Exception, KeyboardInterrupt) as exc:
-            opts = type(
-                "opts", (object,), {"pdb": False, "verbosity": verbosity, "traceback": True}
-            )
-            handle_exception(app, opts, exc, sys.stderr)
-            sys.exit(1)
+        argv = [srcdir, outdir, "-c", confdir, "-d", doctreedir]
+        if self.is_fresh:
+            argv.append("-E")
+        argv.extend(shlex.split(self.photons_app.extra))
+
+        sys.exit(build_main(argv))
 
 
 @task.register(task_group="Docs")
