@@ -138,3 +138,11 @@ The task will raise the following exceptions based on these events:
 * KeyboardInterrupt raises ``photons-app.errors.UserQuit``
 * A ``asyncio.CancelledError`` being raised will result in
   ``photons_app.errors.ApplicationCancelled`` being raised.
+
+.. note:: once the ``post`` handle is called, any exception from ``execute_task``
+  or ``post`` will be passed onto the ``task_holder`` and in affect cancel
+  anything on it.
+
+  The exception to this is tasks using ``GracefulTask`` will not pass on an
+  ``ApplicationStopped`` exception, which is what the ``execute_task`` will
+  raise upon getting a ``SIGTERM``.

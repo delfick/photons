@@ -3,6 +3,13 @@
 ChangeLog
 =========
 
+.. _release-core-0-40-1:
+
+0.40.1 - TBD
+    * The ``post`` hook on a Task class now takes ``exc_info`` with the exception that
+      cause ``execute_task`` to stop.
+    * Some improvements to how tasks are run.
+
 .. _release-core-0-40-0:
 
 0.40.0 - 28 March 2021
