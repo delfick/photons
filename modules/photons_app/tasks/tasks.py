@@ -114,7 +114,10 @@ class Task(dictobj, metaclass=TaskMeta):
                     else:
                         hidden_exc_info = exc_info
                 finally:
-                    exc_info = sys.exc_info()
+                    if hidden_exc_info is not None:
+                        exc_info = hidden_exc_info
+                    else:
+                        exc_info = sys.exc_info()
                     await self.post(exc_info, **kwargs)
         finally:
             if hidden_exc_info is not None:

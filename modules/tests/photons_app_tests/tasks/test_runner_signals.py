@@ -420,9 +420,8 @@ class TestGracefulRunnerSignals:
                 self, collector, notify, output, graceful_final_future, **kwargs
             ):
                 notify()
-                if sys.argv[3] == "None":
-                    graceful_final_future.cancel()
-                await hp.wait_for_all_futures(graceful_final_future)
+                if sys.argv[3] != "None":
+                    await hp.wait_for_all_futures(graceful_final_future)
                 assert not collector.photons_app.final_future.done()
                 with open(output, "w") as fle:
                     fle.write("still ran!")

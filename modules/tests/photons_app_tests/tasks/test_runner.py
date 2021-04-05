@@ -142,6 +142,7 @@ describe "Runner":
 
             async def __aexit__(s, exc_typ, exc, tb):
                 called.append(("task_holder_exit", s.name, getattr(exc_typ, "__name__", exc_typ)))
+                called.append(())
 
         class T(Task):
             @hp.memoized_property
@@ -149,9 +150,12 @@ describe "Runner":
                 return TaskHolder(name="normal")
 
             async def execute_task(s, name, exc, **kwargs):
-                called.append(("execute", name))
+                called.append(("normal execute", name))
                 if exc is not None:
                     raise exc
+
+            async def post(s, exc_info, name, **kwargs):
+                called.append(("normal post", name, getattr(exc_info[0], "__name__", exc_info[0])))
 
         class G(GracefulTask):
             @hp.memoized_property
@@ -163,11 +167,19 @@ describe "Runner":
                 if exc is not None:
                     raise exc
 
+            async def post(s, exc_info, name, **kwargs):
+                called.append(
+                    ("graceful post", name, getattr(exc_info[0], "__name__", exc_info[0]))
+                )
+
         for t in (T, G):
             with assertRaises(ApplicationCancelled):
                 t.create(collector).run_loop(name="cancelled", exc=ApplicationCancelled())
 
-            with assertRaises(ApplicationStopped):
+            if t is T:
+                with assertRaises(ApplicationStopped):
+                    t.create(collector).run_loop(name="stopped", exc=ApplicationStopped())
+            else:
                 t.create(collector).run_loop(name="stopped", exc=ApplicationStopped())
 
             with assertRaises(ValueError):
@@ -176,20 +188,36 @@ describe "Runner":
             t.create(collector).run_loop(name="success", exc=None)
 
         assert called == [
-            ("execute", "cancelled"),
+            ("normal execute", "cancelled"),
+            ("normal post", "cancelled", "ApplicationCancelled"),
             ("task_holder_exit", "normal", "ApplicationCancelled"),
-            ("execute", "stopped"),
+            (),
+            ("normal execute", "stopped"),
+            ("normal post", "stopped", "ApplicationStopped"),
             ("task_holder_exit", "normal", "ApplicationStopped"),
-            ("execute", "error"),
+            (),
+            ("normal execute", "error"),
+            ("normal post", "error", "ValueError"),
             ("task_holder_exit", "normal", "ValueError"),
-            ("execute", "success"),
+            (),
+            ("normal execute", "success"),
+            ("normal post", "success", None),
             ("task_holder_exit", "normal", None),
+            (),
             ("graceful execute", "cancelled"),
+            ("graceful post", "cancelled", "ApplicationCancelled"),
             ("task_holder_exit", "graceful", "ApplicationCancelled"),
+            (),
             ("graceful execute", "stopped"),
+            ("graceful post", "stopped", "ApplicationStopped"),
             ("task_holder_exit", "graceful", None),
+            (),
             ("graceful execute", "error"),
+            ("graceful post", "error", "ValueError"),
             ("task_holder_exit", "graceful", "ValueError"),
+            (),
             ("graceful execute", "success"),
+            ("graceful post", "success", None),
             ("task_holder_exit", "graceful", None),
+            (),
         ]

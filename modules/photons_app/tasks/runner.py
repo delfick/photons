@@ -44,24 +44,27 @@ class Runner:
             task, waiter = self.make_waiter()
 
             override = None
+            graceful = self.significant_future is self.photons_app.graceful_final_future
 
             try:
-                try:
-                    self.loop.run_until_complete(waiter)
-                except KeyboardInterrupt as error:
-                    override = self.got_keyboard_interrupt(error)
-                    raise
-                except asyncio.CancelledError as error:
-                    override = self.got_cancelled(error)
-                    raise
-                finally:
-                    log.debug("CLEANING UP")
+                self.loop.run_until_complete(waiter)
+            except KeyboardInterrupt as error:
+                override = self.got_keyboard_interrupt(error)
+            except asyncio.CancelledError as error:
+                override = self.got_cancelled(error)
+            except:
+                override = sys.exc_info()[1]
 
-                    try:
-                        self.final(task, waiter)
-                    finally:
-                        self.final_close()
+            log.debug("CLEANING UP")
+
+            try:
+                self.final(task, waiter)
             finally:
+                self.final_close()
+
+                if isinstance(override, ApplicationStopped) and graceful:
+                    return
+
                 if override is not None:
                     raise override from None
 
@@ -74,36 +77,24 @@ class Runner:
 
                 self.loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
+        async def wait(self, task):
+            wait = [self.photons_app.final_future, self.significant_future, task]
+            await hp.wait_for_first_future(*wait, name="||run>wait[wait_for_program_exit]")
+
+            if task.done():
+                await task
+
+            if self.photons_app.final_future.done():
+                await self.photons_app.final_future
+
+            if self.significant_future.done():
+                await self.significant_future
+
         def make_waiter(self):
             task = self.loop.create_task(self.coro)
             task.add_done_callback(hp.silent_reporter)
 
-            async def wait():
-                wait = [self.photons_app.final_future, self.significant_future, task]
-                await hp.wait_for_first_future(*wait, name="||run>wait[wait_for_program_exit]")
-
-                if task.done():
-                    await task
-
-                if self.photons_app.final_future.done():
-                    await self.photons_app.final_future
-
-                if self.significant_future is self.photons_app.graceful_final_future:
-                    if (
-                        self.photons_app.graceful_final_future.setup
-                        and self.significant_future.done()
-                    ):
-                        if self.significant_future.cancelled():
-                            return
-
-                        exc = self.significant_future.exception()
-                        if isinstance(exc, ApplicationStopped):
-                            return
-
-                if self.significant_future.done():
-                    await self.significant_future
-
-            waiter = self.loop.create_task(wait())
+            waiter = self.loop.create_task(self.wait(task))
             waiter.add_done_callback(hp.silent_reporter)
 
             return task, waiter
