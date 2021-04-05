@@ -64,9 +64,10 @@ class ShowProductsDirective(Directive):
             found.append((f"cap.{attr}", val._value))
             max_value = max([max_value, len(str(val._value))])
 
-            for ma, mi, becomes in val.upgrades:
-                found.append((f"cap({ma}, {mi}).{attr}", becomes))
-                max_value = max([max_value, len(str(becomes))])
+            for ma, mi, becomes, conds in val.upgrades:
+                if all(c(product.cap) for c in conds):
+                    found.append((f"cap({ma}, {mi}).{attr}", becomes))
+                    max_value = max([max_value, len(str(becomes))])
 
         yield from make_table(found, max_value=max_value, extra_name="====")
 
