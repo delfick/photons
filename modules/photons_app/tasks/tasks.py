@@ -1,4 +1,5 @@
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.errors import ApplicationStopped
 from photons_app.tasks.runner import Runner
 from photons_app import helpers as hp
 
@@ -101,18 +102,33 @@ class Task(dictobj, metaclass=TaskMeta):
         return Runner(self, kwargs).run_loop()
 
     async def run(self, **kwargs):
-        async with self.task_holder:
-            try:
-                return await self.execute_task(**kwargs)
-            finally:
-                exc_info = sys.exc_info()
-                await self.post(exc_info, **kwargs)
+        hidden_exc_info = None
+        try:
+            async with self.task_holder:
+                try:
+                    return await self.execute_task(**kwargs)
+                except:
+                    exc_info = sys.exc_info()
+                    if not self.hide_exception_from_task_holder(exc_info):
+                        raise
+                    else:
+                        hidden_exc_info = exc_info
+                finally:
+                    exc_info = sys.exc_info()
+                    await self.post(exc_info, **kwargs)
+        finally:
+            if hidden_exc_info is not None:
+                hidden_exc_info[1].__traceback__ = hidden_exc_info[2]
+                raise hidden_exc_info[1]
 
     async def execute_task(self, **kwargs):
         raise NotImplementedError()
 
     async def post(self, exc_info, **kwargs):
         pass
+
+    def hide_exception_from_task_holder(self, exc_info):
+        return False
 
     def __repr__(self):
         return f"<Task Instance {self.instantiated_name}>"
@@ -127,3 +143,6 @@ class GracefulTask(Task):
         with self.photons_app.using_graceful_future() as graceful:
             kwargs["graceful_final_future"] = graceful
             super().run_loop(**kwargs)
+
+    def hide_exception_from_task_holder(self, exc_info):
+        return exc_info[0] is ApplicationStopped

@@ -220,6 +220,7 @@ class Runner:
             self.loop.close()
             del self.photons_app.loop
             del self.photons_app.final_future
+            del self.photons_app.graceful_final_future
 
         def cancel_all_tasks(self):
             if hasattr(asyncio.tasks, "all_tasks"):

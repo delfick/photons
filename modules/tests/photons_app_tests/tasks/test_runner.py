@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_app.errors import PhotonsAppError, ApplicationCancelled
+from photons_app.errors import PhotonsAppError, ApplicationCancelled, ApplicationStopped
+from photons_app.tasks.tasks import Task, GracefulTask
 from photons_app.collector import Collector
-from photons_app.tasks.tasks import Task
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
@@ -128,3 +128,68 @@ describe "Runner":
             T.create(collector).run_loop(collector=collector)
 
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
+
+    it "exceptions stop the task_holder unless ApplicationStopped for a graceful task", collector:
+
+        called = []
+
+        class TaskHolder:
+            def __init__(s, name):
+                s.name = name
+
+            async def __aenter__(s):
+                return s
+
+            async def __aexit__(s, exc_typ, exc, tb):
+                called.append(("task_holder_exit", s.name, getattr(exc_typ, "__name__", exc_typ)))
+
+        class T(Task):
+            @hp.memoized_property
+            def task_holder(s):
+                return TaskHolder(name="normal")
+
+            async def execute_task(s, name, exc, **kwargs):
+                called.append(("execute", name))
+                if exc is not None:
+                    raise exc
+
+        class G(GracefulTask):
+            @hp.memoized_property
+            def task_holder(s):
+                return TaskHolder(name="graceful")
+
+            async def execute_task(s, name, exc, **kwargs):
+                called.append(("graceful execute", name))
+                if exc is not None:
+                    raise exc
+
+        for t in (T, G):
+            with assertRaises(ApplicationCancelled):
+                t.create(collector).run_loop(name="cancelled", exc=ApplicationCancelled())
+
+            with assertRaises(ApplicationStopped):
+                t.create(collector).run_loop(name="stopped", exc=ApplicationStopped())
+
+            with assertRaises(ValueError):
+                t.create(collector).run_loop(name="error", exc=ValueError("nope"))
+
+            t.create(collector).run_loop(name="success", exc=None)
+
+        assert called == [
+            ("execute", "cancelled"),
+            ("task_holder_exit", "normal", "ApplicationCancelled"),
+            ("execute", "stopped"),
+            ("task_holder_exit", "normal", "ApplicationStopped"),
+            ("execute", "error"),
+            ("task_holder_exit", "normal", "ValueError"),
+            ("execute", "success"),
+            ("task_holder_exit", "normal", None),
+            ("graceful execute", "cancelled"),
+            ("task_holder_exit", "graceful", "ApplicationCancelled"),
+            ("graceful execute", "stopped"),
+            ("task_holder_exit", "graceful", None),
+            ("graceful execute", "error"),
+            ("task_holder_exit", "graceful", "ValueError"),
+            ("graceful execute", "success"),
+            ("task_holder_exit", "graceful", None),
+        ]
