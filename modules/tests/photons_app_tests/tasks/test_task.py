@@ -55,17 +55,18 @@ describe "Task":
         with mock.patch.multiple(task, post=post, execute_task=execute_task):
             assert (await task.run(a=a, c=b)) is d
             execute_task.assert_called_once_with(a=a, c=b)
-            post.assert_called_once_with(a=a, c=b)
+            post.assert_called_once_with((None, None, None), a=a, c=b)
 
             post.reset_mock()
             execute_task.reset_mock()
-            execute_task.side_effect = ValueError("HI")
+            error = ValueError("HI")
+            execute_task.side_effect = error
 
             with assertRaises(ValueError, "HI"):
                 await task.run(a=a, c=b)
 
             execute_task.assert_called_once_with(a=a, c=b)
-            post.assert_called_once_with(a=a, c=b)
+            post.assert_called_once_with((ValueError, error, mock.ANY), a=a, c=b)
 
     it "has a shortcut to run in a loop":
         got = []
@@ -140,7 +141,7 @@ describe "Task":
 
                     s.photons_app.loop.call_later(0.5, fut.cancel)
 
-                async def post(s, **kwargs):
+                async def post(s, exc_info, **kwargs):
                     got.append((time.time(), "post"))
                     await asyncio.sleep(1)
                     got.append((time.time(), "post sleep"))

@@ -3,6 +3,7 @@ from photons_app.tasks.runner import Runner
 from photons_app import helpers as hp
 
 from delfick_project.norms import dictobj, sb, Meta
+import sys
 
 
 class photons_app_spec(sb.Spec):
@@ -104,12 +105,13 @@ class Task(dictobj, metaclass=TaskMeta):
             try:
                 return await self.execute_task(**kwargs)
             finally:
-                await self.post(**kwargs)
+                exc_info = sys.exc_info()
+                await self.post(exc_info, **kwargs)
 
     async def execute_task(self, **kwargs):
         raise NotImplementedError()
 
-    async def post(self, **kwargs):
+    async def post(self, exc_info, **kwargs):
         pass
 
     def __repr__(self):
