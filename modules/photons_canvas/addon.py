@@ -77,8 +77,8 @@ class animate(task.Task):
 
         if self.reference in register.available_animations():
             ref = self.artifact
-            artifact = self.reference
-            reference = ref
+            self.artifact = self.reference
+            self.reference = ref
 
         extra = self.collector.photons_app.extra_as_json
         reference = self.collector.reference_object(self.reference)
@@ -96,7 +96,7 @@ class animate(task.Task):
 
         if specific_animation:
             background = sb.NotSpecified
-            layered = {"animations": [[artifact, background, options]], "animation_limit": 1}
+            layered = {"animations": [[self.artifact, background, options]], "animation_limit": 1}
             run_options = MergedOptions.using(layered, run_options).as_dict()
 
         def errors(e):
