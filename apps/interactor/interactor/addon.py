@@ -32,6 +32,8 @@ class interactor(task.GracefulTask):
         return self.collector.configuration["interactor"]
 
     async def execute_task(self, graceful_final_future, **kwargs):
+        logging.getLogger("tornado.access").disabled = True
+
         await task.fill_task(self.collector, "migrate").run(extra="upgrade head")
 
         async with self.target.session() as sender:
