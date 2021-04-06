@@ -7,10 +7,88 @@ from photons_control.device_finder import DeviceFinderDaemon, Finder
 
 from whirlwind.commander import Commander
 from whirlwind.server import Server
+import tornado.web
 import logging
 import time
+import uuid
 
 log = logging.getLogger("interactor.server")
+
+REQUEST_IDENTIFIER_HEADER = "X-Request-ID"
+
+
+class Commander(Commander):
+    def peek_valid_request(self, meta, command, path, body):
+        request = meta.everything["request_handler"].request
+
+        if isinstance(body, dict) and "command" in body:
+            request.__whirlwind_commander_command__ = body["command"]
+
+            if body["command"] == "status":
+                return
+
+        command = getattr(request, "__whirlwind_commander_command__", None)
+        remote_ip = request.remote_ip
+        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+
+        log.info(
+            hp.lc(
+                "Command",
+                method=request.method,
+                path=path,
+                command=command,
+                body=body,
+                remote_ip=remote_ip,
+                request_identifier=identifier,
+            )
+        )
+
+
+class WithRequestTracing:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, request):
+        request.__interactor_request_start__ = time.time()
+        if REQUEST_IDENTIFIER_HEADER not in request.headers:
+            request.headers[REQUEST_IDENTIFIER_HEADER] = str(uuid.uuid4())
+        return self.app(request)
+
+
+class OutputRequestID(tornado.web.OutputTransform):
+    def __init__(self, request):
+        self.request = request
+        self.identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+        super().__init__(request)
+
+    def transform_first_chunk(self, status_code, headers, chunk, finishing):
+        headers[REQUEST_IDENTIFIER_HEADER] = self.identifier
+
+        request = self.request
+        took = time.time() - request.__interactor_request_start__
+        command = getattr(request, "__whirlwind_commander_command__", None)
+        remote_ip = request.remote_ip
+        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+
+        if command != "status":
+            method = "error"
+            if status_code < 400:
+                method = "info"
+
+            getattr(log, method)(
+                hp.lc(
+                    "Response",
+                    method=request.method,
+                    path=request.path,
+                    status=status_code,
+                    command=command,
+                    remote_ip=remote_ip,
+                    took_seconds=round(took, 2),
+                    request_identifier=identifier,
+                )
+            )
+
+        return super().transform_first_chunk(status_code, headers, chunk, finishing)
 
 
 class Server(Server):
@@ -27,6 +105,11 @@ class Server(Server):
 
     async def wait_for_end(self):
         await hp.wait_for_all_futures(self.server_end_future, name="Server::wait_for_end")
+
+    def make_application(self, *args, **kwargs):
+        app = super().make_application(*args, **kwargs)
+        app.add_transform(OutputRequestID)
+        return WithRequestTracing(app)
 
     def tornado_routes(self):
         return [

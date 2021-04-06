@@ -8,6 +8,8 @@ from bitarray import bitarray
 import binascii
 import logging
 
+log = logging.getLogger("interactor.request_handlers")
+
 
 class ProgressMessageMaker(ProgressMessageMaker):
     def do_log(self, body, message, info, **kwargs):
@@ -34,19 +36,45 @@ class MessageFromExc(MessageFromExc):
         return super().process(exc_type, exc, tb)
 
 
-class CommandHandler(CommandHandler):
+class BetterLogMessages:
+    @hp.memoized_property
+    def lc(self):
+        from interactor.server import REQUEST_IDENTIFIER_HEADER
+
+        return hp.lc.using(request_id=self.request.headers[REQUEST_IDENTIFIER_HEADER])
+
+    def see_returned_exception(self, exc_typ, exc, tb):
+        log.error(self.lc("Error during request", error=exc), exc_info=(exc_typ, exc, tb))
+
+    def log_json_error(self, body, error):
+        log.error(self.lc("Failed to parse json", error=error, body=body))
+
+    def handle_message_done_error(self, error, msg, final, message_key, exc_info):
+        log.error(
+            self.lc("Failed to finish request", error=error),
+            exc_info=(type(error), error, error.__traceback__),
+        )
+
+    def handle_request_done_exception(self, error):
+        log.error(
+            self.lc("Error handling request", error=error),
+            exc_info=(type(error), error, error.__traceback__),
+        )
+
+
+class CommandHandler(BetterLogMessages, CommandHandler):
     progress_maker = ProgressMessageMaker
 
     def initialize(self, *args, **kwargs):
         super().initialize(*args, **kwargs)
         self.reprer = better_reprer
-        self.message_from_exc = MessageFromExc()
+        self.message_from_exc = MessageFromExc(see_exception=self.see_returned_exception)
 
 
-class WSHandler(WSHandler):
+class WSHandler(BetterLogMessages, WSHandler):
     progress_maker = ProgressMessageMaker
 
     def initialize(self, *args, **kwargs):
         super().initialize(*args, **kwargs)
         self.reprer = better_reprer
-        self.message_from_exc = MessageFromExc()
+        self.message_from_exc = MessageFromExc(see_exception=self.see_returned_exception)
