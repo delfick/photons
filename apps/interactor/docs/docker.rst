@@ -7,8 +7,12 @@ With many thanks to `@Djelibeybi <https://github.com/Djelibeybi>`_, a docker
 image is available to run the interactor, which will work on many architectures
 including a Raspberry Pi.
 
-.. note:: It's not possible to discover devices on the network from a Mac OSX
-    so the docker container only works from linux.
+.. note:: It's not possible to discover devices on the network from a container
+    running under Docker Desktop for macOS or Windows as multicasting is not
+    supported. However, if you configure :ref:`hardcoded discovery <discovery>`,
+    the rest of Interactor's functionality will work. You also need to replace
+    ``--net=host`` with ``-p 6100:6100`` to allow inbound connections to the
+    Interactor RESTful API.
 
 The following may be used::
 
@@ -17,7 +21,7 @@ The following may be used::
         --restart=always \
         --net=host \
         -e TZ=Australia/Melbourne \
-        -v $PWD/configdir:/project/config \
+        -v "${PWD}/configdir":/project/config \
         delfick/lifx-photons-interactor:0.8.4
 
 Replace ``Australia/Melbourne`` with the appropriate
