@@ -43,6 +43,7 @@ class Commander(Commander):
             hp.lc(
                 "Command",
                 method=request.method,
+                uri=request.uri,
                 path=path,
                 command=command,
                 matcher=matcher,
@@ -87,7 +88,7 @@ class OutputRequestID(tornado.web.OutputTransform):
                 hp.lc(
                     "Response",
                     method=request.method,
-                    path=request.path,
+                    uri=request.uri,
                     status=status_code,
                     command=command,
                     remote_ip=remote_ip,
