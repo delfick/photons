@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-40-2:
+
+0.40.2 - 15 April 2021
+    * Small fix to the arguments to the animate task
+
 .. _release-core-0-40-1:
 
 0.40.1 - 5 April 2021

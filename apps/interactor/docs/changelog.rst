@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-8-5:
+
+0.8.5 - 15 April 2021
+    * Improved logging
+
 .. _release-interactor-0-8-4:
 
 0.8.4 - 28 March 2021
