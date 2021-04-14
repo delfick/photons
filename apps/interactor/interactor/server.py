@@ -31,13 +31,21 @@ class Commander(Commander):
         remote_ip = request.remote_ip
         identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
 
+        matcher = None
+        if (
+            isinstance(body, dict)
+            and isinstance(body.get("args"), dict)
+            and "matcher" in body["args"]
+        ):
+            matcher = body["args"]["matcher"]
+
         log.info(
             hp.lc(
                 "Command",
                 method=request.method,
                 path=path,
                 command=command,
-                body=body,
+                matcher=matcher,
                 remote_ip=remote_ip,
                 request_identifier=identifier,
             )
