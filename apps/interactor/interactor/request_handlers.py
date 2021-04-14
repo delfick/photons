@@ -44,18 +44,30 @@ class BetterLogMessages:
         return hp.lc.using(request_id=self.request.headers[REQUEST_IDENTIFIER_HEADER])
 
     def see_returned_exception(self, exc_typ, exc, tb):
+        if exc is None:
+            return
+
         log.error(self.lc("Error during request", error=exc), exc_info=(exc_typ, exc, tb))
 
     def log_json_error(self, body, error):
+        if error is None:
+            return
+
         log.error(self.lc("Failed to parse json", error=error, body=body))
 
     def handle_message_done_error(self, error, msg, final, message_key, exc_info):
+        if error is None:
+            return
+
         log.error(
             self.lc("Failed to finish request", error=error),
             exc_info=(type(error), error, error.__traceback__),
         )
 
     def handle_request_done_exception(self, error):
+        if error is None:
+            return
+
         log.error(
             self.lc("Error handling request", error=error),
             exc_info=(type(error), error, error.__traceback__),
