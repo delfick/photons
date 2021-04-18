@@ -19,6 +19,7 @@ setup(
       , "alembic==1.3.2"
       , "whirlwind-web==0.12.0"
       , "aiohttp==3.7.4"
+      , "astral==2.2"
       ]
 
     , entry_points =
