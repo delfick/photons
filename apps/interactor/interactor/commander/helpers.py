@@ -8,6 +8,7 @@ from photons_messages import protocol_register
 
 from delfick_project.norms import dictobj, Meta
 from textwrap import dedent
+import asyncio
 
 
 def find_packet(pkt_type):
@@ -192,6 +193,7 @@ class memoized_iterable:
             self.instance = instance
 
             self.gen = False
+            self.lock = asyncio.Lock()
             self.results = []
 
         def __aiter__(self):
@@ -218,28 +220,29 @@ class memoized_iterable:
             return results
 
         async def stream(self):
-            if self.gen is False:
-                self.gen = self.func(self.instance)
+            async with self.lock:
+                if self.gen is False:
+                    self.gen = self.func(self.instance)
 
-            for result in self.results:
-                yield result
-
-            if self.gen is None:
-                return
-
-            while True:
-                try:
-                    result = await self.gen.asend(None)
-                except StopAsyncIteration:
-                    self.gen = None
-                    break
-                except Exception:
-                    self.gen = False
-                    self.results = []
-                    raise
-                else:
-                    self.results.append(result)
+                for result in self.results:
                     yield result
+
+                if self.gen is None:
+                    return
+
+                while True:
+                    try:
+                        result = await self.gen.asend(None)
+                    except StopAsyncIteration:
+                        self.gen = None
+                        break
+                    except Exception:
+                        self.gen = False
+                        self.results = []
+                        raise
+                    else:
+                        self.results.append(result)
+                        yield result
 
     def __init__(self, func):
         self.func = func
