@@ -29,8 +29,8 @@ class location_spec(sb.Spec):
                 name=sb.required(sb.string_spec()),
                 region=sb.required(sb.string_spec()),
                 timezone=sb.required(sb.string_spec()),
-                latitude=sb.required(sb.integer_spec()),
-                longitude=sb.required(sb.integer_spec()),
+                latitude=sb.required(sb.float_spec()),
+                longitude=sb.required(sb.float_spec()),
             ).normalise(meta, val)
 
             info = LocationInfo(
