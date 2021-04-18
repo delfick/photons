@@ -31,7 +31,7 @@ class database_uri_spec(sb.Spec):
 
 
 class Database(dictobj.Spec):
-    uri = dictobj.Field(database_uri_spec(), formatted=True, help="Uri to our database")
+    uri = dictobj.Field(format_into=database_uri_spec(), help="Uri to our database")
 
     db_migrations = dictobj.Field(
         sb.overridden(os.path.join("{interactor:resource}", "database", "migrations")),
