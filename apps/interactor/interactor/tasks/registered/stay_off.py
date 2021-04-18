@@ -40,7 +40,7 @@ class Options(DeviceTask):
         return status
 
 
-async def run(final_future, options):
+async def run(final_future, options, progress):
     async def action(reference, sender, **kwargs):
         if datetime.now() in options.lights_off_range:
             yield LightMessages.SetLightPower(level=0, duration=options.duration)

@@ -12,10 +12,11 @@ def register(tasks):
     tasks.register("circadian", Options, run)
 
 
-async def run(final_future, options):
+async def run(final_future, options, progress):
     async def action(reference, sender, **kwargs):
         now = datetime.now()
         if int(now.strftime("%w")) not in options.days:
+            progress("Skipping day", now=now.strftime("%w"), only_for=options.days)
             return
 
         serials = []
@@ -23,6 +24,12 @@ async def run(final_future, options):
             if pkt | LightMessages.LightState:
                 if pkt.saturation < options.break_saturation_threshold:
                     serials.append(pkt.serial)
+                else:
+                    progress(
+                        "Skipping device with too much saturation",
+                        serial=pkt.serial,
+                        saturation=pkt.saturation,
+                    )
 
         if not serials:
             return
@@ -34,6 +41,7 @@ async def run(final_future, options):
             min_brightness=options.min_brightness,
             max_brightness=options.max_brightness,
         )
+        progress("Will modify devices", serials=serials, brightness=bright, kelvin=kelv)
 
         async def apply_change(reference, sender, **kwargs):
             level = 0

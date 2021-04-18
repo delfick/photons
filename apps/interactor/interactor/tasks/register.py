@@ -8,8 +8,12 @@ from photons_control.script import FromGenerator, Repeater
 
 from delfick_project.option_merge import MergedOptions
 from delfick_project.norms import dictobj, sb, Meta
+from collections import defaultdict
+from functools import partial
+from datetime import datetime
 import asyncio
 import logging
+import uuid
 
 
 log = logging.getLogger("interactor.tasks.register")
@@ -88,6 +92,7 @@ class TaskRegister(hp.AsyncCMMixin):
         self.final_future = final_future
 
         self.types = {}
+        self.listeners = defaultdict(dict)
         self.registered = {}
 
     class Config(dictobj.Spec):
@@ -113,9 +118,9 @@ class TaskRegister(hp.AsyncCMMixin):
 
     async def finish(self, exc_typ=None, exc=None, tb=None):
         for name in list(self.registered):
-            self.remove(name)
+            await self.remove(name)
 
-    def add(self, meta, name, typ, options):
+    async def add(self, meta, name, typ, options):
         if name in self.registered:
             raise AlreadyCreatedTask(task=name, running=sorted(self.registered))
 
@@ -132,16 +137,21 @@ class TaskRegister(hp.AsyncCMMixin):
         final_future = hp.ChildOfFuture(
             self.final_future, name=f"TaskRegistered::create[{name}.final_future]"
         )
+
         log.info(hp.lc("Starting task", name=name, type=typ))
-        task = self.task_holder.add(run(final_future, options))
+        task = self.task_holder.add(run(final_future, options, partial(self.progress, name)))
+        task.add_done_callback(partial(self.remove_task_on_done, name))
         self.registered[name] = (task, final_future, options)
 
-    def remove(self, name):
+    def remove_task_on_done(self, name, res=None):
+        if name in self.registered:
+            del self.registered[name]
+
+    async def remove(self, name):
         if name in self.registered:
             task, final_future, _ = self.registered[name]
             final_future.cancel()
             task.cancel()
-            del self.registered[name]
 
     def pause(self, name):
         if name in self.registered:
@@ -154,3 +164,21 @@ class TaskRegister(hp.AsyncCMMixin):
             options = self.registered[name][2]
             if hasattr(options, "paused"):
                 options.paused.clear()
+
+    def progress(self, name, msg, **kwargs):
+        for progress, silent in self.listeners[name].values():
+            if "do_log" not in kwargs:
+                kwargs["do_log"] = not silent
+            if "timestamp" not in kwargs:
+                kwargs["timestamp"] = datetime.now().isoformat()
+            progress(msg, **kwargs)
+
+    @hp.asynccontextmanager
+    async def listener_for(self, name, progress_cb, silent=True):
+        identity = uuid.uuid1().hex
+        try:
+            self.listeners[name][identity] = (progress_cb, silent)
+            yield
+        finally:
+            if identity in self.listeners[name]:
+                del self.listeners[name][identity]

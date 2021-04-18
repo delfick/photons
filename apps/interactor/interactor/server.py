@@ -193,17 +193,17 @@ class Server(Server):
         self.task_register = TaskRegister(self.final_future, self.tasks, self.commander.meta)
         self.task_register._merged_options_formattable = True
 
-        self.cleaners.append(self.task_register.finish)
         await self.task_register.start()
 
         for register in registerers:
             register(self.task_register)
 
         if self.add_registered_tasks is not None:
-            self.add_registered_tasks(self.commander.meta, self.task_register)
+            await self.add_registered_tasks(self.commander.meta, self.task_register)
 
     async def cleanup(self):
         self.tasks.add(self.animations.stop())
         await hp.wait_for_all_futures(
             *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
         )
+        await self.task_register.finish()
