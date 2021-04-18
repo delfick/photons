@@ -6,6 +6,7 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
 
 from delfick_project.addons import addon_hook
+from delfick_project.norms import Meta
 import aiohttp
 import logging
 
@@ -36,6 +37,14 @@ class interactor(task.GracefulTask):
 
         await task.fill_task(self.collector, "migrate").run(extra="upgrade head")
 
+        def add_registered_tasks(meta, task_register):
+            for name, t in self.options.tasks.items():
+                if not t.skip:
+                    meta = (
+                        Meta(self.collector.configuration, []).at("interactor").at("tasks").at(name)
+                    )
+                    task_register.add(meta, name, t.type, t.options)
+
         async with self.target.session() as sender:
             await Server(
                 self.photons_app.final_future, server_end_future=graceful_final_future
@@ -45,6 +54,7 @@ class interactor(task.GracefulTask):
                 self.options,
                 tasks=self.task_holder,
                 sender=sender,
+                add_registered_tasks=add_registered_tasks,
                 cleaners=self.photons_app.cleaners,
                 animation_options=self.collector.configuration.get("animation_options", {}),
             )

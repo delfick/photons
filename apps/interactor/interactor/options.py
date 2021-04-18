@@ -1,3 +1,5 @@
+from interactor.tasks.register import TaskRegister
+
 from photons_app.formatter import MergedOptionStringFormatter
 
 from delfick_project.norms import dictobj, sb
@@ -30,4 +32,14 @@ class Options(dictobj.Spec):
             formatter=MergedOptionStringFormatter
         ),
         help="Database options",
+    )
+
+    tasks = dictobj.Field(
+        sb.dictof(
+            sb.string_spec(),
+            TaskRegister.Config.FieldSpec(formatter=MergedOptionStringFormatter),
+        ),
+        help="""
+    A dictionary of {name: task} where each task is a dictionary of type and options
+    """,
     )

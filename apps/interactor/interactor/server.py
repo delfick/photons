@@ -1,4 +1,5 @@
 from interactor.request_handlers import CommandHandler, WSHandler
+from interactor.tasks.register import TaskRegister, registerers
 from interactor.commander.animations import Animations
 
 from photons_app import helpers as hp
@@ -135,11 +136,22 @@ class Server(Server):
             ),
         ]
 
-    async def setup(self, server_options, *, tasks, sender, cleaners, animation_options=None):
+    async def setup(
+        self,
+        server_options,
+        *,
+        tasks,
+        sender,
+        cleaners,
+        animation_options=None,
+        add_registered_tasks=None
+    ):
         self.sender = sender
         self.cleaners = cleaners
         self.server_options = server_options
+
         self.animation_options = animation_options
+        self.add_registered_tasks = add_registered_tasks
 
         self.tasks = tasks
         self.tasks._merged_options_formattable = True
@@ -173,6 +185,22 @@ class Server(Server):
             final_future=self.final_future,
             server_options=self.server_options,
         )
+
+        await self.make_tasks()
+        self.commander.meta.everything["task_register"] = self.task_register
+
+    async def make_tasks(self):
+        self.task_register = TaskRegister(self.final_future, self.tasks, self.commander.meta)
+        self.task_register._merged_options_formattable = True
+
+        self.cleaners.append(self.task_register.finish)
+        await self.task_register.start()
+
+        for register in registerers:
+            register(self.task_register)
+
+        if self.add_registered_tasks is not None:
+            self.add_registered_tasks(self.commander.meta, self.task_register)
 
     async def cleanup(self):
         self.tasks.add(self.animations.stop())

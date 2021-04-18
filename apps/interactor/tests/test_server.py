@@ -7,6 +7,7 @@ from photons_app import helpers as hp
 
 from photons_control.device_finder import Finder, DeviceFinderDaemon
 
+from delfick_project.norms import Meta
 from unittest import mock
 import pytest
 
@@ -31,7 +32,7 @@ def V():
     class V:
         afr = mock.Mock(name="afr")
         db_queue = mock.Mock(name="db_queue", finish=pytest.helpers.AsyncMock(name="finish"))
-        commander = mock.Mock(name="commander")
+        commander = mock.Mock(name="commander", meta=Meta({}, []))
 
         @hp.memoized_property
         def lan_target(s):
