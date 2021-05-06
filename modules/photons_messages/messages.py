@@ -116,6 +116,8 @@ class DeviceMessages(Messages):
         , ("downtime", fields.nano_to_seconds)
         )
 
+    SetReboot = msg(38)
+
     GetLocation = msg(48)
 
     SetLocation = msg(49

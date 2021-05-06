@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-40-1:
+
+0.40.3 - TBD
+    * Adding SetReboot
+
 .. _release-core-0-40-2:
 
 0.40.2 - 15 April 2021
