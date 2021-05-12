@@ -25,6 +25,9 @@ class Circadian:
 
         Heavily based on
         https://github.com/claytonjn/hass-circadian_lighting/blob/ff4854e7b72db62252b10a773163588299e06cdc/custom_components/circadian_lighting/__init__.py
+
+        and
+        https://github.com/basnijholt/adaptive-lighting/blob/master/custom_components/adaptive_lighting/switch.py
         """
         yesterday = now - timedelta(days=1)
         tomorrow = now + timedelta(days=1)
@@ -55,35 +58,47 @@ class Circadian:
                 # Solar midnight is before sunrise so use tomorrow's time
                 solar_midnight = tomorrow_solar_midnight
 
-        if now > sunrise and now < sunset:
-            h = solar_noon
-            k = 100
-            if now < solar_noon:
-                x = sunrise
-            else:
-                x = sunset
-            y = 0
+        sunrise_or_sunset_next = False
+        if now > sunrise and now < sunset and now > solar_noon:
+            sunrise_or_sunset_next = True
+        elif now > solar_midnight and now < sunrise:
+            sunrise_or_sunset_next = True
 
+        if now > sunrise:
+            prev_ts = sunrise
+        elif now > solar_noon:
+            prev_ts = solar_noon
+        elif now > sunset:
+            prev_ts = sunset
         else:
-            h = solar_midnight
-            k = -100
-            if now < solar_midnight:
-                x = sunset
-            else:
-                x = sunrise
-            y = 0
+            prev_ts = solar_midnight
 
-        a = (y - k) / (h - x) ** 2
-        percent = a * (now - h) ** 2 + k
+        if now > sunset and now < solar_midnight:
+            next_ts = solar_midnight
+        elif now > solar_noon:
+            next_ts = sunset
+        elif now > sunrise:
+            next_ts = solar_noon
+        else:
+            next_ts = sunrise
 
-        brightness = percent / 100
+        if sunrise_or_sunset_next:
+            k = 1
+            h, x = prev_ts, next_ts
+        else:
+            k = -1
+            h, x = next_ts, prev_ts
+
+        percent = (0 - k) * ((now - h) / (h - x)) ** 2 + k
+
+        brightness = percent
         if brightness < min_brightness:
             brightness = min_brightness
         elif brightness > max_brightness:
             brightness = max_brightness
 
         if percent > 0:
-            kelvin = ((max_kelvin - min_kelvin) * (percent / 100)) + min_kelvin
+            kelvin = ((max_kelvin - min_kelvin) * percent) + min_kelvin
         else:
             kelvin = min_kelvin
 
