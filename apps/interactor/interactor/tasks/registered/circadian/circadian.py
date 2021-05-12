@@ -87,4 +87,9 @@ class Circadian:
         else:
             kelvin = min_kelvin
 
+        if kelvin > max_kelvin:
+            kelvin = max_kelvin
+        elif kelvin < min_kelvin:
+            kelvin = min_kelvin
+
         return brightness, int(kelvin)
