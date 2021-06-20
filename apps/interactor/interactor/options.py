@@ -35,11 +35,6 @@ class Options(dictobj.Spec):
     )
 
     tasks = dictobj.Field(
-        sb.dictof(
-            sb.string_spec(),
-            TaskRegister.Config.FieldSpec(formatter=MergedOptionStringFormatter),
-        ),
-        help="""
-    A dictionary of {name: task} where each task is a dictionary of type and options
-    """,
+        TaskRegister.Config.FieldSpec(formatter=MergedOptionStringFormatter),
+        help="""Options for any preset tasks""",
     )

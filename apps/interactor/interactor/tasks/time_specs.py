@@ -1,6 +1,12 @@
+from photons_app.errors import PhotonsAppError
+
 from delfick_project.norms import BadSpecValue, sb
 from datetime import datetime
 import re
+
+
+class UnexpectedUnits(PhotonsAppError):
+    pass
 
 
 class time_spec(sb.Spec):
@@ -53,3 +59,69 @@ class TimeRange:
             diff += 24 * 60
 
         return diff <= self.diff
+
+
+class Duration:
+    def __init__(self, seconds, *, raw):
+        self.raw = raw
+        self.seconds = seconds
+
+
+class duration_spec(sb.Spec):
+    def __init__(self, *, units_from_meta):
+        self.units_from_meta = units_from_meta
+
+    def normalise(self, meta, val):
+        if isinstance(val, (int, float)):
+            return Duration(val, raw=val)
+        elif isinstance(val, str):
+            raise BadSpecValue(
+                "Sorry, I couldn't find a python module that could parse natural language durations!",
+                wanted=val,
+                meta=meta,
+            )
+        elif isinstance(val, dict):
+            units = {}
+            if self.units_from_meta:
+                units.update(meta.everything.units)
+
+            expected = ["seconds", "minutes", "hours", "days"]
+            for unit in units:
+                expected.append(f"unit_{unit}")
+
+            unexpected = set(val) - set(expected)
+            if unexpected:
+                if self.units_from_meta:
+                    raise UnexpectedUnits(
+                        "Can only specify known units and at this stage custom units are unavailable",
+                        available=expected,
+                        missing=sorted(unexpected),
+                    )
+                else:
+                    raise UnexpectedUnits(
+                        "Can only specify known units",
+                        available=expected,
+                        missing=sorted(unexpected),
+                    )
+
+            final = 0
+            for name, amount in val.items():
+                if name == "seconds":
+                    final += amount
+                elif name == "minutes":
+                    final += amount * 60
+                elif name == "hours":
+                    final += amount * 3600
+                elif name == "days":
+                    final += amount * 3600 * 24
+                elif name.startswith("unit_"):
+                    name = name[len("unit_") :]
+                    final += units[name].seconds()
+
+            return Duration(final, raw=(val, units))
+        else:
+            raise BadSpecValue(
+                "Duration must be seconds as a number, or english phrase as a string, or dictionary of unit to amount",
+                got=val,
+                meta=meta,
+            )

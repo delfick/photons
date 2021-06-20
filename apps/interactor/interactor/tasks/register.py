@@ -1,4 +1,6 @@
 from interactor.commander.command import DeviceChangeMixin
+from interactor.tasks.location import NaturalLightPresets
+from interactor.tasks.time_specs import duration_spec
 
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import PhotonsAppError
@@ -30,6 +32,10 @@ class pauser_spec(sb.Spec):
     def normalise(self, meta, val):
         event = asyncio.Event()
         if val is True:
+            event.set()
+        elif val is False:
+            pass
+        elif meta.everything["default_paused"] is True:
             event.set()
         return event
 
@@ -96,9 +102,15 @@ class TaskRegister(hp.AsyncCMMixin):
         self.registered = {}
 
     class Config(dictobj.Spec):
-        type = dictobj.Field(sb.string_spec, wrapper=sb.required)
-        skip = dictobj.Field(sb.boolean, default=False)
-        options = dictobj.Field(sb.dictionary_spec)
+        class TaskConfig(dictobj.Spec):
+            type = dictobj.Field(sb.string_spec, wrapper=sb.required)
+            skip = dictobj.Field(sb.boolean, default=False)
+            units = dictobj.Field(sb.dictof(sb.string_spec(), duration_spec(units_from_meta=False)))
+            paused = dictobj.Field(sb.boolean, default=False)
+            options = dictobj.Field(sb.dictionary_spec)
+
+        natural_light = dictobj.Field(NaturalLightPresets.spec())
+        presets = dictobj.Field(sb.dictof(sb.string_spec(), TaskConfig.FieldSpec()))
 
     def register(self, typ, options_kls, run):
         self.types[typ] = (options_kls, run)
@@ -120,25 +132,32 @@ class TaskRegister(hp.AsyncCMMixin):
         for name in list(self.registered):
             await self.remove(name)
 
-    async def add(self, meta, name, typ, options):
+    async def add(self, meta, name, config):
         if name in self.registered:
             raise AlreadyCreatedTask(task=name, running=sorted(self.registered))
 
-        if typ not in self.types:
-            raise NoSuchType(task=name, wanted=typ, available=sorted(self.types))
+        if config.type not in self.types:
+            raise NoSuchType(task=name, wanted=config.type, available=sorted(self.types))
 
-        meta = Meta(MergedOptions.using(meta.everything, self.meta.everything), meta.path)
+        meta = Meta(
+            MergedOptions.using(
+                meta.everything,
+                self.meta.everything,
+                {"default_paused": config.paused, "units": config.units},
+            ),
+            meta.path,
+        )
 
-        options_kls, run = self.types[typ]
+        options_kls, run = self.types[config.type]
         options = options_kls.FieldSpec(formatter=MergedOptionStringFormatter).normalise(
-            meta, options
+            meta, config.options
         )
 
         final_future = hp.ChildOfFuture(
             self.final_future, name=f"TaskRegistered::create[{name}.final_future]"
         )
 
-        log.info(hp.lc("Starting task", name=name, type=typ))
+        log.info(hp.lc("Starting task", name=name, type=config.type))
         task = self.task_holder.add(run(final_future, options, partial(self.progress, name)))
         task.add_done_callback(partial(self.remove_task_on_done, name))
         self.registered[name] = (task, final_future, options)
