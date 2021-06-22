@@ -3,7 +3,7 @@
 ChangeLog
 =========
 
-.. _release-core-0-40-1:
+.. _release-core-0-40-3:
 
 0.40.3 - TBD
     * Adding SetReboot

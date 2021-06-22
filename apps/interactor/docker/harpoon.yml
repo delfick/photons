@@ -30,3 +30,11 @@ images:
       - ENV INTERACTOR_HOST 0.0.0.0
       - HEALTHCHECK CMD lifx interactor_healthcheck --silent || exit 1
       - CMD ["lifx", "lan:interactor"]
+
+  lifx-photons-interactor-homeassistant:
+    context: false
+
+    commands:
+      - [FROM, "{images.lifx-photons-interactor}"]
+      - WORKDIR /data
+      - LABEL io.hass.version="0.8.5" io.hass.type="addon" io.hass.arch="aarch64|amd64|armhf|armv7|i386"
