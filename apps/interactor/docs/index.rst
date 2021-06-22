@@ -22,6 +22,9 @@ target.
 There is also a :ref:`Docker image <interactor_docker>` that can be used to
 start the server.
 
+And also you can load using :ref:`Home Assistant <interactor_homeassistant>` to
+run Photons interactor.
+
 The server currently supports:
 
 * Getting help information about commands it supports
@@ -102,4 +105,5 @@ does not exist on a more powerful computer.
 
     options.rst
     docker.rst
+    homeassistant.rst
     changelog.rst
