@@ -147,6 +147,22 @@ class SetCommand(store.Command, DeviceChangeMixin):
 
 @store.command(name="apply_theme")
 class ApplyThemeCommand(store.Command, DeviceChangeMixin):
+    """
+    Apply a selection of colours to your devices
+
+    All ``theme_options`` are optional and include:
+
+    colors - A list of colours
+        Colors may be words like "red", "blue", etc. Or may be [h, s, b, k] arrays
+        where each part is optional.
+
+    duration - a float
+        How long in seconds to take to apply the theme
+
+    overrides - dictionary of hue, saturation, brightness and kelvin
+        This will override all colours used when applying the theme
+    """
+
     theme_options = dictobj.Field(
         sb.dictionary_spec, help="Any options to give to applying a theme"
     )
