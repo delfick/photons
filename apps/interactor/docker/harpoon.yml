@@ -35,6 +35,6 @@ images:
     context: false
 
     commands:
-      - [FROM, "{images.lifx-photons-interactor}"]
+      - [FROM, "delfick/lifx-photons-interactor:{VERSION:from_env}"]
       - WORKDIR /data
       - LABEL io.hass.version="0.8.5" io.hass.type="addon" io.hass.arch="aarch64|amd64|armhf|armv7|i386"
