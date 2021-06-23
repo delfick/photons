@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-8-6:
+
+0.8.6 - 23 June 2021
+    * Add help message for apply_theme option
+    * Upgrade photons-core
+
 .. _release-interactor-0-8-5:
 
 0.8.5 - 15 April 2021
