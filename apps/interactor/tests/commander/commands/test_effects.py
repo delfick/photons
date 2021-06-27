@@ -322,7 +322,6 @@ def effects_stopped_status():
         }
     }
 
-
 @pytest.fixture()
 def success_result():
     return {
@@ -486,6 +485,60 @@ describe "Effect commands":
             {"command": "effects/status"},
             json_output=results.effects_stopped,
         )
+
+    async it "can start linear effects and power on", fake, server, results:
+        for device in fake.devices:
+            device.attrs.power = 0
+
+        await server.assertCommand(
+            "/v1/lifx/command",
+            {"command": "effects/run", "args": {"linear_animation": "MOVE", "linear_options": { "power_on": True }}},
+            json_output=results.success
+        )
+
+        for device in fake.devices:
+            if device.serial in ("d073d5000005", "d073d5000006"):
+                assert device.attrs.power == 65535
+
+    async it "can start matrix effects and power on", fake, server, results:
+        for device in fake.devices:
+            device.attrs.power = 0
+
+        await server.assertCommand(
+            "/v1/lifx/command",
+            {"command": "effects/run", "args": {"matrix_animation": "FLAME", "matrix_options": { "power_on": True }}},
+            json_output=results.success
+        )
+
+        for device in fake.devices:
+            if device.serial in ("d073d5000007", "d073d5000008"):
+                assert device.attrs.power == 65535
+
+    async it "can start matrix and linear effects without powering on", fake, server, results:
+        for device in fake.devices:
+            device.attrs.power = 0
+
+        await server.assertCommand(
+            "/v1/lifx/command",
+            {"command": "effects/run", "args": {"matrix_animation": "FLAME", "matrix_options": { "power_on": False }, "linear_animation": "MOVE", "linear_options": { "power_on": False }}},
+            json_output=results.success
+        )
+
+        for device in fake.devices:
+            assert device.attrs.power == 0
+
+    async it "can stop matrix and linear effects without powering on", fake, server, results:
+        for device in fake.devices:
+            device.attrs.power = 0
+
+        await server.assertCommand(
+            "/v1/lifx/command",
+            {"command": "effects/stop", "args": {"stop_matrix": True, "matrix_options": { "power_on": False }, "stop_linear": True, "linear_options": { "power_on": False }}},
+            json_output=results.success
+        )
+
+        for device in fake.devices:
+            assert device.attrs.power == 0
 
     async it "works if devices are offline", fake, server, results, sender:
         offline1 = fake.for_serial("d073d5000001").offline()
