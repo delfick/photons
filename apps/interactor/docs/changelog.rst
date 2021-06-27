@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-8-7:
+
+0.8.7 - 27 June 2021
+    * Added ``matrix_options` and ``linear_options`` to the ``effects/stop``
+      command with many thanks to @Djelibeybi
+
 .. _release-interactor-0-8-6:
 
 0.8.6 - 23 June 2021
