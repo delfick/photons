@@ -91,8 +91,23 @@ class StopEffectCommand(EffectCommand):
     stop_matrix = dictobj.Field(
         sb.boolean, default=True, help="Whether to stop any matrix animations"
     )
+
+    matrix_options = dictobj.Field(
+        sb.dictionary_spec,
+        help="""
+                Any options to give when stopping to the matrix animation. For example power_on
+            """,
+    )
+
     stop_linear = dictobj.Field(
         sb.boolean, default=True, help="Whether to stop any linear animations"
+    )
+
+    linear_options = dictobj.Field(
+        sb.dictionary_spec,
+        help="""
+                Any options to give when stopping the linear animation. For example power_on
+            """,
     )
 
     async def execute(self):
@@ -101,10 +116,10 @@ class StopEffectCommand(EffectCommand):
                 yield self.theme_msg()
 
             if self.stop_matrix:
-                yield SetTileEffect(TileEffectType.OFF, palette=[])
+                yield SetTileEffect(TileEffectType.OFF, palette=[], **self.matrix_options)
 
             if self.stop_linear:
-                yield SetZonesEffect(MultiZoneEffectType.OFF)
+                yield SetZonesEffect(MultiZoneEffectType.OFF, **self.linear_options)
 
         return await self.send(FromGeneratorPerSerial(gen), add_replies=False)
 
