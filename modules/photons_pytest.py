@@ -681,28 +681,47 @@ def pytest_configure(config):
 
     @pytest.helpers.register
     def print_packet_difference(one, two, ignore_unspecified_expected=True):
+        from photons_protocol.packets import reprer
+
         different = False
         if one != two:
-            print("\tGOT : {0}".format(one.payload.__class__))
-            print("\tWANT: {0}".format(two.payload.__class__))
-            if one.payload.__class__ == two.payload.__class__:
-                dictc = dict(one)
-                dictw = dict(two)
+            print(f"  GOT : {one.__class__}")
+            print(f"  WANT: {two.__class__}")
+            if one.__class__ == two.__class__:
+
+                dictc = json.loads(json.dumps(dict(one), default=reprer))
+                dictw = json.loads(json.dumps(dict(two), default=reprer))
                 for k, v in dictc.items():
                     if k not in dictw:
-                        print("\t\tGot key not in wanted: {0}".format(k))
+                        print(f"    Got key not in wanted: {k}")
                         different = True
                     elif dictw[k] is sb.NotSpecified and v is not sb.NotSpecified:
-                        print(f"\t\tkey {k} | Ignored because expected is NotSpecified | was {v}")
+                        print(f"    key {k} | Ignored because expected is NotSpecified | was {v}")
                     elif repr(v) != repr(dictw[k]):
                         if isinstance(v, bool) and dictw[k] in (1, 0) and int(v) == dictw[k]:
                             continue
-                        print("\t\tkey {0} | got {1} | want {2}".format(k, v, dictw[k]))
+                        if isinstance(v, list) and isinstance(dictw[k], list):
+                            for i, (g, w) in enumerate(zip(v, dictw[k])):
+                                if g != w:
+                                    print(
+                                        f"    = || key {k}[{i}]\n    = || GOT -> {g}\n    = || WANT-> {w}"
+                                    )
+                        else:
+                            Reserved = __import__("photons_protocol.types").types.Type.Reserved
+                            if isinstance(one.Meta.all_field_types_dict[k], Reserved.__class__):
+                                if v is sb.NotSpecified or (
+                                    isinstance(v, str) and set(list(v)) == set(["0"])
+                                ):
+                                    continue
+
+                            print(
+                                f"    = || key {k}\n    = || GOT -> {v}\n    = || WANT-> {dictw[k]}"
+                            )
                         different = True
 
                 for k in dictw:
                     if k not in dictc:
-                        print("\t\tGot key in wanted but not in what we got: {0}".format(k))
+                        print(f"    Got key in wanted but not in what we got: {k}")
                         different = True
         return different
 
