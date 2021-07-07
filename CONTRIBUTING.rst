@@ -160,10 +160,10 @@ Please follow Linus'
 `guide <https://github.com/torvalds/subsurface-for-dirk/blob/a48494d2fbed58c751e9b7e8fbff88582f9b2d02/README#L88>`_
 for good commit messages.
 
+And also have in the title the module or app you are working on in square
+brackets::
 
-So, for example::
-
-    [maintenance] Fix some memory leaks
+    [interactor] Fix some memory leaks
 
     It's possible for python to hold onto frame objects via exceptions so I
     need to be more careful about holding onto those
@@ -191,3 +191,100 @@ Commented out code
 ------------------
 
 Please do not commit commented out code. Delete it. It's in git history.
+
+async context managers
+----------------------
+
+In Python, a context manager is a cleanup mechanism that uses the ``with`` syntax.
+
+For example, instead of saying:
+
+.. code-block:: python
+
+    wrapper = MyWrapper()
+
+    wrapper.start()
+    try:
+        do_something()
+    finally:
+        wrapper.finish()
+
+You would write:
+
+.. code-block:: python
+
+    with MyWrapper() as wrapper:
+        do_something()
+
+An async context manager is the same, but uses the ``async/await`` syntax as
+well:
+
+.. code-block:: python
+
+    async with MyWrapper() as wrapper:
+        do_something()
+
+Photons can create these in two ways.
+
+The first way is using the standard library ``asynccontextmanager`` decorator.
+Photons makes this available via ``photons_app.helpers`` to make it easier to
+sync with public photons until the minimum version of Python supported by it is
+Python3.7 as Python3.6 does not include that function in the standard library and
+public photons must polyfill it.
+
+.. code-block:: python
+
+    from photons_app import helpers as hp
+
+    
+    @hp.asynccontextmanager
+    async def wrap():
+        try:
+            await something_fun()
+            yield
+        finally:
+            await some_cleanup()
+
+The other way is via manually defining one in a class. The protocol in Python
+for a context manager is ``__enter__()/__exit__(exc_typ, exc, tb)`` for
+synchronous context managers and ``__aenter__()/__aexit__(exc_typ, exc, tb)`` for
+asynchronous context managers.
+
+In Python a context manager is the same as:
+
+.. code-block:: python
+
+    await wrapper.__aenter__()
+    try:
+        do_something()
+    finally:
+        await wrapper.__aexit__(...)
+
+But for cleanup purposes it is useful to instead have:
+
+.. code-block:: python
+
+    try:
+        await wrapper.__aenter__()
+        do_something()
+    finally:
+        await wrapper.__aexit__(...)
+
+To make this possible, Photons supplies ``hp.AsyncCMMixin`` and you implement
+``start()/finish(exc_typ=None, exc=None, tb=None)``:
+
+.. code-block:: python
+
+    from photons_app import helpers as hp
+
+
+    class Thing(hp.AsyncCMMixin):
+        async def start(self):
+            ...
+
+        async def finish(self, exc_typ=None, exc=None, tb=None):
+            ...
+
+This means all async context managers in Photons will run finish even if an
+exception is raised in start, and have ``start`` and ``finish`` if you are not
+using the ``with`` syntax.
