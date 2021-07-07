@@ -107,10 +107,17 @@ class PacketSpecMixin:
         """Return the number of bits this packet requires. """
         total = 0
         for name, typ in kls.Meta.field_types:
+            multiple = 1
+            if getattr(typ, "_multiple", False) is not False:
+                if callable(typ._multiple):
+                    multiple = typ._multiple(values)
+                else:
+                    multiple = typ._multiple
+
             if callable(typ.size_bits):
-                total += typ.size_bits(values)
+                total += typ.size_bits(values) * multiple
             else:
-                total += typ.size_bits
+                total += typ.size_bits * multiple
         return total
 
     @classmethod

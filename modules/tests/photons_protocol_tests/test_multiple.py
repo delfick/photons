@@ -61,6 +61,7 @@ describe "The multiple modifier":
             assert thing.one == 1
             assert thing.two == [1, 0]
             assert thing.three == [Other(four=4), Other(four=10)]
+            assert thing.three.as_dict() == [{"four": 4}, {"four": 10}]
 
         self.assertProperties(thing, test_thing)
 
@@ -140,12 +141,25 @@ describe "The multiple modifier":
         )
 
         assert thing.one == [E.MEH, E.BLAH, E.ZERO]
+        assert thing.one.as_dict() == [E.MEH, E.BLAH, E.ZERO]
+
         assert thing.two == [1, 2, 3]
+        assert thing.two.as_dict() == [1, 2, 3]
+
         assert thing.three == ["on", "two", "thre"]
+        assert thing.three.as_dict() == ["on", "two", "thre"]
+
         assert thing.four == [
             Other(one=False, five=[ba(b"1"), ba(b"t")]),
             Other(one=True, five=[ba(b""), ba(b"")]),
             Other(one=False, five=[ba(b""), ba(b"")]),
+        ]
+
+        pad = "0" * 8
+        assert thing.four.as_dict() == [
+            {"one": 0, "five": [ba(b"1") + pad, ba(b"t") + pad]},
+            {"one": 1, "five": [ba(b"") + pad + pad, ba(b"") + pad + pad]},
+            {"one": 0, "five": [ba(b"") + pad + pad, ba(b"") + pad + pad]},
         ]
 
         thing.one[-1] = 2

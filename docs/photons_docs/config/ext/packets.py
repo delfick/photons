@@ -98,7 +98,7 @@ class ShowPacketsDirective(Directive):
         for kls in messages.message_classes:
             for _, message in kls.by_type.items():
                 for typ in message.Payload.Meta.all_field_types_dict.values():
-                    if typ._multiple:
+                    if typ._multiple and typ._multiple_kls:
                         name = typ._multiple_kls.__name__
                         if name in found:
                             continue
@@ -175,7 +175,8 @@ class ShowPacketsDirective(Directive):
                 elif "set_" in attr:
                     default = f"``true only if {attr[4:]} is given a value``"
                 elif callable(typ._default):
-                    default = typ._default(None)
+                    pkt = message.create(enabled=True)
+                    default = typ._default(pkt)
                     if isinstance(default, enum.Enum):
                         enum_type, enum_name = str(default).rsplit(".", 1)
                         default = f":ref:`enums.{enum_type}`. **{enum_name}**"
@@ -200,6 +201,9 @@ class ShowPacketsDirective(Directive):
             e = typ._enum.__name__
             yield f"    **enum**: This attribute is a :ref:`enums.{e}`"
             yield ""
+
+            if typ._unknown_enum_values:
+                yield f"    **unknown enums**: This attribute allows values that aren't part of the enum"
 
         if typ._transform is not sb.NotSpecified and message.__name__.startswith("Set"):
             transformed = True
@@ -240,9 +244,13 @@ class ShowPacketsDirective(Directive):
 
         if typ._multiple:
             transformed = True
-            kls_name = typ._multiple_kls.__name__
-            ref = f":ref:`{kls_name} <message_type.{kls_name}>`"
-            yield f"    **multiple**: This attribute turns into an array of {typ._multiple} {ref} objects"
+            if typ._multiple_kls is not None:
+                kls_name = typ._multiple_kls.__name__
+                ref = f":ref:`{kls_name} <message_type.{kls_name}>`"
+                yield f"    **multiple**: This attribute turns into an array of {typ._multiple} {ref} objects"
+            else:
+                yield f"    **multiple**: This attribute turns into an array of {typ._multiple} {typ.__class__.__name__}"
+
             yield ""
 
         if not transformed:

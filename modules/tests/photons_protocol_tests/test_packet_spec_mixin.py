@@ -86,10 +86,10 @@ describe "PacketSpecMixin":
 
             # Make us example groups
             class Group1(dictobj.PacketSpec):
-                fields = [("one", one_typ), ("two", two_typ)]
+                fields = [("one", one_typ), ("two", T.Bytes(1).multiple(3, kls=two_typ))]
 
             class Group2(dictobj.PacketSpec):
-                fields = [("three", three_typ), ("four", four_typ)]
+                fields = [("three", T.Bytes(100).multiple(3, kls=three_typ)), ("four", four_typ)]
 
             class Together(dictobj.PacketSpec):
                 fields = [("g1", Group1), ("g2", Group2), ("another", "Another")]
@@ -102,12 +102,12 @@ describe "PacketSpecMixin":
                     fields = [("five", five_typ), ("six", six_typ)]
 
             values = mock.Mock(name="values")
-            assert Group1.size_bits(values) == 21
-            assert Group2.size_bits(values) == 1100
+            assert Group1.size_bits(values) == 23
+            assert Group2.size_bits(values) == 1300
             four_typ.size_bits.assert_called_once_with(values)
 
-            assert Together.size_bits(values) == 1121
-            assert Child.size_bits(values) == 1133
+            assert Together.size_bits(values) == 1323
+            assert Child.size_bits(values) == 1335
             six_typ.size_bits.assert_called_once_with(values)
 
     describe "spec with mocks":

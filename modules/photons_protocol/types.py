@@ -385,6 +385,15 @@ class MultipleWrapper(list):
         vals = [val_to_kls(kls, meta.indexed_at(i), val) for i, val in enumerate(self)]
         return MultipleWrapper(vals, kls, number, meta, val_to_kls)
 
+    def as_dict(self):
+        lst = []
+        for item in self:
+            if hasattr(item, "as_dict"):
+                lst.append(item.as_dict())
+            else:
+                lst.append(item)
+        return lst
+
 
 class multiple_spec(sb.Spec):
     """Understands going to and from bytes and lists of base types"""
