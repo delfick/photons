@@ -279,6 +279,7 @@ describe "Device":
                 "not_matrix",
                 "not_multizone",
                 "not_relays",
+                "not_unhandled",
                 "variable_color_temp",
             ]
 

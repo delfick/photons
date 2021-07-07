@@ -619,6 +619,7 @@ class Device(dictobj.Spec):
                 "has_matrix",
                 "has_buttons",
                 "has_multizone",
+                "has_unhandled",
                 "has_variable_color_temp",
             ):
                 if getattr(product.cap, prop):

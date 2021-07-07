@@ -33,6 +33,9 @@ class Capability(Capability):
     .. attribute:: has_buttons
         Does this device have physical buttons
 
+    .. attribute:: has_unhandled
+        This product has StateUnhandled
+
     .. attribute:: has_extended_multizone
         This product supports extended multizone messages
 
@@ -71,6 +74,8 @@ class Capability(Capability):
     has_relays = CapabilityValue(False)
     has_buttons = CapabilityValue(False)
 
+    has_unhandled = CapabilityValue(False).until(0, 0, cond.NameHas("SWITCH"), becomes=True)
+
     has_extended_multizone = CapabilityValue(False).until(
         2, 77, cond.Family(Family.LCM2), cond.Capability(has_multizone=True), becomes=True
     )
@@ -91,6 +96,7 @@ class Capability(Capability):
                 "has_matrix",
                 "has_relays",
                 "has_buttons",
+                "has_unhandled",
                 "has_multizone",
                 "has_extended_multizone",
                 "has_variable_color_temp",

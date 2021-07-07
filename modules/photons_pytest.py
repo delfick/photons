@@ -488,6 +488,7 @@ def pytest_configure(config):
             "matrix",
             "multizone",
             "relays",
+            "unhandled",
             "variable_color_temp",
         ]
 

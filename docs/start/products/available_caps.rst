@@ -6,6 +6,9 @@ Available Capabilities
 When you :ref:`make <products_root>` a capability object, you have available
 a number of attributes.
 
+is_light
+    Is this device a light? For example, a Switch is not a light!
+
 zones
     This is one of the ``photons_producst.Zones`` values. So either
     ``Zones.SINGLE`` which says this device only has one zone (e.g. a LIFX A19),
@@ -36,6 +39,12 @@ has_buttons
 has_variable_color_temp
     Does this device have a range of Kelvin values. Some LIFX products can
     only output one kelvin value.
+
+has_relays
+    Does this device have relays?
+
+has_buttons
+    Does this device have buttons on it?
 
 min_kelvin
     The minimum kelvin value supported by this product
@@ -69,6 +78,10 @@ has_extended_multizone
     as this ``cap`` object has been loaded with firmware information,
     ``has_extended_multizone`` can tell you if the device supports the better
     API.
+
+has_unhandled
+    Whether this device responds to messages it doesn't know about with an
+    ``Unhandled`` message.
 
 .. _product_object:
 

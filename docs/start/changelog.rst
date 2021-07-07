@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-40-4:
+
+0.40.2 - TBD
+    * Adding has_unhandled capability
+      * This says that the device responds with a StateUnhandled on messages it ignores
+
 .. _release-core-0-40-3:
 
 0.40.3 - 6 May 2021
