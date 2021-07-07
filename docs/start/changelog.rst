@@ -10,6 +10,7 @@ ChangeLog
       * This says that the device responds with a StateUnhandled on messages it ignores
     * attr command will only print the contents of the replies if there's only one device
       being referenced. Makes it easier to pipe into jq
+    * Add ``lifx lan:effect_off`` for turning off firmware and waveform effects on a device
 
 .. _release-core-0-40-3:
 

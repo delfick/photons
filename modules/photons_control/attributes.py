@@ -1,7 +1,12 @@
+from photons_control.multizone import SetZonesEffect
+from photons_control.script import FromGenerator
+from photons_control.tile import SetTileEffect
 from photons_control.planner import Skip
 
 from photons_app.errors import BadOption, DeprecatedTask
 from photons_app.tasks import task_register as task
+
+from photons_messages import LightMessages
 
 from delfick_project.norms import sb
 from textwrap import dedent
@@ -192,3 +197,24 @@ class get_effects(task.Task):
                     else:
                         print(f"\t{field}: {value}")
                 print()
+
+
+@task
+class effect_off(task.Task):
+    target = task.requires_target()
+    reference = task.provides_reference(special=True)
+
+    async def execute_task(self, **kwargs):
+        async def gen(reference, sender, **kwargs):
+            plans = sender.make_plans("capability")
+            async for serial, _, info in sender.gatherer.gather(plans, reference):
+                print(f"Turning off effects for {serial}")
+
+                yield LightMessages.SetWaveformOptional(res_required=False, target=serial)
+
+                if info["cap"].has_multizone:
+                    yield SetZonesEffect("OFF", power_on=False)
+                elif info["cap"].has_matrix:
+                    yield SetTileEffect("OFF", power_on=False)
+
+        await self.target.send(FromGenerator(gen), self.reference)
