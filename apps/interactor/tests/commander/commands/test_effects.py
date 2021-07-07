@@ -126,6 +126,7 @@ def effects_stopped_status():
                         "has_relays": False,
                         "has_matrix": False,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -149,6 +150,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -172,6 +174,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -195,6 +198,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 6500,
                         "min_kelvin": 2700,
@@ -221,6 +225,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": True,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -247,6 +252,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": False,
                         "has_multizone": True,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -278,6 +284,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": True,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 1500,
@@ -309,6 +316,7 @@ def effects_stopped_status():
                         "has_ir": False,
                         "has_matrix": True,
                         "has_multizone": False,
+                        "has_unhandled": False,
                         "has_variable_color_temp": True,
                         "max_kelvin": 9000,
                         "min_kelvin": 2500,
@@ -321,6 +329,7 @@ def effects_stopped_status():
             },
         }
     }
+
 
 @pytest.fixture()
 def success_result():
@@ -492,8 +501,11 @@ describe "Effect commands":
 
         await server.assertCommand(
             "/v1/lifx/command",
-            {"command": "effects/run", "args": {"linear_animation": "MOVE", "linear_options": { "power_on": True }}},
-            json_output=results.success
+            {
+                "command": "effects/run",
+                "args": {"linear_animation": "MOVE", "linear_options": {"power_on": True}},
+            },
+            json_output=results.success,
         )
 
         for device in fake.devices:
@@ -506,8 +518,11 @@ describe "Effect commands":
 
         await server.assertCommand(
             "/v1/lifx/command",
-            {"command": "effects/run", "args": {"matrix_animation": "FLAME", "matrix_options": { "power_on": True }}},
-            json_output=results.success
+            {
+                "command": "effects/run",
+                "args": {"matrix_animation": "FLAME", "matrix_options": {"power_on": True}},
+            },
+            json_output=results.success,
         )
 
         for device in fake.devices:
@@ -520,8 +535,16 @@ describe "Effect commands":
 
         await server.assertCommand(
             "/v1/lifx/command",
-            {"command": "effects/run", "args": {"matrix_animation": "FLAME", "matrix_options": { "power_on": False }, "linear_animation": "MOVE", "linear_options": { "power_on": False }}},
-            json_output=results.success
+            {
+                "command": "effects/run",
+                "args": {
+                    "matrix_animation": "FLAME",
+                    "matrix_options": {"power_on": False},
+                    "linear_animation": "MOVE",
+                    "linear_options": {"power_on": False},
+                },
+            },
+            json_output=results.success,
         )
 
         for device in fake.devices:
@@ -533,8 +556,16 @@ describe "Effect commands":
 
         await server.assertCommand(
             "/v1/lifx/command",
-            {"command": "effects/stop", "args": {"stop_matrix": True, "matrix_options": { "power_on": False }, "stop_linear": True, "linear_options": { "power_on": False }}},
-            json_output=results.success
+            {
+                "command": "effects/stop",
+                "args": {
+                    "stop_matrix": True,
+                    "matrix_options": {"power_on": False},
+                    "stop_linear": True,
+                    "linear_options": {"power_on": False},
+                },
+            },
+            json_output=results.success,
         )
 
         for device in fake.devices:
