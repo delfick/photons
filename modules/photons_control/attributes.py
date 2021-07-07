@@ -59,8 +59,16 @@ class attr(task.Task):
             extra.update(kwargs["extra_payload_kwargs"])
 
         msg = kls.create(extra)
-        async for pkt in self.target.send(msg, self.reference, **kwargs):
-            print("{0}: {1}".format(pkt.serial, repr(pkt.payload)))
+        async with self.target.session() as sender:
+            found, serials = await self.reference.find(sender, timeout=20)
+            self.reference.raise_on_missing(found)
+
+            msg = kls.create(extra)
+            async for pkt in sender(msg, serials, **kwargs):
+                if len(serials) == 1:
+                    print(repr(pkt.payload))
+                else:
+                    print(f"{pkt.serial}: {repr(pkt.payload)}")
 
 
 @task

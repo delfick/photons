@@ -8,6 +8,8 @@ ChangeLog
 0.40.2 - TBD
     * Adding has_unhandled capability
       * This says that the device responds with a StateUnhandled on messages it ignores
+    * attr command will only print the contents of the replies if there's only one device
+      being referenced. Makes it easier to pipe into jq
 
 .. _release-core-0-40-3:
 
