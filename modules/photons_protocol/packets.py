@@ -37,6 +37,14 @@ import json
 log = logging.getLogger("photons_protocol.packets")
 
 
+def reprer(o):
+    if type(o) is bytes:
+        return binascii.hexlify(o).decode()
+    elif type(o) is bitarray:
+        return binascii.hexlify(o.tobytes()).decode()
+    return repr(o)
+
+
 class Information:
     def __init__(self, remote_addr=None, sender_message=None):
         self.remote_addr = remote_addr
@@ -468,14 +476,6 @@ class PacketSpecMixin:
 
     def __repr__(self):
         """Return this packet as a jsonified string"""
-
-        def reprer(o):
-            if type(o) is bytes:
-                return binascii.hexlify(o).decode()
-            elif type(o) is bitarray:
-                return binascii.hexlify(o.tobytes()).decode()
-            return repr(o)
-
         return json.dumps(self.as_dict(), sort_keys=True, default=reprer)
 
     @classmethod
