@@ -110,7 +110,7 @@ started, and then adding your configuration to the collector.
 .. code-block:: python
 
     from photons_app.formatter import MergedOptionStringFormatter
-    from photons_app.actions import an_action
+    from photons_app.tasks import task_register as task
 
     from photons_transport.targets.base import Target
     from photons_messages import DeviceMessages
@@ -135,15 +135,20 @@ started, and then adding your configuration to the collector.
         )
 
 
-    @an_action(special_reference=True)
-    async def turn_off(collector, reference, **kwargs):
-        options = collector.configuration["example_script_options"]
-        async with options.target.session() as sender:
-            await sender(
-                DeviceMessages.SetPower(level=0),
-                reference,
-                message_timeout=options.message_timeout,
-            )
+    @task
+    class turn_off(task.Task):
+        """Turn off devices"""
+        target = task.requires_target()
+        reference = task.provides_reference(special=True)
+
+        async def execute_task(self, **kwargs):
+            options = collector.configuration["example_script_options"]
+            async with options.self.target.session() as sender:
+                await sender(
+                    DeviceMessages.SetPower(level=0),
+                    self.reference,
+                    message_timeout=options.message_timeout,
+                )
 
 
     if __name__ == "__main__":

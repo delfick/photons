@@ -41,7 +41,7 @@ can do something like:
 
 .. code-block:: python
 
-    from photons_app.actions import an_action
+    from photons_app.tasks import task_register as task
 
     from photons_messages import DeviceMessages
     from photons_products import Products
@@ -49,36 +49,41 @@ can do something like:
     from collections import defaultdict
 
 
-    @an_action(special_reference=True, needs_target=True)
-    async def has_multizone(collector, target, reference, **kwargs):
-        by_device = defaultdict(dict)
+    @task
+    class has_multizone(task.Task):
+        """Print if the device supports multizone"""
+        target = task.requires_target()
+        reference = task.provides_reference(special=True)
 
-        async with target.session() as sender:
-            async for pkt in sender(
-                [DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()], reference
-            ):
-                if pkt | DeviceMessages.StateVersion:
-                    by_device[pkt.serial]["version"] = pkt
-                elif pkt | DeviceMessages.StateHostFirmware:
-                    by_device[pkt.serial]["firmware"] = pkt
-
-            for serial, pkts in by_device.items():
-                version = pkts["version"]
-                firmware = pkts["firmware"]
-
-                # Calling cap with the major and minor parts of the firmware version
-                # will return a new capability object that then knows what
-                # firmware is on the device.
-                cap = Products[version.vendor, version.product].cap(
-                    firmware.version_major, firmware.version_minor
-                )
-
-                if cap.has_extended_multizone:
-                    print(f"device {serial} has extended multizone capability")
-                elif cap.has_multizone:
-                    print(f"device {serial} has multizone, but not extended multizone")
-                else:
-                    print(f"device {serial} doesn't have any multizone capability")
+        async def execute_task(self, **kwargs):
+            by_device = defaultdict(dict)
+    
+            async with self.target.session() as sender:
+                async for pkt in sender(
+                    [DeviceMessages.GetVersion(), DeviceMessages.GetHostFirmware()], self.reference
+                ):
+                    if pkt | DeviceMessages.StateVersion:
+                        by_device[pkt.serial]["version"] = pkt
+                    elif pkt | DeviceMessages.StateHostFirmware:
+                        by_device[pkt.serial]["firmware"] = pkt
+    
+                for serial, pkts in by_device.items():
+                    version = pkts["version"]
+                    firmware = pkts["firmware"]
+    
+                    # Calling cap with the major and minor parts of the firmware version
+                    # will return a new capability object that then knows what
+                    # firmware is on the device.
+                    cap = Products[version.vendor, version.product].cap(
+                        firmware.version_major, firmware.version_minor
+                    )
+    
+                    if cap.has_extended_multizone:
+                        print(f"device {serial} has extended multizone capability")
+                    elif cap.has_multizone:
+                        print(f"device {serial} has multizone, but not extended multizone")
+                    else:
+                        print(f"device {serial} doesn't have any multizone capability")
 
 
     if __name__ == "__main__":
@@ -90,26 +95,31 @@ devices return information, you can use the :ref:`gatherer <gatherer_interface>`
 
 .. code-block:: python
 
-    from photons_app.actions import an_action
+    from photons_app.tasks import task_register as task
 
 
-    @an_action(special_reference=True, needs_target=True)
-    async def has_multizone(collector, target, reference, **kwargs):
-        async with target.session() as sender:
-            plans = sender.make_plans("capability")
+    @task
+    class has_multizone(task.Task):
+        """Print if the device supports multizone"""
+        target = task.requires_target()
+        reference = task.provides_reference(special=True)
 
-            async for serial, complete, info in sender.gatherer.gather_per_serial(
-                plans, reference
-            ):
-                if complete:
-                    cap = info["capability"]["cap"]
+        async def execute_task(self, **kwargs):
+            async with self.target.session() as sender:
+                plans = sender.make_plans("capability")
 
-                    if cap.has_extended_multizone:
-                        print(f"device {serial} has extended multizone capability")
-                    elif cap.has_multizone:
-                        print(f"device {serial} has multizone, but not extended multizone")
-                    else:
-                        print(f"device {serial} doesn't have any multizone capability")
+                async for serial, complete, info in sender.gatherer.gather_per_serial(
+                    plans, self.reference
+                ):
+                    if complete:
+                        cap = info["capability"]["cap"]
+
+                        if cap.has_extended_multizone:
+                            print(f"device {serial} has extended multizone capability")
+                        elif cap.has_multizone:
+                            print(f"device {serial} has multizone, but not extended multizone")
+                        else:
+                            print(f"device {serial} doesn't have any multizone capability")
 
 
     if __name__ == "__main__":
