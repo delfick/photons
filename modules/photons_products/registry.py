@@ -457,7 +457,7 @@ class ProductRegistry:
         class cap(lifx.Capability):
             zones = Zones.MATRIX
             has_chain = False
-            has_color = False
+            has_color = True
             has_variable_color_temp = True
 
             min_kelvin, max_kelvin = (1500, 9000)
@@ -700,7 +700,7 @@ class ProductRegistry:
         pid = 112
         public = True
         family = Family.LCM3
-        friendly = "LIFX BR30 Plus Intl"
+        friendly = "LIFX BR30 Night Vision Intl"
 
         class cap(lifx.Capability):
             has_ir = True
