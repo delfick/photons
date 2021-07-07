@@ -73,6 +73,17 @@ class Device(hp.AsyncCMMixin):
             assert self.device.attrs[key] == val
 
 
+describe "Firmware":
+
+    it "can compare versions":
+        firmware = chp.Firmware(3, 80, 1)
+        assert firmware == (3, 80)
+        assert firmware != (3, 90)
+        assert firmware < (3, 90)
+        assert firmware > (3, 70)
+        assert firmware >= (3, 80)
+        assert firmware <= (3, 80)
+
 describe "Responders":
 
     describe "LightStateResponder":

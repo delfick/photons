@@ -14,6 +14,7 @@ from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
 
 from delfick_project.norms import dictobj, sb, Meta
+from functools import total_ordering
 import logging
 
 log = logging.getLogger("photons_control.test_helpers")
@@ -392,8 +393,33 @@ class GroupingResponder(Responder):
         )
 
 
-class Firmware(dictobj):
-    fields = ["major", "minor", "build", ("install", 0)]
+@total_ordering
+class Firmware:
+    def __init__(self, major, minor, build=0, install=0):
+        self.major = major
+        self.minor = minor
+        self.build = build
+        self.install = install
+
+    def __eq__(self, other):
+        if isinstance(other, tuple) and len(other) == 2:
+            return (self.major, self.minor) == other
+        elif isinstance(other, Firmware):
+            return (
+                self.major == other.major
+                and self.minor == other.minor
+                and self.build == other.build
+            )
+        else:
+            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
+
+    def __lt__(self, other):
+        if isinstance(other, tuple) and len(other) == 2:
+            return (self.major, self.minor) < other
+        elif isinstance(other, Firmware):
+            return (self.major, self.minor) < (other.major, other.minor)
+        else:
+            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
 
 
 class ProductResponder(Responder):
