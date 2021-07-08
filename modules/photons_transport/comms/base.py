@@ -456,9 +456,14 @@ class Communication:
             )
 
             if protocol == 1024 and pkt_type == 45:
-                source = struct.unpack("<I", data[4:8])[0]
-                target = data[8:16]
-                sequence = data[23]
+                if isinstance(data, bytes):
+                    source = struct.unpack("<I", data[4:8])[0]
+                    target = data[8:16]
+                    sequence = data[23]
+                else:
+                    source = data.source
+                    target = data.target
+                    sequence = data.sequence
 
                 serial = binascii.hexlify(target[:6]).decode()
                 pkt = FakeAck(source, sequence, target, serial, addr)
