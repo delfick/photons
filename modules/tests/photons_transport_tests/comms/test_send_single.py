@@ -57,9 +57,7 @@ def assertSent(sender, *expected):
 async def _setup():
     device = FakeDevice(
         "d073d5001337",
-        chp.default_responders(
-            Products.LCM2_Z, zones=[chp.Color(i, 1, 1, 3500) for i in range(22)]
-        ),
+        chp.default_responders(Products.LCM2_Z, zones=[hp.Color(i, 1, 1, 3500) for i in range(22)]),
     )
     async with device:
         options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
@@ -113,7 +111,7 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 0,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(8)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8)],
                     },
                 ),
                 (
@@ -121,7 +119,7 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 8,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
                     },
                 ),
                 (
@@ -129,8 +127,8 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 16,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(16, 22)]
-                        + [chp.Color(0, 0, 0, 0) for _ in range(22, 24)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
+                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
                     },
                 ),
             )
@@ -223,12 +221,12 @@ describe "Sending a single messages":
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=0,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
                             ),
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=8,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
                             ),
                         ],
                     )
@@ -271,12 +269,12 @@ describe "Sending a single messages":
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=0,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
                             ),
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=8,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
                             ),
                         ],
                     )
@@ -295,7 +293,7 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 0,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(8)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8)],
                         "sequence": 11,
                     },
                 ),
@@ -304,7 +302,7 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 8,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
                         "sequence": 11,
                     },
                 ),
@@ -313,8 +311,8 @@ describe "Sending a single messages":
                     {
                         "zones_count": 22,
                         "zone_index": 16,
-                        "colors": [chp.Color(i, 1, 1, 3500) for i in range(16, 22)]
-                        + [chp.Color(0, 0, 0, 0) for _ in range(22, 24)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
+                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
                         "sequence": 11,
                     },
                 ),
@@ -372,12 +370,12 @@ describe "Sending a single messages":
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=0,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
                             ),
                             MultiZoneMessages.StateMultiZone.create(
                                 zones_count=22,
                                 zone_index=8,
-                                colors=[chp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
                             ),
                         ],
                     )

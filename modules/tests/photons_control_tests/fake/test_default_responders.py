@@ -2,6 +2,8 @@
 
 from photons_control import test_helpers as chp
 
+from photons_app import helpers as hp
+
 from photons_messages import MultiZoneEffectType, TileEffectType
 from photons_transport.fake import FakeDevice
 from photons_products import Products
@@ -16,8 +18,8 @@ describe "default_responders":
         assert device.attrs.vendor_id == 1
         assert device.attrs.product_id == 27
 
-        assert device.attrs.firmware == chp.Firmware(0, 0, 0)
-        assert device.attrs.color == chp.Color(0, 1, 1, 3500)
+        assert device.attrs.firmware == hp.Firmware(0, 0)
+        assert device.attrs.color == hp.Color(0, 1, 1, 3500)
         assert device.attrs.power == 0
 
         assert device.attrs.group_uuid == ""
@@ -56,7 +58,7 @@ describe "default_responders":
         ):
             device = FakeDevice("d073d5000001", chp.default_responders(Products.LCM1_Z))
 
-        zones = [chp.Color(0, 0, 0, 0), chp.Color(1, 1, 1, 1)]
+        zones = [hp.Color(0, 0, 0, 0), hp.Color(1, 1, 1, 1)]
         device = FakeDevice("d073d5000001", chp.default_responders(Products.LCM1_Z, zones=zones))
         await device.start()
 

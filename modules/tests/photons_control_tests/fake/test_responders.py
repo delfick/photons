@@ -76,7 +76,7 @@ class Device(hp.AsyncCMMixin):
 describe "Firmware":
 
     it "can compare versions":
-        firmware = chp.Firmware(3, 80, 1)
+        firmware = hp.Firmware(3, 80)
         assert firmware == (3, 80)
         assert firmware != (3, 90)
         assert firmware < (3, 90)
@@ -92,7 +92,7 @@ describe "Responders":
         async def device(self):
             device = Device(chp.LightStateResponder())
             async with device:
-                device.assertAttrs(label="", power=0, color=chp.Color(0, 0, 1, 3500))
+                device.assertAttrs(label="", power=0, color=hp.Color(0, 0, 1, 3500))
                 yield device
 
         async it "responds to label messages", device:
@@ -297,7 +297,7 @@ describe "Responders":
             )
             await device.assertResponse(
                 TileMessages.SetTileEffect(
-                    type=TileEffectType.FLAME, palette_count=1, palette=[chp.Color(1, 0, 1, 3500)]
+                    type=TileEffectType.FLAME, palette_count=1, palette=[hp.Color(1, 0, 1, 3500)]
                 ),
                 [
                     TileMessages.StateTileEffect.create(
@@ -313,7 +313,7 @@ describe "Responders":
                         type=TileEffectType.FLAME,
                         palette_count=1,
                         parameters={},
-                        palette=[chp.Color(1, 0, 1, 3500)] + [chp.Color(0, 0, 0, 0)] * 15,
+                        palette=[hp.Color(1, 0, 1, 3500)] + [hp.Color(0, 0, 0, 0)] * 15,
                     )
                 ],
                 matrix_effect=TileEffectType.FLAME,
@@ -330,7 +330,7 @@ describe "Responders":
                 await device.assertResponse(TileMessages.GetTileEffect(), [])
                 await device.assertResponse(
                     TileMessages.SetTileEffect.create(
-                        type=TileEffectType.FLAME, parameters={}, palette=[chp.Color(0, 0, 0, 3500)]
+                        type=TileEffectType.FLAME, parameters={}, palette=[hp.Color(0, 0, 0, 3500)]
                     ),
                     [],
                 )
@@ -343,13 +343,13 @@ describe "Responders":
             )
 
         async it "complains if you try to set too many zones":
-            zones = [chp.Color(0, 0, 0, 0)] * 83
+            zones = [hp.Color(0, 0, 0, 0)] * 83
             with assertRaises(PhotonsAppError, "Can only have up to 82 zones!"):
-                async with self.make_device(Products.LCM1_Z, chp.Firmware(0, 0, 0), zones):
+                async with self.make_device(Products.LCM1_Z, hp.Firmware(0, 0), zones):
                     pass
 
         async it "doesn't respond if we aren't a multizone device":
-            async with self.make_device(Products.LCMV4_A19_COLOR, chp.Firmware(0, 0, 0)) as device:
+            async with self.make_device(Products.LCMV4_A19_COLOR, hp.Firmware(0, 0)) as device:
                 assert "zones_effect" not in device.attrs
                 assert "zones" not in device.attrs
 
@@ -373,19 +373,19 @@ describe "Responders":
 
                 await device.assertResponse(MultiZoneMessages.GetExtendedColorZones(), [])
                 await device.assertResponse(
-                    MultiZoneMessages.SetExtendedColorZones(colors=[chp.Color(0, 0, 0, 0)]), []
+                    MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)]), []
                 )
 
         async it "doesn't respond to extended multizone if we aren't extended multizone":
             cases = [
-                (Products.LCM1_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
-                (Products.LCM2_Z, chp.Firmware(0, 0, 0), [chp.Color(0, 0, 0, 0)]),
+                (Products.LCM1_Z, hp.Firmware(0, 0), [hp.Color(0, 0, 0, 0)]),
+                (Products.LCM2_Z, hp.Firmware(0, 0), [hp.Color(0, 0, 0, 0)]),
             ]
 
             for case in cases:
                 async with self.make_device(*case) as device:
                     device.assertAttrs(
-                        zones_effect=MultiZoneEffectType.OFF, zones=[chp.Color(0, 0, 0, 0)]
+                        zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
                     )
 
                     await device.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
@@ -413,15 +413,15 @@ describe "Responders":
 
                     await device.assertResponse(MultiZoneMessages.GetExtendedColorZones(), [])
                     await device.assertResponse(
-                        MultiZoneMessages.SetExtendedColorZones(colors=[chp.Color(0, 0, 0, 0)]), []
+                        MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)]), []
                     )
 
         async it "responds to all messages if we have extended multizone":
             async with self.make_device(
-                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), [chp.Color(0, 0, 0, 0)]
+                Products.LCM2_Z, hp.Firmware(2, 77), [hp.Color(0, 0, 0, 0)]
             ) as device:
                 device.assertAttrs(
-                    zones_effect=MultiZoneEffectType.OFF, zones=[chp.Color(0, 0, 0, 0)]
+                    zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
                 )
 
                 await device.assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
@@ -445,17 +445,17 @@ describe "Responders":
                 await device.assertResponse(MultiZoneMessages.GetExtendedColorZones(), True)
                 await device.assertResponse(
                     MultiZoneMessages.SetExtendedColorZones(
-                        colors_count=1, zone_index=0, colors=[chp.Color(0, 0, 0, 0)]
+                        colors_count=1, zone_index=0, colors=[hp.Color(0, 0, 0, 0)]
                     ),
                     True,
                 )
 
         async it "responds to effect messages":
             async with self.make_device(
-                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), [chp.Color(0, 0, 0, 0)]
+                Products.LCM2_Z, hp.Firmware(2, 77), [hp.Color(0, 0, 0, 0)]
             ) as device:
                 device.assertAttrs(
-                    zones_effect=MultiZoneEffectType.OFF, zones=[chp.Color(0, 0, 0, 0)]
+                    zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
                 )
 
                 await device.assertResponse(
@@ -476,21 +476,19 @@ describe "Responders":
 
         async it "responds to old multizone":
             zones = [
-                chp.Color(0, 0, 0, 0),
-                chp.Color(1, 0.1, 0.1, 3500),
-                chp.Color(2, 0.2, 0.1, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(6, 0.6, 0.5, 3500),
-                chp.Color(7, 0.6, 0.7, 3500),
-                chp.Color(8, 0.8, 0.7, 3500),
-                chp.Color(9, 0.8, 0.9, 3500),
-                chp.Color(10, 1.0, 0.9, 3500),
+                hp.Color(0, 0, 0, 0),
+                hp.Color(1, 0.1, 0.1, 3500),
+                hp.Color(2, 0.2, 0.1, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(6, 0.6, 0.5, 3500),
+                hp.Color(7, 0.6, 0.7, 3500),
+                hp.Color(8, 0.8, 0.7, 3500),
+                hp.Color(9, 0.8, 0.9, 3500),
+                hp.Color(10, 1.0, 0.9, 3500),
             ]
-            async with self.make_device(
-                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), zones
-            ) as device:
+            async with self.make_device(Products.LCM2_Z, hp.Firmware(2, 77), zones) as device:
                 device.assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=zones)
 
                 await device.assertResponse(
@@ -545,8 +543,8 @@ describe "Responders":
                     ],
                 )
 
-                zones[7] = chp.Color(100, 0, 0.1, 6500)
-                zones[8] = chp.Color(100, 0, 0.1, 6500)
+                zones[7] = hp.Color(100, 0, 0.1, 6500)
+                zones[8] = hp.Color(100, 0, 0.1, 6500)
                 await device.assertResponse(
                     MultiZoneMessages.GetColorZones(start_index=0, end_index=255),
                     [
@@ -561,22 +559,20 @@ describe "Responders":
 
         async it "responds to extended multizone":
             zones = [
-                chp.Color(0, 0, 0, 0),
-                chp.Color(1, 0.1, 0.1, 3500),
-                chp.Color(2, 0.2, 0.1, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(3, 0.2, 0.3, 3500),
-                chp.Color(6, 0.6, 0.5, 3500),
-                chp.Color(7, 0.6, 0.7, 3500),
-                chp.Color(8, 0.8, 0.7, 3500),
-                chp.Color(9, 0.8, 0.9, 3500),
-                chp.Color(10, 1.0, 0.9, 3500),
+                hp.Color(0, 0, 0, 0),
+                hp.Color(1, 0.1, 0.1, 3500),
+                hp.Color(2, 0.2, 0.1, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(3, 0.2, 0.3, 3500),
+                hp.Color(6, 0.6, 0.5, 3500),
+                hp.Color(7, 0.6, 0.7, 3500),
+                hp.Color(8, 0.8, 0.7, 3500),
+                hp.Color(9, 0.8, 0.9, 3500),
+                hp.Color(10, 1.0, 0.9, 3500),
             ]
 
-            async with self.make_device(
-                Products.LCM2_Z, chp.Firmware(2, 77, 1543215651000000000), list(zones)
-            ) as device:
+            async with self.make_device(Products.LCM2_Z, hp.Firmware(2, 77), list(zones)) as device:
                 device.assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=zones)
 
                 await device.assertResponse(
@@ -589,9 +585,9 @@ describe "Responders":
                 )
 
                 new_colors = [
-                    chp.Color(100, 0.2, 0.3, 9000),
-                    chp.Color(200, 0.3, 0.4, 8000),
-                    chp.Color(300, 0.5, 0.6, 7000),
+                    hp.Color(100, 0.2, 0.3, 9000),
+                    hp.Color(200, 0.3, 0.4, 8000),
+                    hp.Color(300, 0.5, 0.6, 7000),
                 ]
                 await device.assertResponse(
                     MultiZoneMessages.SetExtendedColorZones(
@@ -632,9 +628,7 @@ describe "Responders":
             return device, assertProduct
 
         async it "can determine the devices capability":
-            device, assertProduct = self.make_device(
-                Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0)
-            )
+            device, assertProduct = self.make_device(Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
             async with device:
                 assertProduct()
 
@@ -643,7 +637,7 @@ describe "Responders":
                 assert cap.firmware_major == 1
                 assert cap.firmware_minor == 23
 
-            device, assertProduct = self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 0))
+            device, assertProduct = self.make_device(Products.LCM3_TILE, hp.Firmware(3, 50))
             async with device:
                 assertProduct()
 
@@ -653,9 +647,7 @@ describe "Responders":
                 assert cap.firmware_minor == 50
 
         async it "responds to GetVersion":
-            device, assertProduct = self.make_device(
-                Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 0)
-            )
+            device, assertProduct = self.make_device(Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
             async with device:
                 assertProduct()
 
@@ -664,7 +656,7 @@ describe "Responders":
                     [DeviceMessages.StateVersion(vendor=1, product=22)],
                 )
 
-            device, assertProduct = self.make_device(Products.LCM3_TILE, chp.Firmware(3, 50, 0))
+            device, assertProduct = self.make_device(Products.LCM3_TILE, hp.Firmware(3, 50))
             async with device:
                 assertProduct()
                 await device.assertResponse(
@@ -673,9 +665,7 @@ describe "Responders":
                 )
 
         async it "responds to GetHostFirmware":
-            device, assertProduct = self.make_device(
-                Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2, 100)
-            )
+            device, assertProduct = self.make_device(Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
             async with device:
                 assertProduct()
                 await device.assertResponse(
@@ -683,9 +673,7 @@ describe "Responders":
                     [DeviceMessages.StateHostFirmware(build=2, version_major=1, version_minor=23)],
                 )
 
-            device, assertProduct = self.make_device(
-                Products.LCM3_TILE, chp.Firmware(3, 50, 4, 400)
-            )
+            device, assertProduct = self.make_device(Products.LCM3_TILE, hp.Firmware(3, 50))
             async with device:
                 assertProduct()
                 await device.assertResponse(
@@ -694,9 +682,7 @@ describe "Responders":
                 )
 
         async it "responds to GetWifiFirmware":
-            device, assertProduct = self.make_device(
-                Products.LCMV4_A19_COLOR, chp.Firmware(1, 23, 2, 100)
-            )
+            device, assertProduct = self.make_device(Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
             async with device:
                 assertProduct()
                 await device.assertResponse(
@@ -704,9 +690,7 @@ describe "Responders":
                     [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
                 )
 
-            device, assertProduct = self.make_device(
-                Products.LCM3_TILE, chp.Firmware(3, 50, 4, 400)
-            )
+            device, assertProduct = self.make_device(Products.LCM3_TILE, hp.Firmware(3, 50))
             async with device:
                 assertProduct()
                 await device.assertResponse(

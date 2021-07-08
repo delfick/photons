@@ -4,6 +4,7 @@ from photons_control.planner import Gatherer, make_plans, Plan, NoMessages, Skip
 from photons_control import test_helpers as chp
 
 from photons_app.errors import TimedOut, BadRunWithResults
+from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
 from photons_transport.fake import FakeDevice
@@ -22,8 +23,8 @@ light1 = FakeDevice(
         power=0,
         label="bob",
         infrared=100,
-        color=chp.Color(100, 0.5, 0.5, 4500),
-        firmware=chp.Firmware(2, 77, 1543215651000000000),
+        color=hp.Color(100, 0.5, 0.5, 4500),
+        firmware=hp.Firmware(2, 77),
     ),
 )
 
@@ -33,8 +34,8 @@ light2 = FakeDevice(
         Products.LMB_MESH_A21,
         power=65535,
         label="sam",
-        color=chp.Color(200, 0.3, 1, 9000),
-        firmware=chp.Firmware(2, 2, 1448861477000000000),
+        color=hp.Color(200, 0.3, 1, 9000),
+        firmware=hp.Firmware(2, 2),
     ),
 )
 
@@ -44,8 +45,8 @@ light3 = FakeDevice(
         Products.LCM1_Z,
         power=0,
         label="strip",
-        firmware=chp.Firmware(1, 22, 1502237570000000000),
-        zones=[chp.Color(0, 1, 1, 3500)],
+        firmware=hp.Firmware(1, 22),
+        zones=[hp.Color(0, 1, 1, 3500)],
     ),
 )
 

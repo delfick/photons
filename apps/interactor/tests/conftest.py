@@ -292,7 +292,7 @@ location_two_uuid = identifier()
 
 zones = []
 for i in range(16):
-    zones.append(chp.Color(i * 10, 1, 1, 2500))
+    zones.append(hp.Color(i * 10, 1, 1, 2500))
 
 
 class FakeDevice(FakeDevice):
@@ -314,8 +314,8 @@ a19_1 = FakeDevice(
         group_uuid=group_one_uuid,
         location_label=location_one_label,
         location_uuid=location_one_uuid,
-        color=chp.Color(0, 1, 1, 2500),
-        firmware=chp.Firmware(2, 75, 1521690429),
+        color=hp.Color(0, 1, 1, 2500),
+        firmware=hp.Firmware(2, 75),
     ),
 )
 
@@ -325,12 +325,12 @@ a19_2 = FakeDevice(
         Products.LCM2_A19,
         label="bathroom",
         power=65535,
-        color=chp.Color(100, 1, 1, 2500),
+        color=hp.Color(100, 1, 1, 2500),
         group_label=group_two_label,
         group_uuid=group_two_uuid,
         location_label=location_one_label,
         location_uuid=location_one_uuid,
-        firmware=chp.Firmware(2, 75, 1521690429),
+        firmware=hp.Firmware(2, 75),
     ),
 )
 
@@ -340,12 +340,12 @@ color1000 = FakeDevice(
         Products.LCMV4_A19_COLOR,
         label="lamp",
         power=65535,
-        color=chp.Color(100, 0, 1, 2500),
+        color=hp.Color(100, 0, 1, 2500),
         group_label=group_three_label,
         group_uuid=group_three_uuid,
         location_label=location_two_label,
         location_uuid=location_two_uuid,
-        firmware=chp.Firmware(1, 1, 1530327089),
+        firmware=hp.Firmware(1, 1),
     ),
 )
 
@@ -355,12 +355,12 @@ white800 = FakeDevice(
         Products.LCMV4_A19_WHITE_LV,
         label="lamp",
         power=65535,
-        color=chp.Color(100, 0, 1, 2500),
+        color=hp.Color(100, 0, 1, 2500),
         group_label=group_three_label,
         group_uuid=group_three_uuid,
         location_label=location_two_label,
         location_uuid=location_two_uuid,
-        firmware=chp.Firmware(1, 1, 1530327089),
+        firmware=hp.Firmware(1, 1),
     ),
 )
 
@@ -371,12 +371,12 @@ strip1 = FakeDevice(
         label="desk",
         power=65535,
         zones=zones,
-        color=chp.Color(200, 0.5, 0.5, 2500),
+        color=hp.Color(200, 0.5, 0.5, 2500),
         group_label=group_one_label,
         group_uuid=group_one_uuid,
         location_label=location_one_label,
         location_uuid=location_one_uuid,
-        firmware=chp.Firmware(2, 75, 1521690429),
+        firmware=hp.Firmware(2, 75),
     ),
 )
 
@@ -387,12 +387,12 @@ strip2 = FakeDevice(
         label="tv",
         power=65535,
         zones=zones,
-        color=chp.Color(200, 0.5, 0.5, 2500),
+        color=hp.Color(200, 0.5, 0.5, 2500),
         group_label=group_three_label,
         group_uuid=group_three_uuid,
         location_label=location_two_label,
         location_uuid=location_two_uuid,
-        firmware=chp.Firmware(1, 1, 1530327089),
+        firmware=hp.Firmware(1, 1),
     ),
 )
 
@@ -406,7 +406,7 @@ candle = FakeDevice(
         group_uuid=group_three_uuid,
         location_label=location_two_label,
         location_uuid=location_two_uuid,
-        firmware=chp.Firmware(3, 50, 1562659776000000000),
+        firmware=hp.Firmware(3, 50),
     ),
 )
 
@@ -420,7 +420,7 @@ tile = FakeDevice(
         group_uuid=group_three_uuid,
         location_label=location_two_label,
         location_uuid=location_two_uuid,
-        firmware=chp.Firmware(3, 50, 1548977726000000000),
+        firmware=hp.Firmware(3, 50),
     ),
 )
 

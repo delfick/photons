@@ -267,7 +267,7 @@ describe "finding devices":
                 serials[2],
                 chp.default_responders(
                     Products.LCM2_A19,
-                    firmware=chp.Firmware(2, 80, 1337),
+                    firmware=hp.Firmware(2, 80),
                     group_uuid="aa",
                     group_label="g1",
                     group_updated_at=42,

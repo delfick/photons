@@ -1,7 +1,8 @@
 # coding: spec
 
 from photons_control.colour import split_color_string, ColourParser, InvalidColor, ValueOutOfRange
-from photons_control import test_helpers as chp
+
+from photons_app import helpers as hp
 
 from photons_messages import LightMessages, Waveform
 
@@ -213,7 +214,7 @@ describe "ColourParser":
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")
 
-            c = chp.Color(h, s, 0, k)
+            c = hp.Color(h, s, 0, k)
 
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components)
@@ -245,7 +246,7 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"transient": 1, "period": 1}
 
-            c = chp.Color(h, s, 0, k)
+            c = hp.Color(h, s, 0, k)
 
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
@@ -277,7 +278,7 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"effect": "sine"}
 
-            c = chp.Color(h, s, 0, k)
+            c = hp.Color(h, s, 0, k)
 
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)
@@ -309,7 +310,7 @@ describe "ColourParser":
             components = mock.Mock(name="components")
             overrides = {"effect": "sine", "waveform": Waveform.PULSE, "skew_ratio": 0.2}
 
-            c = chp.Color(h, s, 0, k)
+            c = hp.Color(h, s, 0, k)
 
             with mock.patch.object(ColourParser, "hsbk", hsbk):
                 msg = ColourParser.msg(components, overrides)

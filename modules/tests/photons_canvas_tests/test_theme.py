@@ -3,6 +3,7 @@
 from photons_canvas.theme import ApplyTheme
 
 from photons_app.special import FoundSerials
+from photons_app import helpers as hp
 
 from photons_control import test_helpers as chp
 from photons_transport.fake import FakeDevice
@@ -17,8 +18,8 @@ bulb = FakeDevice(
         power=0,
         label="sam",
         infrared=0,
-        color=chp.Color(0, 0, 0, 0),
-        firmware=chp.Firmware(2, 2, 1448861477000000000),
+        color=hp.Color(0, 0, 0, 0),
+        firmware=hp.Firmware(2, 2),
     ),
 )
 
@@ -30,8 +31,8 @@ tile = FakeDevice(
         power=0,
         label="bob",
         infrared=100,
-        color=chp.Color(100, 0.5, 0.5, 4500),
-        firmware=chp.Firmware(3, 50, 1548977726000000000),
+        color=hp.Color(100, 0.5, 0.5, 4500),
+        firmware=hp.Firmware(3, 50),
     ),
 )
 
@@ -41,8 +42,8 @@ striplcm1 = FakeDevice(
         Products.LCM1_Z,
         power=65535,
         label="lcm1-no-extended",
-        firmware=chp.Firmware(1, 22, 1502237570000000000),
-        zones=[chp.Color(0, 0, 0, 0) for i in range(20)],
+        firmware=hp.Firmware(1, 22),
+        zones=[hp.Color(0, 0, 0, 0) for i in range(20)],
     ),
 )
 
@@ -52,8 +53,8 @@ striplcm2noextended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
-        firmware=chp.Firmware(2, 70, 1508122125000000000),
-        zones=[chp.Color(0, 0, 0, 0) for i in range(30)],
+        firmware=hp.Firmware(2, 70),
+        zones=[hp.Color(0, 0, 0, 0) for i in range(30)],
     ),
 )
 
@@ -63,8 +64,8 @@ striplcm2extended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
-        firmware=chp.Firmware(2, 77, 1543215651000000000),
-        zones=[chp.Color(0, 0, 0, 0) for i in range(82)],
+        firmware=hp.Firmware(2, 77),
+        zones=[hp.Color(0, 0, 0, 0) for i in range(82)],
     ),
 )
 
@@ -112,7 +113,7 @@ describe "ApplyTheme":
             if c.hue != 0:
                 non_zero_hues.append(c.hue)
             assert c.saturation == 1
-            assert c.brightness == chp.Color(0, 0, 0.3, 0).brightness
+            assert c.brightness == hp.Color(0, 0, 0.3, 0).brightness
             assert c.kelvin == 3500
 
         assert len(non_zero_hues) > 200
@@ -142,8 +143,8 @@ describe "ApplyTheme":
         for c in colors:
             if c.hue != 0:
                 non_zero_hues.append(c.hue)
-            assert c.saturation == chp.Color(0, 0.2, 0, 0).saturation
-            assert c.brightness == chp.Color(0, 0, 0.3, 0).brightness
+            assert c.saturation == hp.Color(0, 0.2, 0, 0).saturation
+            assert c.brightness == hp.Color(0, 0, 0.3, 0).brightness
             assert c.kelvin == 3500
 
         assert len(non_zero_hues) > 200

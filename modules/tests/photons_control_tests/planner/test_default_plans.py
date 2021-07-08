@@ -4,6 +4,7 @@ from photons_control.planner import Skip, PacketPlan
 from photons_control import test_helpers as chp
 
 from photons_app.special import FoundSerials
+from photons_app import helpers as hp
 
 from photons_messages import (
     DeviceMessages,
@@ -56,9 +57,9 @@ class Partial:
             return f"<DIFFERENT: {repr(s.item)}>"
 
 
-zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
-zones2 = [chp.Color(60 - i, 1, 1, 6500) for i in range(20)]
-zones3 = [chp.Color(90 - i, 1, 1, 9000) for i in range(40)]
+zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]
+zones2 = [hp.Color(60 - i, 1, 1, 6500) for i in range(20)]
+zones3 = [hp.Color(90 - i, 1, 1, 9000) for i in range(40)]
 
 light1 = FakeDevice(
     "d073d5000001",
@@ -67,8 +68,8 @@ light1 = FakeDevice(
         power=0,
         label="bob",
         infrared=100,
-        color=chp.Color(100, 0.5, 0.5, 4500),
-        firmware=chp.Firmware(3, 50, 1548977726000000000),
+        color=hp.Color(100, 0.5, 0.5, 4500),
+        firmware=hp.Firmware(3, 50),
     ),
 )
 
@@ -79,8 +80,8 @@ light2 = FakeDevice(
         power=65535,
         label="sam",
         infrared=0,
-        color=chp.Color(200, 0.3, 1, 9000),
-        firmware=chp.Firmware(2, 2, 1448861477000000000),
+        color=hp.Color(200, 0.3, 1, 9000),
+        firmware=hp.Firmware(2, 2),
     ),
 )
 
@@ -90,7 +91,7 @@ striplcm1 = FakeDevice(
         Products.LCM1_Z,
         power=0,
         label="lcm1-no-extended",
-        firmware=chp.Firmware(1, 22, 1502237570000000000),
+        firmware=hp.Firmware(1, 22),
         zones=zones1,
     ),
 )
@@ -101,7 +102,7 @@ striplcm2noextended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
-        firmware=chp.Firmware(2, 70, 1508122125000000000),
+        firmware=hp.Firmware(2, 70),
         zones=zones2,
     ),
 )
@@ -112,7 +113,7 @@ striplcm2extended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
-        firmware=chp.Firmware(2, 77, 1543215651000000000),
+        firmware=hp.Firmware(2, 77),
         zones=zones3,
     ),
 )
@@ -311,7 +312,7 @@ describe "Default Plans":
                 "cap": Products.LCM3_TILE.cap(3, 50),
                 "product": Products.LCM3_TILE,
                 "firmware": {
-                    "build": 1548977726000000000,
+                    "build": 0,
                     "version_major": 3,
                     "version_minor": 50,
                 },
@@ -320,14 +321,14 @@ describe "Default Plans":
             l2c = {
                 "cap": Products.LMB_MESH_A21.cap(2, 2),
                 "product": Products.LMB_MESH_A21,
-                "firmware": {"build": 1448861477000000000, "version_major": 2, "version_minor": 2},
+                "firmware": {"build": 0, "version_major": 2, "version_minor": 2},
                 "state_version": make_version(1, 1),
             }
             slcm1c = {
                 "cap": Products.LCM1_Z.cap(1, 22),
                 "product": Products.LCM1_Z,
                 "firmware": {
-                    "build": 1502237570000000000,
+                    "build": 0,
                     "version_major": 1,
                     "version_minor": 22,
                 },
@@ -337,7 +338,7 @@ describe "Default Plans":
                 "cap": Products.LCM2_Z.cap(2, 70),
                 "product": Products.LCM2_Z,
                 "firmware": {
-                    "build": 1508122125000000000,
+                    "build": 0,
                     "version_major": 2,
                     "version_minor": 70,
                 },
@@ -347,7 +348,7 @@ describe "Default Plans":
                 "cap": Products.LCM2_Z.cap(2, 77),
                 "product": Products.LCM2_Z,
                 "firmware": {
-                    "build": 1543215651000000000,
+                    "build": 0,
                     "version_major": 2,
                     "version_minor": 77,
                 },
@@ -373,27 +374,27 @@ describe "Default Plans":
 
         async it "gets the firmware", runner:
             l1c = {
-                "build": 1548977726000000000,
+                "build": 0,
                 "version_major": 3,
                 "version_minor": 50,
             }
             l2c = {
-                "build": 1448861477000000000,
+                "build": 0,
                 "version_major": 2,
                 "version_minor": 2,
             }
             slcm1c = {
-                "build": 1502237570000000000,
+                "build": 0,
                 "version_major": 1,
                 "version_minor": 22,
             }
             slcm2nec = {
-                "build": 1508122125000000000,
+                "build": 0,
                 "version_major": 2,
                 "version_minor": 70,
             }
             slcm2ec = {
-                "build": 1543215651000000000,
+                "build": 0,
                 "version_major": 2,
                 "version_minor": 77,
             }
@@ -474,7 +475,7 @@ describe "Default Plans":
             for ex, strip in [(expectedlcm1, striplcm1), (expectedlcm2, striplcm2extended)]:
                 for i, z in enumerate(strip.attrs.zones):
                     z.hue = i
-                    ex.append(chp.Color(i, z.saturation, z.brightness, z.kelvin))
+                    ex.append(hp.Color(i, z.saturation, z.brightness, z.kelvin))
 
             assert len(expectedlcm1) == 30
             assert len(expectedlcm2) == 40
@@ -485,12 +486,12 @@ describe "Default Plans":
                     light1.attrs.chain[i][1][j].hue = i + j
                 tile_expected.append(list(light1.attrs.chain[i][1]))
 
-            light2.attrs.color = chp.Color(100, 0.5, 0.8, 2500)
+            light2.attrs.color = hp.Color(100, 0.5, 0.8, 2500)
 
             got = await self.gather(runner, serials, "colors")
 
             assert got[light1.serial][1]["colors"] == tile_expected
-            assert got[light2.serial][1]["colors"] == [[chp.Color(100, 0.5, 0.8, 2500)]]
+            assert got[light2.serial][1]["colors"] == [[hp.Color(100, 0.5, 0.8, 2500)]]
             assert got[striplcm1.serial][1]["colors"] == [expectedlcm1]
             assert got[striplcm2extended.serial][1]["colors"] == [expectedlcm2]
 
@@ -736,7 +737,7 @@ describe "Default Plans":
                         "device_version_product": 1,
                         "device_version_vendor": 1,
                         "device_version_version": 0,
-                        "firmware_build": 1448861477000000000,
+                        "firmware_build": 0,
                         "firmware_version_major": 2,
                         "firmware_version_minor": 2,
                         "height": 1,
@@ -752,7 +753,7 @@ describe "Default Plans":
             assert len(info["random_orientations"]) == 1
             assert info["coords_and_sizes"] == [((0.0, 0.0), (1, 1))]
 
-            colors = [chp.Color(200, 1, 1, 3500)]
+            colors = [hp.Color(200, 1, 1, 3500)]
             assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
             assert info["reverse_orient"](0, colors) == reorient(colors, Orientation.RightSideUp)
 
@@ -771,7 +772,7 @@ describe "Default Plans":
                         "device_version_product": 31,
                         "device_version_vendor": 1,
                         "device_version_version": 0,
-                        "firmware_build": 1502237570000000000,
+                        "firmware_build": 0,
                         "firmware_version_major": 1,
                         "firmware_version_minor": 22,
                         "height": 1,
@@ -794,7 +795,7 @@ describe "Default Plans":
                         "device_version_product": 32,
                         "device_version_vendor": 1,
                         "device_version_version": 0,
-                        "firmware_build": 1508122125000000000,
+                        "firmware_build": 0,
                         "firmware_version_major": 2,
                         "firmware_version_minor": 70,
                         "height": 1,
@@ -817,7 +818,7 @@ describe "Default Plans":
                         "device_version_product": 32,
                         "device_version_vendor": 1,
                         "device_version_version": 0,
-                        "firmware_build": 1543215651000000000,
+                        "firmware_build": 0,
                         "firmware_version_major": 2,
                         "firmware_version_minor": 77,
                         "height": 1,
@@ -834,7 +835,7 @@ describe "Default Plans":
 
                 assert info["orientations"] == {0: Orientation.RightSideUp}
 
-                colors = [chp.Color(i, 1, 1, 3500) for i in range(30)]
+                colors = [hp.Color(i, 1, 1, 3500) for i in range(30)]
                 assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
                 assert info["reverse_orient"](0, colors) == reorient(
                     colors, Orientation.RightSideUp
@@ -994,7 +995,7 @@ describe "Default Plans":
 
             assert len(info["random_orientations"]) == len(info["orientations"])
 
-            colors = [chp.Color(i, 1, 1, 3500) for i in range(64)]
+            colors = [hp.Color(i, 1, 1, 3500) for i in range(64)]
 
             assert info["reorient"](1, colors) == reorient(colors, Orientation.RotatedLeft)
             assert info["reorient"](3, colors) == reorient(colors, Orientation.FaceDown)
@@ -1018,7 +1019,7 @@ describe "Default Plans":
                     speed=10,
                     duration=1,
                     palette_count=2,
-                    palette=[chp.Color(120, 1, 1, 3500), chp.Color(360, 1, 1, 3500)],
+                    palette=[hp.Color(120, 1, 1, 3500), hp.Color(360, 1, 1, 3500)],
                 ),
             )
 
@@ -1036,7 +1037,7 @@ describe "Default Plans":
                 "type": TileEffectType.FLAME,
                 "options": {
                     "duration": 1,
-                    "palette": [chp.Color(120, 1, 1, 3500), chp.Color(360, 1, 1, 3500)],
+                    "palette": [hp.Color(120, 1, 1, 3500), hp.Color(360, 1, 1, 3500)],
                     "speed": 10.0,
                     "instanceid": mock.ANY,
                 },

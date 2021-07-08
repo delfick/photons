@@ -5,7 +5,6 @@ Here we create classes that represent the individual fields in the LIFX packets
 from photons_protocol.errors import BadSpecValue, BadConversion
 
 from photons_app.errors import ProgrammerError
-from photons_app import helpers as hp
 
 from delfick_project.norms import sb
 from bitarray import bitarray
@@ -1151,7 +1150,9 @@ class bytes_as_string_spec(sb.Spec):
                 return val.decode()
             except UnicodeDecodeError as error:
                 log.warning(
-                    hp.lc("Can't turn bytes into string, so just returning bytes", error=error)
+                    __import__("photons_app").helpers.lc(
+                        "Can't turn bytes into string, so just returning bytes", error=error
+                    )
                 )
                 return val
             except Exception as error:

@@ -1,4 +1,5 @@
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from photons_messages import (
     LightMessages,
@@ -7,57 +8,15 @@ from photons_messages import (
     TileMessages,
     MultiZoneEffectType,
     TileEffectType,
-    fields,
 )
 from photons_products import Products, Family
 from photons_protocol.types import enum_spec
 from photons_transport.fake import Responder
 
 from delfick_project.norms import dictobj, sb, Meta
-from functools import total_ordering
 import logging
 
 log = logging.getLogger("photons_control.test_helpers")
-
-
-class Color(fields.Color):
-    def __init__(self, hue, saturation, brightness, kelvin):
-        super().__init__(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
-
-    def clone(self):
-        return Color(self.hue, self.saturation, self.brightness, self.kelvin)
-
-    def __eq__(self, other):
-        if isinstance(other, tuple):
-            if len(other) != 4:
-                return False
-
-            other = Color(*other)
-
-        if not isinstance(other, (fields.Color, dict)) and not hasattr(other, "as_dict"):
-            return False
-
-        if not isinstance(other, fields.Color):
-            if hasattr(other, "as_dict"):
-                other = other.as_dict()
-
-            if set(other) != set(["hue", "saturation", "brightness", "kelvin"]):
-                return False
-
-            other = fields.Color(**other)
-
-        # for hue a step is 360/65535 so its only accurate to within 0.0055
-        # In practise, the firmware does truncate values such that 0.0055 becomes
-        # 0.011 and so we should only compare to one decimal for hue here.
-        if "hue" not in other or round(self["hue"], 1) % 360 != round(other["hue"], 1) % 360:
-            return False
-
-        for k in ("saturation", "brightness", "kelvin"):
-            # for brightness and saturation a step is 1/65535 so 4 digits is fine
-            if k not in other or round(self[k], 4) != round(other[k], 4):
-                return False
-
-        return True
 
 
 class TileChild(dictobj.Spec):
@@ -77,7 +36,11 @@ class TileChild(dictobj.Spec):
 
 
 class LightStateResponder(Responder):
-    _fields = [("color", lambda: Color(0, 0, 1, 3500)), ("power", lambda: 0), ("label", lambda: "")]
+    _fields = [
+        ("color", lambda: hp.Color(0, 0, 1, 3500)),
+        ("power", lambda: 0),
+        ("label", lambda: ""),
+    ]
 
     async def respond(self, device, pkt, source):
         if pkt | DeviceMessages.GetLabel:
@@ -101,12 +64,12 @@ class LightStateResponder(Responder):
             yield self.make_light_response(device)
         elif pkt | LightMessages.SetColor or pkt | LightMessages.SetWaveform:
             res = self.make_light_response(device)
-            device.attrs.color = Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin)
+            device.attrs.color = hp.Color(pkt.hue, pkt.saturation, pkt.brightness, pkt.kelvin)
             yield res
         elif pkt | LightMessages.SetWaveformOptional:
             res = self.make_light_response(device)
 
-            color = Color(**device.attrs.color.as_dict())
+            color = hp.Color(**device.attrs.color.as_dict())
             for p in ("hue", "saturation", "brightness", "kelvin"):
                 if getattr(pkt, f"set_{p}"):
                     color[p] = pkt[p]
@@ -181,7 +144,7 @@ class MatrixResponder(Responder):
                     width=device.attrs.matrix_width,
                     height=device.attrs.matrix_height,
                 )
-                colors = [Color(0, 0, 0, 3500) for _ in range(64)]
+                colors = [hp.Color(0, 0, 0, 3500) for _ in range(64)]
                 device.attrs.chain.append((child, colors))
 
     def has_matrix(self, device):
@@ -312,7 +275,7 @@ class ZonesResponder(Responder):
             return
 
         device.attrs.zones = list(device.attrs.zones)
-        device.attrs.zones[index] = Color(hue, saturation, brightness, kelvin)
+        device.attrs.zones[index] = hp.Color(hue, saturation, brightness, kelvin)
 
     async def respond(self, device, pkt, source):
         if not self.has_multizone(device):
@@ -395,40 +358,11 @@ class GroupingResponder(Responder):
         )
 
 
-@total_ordering
-class Firmware:
-    def __init__(self, major, minor, build=0, install=0):
-        self.major = major
-        self.minor = minor
-        self.build = build
-        self.install = install
-
-    def __eq__(self, other):
-        if isinstance(other, tuple) and len(other) == 2:
-            return (self.major, self.minor) == other
-        elif isinstance(other, Firmware):
-            return (
-                self.major == other.major
-                and self.minor == other.minor
-                and self.build == other.build
-            )
-        else:
-            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
-
-    def __lt__(self, other):
-        if isinstance(other, tuple) and len(other) == 2:
-            return (self.major, self.minor) < other
-        elif isinstance(other, Firmware):
-            return (self.major, self.minor) < (other.major, other.minor)
-        else:
-            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
-
-
 class ProductResponder(Responder):
     _fields = ["product", "vendor_id", "product_id", "firmware"]
 
     @classmethod
-    def from_product(self, product, firmware=Firmware(0, 0, 0)):
+    def from_product(self, product, firmware=hp.Firmware(0, 0)):
         return ProductResponder(
             product=product, product_id=product.pid, vendor_id=product.vendor.vid, firmware=firmware
         )
@@ -460,10 +394,10 @@ def default_responders(
     *,
     power=0,
     label="",
-    color=Color(0, 1, 1, 3500),
+    color=hp.Color(0, 1, 1, 3500),
     infrared=0,
     zones=None,
-    firmware=Firmware(0, 0, 0),
+    firmware=hp.Firmware(0, 0),
     zones_effect=MultiZoneEffectType.OFF,
     matrix_effect=TileEffectType.OFF,
     chain=None,

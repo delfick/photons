@@ -9,9 +9,10 @@ from photons_control.multizone import (
 )
 from photons_control.planner import Skip, NoMessages
 from photons_control import test_helpers as chp
-
 from photons_control.colour import ColourParser
+
 from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
 from photons_transport.fake import FakeDevice
@@ -22,10 +23,10 @@ from delfick_project.errors_pytest import assertRaises
 import pytest
 
 
-zeroColor = chp.Color(0, 0, 0, 3500)
-zones1 = [chp.Color(i, 1, 1, 3500) for i in range(30)]
-zones2 = [chp.Color(90 - i, 1, 1, 3500) for i in range(6)]
-zones3 = [chp.Color(300 - i, 1, 1, 3500) for i in range(16)]
+zeroColor = hp.Color(0, 0, 0, 3500)
+zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]
+zones2 = [hp.Color(90 - i, 1, 1, 3500) for i in range(6)]
+zones3 = [hp.Color(300 - i, 1, 1, 3500) for i in range(16)]
 
 light1 = FakeDevice(
     "d073d5000001",
@@ -34,8 +35,8 @@ light1 = FakeDevice(
         power=0,
         label="bob",
         infrared=100,
-        color=chp.Color(100, 0.5, 0.5, 4500),
-        firmware=chp.Firmware(3, 50, 1548977726000000000),
+        color=hp.Color(100, 0.5, 0.5, 4500),
+        firmware=hp.Firmware(3, 50),
     ),
 )
 
@@ -46,8 +47,8 @@ light2 = FakeDevice(
         power=65535,
         label="sam",
         infrared=0,
-        color=chp.Color(200, 0.3, 1, 9000),
-        firmware=chp.Firmware(2, 2, 1448861477000000000),
+        color=hp.Color(200, 0.3, 1, 9000),
+        firmware=hp.Firmware(2, 2),
     ),
 )
 
@@ -57,7 +58,7 @@ striplcm1 = FakeDevice(
         Products.LCM1_Z,
         power=0,
         label="lcm1-no-extended",
-        firmware=chp.Firmware(1, 22, 1502237570000000000),
+        firmware=hp.Firmware(1, 22),
         zones=zones1,
     ),
 )
@@ -68,7 +69,7 @@ striplcm2noextended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
-        firmware=chp.Firmware(2, 70, 1508122125000000000),
+        firmware=hp.Firmware(2, 70),
         zones=zones2,
     ),
 )
@@ -79,7 +80,7 @@ striplcm2extended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
-        firmware=chp.Firmware(2, 77, 1543215651000000000),
+        firmware=hp.Firmware(2, 77),
         zones=zones3,
     ),
 )
@@ -126,13 +127,13 @@ describe "SetZonesPlan":
         assert all(msg | MultiZoneMessages.SetColorZones for msg in plan.set_color_old)
         assert plan.set_color_new | MultiZoneMessages.SetExtendedColorZones
 
-        colorRed = chp.Color(0, 1, 1, 3500)
-        colorBlue = chp.Color(250, 1, 1, 3500)
-        colorHSBK = chp.Color(78, 0, 0.5, 3500)
-        colorHEX = chp.Color(200.39917601281758, 0.5882200350957504, 0.3333333333333333, 3500)
+        colorRed = hp.Color(0, 1, 1, 3500)
+        colorBlue = hp.Color(250, 1, 1, 3500)
+        colorHSBK = hp.Color(78, 0, 0.5, 3500)
+        colorHEX = hp.Color(200.39917601281758, 0.5882200350957504, 0.3333333333333333, 3500)
 
-        hue100 = chp.Color(100, 0, 0, 3500).hue
-        half = chp.Color(0, 0.5, 0, 3500).saturation
+        hue100 = hp.Color(100, 0, 0, 3500).hue
+        half = hp.Color(0, 0.5, 0, 3500).saturation
 
         expected_old = [
             {"start_index": 0, "end_index": 9, **colorRed.as_dict()},
@@ -228,7 +229,7 @@ describe "SetZonesPlan":
 
         def hsbk(*args, **kwargs):
             h, s, b, k = ColourParser.hsbk(*args, **kwargs)
-            return chp.Color(h, s, b, k)
+            return hp.Color(h, s, b, k)
 
         colorRed = hsbk("red", overrides={"brightness": 1.0, "kelvin": 3500})
         colorBlue = hsbk("blue", overrides={"brightness": 1.0, "kelvin": 3500})
@@ -238,11 +239,11 @@ describe "SetZonesPlan":
         self.maxDiff = None
         expected_new = [colorRed] * 10 + [colorBlue] * 3 + [colorHSBK] * 5 + [colorHEX] * 2
         for _ in range(2):
-            expected_new.append(chp.Color(100, 0, 1, 3500))
-            expected_new.append(chp.Color(100, 0.5, 1, 3500))
-            expected_new.append(chp.Color(100, 0.5, 0.5, 3500))
-            expected_new.append(chp.Color(100, 0.5, 0.5, 9000))
-            expected_new.append(chp.Color(0, 0, 0, 0))
+            expected_new.append(hp.Color(100, 0, 1, 3500))
+            expected_new.append(hp.Color(100, 0.5, 1, 3500))
+            expected_new.append(hp.Color(100, 0.5, 0.5, 3500))
+            expected_new.append(hp.Color(100, 0.5, 0.5, 9000))
+            expected_new.append(hp.Color(0, 0, 0, 0))
 
         nw = plan.set_color_new
         assert nw.colors_count == len(expected_new), nw
@@ -255,7 +256,7 @@ describe "SetZonesPlan":
     async it "can overrides hue", specifier:
         plan = SetZonesPlan(specifier, overrides={"hue": 1})
 
-        expected = chp.Color(1, 0, 0, 3500).hue
+        expected = hp.Color(1, 0, 0, 3500).hue
 
         for o in plan.set_color_old:
             assert o.hue == expected
@@ -267,7 +268,7 @@ describe "SetZonesPlan":
     async it "can overrides saturation", specifier:
         plan = SetZonesPlan(specifier, overrides={"saturation": 0.3})
 
-        expected = chp.Color(0, 0.3, 0, 3500).saturation
+        expected = hp.Color(0, 0.3, 0, 3500).saturation
 
         for o in plan.set_color_old:
             assert o.saturation == expected
@@ -279,7 +280,7 @@ describe "SetZonesPlan":
     async it "can overrides brightness", specifier:
         plan = SetZonesPlan(specifier, overrides={"brightness": 0.6})
 
-        expected = chp.Color(0, 0, 0.6, 3500).brightness
+        expected = hp.Color(0, 0, 0.6, 3500).brightness
 
         for o in plan.set_color_old:
             assert o.brightness == expected
@@ -551,8 +552,8 @@ describe "Multizone helpers":
             got = await runner.sender(msg, runner.serials)
             assert got == []
 
-            red = chp.Color(0, 1, 1, 3500)
-            blue = chp.Color(250, 1, 1, 3500)
+            red = hp.Color(0, 1, 1, 3500)
+            blue = hp.Color(250, 1, 1, 3500)
             assert striplcm1.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
@@ -627,12 +628,12 @@ describe "Multizone helpers":
             got = await runner.sender([msg, msg2], None)
             assert got == []
 
-            red = chp.Color(0, 1, 1, 3500)
-            blue = chp.Color(250, 1, 1, 3500)
+            red = hp.Color(0, 1, 1, 3500)
+            blue = hp.Color(250, 1, 1, 3500)
             assert striplcm1.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
 
-            green = chp.Color(120, 1, 1, 3500)
-            yellow = chp.Color(60, 1, 1, 3500)
+            green = hp.Color(120, 1, 1, 3500)
+            yellow = hp.Color(60, 1, 1, 3500)
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
 

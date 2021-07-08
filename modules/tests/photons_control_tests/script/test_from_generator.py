@@ -20,14 +20,14 @@ import sys
 
 
 light1 = FakeDevice(
-    "d073d5000001", chp.default_responders(power=0, color=chp.Color(0, 1, 0.3, 2500))
+    "d073d5000001", chp.default_responders(power=0, color=hp.Color(0, 1, 0.3, 2500))
 )
 
 light2 = FakeDevice(
-    "d073d5000002", chp.default_responders(power=65535, color=chp.Color(100, 1, 0.5, 2500))
+    "d073d5000002", chp.default_responders(power=65535, color=hp.Color(100, 1, 0.5, 2500))
 )
 
-light3 = FakeDevice("d073d5000003", chp.default_responders(color=chp.Color(100, 1, 0.5, 2500)))
+light3 = FakeDevice("d073d5000003", chp.default_responders(color=hp.Color(100, 1, 0.5, 2500)))
 
 
 @pytest.fixture(scope="module")

@@ -2,6 +2,8 @@
 
 from photons_canvas.points.simple_messages import MultizoneMessagesMaker
 
+from photons_app import helpers as hp
+
 from photons_control import test_helpers as chp
 from photons_transport.fake import FakeDevice
 from photons_products import Products
@@ -15,8 +17,8 @@ striplcm1 = FakeDevice(
         Products.LCM1_Z,
         power=0,
         label="lcm1-no-extended",
-        zones=[chp.Color(0, 0, 0, 0)] * 16,
-        firmware=chp.Firmware(1, 22, 1502237570000000000),
+        zones=[hp.Color(0, 0, 0, 0)] * 16,
+        firmware=hp.Firmware(1, 22),
     ),
 )
 
@@ -26,8 +28,8 @@ striplcm2noextended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-no-extended",
-        zones=[chp.Color(0, 0, 0, 0)] * 16,
-        firmware=chp.Firmware(2, 70, 1508122125000000000),
+        zones=[hp.Color(0, 0, 0, 0)] * 16,
+        firmware=hp.Firmware(2, 70),
     ),
 )
 
@@ -37,8 +39,8 @@ striplcm2extended = FakeDevice(
         Products.LCM2_Z,
         power=0,
         label="lcm2-extended",
-        zones=[chp.Color(0, 0, 0, 0)] * 16,
-        firmware=chp.Firmware(2, 77, 1543215651000000000),
+        zones=[hp.Color(0, 0, 0, 0)] * 16,
+        firmware=hp.Firmware(2, 77),
     ),
 )
 
@@ -59,10 +61,10 @@ async def reset_runner(runner):
 describe "SetZones":
 
     async it "set zones", runner:
-        colors = [chp.Color(i, 1, 1, 3500) for i in range(16)]
+        colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in strips:
-            strip.attrs.zones = [chp.Color(0, 0, 0, 0)] * 16
+            strip.attrs.zones = [hp.Color(0, 0, 0, 0)] * 16
             cap = chp.ProductResponder.capability(strip)
             maker = MultizoneMessagesMaker(
                 strip.serial, cap, [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors]
@@ -73,10 +75,10 @@ describe "SetZones":
             assert strip.attrs.zones == colors
 
     async it "set zones from a different start zone", runner:
-        colors = [chp.Color(i, 1, 1, 3500) for i in range(16)]
+        colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in strips:
-            strip.attrs.zones = [chp.Color(0, 0, 0, 0)] * 16
+            strip.attrs.zones = [hp.Color(0, 0, 0, 0)] * 16
             cap = chp.ProductResponder.capability(strip)
             maker = MultizoneMessagesMaker(
                 strip.serial,
@@ -88,5 +90,5 @@ describe "SetZones":
 
         for strip in strips:
             assert (
-                strip.attrs.zones == [chp.Color(0, 0, 0, 0), chp.Color(0, 0, 0, 0)] + colors[:-2]
+                strip.attrs.zones == [hp.Color(0, 0, 0, 0), hp.Color(0, 0, 0, 0)] + colors[:-2]
             ), strip

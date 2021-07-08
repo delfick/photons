@@ -1,10 +1,12 @@
 from photons_app.errors import PhotonsAppError
 
+from photons_messages import fields
+
 from queue import Queue as NormalQueue, Empty as NormalEmpty
+from functools import wraps, total_ordering
 from delfick_project.logging import lc
 from contextlib import contextmanager
 from collections import deque
-from functools import wraps
 import threading
 import traceback
 import tempfile
@@ -36,6 +38,104 @@ class Nope:
     """Used to say there was no value"""
 
     pass
+
+
+class Color(fields.Color):
+    """
+    A helper for comparing HSBK values
+
+    This class is able to compare against tuples, dictionaries and anything with
+    hue, saturation, brightness and kelvin attributes
+
+    It will take into account the precision of the Uint16 values we use to represent
+    these components
+    """
+
+    def __init__(self, hue, saturation, brightness, kelvin):
+        super().__init__(hue=hue, saturation=saturation, brightness=brightness, kelvin=kelvin)
+
+    def clone(self):
+        return Color(self.hue, self.saturation, self.brightness, self.kelvin)
+
+    def as_dict(self):
+        """A copy of as_dict with no keyword arguments to avoid confusing MergedOptions"""
+        return {
+            "hue": self.hue,
+            "saturation": self.saturation,
+            "brightness": self.brightness,
+            "kelvin": self.kelvin,
+        }
+
+    def __eq__(self, other):
+        if isinstance(other, tuple):
+            if len(other) != 4:
+                return False
+
+            other = Color(*other)
+
+        if not isinstance(other, (fields.Color, dict)) and not hasattr(other, "as_dict"):
+            return False
+
+        if not isinstance(other, fields.Color):
+            if hasattr(other, "as_dict"):
+                other = other.as_dict()
+
+            if set(other) != set(["hue", "saturation", "brightness", "kelvin"]):
+                return False
+
+            other = fields.Color(**other)
+
+        # for hue a step is 360/65535 so its only accurate to within 0.0055
+        # In practise, the firmware does truncate values such that 0.0055 becomes
+        # 0.011 and so we should only compare to one decimal for hue here.
+        if "hue" not in other or round(self["hue"], 1) % 360 != round(other["hue"], 1) % 360:
+            return False
+
+        for k in ("saturation", "brightness", "kelvin"):
+            # for brightness and saturation a step is 1/65535 so 4 digits is fine
+            if k not in other or round(self[k], 4) != round(other[k], 4):
+                return False
+
+        return True
+
+
+@total_ordering
+class Firmware:
+    """
+    A helper for representing and comparing LIFX firmware versions
+    """
+
+    def __init__(self, major, minor, build=0, install=0):
+        self.major = major
+        self.minor = minor
+        self.build = build
+        self.install = install
+
+    def clone(self):
+        return Firmware(self.major, self.minor, build=self.build, install=self.install)
+
+    def __repr__(self):
+        return f"<Firmware {self.major},{self.minor}:{self.build},{self.install}>"
+
+    def __eq__(self, other):
+        if isinstance(other, tuple) and len(other) == 2:
+            return (self.major, self.minor) == other
+        elif isinstance(other, Firmware):
+            return (
+                self.major == other.major
+                and self.minor == other.minor
+                and self.build == other.build
+            )
+        else:
+            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
+
+    def __lt__(self, other):
+        if isinstance(other, tuple) and len(other) == 2:
+            return (self.major, self.minor) < other
+        elif isinstance(other, Firmware):
+            return (self.major, self.minor) < (other.major, other.minor)
+        else:
+            raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
 
 
 def ensure_aexit(instance):
