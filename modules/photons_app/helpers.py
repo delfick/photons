@@ -71,14 +71,17 @@ def ensure_aexit(instance):
 
     @asynccontextmanager
     async def ensure_aexit_cm():
+        exc_info = None
         try:
             yield
-        finally:
-            # aexit doesn't run if aenter raises an exception
+        except:
             exc_info = sys.exc_info()
-            if exc_info[1] is not None:
-                await instance.__aexit__(*exc_info)
-                raise
+
+        if exc_info is not None:
+            # aexit doesn't run if aenter raises an exception
+            await instance.__aexit__(*exc_info)
+            exc_info[1].__traceback__ = exc_info[2]
+            raise exc_info[1]
 
     return ensure_aexit_cm()
 
