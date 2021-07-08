@@ -27,6 +27,10 @@ def color_zones_response_count(req, res):
 class CoreMessages(Messages):
     Acknowledgement = msg(45)
 
+    StateUnhandled = msg(223
+        , ("unhandled_type", T.Uint16)
+        )
+
 ########################
 ###   DISCOVERY
 ########################
@@ -134,10 +138,6 @@ class DeviceMessages(Messages):
         )
 
     EchoResponse = EchoRequest.using(59)
-
-    StateUnhandled = msg(223
-        , ("unhandled_type", T.Uint16)
-        )
 
 ########################
 ###   LIGHT

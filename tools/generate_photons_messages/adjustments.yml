@@ -178,6 +178,9 @@ clones:
         more_extras: ["optional()"]
 
 changes:
+  DeviceStateUnhandled:
+    namespace: core
+
   DeviceService:
     rename: Services
 
