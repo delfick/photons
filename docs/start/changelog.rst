@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-40-4:
 
-0.40.2 - TBD
+0.40.4 - 9 July 2021
     * Adding has_unhandled capability
       * This says that the device responds with a StateUnhandled on messages it ignores
     * attr command will only print the contents of the replies if there's only one device
