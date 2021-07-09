@@ -46,15 +46,6 @@ class DiscoveryMessages(Messages):
 ########################
 
 class DeviceMessages(Messages):
-    GetHostInfo = msg(12)
-
-    StateHostInfo = msg(13
-        , ("signal", T.Float)
-        , ("tx", T.Uint32)
-        , ("rx", T.Uint32)
-        , ("reserved6", T.Reserved(16))
-        )
-
     GetHostFirmware = msg(14)
 
     StateHostFirmware = msg(15
@@ -68,9 +59,9 @@ class DeviceMessages(Messages):
 
     StateWifiInfo = msg(17
         , ("signal", T.Float)
-        , ("tx", T.Uint32)
-        , ("rx", T.Uint32)
-        , ("reserved6", T.Reserved(16))
+        , ("reserved6", T.Reserved(32))
+        , ("reserved7", T.Reserved(32))
+        , ("reserved8", T.Reserved(16))
         )
 
     GetWifiFirmware = msg(18)
