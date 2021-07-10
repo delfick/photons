@@ -3,6 +3,7 @@
 from interactor.errors import InteractorError
 
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app import helpers as hp
 
 from delfick_project.norms import dictobj, sb
 from whirlwind.store import Store
@@ -51,16 +52,27 @@ class TError(store.Command):
         return {"serial": self.serial}
 
 
-@pytest.fixture(scope="module")
-async def server(server_wrapper):
-    async with server_wrapper(store) as server:
-        yield server
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
-@pytest.fixture(autouse=True)
-async def wrap_tests(server):
-    async with server.per_test():
-        yield
+@pytest.fixture()
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture()
+async def server(server_wrapper, sender, final_future, FakeTime, MockedCallLater):
+    with FakeTime() as t:
+        async with MockedCallLater(t):
+            async with server_wrapper(store, sender, final_future) as server:
+                yield server
 
 
 describe "Commands":

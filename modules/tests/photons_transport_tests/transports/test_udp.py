@@ -9,7 +9,7 @@ import asyncio
 import pytest
 
 
-class FakeDevice:
+class FakeIO:
     def __init__(self, port, received):
         self.port = port
         self.received = received
@@ -119,7 +119,7 @@ describe "UDP":
             else:
                 assert False, "Unknown message"
 
-        device = FakeDevice(V.port, translate)
+        device = FakeIO(V.port, translate)
         await device.start()
 
         transport = await V.transport.spawn(V.original_message, timeout=1)
@@ -136,7 +136,7 @@ describe "UDP":
             await device.finish()
 
     async it "can close the transport", V:
-        device = FakeDevice(V.port, lambda b, a: [])
+        device = FakeIO(V.port, lambda b, a: [])
         await device.start()
 
         try:

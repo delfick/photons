@@ -8,14 +8,18 @@ from photons_control.multizone import (
     SetZonesEffect,
 )
 from photons_control.planner import Skip, NoMessages
-from photons_control import test_helpers as chp
 from photons_control.colour import ColourParser
 
 from photons_app.errors import PhotonsAppError
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, LightMessages, MultiZoneMessages, MultiZoneEffectType
-from photons_transport.fake import FakeDevice
+from photons_messages import (
+    DeviceMessages,
+    LightMessages,
+    MultiZoneMessages,
+    MultiZoneEffectType,
+    DiscoveryMessages,
+)
 from photons_products.lifx import Capability
 from photons_products import Products
 
@@ -28,76 +32,89 @@ zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [hp.Color(90 - i, 1, 1, 3500) for i in range(6)]
 zones3 = [hp.Color(300 - i, 1, 1, 3500) for i in range(16)]
 
-light1 = FakeDevice(
+devices = pytest.helpers.mimic()
+
+light1 = devices.add("light1")(
     "d073d5000001",
-    chp.default_responders(
-        Products.LCM3_TILE,
+    Products.LCM3_TILE,
+    hp.Firmware(3, 50),
+    value_store=dict(
         power=0,
         label="bob",
         infrared=100,
         color=hp.Color(100, 0.5, 0.5, 4500),
-        firmware=hp.Firmware(3, 50),
     ),
 )
 
-light2 = FakeDevice(
+light2 = devices.add("light2")(
     "d073d5000002",
-    chp.default_responders(
-        Products.LMB_MESH_A21,
+    Products.LMB_MESH_A21,
+    hp.Firmware(2, 2),
+    value_store=dict(
         power=65535,
         label="sam",
         infrared=0,
         color=hp.Color(200, 0.3, 1, 9000),
-        firmware=hp.Firmware(2, 2),
     ),
 )
 
-striplcm1 = FakeDevice(
+striplcm1 = devices.add("striplcm1")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 22),
+    value_store=dict(
         power=0,
         label="lcm1-no-extended",
-        firmware=hp.Firmware(1, 22),
         zones=zones1,
     ),
 )
 
-striplcm2noextended = FakeDevice(
+striplcm2noextended = devices.add("striplcm2noextended")(
     "d073d5000004",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 70),
+    value_store=dict(
         power=0,
         label="lcm2-no-extended",
-        firmware=hp.Firmware(2, 70),
         zones=zones2,
     ),
 )
 
-striplcm2extended = FakeDevice(
+striplcm2extended = devices.add("striplcm2extended")(
     "d073d5000005",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 77),
+    value_store=dict(
         power=0,
         label="lcm2-extended",
-        firmware=hp.Firmware(2, 77),
         zones=zones3,
     ),
 )
 
 strips = [striplcm1, striplcm2extended, striplcm2noextended]
-lights = [light1, light2, *strips]
 
 
 @pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner(lights) as runner:
-        yield runner
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture(scope="module")
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
+async def reset_devices(sender):
+    for device in devices:
+        await device.reset()
+        devices.store(device).clear()
+    sender.gatherer.clear_cache()
 
 
 describe "SetZonesPlan":
@@ -351,8 +368,7 @@ describe "SetZonesPlan":
         plan = SetZonesPlan(specifier)
 
         def make(device, options):
-            product = chp.ProductResponder.capability(device).product
-            return type("Capability", (Capability,), options)(product)
+            return type("Capability", (Capability,), options)(device.cap.product)
 
         instance1 = plan.Instance(
             light1.serial,
@@ -427,21 +443,15 @@ describe "Multizone helpers":
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
-            assert light in lights
-            light.compare_received(msgs)
-            light.reset_received()
-
-    def compare_received_klses(self, by_light):
-        for light, msgs in by_light.items():
-            assert light in lights
-            light.compare_received_klses(msgs)
-            light.reset_received()
+            assert light in devices
+            devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(light).clear()
 
     describe "find_multizone":
 
-        async it "yields serials and capability", runner:
+        async it "yields serials and capability", sender:
             got = {}
-            async for serial, cap in find_multizone(runner.serials, runner.sender):
+            async for serial, cap in find_multizone(devices.serials, sender):
                 assert serial not in got
                 got[serial] = cap.has_extended_multizone
 
@@ -451,47 +461,47 @@ describe "Multizone helpers":
                 striplcm2extended.serial: True,
             }
 
-        async it "resends messages each time if we reset the gatherer", runner:
-            async for serial, cap in find_multizone(runner.serials, runner.sender):
+        async it "resends messages each time if we reset the gatherer", sender:
+            async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
             want = {
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in lights
+                for device in devices
             }
             self.compare_received(want)
 
-            del runner.sender.gatherer
-            async for serial, cap in find_multizone(runner.serials, runner.sender):
+            del sender.gatherer
+            async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
             want = {
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in lights
+                for device in devices
             }
             self.compare_received(want)
 
-        async it "uses cached gatherer on the sender", runner:
-            async for serial, cap in find_multizone(runner.serials, runner.sender):
+        async it "uses cached gatherer on the sender", sender:
+            async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
             want = {
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in lights
+                for device in devices
             }
             self.compare_received(want)
 
-            async for serial, cap in find_multizone(runner.serials, runner.sender):
+            async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
-            want = {device: [] for device in lights}
+            want = {device: [] for device in devices}
             self.compare_received(want)
 
     describe "zones_from_reference":
 
-        async it "yield zones", runner:
+        async it "yield zones", sender:
             got = {}
-            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
+            async for serial, zones in zones_from_reference(devices.serials, sender):
                 assert serial not in got
                 got[serial] = zones
 
@@ -501,13 +511,13 @@ describe "Multizone helpers":
                 striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
             }
 
-        async it "resends messages if no gatherer is reset between runs", runner:
-            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
+        async it "resends messages if no gatherer is reset between runs", sender:
+            async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
             want = {
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in lights
+                for device in devices
             }
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2noextended].append(
@@ -516,19 +526,19 @@ describe "Multizone helpers":
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
-            del runner.sender.gatherer
-            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
+            del sender.gatherer
+            async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
             self.compare_received(want)
 
-        async it "uses cached gatherer on the sender", runner:
-            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
+        async it "uses cached gatherer on the sender", sender:
+            async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
             want = {
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in lights
+                for device in devices
             }
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2noextended].append(
@@ -537,19 +547,19 @@ describe "Multizone helpers":
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             self.compare_received(want)
 
-            async for serial, zones in zones_from_reference(runner.serials, runner.sender):
+            async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
-            self.compare_received({device: [] for device in lights})
+            self.compare_received({device: [] for device in devices})
 
     describe "SetZones":
 
-        async it "can power on devices and set zones", runner:
+        async it "can power on devices and set zones", sender:
             for device in strips:
-                device.attrs.zones = [zeroColor] * 16
+                await device.change_one("zones", [zeroColor] * 16)
 
             msg = SetZones([["red", 7], ["blue", 5]])
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
             red = hp.Color(0, 1, 1, 3500)
@@ -558,7 +568,7 @@ describe "Multizone helpers":
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
 
-            self.compare_received_klses(
+            self.compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -585,15 +595,15 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can skip turning on lights", runner:
+        async it "can skip turning on lights", sender:
             for device in strips:
-                device.attrs.zones = [zeroColor] * 16
+                await device.change_one("zones", [zeroColor] * 16)
 
             msg = SetZones([["red", 7], ["blue", 5]], power_on=False)
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
-            self.compare_received_klses(
+            self.compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -617,15 +627,15 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can target particular lights", runner:
+        async it "can target particular lights", sender:
             for device in strips:
-                device.attrs.zones = [zeroColor] * 16
+                await device.change_one("zones", [zeroColor] * 16)
 
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
             msg2 = SetZones([["red", 7], ["blue", 5]], reference=striplcm1.serial)
             msg = SetZones([["green", 7], ["yellow", 5]], power_on=False, reference=lcm2strips)
-            got = await runner.sender([msg, msg2], None)
+            got = await sender([msg, msg2], None)
             assert got == []
 
             red = hp.Color(0, 1, 1, 3500)
@@ -637,7 +647,7 @@ describe "Multizone helpers":
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
 
-            self.compare_received_klses(
+            self.compare_received(
                 {
                     striplcm1: [
                         DeviceMessages.GetHostFirmware,
@@ -660,30 +670,31 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can give duration to messages", runner:
+        async it "can give duration to messages", sender:
             for device in strips:
-                device.attrs.zones = [zeroColor] * 16
+                await device.change_one("zones", [zeroColor] * 16)
 
             msg = SetZones([["green", 7], ["yellow", 5]], duration=5)
-            got = await runner.sender(msg, [s.serial for s in strips])
+            got = await sender(msg, [s.serial for s in strips])
             assert got == []
 
             for device in strips:
-                assert device.received.pop(0) | DeviceMessages.GetHostFirmware
-                assert device.received.pop(0) | DeviceMessages.GetVersion
+                received = devices.store(device).incoming()
+                assert received.pop(0) | DeviceMessages.GetHostFirmware
+                assert received.pop(0) | DeviceMessages.GetVersion
 
-                for msg in device.received:
-                    assert msg.duration == 5
+                for event in received:
+                    assert event.pkt.duration == 5
 
-        async it "uses cached gatherer on the sender", runner:
+        async it "uses cached gatherer on the sender", sender:
             for device in strips:
-                device.attrs.zones = [zeroColor] * 16
+                await device.change_one("zones", [zeroColor] * 16)
 
             msg = SetZones([["green", 7], ["yellow", 5]])
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
-            self.compare_received_klses(
+            self.compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -711,10 +722,10 @@ describe "Multizone helpers":
             )
 
             msg = SetZones([["green", 7], ["yellow", 5]])
-            got = await runner.sender(msg, [s.serial for s in strips])
+            got = await sender(msg, [s.serial for s in strips])
             assert got == []
 
-            self.compare_received_klses(
+            self.compare_received(
                 {
                     striplcm1: [
                         LightMessages.SetLightPower,
@@ -735,9 +746,9 @@ describe "Multizone helpers":
 
     describe "SetZonesEffect":
 
-        async it "can power on devices and set zones effect", runner:
+        async it "can power on devices and set zones effect", sender:
             msg = SetZonesEffect("move")
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
             for strip in strips:
@@ -768,9 +779,9 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "has options", runner:
+        async it "has options", sender:
             msg = SetZonesEffect("move", speed=5, duration=10, power_on_duration=20)
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
             for strip in strips:
@@ -807,9 +818,9 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can choose not to turn on devices", runner:
+        async it "can choose not to turn on devices", sender:
             msg = SetZonesEffect("move", power_on=False)
-            got = await runner.sender(msg, runner.serials)
+            got = await sender(msg, devices.serials)
             assert got == []
 
             for strip in strips:
@@ -837,12 +848,12 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can target particular devices", runner:
+        async it "can target particular devices", sender:
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
             msg = SetZonesEffect("move", power_on=False, reference=striplcm1.serial)
             msg2 = SetZonesEffect("move", duration=5, reference=lcm2strips)
-            got = await runner.sender([msg, msg2])
+            got = await sender([msg, msg2])
             assert got == []
 
             for strip in strips:

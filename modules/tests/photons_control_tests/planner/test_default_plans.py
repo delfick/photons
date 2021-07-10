@@ -1,7 +1,6 @@
 # coding: spec
 
 from photons_control.planner import Skip, PacketPlan
-from photons_control import test_helpers as chp
 
 from photons_app.special import FoundSerials
 from photons_app import helpers as hp
@@ -17,7 +16,6 @@ from photons_messages import (
 )
 from photons_canvas.orientation import Orientation, reorient
 from photons_canvas.points import containers as cont
-from photons_transport.fake import FakeDevice
 from photons_canvas import orientation as co
 from photons_messages.fields import Color
 from photons_products import Products
@@ -61,81 +59,94 @@ zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [hp.Color(60 - i, 1, 1, 6500) for i in range(20)]
 zones3 = [hp.Color(90 - i, 1, 1, 9000) for i in range(40)]
 
-light1 = FakeDevice(
+devices = pytest.helpers.mimic()
+
+light1 = devices.add("light1")(
     "d073d5000001",
-    chp.default_responders(
-        Products.LCM3_TILE,
+    Products.LCM3_TILE,
+    hp.Firmware(3, 50),
+    value_store=dict(
         power=0,
         label="bob",
         infrared=100,
         color=hp.Color(100, 0.5, 0.5, 4500),
-        firmware=hp.Firmware(3, 50),
     ),
 )
 
-light2 = FakeDevice(
+light2 = devices.add("light2")(
     "d073d5000002",
-    chp.default_responders(
-        Products.LMB_MESH_A21,
+    Products.LMB_MESH_A21,
+    hp.Firmware(2, 2),
+    value_store=dict(
         power=65535,
         label="sam",
         infrared=0,
         color=hp.Color(200, 0.3, 1, 9000),
-        firmware=hp.Firmware(2, 2),
     ),
 )
 
-striplcm1 = FakeDevice(
+striplcm1 = devices.add("striplcm1")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 22),
+    value_store=dict(
         power=0,
         label="lcm1-no-extended",
-        firmware=hp.Firmware(1, 22),
         zones=zones1,
     ),
 )
 
-striplcm2noextended = FakeDevice(
+striplcm2noextended = devices.add("striplcm2noextended")(
     "d073d5000004",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 70),
+    value_store=dict(
         power=0,
         label="lcm2-no-extended",
-        firmware=hp.Firmware(2, 70),
         zones=zones2,
     ),
 )
 
-striplcm2extended = FakeDevice(
+striplcm2extended = devices.add("striplcm2extended")(
     "d073d5000005",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 77),
+    value_store=dict(
         power=0,
         label="lcm2-extended",
-        firmware=hp.Firmware(2, 77),
         zones=zones3,
     ),
 )
 
-lights = [light1, light2, striplcm1, striplcm2noextended, striplcm2extended]
-two_lights = [light1.serial, light2.serial]
+two_lights = [devices["light1"].serial, devices["light2"].serial]
 
 
 @pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner(lights) as runner:
-        yield runner
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture(scope="module")
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
+async def reset_devices(sender):
+    for device in devices:
+        await device.reset()
+        devices.store(device).clear()
+    sender.gatherer.clear_cache()
 
 
 describe "Default Plans":
 
-    async def gather(self, runner, reference, *by_label, **kwargs):
+    async def gather(self, sender, reference, *by_label, **kwargs):
         plan_args = []
         plan_kwargs = {}
         for thing in by_label:
@@ -143,14 +154,14 @@ describe "Default Plans":
                 plan_args.append(thing)
             else:
                 plan_kwargs.update(thing)
-        plans = runner.sender.make_plans(*plan_args, **plan_kwargs)
-        return dict(await runner.sender.gatherer.gather_all(plans, reference, **kwargs))
+        plans = sender.make_plans(*plan_args, **plan_kwargs)
+        return dict(await sender.gatherer.gather_all(plans, reference, **kwargs))
 
     describe "PacketPlan":
 
-        async it "gets the packet", runner:
+        async it "gets the packet", sender:
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StatePower)
-            got = await self.gather(runner, two_lights, {"result": plan})
+            got = await self.gather(sender, two_lights, {"result": plan})
             assert got == {
                 light1.serial: (True, {"result": mock.ANY}),
                 light2.serial: (True, {"result": mock.ANY}),
@@ -163,27 +174,28 @@ describe "Default Plans":
                 got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535)
             )
 
-        async it "fails if we can't get the correct response", runner:
+        async it "fails if we can't get the correct response", sender:
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StateLabel)
-            got = await self.gather(runner, two_lights, {"result": plan})
+            got = await self.gather(sender, two_lights, {"result": plan})
             assert got == {}
 
     describe "PresencePlan":
 
-        async it "returns True", runner:
-            got = await self.gather(runner, two_lights, "presence")
+        async it "returns True", sender:
+            got = await self.gather(sender, two_lights, "presence")
             assert got == {
                 light1.serial: (True, {"presence": True}),
                 light2.serial: (True, {"presence": True}),
             }
 
-        async it "allows us to get serials that otherwise wouldn't", runner, FakeTime, MockedCallLater:
+        async it "allows us to get serials that otherwise wouldn't", sender, FakeTime, MockedCallLater:
             with FakeTime() as t:
                 async with MockedCallLater(t):
                     errors = []
-                    with light2.no_replies_for(DeviceMessages.GetLabel):
+                    lost = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+                    with lost:
                         got = await self.gather(
-                            runner,
+                            sender,
                             two_lights,
                             "presence",
                             "label",
@@ -197,17 +209,17 @@ describe "Default Plans":
                             light2.serial: (False, {"presence": True}),
                         }
 
-        async it "fires for offline devices that have already been discovered", runner, FakeTime, MockedCallLater:
+        async it "fires for offline devices that have already been discovered", sender, FakeTime, MockedCallLater:
 
             with FakeTime() as t:
                 async with MockedCallLater(t):
                     errors = []
-                    _, serials = await FoundSerials().find(runner.sender, timeout=1)
+                    _, serials = await FoundSerials().find(sender, timeout=1)
                     assert all(serial in serials for serial in two_lights)
 
-                    with light2.offline():
+                    async with light2.offline():
                         got = await self.gather(
-                            runner,
+                            sender,
                             two_lights,
                             "presence",
                             "label",
@@ -221,17 +233,17 @@ describe "Default Plans":
                             light2.serial: (False, {"presence": True}),
                         }
 
-        async it "does not fire for devices that don't exist", runner, FakeTime, MockedCallLater:
+        async it "does not fire for devices that don't exist", sender, FakeTime, MockedCallLater:
             with FakeTime() as t:
                 async with MockedCallLater(t):
                     errors = []
 
                     for serial in two_lights:
-                        await runner.sender.forget(serial)
+                        await sender.forget(serial)
 
-                    with light2.offline():
+                    async with light2.offline():
                         got = await self.gather(
-                            runner,
+                            sender,
                             two_lights,
                             "presence",
                             "label",
@@ -244,8 +256,8 @@ describe "Default Plans":
 
     describe "AddressPlan":
 
-        async it "gets the address", runner:
-            got = await self.gather(runner, two_lights, "address")
+        async it "gets the address", sender:
+            got = await self.gather(sender, two_lights, "address")
             assert got == {
                 light1.serial: (True, {"address": (f"fake://{light1.serial}/memory", 56700)}),
                 light2.serial: (True, {"address": (f"fake://{light2.serial}/memory", 56700)}),
@@ -253,8 +265,8 @@ describe "Default Plans":
 
     describe "LabelPlan":
 
-        async it "gets the label", runner:
-            got = await self.gather(runner, two_lights, "label")
+        async it "gets the label", sender:
+            got = await self.gather(sender, two_lights, "label")
             assert got == {
                 light1.serial: (True, {"label": "bob"}),
                 light2.serial: (True, {"label": "sam"}),
@@ -262,7 +274,7 @@ describe "Default Plans":
 
     describe "StatePlan":
 
-        async it "gets the power", runner:
+        async it "gets the power", sender:
             state1 = {
                 "hue": light1.attrs.color.hue,
                 "saturation": light1.attrs.color.saturation,
@@ -281,7 +293,7 @@ describe "Default Plans":
                 "power": 65535,
             }
 
-            got = await self.gather(runner, two_lights, "state")
+            got = await self.gather(sender, two_lights, "state")
             assert got == {
                 light1.serial: (True, {"state": state1}),
                 light2.serial: (True, {"state": state2}),
@@ -289,8 +301,8 @@ describe "Default Plans":
 
     describe "PowerPlan":
 
-        async it "gets the power", runner:
-            got = await self.gather(runner, two_lights, "power")
+        async it "gets the power", sender:
+            got = await self.gather(sender, two_lights, "power")
             assert got == {
                 light1.serial: (True, {"power": {"level": 0, "on": False}}),
                 light2.serial: (True, {"power": {"level": 65535, "on": True}}),
@@ -298,7 +310,7 @@ describe "Default Plans":
 
     describe "CapabilityPlan":
 
-        async it "gets the power", runner:
+        async it "gets the power", sender:
 
             def make_version(vendor, product):
                 msg = DeviceMessages.StateVersion.create(
@@ -355,7 +367,7 @@ describe "Default Plans":
                 "state_version": make_version(1, 32),
             }
 
-            got = await self.gather(runner, runner.serials, "capability")
+            got = await self.gather(sender, devices.serials, "capability")
             assert got == {
                 light1.serial: (True, {"capability": l1c}),
                 light2.serial: (True, {"capability": l2c}),
@@ -372,7 +384,7 @@ describe "Default Plans":
 
     describe "FirmwarePlan":
 
-        async it "gets the firmware", runner:
+        async it "gets the firmware", sender:
             l1c = {
                 "build": 0,
                 "version_major": 3,
@@ -399,7 +411,7 @@ describe "Default Plans":
                 "version_minor": 77,
             }
 
-            got = await self.gather(runner, runner.serials, "firmware")
+            got = await self.gather(sender, devices.serials, "firmware")
             assert got == {
                 light1.serial: (True, {"firmware": l1c}),
                 light2.serial: (True, {"firmware": l2c}),
@@ -410,8 +422,8 @@ describe "Default Plans":
 
     describe "VersionPlan":
 
-        async it "gets the version", runner:
-            got = await self.gather(runner, runner.serials, "version")
+        async it "gets the version", sender:
+            got = await self.gather(sender, devices.serials, "version")
             assert got == {
                 light1.serial: (True, {"version": Match({"product": 55, "vendor": 1})}),
                 light2.serial: (True, {"version": Match({"product": 1, "vendor": 1})}),
@@ -425,8 +437,8 @@ describe "Default Plans":
 
     describe "ZonesPlan":
 
-        async it "gets zones", runner:
-            got = await self.gather(runner, runner.serials, "zones")
+        async it "gets zones", sender:
+            got = await self.gather(sender, devices.serials, "zones")
             expected = {
                 light1.serial: (True, {"zones": Skip}),
                 light2.serial: (True, {"zones": Skip}),
@@ -459,15 +471,15 @@ describe "Default Plans":
                 ],
             }
 
-            for device in runner.devices:
+            for device in devices:
                 if device not in expected:
                     assert False, f"No expectation for {device.serial}"
 
-                device.compare_received(expected[device])
+                devices.store(device).assertIncoming(*expected[device])
 
     describe "ColorsPlan":
 
-        async it "gets colors for different devices", runner:
+        async it "gets colors for different devices", sender:
             serials = [light1.serial, light2.serial, striplcm1.serial, striplcm2extended.serial]
 
             expectedlcm1 = []
@@ -481,14 +493,19 @@ describe "Default Plans":
             assert len(expectedlcm2) == 40
 
             tile_expected = []
+            changes = []
             for i in range(len(light1.attrs.chain)):
                 for j in range(64):
-                    light1.attrs.chain[i][1][j].hue = i + j
-                tile_expected.append(list(light1.attrs.chain[i][1]))
+                    changes.append(
+                        light1.attrs.attrs_path("chain", i, "colors", j, "hue").changer_to(i + j)
+                    )
+            await light1.attrs.attrs_apply(*changes)
+            for i in range(len(light1.attrs.chain)):
+                tile_expected.append(list(light1.attrs.chain[i].colors))
 
-            light2.attrs.color = hp.Color(100, 0.5, 0.8, 2500)
+            await light2.change_one("color", hp.Color(100, 0.5, 0.8, 2500))
 
-            got = await self.gather(runner, serials, "colors")
+            got = await self.gather(sender, serials, "colors")
 
             assert got[light1.serial][1]["colors"] == tile_expected
             assert got[light2.serial][1]["colors"] == [[hp.Color(100, 0.5, 0.8, 2500)]]
@@ -520,15 +537,15 @@ describe "Default Plans":
                 ],
             }
 
-            for device in runner.devices:
+            for device in devices:
                 if device not in expected:
                     assert False, f"No expectation for {device.serial}"
 
-                device.compare_received(expected[device])
+                devices.store(device).assertIncoming(*expected[device])
 
     describe "PartsPlan":
-        async it "works for a bulb", runner:
-            got = await self.gather(runner, [light2.serial], "parts")
+        async it "works for a bulb", sender:
+            got = await self.gather(sender, [light2.serial], "parts")
             info = got[light2.serial][1]["parts"]
 
             assert len(info) == 1
@@ -540,14 +557,14 @@ describe "Default Plans":
 
                 assert p.part_number == 0
                 assert p.device.serial == light2.serial
-                assert p.device.cap == chp.ProductResponder.capability(light2)
+                assert p.device.cap == light2.cap
 
                 assert p.orientation is co.Orientation.RightSideUp
                 assert p.bounds == ((0, 1), (0, -1), (1, 1))
 
                 assert p.original_colors is None
 
-            with_colors = await self.gather(runner, [light2.serial], "parts_and_colors")
+            with_colors = await self.gather(sender, [light2.serial], "parts_and_colors")
             info = with_colors[light2.serial][1]["parts_and_colors"]
 
             assert len(info) == 1
@@ -560,9 +577,9 @@ describe "Default Plans":
             assert pc.original_colors == [color]
             assert pc.real_part.original_colors == [color]
 
-        async it "works for a not extended multizone", runner:
+        async it "works for a not extended multizone", sender:
             for device, colors in ((striplcm1, zones1), (striplcm2noextended, zones2)):
-                got = await self.gather(runner, [device.serial], "parts")
+                got = await self.gather(sender, [device.serial], "parts")
                 info = got[device.serial][1]["parts"]
 
                 assert len(info) == 1
@@ -574,7 +591,7 @@ describe "Default Plans":
 
                     assert p.part_number == 0
                     assert p.device.serial == device.serial
-                    assert p.device.cap == chp.ProductResponder.capability(device)
+                    assert p.device.cap == device.cap
                     assert p.device.cap.has_multizone
                     assert not p.device.cap.has_extended_multizone
 
@@ -587,7 +604,7 @@ describe "Default Plans":
 
                     assert p.original_colors is None
 
-                with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+                with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
                 info = with_colors[device.serial][1]["parts_and_colors"]
 
                 assert len(info) == 1
@@ -599,11 +616,11 @@ describe "Default Plans":
                 assert pc.original_colors == colors
                 assert pc.real_part.original_colors == colors
 
-        async it "works for an extended multizone", runner:
+        async it "works for an extended multizone", sender:
             device = striplcm2extended
             colors = zones3
 
-            got = await self.gather(runner, [device.serial], "parts")
+            got = await self.gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
 
             assert len(info) == 1
@@ -615,7 +632,7 @@ describe "Default Plans":
 
                 assert p.part_number == 0
                 assert p.device.serial == device.serial
-                assert p.device.cap == chp.ProductResponder.capability(device)
+                assert p.device.cap == device.cap
                 assert p.device.cap.has_multizone
                 assert p.device.cap.has_extended_multizone
 
@@ -628,7 +645,7 @@ describe "Default Plans":
 
                 assert p.original_colors is None
 
-            with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+            with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
             info = with_colors[device.serial][1]["parts_and_colors"]
 
             assert len(info) == 1
@@ -639,37 +656,33 @@ describe "Default Plans":
             assert pc.original_colors == colors
             assert pc.real_part.original_colors == colors
 
-        async it "works for a tile set", runner:
-            light1.attrs.chain = []
-            await chp.MatrixResponder().start(light1)
-
+        async it "works for a tile set", sender:
             device = light1
 
             colors1 = [Color(i, 1, 1, 3500) for i in range(64)]
             colors2 = [Color(i + 100, 0, 0.4, 8000) for i in range(64)]
             colors3 = [Color(i + 200, 0.1, 0.9, 7000) for i in range(64)]
 
-            chain = device.attrs.chain
+            await device.change(
+                (("chain", 0, "colors"), co.reorient(colors1, co.Orientation.RotatedLeft)),
+                (("chain", 0, "accel_meas_x"), -10),
+                (("chain", 0, "accel_meas_y"), 1),
+                (("chain", 0, "accel_meas_z"), 5),
+                (("chain", 0, "user_x"), 3),
+                (("chain", 0, "user_y"), 5),
+                #
+                (("chain", 1, "colors"), colors2),
+                #
+                (("chain", 2, "accel_meas_x"), 1),
+                (("chain", 2, "accel_meas_y"), 5),
+                (("chain", 2, "accel_meas_z"), 10),
+                (("chain", 2, "user_x"), 10),
+                (("chain", 2, "user_y"), 25),
+                (("chain", 2, "colors"), co.reorient(colors3, co.Orientation.FaceDown)),
+            )
+            await device.attrs.attrs_apply(device.attrs.attrs_path("chain").reduce_length_to(3))
 
-            chain[0][0].accel_meas_x = -10
-            chain[0][0].accel_meas_y = 1
-            chain[0][0].accel_meas_z = 5
-            chain[0][0].user_x = 3
-            chain[0][0].user_y = 5
-
-            chain[2][0].accel_meas_x = 1
-            chain[2][0].accel_meas_y = 5
-            chain[2][0].accel_meas_z = 10
-            chain[2][0].user_x = 10
-            chain[2][0].user_y = 25
-
-            device.attrs.chain = [
-                (chain[0][0], co.reorient(colors1, co.Orientation.RotatedLeft)),
-                (chain[1][0], colors2),
-                (chain[2][0], co.reorient(colors3, co.Orientation.FaceDown)),
-            ]
-
-            got = await self.gather(runner, [device.serial], "parts")
+            got = await self.gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
 
             assert len(info) == 3
@@ -693,7 +706,7 @@ describe "Default Plans":
 
                     assert p.part_number == i
                     assert p.device.serial == device.serial
-                    assert p.device.cap == chp.ProductResponder.capability(device)
+                    assert p.device.cap == device.cap
                     assert p.device.cap.has_chain
 
                     assert p.orientation is orientation
@@ -701,7 +714,7 @@ describe "Default Plans":
 
                     assert p.original_colors is None
 
-            with_colors = await self.gather(runner, [device.serial], "parts_and_colors")
+            with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
             infoc = with_colors[device.serial][1]["parts_and_colors"]
 
             for i, (pc, colors) in enumerate(zip(infoc, (colors1, colors2, colors3))):
@@ -723,8 +736,8 @@ describe "Default Plans":
 
     describe "ChainPlan":
 
-        async it "gets chain for a bulb", runner:
-            got = await self.gather(runner, [light2.serial], "chain")
+        async it "gets chain for a bulb", sender:
+            got = await self.gather(sender, [light2.serial], "chain")
             info = got[light2.serial][1]["chain"]
 
             assert info["chain"] == [
@@ -757,9 +770,9 @@ describe "Default Plans":
             assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
             assert info["reverse_orient"](0, colors) == reorient(colors, Orientation.RightSideUp)
 
-        async it "gets chain for a strip", runner:
+        async it "gets chain for a strip", sender:
             serials = [striplcm1.serial, striplcm2noextended.serial, striplcm2extended.serial]
-            got = await self.gather(runner, serials, "chain")
+            got = await self.gather(sender, serials, "chain")
 
             lcm1_info = got[striplcm1.serial][1]["chain"]
             assert lcm1_info["chain"] == [
@@ -842,25 +855,22 @@ describe "Default Plans":
                 )
             assert info["coords_and_sizes"] == [((0.0, 0.0), (info["width"], 1))]
 
-        async it "gets chain for tiles", runner:
-            light1.attrs.chain = []
-            await chp.MatrixResponder().start(light1)
+        async it "gets chain for tiles", sender:
+            await light1.change(
+                (("chain", 1, "accel_meas_x"), -10),
+                (("chain", 1, "accel_meas_y"), 1),
+                (("chain", 1, "accel_meas_z"), 5),
+                (("chain", 1, "user_x"), 3),
+                (("chain", 1, "user_y"), 5),
+                #
+                (("chain", 3, "accel_meas_x"), 1),
+                (("chain", 3, "accel_meas_y"), 5),
+                (("chain", 3, "accel_meas_z"), 10),
+                (("chain", 3, "user_x"), 10),
+                (("chain", 3, "user_y"), 25),
+            )
 
-            chain = light1.attrs.chain
-
-            chain[1][0].accel_meas_x = -10
-            chain[1][0].accel_meas_y = 1
-            chain[1][0].accel_meas_z = 5
-            chain[1][0].user_x = 3
-            chain[1][0].user_y = 5
-
-            chain[3][0].accel_meas_x = 1
-            chain[3][0].accel_meas_y = 5
-            chain[3][0].accel_meas_z = 10
-            chain[3][0].user_x = 10
-            chain[3][0].user_y = 25
-
-            got = await self.gather(runner, light1.serial, "chain")
+            got = await self.gather(sender, light1.serial, "chain")
 
             chain = [
                 Partial(
@@ -975,11 +985,11 @@ describe "Default Plans":
                 striplcm2extended: [],
             }
 
-            for device in runner.devices:
+            for device in devices:
                 if device not in expected:
                     assert False, f"No expectation for {device.serial}"
 
-                device.compare_received(expected[device])
+                devices.store(device).assertIncoming(*expected[device])
 
             info = got[light1.serial][1]["chain"]
             assert info["chain"] == chain
@@ -1011,27 +1021,57 @@ describe "Default Plans":
 
     describe "FirmwareEffectsPlan":
 
-        async it "gets firmware effects", runner:
-            light1.set_reply(
-                TileMessages.GetTileEffect,
-                TileMessages.StateTileEffect.create(
-                    type=TileEffectType.FLAME,
-                    speed=10,
-                    duration=1,
-                    palette_count=2,
-                    palette=[hp.Color(120, 1, 1, 3500), hp.Color(360, 1, 1, 3500)],
-                ),
-            )
+        async it "gets firmware effects", sender:
+            io = light1.io["MEMORY"]
 
-            striplcm1.set_reply(
-                MultiZoneMessages.GetMultiZoneEffect,
-                MultiZoneMessages.StateMultiZoneEffect.create(
-                    type=MultiZoneEffectType.MOVE,
-                    speed=5,
-                    duration=2,
-                    parameters={"speed_direction": Direction.LEFT},
-                ),
-            )
+            @io.packet_filter.intercept_process_request
+            async def process_request_light1(event, Cont):
+                if event | TileMessages.GetTileEffect:
+                    event.set_replies(Cont)
+                    event.handled = False
+                    event._viewers_only = True
+                    return True
+                else:
+                    raise Cont()
+
+            @io.packet_filter.intercept_process_outgoing
+            async def process_outgoing_light1(reply, req_event, Cont):
+                if req_event | TileMessages.GetTileEffect:
+                    yield TileMessages.StateTileEffect.create(
+                        type=TileEffectType.FLAME,
+                        speed=10,
+                        duration=1,
+                        palette_count=2,
+                        palette=[hp.Color(120, 1, 1, 3500), hp.Color(360, 1, 1, 3500)],
+                        **reply,
+                    )
+                else:
+                    raise Cont()
+
+            io = striplcm1.io["MEMORY"]
+
+            @io.packet_filter.intercept_process_request
+            async def process_request_striplcm1(event, Cont):
+                if event | MultiZoneMessages.GetMultiZoneEffect:
+                    event.set_replies(Cont)
+                    event.handled = False
+                    event._viewers_only = True
+                    return True
+                else:
+                    raise Cont()
+
+            @io.packet_filter.intercept_process_outgoing
+            async def process_outgoing_striplcm1(reply, req_event, Cont):
+                if req_event | MultiZoneMessages.GetMultiZoneEffect:
+                    yield MultiZoneMessages.StateMultiZoneEffect.create(
+                        type=MultiZoneEffectType.MOVE,
+                        speed=5,
+                        duration=2,
+                        parameters={"speed_direction": Direction.LEFT},
+                        **reply,
+                    )
+                else:
+                    raise Cont()
 
             l1 = {
                 "type": TileEffectType.FLAME,
@@ -1054,7 +1094,8 @@ describe "Default Plans":
             }
 
             serials = [light1.serial, light2.serial, striplcm1.serial]
-            got = await self.gather(runner, serials, "firmware_effects")
+            with process_outgoing_light1, process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
+                got = await self.gather(sender, serials, "firmware_effects")
             expected = {
                 light1.serial: (True, {"firmware_effects": l1}),
                 light2.serial: (True, {"firmware_effects": Skip}),
@@ -1077,4 +1118,4 @@ describe "Default Plans":
             }
 
             for device, e in expected.items():
-                device.compare_received(e)
+                devices.store(device).assertIncoming(*e)

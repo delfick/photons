@@ -12,6 +12,21 @@ import pytest
 
 
 @pytest.fixture(scope="module")
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture(scope="module")
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture(scope="module")
 def V():
     class V:
         afr = mock.Mock(name="afr")
@@ -39,19 +54,13 @@ def V():
 
 
 @pytest.fixture(scope="module")
-async def server(V, server_wrapper):
+async def server(V, server_wrapper, sender, final_future):
     commander_patch = mock.patch("interactor.server.Commander", V.FakeCommander)
     db_patch = mock.patch("interactor.database.db_queue.DBQueue", V.FakeDBQueue)
 
     with commander_patch, db_patch:
-        async with server_wrapper(store) as server:
+        async with server_wrapper(store, sender, final_future) as server:
             yield server
-
-
-@pytest.fixture(autouse=True)
-async def wrap_tests(server):
-    async with server.per_test():
-        yield
 
 
 describe "Server":

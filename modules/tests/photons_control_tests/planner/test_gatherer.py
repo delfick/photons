@@ -1,13 +1,11 @@
 # coding: spec
 
 from photons_control.planner import Gatherer, make_plans, Plan, NoMessages, Skip
-from photons_control import test_helpers as chp
 
 from photons_app.errors import TimedOut, BadRunWithResults
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, LightMessages
-from photons_transport.fake import FakeDevice
+from photons_messages import DeviceMessages, LightMessages, DiscoveryMessages
 from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises, assertSameError
@@ -16,59 +14,78 @@ from unittest import mock
 import itertools
 import pytest
 
-light1 = FakeDevice(
+devices = pytest.helpers.mimic()
+
+light1 = devices.add("light1")(
     "d073d5000001",
-    chp.default_responders(
-        Products.LCM2_A19_PLUS,
+    Products.LCM2_A19_PLUS,
+    hp.Firmware(2, 77),
+    value_store=dict(
         power=0,
         label="bob",
         infrared=100,
         color=hp.Color(100, 0.5, 0.5, 4500),
-        firmware=hp.Firmware(2, 77),
     ),
 )
 
-light2 = FakeDevice(
+light2 = devices.add("light2")(
     "d073d5000002",
-    chp.default_responders(
-        Products.LMB_MESH_A21,
+    Products.LMB_MESH_A21,
+    hp.Firmware(2, 2),
+    value_store=dict(
         power=65535,
         label="sam",
         color=hp.Color(200, 0.3, 1, 9000),
-        firmware=hp.Firmware(2, 2),
     ),
 )
 
-light3 = FakeDevice(
+light3 = devices.add("light3")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 22),
+    value_store=dict(
         power=0,
         label="strip",
-        firmware=hp.Firmware(1, 22),
         zones=[hp.Color(0, 1, 1, 3500)],
     ),
 )
 
 two_lights = [light1.serial, light2.serial]
-lights = [light1, light2, light3]
 
 
 @pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner(lights) as runner:
-        yield runner
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture(scope="module")
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
+async def reset_devices(sender):
+    for device in devices:
+        await device.reset()
+        devices.store(device).clear()
+    sender.gatherer.clear_cache()
 
 
 def compare_called(got, want):
     for i, (g, w) in enumerate(itertools.zip_longest(got, want)):
         if g != w:
-            print(i, g, w)
+            print(f"Different {i}")
+            print(f"  Got : {g}")
+            print(f"  Want: {w}")
+        else:
+            print(f"Same {i}")
+            print(f"  Got : {g}")
+            print(f"  Want: {w}")
     assert want == got
 
 
@@ -76,9 +93,9 @@ describe "Gatherer":
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
-            assert light in lights
-            light.compare_received(msgs, keep_duplicates=True)
-            light.reset_received()
+            assert light in devices
+            devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(light).clear()
 
     @contextmanager
     def modified_time(self):
@@ -98,7 +115,7 @@ describe "Gatherer":
 
     describe "A plan saying NoMessages":
 
-        async it "processes without needing messages", runner:
+        async it "processes without needing messages", sender:
             called = []
 
             i1 = mock.Mock(name="i1")
@@ -116,7 +133,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return i[s.serial]
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -124,7 +141,7 @@ describe "Gatherer":
 
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
-        async it "does not process other messages", runner:
+        async it "does not process other messages", sender:
             called = []
 
             i1 = mock.Mock(name="i1")
@@ -142,7 +159,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return i[s.serial]
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -153,7 +170,7 @@ describe "Gatherer":
 
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
-        async it "can be determined by logic", runner:
+        async it "can be determined by logic", sender:
             called = []
             i1 = mock.Mock(name="i1")
 
@@ -179,7 +196,7 @@ describe "Gatherer":
                         else:
                             return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -194,7 +211,7 @@ describe "Gatherer":
 
     describe "A plan saying Skip":
 
-        async it "has no processing or info", runner:
+        async it "has no processing or info", sender:
             called = []
 
             class NoMessagesPlan(Plan):
@@ -208,7 +225,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -216,7 +233,7 @@ describe "Gatherer":
 
             compare_called(called, [])
 
-        async it "does not process other messages", runner:
+        async it "does not process other messages", sender:
             called = []
 
             class NoMessagesPlan(Plan):
@@ -230,7 +247,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans("power", p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -241,7 +258,7 @@ describe "Gatherer":
 
             compare_called(called, [])
 
-        async it "can be determined by logic", runner:
+        async it "can be determined by logic", sender:
             called = []
 
             class NoMessagesPlan(Plan):
@@ -263,7 +280,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(p=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -275,7 +292,7 @@ describe "Gatherer":
 
     describe "A plan with no messages":
 
-        async it "it gets all other messages", runner:
+        async it "it gets all other messages", sender:
             called = []
 
             class NoMessagesPlan(Plan):
@@ -290,7 +307,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans("label", "power", other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -317,7 +334,7 @@ describe "Gatherer":
                 ],
             )
 
-        async it "still finishes if no messages processed but finished_after_no_more_messages", runner:
+        async it "still finishes if no messages processed but finished_after_no_more_messages", sender:
             called = []
 
             class NoMessagesPlan(Plan):
@@ -332,7 +349,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(other=NoMessagesPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -345,7 +362,7 @@ describe "Gatherer":
 
     describe "a plan that never finishes":
 
-        async it "it doesn't get recorded", runner:
+        async it "it doesn't get recorded", sender:
             called = []
 
             class NeverFinishedPlan(Plan):
@@ -356,7 +373,7 @@ describe "Gatherer":
                     async def info(s):
                         called.append(("info", s.serial))
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans("label", "power", other=NeverFinishedPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -377,7 +394,7 @@ describe "Gatherer":
 
     describe "A plan with messages":
 
-        async it "messages are processed until we say plan is done", runner:
+        async it "messages are processed until we say plan is done", sender:
             called = []
 
             class SimplePlan(Plan):
@@ -395,7 +412,7 @@ describe "Gatherer":
                         called.append(("info", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(simple=SimplePlan())
 
             found = []
@@ -424,7 +441,7 @@ describe "Gatherer":
                 ],
             )
 
-        async it "adds errors from info", runner:
+        async it "adds errors from info", sender:
             error = ValueError("ERROR")
 
             class ErrorPlan(Plan):
@@ -441,12 +458,12 @@ describe "Gatherer":
                             raise error
                         return self.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(label=ErrorPlan())
 
             found = []
             with assertRaises(ValueError, "ERROR"):
-                async for serial, label, info in gatherer.gather(plans, runner.serials):
+                async for serial, label, info in gatherer.gather(plans, devices.serials):
                     found.append((serial, label, info))
 
             assert found == [(light2.serial, "label", "sam"), (light3.serial, "label", "strip")]
@@ -454,14 +471,14 @@ describe "Gatherer":
             errors = []
             found.clear()
             async for serial, label, info in gatherer.gather(
-                plans, runner.serials, error_catcher=errors
+                plans, devices.serials, error_catcher=errors
             ):
                 found.append((serial, label, info))
             assert errors == [error]
 
             assert found == [(light2.serial, "label", "sam"), (light3.serial, "label", "strip")]
 
-        async it "raises errors after yielding everything", runner:
+        async it "raises errors after yielding everything", sender:
             called = []
 
             class LabelPlan(Plan):
@@ -505,20 +522,21 @@ describe "Gatherer":
                         called.append(("info.looker", s.serial))
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
 
             found = []
             with assertRaises(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
-                with light1.no_replies_for(DeviceMessages.GetLabel):
+                lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+                with lost:
                     async for serial, label, info in gatherer.gather(
                         plans, two_lights, message_timeout=0.1
                     ):
                         found.append((serial, label, info))
 
             assert found == [
-                (light1.serial, "power", 0),
                 (light2.serial, "label", "sam"),
+                (light1.serial, "power", 0),
                 (light2.serial, "power", 65535),
                 (light2.serial, "looker", True),
                 (light1.serial, "looker", True),
@@ -526,8 +544,14 @@ describe "Gatherer":
 
             self.compare_received(
                 {
-                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
-                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light1: [
+                        DeviceMessages.GetLabel(),
+                        DeviceMessages.GetPower(),
+                    ],
+                    light2: [
+                        DeviceMessages.GetLabel(),
+                        DeviceMessages.GetPower(),
+                    ],
                     light3: [],
                 }
             )
@@ -538,14 +562,14 @@ describe "Gatherer":
             compare_called(
                 called,
                 [
-                    ("label", light1.serial, power_type),
-                    ("looker", light1.serial, power_type),
-                    ("power", light1.serial, power_type),
-                    ("info.power", light1.serial),
                     ("label", light2.serial, label_type),
                     ("info.label", light2.serial),
                     ("looker", light2.serial, label_type),
                     ("power", light2.serial, label_type),
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
                     ("looker", light2.serial, power_type),
                     ("power", light2.serial, power_type),
                     ("info.power", light2.serial),
@@ -557,7 +581,8 @@ describe "Gatherer":
             found.clear()
             called.clear()
             with assertRaises(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
-                with light1.no_replies_for(DeviceMessages.GetLabel):
+                lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+                with lost:
                     async for serial, completed, info in gatherer.gather_per_serial(
                         plans, two_lights, message_timeout=0.1
                     ):
@@ -574,7 +599,8 @@ describe "Gatherer":
 
             called.clear()
             try:
-                with light1.no_replies_for(DeviceMessages.GetLabel):
+                lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+                with lost:
                     await gatherer.gather_all(plans, two_lights, message_timeout=0.1)
             except BadRunWithResults as e:
                 assert len(e.errors) == 1
@@ -597,7 +623,7 @@ describe "Gatherer":
                 light1.serial: (False, {"looker": True, "power": 0}),
             }
 
-        async it "doesn't raise errors if we have an error catcher", runner:
+        async it "doesn't raise errors if we have an error catcher", sender:
             called = []
 
             class LabelPlan(Plan):
@@ -606,6 +632,7 @@ describe "Gatherer":
                 class Instance(Plan.Instance):
                     def process(s, pkt):
                         called.append(("label", pkt.serial, pkt.pkt_type))
+                        print("-" * 20, called[-1])
 
                         if pkt | DeviceMessages.StateLabel:
                             s.label = pkt.label
@@ -613,6 +640,7 @@ describe "Gatherer":
 
                     async def info(s):
                         called.append(("info.label", s.serial))
+                        print("-" * 20, called[-1])
                         return s.label
 
             class PowerPlan(Plan):
@@ -621,6 +649,7 @@ describe "Gatherer":
                 class Instance(Plan.Instance):
                     def process(s, pkt):
                         called.append(("power", pkt.serial, pkt.pkt_type))
+                        print("-" * 20, called[-1])
 
                         if pkt | DeviceMessages.StatePower:
                             s.level = pkt.level
@@ -628,6 +657,7 @@ describe "Gatherer":
 
                     async def info(s):
                         called.append(("info.power", s.serial))
+                        print("-" * 20, called[-1])
                         return s.level
 
             class Looker(Plan):
@@ -636,12 +666,14 @@ describe "Gatherer":
 
                     def process(s, pkt):
                         called.append(("looker", pkt.serial, pkt.pkt_type))
+                        print("-" * 20, called[-1])
 
                     async def info(s):
                         called.append(("info.looker", s.serial))
+                        print("-" * 20, called[-1])
                         return True
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(power=PowerPlan(), label=LabelPlan(), looker=Looker())
             error_catcher = []
             kwargs = {"message_timeout": 0.1, "error_catcher": error_catcher}
@@ -659,14 +691,15 @@ describe "Gatherer":
                 errors.clear()
 
             found = []
-            with light1.no_replies_for(DeviceMessages.GetLabel):
+            lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+            with lost:
                 async for serial, label, info in gatherer.gather(plans, two_lights, **kwargs):
                     found.append((serial, label, info))
 
             assertError(error_catcher)
             assert found == [
-                (light1.serial, "power", 0),
                 (light2.serial, "label", "sam"),
+                (light1.serial, "power", 0),
                 (light2.serial, "power", 65535),
                 (light2.serial, "looker", True),
                 (light1.serial, "looker", True),
@@ -674,8 +707,14 @@ describe "Gatherer":
 
             self.compare_received(
                 {
-                    light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
-                    light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
+                    light1: [
+                        DeviceMessages.GetLabel(),
+                        DeviceMessages.GetPower(),
+                    ],
+                    light2: [
+                        DeviceMessages.GetLabel(),
+                        DeviceMessages.GetPower(),
+                    ],
                     light3: [],
                 }
             )
@@ -686,14 +725,14 @@ describe "Gatherer":
             compare_called(
                 called,
                 [
-                    ("label", light1.serial, power_type),
-                    ("looker", light1.serial, power_type),
-                    ("power", light1.serial, power_type),
-                    ("info.power", light1.serial),
                     ("label", light2.serial, label_type),
                     ("info.label", light2.serial),
                     ("looker", light2.serial, label_type),
                     ("power", light2.serial, label_type),
+                    ("label", light1.serial, power_type),
+                    ("looker", light1.serial, power_type),
+                    ("power", light1.serial, power_type),
+                    ("info.power", light1.serial),
                     ("looker", light2.serial, power_type),
                     ("power", light2.serial, power_type),
                     ("info.power", light2.serial),
@@ -704,7 +743,8 @@ describe "Gatherer":
 
             found.clear()
             called.clear()
-            with light1.no_replies_for(DeviceMessages.GetLabel):
+            lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+            with lost:
                 async for serial, completed, info in gatherer.gather_per_serial(
                     plans, two_lights, **kwargs
                 ):
@@ -721,7 +761,8 @@ describe "Gatherer":
             ]
 
             called.clear()
-            with light1.no_replies_for(DeviceMessages.GetLabel):
+            lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+            with lost:
                 found = dict(await gatherer.gather_all(plans, two_lights, **kwargs))
 
             assertError(error_catcher)
@@ -736,7 +777,7 @@ describe "Gatherer":
 
     describe "refreshing":
 
-        async it "it can refresh always", runner:
+        async it "it can refresh always", sender:
             called = []
 
             class LabelPlan(Plan):
@@ -755,7 +796,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, light1.serial))
             assert got == {light1.serial: (True, {"label": "bob"})}
@@ -790,7 +831,7 @@ describe "Gatherer":
             compare_called(called, [])
             self.compare_received({light1: [], light2: [], light3: []})
 
-        async it "it can refresh on time", runner:
+        async it "it can refresh on time", sender:
             with self.modified_time() as t:
                 called = []
 
@@ -810,7 +851,7 @@ describe "Gatherer":
                             called.append(("info.label", s.serial))
                             return s.label
 
-                gatherer = Gatherer(runner.sender)
+                gatherer = Gatherer(sender)
                 plans = make_plans(label=LabelPlan())
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 assert got == {light1.serial: (True, {"label": "bob"})}
@@ -905,7 +946,7 @@ describe "Gatherer":
 
                 called.clear()
 
-        async it "cannot steal messages from completed plans if we refresh messages those other plans use", runner:
+        async it "cannot steal messages from completed plans if we refresh messages those other plans use", sender:
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -940,7 +981,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
             assert got == {
@@ -1000,7 +1041,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "has no cached completed data if instance has no key", runner:
+        async it "has no cached completed data if instance has no key", sender:
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -1038,7 +1079,7 @@ describe "Gatherer":
                         called.append(("info.label", s.serial))
                         return s.label
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(rev=ReverseLabelPlan(), label=LabelPlan())
             got = dict(await gatherer.gather_all(plans, two_lights))
             assert got == {
@@ -1094,7 +1135,7 @@ describe "Gatherer":
 
     describe "dependencies":
 
-        async it "it can get dependencies", runner:
+        async it "it can get dependencies", sender:
             called = []
 
             class PowerPlan(Plan):
@@ -1145,9 +1186,9 @@ describe "Gatherer":
                         called.append(("info.info", s.serial))
                         return {"power": s.deps["p"], "info": s.i}
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(info=InfoPlan())
-            got = dict(await gatherer.gather_all(plans, runner.serials))
+            got = dict(await gatherer.gather_all(plans, devices.serials))
 
             assert got == {
                 light1.serial: (True, {"info": {"power": 0, "info": 100}}),
@@ -1185,7 +1226,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "it can get dependencies of dependencies and messages can be shared", runner:
+        async it "it can get dependencies of dependencies and messages can be shared", sender:
             called = []
 
             class Plan1(Plan):
@@ -1232,7 +1273,7 @@ describe "Gatherer":
                         called.append(("info.plan3", s.serial))
                         return (s.level, s.deps["p"])
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(plan3=Plan3())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1272,7 +1313,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "it can skip based on dependency", runner:
+        async it "it can skip based on dependency", sender:
             called = []
 
             class Plan1(Plan):
@@ -1310,7 +1351,7 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1343,7 +1384,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "can get results from deps as well", runner:
+        async it "can get results from deps as well", sender:
             called = []
 
             class Plan1(Plan):
@@ -1381,7 +1422,7 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans(plan1=Plan1(), plan2=Plan2())
             got = dict(await gatherer.gather_all(plans, two_lights))
 
@@ -1414,7 +1455,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "chain is broken when dep can't get results", runner:
+        async it "chain is broken when dep can't get results", sender:
             called = []
 
             class Plan1(Plan):
@@ -1452,13 +1493,14 @@ describe "Gatherer":
                         called.append(("info.plan2", s.serial))
                         return {"label": s.deps["l"], "power": s.level}
 
-            gatherer = Gatherer(runner.sender)
+            gatherer = Gatherer(sender)
             plans = make_plans("presence", plan2=Plan2())
             errors = []
-            with light3.no_replies_for(DeviceMessages.GetLabel):
+            lost = light3.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+            with lost:
                 got = dict(
                     await gatherer.gather_all(
-                        plans, runner.serials, error_catcher=errors, message_timeout=0.1
+                        plans, devices.serials, error_catcher=errors, message_timeout=0.1
                     )
                 )
             assert len(errors) == 1

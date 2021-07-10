@@ -1,11 +1,9 @@
 # coding: spec
 
 from photons_control.device_finder import DeviceFinderDaemon, Finder, Filter, DeviceFinder, Device
-from photons_control import test_helpers as chp
 
 from photons_app import helpers as hp
 
-from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 from unittest import mock
@@ -382,58 +380,56 @@ describe "DeviceFinderDaemon":
 describe "Getting devices from the daemon":
 
     @pytest.fixture()
-    def V(self):
+    async def V(self, final_future):
         class V:
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
+            devices = pytest.helpers.mimic()
 
-            d1 = FakeDevice(serials[0], chp.default_responders(Products.LCM3_TILE))
-            d2 = FakeDevice(serials[1], chp.default_responders(Products.LCM2_Z, zones=[]))
-            d3 = FakeDevice(
+            d1 = devices.add("d1")(serials[0], Products.LCM3_TILE, hp.Firmware(3, 50))
+            d2 = devices.add("d2")(
+                serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[])
+            )
+            d3 = devices.add("d3")(
                 serials[2],
-                chp.default_responders(
-                    Products.LCM2_A19,
+                Products.LCM2_A19,
+                hp.Firmware(2, 80),
+                value_store=dict(
                     label="kitchen",
                     firmware=hp.Firmware(2, 80),
-                    group_uuid="aa",
-                    group_label="g1",
-                    group_updated_at=42,
-                    location_uuid="bb",
-                    location_label="l1",
-                    location_updated_at=56,
+                    group={"identity": "aa", "label": "g1", "updated_at": 42},
+                    location={"identity": "bb", "label": "l1", "updated_at": 56},
                 ),
             )
 
-            @hp.memoized_property
-            def devices(s):
-                return [s.d1, s.d2, s.d3]
+        v = V()
+        async with V.devices.for_test(final_future) as sender:
+            v.sender = sender
+            yield v
 
-        return V()
+    async it "can get serials and info", V:
+        async with DeviceFinderDaemon(V.sender) as daemon:
+            found = []
+            async for device in daemon.serials(Filter.empty()):
+                found.append(device.serial)
+            assert sorted(found) == sorted(V.serials)
 
-    async it "can get serials and info", memory_devices_runner, V:
-        async with memory_devices_runner(V.devices) as runner:
-            async with DeviceFinderDaemon(runner.sender) as daemon:
-                found = []
-                async for device in daemon.serials(Filter.empty()):
-                    found.append(device.serial)
-                assert sorted(found) == sorted(V.serials)
-
-                found = []
-                async for device in daemon.info(Filter.from_kwargs(label="kitchen")):
-                    found.append(device)
-                assert [f.serial for f in found] == [V.d3.serial]
-                assert found[0].info == {
-                    "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-                    "firmware_version": "2.80",
-                    "hue": V.d3.attrs.color.hue,
-                    "label": "kitchen",
-                    "power": "off",
-                    "serial": V.d3.serial,
-                    "kelvin": V.d3.attrs.color.kelvin,
-                    "saturation": V.d3.attrs.color.saturation,
-                    "brightness": V.d3.attrs.color.brightness,
-                    "group_id": "aa000000000000000000000000000000",
-                    "product_id": 27,
-                    "group_name": "g1",
-                    "location_id": "bb000000000000000000000000000000",
-                    "location_name": "l1",
-                }
+            found = []
+            async for device in daemon.info(Filter.from_kwargs(label="kitchen")):
+                found.append(device)
+            assert [f.serial for f in found] == [V.d3.serial]
+            assert found[0].info == {
+                "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
+                "firmware_version": "2.80",
+                "hue": V.d3.attrs.color.hue,
+                "label": "kitchen",
+                "power": "off",
+                "serial": V.d3.serial,
+                "kelvin": V.d3.attrs.color.kelvin,
+                "saturation": V.d3.attrs.color.saturation,
+                "brightness": V.d3.attrs.color.brightness,
+                "group_id": "aa000000000000000000000000000000",
+                "product_id": 27,
+                "group_name": "g1",
+                "location_id": "bb000000000000000000000000000000",
+                "location_name": "l1",
+            }

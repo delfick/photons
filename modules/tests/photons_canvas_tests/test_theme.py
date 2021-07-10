@@ -5,82 +5,69 @@ from photons_canvas.theme import ApplyTheme
 from photons_app.special import FoundSerials
 from photons_app import helpers as hp
 
-from photons_control import test_helpers as chp
-from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 import pytest
 
-bulb = FakeDevice(
+devices = pytest.helpers.mimic()
+
+devices.add("bulb")(
     "d073d5000002",
-    chp.default_responders(
-        Products.LMB_MESH_A21,
-        power=0,
-        label="sam",
-        infrared=0,
-        color=hp.Color(0, 0, 0, 0),
-        firmware=hp.Firmware(2, 2),
-    ),
+    Products.LMB_MESH_A21,
+    hp.Firmware(2, 2),
+    value_store=dict(power=0, label="sam", infrared=0, color=hp.Color(0, 0, 0, 0)),
 )
 
-
-tile = FakeDevice(
+devices.add("tile")(
     "d073d5000001",
-    chp.default_responders(
-        Products.LCM3_TILE,
+    Products.LCM3_TILE,
+    hp.Firmware(3, 50),
+    value_store=dict(
         power=0,
         label="bob",
         infrared=100,
         color=hp.Color(100, 0.5, 0.5, 4500),
-        firmware=hp.Firmware(3, 50),
     ),
 )
 
-striplcm1 = FakeDevice(
+devices.add("striplcm1")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 22),
+    value_store=dict(
         power=65535,
         label="lcm1-no-extended",
-        firmware=hp.Firmware(1, 22),
         zones=[hp.Color(0, 0, 0, 0) for i in range(20)],
     ),
 )
 
-striplcm2noextended = FakeDevice(
+devices.add("striplcm2noextended")(
     "d073d5000004",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 70),
+    value_store=dict(
         power=0,
         label="lcm2-no-extended",
-        firmware=hp.Firmware(2, 70),
         zones=[hp.Color(0, 0, 0, 0) for i in range(30)],
     ),
 )
 
-striplcm2extended = FakeDevice(
+devices.add("striplcm2extended")(
     "d073d5000005",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 77),
+    value_store=dict(
         power=0,
         label="lcm2-extended",
-        firmware=hp.Firmware(2, 77),
         zones=[hp.Color(0, 0, 0, 0) for i in range(82)],
     ),
 )
 
-lights = [bulb, tile, striplcm1, striplcm2noextended, striplcm2extended]
 
-
-@pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner(lights) as runner:
-        yield runner
-
-
-@pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
+@pytest.fixture()
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(autouse=True)
@@ -90,52 +77,52 @@ def set_async_timeout(request):
 
 describe "ApplyTheme":
 
-    async it "can apply a theme", runner:
+    async it "can apply a theme", sender:
         msg = ApplyTheme.msg({})
-        await runner.sender(msg, FoundSerials())
+        await sender(msg, FoundSerials())
 
-        for light in lights:
+        for light in devices:
             assert light.attrs.power == 65535
 
         colors = [
-            bulb.attrs.color,
-            *striplcm1.attrs.zones,
-            *striplcm2noextended.attrs.zones,
-            *striplcm2extended.attrs.zones,
+            ("bulb", devices["bulb"].attrs.color),
+            *[("striplcm1", c) for c in devices["striplcm1"].attrs.zones],
+            *[("striplcm2noextended", c) for c in devices["striplcm2noextended"].attrs.zones],
+            *[("striplcm2extended", c) for c in devices["striplcm2extended"].attrs.zones],
         ]
-        for _, cs in tile.attrs.chain:
-            colors.extend(cs)
+        for i, ch in enumerate(devices["tile"].attrs.chain):
+            colors.extend([(("tile", i), c) for c in ch.colors])
 
         assert len(colors) == 1 + 20 + 30 + 82 + (64 * 5)
 
         non_zero_hues = []
-        for c in colors:
+        for index, (name, c) in enumerate(colors):
             if c.hue != 0:
                 non_zero_hues.append(c.hue)
-            assert c.saturation == 1
-            assert c.brightness == hp.Color(0, 0, 0.3, 0).brightness
-            assert c.kelvin == 3500
+            assert c.saturation == 1, (index, name)
+            assert c.brightness == hp.Color(0, 0, 0.3, 0).brightness, (index, name)
+            assert c.kelvin == 3500, (index, name)
 
         assert len(non_zero_hues) > 200
 
-    async it "can have options", runner:
+    async it "can have options", sender:
         msg = ApplyTheme.msg({"power_on": False, "overrides": {"saturation": 0.2}})
-        await runner.sender(msg, FoundSerials())
+        await sender(msg, FoundSerials())
 
-        for light in lights:
-            if light is striplcm1:
+        for light in devices:
+            if light is devices["striplcm1"]:
                 assert light.attrs.power == 65535
             else:
                 assert light.attrs.power == 0
 
         colors = [
-            bulb.attrs.color,
-            *striplcm1.attrs.zones,
-            *striplcm2noextended.attrs.zones,
-            *striplcm2extended.attrs.zones,
+            devices["bulb"].attrs.color,
+            *devices["striplcm1"].attrs.zones,
+            *devices["striplcm2noextended"].attrs.zones,
+            *devices["striplcm2extended"].attrs.zones,
         ]
-        for _, cs in tile.attrs.chain:
-            colors.extend(cs)
+        for ch in devices["tile"].attrs.chain:
+            colors.extend(ch.colors)
 
         assert len(colors) == 1 + 20 + 30 + 82 + (64 * 5)
 

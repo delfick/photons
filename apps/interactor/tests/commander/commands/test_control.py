@@ -2,6 +2,9 @@
 
 from interactor.commander.store import store, load_commands
 
+from photons_app.mimic.event import Events
+from photons_app import helpers as hp
+
 from photons_messages import DeviceMessages, LightMessages
 from photons_control.colour import ColourParser
 
@@ -9,27 +12,40 @@ from unittest import mock
 import pytest
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def store_clone():
     load_commands()
     return store.clone()
 
 
-@pytest.fixture(scope="module")
-async def server(store_clone, server_wrapper):
-    async with server_wrapper(store_clone) as server:
-        yield server
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
-@pytest.fixture(autouse=True)
-async def wrap_tests(server):
-    async with server.per_test():
-        yield
+@pytest.fixture()
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture()
+async def server(
+    store_clone, devices, server_wrapper, sender, final_future, FakeTime, MockedCallLater
+):
+    with FakeTime() as t:
+        async with MockedCallLater(t):
+            async with server_wrapper(store_clone, sender, final_future) as server:
+                yield server
 
 
 describe "Control Commands":
 
-    async it "has discovery commands", fake, server, responses:
+    async it "has discovery commands", devices, server, responses:
         await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover"},
@@ -39,7 +55,7 @@ describe "Control Commands":
         serials = await server.assertCommand(
             "/v1/lifx/command", {"command": "discover", "args": {"just_serials": True}}
         )
-        assert sorted(serials) == sorted(device.serial for device in fake.devices)
+        assert sorted(serials) == sorted(device.serial for device in devices)
 
         serials = await server.assertCommand(
             "/v1/lifx/command",
@@ -47,8 +63,8 @@ describe "Control Commands":
         )
         wanted = {
             device.serial: responses.discovery_response[device.serial]
-            for device in fake.devices
-            if device.attrs.group_label == "Living Room"
+            for device in devices
+            if device.attrs.group.label == "Living Room"
         }
         assert len(wanted) == 2
         assert serials == wanted
@@ -57,13 +73,13 @@ describe "Control Commands":
             "/v1/lifx/command",
             {"command": "discover", "args": {"just_serials": True, "matcher": "label=kitchen"}},
         )
-        assert serials == [fake.for_attribute("label", "kitchen")[0].serial]
+        assert serials == [devices.for_attribute("label", "kitchen")[0].serial]
 
         serials = await server.assertCommand(
             "/v1/lifx/command",
             {"command": "discover", "args": {"just_serials": True, "matcher": "label=lamp"}},
         )
-        assert serials == [d.serial for d in fake.for_attribute("label", "lamp", 2)]
+        assert serials == [d.serial for d in devices.for_attribute("label", "lamp", 2)]
 
         serials = await server.assertCommand(
             "/v1/lifx/command",
@@ -72,7 +88,7 @@ describe "Control Commands":
         )
         assert serials == []
 
-    async it "has query commands", fake, server, responses:
+    async it "has query commands", devices, server, responses:
         await server.assertCommand(
             "/v1/lifx/command",
             {"command": "query", "args": {"pkt_type": 101}},
@@ -82,7 +98,7 @@ describe "Control Commands":
         results = responses.light_state_responses["results"]
         expected = {
             device.serial: results[device.serial]
-            for device in fake.for_attribute("power", 65535, expect=7)
+            for device in devices.for_attribute("power", 65535, expect=7)
         }
         await server.assertCommand(
             "/v1/lifx/command",
@@ -90,8 +106,8 @@ describe "Control Commands":
             json_output={"results": expected},
         )
 
-        bathroom_light = fake.for_serial("d073d5000002")
-        with bathroom_light.offline():
+        bathroom_light = devices["d073d5000002"]
+        async with bathroom_light.offline():
             expected["d073d5000002"] = {
                 "error": {
                     "message": "Timed out. Waiting for reply to a packet",
@@ -130,8 +146,8 @@ describe "Control Commands":
             json_output=responses.multizone_state_responses,
         )
 
-    async it "has set commands", fake, server:
-        expected = {"results": {device.serial: "ok" for device in fake.devices}}
+    async it "has set commands", devices, server:
+        expected = {"results": {device.serial: "ok" for device in devices}}
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -139,13 +155,19 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set([DeviceMessages.SetPower(level=0)])
-            device.reset_received()
+        for device in devices:
+            io = device.io["MEMORY"]
+            assert (
+                devices.store(device).count(
+                    Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))
+                )
+                == 1
+            )
+            devices.store(device).clear()
 
         # With an offline light
-        bathroom_light = fake.for_serial("d073d5000002")
-        with bathroom_light.offline():
+        bathroom_light = devices["d073d5000002"]
+        async with bathroom_light.offline():
             expected["results"]["d073d5000002"] = {
                 "error": {
                     "message": "Timed out. Waiting for reply to a packet",
@@ -166,13 +188,19 @@ describe "Control Commands":
                 json_output=expected,
             )
 
-            for device in fake.devices:
+            for device in devices:
                 if device is not bathroom_light:
-                    device.compare_received_set([DeviceMessages.SetPower(level=65535)])
-                    device.reset_received()
+                    io = device.io["MEMORY"]
+                    assert (
+                        devices.store(device).count(
+                            Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0xFFFF))
+                        )
+                        == 1
+                    )
+                    devices.store(device).clear()
 
         # With a matcher
-        kitchen_light = fake.for_attribute("label", "kitchen", expect=1)[0]
+        kitchen_light = devices.for_attribute("label", "kitchen", expect=1)[0]
         expected = {"results": {kitchen_light.serial: "ok"}}
 
         await server.assertCommand(
@@ -184,13 +212,28 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        kitchen_light.compare_received_set([DeviceMessages.SetLabel(label="blah")])
-        for device in fake.devices:
+        assert (
+            devices.store(kitchen_light).count(
+                Events.INCOMING(
+                    kitchen_light,
+                    kitchen_light.io["MEMORY"],
+                    pkt=DeviceMessages.SetLabel(label="blah"),
+                )
+            )
+            == 1
+        )
+        for device in devices:
             if device is not kitchen_light:
-                device.expect_no_set_messages()
+                devices.store(device).assertNoSetMessages()
 
-    async it "has power_toggle command", fake, server:
-        expected = {"results": {device.serial: "ok" for device in fake.devices}}
+    async it "has power_toggle command", devices, server:
+        expected = {"results": {device.serial: "ok" for device in devices}}
+
+        for device in devices:
+            if device.serial == "d073d5000001":
+                await device.change_one("power", 0)
+            else:
+                await device.change_one("power", 0xFFFF)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -198,12 +241,27 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
+        for device in devices:
+            io = device.io["MEMORY"]
             if device.serial == "d073d5000001":
-                device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=1)])
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device, io, pkt=LightMessages.SetLightPower(level=65535, duration=1)
+                        )
+                    )
+                    == 1
+                )
             else:
-                device.compare_received_set([LightMessages.SetLightPower(level=0, duration=1)])
-            device.reset_received()
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device, io, pkt=LightMessages.SetLightPower(level=0, duration=1)
+                        )
+                    )
+                    == 1
+                )
+            devices.store(device).clear()
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -211,15 +269,30 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
+        for device in devices:
+            io = device.io["MEMORY"]
             if device.serial == "d073d5000001":
-                device.compare_received_set([LightMessages.SetLightPower(level=0, duration=2)])
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device, io, pkt=LightMessages.SetLightPower(level=0, duration=2)
+                        )
+                    )
+                    == 1
+                )
             else:
-                device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
-            device.reset_received()
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2)
+                        )
+                    )
+                    == 1
+                )
+            devices.store(device).clear()
 
-    async it "has power_toggle group command", fake, server:
-        expected = {"results": {device.serial: "ok" for device in fake.devices}}
+    async it "has power_toggle group command", devices, server:
+        expected = {"results": {device.serial: "ok" for device in devices}}
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -227,9 +300,17 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set([LightMessages.SetLightPower(level=0, duration=1)])
-            device.reset_received()
+        for device in devices:
+            io = device.io["MEMORY"]
+            assert (
+                devices.store(device).count(
+                    Events.INCOMING(
+                        device, io, pkt=LightMessages.SetLightPower(level=0, duration=1)
+                    )
+                )
+                == 1
+            )
+            devices.store(device).clear()
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -237,9 +318,17 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set([LightMessages.SetLightPower(level=65535, duration=2)])
-            device.reset_received()
+        for device in devices:
+            io = device.io["MEMORY"]
+            assert (
+                devices.store(device).count(
+                    Events.INCOMING(
+                        device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2)
+                    )
+                )
+                == 1
+            )
+            devices.store(device).clear()
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -247,13 +336,22 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set([LightMessages.SetLightPower(level=0, duration=3)])
-            device.reset_received()
+        for device in devices:
+            io = device.io["MEMORY"]
+            assert (
+                devices.store(device).count(
+                    Events.INCOMING(
+                        device, io, pkt=LightMessages.SetLightPower(level=0, duration=3)
+                    )
+                )
+                == 1
+            )
+            devices.store(device).clear()
 
-    async it "has transform command", fake, server:
+    @pytest.mark.async_timeout(5)
+    async it "has transform command", devices, server:
         # Just power
-        expected = {"results": {device.serial: "ok" for device in fake.devices}}
+        expected = {"results": {device.serial: "ok" for device in devices}}
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -261,9 +359,15 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set([DeviceMessages.SetPower(level=0)])
-            device.reset_received()
+        for device in devices:
+            io = device.io["MEMORY"]
+            assert (
+                devices.store(device).count(
+                    Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))
+                )
+                == 1
+            )
+            devices.store(device).clear()
 
         # Just color
         await server.assertCommand(
@@ -272,21 +376,30 @@ describe "Control Commands":
             json_output=expected,
         )
 
-        for device in fake.devices:
-            device.compare_received_set(
-                [ColourParser.msg("red", overrides={"effect": "sine", "res_required": False})]
+        for device in devices:
+            io = device.io["MEMORY"]
+            want = Events.INCOMING(
+                device,
+                io,
+                pkt=(
+                    LightMessages.SetWaveformOptional,
+                    ColourParser.msg(
+                        "red", overrides={"effect": "sine", "res_required": False}
+                    ).payload.as_dict(),
+                ),
             )
-            device.reset_received()
+            assert devices.store(device).count(want) == 1, device
+            devices.store(device).clear()
 
         # Power on and color
-        for device in fake.devices:
-            device.attrs.power = 0
-            device.attrs.color.brightness = 0.5
-        fake.for_serial("d073d5000001").attrs.power = 65535
-        fake.for_serial("d073d5000003").attrs.power = 65535
+        for device in devices:
+            await device.change_one("power", 0)
+            await device.change_one(("color", "brightness"), 0.5)
+        await devices["d073d5000001"].change_one("power", 0xFFFF)
+        await devices["d073d5000003"].change_one("power", 0xFFFF)
 
-        tv_light = fake.for_attribute("label", "tv", expect=1)[0]
-        with tv_light.offline():
+        tv_light = devices.for_attribute("label", "tv", expect=1)[0]
+        async with tv_light.offline():
             expected["results"]["d073d5000006"] = {
                 "error": {
                     "message": "Timed out. Waiting for reply to a packet",
@@ -306,36 +419,34 @@ describe "Control Commands":
                 json_output=expected,
             )
 
-        for device in fake.devices:
+        for device in devices:
+            io = device.io["MEMORY"]
             if device.attrs.label == "tv":
-                device.expect_no_set_messages()
+                devices.store(device).assertNoSetMessages()
             elif device.serial in ("d073d5000001", "d073d5000003"):
-                device.compare_received_set(
-                    [ColourParser.msg("blue", overrides={"res_required": False})]
-                )
+                devices.store(device).count(
+                    Events.INCOMING(
+                        device, io, pkt=ColourParser.msg("blue", overrides={"res_required": False})
+                    )
+                ) == 1
             else:
-                device.compare_received_set(
-                    [
-                        ColourParser.msg(
-                            "blue", overrides={"brightness": 0, "res_required": False}
-                        ),
-                        DeviceMessages.SetPower(level=65535, res_required=False),
-                        ColourParser.msg(
-                            "blue", overrides={"brightness": 0.5, "res_required": False}
-                        ),
-                    ]
-                )
-            device.reset_received()
+                for pkt in [
+                    ColourParser.msg("blue", overrides={"brightness": 0, "res_required": False}),
+                    DeviceMessages.SetPower(level=65535, res_required=False),
+                    ColourParser.msg("blue", overrides={"brightness": 0.5, "res_required": False}),
+                ]:
+                    assert devices.store(device).count(Events.INCOMING(device, io, pkt=pkt)) == 1
+            devices.store(device).clear()
 
         # Power on and transition color
-        for device in fake.devices:
-            device.attrs.power = 0
-            device.attrs.color.brightness = 0.5
-        fake.for_serial("d073d5000001").attrs.power = 65535
-        fake.for_serial("d073d5000003").attrs.power = 65535
+        for device in devices:
+            await device.change_one("power", 0)
+            await device.change_one(("color", "brightness"), 0.5)
+        await devices["d073d5000001"].change_one("power", 0xFFFF)
+        await devices["d073d5000003"].change_one("power", 0xFFFF)
 
-        tv_light = fake.for_attribute("label", "tv", expect=1)[0]
-        with tv_light.offline():
+        tv_light = devices.for_attribute("label", "tv", expect=1)[0]
+        async with tv_light.offline():
             expected["results"]["d073d5000006"] = {
                 "error": {
                     "message": "Timed out. Waiting for reply to a packet",
@@ -359,12 +470,20 @@ describe "Control Commands":
                 json_output=expected,
             )
 
-        for device in fake.devices:
+        for device in devices:
+            io = device.io["MEMORY"]
             if device.attrs.label == "tv":
-                device.expect_no_set_messages()
+                devices.store(device).assertNoSetMessages()
             elif device.serial in ("d073d5000001", "d073d5000003"):
-                device.compare_received_set(
-                    [ColourParser.msg("blue", overrides={"res_required": False})]
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device,
+                            io,
+                            pkt=ColourParser.msg("blue", overrides={"res_required": False}),
+                        )
+                    )
+                    == 1
                 )
             else:
                 device_reset = ColourParser.msg(
@@ -377,12 +496,23 @@ describe "Control Commands":
                 device_reset.set_hue = 0
                 device_reset.set_saturation = 0
                 device_reset.set_kelvin = 0
-                device.compare_received_set(
-                    [
-                        device_reset,
-                        DeviceMessages.SetPower(level=65535, res_required=False),
-                        ColourParser.msg(
-                            "blue", overrides={"brightness": 0.5, "res_required": False}
-                        ),
-                    ]
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device, io, pkt=DeviceMessages.SetPower(level=65535, res_required=False)
+                        )
+                    )
+                    == 1
+                )
+                assert (
+                    devices.store(device).count(
+                        Events.INCOMING(
+                            device,
+                            io,
+                            pkt=ColourParser.msg(
+                                "blue", overrides={"brightness": 0.5, "res_required": False}
+                            ),
+                        )
+                    )
+                    == 1
                 )

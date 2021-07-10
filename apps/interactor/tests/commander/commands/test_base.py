@@ -2,6 +2,8 @@
 
 from interactor.commander.store import store, load_commands
 
+from photons_app import helpers as hp
+
 from delfick_project.norms import dictobj, sb
 from textwrap import dedent
 from unittest import mock
@@ -38,22 +40,33 @@ def TCommand(store_clone):
     return TCommand
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def store_clone():
     load_commands()
     return store.clone()
 
 
-@pytest.fixture(scope="module")
-async def server(store_clone, server_wrapper):
-    async with server_wrapper(store_clone) as server:
-        yield server
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
-@pytest.fixture(autouse=True)
-async def wrap_tests(server):
-    async with server.per_test():
-        yield
+@pytest.fixture()
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture()
+async def server(store_clone, server_wrapper, sender, final_future, FakeTime, MockedCallLater):
+    with FakeTime() as t:
+        async with MockedCallLater(t):
+            async with server_wrapper(store_clone, sender, final_future) as server:
+                yield server
 
 
 describe "commands":
@@ -149,6 +162,7 @@ describe "commands":
 
             # another valid command
             await stream.create(
-                "/v1/lifx/command", {"command": "query", "args": {"pkt_type": 101}},
+                "/v1/lifx/command",
+                {"command": "query", "args": {"pkt_type": 101}},
             )
             await stream.check_reply(responses.light_state_responses)

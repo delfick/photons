@@ -470,7 +470,10 @@ class Communication:
             else:
                 if PacketKls is None:
                     PacketKls = Packet
-                pkt = PacketKls.create(data)
+                if isinstance(data, PacketKls):
+                    pkt = data.clone()
+                else:
+                    pkt = PacketKls.create(data)
         except Exception as error:
             log.exception(error)
         else:

@@ -2,13 +2,10 @@ from interactor.options import Options
 from interactor.server import Server
 
 from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.mimic import DeviceCollection
 from photons_app.errors import BadRun
 from photons_app import helpers as hp
 
-from photons_transport.targets import MemoryTarget
-from photons_control import test_helpers as chp
-from photons_messages import protocol_register
-from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 from unittest import mock
@@ -23,6 +20,28 @@ import uuid
 import sys
 
 log = logging.getLogger("interactor.test_helpers")
+
+ds = DeviceCollection()
+
+
+@pytest.fixture(scope="session")
+def devices():
+    return ds
+
+
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture()
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(scope="session")
@@ -76,7 +95,7 @@ class WSTester(hp.AsyncCMMixin):
         class IsNum:
             def __eq__(self, value):
                 self.got = value
-                return type(value) is float
+                return isinstance(value, (int, float)) or value.isdigit()
 
             def __repr__(self):
                 if hasattr(self, "got"):
@@ -111,20 +130,12 @@ class WSTester(hp.AsyncCMMixin):
 
 
 class ServerWrapper(hp.AsyncCMMixin):
-    def __init__(self, store, **kwargs):
+    def __init__(self, store, sender, final_future, **kwargs):
         self.store = store
         self.kwargs = kwargs
+        self.sender = sender
+        self.final_future = final_future
         self.cleaners = []
-
-    @hp.asynccontextmanager
-    async def per_test(self):
-        try:
-            for device in fakery.devices:
-                await device.reset()
-            yield
-        finally:
-            for device in fakery.devices:
-                await device.wait_for_reboot_fut
 
     def ws_stream(self, path="/v1/ws"):
         return WSTester(self.port, path=path)
@@ -195,10 +206,6 @@ class ServerWrapper(hp.AsyncCMMixin):
                     assert got == text_output
 
     @hp.memoized_property
-    def final_future(self):
-        return hp.create_future()
-
-    @hp.memoized_property
     def ts(self):
         return hp.TaskHolder(self.final_future)
 
@@ -215,11 +222,6 @@ class ServerWrapper(hp.AsyncCMMixin):
         await pytest.helpers.wait_for_no_port(self.port)
 
         self.options = make_options(**{**self.kwargs, "port": self.port})
-
-        self.Wrapped = fakery(self.options, self.final_future)
-        await self.Wrapped.__aenter__()
-
-        self.sender = await self.options.lan.make_sender()
 
         self._task = hp.async_as_background(
             self.server.serve(
@@ -255,7 +257,6 @@ class ServerWrapper(hp.AsyncCMMixin):
                 waited.append(ts.add(self.Wrapped.__aexit__(exc_typ, exc, tb)))
 
             waited.append(ts.add(pytest.helpers.wait_for_no_port(self.port)))
-            waited.append(ts.add(self.options.lan.close_sender(self.sender)))
 
             if hasattr(self, "ws"):
                 waited.append(ts.add(self.ws.__aexit__(None, None, None)))
@@ -295,179 +296,111 @@ for i in range(16):
     zones.append(hp.Color(i * 10, 1, 1, 2500))
 
 
-class FakeDevice(FakeDevice):
-    def compare_received_set(self, expected, keep_duplicates=False):
-        self.received = [m for m in self.received if m.__class__.__name__.startswith("Set")]
-        super().compare_received(expected, keep_duplicates=keep_duplicates)
-
-    def expect_no_set_messages(self):
-        assert not any([m for m in self.received if m.__class__.__name__.startswith("Set")])
-
-
-a19_1 = FakeDevice(
+ds.add("a19_1")(
     "d073d5000001",
-    chp.default_responders(
-        Products.LCM2_A19,
+    Products.LCM2_A19,
+    hp.Firmware(2, 75),
+    value_store=dict(
         label="kitchen",
         power=0,
-        group_label=group_one_label,
-        group_uuid=group_one_uuid,
-        location_label=location_one_label,
-        location_uuid=location_one_uuid,
+        group={"label": group_one_label, "identity": group_one_uuid},
+        location={"label": location_one_label, "identity": location_one_uuid},
         color=hp.Color(0, 1, 1, 2500),
-        firmware=hp.Firmware(2, 75),
     ),
 )
 
-a19_2 = FakeDevice(
+ds.add("a19_2")(
     "d073d5000002",
-    chp.default_responders(
-        Products.LCM2_A19,
+    Products.LCM2_A19,
+    hp.Firmware(2, 75),
+    value_store=dict(
         label="bathroom",
         power=65535,
         color=hp.Color(100, 1, 1, 2500),
-        group_label=group_two_label,
-        group_uuid=group_two_uuid,
-        location_label=location_one_label,
-        location_uuid=location_one_uuid,
-        firmware=hp.Firmware(2, 75),
+        group={"label": group_two_label, "identity": group_two_uuid},
+        location={"label": location_one_label, "identity": location_one_uuid},
     ),
 )
 
-color1000 = FakeDevice(
+ds.add("color1000")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCMV4_A19_COLOR,
+    Products.LCMV4_A19_COLOR,
+    hp.Firmware(1, 1),
+    value_store=dict(
         label="lamp",
         power=65535,
         color=hp.Color(100, 0, 1, 2500),
-        group_label=group_three_label,
-        group_uuid=group_three_uuid,
-        location_label=location_two_label,
-        location_uuid=location_two_uuid,
-        firmware=hp.Firmware(1, 1),
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
     ),
 )
 
-white800 = FakeDevice(
+ds.add("white800")(
     "d073d5000004",
-    chp.default_responders(
-        Products.LCMV4_A19_WHITE_LV,
+    Products.LCMV4_A19_WHITE_LV,
+    hp.Firmware(1, 1),
+    value_store=dict(
         label="lamp",
         power=65535,
         color=hp.Color(100, 0, 1, 2500),
-        group_label=group_three_label,
-        group_uuid=group_three_uuid,
-        location_label=location_two_label,
-        location_uuid=location_two_uuid,
-        firmware=hp.Firmware(1, 1),
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
     ),
 )
 
-strip1 = FakeDevice(
+ds.add("strip1")(
     "d073d5000005",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 75),
+    value_store=dict(
         label="desk",
         power=65535,
         zones=zones,
         color=hp.Color(200, 0.5, 0.5, 2500),
-        group_label=group_one_label,
-        group_uuid=group_one_uuid,
-        location_label=location_one_label,
-        location_uuid=location_one_uuid,
-        firmware=hp.Firmware(2, 75),
+        group={"label": group_one_label, "identity": group_one_uuid},
+        location={"label": location_one_label, "identity": location_one_uuid},
     ),
 )
 
-strip2 = FakeDevice(
+ds.add("strip2")(
     "d073d5000006",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 1),
+    value_store=dict(
         label="tv",
         power=65535,
         zones=zones,
         color=hp.Color(200, 0.5, 0.5, 2500),
-        group_label=group_three_label,
-        group_uuid=group_three_uuid,
-        location_label=location_two_label,
-        location_uuid=location_two_uuid,
-        firmware=hp.Firmware(1, 1),
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
     ),
 )
 
-candle = FakeDevice(
+ds.add("candle")(
     "d073d5000007",
-    chp.default_responders(
-        Products.LCM3_CANDLE,
+    Products.LCM3_CANDLE,
+    hp.Firmware(3, 50),
+    value_store=dict(
+        color=hp.Color(0, 1, 1, 3500),
         label="pretty",
         power=65535,
-        group_label=group_three_label,
-        group_uuid=group_three_uuid,
-        location_label=location_two_label,
-        location_uuid=location_two_uuid,
-        firmware=hp.Firmware(3, 50),
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
     ),
 )
 
-tile = FakeDevice(
+ds.add("tile")(
     "d073d5000008",
-    chp.default_responders(
-        Products.LCM3_TILE,
+    Products.LCM3_TILE,
+    hp.Firmware(3, 50),
+    value_store=dict(
+        color=hp.Color(0, 1, 1, 3500),
         label="wall",
         power=65535,
-        group_label=group_three_label,
-        group_uuid=group_three_uuid,
-        location_label=location_two_label,
-        location_uuid=location_two_uuid,
-        firmware=hp.Firmware(3, 50),
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
     ),
 )
-
-
-class Fakery:
-    def __init__(self):
-        self.devices = [a19_1, a19_2, color1000, white800, strip1, strip2, candle, tile]
-
-    def for_serial(self, serial):
-        for d in self.devices:
-            if d.serial == serial:
-                return d
-        assert False, f"Expected one device with serial {serial}"
-
-    def for_attribute(self, key, value, expect=1):
-        got = []
-        for d in self.devices:
-            if d.attrs[key] == value:
-                got.append(d)
-        assert len(got) == expect, f"Expected {expect} devices, got {len(got)}: {got}"
-        return got
-
-    @hp.asynccontextmanager
-    async def __call__(self, options, final_future):
-        configuration = {
-            "final_future": final_future,
-            "protocol_register": protocol_register,
-        }
-
-        options.lan = MemoryTarget.create(configuration, {"devices": self.devices})
-        options.fake_devices = self.devices
-
-        try:
-            for device in fakery.devices:
-                await device.start()
-            yield
-        finally:
-            for device in fakery.devices:
-                await device.finish()
-
-
-fakery = Fakery()
-
-
-@pytest.fixture()
-def fake():
-    return fakery
 
 
 class Around:

@@ -4,91 +4,84 @@ from photons_canvas.points.simple_messages import MultizoneMessagesMaker
 
 from photons_app import helpers as hp
 
-from photons_control import test_helpers as chp
-from photons_transport.fake import FakeDevice
 from photons_products import Products
 
 import pytest
 
+devices = pytest.helpers.mimic()
 
-striplcm1 = FakeDevice(
+
+devices.add("striplcm1")(
     "d073d5000003",
-    chp.default_responders(
-        Products.LCM1_Z,
+    Products.LCM1_Z,
+    hp.Firmware(1, 22),
+    value_store=dict(
         power=0,
         label="lcm1-no-extended",
         zones=[hp.Color(0, 0, 0, 0)] * 16,
-        firmware=hp.Firmware(1, 22),
     ),
 )
 
-striplcm2noextended = FakeDevice(
+devices.add("striplcm2noextended")(
     "d073d5000004",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 70),
+    value_store=dict(
         power=0,
         label="lcm2-no-extended",
         zones=[hp.Color(0, 0, 0, 0)] * 16,
-        firmware=hp.Firmware(2, 70),
     ),
 )
 
-striplcm2extended = FakeDevice(
+devices.add("striplcm2extended")(
     "d073d5000005",
-    chp.default_responders(
-        Products.LCM2_Z,
+    Products.LCM2_Z,
+    hp.Firmware(2, 77),
+    value_store=dict(
         power=0,
         label="lcm2-extended",
         zones=[hp.Color(0, 0, 0, 0)] * 16,
-        firmware=hp.Firmware(2, 77),
     ),
 )
 
-strips = [striplcm1, striplcm2extended, striplcm2noextended]
 
-
-@pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner(strips) as runner:
-        yield runner
-
-
-@pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
+@pytest.fixture()
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 describe "SetZones":
 
-    async it "set zones", runner:
+    async it "set zones", sender:
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
-        for strip in strips:
-            strip.attrs.zones = [hp.Color(0, 0, 0, 0)] * 16
-            cap = chp.ProductResponder.capability(strip)
-            maker = MultizoneMessagesMaker(
-                strip.serial, cap, [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors]
-            )
-            await runner.sender(list(maker.msgs))
-
-        for strip in strips:
-            assert strip.attrs.zones == colors
-
-    async it "set zones from a different start zone", runner:
-        colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
-
-        for strip in strips:
-            strip.attrs.zones = [hp.Color(0, 0, 0, 0)] * 16
-            cap = chp.ProductResponder.capability(strip)
+        for strip in devices:
+            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16)
             maker = MultizoneMessagesMaker(
                 strip.serial,
-                cap,
+                strip.cap,
+                [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors],
+            )
+            await sender(list(maker.msgs))
+
+        for strip in devices:
+            assert strip.attrs.zones == colors
+
+    async it "set zones from a different start zone", sender:
+        colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
+
+        for strip in devices:
+            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16)
+            maker = MultizoneMessagesMaker(
+                strip.serial,
+                strip.cap,
                 [(c.hue, c.saturation, c.brightness, c.kelvin) for c in colors],
                 zone_index=2,
             )
-            await runner.sender(list(maker.msgs))
+            await sender(list(maker.msgs))
 
-        for strip in strips:
+        for strip in devices:
             assert (
                 strip.attrs.zones == [hp.Color(0, 0, 0, 0), hp.Color(0, 0, 0, 0)] + colors[:-2]
             ), strip

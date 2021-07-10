@@ -1,13 +1,11 @@
 # coding: spec
 
 from photons_control.device_finder import DeviceFinder, Filter, Finder
-from photons_control import test_helpers as chp
 
 from photons_app.special import SpecialReference
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, LightMessages
-from photons_transport.fake import FakeDevice
+from photons_messages import DeviceMessages, LightMessages, DiscoveryMessages
 from photons_products import Products
 
 from unittest import mock
@@ -257,280 +255,323 @@ describe "DeviceFinder":
 describe "finding devices":
 
     @pytest.fixture()
-    def V(self):
+    async def V(self, final_future):
         class V:
             serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
+            devices = pytest.helpers.mimic()
 
-            d1 = FakeDevice(serials[0], chp.default_responders(Products.LCM3_TILE))
-            d2 = FakeDevice(serials[1], chp.default_responders(Products.LCM2_Z, zones=[]))
-            d3 = FakeDevice(
+            d1 = devices.add("d1")(serials[0], Products.LCM3_TILE, hp.Firmware(3, 50))
+            d2 = devices.add("d2")(
+                serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[])
+            )
+            d3 = devices.add("d3")(
                 serials[2],
-                chp.default_responders(
-                    Products.LCM2_A19,
+                Products.LCM2_A19,
+                hp.Firmware(2, 80),
+                value_store=dict(
                     firmware=hp.Firmware(2, 80),
-                    group_uuid="aa",
-                    group_label="g1",
-                    group_updated_at=42,
-                    location_uuid="bb",
-                    location_label="l1",
-                    location_updated_at=56,
+                    group={"identity": "aa", "label": "g1", "updated_at": 42},
+                    location={"identity": "bb", "label": "l1", "updated_at": 56},
                 ),
             )
 
-            @hp.memoized_property
-            def devices(s):
-                return [s.d1, s.d2, s.d3]
+        v = V()
+        async with V.devices.for_test(final_future) as sender:
+            v.sender = sender
+            yield v
 
-        return V()
+    async it "can get serials and info", V, FakeTime, MockedCallLater:
+        reference = DeviceFinder.empty()
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == sorted(V.serials)
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(DiscoveryMessages.GetService())
+            V.devices.store(device).clear()
 
-    async it "can get serials and info", memory_devices_runner, V:
-        async with memory_devices_runner(V.devices) as runner:
-            reference = DeviceFinder.empty()
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == sorted(V.serials)
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(label="kitchen")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == []
 
-            reference = DeviceFinder.from_kwargs(label="kitchen")
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == []
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(), LightMessages.GetColor()
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+        await V.d3.change_one("label", "kitchen")
+        reference = DeviceFinder.from_kwargs(label="kitchen")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d3.serial]
 
-            V.d3.attrs.label = "kitchen"
-            reference = DeviceFinder.from_kwargs(label="kitchen")
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d3.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(), LightMessages.GetColor()
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap="matrix")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d1.serial]
 
-            reference = DeviceFinder.from_kwargs(cap="matrix")
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d1.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([DeviceMessages.GetVersion()])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"])
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d1.serial, V.d2.serial]
 
-            reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"])
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d1.serial, V.d2.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([DeviceMessages.GetVersion()])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d3.serial]
 
-            reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen")
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d3.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(),
+                LightMessages.GetColor(),
+                DeviceMessages.GetVersion(),
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor(), DeviceMessages.GetVersion()])
-                device.reset_received()
+        found = []
+        reference = DeviceFinder.from_kwargs(label="kitchen")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for device in reference.serials(V.sender):
+                    found.append(device)
+        assert [f.serial for f in found] == [V.d3.serial]
+        assert found[0].info == {
+            "hue": V.d3.attrs.color.hue,
+            "label": "kitchen",
+            "power": "off",
+            "serial": V.d3.serial,
+            "kelvin": V.d3.attrs.color.kelvin,
+            "saturation": V.d3.attrs.color.saturation,
+            "brightness": V.d3.attrs.color.brightness,
+        }
 
-            found = []
-            reference = DeviceFinder.from_kwargs(label="kitchen")
-            async for device in reference.serials(runner.sender):
-                found.append(device)
-            assert [f.serial for f in found] == [V.d3.serial]
-            assert found[0].info == {
-                "hue": V.d3.attrs.color.hue,
-                "label": "kitchen",
-                "power": "off",
-                "serial": V.d3.serial,
-                "kelvin": V.d3.attrs.color.kelvin,
-                "saturation": V.d3.attrs.color.saturation,
-                "brightness": V.d3.attrs.color.brightness,
-            }
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(
+                DiscoveryMessages.GetService(), LightMessages.GetColor()
+            )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+        found = []
+        reference = DeviceFinder.from_kwargs(label="kitchen")
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for device in reference.info(V.sender):
+                    found.append(device)
+        assert [f.serial for f in found] == [V.d3.serial]
+        assert found[0].info == {
+            "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
+            "firmware_version": "2.80",
+            "hue": V.d3.attrs.color.hue,
+            "label": "kitchen",
+            "power": "off",
+            "serial": V.d3.serial,
+            "kelvin": V.d3.attrs.color.kelvin,
+            "saturation": V.d3.attrs.color.saturation,
+            "brightness": V.d3.attrs.color.brightness,
+            "group_id": "aa000000000000000000000000000000",
+            "product_id": 27,
+            "group_name": "g1",
+            "location_id": "bb000000000000000000000000000000",
+            "location_name": "l1",
+        }
 
-            found = []
-            reference = DeviceFinder.from_kwargs(label="kitchen")
-            async for device in reference.info(runner.sender):
-                found.append(device)
-            assert [f.serial for f in found] == [V.d3.serial]
-            assert found[0].info == {
-                "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-                "firmware_version": "2.80",
-                "hue": V.d3.attrs.color.hue,
-                "label": "kitchen",
-                "power": "off",
-                "serial": V.d3.serial,
-                "kelvin": V.d3.attrs.color.kelvin,
-                "saturation": V.d3.attrs.color.saturation,
-                "brightness": V.d3.attrs.color.brightness,
-                "group_id": "aa000000000000000000000000000000",
-                "product_id": 27,
-                "group_name": "g1",
-                "location_id": "bb000000000000000000000000000000",
-                "location_name": "l1",
-            }
+        for device in V.devices:
+            if device is V.d3:
+                V.devices.store(device).assertIncoming(
+                    DiscoveryMessages.GetService(),
+                    LightMessages.GetColor(),
+                    DeviceMessages.GetVersion(),
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetGroup(),
+                    DeviceMessages.GetLocation(),
+                )
+            else:
+                V.devices.store(device).assertIncoming(
+                    DiscoveryMessages.GetService(), LightMessages.GetColor()
+                )
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                if device is V.d3:
-                    device.compare_received(
-                        [
-                            LightMessages.GetColor(),
-                            DeviceMessages.GetVersion(),
-                            DeviceMessages.GetHostFirmware(),
-                            DeviceMessages.GetGroup(),
-                            DeviceMessages.GetLocation(),
-                        ]
-                    )
-                else:
-                    device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+    async it "can reuse a finder", V, FakeTime, MockedCallLater:
 
-    async it "can reuse a finder", memory_devices_runner, V:
+        finder = Finder(V.sender)
 
-        async with memory_devices_runner(V.devices) as runner:
-            finder = Finder(runner.sender)
+        reference = DeviceFinder.empty(finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == sorted(V.serials)
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(DiscoveryMessages.GetService)
+            V.devices.store(device).clear()
 
-            reference = DeviceFinder.empty(finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == sorted(V.serials)
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == []
 
-            reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == []
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(LightMessages.GetColor())
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+        await V.d3.change_one("label", "kitchen")
+        reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        # It can't find it because the finder has the label cached
+        assert ss == []
 
-            V.d3.attrs.label = "kitchen"
-            reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            # It can't find it because the finder has the label cached
-            assert ss == []
+        for device in V.devices:
+            V.devices.store(device).assertIncoming()
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        await V.d3.change_one("label", "kitchen")
+        reference = DeviceFinder.from_kwargs(label="kitchen", refresh_info=True, finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        # But now it can because refresh_info is True
+        assert ss == [V.d3.serial]
 
-            V.d3.attrs.label = "kitchen"
-            reference = DeviceFinder.from_kwargs(label="kitchen", refresh_info=True, finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            # But now it can because refresh_info is True
-            assert ss == [V.d3.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(LightMessages.GetColor())
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([LightMessages.GetColor()])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap="matrix", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d1.serial]
 
-            reference = DeviceFinder.from_kwargs(cap="matrix", finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d1.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming(DeviceMessages.GetVersion())
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([DeviceMessages.GetVersion()])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"], finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d1.serial, V.d2.serial]
 
-            reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"], finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d1.serial, V.d2.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming()
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                found, ss = await reference.find(V.sender, timeout=5)
+        reference.raise_on_missing(found)
+        assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
+        assert ss == [V.d3.serial]
 
-            reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen", finder=finder)
-            found, ss = await reference.find(runner.sender, timeout=5)
-            reference.raise_on_missing(found)
-            assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
-            assert ss == [V.d3.serial]
+        for device in V.devices:
+            V.devices.store(device).assertIncoming()
+            V.devices.store(device).clear()
 
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        found = []
+        reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for device in reference.serials(V.sender):
+                    found.append(device)
+        assert [f.serial for f in found] == [V.d3.serial]
+        assert found[0].info == {
+            "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
+            "hue": V.d3.attrs.color.hue,
+            "label": "kitchen",
+            "power": "off",
+            "serial": V.d3.serial,
+            "kelvin": V.d3.attrs.color.kelvin,
+            "saturation": V.d3.attrs.color.saturation,
+            "brightness": V.d3.attrs.color.brightness,
+            "product_id": 27,
+        }
 
-            found = []
-            reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-            async for device in reference.serials(runner.sender):
-                found.append(device)
-            assert [f.serial for f in found] == [V.d3.serial]
-            assert found[0].info == {
-                "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-                "hue": V.d3.attrs.color.hue,
-                "label": "kitchen",
-                "power": "off",
-                "serial": V.d3.serial,
-                "kelvin": V.d3.attrs.color.kelvin,
-                "saturation": V.d3.attrs.color.saturation,
-                "brightness": V.d3.attrs.color.brightness,
-                "product_id": 27,
-            }
+        for device in V.devices:
+            assert V.devices.store(device) == []
 
-            for device in V.devices:
-                device.compare_received([])
-                device.reset_received()
+        found = []
+        reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async for device in reference.info(V.sender):
+                    found.append(device)
+        assert [f.serial for f in found] == [V.d3.serial]
+        assert found[0].info == {
+            "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
+            "firmware_version": "2.80",
+            "hue": V.d3.attrs.color.hue,
+            "label": "kitchen",
+            "power": "off",
+            "serial": V.d3.serial,
+            "kelvin": V.d3.attrs.color.kelvin,
+            "saturation": V.d3.attrs.color.saturation,
+            "brightness": V.d3.attrs.color.brightness,
+            "group_id": "aa000000000000000000000000000000",
+            "product_id": 27,
+            "group_name": "g1",
+            "location_id": "bb000000000000000000000000000000",
+            "location_name": "l1",
+        }
 
-            found = []
-            reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-            async for device in reference.info(runner.sender):
-                found.append(device)
-            assert [f.serial for f in found] == [V.d3.serial]
-            assert found[0].info == {
-                "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-                "firmware_version": "2.80",
-                "hue": V.d3.attrs.color.hue,
-                "label": "kitchen",
-                "power": "off",
-                "serial": V.d3.serial,
-                "kelvin": V.d3.attrs.color.kelvin,
-                "saturation": V.d3.attrs.color.saturation,
-                "brightness": V.d3.attrs.color.brightness,
-                "group_id": "aa000000000000000000000000000000",
-                "product_id": 27,
-                "group_name": "g1",
-                "location_id": "bb000000000000000000000000000000",
-                "location_name": "l1",
-            }
-
-            for device in V.devices:
-                if device is V.d3:
-                    device.compare_received(
-                        [
-                            DeviceMessages.GetHostFirmware(),
-                            DeviceMessages.GetGroup(),
-                            DeviceMessages.GetLocation(),
-                        ]
-                    )
-                else:
-                    device.compare_received([])
-                device.reset_received()
+        for device in V.devices:
+            if device is V.d3:
+                V.devices.store(device).assertIncoming(
+                    DeviceMessages.GetHostFirmware(),
+                    DeviceMessages.GetGroup(),
+                    DeviceMessages.GetLocation(),
+                )
+            else:
+                V.devices.store(device).assertIncoming()
+            V.devices.store(device).clear()

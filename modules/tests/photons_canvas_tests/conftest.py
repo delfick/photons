@@ -1,3 +1,5 @@
+from photons_app import helpers as hp
+
 from photons_messages.fields import scaled_hue, scaled_to_65535
 
 from delfick_project.norms import sb
@@ -25,3 +27,12 @@ def modify_hsbk_calculation():
 
     with p1, p2:
         yield
+
+
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()

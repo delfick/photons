@@ -14,7 +14,22 @@ import uuid
 
 
 @pytest.fixture()
-def server_maker(server_wrapper):
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture()
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture()
+def server_maker(server_wrapper, final_future, sender):
     class Maker(hp.AsyncCMMixin):
         def __init__(self, Handler):
             self.Handler = Handler
@@ -30,7 +45,7 @@ def server_maker(server_wrapper):
             self.patch = mock.patch.object(Server, "tornado_routes", tornado_routes)
             self.patch.start()
 
-            self.wrapper = server_wrapper(None)
+            self.wrapper = server_wrapper(None, sender, final_future)
             await self.wrapper.start()
             return self.wrapper
 

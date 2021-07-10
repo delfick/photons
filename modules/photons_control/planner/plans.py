@@ -784,7 +784,9 @@ class CapabilityPlan(Plan):
                 "cap": cap,
                 "product": product,
                 "firmware": self.firmware,
-                "state_version": self.version.payload,
+                "state_version": DeviceMessages.StateVersion.Payload.create(
+                    self.version.payload.pack()
+                ),
             }
 
 

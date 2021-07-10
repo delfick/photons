@@ -622,5 +622,8 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
 
         return kls
 
+    def __or__(self, other):
+        return self == other
+
 
 dictobj.PacketSpec = type.__new__(PacketSpecMetaKls, "PacketSpec", (PacketSpecMixin, dictobj), {})

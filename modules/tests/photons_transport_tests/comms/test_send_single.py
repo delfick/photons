@@ -1,42 +1,43 @@
 # coding: spec
 
-from photons_transport.targets import MemoryTarget
-from photons_transport.fake import FakeDevice
-
 from photons_app.special import FoundSerials
 from photons_app.errors import TimedOut
 from photons_app import helpers as hp
 
 from photons_messages import (
     DeviceMessages,
+    CoreMessages,
     MultiZoneMessages,
     DiscoveryMessages,
     Services,
-    protocol_register,
 )
-from photons_control import test_helpers as chp
 from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises
 import pytest
 import time
 
+devices = pytest.helpers.mimic()
+devices.add("strip")(
+    "d073d5001337", Products.LCM2_Z, hp.Firmware(2, 80), value_store={"zones_count": 22}
+)
 
-def assertSamePackets(got, *want):
-    assert isinstance(got, list)
-    assert len(got) == len(want)
-    for g, w in zip(got, want):
-        if isinstance(w, tuple):
-            kls, options = w
-            options = {"sequence": 1, "source": 2, "target": "d073d5001337", **options}
-            w = kls.create(kls.create(**options).pack())
-            if g.pack() != w.pack():
-                print(f"GOT: {repr(g)}")
-                print(f"WANT: {repr(w)}")
-                print()
-            assert g.pack() == w.pack()
-        else:
-            assert g | w
+
+@pytest.fixture()
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        await FoundSerials().find(sender, timeout=1)
+        sender.received.clear()
+        for store in devices.stores.values():
+            store.clear()
+        yield sender
+
+
+@pytest.fixture(autouse=True)
+async def reset_devices(sender):
+    for device in devices:
+        await device.reset()
+        devices.store(device).clear()
 
 
 def assertSent(sender, *expected):
@@ -53,59 +54,51 @@ def assertSent(sender, *expected):
         assert g == e
 
 
-@pytest.fixture()
-async def _setup():
-    device = FakeDevice(
-        "d073d5001337",
-        chp.default_responders(Products.LCM2_Z, zones=[hp.Color(i, 1, 1, 3500) for i in range(22)]),
-    )
-    async with device:
-        options = {"final_future": hp.create_future(), "protocol_register": protocol_register}
-        target = MemoryTarget.create(options, {"devices": [device]})
-        yield target, device
-
-
 describe "Sending a single messages":
 
-    @pytest.fixture
-    async def sending(self, _setup):
-        target, device = _setup
-
-        async with target.session() as sender:
-            await FoundSerials().find(sender, timeout=1)
-            yield sender, device
-
     @pytest.fixture()
-    def send_single(self, sending):
+    def send_single(self, sender):
         async def send_single(original, **kwargs):
             packet = original.clone()
             packet.update(target="d073d5001337", sequence=1, source=2)
-            return await sending[0].send_single(original, packet, **kwargs)
+            return await sender.send_single(original, packet, **kwargs)
 
         return send_single
 
     @pytest.fixture()
-    def sender(self, sending):
-        return sending[0]
-
-    @pytest.fixture()
-    def device(self, sending):
-        return sending[1]
+    def device(self):
+        return devices["strip"]
 
     describe "happy path":
-        async it "it can send and receive a single message", send_single, device:
+
+        async it "can send and receive a single message", send_single, device:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             result = await send_single(original, timeout=1)
-            assertSamePackets(result, (DeviceMessages.EchoResponse, {"echoing": b"hi"}))
-            device.compare_received(
-                [DeviceMessages.EchoRequest(echoing=b"hi")], keep_duplicates=True
-            )
+
+            expected = (DeviceMessages.EchoResponse, {"echoing": b"hi"})
+            pytest.helpers.assertSamePackets(result, expected)
+
+            assert devices.store(device) == [
+                devices.Events.INCOMING(device, device.io["MEMORY"], pkt=original),
+                devices.Events.OUTGOING(
+                    device,
+                    device.io["MEMORY"],
+                    pkt=CoreMessages.Acknowledgement,
+                    replying_to=original,
+                ),
+                devices.Events.OUTGOING(
+                    device, device.io["MEMORY"], pkt=expected, replying_to=original
+                ),
+            ]
 
         async it "can get multiple replies", send_single, device:
+            await device.event(
+                devices.Events.SET_ZONES, zones=[(i, hp.Color(i, 1, 1, 3500)) for i in range(22)]
+            )
+            devices.store(device).clear()
+
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
-            result = await send_single(original, timeout=1)
-            assertSamePackets(
-                result,
+            expected = [
                 (
                     MultiZoneMessages.StateMultiZone,
                     {
@@ -131,29 +124,49 @@ describe "Sending a single messages":
                         + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
                     },
                 ),
-            )
-            device.compare_received(
-                [MultiZoneMessages.GetColorZones(start_index=0, end_index=255)],
-                keep_duplicates=True,
-            )
+            ]
+
+            result = await send_single(original, timeout=1)
+            pytest.helpers.assertSamePackets(result, *expected)
+
+            assert devices.store(device) == [
+                devices.Events.INCOMING(device, device.io["MEMORY"], pkt=original),
+                devices.Events.OUTGOING(
+                    device,
+                    device.io["MEMORY"],
+                    pkt=CoreMessages.Acknowledgement,
+                    replying_to=original,
+                ),
+                *[
+                    devices.Events.OUTGOING(
+                        device, device.io["MEMORY"], pkt=ex, replying_to=original
+                    )
+                    for ex in expected
+                ],
+            ]
 
         async it "can get unlimited replies", send_single, device, FakeTime, MockedCallLater:
-            original = DiscoveryMessages.GetService()
+            original = DiscoveryMessages.GetService(ack_required=False)
             with FakeTime() as t:
                 async with MockedCallLater(t):
                     result = await send_single(original, timeout=1)
 
             assert t.time == 0.1
-            assertSamePackets(
-                result,
-                (
-                    DiscoveryMessages.StateService,
-                    {"service": Services.UDP, "port": device.services[0].state_service.port},
-                ),
+
+            expected = (
+                DiscoveryMessages.StateService,
+                {"service": Services.UDP, "port": device.io["MEMORY"].options.port},
             )
-            device.compare_received([DiscoveryMessages.GetService()], keep_duplicates=True)
+            pytest.helpers.assertSamePackets(result, expected)
+            assert devices.store(device) == [
+                devices.Events.INCOMING(device, device.io["MEMORY"], pkt=original),
+                devices.Events.OUTGOING(
+                    device, device.io["MEMORY"], pkt=expected, replying_to=original
+                ),
+            ]
 
     describe "timeouts":
+
         async it "can retry until it gets a timeout", send_single, sender, device, FakeTime, MockedCallLater:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
@@ -167,7 +180,7 @@ describe "Sending a single messages":
                         source=2,
                         serial=device.serial,
                     ):
-                        with device.offline():
+                        async with device.offline():
                             await send_single(original, timeout=2)
 
             assert t.time == 2
@@ -182,24 +195,38 @@ describe "Sending a single messages":
 
         async it "can retry until it gets a result", send_single, sender, device, FakeTime, MockedCallLater:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
+            io = device.io["MEMORY"]
 
             with FakeTime() as t:
 
-                async def intercept(pkt, source):
+                @io.packet_filter.intercept_process_request
+                async def intercept(event, Cont):
                     if time.time() == 0.6:
-                        return
-                    return False
+                        return True
+                    return None
 
-                device.set_intercept_got_message(intercept)
-
-                async with MockedCallLater(t):
-                    result = await send_single(original, timeout=2)
+                with intercept:
+                    async with MockedCallLater(t):
+                        result = await send_single(original, timeout=2)
 
             assert t.time == 0.6
-            assertSamePackets(
-                result, (DeviceMessages.EchoResponse, {"echoing": b"hi", "sequence": 3})
-            )
-            device.compare_received([DeviceMessages.EchoRequest(echoing=b"hi")])
+            expected = (DeviceMessages.EchoResponse, {"echoing": b"hi", "sequence": 3})
+            pytest.helpers.assertSamePackets(result, expected)
+            assert devices.store(device) == [
+                devices.Events.LOST(device, device.io["MEMORY"], pkt=original),
+                devices.Events.LOST(device, device.io["MEMORY"], pkt=original),
+                devices.Events.LOST(device, device.io["MEMORY"], pkt=original),
+                devices.Events.INCOMING(device, device.io["MEMORY"], pkt=original),
+                devices.Events.OUTGOING(
+                    device,
+                    device.io["MEMORY"],
+                    pkt=CoreMessages.Acknowledgement,
+                    replying_to=original,
+                ),
+                devices.Events.OUTGOING(
+                    device, device.io["MEMORY"], pkt=expected, replying_to=original
+                ),
+            ]
 
             assertSent(
                 sender,
@@ -211,38 +238,48 @@ describe "Sending a single messages":
 
         async it "can give up on getting multiple messages that have a set length", send_single, sender, device, FakeTime, MockedCallLater:
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
+            io = device.io["MEMORY"]
 
             with FakeTime() as t:
 
-                async def set_reply(pkt, source):
-                    return (
-                        True,
-                        [
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=0,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
-                            ),
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=8,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
-                            ),
-                        ],
-                    )
+                @io.packet_filter.intercept_process_request
+                async def process_request(event, Cont):
+                    if event | MultiZoneMessages.GetColorZones:
+                        event.set_replies(Cont)
+                        event.handled = False
+                        event._viewers_only = True
+                        return True
+                    else:
+                        raise Cont()
 
-                device.set_reply(MultiZoneMessages.GetColorZones, set_reply)
+                @io.packet_filter.intercept_process_outgoing
+                async def process_outgoing(reply, req_event, Cont):
+                    if req_event | MultiZoneMessages.GetColorZones:
+                        yield MultiZoneMessages.StateMultiZone.create(
+                            zones_count=22,
+                            zone_index=0,
+                            colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
+                            **reply,
+                        )
+                        yield MultiZoneMessages.StateMultiZone.create(
+                            zones_count=22,
+                            zone_index=8,
+                            colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                        )
+                    else:
+                        raise Cont()
 
-                async with MockedCallLater(t):
-                    with assertRaises(
-                        TimedOut,
-                        "Waiting for reply to a packet",
-                        sent_pkt_type=502,
-                        sequence=1,
-                        source=2,
-                        serial=device.serial,
-                    ):
-                        await send_single(original, timeout=3)
+                with process_request, process_outgoing:
+                    async with MockedCallLater(t):
+                        with assertRaises(
+                            TimedOut,
+                            "Waiting for reply to a packet",
+                            sent_pkt_type=502,
+                            sequence=1,
+                            source=2,
+                            serial=device.serial,
+                        ):
+                            await send_single(original, timeout=3)
 
             assert t.time == 3
 
@@ -255,71 +292,104 @@ describe "Sending a single messages":
             )
 
         async it "can retry getting multiple replies till it has all replies", send_single, sender, device, FakeTime, MockedCallLater:
-            original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
+            original = MultiZoneMessages.GetColorZones(
+                start_index=0, end_index=255, ack_required=False
+            )
+            io = device.io["MEMORY"]
+
+            expected = (
+                (
+                    MultiZoneMessages.StateMultiZone,
+                    dict(
+                        zones_count=22,
+                        zone_index=0,
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
+                    ),
+                ),
+                (
+                    MultiZoneMessages.StateMultiZone,
+                    dict(
+                        zones_count=22,
+                        zone_index=8,
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                    ),
+                ),
+                (
+                    MultiZoneMessages.StateMultiZone,
+                    dict(
+                        zones_count=22,
+                        zone_index=16,
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
+                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
+                    ),
+                ),
+            )
+
+            reply1 = expected[0][0].create(**expected[0][1])
+            reply2 = expected[1][0].create(**expected[1][1])
+            reply3 = expected[2][0].create(**expected[2][1])
 
             with FakeTime() as t:
 
-                async def set_reply(pkt, source):
-                    if time.time() == 2.2:
-                        return
+                @io.packet_filter.intercept_process_request
+                async def process_request(event, Cont):
+                    if event | MultiZoneMessages.GetColorZones:
+                        event.set_replies(Cont)
+                        event.handled = False
+                        event._viewers_only = True
+                        return True
+                    else:
+                        raise Cont()
 
-                    return (
-                        True,
-                        [
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=0,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
-                            ),
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=8,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
-                            ),
-                        ],
-                    )
+                @io.packet_filter.intercept_process_outgoing
+                async def process_outgoing(reply, req_event, Cont):
+                    if req_event | MultiZoneMessages.GetColorZones:
+                        yield reply1.clone(overrides=reply)
 
-                device.set_reply(MultiZoneMessages.GetColorZones, set_reply)
+                        if time.time() != 2.2:
+                            return
 
-                async with MockedCallLater(t):
-                    result = await send_single(original, timeout=3)
+                        yield reply2.clone(overrides=reply)
+                        yield reply3.clone(overrides=reply)
+                    else:
+                        raise Cont()
+
+                with process_request, process_outgoing:
+                    async with MockedCallLater(t):
+                        result = await send_single(original, timeout=3)
 
             assert t.time == 2.2
 
-            assertSamePackets(
-                result,
-                (
-                    MultiZoneMessages.StateMultiZone,
-                    {
-                        "zones_count": 22,
-                        "zone_index": 0,
-                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8)],
-                        "sequence": 11,
-                    },
-                ),
-                (
-                    MultiZoneMessages.StateMultiZone,
-                    {
-                        "zones_count": 22,
-                        "zone_index": 8,
-                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
-                        "sequence": 11,
-                    },
-                ),
-                (
-                    MultiZoneMessages.StateMultiZone,
-                    {
-                        "zones_count": 22,
-                        "zone_index": 16,
-                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
-                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
-                        "sequence": 11,
-                    },
-                ),
-            )
-            device.compare_received(
-                [MultiZoneMessages.GetColorZones(start_index=0, end_index=255, sequence=11)]
-            )
+            pytest.helpers.assertSamePackets(result, *expected)
+
+            assert devices.store(device) == [
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                devices.Events.OUTGOING(device, io, pkt=reply2, replying_to=original),
+                devices.Events.OUTGOING(device, io, pkt=reply3, replying_to=original),
+            ]
 
             assertSent(
                 sender,
@@ -330,13 +400,24 @@ describe "Sending a single messages":
             )
 
     describe "without retries":
+
         async it "works if we get a response first time", send_single, device:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
+            expected = (DeviceMessages.EchoResponse, {"echoing": b"hi"})
             result = await send_single(original, timeout=1, no_retry=True)
-            assertSamePackets(result, (DeviceMessages.EchoResponse, {"echoing": b"hi"}))
-            device.compare_received(
-                [DeviceMessages.EchoRequest(echoing=b"hi")], keep_duplicates=True
-            )
+
+            pytest.helpers.assertSamePackets(result, expected)
+
+            io = device.io["MEMORY"]
+            assert devices.store(device) == [
+                devices.Events.INCOMING(device, io, pkt=original),
+                devices.Events.OUTGOING(
+                    device, io, pkt=CoreMessages.Acknowledgement(), replying_to=original
+                ),
+                devices.Events.OUTGOING(
+                    device, io, pkt=expected[0].create(**expected[1]), replying_to=original
+                ),
+            ]
 
         async it "times out if we don't get a response", send_single, sender, device, FakeTime, MockedCallLater:
             original = DeviceMessages.EchoRequest(echoing=b"hi")
@@ -351,7 +432,7 @@ describe "Sending a single messages":
                         source=2,
                         serial=device.serial,
                     ):
-                        with device.offline():
+                        async with device.offline():
                             await send_single(original, timeout=2, no_retry=True)
 
             assert t.time == 2
@@ -360,55 +441,99 @@ describe "Sending a single messages":
 
         async it "doesn't wait beyond timeout for known count multi reply messages", send_single, sender, device, FakeTime, MockedCallLater:
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
+            io = device.io["MEMORY"]
+
+            expected = (
+                (
+                    MultiZoneMessages.StateMultiZone,
+                    dict(
+                        zones_count=22,
+                        zone_index=0,
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
+                    ),
+                ),
+                (
+                    MultiZoneMessages.StateMultiZone,
+                    dict(
+                        zones_count=22,
+                        zone_index=8,
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
+                    ),
+                ),
+            )
+
+            reply1 = expected[0][0].create(**expected[0][1])
+            reply2 = expected[1][0].create(**expected[1][1])
 
             with FakeTime() as t:
 
-                async def set_reply(pkt, source):
-                    return (
-                        True,
-                        [
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=0,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8)],
-                            ),
-                            MultiZoneMessages.StateMultiZone.create(
-                                zones_count=22,
-                                zone_index=8,
-                                colors=[hp.Color(i, 1, 1, 3500) for i in range(8, 16)],
-                            ),
-                        ],
-                    )
+                @io.packet_filter.intercept_process_request
+                async def process_request(event, Cont):
+                    if event | MultiZoneMessages.GetColorZones:
+                        event.set_replies(Cont)
+                        event.handled = False
+                        event._viewers_only = True
+                        return True
+                    else:
+                        raise Cont()
 
-                device.set_reply(MultiZoneMessages.GetColorZones, set_reply)
+                @io.packet_filter.intercept_process_outgoing
+                async def process_outgoing(reply, req_event, Cont):
+                    if req_event | MultiZoneMessages.GetColorZones:
+                        yield reply1
+                        yield reply2
+                    else:
+                        raise Cont()
 
-                async with MockedCallLater(t):
-                    with assertRaises(
-                        TimedOut,
-                        "Waiting for reply to a packet",
-                        sent_pkt_type=502,
-                        sequence=1,
-                        source=2,
-                        serial=device.serial,
-                    ):
-                        await send_single(original, timeout=3, no_retry=True)
+                with process_request, process_outgoing:
+                    async with MockedCallLater(t):
+                        with assertRaises(
+                            TimedOut,
+                            "Waiting for reply to a packet",
+                            sent_pkt_type=502,
+                            sequence=1,
+                            source=2,
+                            serial=device.serial,
+                        ):
+                            await send_single(original, timeout=3, no_retry=True)
 
             assert t.time == 3
 
             assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
 
         async it "doesn't wait beyond timeout for unlimited reply messages that get no reply", send_single, sender, device, FakeTime, MockedCallLater:
-            original = DiscoveryMessages.GetService()
+            original = DiscoveryMessages.GetService(ack_required=False)
+            io = device.io["MEMORY"]
 
-            with FakeTime() as t:
+            reply1 = DiscoveryMessages.StateService(service=1, port=56700)
+            reply2 = DiscoveryMessages.StateService(service=2, port=56700)
+
+            info = {"m": None}
+
+            @io.packet_filter.intercept_process_request
+            async def process_request(event, Cont):
+                if event | DiscoveryMessages.GetService:
+                    event.set_replies(Cont)
+                    event.handled = False
+                    event._viewers_only = True
+                    return True
+                else:
+                    raise Cont()
+
+            @io.packet_filter.intercept_process_outgoing
+            async def process_outgoing(reply, req_event, Cont):
+                if req_event | DiscoveryMessages.GetService:
+                    await info["m"].resume_after(2)
+                    yield reply1.clone(overrides=reply)
+                    yield reply2.clone(overrides=reply)
+                else:
+                    raise Cont()
+
+            with process_request, process_outgoing, FakeTime() as t:
 
                 async with MockedCallLater(t) as m:
 
-                    async def set_reply(pkt, source):
-                        await m.resume_after(2)
-                        return [s.state_service for s in device.services]
-
-                    device.set_reply(DiscoveryMessages.GetService, set_reply)
+                    info["m"] = m
 
                     with assertRaises(
                         TimedOut,
@@ -418,37 +543,72 @@ describe "Sending a single messages":
                         source=2,
                         serial=device.serial,
                     ):
-                        await send_single(original, timeout=1, no_retry=True)
+                        assert await send_single(original, timeout=1, no_retry=True) == []
 
-            assert t.time == 1
+                    assert t.time == 1
+                    assert devices.store(device) == [
+                        devices.Events.INCOMING(device, io, pkt=original),
+                    ]
 
-            assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
+                    assertSent(
+                        sender, (0, device.serial, original.Payload.__name__, original.payload)
+                    )
+
+                    await m.resume_after(1.5)
+                    assert devices.store(device) == [
+                        devices.Events.INCOMING(device, io, pkt=original),
+                        devices.Events.OUTGOING(device, io, pkt=reply1, replying_to=original),
+                        devices.Events.OUTGOING(device, io, pkt=reply2, replying_to=original),
+                    ]
 
         async it "does wait beyond timeout for unlimited reply messages that have any replies after timeout", send_single, sender, device, FakeTime, MockedCallLater:
-            original = DiscoveryMessages.GetService()
+            original = DiscoveryMessages.GetService(ack_required=False)
             sender.transport_target.gaps.gap_between_results = 0.55
+            io = device.io["MEMORY"]
 
-            with FakeTime() as t:
+            reply1 = DiscoveryMessages.StateService(service=1, port=56700)
+
+            info = {"m": None}
+
+            @io.packet_filter.intercept_process_request
+            async def process_request(event, Cont):
+                if event | DiscoveryMessages.GetService:
+                    event.set_replies(Cont)
+                    event.handled = False
+                    event._viewers_only = True
+                    return True
+                else:
+                    raise Cont()
+
+            @io.packet_filter.intercept_process_outgoing
+            async def process_outgoing(reply, req_event, Cont):
+                if req_event | DiscoveryMessages.GetService:
+                    await m.resume_after(0.8)
+                    yield reply1.clone(overrides=reply)
+                else:
+                    raise Cont()
+
+            with process_request, process_outgoing, FakeTime() as t:
 
                 async with MockedCallLater(t) as m:
 
-                    async def set_reply(pkt, source):
-                        await m.resume_after(0.8)
-                        return [s.state_service for s in device.services]
-
-                    device.set_reply(DiscoveryMessages.GetService, set_reply)
-
+                    info["m"] = m
                     result = await send_single(original, timeout=1, no_retry=True)
 
-            # Waited 0.8 to get that second reply and finish_multi_gap of 0.6
-            assert t.time == 1.4
+                    # Waited 0.8 to get that second reply and finish_multi_gap of 0.6
+                    assert t.time == 1.4
 
-            assertSamePackets(
-                result,
-                (
-                    DiscoveryMessages.StateService,
-                    {"service": Services.UDP, "port": device.services[0].state_service.port},
-                ),
-            )
+                    pytest.helpers.assertSamePackets(
+                        result,
+                        (
+                            DiscoveryMessages.StateService,
+                            {
+                                "service": Services.UDP,
+                                "port": 56700,
+                            },
+                        ),
+                    )
 
-            assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
+                    assertSent(
+                        sender, (0, device.serial, original.Payload.__name__, original.payload)
+                    )

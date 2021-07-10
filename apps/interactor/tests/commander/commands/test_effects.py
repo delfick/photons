@@ -2,6 +2,9 @@
 
 from interactor.commander.store import store, load_commands
 
+from photons_app.mimic.event import Events
+from photons_app import helpers as hp
+
 from photons_control.tile import default_tile_palette
 from photons_messages.fields import Color
 
@@ -9,27 +12,39 @@ from unittest import mock
 import pytest
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def store_clone():
     load_commands()
     return store.clone()
 
 
-@pytest.fixture(scope="module")
-async def server(store_clone, server_wrapper):
-    async with server_wrapper(store_clone) as server:
-        yield server
-
-
-@pytest.fixture(autouse=True)
-async def wrap_tests(server):
-    async with server.per_test():
-        yield
+@pytest.fixture()
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
 
 
 @pytest.fixture()
-def sender(server):
-    return server.server.sender
+async def sender(devices, final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
+
+
+@pytest.fixture()
+async def server(store_clone, server_wrapper, sender, final_future, FakeTime, MockedCallLater):
+    with FakeTime() as t:
+        async with MockedCallLater(t):
+            async with server_wrapper(store_clone, sender, final_future) as server:
+                yield server
+
+
+@pytest.fixture(autouse=True)
+async def reset_devices(devices):
+    for device in devices:
+        await device.event(Events.RESET)
 
 
 @pytest.fixture(autouse=True)
@@ -87,7 +102,7 @@ def effects_running_status():
                         "duration": 0.0,
                         "instanceid": mock.ANY,
                         "palette": [Color(**color).as_dict() for color in default_tile_palette],
-                        "speed": 5.0,
+                        "speed": 0.005,
                     },
                     "type": "MORPH",
                 },
@@ -99,7 +114,7 @@ def effects_running_status():
                         "duration": 0.0,
                         "instanceid": mock.ANY,
                         "palette": [],
-                        "speed": 5.0,
+                        "speed": 0.005,
                     },
                     "type": "OFF",
                 },
@@ -269,7 +284,7 @@ def effects_stopped_status():
                         "duration": 0.0,
                         "instanceid": mock.ANY,
                         "palette": [],
-                        "speed": 5.0,
+                        "speed": 0.005,
                     },
                     "type": "OFF",
                 },
@@ -301,7 +316,7 @@ def effects_stopped_status():
                         "duration": 0.0,
                         "instanceid": mock.ANY,
                         "palette": [],
-                        "speed": 5.0,
+                        "speed": 0.005,
                     },
                     "type": "OFF",
                 },
@@ -360,7 +375,7 @@ def results(effects_running_status, effects_stopped_status, success_result):
 
 describe "Effect commands":
 
-    async it "can start effects", fake, server, results:
+    async it "can start effects", server, results:
         results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "MORPH"
         palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"]
         results.effects_running["results"]["d073d5000008"]["effect"]["options"]["palette"] = palette
@@ -398,7 +413,7 @@ describe "Effect commands":
             json_output=results.effects_stopped,
         )
 
-    async it "can apply a theme first", fake, server, results:
+    async it "can apply a theme first", server, results:
         await server.assertCommand(
             "/v1/lifx/command",
             {
@@ -412,7 +427,7 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-    async it "can start just matrix effects", fake, server, results:
+    async it "can start just matrix effects", server, results:
         await server.assertCommand(
             "/v1/lifx/command",
             {"command": "effects/status"},
@@ -459,7 +474,7 @@ describe "Effect commands":
             json_output=results.effects_stopped,
         )
 
-    async it "can start just linear effects", fake, server, results:
+    async it "can start just linear effects", server, results:
         await server.assertCommand(
             "/v1/lifx/command",
             {"command": "effects/status"},
@@ -495,9 +510,9 @@ describe "Effect commands":
             json_output=results.effects_stopped,
         )
 
-    async it "can start linear effects and power on", fake, server, results:
-        for device in fake.devices:
-            device.attrs.power = 0
+    async it "can start linear effects and power on", devices, server, results:
+        for device in devices:
+            await device.change_one("power", 0)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -508,13 +523,13 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-        for device in fake.devices:
+        for device in devices:
             if device.serial in ("d073d5000005", "d073d5000006"):
                 assert device.attrs.power == 65535
 
-    async it "can start matrix effects and power on", fake, server, results:
-        for device in fake.devices:
-            device.attrs.power = 0
+    async it "can start matrix effects and power on", devices, server, results:
+        for device in devices:
+            await device.change_one("power", 0)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -525,13 +540,13 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-        for device in fake.devices:
+        for device in devices:
             if device.serial in ("d073d5000007", "d073d5000008"):
                 assert device.attrs.power == 65535
 
-    async it "can start matrix and linear effects without powering on", fake, server, results:
-        for device in fake.devices:
-            device.attrs.power = 0
+    async it "can start matrix and linear effects without powering on", devices, server, results:
+        for device in devices:
+            await device.change_one("power", 0)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -547,12 +562,12 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-        for device in fake.devices:
+        for device in devices:
             assert device.attrs.power == 0
 
-    async it "can stop matrix and linear effects without powering on", fake, server, results:
-        for device in fake.devices:
-            device.attrs.power = 0
+    async it "can stop matrix and linear effects without powering on", devices, server, results:
+        for device in devices:
+            await device.change_one("power", 0)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -568,13 +583,13 @@ describe "Effect commands":
             json_output=results.success,
         )
 
-        for device in fake.devices:
+        for device in devices:
             assert device.attrs.power == 0
 
-    async it "works if devices are offline", fake, server, results, sender:
-        offline1 = fake.for_serial("d073d5000001").offline()
-        offline5 = fake.for_serial("d073d5000005").offline()
-        offline7 = fake.for_serial("d073d5000007").offline()
+    async it "works if devices are offline", devices, server, results, sender:
+        offline1 = devices["d073d5000001"].offline()
+        offline5 = devices["d073d5000005"].offline()
+        offline7 = devices["d073d5000007"].offline()
 
         fail = {
             "error": {
@@ -594,8 +609,9 @@ describe "Effect commands":
             del r["results"]["d073d5000008"]
 
         matcher = {"cap": "not_chain"}
+        await server.assertCommand("/v1/lifx/command", {"command": "discover"})
 
-        with offline1, offline5, offline7:
+        async with offline1, offline5, offline7:
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status", "args": {"timeout": 0.1, "matcher": matcher}},

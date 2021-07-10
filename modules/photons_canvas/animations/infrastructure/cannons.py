@@ -1,9 +1,8 @@
 from photons_transport.comms.result import Result
 from photons_messages.enums import Services
 
+from photons_app.mimic.transport import MemoryService
 from photons_app import helpers as hp
-
-from photons_transport.session.memory import MemoryService
 
 from collections import defaultdict
 from functools import partial

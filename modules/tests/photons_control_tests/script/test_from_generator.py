@@ -1,14 +1,14 @@
 # coding: spec
 
 from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeline
-from photons_control import test_helpers as chp
 
 from photons_app.errors import BadRun, TimedOut, BadRunWithResults
+from photons_app.special import FoundSerials
 from photons_app import helpers as hp
 
+from photons_messages import DeviceMessages, DiscoveryMessages
 from photons_transport.errors import FailedToFindDevice
-from photons_transport.fake import FakeDevice
-from photons_messages import DeviceMessages
+from photons_products import Products
 
 from delfick_project.errors_pytest import assertRaises, assertSameError
 from contextlib import contextmanager
@@ -16,50 +16,75 @@ from collections import defaultdict
 from functools import partial
 import asyncio
 import pytest
+import time
 import sys
 
+devices = pytest.helpers.mimic()
 
-light1 = FakeDevice(
-    "d073d5000001", chp.default_responders(power=0, color=hp.Color(0, 1, 0.3, 2500))
+
+light1 = devices.add("light1")(
+    "d073d5000001",
+    Products.LCM2_A19,
+    hp.Firmware(2, 80),
+    value_store=dict(power=0, color=hp.Color(0, 1, 0.3, 2500)),
 )
 
-light2 = FakeDevice(
-    "d073d5000002", chp.default_responders(power=65535, color=hp.Color(100, 1, 0.5, 2500))
+light2 = devices.add("light2")(
+    "d073d5000002",
+    Products.LCM2_A19,
+    hp.Firmware(2, 80),
+    value_store=dict(power=65535, color=hp.Color(100, 1, 0.5, 2500)),
 )
 
-light3 = FakeDevice("d073d5000003", chp.default_responders(color=hp.Color(100, 1, 0.5, 2500)))
+light3 = devices.add("light3")(
+    "d073d5000003",
+    Products.LCM2_A19,
+    hp.Firmware(2, 80),
+    value_store=dict(color=hp.Color(100, 1, 0.5, 2500)),
+)
 
 
 @pytest.fixture(scope="module")
-async def runner(memory_devices_runner):
-    async with memory_devices_runner([light1, light2, light3]) as runner:
-        yield runner
+def final_future():
+    fut = hp.create_future()
+    try:
+        yield fut
+    finally:
+        fut.cancel()
+
+
+@pytest.fixture(scope="module")
+async def sender(final_future):
+    async with devices.for_test(final_future) as sender:
+        yield sender
 
 
 @pytest.fixture(autouse=True)
-async def reset_runner(runner):
-    await runner.per_test()
-
-
-def loop_time():
-    return asyncio.get_event_loop().time()
+async def reset_devices(sender):
+    for device in devices:
+        await device.reset()
+        devices.store(device).clear()
+    sender.gatherer.clear_cache()
 
 
 describe "FromGenerator":
 
-    async def assertScript(self, runner, gen, *, generator_kwargs=None, expected, **kwargs):
+    async def assertScript(self, sender, gen, *, generator_kwargs=None, expected, **kwargs):
         msg = FromGenerator(gen, **(generator_kwargs or {}))
-        await runner.sender(msg, runner.serials, **kwargs)
+        await sender(msg, devices.serials, **kwargs)
 
-        assert len(runner.devices) > 0
+        assert len(devices) > 0
 
-        for device in runner.devices:
+        for device in devices:
             if device not in expected:
                 assert False, f"No expectation for {device.serial}"
 
-            device.compare_received(expected[device])
+        for device, msgs in expected.items():
+            assert device in devices
+            devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(device).clear()
 
-    async it "is able to do a FromGenerator per serial", runner:
+    async it "is able to do a FromGenerator per serial", sender, FakeTime, MockedCallLater:
 
         async def gen(serial, sender, **kwargs):
             assert serial in (light1.serial, light2.serial)
@@ -77,26 +102,31 @@ describe "FromGenerator":
 
         got = defaultdict(list)
         try:
-            with light3.offline():
-                async for pkt in runner.sender(msg, runner.serials, error_catcher=errors):
-                    got[pkt.serial].append(pkt)
+            with FakeTime() as t:
+                async with MockedCallLater(t):
+                    async with light3.offline():
+                        async for pkt in sender(msg, devices.serials, error_catcher=errors):
+                            got[pkt.serial].append(pkt)
         finally:
             assert errors == [FailedToFindDevice(serial=light3.serial)]
 
-        assert len(runner.devices) > 0
+        assert len(devices) > 0
 
-        for device in runner.devices:
+        for device in devices:
             if device not in expected:
                 assert False, f"No expectation for {device.serial}"
 
-            device.compare_received(expected[device])
+        for device, msgs in expected.items():
+            assert device in devices
+            devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(device).clear()
 
             if expected[device]:
                 assert len(got[device.serial]) == 2
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-    async it "is able to do a FromGenerator per serial with per serial error_catchers", runner:
+    async it "is able to do a FromGenerator per serial with per serial error_catchers", sender, FakeTime, MockedCallLater:
 
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
 
@@ -116,29 +146,46 @@ describe "FromGenerator":
         msg = FromGeneratorPerSerial(gen, error_catcher_override=error_catcher_override)
 
         expected = {
-            light1: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
-            light2: [DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")],
+            light1: [
+                DeviceMessages.GetPower(),
+                *[DeviceMessages.SetLabel(label="wat") for _ in range(10)],
+            ],
+            light2: [
+                DeviceMessages.GetPower(),
+                DeviceMessages.SetLabel(label="wat"),
+                *[DeviceMessages.GetPower() for _ in range(9)],
+            ],
             light3: [],
         }
 
         errors = []
 
         got = defaultdict(list)
-        with light3.offline():
-            with light1.no_replies_for(DeviceMessages.SetLabel):
-                with light2.no_replies_for(DeviceMessages.GetPower):
-                    async for pkt in runner.sender(
-                        msg, runner.serials, error_catcher=errors, message_timeout=0.05
-                    ):
-                        got[pkt.serial].append(pkt)
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                async with light3.offline():
+                    lost_light1 = light1.io["MEMORY"].packet_filter.lost_replies(
+                        DeviceMessages.SetLabel
+                    )
+                    lost_light2 = light2.io["MEMORY"].packet_filter.lost_replies(
+                        DeviceMessages.GetPower
+                    )
+                    with lost_light1, lost_light2:
+                        async for pkt in sender(
+                            msg, devices.serials, error_catcher=errors, message_timeout=2
+                        ):
+                            got[pkt.serial].append(pkt)
 
-        assert len(runner.devices) > 0
+        assert len(devices) > 0
 
-        for device in runner.devices:
+        for device in devices:
             if device not in expected:
                 assert False, f"No expectation for {device.serial}"
 
-            device.compare_received(expected[device])
+        for device, msgs in expected.items():
+            assert device in devices
+            devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(device).clear()
 
         assert len(errors) == 3
         assertSameError(errors[0], FailedToFindDevice, "", dict(serial=light3.serial), [])
@@ -165,7 +212,7 @@ describe "FromGenerator":
             light2.serial: [errors[2]],
         }
 
-    async it "Can get results", runner:
+    async it "Can get results", sender:
 
         async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
@@ -179,26 +226,30 @@ describe "FromGenerator":
         }
 
         got = defaultdict(list)
-        async for pkt in runner.target.send(FromGenerator(gen), runner.serials):
+        async for pkt in sender.transport_target.send(FromGenerator(gen), devices.serials):
             got[pkt.serial].append(pkt)
 
-        assert len(runner.devices) > 0
+        assert len(devices) > 0
 
-        for device in runner.devices:
+        for device in devices:
             if device not in expected:
                 assert False, f"No expectation for {device.serial}"
 
-            device.compare_received(expected[device])
+        for device, msgs in expected.items():
+            assert device in devices
+            devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+            devices.store(device).clear()
 
-            assert len(got[device.serial]) == 1
-            assert got[device.serial][0] | DeviceMessages.StatePower
+            if expected[device]:
+                assert len(got[device.serial]) == 1
+                assert got[device.serial][0] | DeviceMessages.StatePower
 
-    async it "Sends all the messages that are yielded", runner:
+    async it "Sends all the messages that are yielded", sender:
 
         async def gen(reference, sender, **kwargs):
             get_power = DeviceMessages.GetPower()
 
-            async for pkt in runner.sender(get_power, reference, **kwargs):
+            async for pkt in sender(get_power, reference, **kwargs):
                 if pkt | DeviceMessages.StatePower:
                     if pkt.level == 0:
                         yield DeviceMessages.SetPower(level=65535, target=pkt.serial)
@@ -211,9 +262,9 @@ describe "FromGenerator":
             light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=65535)],
         }
 
-        await self.assertScript(runner, gen, expected=expected)
+        await self.assertScript(sender, gen, expected=expected)
 
-    async it "does not ignore exception in generator", runner:
+    async it "does not ignore exception in generator", sender:
         error = Exception("NOPE")
 
         async def gen(reference, sender, **kwargs):
@@ -222,9 +273,9 @@ describe "FromGenerator":
 
         expected = {light1: [], light2: [], light3: []}
         with assertRaises(BadRun, _errors=[error]):
-            await self.assertScript(runner, gen, expected=expected)
+            await self.assertScript(sender, gen, expected=expected)
 
-    async it "adds exception from generator to error_catcher", runner:
+    async it "adds exception from generator to error_catcher", sender:
         got = []
 
         def err(e):
@@ -237,10 +288,10 @@ describe "FromGenerator":
             yield DeviceMessages.GetPower()
 
         expected = {light1: [], light2: [], light3: []}
-        await self.assertScript(runner, gen, expected=expected, error_catcher=err)
+        await self.assertScript(sender, gen, expected=expected, error_catcher=err)
         assert got == [error]
 
-    async it "it can know if the message was sent successfully", runner:
+    async it "it can know if the message was sent successfully", sender:
 
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -253,16 +304,10 @@ describe "FromGenerator":
         }
 
         await self.assertScript(
-            runner, gen, generator_kwargs={"reference_override": True}, expected=expected
+            sender, gen, generator_kwargs={"reference_override": True}, expected=expected
         )
 
-    async it "it can know if the message was not sent successfully", runner:
-
-        async def waiter(pkt, source):
-            if pkt | DeviceMessages.GetPower:
-                return False
-
-        light1.set_intercept_got_message(waiter)
+    async it "it can know if the message was not sent successfully", sender, FakeTime, MockedCallLater:
 
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -276,14 +321,20 @@ describe "FromGenerator":
 
         errors = []
 
-        await self.assertScript(
-            runner,
-            gen,
-            generator_kwargs={"reference_override": True},
-            expected=expected,
-            message_timeout=0.2,
-            error_catcher=errors,
+        lost_request_light1 = light1.io["MEMORY"].packet_filter.lost_request(
+            DeviceMessages.GetPower
         )
+        with lost_request_light1:
+            with FakeTime() as t:
+                async with MockedCallLater(t):
+                    await self.assertScript(
+                        sender,
+                        gen,
+                        generator_kwargs={"reference_override": True},
+                        expected=expected,
+                        message_timeout=2,
+                        error_catcher=errors,
+                    )
 
         assert len(errors) == 1
         assertSameError(
@@ -294,7 +345,7 @@ describe "FromGenerator":
             [],
         )
 
-    async it "it can have a serial override", runner:
+    async it "it can have a serial override", sender:
 
         async def gen(reference, sender, **kwargs):
             async def inner_gen(level, reference, sender2, **kwargs2):
@@ -303,7 +354,7 @@ describe "FromGenerator":
                 kwargs1 = dict(kwargs)
                 del kwargs1["error_catcher"]
                 assert kwargs1 == kwargs2
-                assert reference in runner.serials
+                assert reference in devices.serials
                 yield DeviceMessages.SetPower(level=level)
 
             get_power = DeviceMessages.GetPower()
@@ -325,20 +376,20 @@ describe "FromGenerator":
             light3: [DeviceMessages.GetPower(), DeviceMessages.SetPower(level=3)],
         }
 
-        await self.assertScript(runner, gen, expected=expected)
+        await self.assertScript(sender, gen, expected=expected)
 
-    async it "it sends messages in parallel", runner:
+    async it "it sends messages in parallel", sender, FakeTime, MockedCallLater:
         got = []
 
-        async def waiter(pkt, source):
-            if pkt | DeviceMessages.GetPower:
-                got.append(loop_time())
+        async def see_request(event):
+            if event | DeviceMessages.GetPower:
+                got.append(time.time())
             else:
                 assert False, "unknown message"
 
-        light1.set_intercept_got_message(waiter)
-        light2.set_intercept_got_message(waiter)
-        light3.set_intercept_got_message(waiter)
+        isr1 = light1.io["MEMORY"].packet_filter.intercept_see_request(see_request)
+        isr2 = light2.io["MEMORY"].packet_filter.intercept_see_request(see_request)
+        isr3 = light3.io["MEMORY"].packet_filter.intercept_see_request(see_request)
 
         async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
@@ -351,27 +402,32 @@ describe "FromGenerator":
             light3: [DeviceMessages.GetPower()],
         }
 
-        start = loop_time()
-        await self.assertScript(runner, gen, expected=expected)
-        assert len(got) == 3
-        for t in got:
-            assert t - start < 0.1
+        with isr1, isr2, isr3:
+            with FakeTime() as t:
+                async with MockedCallLater(t):
+                    start = time.time()
+                    await self.assertScript(sender, gen, expected=expected)
+                    assert len(got) == 3
+                    for t in got:
+                        assert t - start < 0.1
 
-    async it "can wait for other messages", runner:
+    async it "can wait for other messages", sender, FakeTime, MockedCallLater:
         got = {}
 
-        async def waiter(pkt, source):
-            if pkt | DeviceMessages.GetPower:
-                if pkt.serial not in got:
-                    got[pkt.serial] = loop_time()
-                if pkt.serial == light2.serial:
-                    return False
+        async def process_request(event, Cont):
+            if event | DeviceMessages.GetPower:
+                if event.pkt.serial not in got:
+                    got[event.pkt.serial] = time.time()
+                if event.pkt.serial == light2.serial:
+                    return
+                else:
+                    raise Cont()
             else:
                 assert False, "unknown message"
 
-        light1.set_intercept_got_message(waiter)
-        light2.set_intercept_got_message(waiter)
-        light3.set_intercept_got_message(waiter)
+        psr1 = light1.io["MEMORY"].packet_filter.intercept_process_request(process_request)
+        psr2 = light2.io["MEMORY"].packet_filter.intercept_process_request(process_request)
+        psr3 = light3.io["MEMORY"].packet_filter.intercept_process_request(process_request)
 
         async def gen(reference, sender, **kwargs):
             assert await (yield DeviceMessages.GetPower(target=light1.serial))
@@ -384,11 +440,15 @@ describe "FromGenerator":
             light3: [DeviceMessages.GetPower()],
         }
 
-        start = loop_time()
-        errors = []
-        await self.assertScript(
-            runner, gen, expected=expected, error_catcher=errors, message_timeout=0.2
-        )
+        with psr1, psr2, psr3:
+            with FakeTime() as t:
+                async with MockedCallLater(t):
+                    start = time.time()
+                    errors = []
+                    await self.assertScript(
+                        sender, gen, expected=expected, error_catcher=errors, message_timeout=2
+                    )
+
         got = list(got.values())
         assert len(got) == 3
         assert got[0] - start < 0.1
@@ -404,9 +464,9 @@ describe "FromGenerator":
             [],
         )
 
-    async it "can provide errors", runner:
-        for device in runner.devices:
-            device.compare_received([])
+    async it "can provide errors", sender:
+        for device in devices:
+            devices.store(device).assertIncoming()
 
         async def gen(reference, sender, **kwargs):
             yield FailedToFindDevice(serial=light1.serial)
@@ -420,13 +480,13 @@ describe "FromGenerator":
         }
 
         errors = []
-        await self.assertScript(runner, gen, expected=expected, error_catcher=errors)
+        await self.assertScript(sender, gen, expected=expected, error_catcher=errors)
         assert errors == [FailedToFindDevice(serial=light1.serial)]
 
         with assertRaises(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
-            await self.assertScript(runner, gen, expected=expected)
+            await self.assertScript(sender, gen, expected=expected)
 
-    async it "can be cancelled", runner, FakeTime, MockedCallLater:
+    async it "can be cancelled", sender, FakeTime, MockedCallLater:
         called = []
 
         @contextmanager
@@ -467,12 +527,15 @@ describe "FromGenerator":
             async with MockedCallLater(t) as m:
                 msg = make_primary_msg(m)
 
+                await FoundSerials().find(sender, timeout=1)
+                sender.received.clear()
+
                 fut = hp.create_future()
                 async with hp.ResultStreamer(fut) as streamer:
 
                     async def pkts():
                         with alter_called("pkts"):
-                            async for pkt in runner.sender(msg, light1.serial):
+                            async for pkt in sender(msg, light1.serial):
                                 yield pkt
 
                     t = await streamer.add_generator(pkts(), context="pkt")
@@ -511,15 +574,15 @@ describe "FromGenerator":
                 ("secondary", 2),
                 ("secondary", 1),
                 ("secondary", 3),
-                ("secondary", 2),
-                ("secondary", 1),
                 ("primary", 4),
                 ("start", ("secondary", 4)),
                 ("secondary", 4),
-                ("secondary", 3),
                 ("secondary", 2),
                 ("secondary", 1),
+                ("secondary", 3),
                 ("secondary", 4),
+                ("secondary", 2),
+                ("secondary", 1),
                 ("cancelled", "primary"),
                 ("finally", "primary"),
                 ("cancelled", ("secondary", 1)),
@@ -534,20 +597,17 @@ describe "FromGenerator":
                 ("finally", "pkts"),
             ]
 
-        got = [(i, serial, p) for i, serial, p, *_ in runner.sender.received]
+        got = [(i, serial, p) for i, serial, p, *_ in sender.received]
         assert len(got) == 18
         assert got == [
-            (0, "d073d5000001", "SetPowerPayload"),
             (0.1, "d073d5000001", "SetPowerPayload"),
             (0.2, "d073d5000001", "SetPowerPayload"),
             (0.3, "d073d5000001", "SetPowerPayload"),
-            (0.3, "d073d5000001", "SetPowerPayload"),
             (0.4, "d073d5000001", "SetPowerPayload"),
             (0.4, "d073d5000001", "SetPowerPayload"),
             (0.6, "d073d5000001", "SetPowerPayload"),
             (0.6, "d073d5000001", "SetPowerPayload"),
-            (0.6, "d073d5000001", "SetPowerPayload"),
-            (0.8, "d073d5000001", "SetPowerPayload"),
+            (0.7, "d073d5000001", "SetPowerPayload"),
             (0.8, "d073d5000001", "SetPowerPayload"),
             (0.8, "d073d5000001", "SetPowerPayload"),
             (0.9, "d073d5000001", "SetPowerPayload"),
@@ -555,4 +615,7 @@ describe "FromGenerator":
             (1.0, "d073d5000001", "SetPowerPayload"),
             (1.0, "d073d5000001", "SetPowerPayload"),
             (1.1, "d073d5000001", "SetPowerPayload"),
+            (1.1, "d073d5000001", "SetPowerPayload"),
+            (1.2, "d073d5000001", "SetPowerPayload"),
+            (1.2, "d073d5000001", "SetPowerPayload"),
         ]
