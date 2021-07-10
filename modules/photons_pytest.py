@@ -7,6 +7,7 @@ from collections import defaultdict
 from textwrap import dedent
 from unittest import mock
 import tempfile
+import inspect
 import asyncio
 import socket
 import shutil
@@ -220,6 +221,7 @@ class MockedCallLaterImpl(AsyncCMMixin):
 
     async def start(self):
         self.task = self.hp.async_as_background(self._calls())
+        self.original_call_later = self.loop.call_later
         self.call_later_patch = mock.patch.object(self.loop, "call_later", self._call_later)
         self.call_later_patch.start()
         return self
@@ -243,6 +245,16 @@ class MockedCallLaterImpl(AsyncCMMixin):
         return __import__("photons_app").helpers
 
     def _call_later(self, when, func, *args):
+        fr = inspect.currentframe()
+        while fr and "tornado/" not in fr.f_code.co_filename:
+            fr = fr.f_back
+        if fr:
+            return self.original_call_later(when, func, *args)
+
+        called_from = inspect.currentframe().f_back.f_code.co_filename
+        if any(exc in called_from for exc in ("alt_pytest_asyncio/",)):
+            return self.original_call_later(when, func, *args)
+
         self.have_call_later.reset()
         self.have_call_later.set_result(True)
 
@@ -476,6 +488,7 @@ def pytest_configure(config):
         return
 
     pytest.helpers.register(FutureDominoes)
+    pytest.helpers.register(__import__("photons_app.mimic").mimic.DeviceCollection, name="mimic")
 
     @pytest.helpers.register
     def has_caps_list(*have):
@@ -731,51 +744,56 @@ def pytest_configure(config):
     pytest.helpers.register(port_helpers.wait_for_no_port)
     pytest.helpers.register(port_helpers.port_connected)
 
+    @pytest.helpers.register
+    def assertSamePackets(got, *want):
+        assert isinstance(got, list)
+        assert len(got) == len(want)
 
-class MemoryDevicesRunner(AsyncCMMixin):
-    def __init__(self, devices):
-        self.final_future = __import__("photons_app").helpers.create_future()
+        def normalise(p):
+            kls = p
+            options = {}
+            if isinstance(p, tuple):
+                kls, options = p
+            elif hasattr(p, "payload"):
+                options = p.payload.as_dict()
+            elif hasattr(p, "as_dict"):
+                options = p.as_dict()
 
-        options = {
-            "devices": devices,
-            "final_future": self.final_future,
-            "protocol_register": __import__("photons_messages").protocol_register,
-        }
+            options = kls.Payload.create(kls.create(**options).payload.as_dict())
+            return kls, options
 
-        MemoryTarget = __import__("photons_transport.targets").targets.MemoryTarget
-        self.target = MemoryTarget.create(options)
-        self.devices = devices
+        for g, w in zip(got, want):
+            gkls, goptions = normalise(g)
+            wkls, woptions = normalise(w)
 
-    async def start(self):
-        for device in self.devices:
-            await device.start()
+            assert g | wkls, g.__class__
 
-        self.sender = await self.target.make_sender()
-        return self
+            different = False
+            compare = []
+            for key, val in woptions.items():
+                if key == "instanceid":
+                    continue
 
-    async def finish(self, exc_typ=None, exc=None, tb=None):
-        if hasattr(self, "sender"):
-            await self.target.close_sender(self.sender)
+                got = goptions[key]
+                if hasattr(got, "as_dict"):
+                    got = got.as_dict()
+                if hasattr(val, "as_dict"):
+                    val = val.as_dict()
 
-        for device in self.target.devices:
-            await device.finish(exc_typ, exc, tb)
+                compare.append((key, got, val))
 
-        self.final_future.cancel()
+            if any(got != val for _, got, val in compare):
+                different = True
+                for key, got, val in compare:
+                    if got == val:
+                        print(f"Same {key}")
+                        print(f"   got: {got}")
+                        print(f"  want: {val}")
+                        print()
+                    else:
+                        print(f"Different {key}")
+                        print(f"   got: {got}")
+                        print(f"  want: {val}")
+                        print()
 
-    async def reset_devices(self):
-        for device in self.devices:
-            await device.reset()
-
-    async def per_test(self):
-        self.sender.received.clear()
-        await self.reset_devices()
-        del self.sender.gatherer
-
-    @property
-    def serials(self):
-        return [device.serial for device in self.devices]
-
-
-@pytest.fixture(scope="session")
-def memory_devices_runner():
-    return MemoryDevicesRunner
+            assert not different, (goptions, repr(g.payload))
