@@ -63,7 +63,7 @@ def assertReceived(received, want):
 
 describe "Repeater":
 
-    async it "repeats messages", sender, FakeTime, MockedCallLater:
+    async it "repeats messages", sender:
         for use_pipeline in (True, False):
             pipeline = [
                 DeviceMessages.SetPower(level=0),
@@ -79,13 +79,11 @@ describe "Repeater":
                 assert False, f"Got an error: {err}"
 
             got = defaultdict(list)
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async with sender(msg, FoundSerials(), error_catcher=no_errors) as pkts:
-                        async for pkt in pkts:
-                            got[pkt.serial].append(pkt)
-                            if all(len(pkts) >= 6 for pkts in got.values()):
-                                raise pkts.StopPacketStream()
+            async with sender(msg, FoundSerials(), error_catcher=no_errors) as pkts:
+                async for pkt in pkts:
+                    got[pkt.serial].append(pkt)
+                    if all(len(pkts) >= 6 for pkts in got.values()):
+                        raise pkts.StopPacketStream()
 
             assert all(serial in got for serial in devices.serials), got
 
@@ -112,7 +110,8 @@ describe "Repeater":
                         got_power = False
                         got_light = False
 
-    async it "can have a min loop time", sender, FakeTime, MockedCallLater:
+    async it "can have a min loop time", sender, fake_time, m:
+        t = fake_time
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -124,24 +123,22 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         responses_at = []
-        with FakeTime() as t:
-            async with MockedCallLater(t) as m:
-                await FoundSerials().find(sender, timeout=1)
-                sender.received.clear()
-                t.set(0)
+        await FoundSerials().find(sender, timeout=1)
+        sender.received.clear()
+        t.set(0)
 
-                async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
-                    async for pkt in pkts:
-                        responses_at.append(time.time())
+        async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
+            async for pkt in pkts:
+                responses_at.append(time.time())
 
-                        if len(responses_at) == 8:
-                            await m.add(2)
+                if len(responses_at) == 8:
+                    await m.add(2)
 
-                        elif len(responses_at) == 13:
-                            await m.add(4)
+                elif len(responses_at) == 13:
+                    await m.add(4)
 
-                        if len(responses_at) == len(devices.serials) * 10:
-                            raise pkts.StopPacketStream()
+                if len(responses_at) == len(devices.serials) * 10:
+                    raise pkts.StopPacketStream()
 
         assert len(responses_at) == 30
         assert len(sender.received) == 30
@@ -212,7 +209,7 @@ describe "Repeater":
             ],
         )
 
-    async it "can have a on_done_loop", sender, FakeTime, MockedCallLater:
+    async it "can have a on_done_loop", sender:
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -229,18 +226,16 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = []
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
-                    async for pkt in pkts:
-                        got.append(time.time())
-                        if len(got) == len(devices.serials) * 2 * 3:
-                            raise pkts.StopPacketStream()
+        async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
+            async for pkt in pkts:
+                got.append(time.time())
+                if len(got) == len(devices.serials) * 2 * 3:
+                    raise pkts.StopPacketStream()
 
         assert got == [0] * 6 + [30] * 6 + [60] * 6
         assert len(done) == 3
 
-    async it "runs on_done if we exit the full message early", sender, FakeTime, MockedCallLater:
+    async it "runs on_done if we exit the full message early", sender:
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -258,18 +253,16 @@ describe "Repeater":
 
         # And make sure it doesn't do on_done for partially completed loops
         got = []
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
-                    async for pkt in pkts:
-                        got.append(time.time())
-                        if len(got) == 1 + len(devices.serials) * 2 * 3:
-                            raise pkts.StopPacketStream()
+        async with sender(msg, devices.serials, error_catcher=no_errors) as pkts:
+            async for pkt in pkts:
+                got.append(time.time())
+                if len(got) == 1 + len(devices.serials) * 2 * 3:
+                    raise pkts.StopPacketStream()
 
         assert got == ([0] * 6) + ([30] * 6) + ([60] * 6) + [90]
         assert len(done) == 4
 
-    async it "can be stopped by a on_done_loop", sender, FakeTime, MockedCallLater:
+    async it "can be stopped by a on_done_loop", sender:
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -288,10 +281,8 @@ describe "Repeater":
             assert False, f"Got an error: {err}"
 
         got = defaultdict(list)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async for pkt in sender(msg, devices.serials, error_catcher=no_errors):
-                    got[pkt.serial].append((pkt, time.time()))
+        async for pkt in sender(msg, devices.serials, error_catcher=no_errors):
+            got[pkt.serial].append((pkt, time.time()))
 
         assert all(serial in got for serial in devices.serials), got
         assert all(len(pkts) == 6 for pkts in got.values()), [
@@ -299,7 +290,7 @@ describe "Repeater":
         ]
         assert len(done) == 3
 
-    async it "is not stopped by errors", sender, FakeTime, MockedCallLater:
+    async it "is not stopped by errors", sender:
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetPower:
@@ -331,12 +322,10 @@ describe "Repeater":
 
         got = defaultdict(list)
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(
-                        msg, devices.serials, error_catcher=got_error, message_timeout=0.1
-                    ):
-                        got[pkt.serial].append(pkt)
+            async for pkt in sender(
+                msg, devices.serials, error_catcher=got_error, message_timeout=0.1
+            ):
+                got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in devices.serials), got
         assert all(len(pkts) == 2 for pkts in got.values()), [

@@ -280,11 +280,9 @@ describe "finding devices":
             v.sender = sender
             yield v
 
-    async it "can get serials and info", V, FakeTime, MockedCallLater:
+    async it "can get serials and info", V:
         reference = DeviceFinder.empty()
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == sorted(V.serials)
@@ -293,9 +291,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(label="kitchen")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == []
@@ -308,9 +304,7 @@ describe "finding devices":
 
         await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d3.serial]
@@ -322,9 +316,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap="matrix")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d1.serial]
@@ -336,9 +328,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"])
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d1.serial, V.d2.serial]
@@ -350,9 +340,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d3.serial]
@@ -367,10 +355,8 @@ describe "finding devices":
 
         found = []
         reference = DeviceFinder.from_kwargs(label="kitchen")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async for device in reference.serials(V.sender):
-                    found.append(device)
+        async for device in reference.serials(V.sender):
+            found.append(device)
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "hue": V.d3.attrs.color.hue,
@@ -390,10 +376,8 @@ describe "finding devices":
 
         found = []
         reference = DeviceFinder.from_kwargs(label="kitchen")
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async for device in reference.info(V.sender):
-                    found.append(device)
+        async for device in reference.info(V.sender):
+            found.append(device)
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
@@ -428,14 +412,12 @@ describe "finding devices":
                 )
             V.devices.store(device).clear()
 
-    async it "can reuse a finder", V, FakeTime, MockedCallLater:
+    async it "can reuse a finder", V:
 
         finder = Finder(V.sender)
 
         reference = DeviceFinder.empty(finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == sorted(V.serials)
@@ -444,9 +426,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == []
@@ -457,9 +437,7 @@ describe "finding devices":
 
         await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         # It can't find it because the finder has the label cached
@@ -471,9 +449,7 @@ describe "finding devices":
 
         await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen", refresh_info=True, finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         # But now it can because refresh_info is True
@@ -484,9 +460,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap="matrix", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d1.serial]
@@ -496,9 +470,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"], finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d1.serial, V.d2.serial]
@@ -508,9 +480,7 @@ describe "finding devices":
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                found, ss = await reference.find(V.sender, timeout=5)
+        found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
         assert sorted(list(found)) == sorted(binascii.unhexlify(s)[:6] for s in ss)
         assert ss == [V.d3.serial]
@@ -521,10 +491,8 @@ describe "finding devices":
 
         found = []
         reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async for device in reference.serials(V.sender):
-                    found.append(device)
+        async for device in reference.serials(V.sender):
+            found.append(device)
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
@@ -543,10 +511,8 @@ describe "finding devices":
 
         found = []
         reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async for device in reference.info(V.sender):
-                    found.append(device)
+        async for device in reference.info(V.sender):
+            found.append(device)
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),

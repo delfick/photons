@@ -84,7 +84,7 @@ describe "FromGenerator":
             devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(device).clear()
 
-    async it "is able to do a FromGenerator per serial", sender, FakeTime, MockedCallLater:
+    async it "is able to do a FromGenerator per serial", sender:
 
         async def gen(serial, sender, **kwargs):
             assert serial in (light1.serial, light2.serial)
@@ -102,11 +102,9 @@ describe "FromGenerator":
 
         got = defaultdict(list)
         try:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async with light3.offline():
-                        async for pkt in sender(msg, devices.serials, error_catcher=errors):
-                            got[pkt.serial].append(pkt)
+            async with light3.offline():
+                async for pkt in sender(msg, devices.serials, error_catcher=errors):
+                    got[pkt.serial].append(pkt)
         finally:
             assert errors == [FailedToFindDevice(serial=light3.serial)]
 
@@ -126,7 +124,7 @@ describe "FromGenerator":
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-    async it "is able to do a FromGenerator per serial with per serial error_catchers", sender, FakeTime, MockedCallLater:
+    async it "is able to do a FromGenerator per serial with per serial error_catchers", sender:
 
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
 
@@ -161,20 +159,14 @@ describe "FromGenerator":
         errors = []
 
         got = defaultdict(list)
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async with light3.offline():
-                    lost_light1 = light1.io["MEMORY"].packet_filter.lost_replies(
-                        DeviceMessages.SetLabel
-                    )
-                    lost_light2 = light2.io["MEMORY"].packet_filter.lost_replies(
-                        DeviceMessages.GetPower
-                    )
-                    with lost_light1, lost_light2:
-                        async for pkt in sender(
-                            msg, devices.serials, error_catcher=errors, message_timeout=2
-                        ):
-                            got[pkt.serial].append(pkt)
+        async with light3.offline():
+            lost_light1 = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.SetLabel)
+            lost_light2 = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetPower)
+            with lost_light1, lost_light2:
+                async for pkt in sender(
+                    msg, devices.serials, error_catcher=errors, message_timeout=2
+                ):
+                    got[pkt.serial].append(pkt)
 
         assert len(devices) > 0
 
@@ -307,7 +299,7 @@ describe "FromGenerator":
             sender, gen, generator_kwargs={"reference_override": True}, expected=expected
         )
 
-    async it "it can know if the message was not sent successfully", sender, FakeTime, MockedCallLater:
+    async it "it can know if the message was not sent successfully", sender:
 
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -325,16 +317,14 @@ describe "FromGenerator":
             DeviceMessages.GetPower
         )
         with lost_request_light1:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    await self.assertScript(
-                        sender,
-                        gen,
-                        generator_kwargs={"reference_override": True},
-                        expected=expected,
-                        message_timeout=2,
-                        error_catcher=errors,
-                    )
+            await self.assertScript(
+                sender,
+                gen,
+                generator_kwargs={"reference_override": True},
+                expected=expected,
+                message_timeout=2,
+                error_catcher=errors,
+            )
 
         assert len(errors) == 1
         assertSameError(
@@ -378,7 +368,7 @@ describe "FromGenerator":
 
         await self.assertScript(sender, gen, expected=expected)
 
-    async it "it sends messages in parallel", sender, FakeTime, MockedCallLater:
+    async it "it sends messages in parallel", sender:
         got = []
 
         async def see_request(event):
@@ -403,15 +393,13 @@ describe "FromGenerator":
         }
 
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    start = time.time()
-                    await self.assertScript(sender, gen, expected=expected)
-                    assert len(got) == 3
-                    for t in got:
-                        assert t - start < 0.1
+            start = time.time()
+            await self.assertScript(sender, gen, expected=expected)
+            assert len(got) == 3
+            for t in got:
+                assert t - start < 0.1
 
-    async it "can wait for other messages", sender, FakeTime, MockedCallLater:
+    async it "can wait for other messages", sender:
         got = {}
 
         async def process_request(event, Cont):
@@ -441,13 +429,11 @@ describe "FromGenerator":
         }
 
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    start = time.time()
-                    errors = []
-                    await self.assertScript(
-                        sender, gen, expected=expected, error_catcher=errors, message_timeout=2
-                    )
+            start = time.time()
+            errors = []
+            await self.assertScript(
+                sender, gen, expected=expected, error_catcher=errors, message_timeout=2
+            )
 
         got = list(got.values())
         assert len(got) == 3
@@ -486,7 +472,7 @@ describe "FromGenerator":
         with assertRaises(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
             await self.assertScript(sender, gen, expected=expected)
 
-    async it "can be cancelled", sender, FakeTime, MockedCallLater:
+    async it "can be cancelled", sender, m:
         called = []
 
         @contextmanager
@@ -523,30 +509,28 @@ describe "FromGenerator":
 
             return FromGenerator(gen, reference_override=True)
 
-        with FakeTime() as t:
-            async with MockedCallLater(t) as m:
-                msg = make_primary_msg(m)
+        msg = make_primary_msg(m)
 
-                await FoundSerials().find(sender, timeout=1)
-                sender.received.clear()
+        await FoundSerials().find(sender, timeout=1)
+        sender.received.clear()
 
-                fut = hp.create_future()
-                async with hp.ResultStreamer(fut) as streamer:
+        fut = hp.create_future()
+        async with hp.ResultStreamer(fut) as streamer:
 
-                    async def pkts():
-                        with alter_called("pkts"):
-                            async for pkt in sender(msg, light1.serial):
-                                yield pkt
+            async def pkts():
+                with alter_called("pkts"):
+                    async for pkt in sender(msg, light1.serial):
+                        yield pkt
 
-                    t = await streamer.add_generator(pkts(), context="pkt")
-                    streamer.no_more_work()
+            t = await streamer.add_generator(pkts(), context="pkt")
+            streamer.no_more_work()
 
-                    found = []
-                    async for result in streamer:
-                        if result.context == "pkt":
-                            found.append(result)
-                            if len(found) == 18:
-                                t.cancel()
+            found = []
+            async for result in streamer:
+                if result.context == "pkt":
+                    found.append(result)
+                    if len(found) == 18:
+                        t.cancel()
 
             # 3 + 6 + 9
             assert called.count(("secondary", 1)) == 8

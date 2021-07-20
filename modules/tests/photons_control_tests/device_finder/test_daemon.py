@@ -157,29 +157,26 @@ describe "DeviceFinderDaemon":
 
         describe "search_loop":
 
-            async it "keeps doing a search", V, FakeTime, MockedCallLater:
+            async it "keeps doing a search", V:
                 called = []
                 finish_fut = hp.create_future()
 
-                with FakeTime() as t:
-                    async with MockedCallLater(t):
+                async def find(fltr):
+                    assert fltr.matches_all
+                    assert fltr.refresh_discovery
 
-                        async def find(fltr):
-                            assert fltr.matches_all
-                            assert fltr.refresh_discovery
+                    called.append(("find", time.time()))
+                    if len(called) == 4:
+                        finish_fut.set_result(True)
 
-                            called.append(("find", time.time()))
-                            if len(called) == 4:
-                                finish_fut.set_result(True)
+                    if False:
+                        yield
 
-                            if False:
-                                yield
+                find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
 
-                        find = pytest.helpers.MagicAsyncMock(name="find", side_effect=find)
-
-                        with mock.patch.object(V.daemon.finder, "find", find):
-                            async with V.daemon:
-                                await finish_fut
+                with mock.patch.object(V.daemon.finder, "find", find):
+                    async with V.daemon:
+                        await finish_fut
 
                 si = V.daemon.search_interval
                 assert called == [
@@ -189,7 +186,7 @@ describe "DeviceFinderDaemon":
                     ("find", si * 3),
                 ]
 
-            async it "does refresh information loops", V, FakeTime, MockedCallLater:
+            async it "does refresh information loops", V:
                 called = []
                 m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
                 d1 = m("d073d5000001")
@@ -241,18 +238,16 @@ describe "DeviceFinderDaemon":
                 p3 = mock.patch.object(V.daemon.finder, "find", find)
                 p4 = mock.patch.object(V.daemon, "hp_tick", Tick)
 
-                with FakeTime() as t:
-                    async with MockedCallLater(t):
-                        with p1, p2, p3, p4:
+                with p1, p2, p3, p4:
 
-                            async def run():
-                                async with V.daemon:
-                                    await hp.create_future()
+                    async def run():
+                        async with V.daemon:
+                            await hp.create_future()
 
-                            async with hp.TaskHolder(V.final_future) as ts:
-                                t = ts.add(run())
-                                await wait
-                                t.cancel()
+                    async with hp.TaskHolder(V.final_future) as ts:
+                        t = ts.add(run())
+                        await wait
+                        t.cancel()
 
                 for eril in (d1ril, d2ril):
                     assert len(eril.mock_calls) >= 3

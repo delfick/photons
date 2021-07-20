@@ -41,17 +41,13 @@ describe "Device":
     @pytest.fixture()
     async def sender(self, final_future):
         async with devices.for_test(final_future) as sender:
-            yield sender
+            with mock.patch.object(type(sender.transport_target.gaps), "finish_multi_gap", 0):
+                yield sender
 
     @pytest.fixture()
     async def finder(self, sender):
         async with Finder(sender) as finder:
             yield finder
-
-    @pytest.fixture()
-    def fake_time(self, FakeTime):
-        with FakeTime() as t:
-            yield t
 
     @pytest.fixture()
     def V(self, sender, device, fake_device, finder, fake_time, final_future):
@@ -131,7 +127,7 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
 
-    async it "can start an information loop", V, fake_time, MockedCallLater:
+    async it "can start an information loop", V, fake_time:
         fake_time.set(1)
 
         msgs = [e.value.msg for e in list(InfoPoints)]
@@ -258,19 +254,18 @@ describe "Device":
 
         await FoundSerials().find(V.sender, timeout=1)
 
-        async with MockedCallLater(fake_time):
-            with hp.ChildOfFuture(V.final_future) as ff:
-                async with hp.TaskHolder(ff, name="TEST") as ts:
-                    checker_task = ts.add(checker(ff))
-                    ts.add(
-                        V.device.refresh_information_loop(
-                            V.sender, time_between_queries, V.finder.collections
-                        )
+        with hp.ChildOfFuture(V.final_future) as ff:
+            async with hp.TaskHolder(ff, name="TEST") as ts:
+                checker_task = ts.add(checker(ff))
+                ts.add(
+                    V.device.refresh_information_loop(
+                        V.sender, time_between_queries, V.finder.collections
                     )
+                )
 
         await checker_task
 
-    async it "stops the information loop when the device disappears", V, fake_device, fake_time, MockedCallLater:
+    async it "stops the information loop when the device disappears", V, fake_device, fake_time:
         fake_time.set(1)
 
         msgs = [e.value.msg for e in list(InfoPoints)]
@@ -393,19 +388,18 @@ describe "Device":
 
         await FoundSerials().find(V.sender, timeout=1)
 
-        async with MockedCallLater(fake_time):
-            with hp.ChildOfFuture(V.final_future) as ff:
-                async with hp.TaskHolder(ff, name="TEST") as ts:
-                    l = ts.add(
-                        V.device.refresh_information_loop(
-                            V.sender, time_between_queries, V.finder.collections
-                        )
+        with hp.ChildOfFuture(V.final_future) as ff:
+            async with hp.TaskHolder(ff, name="TEST") as ts:
+                l = ts.add(
+                    V.device.refresh_information_loop(
+                        V.sender, time_between_queries, V.finder.collections
                     )
-                    checker_task = ts.add(checker(ff, l))
+                )
+                checker_task = ts.add(checker(ff, l))
 
         await checker_task
 
-    async it "doesn't do multiple refresh loops at the same time", V, fake_time, MockedCallLater:
+    async it "doesn't do multiple refresh loops at the same time", V, fake_time:
 
         async def impl(*args, **kwargs):
             await asyncio.sleep(200)

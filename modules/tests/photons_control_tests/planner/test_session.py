@@ -14,12 +14,6 @@ def session():
     return Session()
 
 
-@pytest.fixture(autouse=True)
-def fake_time(FakeTime):
-    with FakeTime() as t:
-        yield t
-
-
 def Information(key):
     class Information:
         remote_addr = None

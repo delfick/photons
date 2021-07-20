@@ -48,7 +48,7 @@ async def reset_devices(sender):
 describe "Pipeline":
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async it "does all messages at once if pipeline isn't used", sender, reference, FakeTime, MockedCallLater:
+    async it "does all messages at once if pipeline isn't used", sender, reference:
         called = []
         wait = hp.create_future()
 
@@ -72,11 +72,9 @@ describe "Pipeline":
         got = defaultdict(list)
 
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(msgs, reference):
-                        print(pkt.serial, type(pkt.payload))
-                        got[pkt.serial].append(pkt)
+            async for pkt in sender(msgs, reference):
+                print(pkt.serial, type(pkt.payload))
+                got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in devices.serials), got
 
@@ -93,7 +91,7 @@ describe "Pipeline":
         assert sorted(called) == sorted(devices.serials)
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async it "waits on replies before sending next if we have a pipeline", sender, reference, FakeTime, MockedCallLater:
+    async it "waits on replies before sending next if we have a pipeline", sender, reference:
         called = []
         wait = hp.create_future()
 
@@ -117,11 +115,9 @@ describe "Pipeline":
         got = defaultdict(list)
 
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(msgs, reference):
-                        print(pkt.serial, type(pkt.payload))
-                        got[pkt.serial].append(pkt)
+            async for pkt in sender(msgs, reference):
+                print(pkt.serial, type(pkt.payload))
+                got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in devices.serials), got
 
@@ -141,7 +137,7 @@ describe "Pipeline":
 
         assert sorted(called) == sorted(devices.serials)
 
-    async it "can wait between messages", sender, FakeTime, MockedCallLater:
+    async it "can wait between messages", sender:
         got_times = defaultdict(list)
 
         async def see_request(event):
@@ -161,12 +157,10 @@ describe "Pipeline":
         got = defaultdict(list)
 
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    start = time.time()
-                    async for pkt in sender(msg, devices.serials):
-                        got[pkt.serial].append(pkt)
-                    assert time.time() - start == 9
+            start = time.time()
+            async for pkt in sender(msg, devices.serials):
+                got[pkt.serial].append(pkt)
+            assert time.time() - start == 9
 
         assert all(serial in got for serial in devices.serials), got
         assert all(len(got[serial]) == 3 for serial in devices.serials), got
@@ -178,7 +172,7 @@ describe "Pipeline":
 
         assert all(got_times[serial] == [0, 3, 6] for serial in devices.serials)
 
-    async it "devices aren't slowed down by other slow devices", sender, FakeTime, MockedCallLater:
+    async it "devices aren't slowed down by other slow devices", sender:
         light1_power_wait = hp.create_future()
 
         got = defaultdict(list)
@@ -203,22 +197,20 @@ describe "Pipeline":
 
         called = []
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(msg, devices.serials):
-                        got[pkt.serial].append(pkt)
-                        called.append(("got_reply", type(pkt.payload).__name__))
+            async for pkt in sender(msg, devices.serials):
+                got[pkt.serial].append(pkt)
+                called.append(("got_reply", type(pkt.payload).__name__))
 
-                        with_two = [
-                            serial
-                            for serial, pkts in got.items()
-                            if serial != light1.serial and len(pkts) == 2
-                        ]
-                        if len(with_two) == 2 and not light1_power_wait.done():
-                            assert len(got) == 2, list(got)
-                            assert all(len(pkts) == 2 for pkts in got.values())
-                            light1_power_wait.set_result(True)
-                            called.append("freed_light1_power")
+                with_two = [
+                    serial
+                    for serial, pkts in got.items()
+                    if serial != light1.serial and len(pkts) == 2
+                ]
+                if len(with_two) == 2 and not light1_power_wait.done():
+                    assert len(got) == 2, list(got)
+                    assert all(len(pkts) == 2 for pkts in got.values())
+                    light1_power_wait.set_result(True)
+                    called.append("freed_light1_power")
 
         assert called == [
             "got_power",
@@ -244,7 +236,7 @@ describe "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async it "devices are slowed down by other slow devices if synchronized is True", sender, FakeTime, MockedCallLater:
+    async it "devices are slowed down by other slow devices if synchronized is True", sender:
         wait = hp.create_future()
         called = []
         got_times = defaultdict(list)
@@ -274,11 +266,9 @@ describe "Pipeline":
 
         got = defaultdict(list)
         with isr1, isr2, isr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(msg, devices.serials):
-                        got[pkt.serial].append(pkt)
-                        called.append(("got_reply", type(pkt.payload).__name__))
+            async for pkt in sender(msg, devices.serials):
+                got[pkt.serial].append(pkt)
+                called.append(("got_reply", type(pkt.payload).__name__))
 
         assert called == [
             "got_power",
@@ -303,7 +293,7 @@ describe "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async it "doesn't stop on errors", sender, FakeTime, MockedCallLater:
+    async it "doesn't stop on errors", sender:
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -328,12 +318,8 @@ describe "Pipeline":
 
         got = defaultdict(list)
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(
-                        msg, devices.serials, error_catcher=error, message_timeout=1
-                    ):
-                        got[pkt.serial].append((pkt, time.time()))
+            async for pkt in sender(msg, devices.serials, error_catcher=error, message_timeout=1):
+                got[pkt.serial].append((pkt, time.time()))
 
         assert all(serial in got for serial in devices.serials), (list(got), errors)
         assert len(errors) == 1
@@ -361,7 +347,7 @@ describe "Pipeline":
         # The reply from third message is after the second one times out
         assert [t for _, t in got[serial]] == [0, 1]
 
-    async it "can short cut on errors", sender, FakeTime, MockedCallLater:
+    async it "can short cut on errors", sender:
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -387,12 +373,8 @@ describe "Pipeline":
 
         got = defaultdict(list)
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(
-                        msg, devices.serials, error_catcher=error, message_timeout=1
-                    ):
-                        got[pkt.serial].append((pkt, time.time()))
+            async for pkt in sender(msg, devices.serials, error_catcher=error, message_timeout=1):
+                got[pkt.serial].append((pkt, time.time()))
 
         assert all(serial in got for serial in devices.serials), (list(got), errors)
         assert len(errors) == 1
@@ -418,7 +400,7 @@ describe "Pipeline":
         assert got[serial][0][0] | DeviceMessages.StatePower
         assert got[serial][0][1] == 0
 
-    async it "can short cut on errors with synchronized", sender, FakeTime, MockedCallLater:
+    async it "can short cut on errors with synchronized", sender:
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -445,12 +427,8 @@ describe "Pipeline":
 
         got = defaultdict(list)
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async for pkt in sender(
-                        msg, devices.serials, error_catcher=error, message_timeout=1
-                    ):
-                        got[pkt.serial].append((pkt, time.time()))
+            async for pkt in sender(msg, devices.serials, error_catcher=error, message_timeout=1):
+                got[pkt.serial].append((pkt, time.time()))
 
         assert all(serial in got for serial in devices.serials), (list(got), errors)
         assert len(errors) == 1
@@ -474,7 +452,7 @@ describe "Pipeline":
         assert got[serial][0][0] | DeviceMessages.StatePower
         assert got[serial][0][1] == 0
 
-    async it "can raise all errors", sender, FakeTime, MockedCallLater:
+    async it "can raise all errors", sender:
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -495,19 +473,17 @@ describe "Pipeline":
         got = defaultdict(list)
 
         with psr1, psr2, psr3:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    try:
-                        async for pkt in sender(msg, devices.serials, message_timeout=1):
-                            got[pkt.serial].append((pkt, time.time()))
-                    except RunErrors as errors:
-                        assert len(errors.errors) == 2
-                        serials = {light1.serial: True, light2.serial: True}
-                        for error in errors.errors:
-                            if not isinstance(error, TimedOut):
-                                raise error
-                            serials.pop(error.kwargs["serial"])
-                        assert serials == {}
+            try:
+                async for pkt in sender(msg, devices.serials, message_timeout=1):
+                    got[pkt.serial].append((pkt, time.time()))
+            except RunErrors as errors:
+                assert len(errors.errors) == 2
+                serials = {light1.serial: True, light2.serial: True}
+                for error in errors.errors:
+                    if not isinstance(error, TimedOut):
+                        raise error
+                    serials.pop(error.kwargs["serial"])
+                assert serials == {}
 
         for serial in (light1.serial, light2.serial):
             assert len(got[serial]) == 2, got[serial]

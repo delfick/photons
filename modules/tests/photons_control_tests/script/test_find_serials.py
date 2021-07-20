@@ -46,36 +46,32 @@ describe "Finding serials":
         for ref in ("", "_", None, sb.NotSpecified, FoundSerials()):
             assert await find_serials(ref, sender, timeout=1) == (devices.serials, [])
 
-    async it "can find a specific serial", sender, FakeTime, MockedCallLater:
+    async it "can find a specific serial", sender:
         assert await find_serials(light1.serial, sender, timeout=1) == ([light1.serial], [])
 
-        with FakeTime() as t:
-            async with MockedCallLater(t):
-                async with sender.transport_target.session() as sender:
-                    async with light1.offline():
-                        assert await find_serials(light1.serial, sender, timeout=0.5) == (
-                            [],
-                            [light1.serial],
-                        )
+        async with sender.transport_target.session() as sender:
+            async with light1.offline():
+                assert await find_serials(light1.serial, sender, timeout=0.5) == (
+                    [],
+                    [light1.serial],
+                )
 
-    async it "can find a number of serials", sender, FakeTime, MockedCallLater:
+    async it "can find a number of serials", sender:
         for ref in (f"{light1.serial},{light2.serial}", [light1.serial, light2.serial]):
             assert light1.has_power
             assert light2.has_power
 
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    async with sender.transport_target.session() as sender:
-                        assert await find_serials(ref, sender, timeout=1) == (
-                            [light1.serial, light2.serial],
-                            [],
-                        )
+            async with sender.transport_target.session() as sender:
+                assert await find_serials(ref, sender, timeout=1) == (
+                    [light1.serial, light2.serial],
+                    [],
+                )
 
-                    async with light1.offline():
-                        assert not light1.has_power
-                        assert light2.has_power
-                        async with sender.transport_target.session() as sender:
-                            assert await find_serials(ref, sender, timeout=0.5) == (
-                                [light2.serial],
-                                [light1.serial],
-                            )
+            async with light1.offline():
+                assert not light1.has_power
+                assert light2.has_power
+                async with sender.transport_target.session() as sender:
+                    assert await find_serials(ref, sender, timeout=0.5) == (
+                        [light2.serial],
+                        [light1.serial],
+                    )

@@ -441,11 +441,15 @@ class FutureDominoes(AsyncCMMixin):
                     self.futs[i + 1].set_result(True)
 
     async def _allow_real_loop(self):
+        until = 0
+        if "mock" in str(asyncio.get_event_loop().call_later).lower():
+            until = 1
+
         while True:
             ready = asyncio.get_event_loop()._ready
             ready_len = len(ready)
             await asyncio.sleep(0)
-            if ready_len == 0:
+            if ready_len <= until:
                 return
 
     @property

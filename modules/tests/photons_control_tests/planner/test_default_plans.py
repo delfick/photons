@@ -188,71 +188,65 @@ describe "Default Plans":
                 light2.serial: (True, {"presence": True}),
             }
 
-        async it "allows us to get serials that otherwise wouldn't", sender, FakeTime, MockedCallLater:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    errors = []
-                    lost = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
-                    with lost:
-                        got = await self.gather(
-                            sender,
-                            two_lights,
-                            "presence",
-                            "label",
-                            error_catcher=errors,
-                            message_timeout=0.1,
-                            find_timeout=0.1,
-                        )
+        async it "allows us to get serials that otherwise wouldn't", sender:
+            errors = []
+            lost = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
+            with lost:
+                got = await self.gather(
+                    sender,
+                    two_lights,
+                    "presence",
+                    "label",
+                    error_catcher=errors,
+                    message_timeout=0.1,
+                    find_timeout=0.1,
+                )
 
-                        assert got == {
-                            light1.serial: (True, {"presence": True, "label": "bob"}),
-                            light2.serial: (False, {"presence": True}),
-                        }
+                assert got == {
+                    light1.serial: (True, {"presence": True, "label": "bob"}),
+                    light2.serial: (False, {"presence": True}),
+                }
 
-        async it "fires for offline devices that have already been discovered", sender, FakeTime, MockedCallLater:
+        async it "fires for offline devices that have already been discovered", sender:
 
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    errors = []
-                    _, serials = await FoundSerials().find(sender, timeout=1)
-                    assert all(serial in serials for serial in two_lights)
+            errors = []
+            _, serials = await FoundSerials().find(sender, timeout=1)
+            assert all(serial in serials for serial in two_lights)
 
-                    async with light2.offline():
-                        got = await self.gather(
-                            sender,
-                            two_lights,
-                            "presence",
-                            "label",
-                            error_catcher=errors,
-                            message_timeout=0.1,
-                            find_timeout=0.1,
-                        )
+            async with light2.offline():
+                got = await self.gather(
+                    sender,
+                    two_lights,
+                    "presence",
+                    "label",
+                    error_catcher=errors,
+                    message_timeout=0.1,
+                    find_timeout=0.1,
+                )
 
-                        assert got == {
-                            light1.serial: (True, {"presence": True, "label": "bob"}),
-                            light2.serial: (False, {"presence": True}),
-                        }
+                assert got == {
+                    light1.serial: (True, {"presence": True, "label": "bob"}),
+                    light2.serial: (False, {"presence": True}),
+                }
 
-        async it "does not fire for devices that don't exist", sender, FakeTime, MockedCallLater:
-            with FakeTime() as t:
-                async with MockedCallLater(t):
-                    errors = []
+        async it "does not fire for devices that don't exist", sender:
+            errors = []
 
-                    for serial in two_lights:
-                        await sender.forget(serial)
+            for serial in two_lights:
+                await sender.forget(serial)
 
-                    async with light2.offline():
-                        got = await self.gather(
-                            sender,
-                            two_lights,
-                            "presence",
-                            "label",
-                            error_catcher=errors,
-                            message_timeout=0.1,
-                            find_timeout=0.1,
-                        )
+            async with light2.offline():
+                got = await self.gather(
+                    sender,
+                    two_lights,
+                    "presence",
+                    "label",
+                    error_catcher=errors,
+                    message_timeout=0.1,
+                    find_timeout=0.1,
+                )
 
-                        assert got == {light1.serial: (True, {"presence": True, "label": "bob"})}
+                assert got == {light1.serial: (True, {"presence": True, "label": "bob"})}
 
     describe "AddressPlan":
 

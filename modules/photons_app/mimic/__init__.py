@@ -148,10 +148,57 @@ class Store:
                 v = v.as_dict()
             assert got == v
 
-    def assertIncoming(self, *expected, ignore=None):
-        found = self.incoming(ignore=ignore)
+    def assertIncoming(self, *expected, ignore=None, remove_duplicates=True):
+        got = list(self.incoming(ignore=ignore))
         want = [Events.INCOMING(self.device, self.device.io["MEMORY"], pkt=pkt) for pkt in expected]
-        assert self.__eq__(want, record=found)
+
+        unmatched = []
+        remaining = list(got)
+        ww = list(want)
+        while ww:
+            w = ww.pop(0)
+            found = False
+            buf = []
+            for f in remaining:
+                if not found and f == w:
+                    found = True
+                else:
+                    buf.append(f)
+
+            if not found:
+                unmatched.append(w)
+            remaining = buf
+
+        if remove_duplicates:
+            remaining = [event for event in remaining if not any(event == w for w in want)]
+
+        if not unmatched and not remaining:
+            return
+
+        print("Wanted the following")
+        for event in want:
+            print(f" - {event}")
+        print()
+
+        print("Got the following")
+        for event in got:
+            print(f" - {event}")
+        print()
+
+        if unmatched:
+            __import__("pdb").set_trace()
+            print("Following did not have matches")
+            for event in unmatched:
+                print(f" - {event}")
+            print()
+
+        if remaining:
+            print("Following was found unexpectedly")
+            for event in remaining:
+                print(f" - {event}")
+            print()
+
+        assert False
 
     def assertNoSetMessages(self):
         for e in self.record:

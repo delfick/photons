@@ -117,13 +117,6 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-@pytest.fixture(autouse=True)
-async def fake_time(FakeTime, MockedCallLater):
-    with FakeTime() as t:
-        async with MockedCallLater(t):
-            yield
-
-
 describe "SetZonesPlan":
 
     @pytest.fixture()

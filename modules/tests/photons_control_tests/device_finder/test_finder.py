@@ -133,7 +133,8 @@ describe "Finder":
                     p.stop()
 
         describe "ensure_devices":
-            async it "can add and remove devices", V, FakeTime:
+            async it "can add and remove devices", V, fake_time:
+                t = fake_time
 
                 async def assertDevices(serials, added, removed):
                     existing = {d.serial: id(d) for d in V.finder.devices.values()}
@@ -173,22 +174,21 @@ describe "Finder":
                         if serial not in added and serial in serials:
                             assert V.finder.last_seen[serial] > existing_last_seen[serial]
 
-                with FakeTime() as t:
-                    await assertDevices([], [], [])
+                await assertDevices([], [], [])
 
-                    await assertDevices(["s1", "s2", "s3"], ["s1", "s2", "s3"], [])
+                await assertDevices(["s1", "s2", "s3"], ["s1", "s2", "s3"], [])
 
-                    t.add(10)
-                    await assertDevices(["s2", "s1", "s4"], ["s4"], [])
+                t.add(10)
+                await assertDevices(["s2", "s1", "s4"], ["s4"], [])
 
-                    t.add(21)
-                    await assertDevices(["s1"], [], ["s3"])
+                t.add(21)
+                await assertDevices(["s1"], [], ["s3"])
 
-                    t.add(20)
-                    await assertDevices(["s5"], ["s5"], ["s2", "s4"])
+                t.add(20)
+                await assertDevices(["s5"], ["s5"], ["s2", "s4"])
 
-                    t.add(10)
-                    await assertDevices(["s1", "s5"], [], [])
+                t.add(10)
+                await assertDevices(["s1", "s5"], [], [])
 
         describe "find":
 
@@ -196,7 +196,8 @@ describe "Finder":
                 "fltr,matches_runs",
                 [(Filter.empty(), False), (Filter.from_kwargs(label="kitchen"), True)],
             )
-            async it "streams devices that match the filter", V, fltr, matches_runs, FakeTime:
+            async it "streams devices that match the filter", V, fltr, matches_runs, fake_time:
+                t = fake_time
 
                 class Patches:
                     def __init__(s, devices):
@@ -266,7 +267,7 @@ describe "Finder":
 
                     with Patches(
                         [s1, s2, s3, s4, s5, s6, s7]
-                    ), ensure_devices_patch, find_all_serials_patch, FakeTime() as t:
+                    ), ensure_devices_patch, find_all_serials_patch:
 
                         async def s4finish():
                             called.append("s4finish_start")
@@ -401,7 +402,8 @@ describe "Finder":
                     Filter.from_options({"label": "attic", "refresh_info": True}),
                 ],
             )
-            async it "streams devices after getting all info for that device", V, FakeTime, fltr:
+            async it "streams devices after getting all info for that device", V, fltr, fake_time:
+                t = fake_time
 
                 class Patches:
                     def __init__(s, devices):
@@ -439,7 +441,7 @@ describe "Finder":
                     find_mock = pytest.helpers.MagicAsyncMock(name="find_mock")
                     find_patch = mock.patch.object(V.finder, "find", find_mock)
 
-                    with Patches([s1, s2, s3, s4]), find_patch, FakeTime() as t:
+                    with Patches([s1, s2, s3, s4]), find_patch:
 
                         async def find(fr):
                             assert fr is fltr
