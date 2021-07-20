@@ -44,7 +44,7 @@ async def server(store_clone, server_wrapper, sender, final_future, FakeTime, Mo
 @pytest.fixture(autouse=True)
 async def reset_devices(devices):
     for device in devices:
-        await device.event(Events.RESET)
+        await device.event(Events.RESET, old_attrs={})
 
 
 @pytest.fixture(autouse=True)
@@ -512,7 +512,7 @@ describe "Effect commands":
 
     async it "can start linear effects and power on", devices, server, results:
         for device in devices:
-            await device.change_one("power", 0)
+            await device.change_one("power", 0, event=None)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -529,7 +529,7 @@ describe "Effect commands":
 
     async it "can start matrix effects and power on", devices, server, results:
         for device in devices:
-            await device.change_one("power", 0)
+            await device.change_one("power", 0, event=None)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -546,7 +546,7 @@ describe "Effect commands":
 
     async it "can start matrix and linear effects without powering on", devices, server, results:
         for device in devices:
-            await device.change_one("power", 0)
+            await device.change_one("power", 0, event=None)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -567,7 +567,7 @@ describe "Effect commands":
 
     async it "can stop matrix and linear effects without powering on", devices, server, results:
         for device in devices:
-            await device.change_one("power", 0)
+            await device.change_one("power", 0, event=None)
 
         await server.assertCommand(
             "/v1/lifx/command",

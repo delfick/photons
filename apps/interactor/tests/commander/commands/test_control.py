@@ -231,9 +231,9 @@ describe "Control Commands":
 
         for device in devices:
             if device.serial == "d073d5000001":
-                await device.change_one("power", 0)
+                await device.change_one("power", 0, event=None)
             else:
-                await device.change_one("power", 0xFFFF)
+                await device.change_one("power", 0xFFFF, event=None)
 
         await server.assertCommand(
             "/v1/lifx/command",
@@ -393,10 +393,10 @@ describe "Control Commands":
 
         # Power on and color
         for device in devices:
-            await device.change_one("power", 0)
-            await device.change_one(("color", "brightness"), 0.5)
-        await devices["d073d5000001"].change_one("power", 0xFFFF)
-        await devices["d073d5000003"].change_one("power", 0xFFFF)
+            await device.change_one("power", 0, event=None)
+            await device.change_one(("color", "brightness"), 0.5, event=None)
+        await devices["d073d5000001"].change_one("power", 0xFFFF, event=None)
+        await devices["d073d5000003"].change_one("power", 0xFFFF, event=None)
 
         tv_light = devices.for_attribute("label", "tv", expect=1)[0]
         async with tv_light.offline():
@@ -440,10 +440,10 @@ describe "Control Commands":
 
         # Power on and transition color
         for device in devices:
-            await device.change_one("power", 0)
-            await device.change_one(("color", "brightness"), 0.5)
-        await devices["d073d5000001"].change_one("power", 0xFFFF)
-        await devices["d073d5000003"].change_one("power", 0xFFFF)
+            await device.change_one("power", 0, event=None)
+            await device.change_one(("color", "brightness"), 0.5, event=None)
+        await devices["d073d5000001"].change_one("power", 0xFFFF, event=None)
+        await devices["d073d5000003"].change_one("power", 0xFFFF, event=None)
 
         tv_light = devices.for_attribute("label", "tv", expect=1)[0]
         async with tv_light.offline():

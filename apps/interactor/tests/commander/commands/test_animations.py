@@ -198,7 +198,7 @@ describe "Animation Commands":
         store = devices.store(tile)
         store.clear()
 
-        first_set_64 = tile.attrs.pkt_waiter.wait_for_incoming(io, Set64)
+        first_set_64 = tile.attrs.event_waiter.wait_for_incoming(io, Set64)
 
         # start
         got = await server.assertCommand(
