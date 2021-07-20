@@ -5,14 +5,14 @@ import { WSState, WSCommand } from "./wsclient.js";
 
 var combine_parts = (parts, existing) => {
   var by_key = {};
-  existing.map(part => {
+  existing.map((part) => {
     by_key[part.key] = part;
   });
 
   var result = [];
   var anyDifferent = false;
 
-  parts.map(part => {
+  parts.map((part) => {
     if (!by_key[part.key]) {
       by_key[part.key] = {};
     }
@@ -20,7 +20,7 @@ var combine_parts = (parts, existing) => {
     var nxt = { ...by_key[part.key], ...part };
 
     var different = false;
-    Object.keys(nxt).map(attr => {
+    Object.keys(nxt).map((attr) => {
       if (by_key[part.key][attr] != nxt[attr]) {
         different = true;
       }
@@ -65,15 +65,15 @@ class PartsStateKls {
   ClearError = createAction("Clear error");
 
   MakeStream = createAction("Make a stream");
-  StartedStream = createAction("Started a stream", messageId => ({
-    messageId
+  StartedStream = createAction("Started a stream", (messageId) => ({
+    messageId,
   }));
   LoadingStream = createAction("Loading a stream");
   StreamProgress = createAction("Progress from a stream");
 
   Highlight = createAction("highlight a part", (serial, part_number) => ({
     serial,
-    part_number
+    part_number,
   }));
 
   GotParts = createAction("Got parts");
@@ -100,23 +100,23 @@ class PartsStateKls {
             loading: true,
             error: undefined,
             parts: [],
-            messageId: undefined
+            messageId: undefined,
           };
         },
         [this.GotParts]: (state, parts) => {
           return {
             ...state,
             parts: combine_parts(parts, state.parts),
-            waiting: false
+            waiting: false,
           };
-        }
+        },
       },
       {
         parts: [],
         error: undefined,
         waiting: true,
         loading: false,
-        messageId: undefined
+        messageId: undefined,
       }
     );
   }
@@ -129,7 +129,7 @@ function* wsConnectedSaga() {
 }
 
 function* changePositionSaga(original) {
-  let messageId = yield select(state => state.parts.messageId);
+  let messageId = yield select((state) => state.parts.messageId);
   if (!messageId) {
     return;
   }
@@ -139,7 +139,7 @@ function* changePositionSaga(original) {
       "/v1/lifx/command",
       {
         command: "change_position",
-        args: original.payload
+        args: original.payload,
       },
       { onerror: PartState.Error, original, parentMessageIds: [messageId] }
     )
@@ -147,7 +147,7 @@ function* changePositionSaga(original) {
 }
 
 function* highlightSaga(original) {
-  let messageId = yield select(state => state.parts.messageId);
+  let messageId = yield select((state) => state.parts.messageId);
   if (!messageId) {
     return;
   }
@@ -157,7 +157,7 @@ function* highlightSaga(original) {
       "/v1/lifx/command",
       {
         command: "highlight",
-        args: original.payload
+        args: original.payload,
       },
       { onerror: PartState.Error, original, parentMessageIds: [messageId] }
     )
@@ -165,7 +165,7 @@ function* highlightSaga(original) {
 }
 
 function* makePartStreamSaga(original) {
-  let loading = yield select(state => state.parts.loading);
+  let loading = yield select((state) => state.parts.loading);
   if (loading) {
     return;
   }
@@ -180,7 +180,7 @@ function* makePartStreamSaga(original) {
     WSCommand(
       "/v1/lifx/command",
       {
-        command: "parts/store"
+        command: "parts/store",
       },
       { onsuccess, onprogress, onerror, original }
     )
@@ -194,7 +194,7 @@ function* streamProgressSaga(command) {
     yield put(
       PartState.Error({
         ...payload.progress,
-        original: { type: "[] processing device discovery" }
+        original: { type: "[] processing device discovery" },
       })
     );
     return;

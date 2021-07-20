@@ -41,7 +41,7 @@ function makeGrid(dimensions, zerosState) {
       strokeWidth={2}
       stroke="red"
       points={[0, zerosState.zero_y, width, zerosState.zero_y]}
-    />
+    />,
   ];
 
   for (
@@ -129,7 +129,7 @@ export default () => {
     return {
       width,
       height,
-      pixelWidth
+      pixelWidth,
     };
   };
   const [dimensions, setDimensions] = useState(makeDimensions());
@@ -144,7 +144,7 @@ export default () => {
           ...state,
           grid_x: s_x,
           grid_y: s_y,
-          start_offset: { zero_x: state.zero_x, zero_y: state.zero_y }
+          start_offset: { zero_x: state.zero_x, zero_y: state.zero_y },
         };
       case "drag_grid":
         var diffx = state.grid_x - s_x;
@@ -152,7 +152,7 @@ export default () => {
         return {
           ...state,
           zero_x: state.start_offset.zero_x - diffx,
-          zero_y: state.start_offset.zero_y - diffy
+          zero_y: state.start_offset.zero_y - diffy,
         };
       default:
         throw new Error(`Unknown event ${action.type}`);
@@ -170,7 +170,7 @@ export default () => {
     zero_y,
     grid_x: 0,
     grid_y: 0,
-    start_offset: { zero_x, zero_y }
+    start_offset: { zero_x, zero_y },
   });
 
   useEffect(() => {
@@ -196,9 +196,11 @@ export default () => {
                 height={height}
                 fill="#e6e6e6"
                 draggable={true}
-                dragBoundFunc={_ => ({ x: 0, y: 0 })}
-                onDragMove={e => dispatchZeros({ type: "drag_grid", e })}
-                onDragStart={e => dispatchZeros({ type: "drag_grid_start", e })}
+                dragBoundFunc={(_) => ({ x: 0, y: 0 })}
+                onDragMove={(e) => dispatchZeros({ type: "drag_grid", e })}
+                onDragStart={(e) =>
+                  dispatchZeros({ type: "drag_grid_start", e })
+                }
               />
             </Layer>
             <Layer>{makeGrid(dimensions, zerosState)}</Layer>

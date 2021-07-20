@@ -7,7 +7,7 @@ import {
   race,
   spawn,
   take,
-  delay
+  delay,
 } from "redux-saga/effects";
 import { createAction, createReducer } from "redux-act";
 import { END, channel } from "redux-saga";
@@ -17,9 +17,12 @@ class WSStateKls {
   Loading = createAction("Starting to open connection");
   Error = createAction("Got an error connecting to the websocket");
   Connected = createAction("Successfully connected to the websocket");
-  ServerTime = createAction("Got a new server time from the server", time => ({
-    time
-  }));
+  ServerTime = createAction(
+    "Got a new server time from the server",
+    (time) => ({
+      time,
+    })
+  );
 
   disabledSelector(state) {
     return state.ws.loading || state.ws.error;
@@ -54,15 +57,15 @@ class WSStateKls {
             ...state,
             error: undefined,
             errorStr: undefined,
-            loading: false
+            loading: false,
           };
-        }
+        },
       },
       {
         error: undefined,
         errorStr: undefined,
         devices: {},
-        loading: true
+        loading: true,
       }
     );
   }
@@ -84,7 +87,7 @@ export const WSCommand = createAction(
     onprogress,
     timeout,
     original,
-    parentMessageIds
+    parentMessageIds,
   })
 );
 
@@ -94,7 +97,7 @@ function* maybeTimeoutMessage(actions, messageId) {
   try {
     var response = action.onerror({
       error: "Timedout waiting for a reply to the message",
-      error_code: "Timedout"
+      error_code: "Timedout",
     });
   } finally {
     if (response) {
@@ -114,7 +117,7 @@ function* sendToSocket(socket, sendch, actions) {
       try {
         var response = action.onerror({
           error: "Connection to the server wasn't active",
-          error_code: "InactiveConnection"
+          error_code: "InactiveConnection",
         });
       } finally {
         // We use a finally block to make sure the response is dispatched
@@ -148,17 +151,17 @@ function* startWS(url, count, sendch, receivech, actions) {
       resolve(socket);
     };
 
-    socket.onmessage = event => receivech.put(event);
+    socket.onmessage = (event) => receivech.put(event);
 
-    socket.onerror = evt => {
+    socket.onerror = (evt) => {
       console.error("Websocket got error", evt);
       reject(evt);
     };
 
-    socket.onclose = evt => {
+    socket.onclose = (evt) => {
       console.error("Websocket closed", evt);
       reject(evt);
-      oncloses.map(cb => {
+      oncloses.map((cb) => {
         try {
           cb(evt);
         } catch (e) {
@@ -178,8 +181,8 @@ function* startWS(url, count, sendch, receivech, actions) {
       WSState.Error({
         error: {
           error: "Could not connect to server",
-          error_code: "FailedToConnected"
-        }
+          error_code: "FailedToConnected",
+        },
       })
     );
     var diff = Date.now() - start;
@@ -209,7 +212,7 @@ function* startWS(url, count, sendch, receivech, actions) {
   } finally {
     yield put(
       WSState.Error({
-        error: { error: "Server went away", error_code: "ServerWentAway" }
+        error: { error: "Server went away", error_code: "ServerWentAway" },
       })
     );
     waiter.close();
@@ -233,7 +236,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
         try {
           return defaultonerror({
             error_code: "INTERNAL_ERROR",
-            error: e.toString()
+            error: e.toString(),
           });
         } catch (e2) {
           console.error(e2);
@@ -242,7 +245,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
     };
 
     var data = { path, body, message_id: messageId };
-    var doerror = error => {
+    var doerror = (error) => {
       if (done) {
         return;
       }
@@ -268,7 +271,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
               ...data,
               namespace: "",
               messageId,
-              original
+              original,
             })
           )
         );
@@ -279,7 +282,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
               ...data.error.msg,
               namespace: data.error.namespace,
               messageId,
-              original
+              original,
             })
           )
         );
@@ -294,7 +297,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
       return all(payloads);
     };
 
-    var doprogress = progress => {
+    var doprogress = (progress) => {
       if (onprogress) {
         return put(create(onprogress, { messageId, progress, original }));
       }
@@ -306,7 +309,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
       timeout: timeout,
       onreply: doreply,
       onerror: doerror,
-      onprogress: doprogress
+      onprogress: doprogress,
     };
   };
 
@@ -410,7 +413,7 @@ export function* listen(url, defaultonerror, delayMS) {
   var commandch = yield call(channel);
 
   if (defaultonerror === undefined) {
-    defaultonerror = e => console.error(e);
+    defaultonerror = (e) => console.error(e);
   }
 
   // This is outside the while true so that we don't miss messages
@@ -444,7 +447,7 @@ export function* listen(url, defaultonerror, delayMS) {
 
       var response = action.onerror({
         error: "Lost connection to the server",
-        error_code: "LostConnection"
+        error_code: "LostConnection",
       });
       if (response) {
         yield put(response);

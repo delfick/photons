@@ -6,11 +6,11 @@ import { combineReducers } from "redux";
 import { PartState, partsSaga } from "./state.js";
 import { WSState } from "./wsclient.js";
 
-export const makeReducer = extra => {
+export const makeReducer = (extra) => {
   return combineReducers({
     ...extra,
     wsclient: WSState.reducer(),
-    parts: PartState.reducer()
+    parts: PartState.reducer(),
   });
 };
 
@@ -23,6 +23,6 @@ export const makeStore = (reducer, sagaMiddleware) => {
   return creator(reducer, devToolsEnhancer());
 };
 
-export const runSagaMiddleware = sagaMiddleware => {
+export const runSagaMiddleware = (sagaMiddleware) => {
   sagaMiddleware.run(partsSaga);
 };

@@ -5,12 +5,12 @@ import { useState } from "react";
 import { PartState } from "./state.js";
 
 var PartPixels = ({ part, pixelWidth, lineWidth }) => {
-  let x = col => col * pixelWidth;
-  let y = row => row * pixelWidth;
+  let x = (col) => col * pixelWidth;
+  let y = (row) => row * pixelWidth;
 
   return (
     <Group>
-      {part.pixels.map(pixel => {
+      {part.pixels.map((pixel) => {
         return (
           <Rect
             key={pixel.key}
@@ -35,7 +35,7 @@ var PartPixels = ({ part, pixelWidth, lineWidth }) => {
           x(0),
           y(part.height),
           x(0),
-          y(0)
+          y(0),
         ]}
       />
     </Group>
@@ -59,15 +59,15 @@ var Part = ({ part, zero_x, zero_y, pixelWidth, partWidth }) => {
         serial: part.serial,
         part_number: part.part_number,
         user_x,
-        user_y
+        user_y,
       })
     );
   };
 
-  var dragBound = pos => {
+  var dragBound = (pos) => {
     var newpos = {
       x: pos.x - ((pos.x - zero_x) % pixelWidth),
-      y: pos.y - ((pos.y - zero_y) % pixelWidth)
+      y: pos.y - ((pos.y - zero_y) % pixelWidth),
     };
     setPosition(newpos);
     return newpos;
@@ -96,12 +96,12 @@ var Part = ({ part, zero_x, zero_y, pixelWidth, partWidth }) => {
   );
 };
 
-export default props => {
-  var parts = useSelector(state => state.parts.parts);
+export default (props) => {
+  var parts = useSelector((state) => state.parts.parts);
 
   return (
     <Layer>
-      {parts.map(part => (
+      {parts.map((part) => (
         <Part key={part.key} part={part} {...props} />
       ))}
     </Layer>

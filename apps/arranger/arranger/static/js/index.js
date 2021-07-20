@@ -12,7 +12,7 @@ import {
   makeReducer,
   makeSagaMiddleware,
   makeStore,
-  runSagaMiddleware
+  runSagaMiddleware,
 } from "./store.js";
 
 const reducer = makeReducer();
