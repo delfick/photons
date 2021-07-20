@@ -26,7 +26,7 @@ class Responder(Operator):
         elif event | DeviceMessages.SetPower:
             event.set_replies(DeviceMessages.StatePower(level=s.device_attrs.power))
             await s.device_attrs.attrs_apply(
-                s.device_attrs.attrs_path("power").changer_to(event.pkt.level)
+                s.device_attrs.attrs_path("power").changer_to(event.pkt.level), event=event
             )
 
 
@@ -146,7 +146,7 @@ describe "can send over udp":
         async with LanTarget.create(configuration).session() as sender:
             yield sender
 
-    async it "can send and receive messages using memory target", sender, device:
+    async it "can send and receive messages using lan target target", sender, device:
         reference = HardCodedSerials([device.serial])
         found, serials = await reference.find(sender, timeout=1)
         assert serials == [device.serial]

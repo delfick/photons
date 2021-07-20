@@ -82,9 +82,10 @@ def makeMemorySession(basedon):
 
             async def writer(bts, give_reply, addr):
                 self.record(serial, bts)
-                return device.io[MemoryService.name].received(bts, give_reply, addr)
+                io_name = self.transport_target.io_service.name
+                return device.io[io_name].received(bts, give_reply, addr)
 
-            return MemoryTransport(self, self.record, writer, serial=serial)
+            return self.transport_target.transport_kls(self, self.record, writer, serial=serial)
 
         async def make_broadcast_transport(self, broadcast):
             if broadcast is True:
@@ -92,15 +93,19 @@ def makeMemorySession(basedon):
 
             if broadcast not in self.broadcast_transports:
 
+                io_service = self.transport_target.io_service
+
                 async def writer(bts, received_data, addr):
                     for device in self.transport_target.devices:
                         self.record(device.serial, bts)
-                        if MemoryService.name in device.io and await device.discoverable(
-                            MemoryService, broadcast
+                        if io_service.name in device.io and await device.discoverable(
+                            io_service, broadcast
                         ):
-                            device.io[MemoryService.name].received(bts, received_data, addr)
+                            device.io[io_service.name].received(bts, received_data, addr)
 
-                self.broadcast_transports[broadcast] = MemoryTransport(self, self.record, writer)
+                self.broadcast_transports[broadcast] = self.transport_target.transport_kls(
+                    self, self.record, writer
+                )
             return self.broadcast_transports[broadcast]
 
     return MemorySession
@@ -114,6 +119,8 @@ class MemoryTarget(LanTarget):
     gaps = dictobj.Field(
         Gaps(gap_between_results=0.05, gap_between_ack_and_res=0.05, timeouts=[(0.2, 0.2)])
     )
+    io_service = dictobj.Field(sb.any_spec, default=MemoryService)
+    transport_kls = dictobj.Field(sb.any_spec, default=MemoryTransport)
 
     devices = dictobj.Field(sb.listof(sb.any_spec()), wrapper=sb.required)
     default_broadcast = dictobj.Field(sb.defaulted(sb.string_spec(), "255.255.255.255"))

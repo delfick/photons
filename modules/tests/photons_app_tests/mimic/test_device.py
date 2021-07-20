@@ -47,29 +47,35 @@ describe "DeviceSession":
                 called.append("delete")
 
             class IO1(IO):
-                async def _start_session(s):
+                io_source = "io1"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[2]
                     called.append("io1 start")
 
-                async def _finish_session(s):
+                async def finish_session(s):
                     await futs[8]
                     called.append("io1 finish")
 
             class IO2(IO):
-                async def _start_session(s):
+                io_source = "io2"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[4]
                     called.append("io2 start")
 
-                async def _finish_session(s):
+                async def finish_session(s):
                     await futs[6]
                     called.append("io2 finish")
 
             class IO3(IO):
-                async def _start_session(s):
+                io_source = "io3"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[3]
                     called.append("io3 start")
 
-                async def _finish_session(s):
+                async def finish_session(s):
                     await futs[7]
                     called.append("io3 finish")
 
@@ -97,7 +103,7 @@ describe "DeviceSession":
 
     async it "follows a prepare, reset, delete protocol even if io operators fail", final_future, device:
         called = []
-        async with pytest.helpers.FutureDominoes(expected=9) as futs:
+        async with pytest.helpers.FutureDominoes(expected=8) as futs:
 
             error1 = KeyError("nope")
             error2 = KeyError("nup")
@@ -107,41 +113,46 @@ describe "DeviceSession":
                 called.append("prepare")
 
             async def reset():
-                await futs[5]
                 called.append("reset")
 
             async def delete():
-                await futs[9]
+                await futs[8]
                 called.append("delete")
 
             class IO1(IO):
-                async def _start_session(s):
+                io_source = "io1"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[2]
                     called.append("io1 start")
                     raise error1
 
-                async def _finish_session(s):
-                    await futs[8]
+                async def finish_session(s):
+                    await futs[7]
                     called.append("io1 finish")
 
             class IO2(IO):
-                async def _start_session(s):
+                io_source = "io2"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[4]
                     called.append("io2 start")
 
-                async def _finish_session(s):
+                async def finish_session(s):
                     called.append("io2 finish")
-                    await futs[6]
+                    await futs[5]
                     raise error2
 
             class IO3(IO):
-                async def _start_session(s):
+                io_source = "io3"
+
+                async def start_session(s, final_future, parent_ts):
                     await futs[3]
                     called.append("io3 start")
 
-                async def _finish_session(s):
+                async def finish_session(s):
                     called.append("io3 finish")
-                    await futs[7]
+                    await futs[6]
 
             device.io = {}
             for io in (IO1(device), IO2(device), IO3(device)):
@@ -161,7 +172,6 @@ describe "DeviceSession":
                     "io1 start",
                     "io3 start",
                     "io2 start",
-                    "reset",
                     "io2 finish",
                     "io3 finish",
                     "io1 finish",
@@ -565,6 +575,12 @@ describe "Device":
                     record.add(self, "reset_operator", event)
                     await super().reset(event)
 
+                async def power_on(self, event):
+                    record.add(self, "power_on_operator", event)
+
+                async def shutting_down(self, event):
+                    record.add(self, "shutting_down_operator", event)
+
             class viewer(Viewer):
                 async def respond(self, event):
                     record.add(self, "viewer", event)
@@ -573,17 +589,25 @@ describe "Device":
                     record.add(self, "reset_viewer", event)
                     await super().reset(event)
 
+                async def power_on(self, event):
+                    record.add(self, "power_on_viewer", event)
+
+                async def shutting_down(self, event):
+                    record.add(self, "shutting_down_viewer", event)
+
             class io(IO):
                 io_source = "IOtest"
 
                 async def apply(self):
                     self.device.io[self.io_source] = self
 
-                async def _start_session(self):
-                    pass
+                async def power_on(self, event):
+                    record.add(self, "power_on_io", event)
+                    await super().power_on(event)
 
-                async def _finish_session(self):
-                    pass
+                async def shutting_down(self, event):
+                    record.add(self, "shutting_down_io", event)
+                    await super().shutting_down(event)
 
                 async def respond(self, event):
                     record.add(self, "io", event)
@@ -619,20 +643,41 @@ describe "Device":
             )
 
             async with device.session(final_future):
+                reset_event = Events.RESET(device, old_attrs={})
                 assert record == [
-                    ("execute_event", Events.RESET(device), None),
-                    ("reset_viewer", Events.RESET(device)),
-                    ("reset_io", Events.RESET(device)),
-                    ("reset_operator", Events.RESET(device)),
+                    ("execute_event", Events.SHUTTING_DOWN(device), None),
+                    ("shutting_down_viewer", Events.SHUTTING_DOWN(device)),
+                    ("shutting_down_operator", Events.SHUTTING_DOWN(device)),
+                    ("viewer", Events.SHUTTING_DOWN(device)),
+                    ("io", Events.SHUTTING_DOWN(device)),
+                    ("operator", Events.SHUTTING_DOWN(device)),
+                    #
+                    ("execute_event", Events.POWER_OFF(device), None),
+                    ("viewer", Events.POWER_OFF(device)),
+                    ("io", Events.POWER_OFF(device)),
+                    ("operator", Events.POWER_OFF(device)),
+                    #
+                    ("execute_event", reset_event, None),
+                    ("reset_viewer", reset_event),
+                    ("reset_io", reset_event),
+                    ("reset_operator", reset_event),
                     #
                     ("execute_event", attr_change_event, None),
                     # No viewer because this happens before the device has started
                     ("io", attr_change_event),
                     ("operator", attr_change_event),
                     #
-                    ("viewer", Events.RESET(device)),
-                    ("io", Events.RESET(device)),
-                    ("operator", Events.RESET(device)),
+                    ("viewer", reset_event),
+                    ("io", reset_event),
+                    ("operator", reset_event),
+                    #
+                    ("execute_event", Events.POWER_ON(device), None),
+                    ("power_on_viewer", Events.POWER_ON(device)),
+                    ("power_on_io", Events.POWER_ON(device)),
+                    ("power_on_operator", Events.POWER_ON(device)),
+                    ("viewer", Events.POWER_ON(device)),
+                    ("io", Events.POWER_ON(device)),
+                    ("operator", Events.POWER_ON(device)),
                 ]
                 record.clear()
                 yield device
@@ -683,8 +728,10 @@ describe "Device":
                         yield mocked
 
                 async it "has helper for creating and executing events", mocked:
-                    res = await mocked.device.event_with_options(Events.RESET, args=(), kwargs={})
-                    assert res == (mocked.ret, Events.RESET(mocked.device), None)
+                    res = await mocked.device.event_with_options(
+                        Events.RESET, args=(), kwargs={"old_attrs": {}}
+                    )
+                    assert res == (mocked.ret, Events.RESET(mocked.device, old_attrs={}), None)
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is False
 
@@ -708,17 +755,17 @@ describe "Device":
 
                 async it "can make the event invisible to viewers", mocked:
                     res = await mocked.device.event_with_options(
-                        Events.RESET, visible=False, args=(), kwargs={}
+                        Events.RESET, visible=False, args=(), kwargs={"old_attrs": {}}
                     )
-                    assert res == (mocked.ret, Events.RESET(mocked.device), None)
+                    assert res == (mocked.ret, Events.RESET(mocked.device, old_attrs={}), None)
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is True
 
                 async it "can not execute", mocked:
                     res = await mocked.device.event_with_options(
-                        Events.RESET, execute=False, args=(), kwargs={}
+                        Events.RESET, execute=False, args=(), kwargs={"old_attrs": {}}
                     )
-                    assert res == Events.RESET(mocked.device)
+                    assert res == Events.RESET(mocked.device, old_attrs={})
                     mocked.execute_event.assert_not_called()
 
             describe "executing events":
@@ -737,7 +784,7 @@ describe "Device":
                     )
 
                     assert not device.applied_options
-                    event = Events.RESET(device)
+                    event = Events.RESET(device, old_attrs={})
                     assert await device.execute_event(event, None) is event
                     assert called == []
 
@@ -803,7 +850,7 @@ describe "Device":
                         Events.RESET,
                         execute=False,
                         args=(),
-                        kwargs={},
+                        kwargs={"old_attrs": {}},
                     )
                     assert record == []
                     assert await device.execute_event(event, None) is event
@@ -838,7 +885,7 @@ describe "Device":
                         execute=False,
                         visible=False,
                         args=(),
-                        kwargs={},
+                        kwargs={"old_attrs": {}},
                     )
                     assert record == []
                     assert await device.execute_event(event, None) is event
@@ -876,6 +923,7 @@ describe "Device":
                     class II(IO):
                         def setup(s, source):
                             s.io_source = source
+                            super().setup()
 
                         async def apply(s):
                             s.device.io[s.io_source] = s
@@ -961,6 +1009,9 @@ describe "Device":
                 assert device.has_power
                 assert record == [
                     ("execute_event", Events.POWER_ON(device), None),
+                    ("power_on_viewer", Events.POWER_ON(device)),
+                    ("power_on_io", Events.POWER_ON(device)),
+                    ("power_on_operator", Events.POWER_ON(device)),
                     ("viewer", Events.POWER_ON(device)),
                     ("io", Events.POWER_ON(device)),
                     ("operator", Events.POWER_ON(device)),
@@ -982,6 +1033,10 @@ describe "Device":
 
                 assert record == [
                     ("execute_event", Events.SHUTTING_DOWN(device), None),
+                    #
+                    ("shutting_down_viewer", Events.SHUTTING_DOWN(device), True),
+                    ("shutting_down_io", Events.SHUTTING_DOWN(device), True),
+                    ("shutting_down_operator", Events.SHUTTING_DOWN(device), True),
                     #
                     ("viewer", Events.SHUTTING_DOWN(device), True),
                     ("io", Events.SHUTTING_DOWN(device), True),
@@ -1009,6 +1064,10 @@ describe "Device":
                     assert record == [
                         ("execute_event", Events.SHUTTING_DOWN(device), None),
                         #
+                        ("shutting_down_viewer", Events.SHUTTING_DOWN(device), True),
+                        ("shutting_down_io", Events.SHUTTING_DOWN(device), True),
+                        ("shutting_down_operator", Events.SHUTTING_DOWN(device), True),
+                        #
                         ("viewer", Events.SHUTTING_DOWN(device), True),
                         ("io", Events.SHUTTING_DOWN(device), True),
                         ("operator", Events.SHUTTING_DOWN(device), True),
@@ -1024,6 +1083,11 @@ describe "Device":
                 assert device.has_power
                 assert record == [
                     ("execute_event", Events.POWER_ON(device), None),
+                    #
+                    ("power_on_viewer", Events.POWER_ON(device), True),
+                    ("power_on_io", Events.POWER_ON(device), True),
+                    ("power_on_operator", Events.POWER_ON(device), True),
+                    #
                     ("viewer", Events.POWER_ON(device), True),
                     ("io", Events.POWER_ON(device), True),
                     ("operator", Events.POWER_ON(device), True),
@@ -1045,6 +1109,7 @@ describe "Device":
                 assert device.attrs.five == 3
                 assert device.has_power
                 device.firmware = Device.Firmware(2, 90, 0)
+                current_firmware = device.firmware
                 assert device.original_firmware == Device.Firmware(2, 80, 0)
                 original = Device.Firmware(2, 80, 0)
 
@@ -1052,6 +1117,7 @@ describe "Device":
                 await device.attrs.attrs_apply(
                     device.attrs.attrs_path("three").changer_to("twenty"),
                     device.attrs.attrs_path("five").changer_to("forty"),
+                    event=None,
                 )
                 assert device.attrs.as_dict() == {
                     "three": "twenty",
@@ -1074,42 +1140,29 @@ describe "Device":
                     return (operator, v)
 
                 record._intercept = intercept
+                reset_event = Events.RESET(device, old_attrs={})
+                shutdown_event = Events.SHUTTING_DOWN(device)
+                power_off_event = Events.POWER_OFF(device)
+                power_on_event = Events.POWER_ON(device)
+
                 await device.reset()
                 assert record == [
-                    ("execute_event", Events.RESET(device), None),
-                    ("reset_viewer", Events.RESET(device), False, original, False),
-                    ("reset_io", Events.RESET(device), False, original, False),
-                    ("reset_operator", Events.RESET(device), False, original, False),
+                    ("execute_event", shutdown_event, None),
                     #
-                    ("execute_event", attr_change_event, None),
-                    # No viewer because this happens before the device has started
-                    ("io", attr_change_event, False, original, False),
-                    ("operator", attr_change_event, False, original, False),
+                    ("shutting_down_viewer", shutdown_event, True, current_firmware, True),
+                    ("shutting_down_io", shutdown_event, True, current_firmware, True),
+                    ("shutting_down_operator", shutdown_event, True, current_firmware, True),
                     #
-                    ("viewer", Events.RESET(device), False, original, False),
-                    ("io", Events.RESET(device), False, original, False),
-                    ("operator", Events.RESET(device), False, original, False),
-                ]
-                record.clear()
-
-                assert device.attrs._started
-                assert device.firmware == Device.Firmware(2, 80, 0)
-                assert device.has_power
-                assert device.attrs.as_dict() == {"three": "blah", "four": "stuff", "five": 3}
-
-                device.firmware = Device.Firmware(2, 100, 0)
-                await device.reset(zerod=True)
-                reset_event = Events.RESET(device, zerod=True)
-                attr_change_event = Events.ATTRIBUTE_CHANGE(
-                    device,
-                    [
-                        ChangeAttr.test("three", 1),
-                        ChangeAttr.test("four", 2),
-                        ChangeAttr.test("five", 3),
-                    ],
-                    False,
-                )
-                assert record == [
+                    ("viewer", shutdown_event, True, current_firmware, True),
+                    ("io", shutdown_event, True, current_firmware, True),
+                    ("operator", shutdown_event, True, current_firmware, True),
+                    #
+                    ("execute_event", power_off_event, None),
+                    #
+                    ("viewer", power_off_event, False, current_firmware, True),
+                    ("io", power_off_event, False, current_firmware, True),
+                    ("operator", power_off_event, False, current_firmware, True),
+                    #
                     ("execute_event", reset_event, None),
                     ("reset_viewer", reset_event, False, original, False),
                     ("reset_io", reset_event, False, original, False),
@@ -1123,6 +1176,77 @@ describe "Device":
                     ("viewer", reset_event, False, original, False),
                     ("io", reset_event, False, original, False),
                     ("operator", reset_event, False, original, False),
+                    #
+                    ("execute_event", power_on_event, None),
+                    #
+                    ("power_on_viewer", power_on_event, True, original, True),
+                    ("power_on_io", power_on_event, True, original, True),
+                    ("power_on_operator", power_on_event, True, original, True),
+                    #
+                    ("viewer", power_on_event, True, original, True),
+                    ("io", power_on_event, True, original, True),
+                    ("operator", power_on_event, True, original, True),
+                ]
+                record.clear()
+
+                assert device.attrs._started
+                assert device.firmware == Device.Firmware(2, 80, 0)
+                assert device.has_power
+                assert device.attrs.as_dict() == {"three": "blah", "four": "stuff", "five": 3}
+
+                device.firmware = Device.Firmware(2, 100, 0)
+                current_firmware = device.firmware
+                await device.reset(zerod=True)
+                reset_event = Events.RESET(device, zerod=True, old_attrs={})
+                attr_change_event = Events.ATTRIBUTE_CHANGE(
+                    device,
+                    [
+                        ChangeAttr.test("three", 1),
+                        ChangeAttr.test("four", 2),
+                        ChangeAttr.test("five", 3),
+                    ],
+                    False,
+                )
+                assert record == [
+                    ("execute_event", shutdown_event, None),
+                    #
+                    ("shutting_down_viewer", shutdown_event, True, current_firmware, True),
+                    ("shutting_down_io", shutdown_event, True, current_firmware, True),
+                    ("shutting_down_operator", shutdown_event, True, current_firmware, True),
+                    #
+                    ("viewer", shutdown_event, True, current_firmware, True),
+                    ("io", shutdown_event, True, current_firmware, True),
+                    ("operator", shutdown_event, True, current_firmware, True),
+                    #
+                    ("execute_event", power_off_event, None),
+                    #
+                    ("viewer", power_off_event, False, current_firmware, True),
+                    ("io", power_off_event, False, current_firmware, True),
+                    ("operator", power_off_event, False, current_firmware, True),
+                    #
+                    ("execute_event", reset_event, None),
+                    ("reset_viewer", reset_event, False, original, False),
+                    ("reset_io", reset_event, False, original, False),
+                    ("reset_operator", reset_event, False, original, False),
+                    #
+                    ("execute_event", attr_change_event, None),
+                    # No viewer because this happens before the device has started
+                    ("io", attr_change_event, False, original, False),
+                    ("operator", attr_change_event, False, original, False),
+                    #
+                    ("viewer", reset_event, False, original, False),
+                    ("io", reset_event, False, original, False),
+                    ("operator", reset_event, False, original, False),
+                    #
+                    ("execute_event", power_on_event, None),
+                    #
+                    ("power_on_viewer", power_on_event, True, original, True),
+                    ("power_on_io", power_on_event, True, original, True),
+                    ("power_on_operator", power_on_event, True, original, True),
+                    #
+                    ("viewer", power_on_event, True, original, True),
+                    ("io", power_on_event, True, original, True),
+                    ("operator", power_on_event, True, original, True),
                 ]
                 record.clear()
 

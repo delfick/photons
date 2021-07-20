@@ -38,75 +38,31 @@ def wrap_io(device):
     return wrap_io
 
 
+@pytest.fixture()
+async def parent_ts(final_future):
+    async with hp.TaskHolder(final_future) as ts:
+        yield ts
+
+
 describe "IO":
     it "has a packet filter", device:
-        io = IO(device)
+
+        class IIO(IO):
+            io_source = "iio"
+
+        io = IIO(device)
         assert isinstance(io.packet_filter, Filter)
         assert io.final_future is None
         assert io.last_final_future is None
 
     describe "session":
-        async it "does not require _start_session or _finish_session", device, wrap_io, final_future:
-            async with wrap_io(IO(device)) as io:
-                # Works if no _start_session is defined
-                await io.start_session(final_future)
-
-        async it "may use _start_session", device, wrap_io, final_future:
-            got = []
-
-            class MyIO(IO):
-                async def _start_session(s):
-                    got.append(
-                        ("started", s.final_future.name, s.last_final_future is final_future)
-                    )
-
-            async with wrap_io(MyIO(device)) as io:
-                assert got == []
-                await io.start_session(final_future)
-                assert got == [("started", "MyIO(d073d5001337::start_session[final_future]", True)]
-                assert not io.final_future.done()
-                assert io.last_final_future is final_future
-
-            assert io.final_future is None
-            assert io.last_final_future is final_future
-
-        async it "may use _finish_session", device, wrap_io, final_future:
-            got = []
-
-            class MyIO(IO):
-                async def _start_session(s):
-                    got.append(
-                        ("started", s.final_future.name, s.last_final_future is final_future)
-                    )
-
-                async def _finish_session(s):
-                    got.append(
-                        ("finished", s.final_future.done(), s.last_final_future is final_future)
-                    )
-
-            async with wrap_io(MyIO(device)) as io:
-                assert got == []
-                await io.start_session(final_future)
-                assert got == [("started", "MyIO(d073d5001337::start_session[final_future]", True)]
-                assert not io.final_future.done()
-                assert io.last_final_future is final_future
-
-                await io.finish_session()
-                assert got == [
-                    ("started", "MyIO(d073d5001337::start_session[final_future]", True),
-                    ("finished", False, True),
-                ]
-                assert io.final_future is None
-                assert io.last_final_future is final_future
-
-            assert io.final_future is None
-            assert io.last_final_future is final_future
-
-        async it "manages a queue and consumer task for incoming messages", device, wrap_io, final_future:
+        async it "manages a queue and consumer task for incoming messages", device, wrap_io, final_future, parent_ts:
             process = []
             got = hp.ResettableFuture()
 
             class TheIO(IO):
+                io_source = "theio"
+
                 async def process_incoming(s, bts, give_reply, addr):
                     process.append((bts, give_reply, addr))
                     got.reset()
@@ -121,7 +77,7 @@ describe "IO":
             addr2 = mock.Mock(name="addr2")
 
             async with wrap_io(TheIO(device)) as io:
-                await io.start_session(final_future)
+                await io.start_session(final_future, parent_ts)
                 assert isinstance(io.incoming, hp.Queue)
                 assert isinstance(io.ts, hp.TaskHolder)
                 assert len(list(io.ts)) == 1
@@ -139,25 +95,19 @@ describe "IO":
             assert io.ts.final_future.done()
             assert io.incoming.final_future.done()
 
-        async it "can restart a session", device, wrap_io, final_future:
-            got = []
+        async it "can restart a session", device, wrap_io, final_future, parent_ts:
 
-            class MyIO(IO):
-                async def _start_session(s):
-                    got.append(
-                        ("started", s.incoming.final_future.done(), s.ts.final_future.done())
-                    )
+            class IIO(IO):
+                io_source = "iio"
 
-            async with wrap_io(MyIO(device)) as io:
+            async with wrap_io(IIO(device)) as io:
                 with assertRaises(
                     PhotonsAppError,
                     "The IO does not have a valid final future to restart the session from",
                 ):
                     await io.restart_session()
 
-                assert got == []
-                await io.start_session(final_future)
-                assert got == [("started", False, False)]
+                await io.start_session(final_future, parent_ts)
                 assert not io.incoming.final_future.done()
                 assert not io.ts.final_future.done()
                 ff = io.final_future
@@ -166,7 +116,6 @@ describe "IO":
                 assert io.last_final_future is final_future
 
                 await io.restart_session()
-                assert got == [("started", False, False), ("started", False, False)]
                 assert not io.incoming.final_future.done()
                 assert not io.ts.final_future.done()
 
@@ -181,7 +130,10 @@ describe "IO":
             give_reply = mock.Mock(name="give_reply")
             addr = mock.Mock(name="addr")
 
-            async with wrap_io(IO(device)) as io:
+            class IIO(IO):
+                io_source = "iio"
+
+            async with wrap_io(IIO(device)) as io:
                 try:
                     queue = hp.Queue(final_future)
                     io.incoming = queue
@@ -287,7 +239,8 @@ describe "IO":
                     elif event | DeviceMessages.SetPower:
                         event.set_replies(DeviceMessages.StatePower(level=s.device_attrs.power))
                         await s.device_attrs.attrs_apply(
-                            s.device_attrs.attrs_path("power").changer_to(event.pkt.level)
+                            s.device_attrs.attrs_path("power").changer_to(event.pkt.level),
+                            event=None,
                         )
                     elif event | DiscoveryMessages.GetService:
                         event.set_replies(
@@ -335,12 +288,13 @@ describe "IO":
                 lambda d: iokls(d),
                 lambda d: Listener(d),
                 lambda d: Responder(d),
-                lambda d: RecordEvents(d, {"store": record, "got_event_fut": got_event}),
+                lambda d: RecordEvents(
+                    d, {"record_events_store": record, "got_event_fut": got_event}
+                ),
                 search_for_operators=False,
             )
             async with device.session(final_future):
-                if record and record[-1] | Events.RESET:
-                    record.pop()
+                record.clear()
                 yield device
 
         @pytest.fixture()
@@ -352,7 +306,9 @@ describe "IO":
                 lambda d: iokls(d),
                 lambda d: Listener(d),
                 lambda d: Responder(d),
-                lambda d: RecordEvents(d, {"store": record, "got_event_fut": got_event}),
+                lambda d: RecordEvents(
+                    d, {"record_events_store": record, "got_event_fut": got_event}
+                ),
                 search_for_operators=False,
             )
             async with device.session(final_future):

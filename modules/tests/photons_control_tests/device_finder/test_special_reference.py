@@ -306,7 +306,7 @@ describe "finding devices":
             )
             V.devices.store(device).clear()
 
-        await V.d3.change_one("label", "kitchen")
+        await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen")
         with FakeTime() as t:
             async with MockedCallLater(t):
@@ -455,7 +455,7 @@ describe "finding devices":
             V.devices.store(device).assertIncoming(LightMessages.GetColor())
             V.devices.store(device).clear()
 
-        await V.d3.change_one("label", "kitchen")
+        await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
         with FakeTime() as t:
             async with MockedCallLater(t):
@@ -469,7 +469,7 @@ describe "finding devices":
             V.devices.store(device).assertIncoming()
             V.devices.store(device).clear()
 
-        await V.d3.change_one("label", "kitchen")
+        await V.d3.change_one("label", "kitchen", event=None)
         reference = DeviceFinder.from_kwargs(label="kitchen", refresh_info=True, finder=finder)
         with FakeTime() as t:
             async with MockedCallLater(t):

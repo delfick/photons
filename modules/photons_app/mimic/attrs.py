@@ -14,7 +14,10 @@ class Path:
         return f"<Path {readable}>"
 
     def matches(self, match):
-        readable, at, part = self.follow()
+        if isinstance(match, list):
+            return match == self.parts
+
+        readable, at, part = self.follow(create=False)
         if part is sb.NotSpecified:
             return False
         return fnmatch.fnmatch(readable, match.replace("[", "[[]"))
@@ -43,16 +46,19 @@ class Path:
         else:
             return len(got)
 
-    def set(self, at, part, value):
+    async def set(self, at, part, value, event):
         if isinstance(at, Attrs):
             at = at._attrs
 
         if isinstance(part, str) and hasattr(at, part):
-            setattr(at, part, value)
+            if hasattr(at, "attr_change"):
+                await at.attr_change(part, value, event)
+            else:
+                setattr(at, part, value)
         else:
             at[part] = value
 
-    def reduce_length(self, at, part, new_length):
+    async def reduce_length(self, at, part, new_length, event):
         if isinstance(at, Attrs):
             at = at._attrs
 
@@ -69,12 +75,11 @@ class Path:
                     break
                 l = len(current)
         elif isinstance(current, tuple):
-            if isinstance(part, str) and hasattr(at, part):
-                setattr(at, part, current[:new_length])
-            else:
-                at[part] = current[:new_length]
+            current = current[:new_length]
 
-    def follow(self):
+        await self.set(at, part, current, event=event)
+
+    def follow(self, create=True):
         at = self.attrs
 
         if not self.parts:
@@ -110,7 +115,7 @@ class Path:
             elif isinstance(at, list) and isinstance(part, int):
                 if len(at) > part:
                     contains = True
-                elif len(at) == part:
+                elif len(at) == part and create:
                     at.append(None)
                     contains = True
 
@@ -158,7 +163,7 @@ class ReduceLength:
         self.followed = None
         self.length_after = None
 
-    async def __call__(self):
+    async def __call__(self, *, event=None):
         if not self.path:
             return
 
@@ -173,7 +178,7 @@ class ReduceLength:
         if part is not sb.NotSpecified:
             applied = True
             current = self.path.retrieve(at, part, allow_missing=len(self.path.parts) == 1)
-            self.path.reduce_length(at, part, self.value)
+            await self.path.reduce_length(at, part, self.value, event)
             length_after = self.path.retrieve_length(at, part)
 
         self.followed = (readable, applied, current, self.value, length_after)
@@ -221,7 +226,7 @@ class ChangeAttr:
         self.followed = None
         self.value_after = None
 
-    async def __call__(self):
+    async def __call__(self, *, event=None):
         if not self.path:
             return
 
@@ -233,7 +238,7 @@ class ChangeAttr:
         if part is not sb.NotSpecified:
             applied = True
             current = self.path.retrieve(at, part, allow_missing=len(self.path.parts) == 1)
-            self.path.set(at, part, self.value)
+            await self.path.set(at, part, self.value, event)
             value_after = self.path.retrieve(at, part)
 
         self.followed = (readable, applied, current, self.value, value_after)
@@ -271,15 +276,15 @@ class Attrs:
     def attrs_path(self, *parts):
         return Path(self, list(parts))
 
-    async def attrs_apply(self, *changes):
+    async def attrs_apply(self, *changes, event):
         for changer in changes:
-            await changer()
+            await changer(event=event)
 
         await self._device.event_with_options(
             Events.ATTRIBUTE_CHANGE,
             visible=self._started,
             args=(),
-            kwargs=dict(changes=list(changes), attrs_started=self._started),
+            kwargs=dict(because=event, changes=list(changes), attrs_started=self._started),
         )
 
     def __contains__(self, key):

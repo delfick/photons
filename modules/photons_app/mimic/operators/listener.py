@@ -22,6 +22,7 @@ class Listener(Viewer):
             hasattr(event, "pkt")
             and not self.options.show_packets_from_other_devices
             and event.pkt.serial != self.device.serial
+            and event.pkt.serial != "00" * 6
         ):
             return
 
@@ -49,34 +50,26 @@ class Recorder(Viewer):
 @operator
 class RecordEvents(Viewer):
     class Options(dictobj.Spec):
-        store = dictobj.Field(sb.any_spec(), wrapper=sb.required)
         got_event_fut = dictobj.NullableField(sb.any_spec())
         record_annotations = dictobj.Field(sb.boolean, default=False)
+        record_events_store = dictobj.Field(sb.any_spec(), wrapper=sb.required)
 
     @classmethod
     def select(kls, device):
         if "record_events_store" in device.value_store:
-            return kls(
-                device,
-                {
-                    "store": device.value_store["record_events_store"],
-                    "record_annotations": device.value_store.get(
-                        "record_events_annotations", False
-                    ),
-                },
-            )
+            return kls(device, device.value_store)
 
     async def respond(self, event):
         if not self.options.record_annotations and event | Events.ANNOTATION:
             return
 
-        self.options.store.append(event)
+        self.options.record_events_store.append(event)
         if self.options.got_event_fut is not None:
             self.options.got_event_fut.reset()
             self.options.got_event_fut.set_result(event)
 
 
-class PktWaiter:
+class EventWaiter:
     def __init__(self, device):
         self.waiters = []
         self.device = device
@@ -104,10 +97,19 @@ class PktWaiter:
         else:
             desc = "{pkt.__class__.__name__}({repr(pkt.payload)})"
 
-        fut = hp.create_future(name=f"PktWaiter::wait_incoming[{io}, {desc}]")
+        fut = hp.create_future(name=f"EventWaiter::wait_incoming[{io}, {desc}]")
 
         def match(event):
             return event == Events.INCOMING(self.device, io, pkt=pkt)
+
+        self.waiters.append((fut, match))
+        return fut
+
+    def wait_for_event(self, want):
+        fut = hp.create_future(name=f"EventWaiter::wait_for_event[{repr(want)}]")
+
+        def match(event):
+            return event | want
 
         self.waiters.append((fut, match))
         return fut
@@ -121,9 +123,11 @@ class PacketWaiter(Viewer):
             return kls(device)
 
     attrs = [
-        Viewer.Attr.Lambda("pkt_waiter", from_zero=lambda event, options: PktWaiter(event.device))
+        Viewer.Attr.Lambda(
+            "event_waiter", from_zero=lambda event, options: EventWaiter(event.device)
+        )
     ]
 
     async def respond(self, event):
-        if hasattr(self.device.attrs, "pkt_waiter"):
-            self.device.attrs.pkt_waiter.match(event)
+        if hasattr(self.device.attrs, "event_waiter"):
+            self.device.attrs.event_waiter.match(event)

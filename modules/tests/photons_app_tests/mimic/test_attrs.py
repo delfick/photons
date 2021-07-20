@@ -10,6 +10,7 @@ from delfick_project.option_merge import MergedOptions
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb
 from textwrap import dedent
+from unittest import mock
 import pytest
 import io
 
@@ -129,6 +130,32 @@ describe "Path":
             assert repr(changer) == "<Couldn't Change one<list24><2>>"
             assert changer == ChangeAttr.test("one<list24><2>", 23, attempted=True, success=False)
 
+        async it "can call attr_change on parent if it has one", attrs:
+            called = []
+
+            class Holder:
+                def __init__(self):
+                    self.my_property = 4
+
+                async def attr_change(self, part, value, event):
+                    called.append(("attr_change", part, value, event))
+                    setattr(self, part, value)
+
+            event = mock.Mock(name="event")
+
+            path = Path(attrs, ["holder"])
+            holder = Holder()
+            changer = ChangeAttr(path, holder)
+            await changer(event=event)
+            assert called == []
+            assert attrs.holder.my_property == 4
+
+            path = Path(attrs, ["holder", "my_property"])
+            await (ChangeAttr(path, 5))(event=event)
+            assert called == [("attr_change", "my_property", 5, event)]
+            called.clear()
+            assert attrs.holder.my_property == 5
+
         async it "has a repr if we applied to a path but the value didn't change", attrs:
 
             class Sticky(dictobj.Spec):
@@ -223,6 +250,43 @@ describe "Path":
             await changer()
             assert repr(changer) == "<Couldn't Change length for one<list24>>"
             assert changer == ReduceLength.test("one<list24>", 23, attempted=True, success=False)
+
+        async it "can call attr_change if property tuple is on has one", attrs:
+            called = []
+
+            class Holder:
+                def __init__(self):
+                    self.a_list = ()
+
+                async def attr_change(self, part, value, event):
+                    called.append(("attr_change", part, value, event))
+                    setattr(self, part, value)
+
+            event = mock.Mock(name="event")
+
+            path = Path(attrs, ["holder"])
+            holder = Holder()
+            changer = ChangeAttr(path, holder)
+            await changer(event=event)
+            assert called == []
+
+            path = Path(attrs, ["holder", "a_list"])
+            await (ChangeAttr(path, (1, 2, 3, 4)))(event=event)
+            assert called == [("attr_change", "a_list", (1, 2, 3, 4), event)]
+            called.clear()
+            assert attrs.holder.a_list == (1, 2, 3, 4)
+
+            path = Path(attrs, ["holder", "a_list"])
+            changer = ReduceLength(path, 2)
+            assert repr(changer) == "<Will change <Path holder.a_list> length to 2>"
+            assert changer == ReduceLength.test("holder.a_list", 2, attempted=False)
+
+            await changer()
+            assert repr(changer) == "<Changed holder.a_list length to 2>"
+            assert changer == ReduceLength.test("holder.a_list", 2)
+
+            assert attrs.holder.a_list == (1, 2)
+            assert called == [("attr_change", "a_list", (1, 2), None)]
 
         async it "has a repr if we applied to a path but the value didn't change", attrs:
 
@@ -327,7 +391,7 @@ describe "Attrs":
 
     async it "says if something is inside _attrs", attrs:
         assert "one" not in attrs
-        await attrs.attrs_apply(attrs.attrs_path("one").changer_to(3))
+        await attrs.attrs_apply(attrs.attrs_path("one").changer_to(3), event=None)
         assert "one" in attrs
         assert attrs.one == 3
         assert attrs["one"] == 3
@@ -351,6 +415,7 @@ describe "Attrs":
         await attrs.attrs_apply(
             attrs.attrs_path("thing").changer_to(3),
             attrs.attrs_path("stuff").changer_to({"one": 1}),
+            event=None,
         )
 
         assert attrs.thing == 3
@@ -365,6 +430,7 @@ describe "Attrs":
         await attrs.attrs_apply(
             attrs.attrs_path("thing").changer_to(3),
             attrs.attrs_path("stuff").changer_to({"one": 1}),
+            event=None,
         )
 
         assert set(dir(attrs)) == set(without + ["thing", "stuff"])
@@ -375,7 +441,7 @@ describe "Attrs":
         assert dct == attrs._attrs
         assert dct is not attrs._attrs
 
-        await attrs.attrs_apply(attrs.attrs_path("one").changer_to(2))
+        await attrs.attrs_apply(attrs.attrs_path("one").changer_to(2), event=None)
         dct = attrs.as_dict()
         assert dct == {"one": 2}
         assert dct == attrs._attrs
@@ -398,6 +464,7 @@ describe "Attrs":
                 attrs.attrs_path("one").changer_to(5),
                 attrs.attrs_path("two").changer_to({"one": 1}),
                 attrs.attrs_path("three").changer_to("blah"),
+                event=None,
             )
 
         record.seek(0)
@@ -405,16 +472,22 @@ describe "Attrs":
             record.read()
             == dedent(
                 """
-        TIME -> d073d5001337(LCM2_A19) RESET
+        TIME -> d073d5001337(LCM2_A19:2,80) SHUTTING_DOWN
+
+        TIME -> d073d5001337(LCM2_A19:2,80) POWER_OFF
+
+        TIME -> d073d5001337(LCM2_A19:2,80) RESET
           :: zerod = False
 
-        TIME -> d073d5001337(LCM2_A19) ATTRIBUTE_CHANGE
+        TIME -> d073d5001337(LCM2_A19:2,80) POWER_ON
+
+        TIME -> d073d5001337(LCM2_A19:2,80) ATTRIBUTE_CHANGE
           -- Attributes changed (started)
           ~ <Changed one to 5>
           ~ <Changed two to {'one': 1}>
           ~ <Changed three to blah>
 
-        TIME -> d073d5001337(LCM2_A19) DELETE
+        TIME -> d073d5001337(LCM2_A19:2,80) DELETE
 
         """
             ).lstrip()
@@ -438,28 +511,33 @@ describe "Attrs":
                 attrs.attrs_path("one").changer_to(5),
                 attrs.attrs_path("two").changer_to({"one": 1}),
                 attrs.attrs_path("three").changer_to("blah"),
+                event=None,
             )
 
             device.attrs.attrs_start()
             assert attrs._started
 
-            await attrs.attrs_apply(
-                attrs.attrs_path("one").changer_to(10),
-            )
+            await attrs.attrs_apply(attrs.attrs_path("one").changer_to(10), event=None)
 
         record.seek(0)
         assert (
             record.read()
             == dedent(
                 """
-        TIME -> d073d5001337(LCM2_A19) RESET
+        TIME -> d073d5001337(LCM2_A19:2,80) SHUTTING_DOWN
+
+        TIME -> d073d5001337(LCM2_A19:2,80) POWER_OFF
+
+        TIME -> d073d5001337(LCM2_A19:2,80) RESET
           :: zerod = False
 
-        TIME -> d073d5001337(LCM2_A19) ATTRIBUTE_CHANGE
+        TIME -> d073d5001337(LCM2_A19:2,80) POWER_ON
+
+        TIME -> d073d5001337(LCM2_A19:2,80) ATTRIBUTE_CHANGE
           -- Attributes changed (started)
           ~ <Changed one to 10>
 
-        TIME -> d073d5001337(LCM2_A19) DELETE
+        TIME -> d073d5001337(LCM2_A19:2,80) DELETE
 
         """
             ).lstrip()

@@ -69,7 +69,7 @@ class LightState(Operator):
 
         elif event | LightMessages.SetLightPower:
             event.add_replies(self.state_for(LightMessages.StateLightPower))
-            await self.change_one("power", event.pkt.level)
+            await self.change_one("power", event.pkt.level, event=event)
 
         elif event | LightMessages.SetColor or event | LightMessages.SetWaveform:
             event.add_replies(self.state_for(LightMessages.LightState))
@@ -78,6 +78,7 @@ class LightState(Operator):
                 (("color", "saturation"), event.pkt.saturation),
                 (("color", "brightness"), event.pkt.brightness),
                 (("color", "kelvin"), event.pkt.kelvin),
+                event=event,
             )
         elif event | LightMessages.SetWaveformOptional:
             event.add_replies(self.state_for(LightMessages.LightState))
@@ -91,7 +92,7 @@ class LightState(Operator):
                     )
 
             if changes:
-                await self.device.attrs.attrs_apply(*changes)
+                await self.device.attrs.attrs_apply(*changes, event=event)
 
     def make_state_for(self, kls, result):
         if kls | LightMessages.StateLightPower:
@@ -133,7 +134,7 @@ class Infrared(Operator):
 
         elif event | LightMessages.SetInfrared:
             event.add_replies(self.state_for(LightMessages.StateInfrared))
-            await self.change_one("infrared", event.pkt.brightness)
+            await self.change_one("infrared", event.pkt.brightness, event=event)
 
     def make_state_for(self, kls, result):
         if kls | LightMessages.StateInfrared:

@@ -154,7 +154,7 @@ class Matrix(Operator):
                 )
 
             changes.append(self.device.attrs.attrs_path("matrix_effect").changer_to(event.pkt.type))
-            await self.device.attrs.attrs_apply(*changes)
+            await self.device.attrs.attrs_apply(*changes, event=event)
 
         elif event | TileMessages.GetDeviceChain:
             event.add_replies(self.state_for(TileMessages.StateDeviceChain))
@@ -168,6 +168,15 @@ class Matrix(Operator):
                 if i in res:
                     state.append(res[i])
             event.add_replies(*state)
+
+        if event | TileMessages.SetUserPosition:
+            if event.pkt.tile_index < len(self.device.attrs.chain):
+                await self.device.change(
+                    (("chain", event.pkt.tile_index, "user_x"), event.pkt.user_x),
+                    (("chain", event.pkt.tile_index, "user_y"), event.pkt.user_y),
+                    event=event,
+                )
+            event.set_replies()
 
         elif event | TileMessages.Set64:
 

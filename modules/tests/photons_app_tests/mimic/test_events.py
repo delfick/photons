@@ -3,6 +3,7 @@
 from photons_app.mimic.event import ConsoleFormat, Event, Events, EventsHolder
 from photons_app.mimic.operator import Operator
 from photons_app.errors import PhotonsAppError
+from photons_app.mimic.attrs import ChangeAttr
 from photons_app.mimic.device import Device
 from photons_app import helpers as hp
 from photons_app.mimic import event
@@ -178,6 +179,22 @@ describe "ConsoleFormat":
             )
 
 describe "Event":
+    it "has a repr on the class":
+        assert repr(event.IncomingEvent) == "<Events.INCOMING>"
+
+        class MyEvent:
+            pass
+
+        expected = repr(MyEvent)
+
+        class MyEvent(Event):
+            pass
+
+        assert repr(MyEvent) == expected
+
+    it "has or comparison":
+        assert event.IncomingEvent | event.IncomingEvent
+        assert not event.IncomingEvent | event.ResetEvent
 
     it "has a name", device:
 
@@ -185,7 +202,7 @@ describe "Event":
             pass
 
         e = MyEvent(device)
-        assert e.name == "d073d5001337(LCM2_A19) MyEvent"
+        assert e.name == "d073d5001337(LCM2_A19:2,80) MyEvent"
 
     it "has a repr", device:
 
@@ -193,7 +210,7 @@ describe "Event":
             pass
 
         e = MyEvent(device)
-        assert repr(e) == "<Event:MyEvent>"
+        assert repr(e) == "<Event:d073d5001337:MyEvent>"
 
     it "has equality", device, device2:
 
@@ -266,7 +283,7 @@ describe "Event":
         assert e | Events.POWER_OFF
         assert not e | Events.OUTGOING
 
-        e = Events.RESET(device)
+        e = Events.RESET(device, old_attrs={})
         assert e | Events.RESET
         assert not e | Events.POWER_OFF
 
@@ -275,7 +292,7 @@ describe "Event":
         it "can format a simple event", device:
             assertConsoleOutput(
                 Events.POWER_OFF(device),
-                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) POWER_OFF",
+                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) POWER_OFF",
             )
 
         it "can format an event with arguments", device:
@@ -287,7 +304,7 @@ describe "Event":
 
             assertConsoleOutput(
                 Simple(device),
-                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) Simple",
+                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) Simple",
                 "  -- hello",
                 "  -- there",
                 "  :: tree = 'forest'",
@@ -304,7 +321,7 @@ describe "Event":
 
             assertConsoleOutput(
                 Complex(device),
-                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) Complex",
+                "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) Complex",
                 "  --> <PhotonsAppError> stuff happens",
                 "  --> one = 1",
                 "  || pkt = SetPower(ack=True,res=True,source=<NOT_SPECIFIED>,sequence=<NOT_SPECIFIED>,target=None)",
@@ -356,7 +373,7 @@ describe "IncomingEvent":
 
     it "has a repr", EKLS, io, device:
         e = EKLS(device, io, pkt=DeviceMessages.GetPower())
-        assert repr(e) == "<Event:IncomingEvent:pkt=GetPower>"
+        assert repr(e) == "<Event:d073d5001337:INCOMING:io=TEST_IO:pkt=GetPower>"
 
     it "can do comparisons with packets and events", EKLS, io, device:
         e = EKLS(device, io, pkt=DeviceMessages.GetPower())
@@ -457,7 +474,7 @@ describe "IncomingEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) INCOMING",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) INCOMING",
             f"  || packet = SetPower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 'aa'",
@@ -472,7 +489,7 @@ describe "IncomingEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) INCOMING",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) INCOMING",
             f"  || packet = SetPower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 260000340200000000000000000000000000000000000301000000000000000015000000ffff",
@@ -493,7 +510,7 @@ describe "OutgoingEvent":
     it "has a repr", EKLS, io, device:
         pkt = DeviceMessages.StatePower(source=2, sequence=1, target=None, level=0)
         e = EKLS(device, io, pkt=pkt, replying_to=DeviceMessages.GetPower(), addr=None)
-        assert repr(e) == "<Event:OutgoingEvent:pkt=StatePower>"
+        assert repr(e) == "<Event:d073d5001337:OUTGOING:io=TEST_IO,pkt=StatePower>"
 
     it "can create bytes", EKLS, device, io:
         pkt = DeviceMessages.StatePower(source=2, sequence=1, target=None, level=0)
@@ -523,7 +540,7 @@ describe "OutgoingEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) OUTGOING",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) OUTGOING",
             f"  || packet = StatePower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 'aa'",
@@ -541,7 +558,7 @@ describe "OutgoingEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) OUTGOING",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) OUTGOING",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
             "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
@@ -568,7 +585,7 @@ describe "UnhandledEvent":
             bts="aa",
             addr="earth",
         )
-        assert repr(e) == "<Event:UnhandledEvent:pkt=StatePower>"
+        assert repr(e) == "<Event:d073d5001337:UNHANDLED:pkt=StatePower>"
 
     it "modifies args and kwargs for console output", EKLS, device, io:
         e = EKLS(
@@ -580,7 +597,7 @@ describe "UnhandledEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) UNHANDLED",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) UNHANDLED",
             f"  || packet = StatePower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 'aa'",
@@ -595,7 +612,7 @@ describe "UnhandledEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) UNHANDLED",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) UNHANDLED",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
             "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
@@ -621,7 +638,7 @@ describe "IgnoredEvent":
             bts="aa",
             addr="earth",
         )
-        assert repr(e) == "<Event:IgnoredEvent:pkt=StatePower>"
+        assert repr(e) == "<Event:d073d5001337:IGNORED:pkt=StatePower>"
 
     it "modifies args and kwargs for console output", EKLS, device, io:
         e = EKLS(
@@ -633,7 +650,7 @@ describe "IgnoredEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) IGNORED",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) IGNORED",
             f"  || packet = StatePower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 'aa'",
@@ -648,7 +665,7 @@ describe "IgnoredEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) IGNORED",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) IGNORED",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
             "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
@@ -674,7 +691,7 @@ describe "LostEvent":
             bts="aa",
             addr="earth",
         )
-        assert repr(e) == "<Event:LostEvent:pkt=StatePower>"
+        assert repr(e) == "<Event:d073d5001337:LOST:pkt=StatePower>"
 
     it "modifies args and kwargs for console output", EKLS, device, io:
         e = EKLS(
@@ -686,7 +703,7 @@ describe "LostEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) LOST",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) LOST",
             f"  || packet = StatePower(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   level: 65535",
             "  :: bts = 'aa'",
@@ -701,7 +718,7 @@ describe "LostEvent":
         )
         assertConsoleOutput(
             e,
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) LOST",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) LOST",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
             "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
@@ -709,6 +726,8 @@ describe "LostEvent":
             "  :: addr = None",
         )
 
+
+@pytest.mark.focus
 describe "AttributeChangeEvent":
 
     @pytest.fixture()
@@ -720,24 +739,35 @@ describe "AttributeChangeEvent":
         assert EKLS is event.AttributeChangeEvent
 
     it "has a repr", EKLS, io, device:
-        e = EKLS(device, {"one": 1, "two": 2}, False)
+        e = EKLS(
+            device,
+            [ChangeAttr.test("one", 1), ChangeAttr.test("two", 2)],
+            False,
+            Events.RESET(device, old_attrs={}),
+        )
         assert (
             repr(e)
-            == "<Event:AttributeChangeEvent:changes={'one': 1, 'two': 2}:attrs_started=False>"
+            == "<Event:d073d5001337:ATTRIBUTE_CHANGE:changes=[<Changed one to 1>, <Changed two to 2>]:attrs_started=False:because=<Event:d073d5001337:RESET:zerod=False>>"
         )
 
     it "has changes", EKLS, device:
-        e = EKLS(device, {"one": 1, "two": 2}, False)
+        e = EKLS(device, {"one": 1, "two": 2}, False, Events.RESET(device, old_attrs={}))
         assert e.changes == {"one": 1, "two": 2}
         assert not e.attrs_started
 
     it "has nicer console output", EKLS, device:
         assertConsoleOutput(
-            EKLS(device, {"one": 1, "two": 2}, True),
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) ATTRIBUTE_CHANGE",
+            EKLS(
+                device,
+                [ChangeAttr.test("one", 1), ChangeAttr.test("two", 2)],
+                True,
+                Events.RESET(device, old_attrs={}),
+            ),
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) ATTRIBUTE_CHANGE",
             "  -- Attributes changed (started)",
-            "  :: one = 1",
-            "  :: two = 2",
+            "  :: because = <Event:d073d5001337:RESET:zerod=False>",
+            "  ~ <Changed one to 1>",
+            "  ~ <Changed two to 2>",
         )
 
 describe "AnnotationEvent":
@@ -752,12 +782,12 @@ describe "AnnotationEvent":
 
     it "has a repr", EKLS, io, device:
         e = EKLS(device, logging.INFO, "hello there", stuff=20, things="blah")
-        assert repr(e) == "<Event:AnnotationEvent>"
+        assert repr(e) == "<Event:d073d5001337:ANNOTATION>"
 
     it "has nicer console output", EKLS, device:
         assertConsoleOutput(
             EKLS(device, logging.INFO, "hello there", stuff=20, things="blah"),
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) ANNOTATION(INFO)",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) ANNOTATION(INFO)",
             "  -- hello there",
             "  :: stuff = 20",
             "  :: things = 'blah'",
@@ -774,7 +804,7 @@ describe "AnnotationEvent":
                 error=AnError("NOOO", bad=True),
                 future="now",
             ),
-            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19) ANNOTATION(ERROR)",
+            "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) ANNOTATION(ERROR)",
             "  -- nopety nope nope",
             "  >> <AnError> sad. NOOO",
             "  >> bad = True",
@@ -793,7 +823,7 @@ describe "DiscoverableEvent":
 
     it "has a repr", EKLS, io, device:
         e = EKLS(device, service="MEMORY", address="computer")
-        assert repr(e) == "<Event:DiscoverableEvent:address=computer,service=MEMORY>"
+        assert repr(e) == "<Event:d073d5001337:DISCOVERABLE:address=computer,service=MEMORY>"
 
     it "has service and address", EKLS, device:
         e = EKLS(device, service="MEMORY", address="computer")

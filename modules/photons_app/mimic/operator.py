@@ -1,11 +1,12 @@
 from photons_app.mimic.packet_filter import Filter, SendReplies, SendUnhandled, SendAck
-from photons_app.errors import PhotonsAppError
+from photons_app.errors import PhotonsAppError, ProgrammerError
 from photons_app.mimic.event import Events
 from photons_app import helpers as hp
 
 from photons_protocol.messages import Messages
 
 from delfick_project.norms import dictobj, Meta
+import asyncio
 
 
 register = []
@@ -94,7 +95,7 @@ class Operator:
                 changes.append(change)
 
         if changes:
-            await event.device.attrs.attrs_apply(*changes)
+            await event.device.attrs.attrs_apply(*changes, event=event)
 
     async def respond(self, event):
         pass
@@ -105,11 +106,11 @@ class Operator:
     def make_state_for(self, kls, result):
         pass
 
-    async def change_one(self, key, value):
-        return await self.device.change_one(key, value)
+    async def change_one(self, key, value, *, event):
+        return await self.device.change_one(key, value, event=event)
 
-    async def change(self, *changes):
-        return await self.device.change(*changes)
+    async def change(self, *changes, event):
+        return await self.device.change(*changes, event=event)
 
 
 class Viewer(Operator):
@@ -119,16 +120,20 @@ class Viewer(Operator):
 
 class IO(Operator):
     def setup(self):
+        self.active = False
         self.packet_filter = Filter()
 
         self.final_future = None
         self.last_final_future = None
 
-    async def _start_session(self):
-        pass
+        if not hasattr(self, "io_source"):
+            raise ProgrammerError(f"IO must have an io_source property: {self.__class__}")
 
-    async def _finish_session(self):
-        pass
+    async def power_on(self, event):
+        self.active = True
+
+    async def shutting_down(self, event):
+        self.active = False
 
     async def apply(self):
         raise NotImplementedError()
@@ -136,10 +141,17 @@ class IO(Operator):
     async def _send_reply(self, reply, addr, replying_to):
         raise NotImplementedError()
 
-    async def start_session(self, final_future):
-        await self.finish_session()
+    async def with_delay(self, coro, delay):
+        async def run():
+            await asyncio.sleep(delay)
+            await self.parent_ts.add(coro)
 
+        self.parent_ts.add(run())
+
+    async def start_session(self, final_future, parent_ts):
         self.last_final_future = final_future
+        self.parent_ts = parent_ts
+
         self.final_future = hp.ChildOfFuture(
             final_future,
             name=f"{self.__class__.__name__}({self.device.serial}::start_session[final_future]",
@@ -157,14 +169,15 @@ class IO(Operator):
 
         await self.ts.start()
         self.ts.add(self.incoming_loop())
-        return await self._start_session()
 
     async def restart_session(self):
         if self.last_final_future is None or self.last_final_future.done():
             raise PhotonsAppError(
                 "The IO does not have a valid final future to restart the session from"
             )
-        return await self.start_session(self.last_final_future)
+        await self.shutting_down(Events.SHUTTING_DOWN(self.device))
+        await self.start_session(self.last_final_future, self.parent_ts)
+        await self.power_on(Events.POWER_ON(self.device))
 
     async def finish_session(self):
         if getattr(self, "final_future", None) is None:
@@ -173,7 +186,10 @@ class IO(Operator):
         ff = self.final_future
 
         try:
-            await self._finish_session()
+            await hp.wait_for_all_futures(
+                self.parent_ts.add(self.shutting_down(Events.SHUTTING_DOWN(self.device))),
+                name="IO::finish_session[power_off]",
+            )
             self.final_future.cancel()
             await self.ts.finish()
             await self.incoming.finish()
@@ -187,7 +203,8 @@ class IO(Operator):
 
     async def incoming_loop(self):
         async for bts, give_reply, addr in self.incoming:
-            self.ts.add(self.process_incoming(bts, give_reply, addr))
+            t = self.ts.add(self.process_incoming(bts, give_reply, addr))
+            await hp.wait_for_all_futures(t, name="IO::incoming_loop[wait]")
 
     async def process_incoming(self, bts, give_reply, addr):
         if not self.device.has_power:

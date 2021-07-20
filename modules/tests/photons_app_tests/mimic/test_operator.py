@@ -90,6 +90,7 @@ describe "Operator":
                 await device.attrs.attrs_apply(
                     device.attrs.attrs_path("three").changer_to(20),
                     device.attrs.attrs_path("two").changer_to(0),
+                    event=None,
                 )
                 assert device.attrs.three == 20
                 assert device.attrs.two == 0
@@ -151,7 +152,9 @@ describe "Operator":
             async with device.session(final_future):
                 assert device.attrs.thing == "stuff"
 
-                await device.attrs.attrs_apply(device.attrs.attrs_path("thing").changer_to("yeap"))
+                await device.attrs.attrs_apply(
+                    device.attrs.attrs_path("thing").changer_to("yeap"), event=None
+                )
                 assert device.attrs.thing == "yeap"
 
                 await device.reset(zerod=True)
@@ -292,15 +295,18 @@ describe "Operator":
 
             device.options.append(Op(device))
 
-            evtZerod = Events.RESET(device=device, zerod=True)
-            evtNormal = Events.RESET(device=device, zerod=False)
+            evtZerod = Events.RESET(device, zerod=True, old_attrs={})
+            evtNormal = Events.RESET(device, zerod=False, old_attrs={})
 
             async with device.session(final_future):
                 assertEvents(
                     got,
+                    ("respond", (Events.SHUTTING_DOWN, device)),
+                    ("respond", (Events.POWER_OFF, device)),
                     ("reset", evtNormal),
                     ("respond", (Events.ATTRIBUTE_CHANGE, device)),
                     ("respond", evtNormal),
+                    ("respond", (Events.POWER_ON, device)),
                 )
                 assert device.attrs.three == 1
                 assert device.attrs.four == 2
@@ -308,19 +314,23 @@ describe "Operator":
                 await device.attrs.attrs_apply(
                     device.attrs.attrs_path("three").changer_to(20),
                     device.attrs.attrs_path("four").changer_to(40),
+                    event=None,
                 )
                 assert device.attrs.three == 20
                 assert device.attrs.four == 40
 
-                await device.event(Events.RESET, zerod=True)
+                await device.event(Events.RESET, zerod=True, old_attrs={})
                 assert device.attrs.three == 1
                 assert device.attrs.four == 2
 
                 assertEvents(
                     got,
+                    ("respond", (Events.SHUTTING_DOWN, device)),
+                    ("respond", (Events.POWER_OFF, device)),
                     ("reset", evtNormal),
                     ("respond", (Events.ATTRIBUTE_CHANGE, device)),
                     ("respond", evtNormal),
+                    ("respond", (Events.POWER_ON, device)),
                     #
                     ("respond", (Events.ATTRIBUTE_CHANGE, device)),
                     #
@@ -328,18 +338,9 @@ describe "Operator":
                     ("respond", (Events.ATTRIBUTE_CHANGE, device)),
                     ("respond", evtZerod),
                 )
+                got.clear()
 
             assertEvents(
                 got,
-                ("reset", evtNormal),
-                ("respond", (Events.ATTRIBUTE_CHANGE, device)),
-                ("respond", evtNormal),
-                #
-                ("respond", (Events.ATTRIBUTE_CHANGE, device)),
-                #
-                ("reset", evtZerod),
-                ("respond", (Events.ATTRIBUTE_CHANGE, device)),
-                ("respond", evtZerod),
-                #
                 ("respond", (Events.DELETE, device)),
             )

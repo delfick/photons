@@ -499,11 +499,11 @@ describe "Default Plans":
                     changes.append(
                         light1.attrs.attrs_path("chain", i, "colors", j, "hue").changer_to(i + j)
                     )
-            await light1.attrs.attrs_apply(*changes)
+            await light1.attrs.attrs_apply(*changes, event=None)
             for i in range(len(light1.attrs.chain)):
                 tile_expected.append(list(light1.attrs.chain[i].colors))
 
-            await light2.change_one("color", hp.Color(100, 0.5, 0.8, 2500))
+            await light2.change_one("color", hp.Color(100, 0.5, 0.8, 2500), event=None)
 
             got = await self.gather(sender, serials, "colors")
 
@@ -679,8 +679,11 @@ describe "Default Plans":
                 (("chain", 2, "user_x"), 10),
                 (("chain", 2, "user_y"), 25),
                 (("chain", 2, "colors"), co.reorient(colors3, co.Orientation.FaceDown)),
+                event=None,
             )
-            await device.attrs.attrs_apply(device.attrs.attrs_path("chain").reduce_length_to(3))
+            await device.attrs.attrs_apply(
+                device.attrs.attrs_path("chain").reduce_length_to(3), event=None
+            )
 
             got = await self.gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
@@ -868,6 +871,7 @@ describe "Default Plans":
                 (("chain", 3, "accel_meas_z"), 10),
                 (("chain", 3, "user_x"), 10),
                 (("chain", 3, "user_y"), 25),
+                event=None,
             )
 
             got = await self.gather(sender, light1.serial, "chain")

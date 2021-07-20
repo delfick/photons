@@ -68,6 +68,8 @@ async def reset_devices(sender):
 
 def makeAssertResponse(device):
     async def assertResponse(send, expected, **attrs):
+        send = send.clone()
+        send.update(source=2, sequence=2, target=device.serial)
         event = await device.event(Events.INCOMING, device.io["MEMORY"], pkt=send)
         assert event.handled or event.replies
         if expected is not True:
@@ -80,6 +82,8 @@ def makeAssertResponse(device):
 
 def makeAssertUnhandled(device):
     async def assertUnhandled(send):
+        send = send.clone()
+        send.update(source=2, sequence=2, target=device.serial)
         event = await device.event(Events.INCOMING, device.io["MEMORY"], pkt=send)
         assert not event.handled and not event.replies
 
@@ -286,6 +290,34 @@ describe "MatrixResponder":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
+    async it "responds to changing user position", device, assertResponse:
+        await assertResponse(
+            TileMessages.SetUserPosition(tile_index=1, user_x=0, user_y=1),
+            [],
+        )
+        assert device.attrs.chain[1].user_x == 0
+        assert device.attrs.chain[1].user_y == 1
+
+        await assertResponse(
+            TileMessages.SetUserPosition(tile_index=1, user_x=3, user_y=4),
+            [],
+        )
+        assert device.attrs.chain[1].user_x == 3
+        assert device.attrs.chain[1].user_y == 4
+
+        await assertResponse(
+            TileMessages.SetUserPosition(tile_index=2, user_x=4, user_y=5),
+            [],
+        )
+        assert device.attrs.chain[2].user_x == 4
+        assert device.attrs.chain[2].user_y == 5
+
+        # And can be out of range
+        await assertResponse(
+            TileMessages.SetUserPosition(tile_index=20, user_x=3, user_y=4),
+            [],
+        )
+
     async it "responds to tile effect messages", device, assertResponse:
         await assertResponse(
             TileMessages.GetTileEffect(),
@@ -340,7 +372,7 @@ describe "ZonesResponder":
     async def make_device(self, name, zones=None):
         device = devices[name]
         if zones is not None:
-            await device.change_one("zones", zones)
+            await device.change_one("zones", zones, event=None)
         return device
 
     async it "doesn't respond if we aren't a multizone device":
@@ -366,7 +398,7 @@ describe "ZonesResponder":
 
         await assertUnhandled(MultiZoneMessages.GetExtendedColorZones())
         await assertUnhandled(
-            MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)])
+            MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)], colors_count=1)
         )
 
     async it "doesn't respond to extended multizone if we aren't extended multizone":
@@ -404,7 +436,9 @@ describe "ZonesResponder":
             assertUnhandled = makeAssertUnhandled(device)
             await assertUnhandled(MultiZoneMessages.GetExtendedColorZones())
             await assertUnhandled(
-                MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)])
+                MultiZoneMessages.SetExtendedColorZones(
+                    colors=[hp.Color(0, 0, 0, 0)], colors_count=1
+                )
             )
 
     async it "responds to all messages if we have extended multizone":

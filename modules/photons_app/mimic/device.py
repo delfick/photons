@@ -5,6 +5,7 @@ from photons_app.mimic.attrs import Attrs
 from photons_app import helpers as hp
 
 import logging
+import asyncio
 
 
 class ExpectedMessages(PhotonsAppError):
@@ -23,6 +24,10 @@ class DeviceSession(hp.AsyncCMMixin):
 
     async def start(self):
         await self.device.prepare()
+        self.parent_ts = hp.TaskHolder(
+            self.final_future, name=f"DeviceSession({self.device.serial})::start[parent]"
+        )
+        await self.parent_ts.start()
 
         made = []
         async with hp.TaskHolder(
@@ -30,29 +35,44 @@ class DeviceSession(hp.AsyncCMMixin):
         ) as ts:
             for _, io in self.device.io.items():
                 self.managed.append(io)
-                made.append(ts.add(io.start_session(self.final_future), silent=True))
-
-        await self.device.reset()
+                made.append(
+                    ts.add(io.start_session(self.final_future, self.parent_ts), silent=True)
+                )
 
         # Raise any exceptions
         for t in made:
             await t
 
+        await self.device.reset()
+
     async def finish(self, exc_typ=None, exc=None, tb=None):
-        try:
-            made = []
+        if not hasattr(self, "parent_ts"):
+            return
+
+        made = []
+
+        async def run_and_wait(coro, *, name):
+            await hp.wait_for_all_futures(
+                self.parent_ts.add(coro), name=f"DeviceSession::finish[run_and_wait-{name}]"
+            )
+
+        async def call_finishers():
             async with hp.TaskHolder(
                 self.final_future, name=f"DeviceSession({self.device.serial})::finish[ts]"
             ) as ts:
                 for io in self.managed:
                     made.append(ts.add(io.finish_session(), silent=True))
                 self.managed = []
-        finally:
-            await self.device.delete()
 
-        # Raise any exceptions
-        for t in made:
-            await t
+        await run_and_wait(call_finishers(), name="Call finish session")
+        await run_and_wait(self.device.delete(), name="delete device")
+
+        try:
+            # Raise any exceptions
+            for t in made:
+                await t
+        finally:
+            await self.parent_ts.finish()
 
 
 class Device:
@@ -98,6 +118,24 @@ class Device:
     def session(self, final_future):
         return DeviceSession(final_future, self)
 
+    @hp.asynccontextmanager
+    async def annotate_error(self, *, executing):
+        try:
+            yield
+        except Events.Stop:
+            raise
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            try:
+                await self.annotate(
+                    "ERROR", "Failed executing an event", error=error, executing=executing
+                )
+            except asyncio.CancelledError:
+                raise
+            except:
+                pass
+
     async def event(self, eventkls, *args, **kwargs):
         return await self.event_with_options(eventkls, args=args, kwargs=kwargs)
 
@@ -116,11 +154,20 @@ class Device:
         if not self.applied_options:
             return event
 
-        if event | Events.RESET:
-            for group in (self.viewers, self.io.values(), self.operators):
-                for op in group:
-                    if hasattr(op, "reset"):
-                        await op.reset(event)
+        for e, special in (
+            (Events.RESET, "reset"),
+            (Events.SHUTTING_DOWN, "shutting_down"),
+            (Events.POWER_ON, "power_on"),
+        ):
+            if event | e:
+                for group in (self.viewers, self.io.values(), self.operators):
+                    for op in group:
+                        if event | Events.SHUTTING_DOWN and not getattr(op, "active", True):
+                            continue
+                        func = getattr(op, special, None)
+                        if func:
+                            async with self.annotate_error(executing=event):
+                                await func(event)
 
         async def response():
             yield
@@ -133,12 +180,14 @@ class Device:
 
                 for op in group:
                     if hasattr(op, "respond"):
-                        await op.respond(event)
+                        async with self.annotate_error(executing=event):
+                            await op.respond(event)
                         yield
 
-        async for _ in response():
-            if is_finished is not None and is_finished(event):
-                return event
+        async with self.annotate_error(executing=event):
+            async for _ in response():
+                if is_finished is not None and is_finished(event):
+                    return event
 
         return event
 
@@ -150,15 +199,16 @@ class Device:
     def cap(self):
         return self.product.cap(self.firmware.major, self.firmware.minor)
 
-    async def change_one(self, key, value):
-        await self.change((key, value))
+    async def change_one(self, key, value, *, event):
+        await self.change((key, value), event=event)
 
-    async def change(self, *changes):
+    async def change(self, *changes, event):
         await self.attrs.attrs_apply(
             *[
                 self.attrs.attrs_path(*((key,) if isinstance(key, str) else key)).changer_to(value)
                 for key, value in changes
-            ]
+            ],
+            event=event,
         )
 
     async def power_on(self):
@@ -203,14 +253,15 @@ class Device:
         self.applied_options = True
 
     async def reset(self, zerod=False):
-        self.has_power = False
+        await self.power_off()
         self.firmware = self.original_firmware.clone()
 
+        old_attrs = self.attrs._attrs
         self.attrs.attrs_reset()
-        await self.event(Events.RESET, zerod=zerod)
+        await self.event(Events.RESET, zerod=zerod, old_attrs=old_attrs)
         self.attrs.attrs_start()
 
-        self.has_power = True
+        await self.power_on()
 
     async def delete(self):
         await self.event(Events.DELETE)

@@ -155,7 +155,7 @@ describe "Device":
                 s.make_fut()
 
             def make_fut(s, res=None):
-                fut = message_futs[s.name] = V.fake_device.attrs.pkt_waiter.wait_for_incoming(
+                fut = message_futs[s.name] = V.fake_device.attrs.event_waiter.wait_for_incoming(
                     V.fake_device.io["MEMORY"], s.kls
                 )
                 fut.add_done_callback(s.make_fut)
@@ -294,7 +294,7 @@ describe "Device":
                 s.make_fut()
 
             def make_fut(s, res=None):
-                fut = message_futs[s.name] = V.fake_device.attrs.pkt_waiter.wait_for_incoming(
+                fut = message_futs[s.name] = V.fake_device.attrs.event_waiter.wait_for_incoming(
                     V.fake_device.io["MEMORY"], s.kls
                 )
                 fut.add_done_callback(s.make_fut)

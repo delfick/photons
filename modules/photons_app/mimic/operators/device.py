@@ -6,10 +6,27 @@ from photons_messages import DeviceMessages
 from delfick_project.norms import dictobj, sb, BadSpecValue
 
 
+class identity_spec(sb.Spec):
+    def __init__(self):
+        self.spec = bytes_spec(None, 16 * 8)
+
+    def normalise(self, meta, val):
+        val = self.spec.normalise(meta, val)
+        return val.tobytes()
+
+
 class Collection(dictobj.Spec):
     label = dictobj.Field(sb.string_spec, default="")
-    identity = dictobj.Field(bytes_spec(None, 16 * 8))
+    identity = dictobj.Field(identity_spec, default=b"")
     updated_at = dictobj.Field(sb.integer_spec, default=0)
+
+    @classmethod
+    def create(
+        self, *, identity=sb.NotSpecified, label=sb.NotSpecified, updated_at=sb.NotSpecified
+    ):
+        return Collection.FieldSpec().empty_normalise(
+            identity=identity, label=label, updated_at=updated_at
+        )
 
 
 class power_spec(sb.Spec):
@@ -31,7 +48,7 @@ class power_spec(sb.Spec):
 class Device(Operator):
     class Options(dictobj.Spec):
         power = dictobj.Field(power_spec)
-        label = dictobj.Field(sb.string_spec())
+        label = dictobj.Field(sb.string_spec(), default="")
 
     @classmethod
     def select(kls, device):
@@ -59,12 +76,12 @@ class Device(Operator):
             event.add_replies(self.state_for(DeviceMessages.StatePower))
 
         elif event | DeviceMessages.SetLabel:
-            await self.change_one("label", event.pkt.label)
+            await self.change_one("label", event.pkt.label, event=event)
             event.add_replies(self.state_for(DeviceMessages.StateLabel))
 
         elif event | DeviceMessages.SetPower:
             event.add_replies(self.state_for(DeviceMessages.StatePower))
-            await self.change_one("power", event.pkt.level)
+            await self.change_one("power", event.pkt.level, event=event)
 
         elif event | DeviceMessages.EchoRequest:
             event.add_replies(DeviceMessages.EchoResponse(echoing=event.pkt.echoing))
@@ -113,6 +130,7 @@ class Grouping(Operator):
                 (("group", "identity"), event.pkt.group),
                 (("group", "label"), event.pkt.label),
                 (("group", "updated_at"), event.pkt.updated_at),
+                event=event,
             )
             event.add_replies(self.state_for(DeviceMessages.StateGroup))
 
@@ -121,6 +139,7 @@ class Grouping(Operator):
                 (("location", "identity"), event.pkt.location),
                 (("location", "label"), event.pkt.label),
                 (("location", "updated_at"), event.pkt.updated_at),
+                event=event,
             )
             event.add_replies(self.state_for(DeviceMessages.StateLocation))
 

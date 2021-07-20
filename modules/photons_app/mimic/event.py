@@ -9,9 +9,11 @@ from delfick_project.norms import sb, BadSpecValue
 from datetime import datetime
 from unittest import mock
 import dateutil.tz
+import traceback
 import logging
 import time
 import json
+import re
 
 
 class ConsoleFormat:
@@ -71,6 +73,8 @@ class ConsoleFormat:
                 for name in pkt.payload.Meta.all_names:
                     if pkt | TileMessages.Set64 and not show_set64_contents and name == "colors":
                         continue
+                    if name not in payload:
+                        continue
                     val = payload[name]
                     if isinstance(val, list):
 
@@ -116,6 +120,9 @@ class EventsHolder:
         return decorator
 
     def name(self, kls):
+        if not isinstance(kls, type):
+            kls = kls.__class__
+
         for name, v in self.events.items():
             if v is kls:
                 return name
@@ -125,12 +132,23 @@ class EventsHolder:
 Events = EventsHolder()
 
 
-class Event:
+class EventMeta(type):
+    def __or__(self, other):
+        return other == self
+
+    def __repr__(self):
+        for name, e in Events.events.items():
+            if e is self:
+                return f"<Events.{name}>"
+        return super().__repr__()
+
+
+class Event(metaclass=EventMeta):
     Stop = Events.Stop
     LOCAL_TZ = dateutil.tz.gettz()
 
     def __init__(self, device, *args, **kwargs):
-        self.name = f"{device.serial}({device.cap.product.name}) {Events.name(self.__class__)}"
+        self.name = f"{device.serial}({device.cap.product.name}:{device.firmware.major},{device.firmware.minor}) {Events.name(self.__class__)}"
         self.device = device
         self.created = time.time()
 
@@ -166,7 +184,7 @@ class Event:
         return other | self.__class__ and other.device is self.device and self.has_same_args(other)
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}>"
 
     def has_same_args(self, other):
         return self.log_args == other.log_args and self.log_kwargs == other.log_kwargs
@@ -191,26 +209,28 @@ class Event:
             else:
                 yield f"  -- {reprer(arg)}"
 
-        if isinstance(self.log_kwargs, list):
-            for item in self.log_kwargs:
-                yield f"  ~ {reprer(item)}"
-        else:
-            for key, val in self.log_kwargs.items():
-                if key == "error":
-                    for line in ConsoleFormat.lines_from_error(val):
-                        yield f"  >> {line}"
-                elif isinstance(val, dictobj.PacketSpec) or getattr(val, "represents_ack", False):
-                    lines = list(
-                        ConsoleFormat.lines_from_packet(
-                            val, show_set64_contents=show_set64_contents
-                        )
-                    )
-                    if lines:
-                        yield f"  || {key} = {lines.pop(0)}"
-                        for line in lines:
-                            yield f"  ^^ {line}"
-                else:
-                    yield f"  :: {key} = {reprer(val)}"
+        for key, val in self.log_kwargs.items():
+            if key == "changes" and isinstance(val, list):
+                for item in val:
+                    yield f"  ~ {reprer(item)}"
+            elif key == "error":
+                for line in ConsoleFormat.lines_from_error(val):
+                    yield f"  >> {line}"
+                if val.__traceback__:
+                    for line in traceback.format_tb(val.__traceback__):
+                        for part in line.split("\n"):
+                            yield f"  | {part}"
+
+            elif isinstance(val, dictobj.PacketSpec) or getattr(val, "represents_ack", False):
+                lines = list(
+                    ConsoleFormat.lines_from_packet(val, show_set64_contents=show_set64_contents)
+                )
+                if lines:
+                    yield f"  || {key} = {lines.pop(0)}"
+                    for line in lines:
+                        yield f"  ^^ {line}"
+            else:
+                yield f"  :: {key} = {reprer(val)}"
 
     def __or__(self, compare):
         return isinstance(compare, type) and isinstance(self, compare)
@@ -249,6 +269,9 @@ class EventPktBtsMixin:
 
         got = dict(self.log_kwargs)
         want = dict(other.log_kwargs)
+
+        if "reason" in got and "reason" not in want:
+            del got["reason"]
 
         got.pop("packet")
         want.pop("packet")
@@ -295,14 +318,16 @@ class ResetEvent(Event):
     This event also contains:
 
     * zerod - Apply zero values rather than values from the options
+    * old_attrs - the raw dictionary from the attrs before reset
     """
 
-    def setup(self, zerod=False):
+    def setup(self, zerod=False, *, old_attrs):
         self.zerod = zerod
+        self.old_attrs = old_attrs
         self.log_kwargs = {"zerod": self.zerod}
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:zerod={self.zerod}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:zerod={self.zerod}>"
 
 
 @Events.register("POWER_ON")
@@ -367,7 +392,7 @@ class IncomingEvent(EventPktBtsMixin, Event):
         }
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:pkt={self.pkt.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:io={self.io.io_source}:pkt={self.pkt.__class__.__name__}>"
 
     def __or__(self, compare):
         if isinstance(compare, type) and issubclass(compare, dictobj.PacketSpec):
@@ -376,6 +401,9 @@ class IncomingEvent(EventPktBtsMixin, Event):
         return self.io.io_source == compare or super().__or__(compare)
 
     def set_replies(self, *replies):
+        if self.ignored:
+            return
+
         self.replies = []
         self.add_replies(*replies)
         self.handled = True
@@ -385,6 +413,9 @@ class IncomingEvent(EventPktBtsMixin, Event):
         self.ignored = True
 
     def add_replies(self, *replies):
+        if self.ignored:
+            return
+
         if self.replies is None:
             self.replies = []
 
@@ -411,10 +442,11 @@ class OutgoingEvent(EventPktBtsMixin, Event):
     * addr - The address those bytes are sending to
     """
 
-    def setup(self, io, *, pkt, replying_to, addr=None, bts=None):
+    def setup(self, io, *, pkt, replying_to, addr=None, bts=None, reason=None, proactive_for=None):
         self.io = io
         self.pkt = pkt
         self.addr = addr
+        self.reason = reason
         self.replying_to = replying_to
 
         self._bts = bts
@@ -428,8 +460,16 @@ class OutgoingEvent(EventPktBtsMixin, Event):
             "replying_to": replying_to.__class__.__name__,
         }
 
+        if reason is not None:
+            self.log_kwargs["reason"] = reason
+
+        if proactive_for is not None:
+            if reason is None:
+                self.log_kwargs["reason"] = "Proactive reporting to the cloud"
+            self.log_kwargs["proactive_for"] = proactive_for
+
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:pkt={self.pkt.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:io={self.io.io_source},pkt={self.pkt.__class__.__name__}>"
 
 
 @Events.register("UNHANDLED")
@@ -461,7 +501,7 @@ class UnhandledEvent(EventPktBtsMixin, Event):
         }
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:pkt={self.pkt.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:pkt={self.pkt.__class__.__name__}>"
 
 
 @Events.register("LOST")
@@ -493,7 +533,7 @@ class LostEvent(EventPktBtsMixin, Event):
         }
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:pkt={self.pkt.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:pkt={self.pkt.__class__.__name__}>"
 
 
 @Events.register("IGNORED")
@@ -525,7 +565,7 @@ class IgnoredEvent(EventPktBtsMixin, Event):
         }
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:pkt={self.pkt.__class__.__name__}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:pkt={self.pkt.__class__.__name__}>"
 
 
 @Events.register("ATTRIBUTE_CHANGE")
@@ -537,19 +577,30 @@ class AttributeChangeEvent(Event):
 
     * changes - A dictionary of `{key: (old, new)}` of what changed
     * attrs_started - Whether the attrs for this device has started yet
+    * because - An event that caused this change
     """
 
-    def setup(self, changes, attrs_started):
+    def setup(self, changes, attrs_started, because=None):
         self.changes = changes
+        self.because = because
         self.attrs_started = attrs_started
 
         start = "started" if self.attrs_started else "not started"
         self.log_args = (f"Attributes changed ({start})",)
-
-        self.log_kwargs = changes
+        self.log_kwargs = {}
+        if self.because is not None:
+            self.log_kwargs["because"] = self.because
+        self.log_kwargs["changes"] = changes
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:changes={self.changes}:attrs_started={self.attrs_started}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:changes={self.changes}:attrs_started={self.attrs_started}:because={self.because}>"
+
+    def has_same_args(self, other):
+        got = dict(self.log_kwargs)
+        want = dict(other.log_kwargs)
+        if "because" in got and "because" not in want:
+            del got["because"]
+        return self.log_args == other.log_args and got == want
 
 
 @Events.register("ANNOTATION")
@@ -565,6 +616,9 @@ class AnnotationEvent(Event):
     """
 
     def setup(self, level, message, **details):
+        if isinstance(level, str):
+            level = getattr(logging, level)
+
         self.level = level
         self.details = details
         self.message = message
@@ -573,6 +627,13 @@ class AnnotationEvent(Event):
 
         self.log_args = (message,)
         self.log_kwargs = self.details
+
+    def has_same_args(self, other):
+        return (
+            super().has_same_args(other)
+            and self.level == other.level
+            and re.match(other.message, self.message)
+        )
 
 
 @Events.register("DISCOVERABLE")
@@ -593,4 +654,4 @@ class DiscoverableEvent(Event):
         self.address = address
 
     def __repr__(self):
-        return f"<Event:{self.__class__.__name__}:address={self.address},service={self.service}>"
+        return f"<Event:{self.device.serial}:{Events.name(self)}:address={self.address},service={self.service}>"

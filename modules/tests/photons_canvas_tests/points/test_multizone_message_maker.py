@@ -57,7 +57,7 @@ describe "SetZones":
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in devices:
-            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16)
+            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16, event=None)
             maker = MultizoneMessagesMaker(
                 strip.serial,
                 strip.cap,
@@ -72,7 +72,7 @@ describe "SetZones":
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in devices:
-            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16)
+            await strip.change_one("zones", [hp.Color(0, 0, 0, 0)] * 16, event=None)
             maker = MultizoneMessagesMaker(
                 strip.serial,
                 strip.cap,

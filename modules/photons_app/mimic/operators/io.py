@@ -20,16 +20,12 @@ def make_port():
 
 @operator
 class MemoryIO(IO):
-    Source = "MEMORY"
+    io_source = MemoryService.name
 
     class Options(dictobj.Spec):
         port = dictobj.Field(sb.overridden(56700))
         service = dictobj.Field(sb.overridden(MemoryService))
-
-    def setup(self):
-        super().setup()
-        self.active = False
-        self.io_source = self.Source
+        state_service = dictobj.Field(sb.overridden(Services.UDP))
 
     @classmethod
     def select(kls, device):
@@ -39,12 +35,6 @@ class MemoryIO(IO):
 
     async def apply(self):
         self.device.io[self.options.service.name] = self
-
-    async def _start_session(self):
-        self.active = True
-
-    async def _finish_session(self):
-        self.active = False
 
     async def _send_reply(self, reply, give_reply, addr, replying_to):
         if self.active:
@@ -61,22 +51,23 @@ class MemoryIO(IO):
 
     async def respond(self, event):
         if event | DiscoveryMessages.GetService and event.io is self:
-            port = 0 if self.options.port is None else self.options.port
-            event.add_replies(DiscoveryMessages.StateService(service=Services.UDP, port=port))
+            port = self.options.get("state_service_port", self.options.port)
+            state_service_port = 0 if port is None else port
+            event.add_replies(
+                DiscoveryMessages.StateService(
+                    service=self.options.state_service, port=state_service_port
+                )
+            )
 
 
 @operator
 class UDPIO(MemoryIO):
-    Source = "UDP"
+    io_source = Services.UDP.name
 
     class Options(dictobj.Spec):
         port = dictobj.NullableField(sb.integer_spec())
         service = dictobj.Field(sb.overridden(Services.UDP))
-
-    def setup(self):
-        super().setup()
-        self.active = False
-        self.io_source = self.Source
+        state_service = dictobj.Field(sb.overridden(Services.UDP))
 
     @classmethod
     def select(kls, device):
@@ -84,9 +75,8 @@ class UDPIO(MemoryIO):
             return
         return kls(device, {"port": device.value_store.get("port", None)})
 
-    async def _start_session(self):
-        await self._finish_session()
-        await super()._start_session()
+    async def power_on(self, event):
+        await super().power_on(event)
 
         class ServerProtocol(asyncio.Protocol):
             def connection_made(sp, transport):
@@ -97,10 +87,13 @@ class UDPIO(MemoryIO):
                     return
 
                 async def give_reply(bts, addr, replying_to, *, reply):
-                    sp.udp_transport.sendto(bts, addr)
+                    if sp.udp_transport and not sp.udp_transport.is_closing():
+                        sp.udp_transport.sendto(bts, addr)
 
                 self.received(data, give_reply, addr)
 
+        port = None
+        error = None
         remote = None
         async with hp.tick(0.1, max_iterations=3) as ticker:
             async for _ in ticker:
@@ -113,23 +106,34 @@ class UDPIO(MemoryIO):
                         ServerProtocol, local_addr=("0.0.0.0", port)
                     )
                     self.remote = remote
-                except OSError:
-                    pass
+                except OSError as e:
+                    error = e
                 else:
                     await self.device.annotate(
                         logging.INFO,
-                        "Creating UDP port",
+                        f"Creating {self.io_source} port",
                         serial=self.device.serial,
                         port=port,
-                        service="UDP",
+                        service=self.io_source,
                     )
                     self.options.port = port
                     break
 
         if remote is None:
-            raise Exception("Failed to bind to a udp socket")
+            raise Exception(
+                "%" * 80
+                + f"%%% Failed to bind to a udp socket: {port} ({error})\n"
+                + "You should stop whatever is using that port!"
+            )
 
-    async def _finish_session(self):
-        await super()._finish_session()
+    async def shutting_down(self, event):
         if hasattr(self, "remote"):
+            await self.device.annotate(
+                logging.INFO,
+                f"Closing {self.io_source} port",
+                serial=self.device.serial,
+                port=self.options.port,
+                service=self.io_source,
+            )
             self.remote.close()
+        await super().shutting_down(event)

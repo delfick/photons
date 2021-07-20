@@ -797,3 +797,52 @@ def pytest_configure(config):
                         print()
 
             assert not different, (goptions, repr(g.payload))
+
+
+class MemoryDevicesRunner(AsyncCMMixin):
+    def __init__(self, devices):
+        self.final_future = __import__("photons_app").helpers.create_future()
+
+        options = {
+            "devices": devices,
+            "final_future": self.final_future,
+            "protocol_register": __import__("photons_messages").protocol_register,
+        }
+
+        MemoryTarget = __import__("photons_fake_device.oldfake.target").oldfake.target.MemoryTarget
+        self.target = MemoryTarget.create(options)
+        self.devices = devices
+
+    async def start(self):
+        for device in self.devices:
+            await device.start()
+
+        self.sender = await self.target.make_sender()
+        return self
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        if hasattr(self, "sender"):
+            await self.target.close_sender(self.sender)
+
+        for device in self.target.devices:
+            await device.finish(exc_typ, exc, tb)
+
+        self.final_future.cancel()
+
+    async def reset_devices(self):
+        for device in self.devices:
+            await device.reset()
+
+    async def per_test(self):
+        self.sender.received.clear()
+        await self.reset_devices()
+        del self.sender.gatherer
+
+    @property
+    def serials(self):
+        return [device.serial for device in self.devices]
+
+
+@pytest.fixture(scope="session")
+def memory_devices_runner():
+    return MemoryDevicesRunner

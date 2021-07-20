@@ -52,6 +52,9 @@ class Store:
     def __repr__(self):
         return f"<Store: {self.record}>"
 
+    def __iter__(self):
+        return iter(self.record)
+
     def intercept(self, event):
         if self._intercept:
             return self._intercept(event)
@@ -63,6 +66,46 @@ class Store:
 
     def __bool__(self):
         return bool(self.record)
+
+    def assertNotContains(self, *want, record=None):
+        want = list(want)
+        recorded = self.record if record is None else record
+        for w in want:
+            assert all(r != w for r in recorded)
+
+    def assertContainsInOrder(self, *want, record=None):
+        want = list(want)
+        recorded = self.record if record is None else record
+        if recorded == want:
+            return
+
+        original = list(recorded)
+        recorded = list(recorded)
+        while want:
+            if not recorded:
+                print("Remaining items")
+                for w in want:
+                    print(f"  - {w}")
+
+                print()
+                print("original contained")
+                for r in original:
+                    print(f"  - {r}")
+                assert False
+
+            nxtwant = want.pop(0)
+
+            while recorded:
+                nxtrecorded = recorded.pop(0)
+                if nxtrecorded == nxtwant:
+                    if not want:
+                        return
+                    else:
+                        break
+
+                if not recorded:
+                    want.insert(0, nxtwant)
+                    break
 
     def __eq__(self, other, *, record=None):
         recorded = self.record if record is None else record

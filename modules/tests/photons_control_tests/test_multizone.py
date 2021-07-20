@@ -117,6 +117,13 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
+@pytest.fixture(autouse=True)
+async def fake_time(FakeTime, MockedCallLater):
+    with FakeTime() as t:
+        async with MockedCallLater(t):
+            yield
+
+
 describe "SetZonesPlan":
 
     @pytest.fixture()
@@ -556,7 +563,7 @@ describe "Multizone helpers":
 
         async it "can power on devices and set zones", sender:
             for device in strips:
-                await device.change_one("zones", [zeroColor] * 16)
+                await device.change_one("zones", [zeroColor] * 16, event=None)
 
             msg = SetZones([["red", 7], ["blue", 5]])
             got = await sender(msg, devices.serials)
@@ -597,7 +604,7 @@ describe "Multizone helpers":
 
         async it "can skip turning on lights", sender:
             for device in strips:
-                await device.change_one("zones", [zeroColor] * 16)
+                await device.change_one("zones", [zeroColor] * 16, event=None)
 
             msg = SetZones([["red", 7], ["blue", 5]], power_on=False)
             got = await sender(msg, devices.serials)
@@ -629,7 +636,7 @@ describe "Multizone helpers":
 
         async it "can target particular lights", sender:
             for device in strips:
-                await device.change_one("zones", [zeroColor] * 16)
+                await device.change_one("zones", [zeroColor] * 16, event=None)
 
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
@@ -672,7 +679,7 @@ describe "Multizone helpers":
 
         async it "can give duration to messages", sender:
             for device in strips:
-                await device.change_one("zones", [zeroColor] * 16)
+                await device.change_one("zones", [zeroColor] * 16, event=None)
 
             msg = SetZones([["green", 7], ["yellow", 5]], duration=5)
             got = await sender(msg, [s.serial for s in strips])
@@ -688,7 +695,7 @@ describe "Multizone helpers":
 
         async it "uses cached gatherer on the sender", sender:
             for device in strips:
-                await device.change_one("zones", [zeroColor] * 16)
+                await device.change_one("zones", [zeroColor] * 16, event=None)
 
             msg = SetZones([["green", 7], ["yellow", 5]])
             got = await sender(msg, devices.serials)

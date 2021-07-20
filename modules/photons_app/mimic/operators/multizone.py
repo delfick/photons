@@ -82,7 +82,7 @@ class Multizone(Operator):
                 if index >= len(self.device.attrs.zones):
                     continue
                 changes.append(self.device.attrs.attrs_path("zones", index).changer_to(color))
-            await self.device.attrs.attrs_apply(*changes)
+            await self.device.attrs.attrs_apply(*changes, event=event)
 
         elif event | MultiZoneMessages.GetMultiZoneEffect:
             event.add_replies(self.state_for(MultiZoneMessages.StateMultiZoneEffect))
@@ -94,7 +94,7 @@ class Multizone(Operator):
 
         elif event | MultiZoneMessages.SetMultiZoneEffect:
             state = self.state_for(MultiZoneMessages.StateMultiZoneEffect)
-            await self.change_one("zones_effect", event.pkt.type)
+            await self.change_one("zones_effect", event.pkt.type, event=event)
             event.add_replies(state)
 
         elif event | MultiZoneMessages.SetColorZones:
