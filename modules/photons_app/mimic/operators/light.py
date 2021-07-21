@@ -1,7 +1,7 @@
 from photons_app.mimic.operator import Operator, operator
 from photons_app import helpers as hp
 
-from photons_messages import LightMessages
+from photons_messages import LightMessages, DeviceMessages
 from photons_products import Family
 
 from delfick_project.norms import dictobj, sb, BadSpecValue
@@ -66,6 +66,9 @@ class LightState(Operator):
     async def respond(self, event):
         if event | LightMessages.GetColor:
             event.add_replies(self.state_for(LightMessages.LightState))
+
+        elif event | LightMessages.GetLightPower:
+            event.add_replies(self.state_for(DeviceMessages.StatePower))
 
         elif event | LightMessages.SetLightPower:
             event.add_replies(self.state_for(LightMessages.StateLightPower))

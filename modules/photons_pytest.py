@@ -751,7 +751,7 @@ def pytest_configure(config):
     @pytest.helpers.register
     def assertSamePackets(got, *want):
         assert isinstance(got, list)
-        assert len(got) == len(want)
+        assert len(got) == len(want), (got, want)
 
         def normalise(p):
             kls = p

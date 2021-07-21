@@ -13,6 +13,7 @@ from photons_messages import (
     Waveform,
     TileEffectType,
     MultiZoneEffectType,
+    LightLastHevCycleResult,
 )
 
 import pytest
@@ -36,6 +37,8 @@ devices.add("lcm3a19")(next(devices.serial_seq), Products.LCM3_A19, hp.Firmware(
 devices.add("ir")(next(devices.serial_seq), Products.LCM2_A19_PLUS, hp.Firmware(2, 80))
 
 devices.add("tile")(next(devices.serial_seq), Products.LCM3_TILE, hp.Firmware(3, 50))
+
+devices.add("clean")(next(devices.serial_seq), Products.LCM3_A19_CLEAN, hp.Firmware(3, 50))
 
 devices.add("striplcm1")(next(devices.serial_seq), Products.LCM1_Z, hp.Firmware(1, 22))
 
@@ -90,7 +93,7 @@ def makeAssertUnhandled(device):
     return assertUnhandled
 
 
-describe "DeviceResponder":
+describe "Device":
 
     @pytest.fixture()
     def device(self):
@@ -123,7 +126,7 @@ describe "DeviceResponder":
         )
 
 
-describe "LightStateResponder":
+describe "LightState":
 
     @pytest.fixture()
     def device(self):
@@ -144,6 +147,9 @@ describe "LightStateResponder":
         )
         await assertResponse(
             DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
+        )
+        await assertResponse(
+            LightMessages.GetLightPower(), [DeviceMessages.StatePower(level=200)], power=200
         )
 
     @pytest.mark.async_timeout(1e9)
@@ -217,7 +223,7 @@ describe "LightStateResponder":
         )
         await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 333, 0, 1, 6789)])
 
-describe "InfraredResponder":
+describe "Infrared":
 
     @pytest.fixture()
     def device(self):
@@ -278,7 +284,7 @@ describe "InfraredResponder":
             infrared=100,
         )
 
-describe "MatrixResponder":
+describe "Matrix":
 
     @pytest.fixture
     def device(self):
@@ -367,7 +373,7 @@ describe "MatrixResponder":
             )
         )
 
-describe "ZonesResponder":
+describe "Zones":
 
     async def make_device(self, name, zones=None):
         device = devices[name]
@@ -619,7 +625,7 @@ describe "ZonesResponder":
             ],
         )
 
-describe "ProductResponder":
+describe "Product":
 
     def make_device(self, name, product, firmware):
         device = devices[name]
@@ -672,7 +678,7 @@ describe "ProductResponder":
             [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
         )
 
-describe "GroupingResponder":
+describe "Grouping":
 
     @pytest.fixture()
     def device(self):
@@ -712,3 +718,230 @@ describe "GroupingResponder":
             location=Collection(label="ll2", identity=setter.location, updated_at=6),
         )
         await assertResponse(getter, [state])
+
+describe "Clean":
+
+    @pytest.fixture()
+    def device(self):
+        return devices["clean"]
+
+    @pytest.fixture()
+    def assertResponse(self, device, **attrs):
+        return makeAssertResponse(device, **attrs)
+
+    @pytest.fixture(autouse=True)
+    async def fake_the_time(self, FakeTime, MockedCallLater):
+        with FakeTime() as t:
+            async with MockedCallLater(t) as m:
+                yield (t, m)
+
+    @pytest.fixture()
+    def m(self, fake_the_time):
+        return fake_the_time[1]
+
+    async it "responds to starting a cycle when light is off", device, assertResponse, m:
+        await device.change_one("power", 0, event=None)
+
+        assert device.attrs.clean_details.enabled is False
+        assert device.attrs.clean_details.duration_s == 0
+        assert device.attrs.clean_details.remaining_s == 0
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        getter = LightMessages.GetHevCycleConfiguration()
+        state = LightMessages.StateHevCycleConfiguration(indication=False, duration_s=7200)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0
+
+        setter = LightMessages.SetHevCycle(enable=True, duration_s=0, res_required=False)
+        await assertResponse(setter, True)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=7200, remaining_s=7200, last_power=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is True
+        assert device.attrs.clean_details.duration_s == 7200
+        assert device.attrs.clean_details.remaining_s == 7200
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        # Reports as on even though it's actually not
+        assert device.attrs.power == 0
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+
+        await m.add(250)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=7200, remaining_s=6950, last_power=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is True
+        assert device.attrs.clean_details.duration_s == 7200
+        assert device.attrs.clean_details.remaining_s == 6950
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        await m.add(7200)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=0, remaining_s=0, last_power=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is False
+        assert device.attrs.clean_details.duration_s == 0
+        assert device.attrs.clean_details.remaining_s == 0
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.SUCCESS
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        # Reports to back as off
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0
+
+    async it "responds to starting a cycle when light is on", device, assertResponse, m:
+        await device.change_one("power", 0xFFFF, event=None)
+
+        assert device.attrs.clean_details.enabled is False
+        assert device.attrs.clean_details.duration_s == 0
+        assert device.attrs.clean_details.remaining_s == 0
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+
+        setter = LightMessages.SetHevCycle(enable=True, duration_s=200, res_required=False)
+        await assertResponse(setter, True)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=200, remaining_s=200, last_power=1)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is True
+        assert device.attrs.clean_details.duration_s == 200
+        assert device.attrs.clean_details.remaining_s == 200
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+
+        await m.add(250)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=0, remaining_s=0, last_power=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is False
+        assert device.attrs.clean_details.duration_s == 0
+        assert device.attrs.clean_details.remaining_s == 0
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.SUCCESS
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        getter = LightMessages.GetLightPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+        getter = DeviceMessages.GetPower()
+        state = DeviceMessages.StatePower(level=0xFFFF)
+        await assertResponse(getter, [state])
+        assert device.attrs.power == 0xFFFF
+
+    async it "can change default duration", device, assertResponse, m:
+        setter = LightMessages.SetHevCycle(enable=True, duration_s=0, res_required=False)
+        await assertResponse(setter, True)
+        getter = LightMessages.GetHevCycle()
+        state = LightMessages.StateHevCycle(duration_s=7200, remaining_s=7200, last_power=0)
+        await assertResponse(getter, [state])
+        assert device.attrs.clean_details.enabled is True
+        assert device.attrs.clean_details.duration_s == 7200
+        assert device.attrs.clean_details.remaining_s == 7200
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+        assert device.attrs.clean_details.indication is False
+        assert device.attrs.clean_details.default_duration_s == 7200
+
+        setter = LightMessages.SetHevCycleConfiguration(indication=True, duration_s=69420)
+        state = LightMessages.StateHevCycleConfiguration(indication=True, duration_s=69420)
+        await assertResponse(setter, [state])
+
+        setter = LightMessages.SetHevCycle(enable=True, duration_s=0, res_required=False)
+        await assertResponse(setter, True)
+        assert device.attrs.clean_details.enabled is True
+        assert device.attrs.clean_details.duration_s == 69420
+        assert device.attrs.clean_details.remaining_s == 69420
+        assert device.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+        assert device.attrs.clean_details.indication is True
+        assert device.attrs.clean_details.default_duration_s == 69420
+
+    async it "can interrupt a cycle", device, assertResponse, m:
+
+        async def start(enable, duration):
+            setter = LightMessages.SetHevCycle(
+                enable=enable, duration_s=duration, res_required=False
+            )
+            await assertResponse(setter, True)
+
+        async def assertRemaining(duration, remaining, last_power, result):
+            getter = LightMessages.GetHevCycle()
+            state = LightMessages.StateHevCycle(
+                duration_s=duration, remaining_s=remaining, last_power=last_power
+            )
+            await assertResponse(getter, [state])
+
+            getter = LightMessages.GetLastHevCycleResult()
+            state = LightMessages.StateLastHevCycleResult(result=result)
+            await assertResponse(getter, [state])
+
+        await assertRemaining(0, 0, 0, LightLastHevCycleResult.NONE)
+        await start(True, 2000)
+        await assertRemaining(2000, 2000, 0, LightLastHevCycleResult.BUSY)
+        await m.add(1720)
+        await assertRemaining(2000, 280, 0, LightLastHevCycleResult.BUSY)
+
+        await start(False, 2000)
+        await assertRemaining(0, 0, 0, LightLastHevCycleResult.INTERRUPTED_BY_LAN)
+
+        await start(True, 200)
+        await assertRemaining(200, 200, 0, LightLastHevCycleResult.BUSY)
+
+        await device.power_off()
+        await assertRemaining(0, 0, 0, LightLastHevCycleResult.INTERRUPTED_BY_RESET)
+        await device.power_on()
+        await assertRemaining(0, 0, 0, LightLastHevCycleResult.INTERRUPTED_BY_RESET)
+
+        await start(True, 1337)
+        await m.add(1336)
+        await assertRemaining(1337, 1, 0, LightLastHevCycleResult.BUSY)
+        await m.add(2)
+        await assertRemaining(0, 0, 0, LightLastHevCycleResult.SUCCESS)
