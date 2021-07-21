@@ -1,6 +1,6 @@
-from photons_messages import LightMessages, LightLastHevCycleResult
 from photons_app.tasks import task_register as task
 from photons_control.script import FromGenerator
+from photons_messages import LightMessages
 from photons_control.planner import Skip
 
 from delfick_project.norms import sb, Meta
@@ -200,7 +200,7 @@ class get_clean_status(task.Task):
             async for serial, _, info in sender.gatherer.gather(plans, self.reference, **kwargs):
                 if info is not Skip:
                     print(serial)
-                    if info["current"]["active"] == True:
+                    if info["current"]["active"]:
                         power_off = "yes" if info["current"]["power_off"] else "no"
                         remaining = humanize_duration(info["current"]["remaining"])
                         print("    Cycle in progress: yes")
@@ -208,9 +208,5 @@ class get_clean_status(task.Task):
                         print(f"    Power off: {power_off}")
                     else:
                         print("    Cycle in progress: no")
-
-                    if info["last"]["result"] == LightLastHevCycleResult.SUCCESS:
-                        print("    Last cycle: completed successfully.")
-                    else:
                         print(f"    Last cycle result: {info['last']['result']}")
                     print("")

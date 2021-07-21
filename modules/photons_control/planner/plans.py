@@ -1,4 +1,10 @@
-from photons_messages import LightMessages, LightLastHevCycleResult, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_messages import (
+    LightMessages,
+    LightLastHevCycleResult,
+    DeviceMessages,
+    MultiZoneMessages,
+    TileMessages,
+)
 from photons_canvas.orientation import nearest_orientation, Orientation
 from photons_canvas.points import containers as cont
 from photons_messages.fields import Tile, Color
@@ -865,9 +871,7 @@ class HevStatusPlan(Plan):
                     self.hev_current = {"active": False}
 
             elif pkt | LightMessages.StateLastHevCycleResult:
-                self.hev_last = {
-                    "result": LightLastHevCycleResult(pkt.result).name
-                }
+                self.hev_last = {"result": LightLastHevCycleResult(pkt.result).name}
 
             return hasattr(self, "hev_current") and hasattr(self, "hev_last")
 
