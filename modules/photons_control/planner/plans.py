@@ -880,7 +880,7 @@ class HevStatusPlan(Plan):
                     self.hev_current = {"active": False}
 
             elif pkt | LightMessages.StateLastHevCycleResult:
-                self.hev_last = {"result": LightLastHevCycleResult(pkt.result).name}
+                self.hev_last = {"result": pkt.result}
 
             return hasattr(self, "hev_current") and hasattr(self, "hev_last")
 
