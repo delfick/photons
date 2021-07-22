@@ -3,7 +3,7 @@ from photons_control.planner import Skip
 
 from photons_app.tasks import task_register as task
 
-from photons_messages import LightMessages
+from photons_messages import LightMessages, LightLastHevCycleResult
 
 from delfick_project.norms import sb, Meta
 from datetime import timedelta
@@ -210,5 +210,5 @@ class get_clean_status(task.Task):
                         print(f"    Power off: {power_off}")
                     else:
                         print("    Cycle in progress: no")
-                        print(f"    Last cycle result: {info['last']['result']}")
+                        print(f"    Last cycle result: {LightLastHevCycleResult(info['last']['result']).name}")
                     print("")
