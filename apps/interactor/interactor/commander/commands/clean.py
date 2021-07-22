@@ -6,8 +6,6 @@ from photons_control.script import FromGeneratorPerSerial
 from photons_control.clean import ChangeCleanCycle
 from photons_control.planner import Skip
 
-from photons_messages import LightLastHevCycleResult
-
 from delfick_project.norms import dictobj, sb
 
 
@@ -65,7 +63,7 @@ class StatusCleanCommand(store.Command, DeviceChangeMixin):
 
             if info["hev_status"] is not Skip:
                 final["status"] = info["hev_status"]
-                final["status"]["last"]["result"] = LightLastHevCycleResult(final["status"]["last"]["result"]).name
+                final["status"]["last"]["result"] = final["status"]["last"]["result"].name
 
             if info["hev_config"] is not Skip:
                 final["config"] = info["hev_config"]
