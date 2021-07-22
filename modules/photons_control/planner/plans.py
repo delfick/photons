@@ -829,16 +829,25 @@ class HevStatusPlan(Plan):
     running.
 
         {
-            active: <boolean>,
-            duration: <total time in seconds>
-            remaining: <time left in seconds>
-            power_off: <boolean>
+            current: {
+                active: <boolean>,
+                duration: <total time in seconds>
+                remaining: <time left in seconds>
+                power_off: <boolean>
+            },
+            last: {
+                result: <result of last cycle>
+            }
        }
 
-    * active: (boolean) true if the device is currently in a cycle
-    * duration: the total time in seconds for the current cycle
-    * remaining: the remaining time in seconds for the current cycle
-    * power_off: (boolean) true if the device power itself off when the cycle completes
+    * current:
+        * active: (boolean) true if the device is currently in a cycle
+        * duration: the total time in seconds for the current cycle
+        * remaining: the remaining time in seconds for the current cycle
+        * power_off: (boolean) true if the device power itself off when the cycle completes
+    * last:
+        * result: either SUCCESS, BUSY or INTERRUPTED BY <source>
+
     """
 
     default_refresh = 1
