@@ -1,6 +1,5 @@
 from photons_messages import (
     LightMessages,
-    LightLastHevCycleResult,
     DeviceMessages,
     MultiZoneMessages,
     TileMessages,
