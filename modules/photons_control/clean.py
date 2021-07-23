@@ -56,7 +56,7 @@ def SetCleanConfig(*, indication, duration, reference=None, **kwargs):
                     duration_s=duration,
                     target=serial,
                     ack_required=True,
-                    res_required=True,
+                    res_required=False,
                 )
 
     return FromGenerator(gen)
@@ -142,7 +142,7 @@ def ChangeCleanCycle(*, enable, duration=0, **kwargs):
             if info["cap"].has_hev:
                 yield LightMessages.SetHevCycle(
                     enable=enable,
-                    res_required=True,
+                    res_required=False,
                     ack_required=True,
                     duration_s=duration,
                     target=serial,
