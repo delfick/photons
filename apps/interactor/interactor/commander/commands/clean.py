@@ -2,7 +2,6 @@ from interactor.commander.command import DeviceChangeMixin
 from interactor.commander import helpers as ihp
 from interactor.commander.store import store
 
-from photons_control.script import FromGeneratorPerSerial
 from photons_control.clean import ChangeCleanCycle
 from photons_control.planner import Skip
 
@@ -22,8 +21,7 @@ class StartCleanCommand(store.Command, DeviceChangeMixin):
 
     async def execute(self):
         return await self.send(
-            FromGeneratorPerSerial(ChangeCleanCycle(enable=True, duration=self.duration)),
-            add_replies=False,
+            ChangeCleanCycle(enable=True, duration=self.duration), add_replies=False
         )
 
 
