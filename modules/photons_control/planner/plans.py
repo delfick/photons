@@ -873,7 +873,7 @@ class HevStatusPlan(Plan):
                         "active": True,
                         "duration": pkt.duration_s,
                         "remaining": pkt.remaining_s,
-                        "power_off": False if pkt.last_power == 1 else True,
+                        "last_power": True if pkt.last_power == 1 else False,
                     }
                 else:
                     self.hev_current = {"active": False}
