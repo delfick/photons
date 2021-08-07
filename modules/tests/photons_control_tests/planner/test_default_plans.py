@@ -12,6 +12,7 @@ from photons_messages import (
     TileMessages,
     TileEffectType,
     MultiZoneEffectType,
+    LightLastHevCycleResult,
     Direction,
 )
 from photons_canvas.orientation import Orientation, reorient
@@ -303,6 +304,184 @@ describe "Default Plans":
                 light1.serial: (True, {"power": {"level": 0, "on": False}}),
                 light2.serial: (True, {"power": {"level": 65535, "on": True}}),
             }
+
+    describe "HevStatusPlan":
+
+        async it "works when hev is not on", sender:
+            assert not clean.attrs.clean_details.enabled
+            assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {"active": False},
+                            "last": {"result": LightLastHevCycleResult.NONE},
+                        }
+                    },
+                ),
+            }
+
+        async it "works when hev is on", sender, m:
+            assert clean.attrs.power == 0
+            await sender(LightMessages.SetHevCycle(enable=True, duration_s=20), clean.serial)
+            assert clean.attrs.clean_details.enabled
+            assert clean.attrs.clean_details.duration_s == 20
+            assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": True,
+                                "duration": 20,
+                                "remaining": 20,
+                                "power_off": True,
+                            },
+                            "last": {"result": LightLastHevCycleResult.BUSY},
+                        }
+                    },
+                ),
+            }
+
+            await m.add(5)
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": True,
+                                "duration": 20,
+                                "remaining": 15,
+                                "power_off": True,
+                            },
+                            "last": {"result": LightLastHevCycleResult.BUSY},
+                        }
+                    },
+                ),
+            }
+
+            await m.add(17)
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": False,
+                            },
+                            "last": {"result": LightLastHevCycleResult.SUCCESS},
+                        }
+                    },
+                ),
+            }
+
+        async it "works with different last result", sender, m:
+            await sender(DeviceMessages.SetPower(level=65535), clean.serial)
+            await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
+            await m.add(22)
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": True,
+                                "duration": 2000,
+                                "remaining": 1978,
+                                "power_off": False,
+                            },
+                            "last": {"result": LightLastHevCycleResult.BUSY},
+                        }
+                    },
+                ),
+            }
+
+            await sender(LightMessages.SetHevCycle(enable=False, duration_s=20), clean.serial)
+            await m.add(2)
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": False,
+                            },
+                            "last": {"result": LightLastHevCycleResult.INTERRUPTED_BY_LAN},
+                        }
+                    },
+                ),
+            }
+
+        async it "works with different last result from power cycle", sender, m:
+            await sender(DeviceMessages.SetPower(level=65535), clean.serial)
+            await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
+            await m.add(20)
+
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": True,
+                                "duration": 2000,
+                                "remaining": 1980,
+                                "power_off": False,
+                            },
+                            "last": {"result": LightLastHevCycleResult.BUSY},
+                        }
+                    },
+                ),
+            }
+
+            async with clean.offline():
+                pass
+
+            await m.add(2)
+            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            assert got == {
+                light1.serial: (True, {"hev_status": Skip}),
+                clean.serial: (
+                    True,
+                    {
+                        "hev_status": {
+                            "current": {
+                                "active": False,
+                            },
+                            "last": {"result": LightLastHevCycleResult.INTERRUPTED_BY_RESET},
+                        }
+                    },
+                ),
+            }
+
+    describe "HEVConfigPlan":
+
+        @pytest.mark.skip("TODO")
+        it "works":
+            pass
 
     describe "CapabilityPlan":
 
