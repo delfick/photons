@@ -203,7 +203,7 @@ class get_clean_status(task.Task):
                 if info is not Skip:
                     print(serial)
                     if info["current"]["active"]:
-                        power_state = "on" if info["current"]["last_power"] else "off"
+                        power_state = "off" if info["current"]["last_power"] == 0 else "on"
                         remaining = humanize_duration(info["current"]["remaining"])
                         print("    Cycle in progress: yes")
                         print(f"    Time left: {remaining}")

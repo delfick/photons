@@ -343,7 +343,7 @@ describe "Default Plans":
                                 "active": True,
                                 "duration": 20,
                                 "remaining": 20,
-                                "power_off": True,
+                                "last_power": 0,
                             },
                             "last": {"result": LightLastHevCycleResult.BUSY},
                         }
@@ -364,7 +364,7 @@ describe "Default Plans":
                                 "active": True,
                                 "duration": 20,
                                 "remaining": 15,
-                                "power_off": True,
+                                "last_power": 0,
                             },
                             "last": {"result": LightLastHevCycleResult.BUSY},
                         }
@@ -406,7 +406,7 @@ describe "Default Plans":
                                 "active": True,
                                 "duration": 2000,
                                 "remaining": 1978,
-                                "power_off": False,
+                                "last_power": 65535,
                             },
                             "last": {"result": LightLastHevCycleResult.BUSY},
                         }
@@ -449,7 +449,7 @@ describe "Default Plans":
                                 "active": True,
                                 "duration": 2000,
                                 "remaining": 1980,
-                                "power_off": False,
+                                "last_power": 65535,
                             },
                             "last": {"result": LightLastHevCycleResult.BUSY},
                         }
