@@ -186,7 +186,6 @@ class Store:
         print()
 
         if unmatched:
-            __import__("pdb").set_trace()
             print("Following did not have matches")
             for event in unmatched:
                 print(f" - {event}")
