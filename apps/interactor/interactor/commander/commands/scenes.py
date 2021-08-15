@@ -116,17 +116,36 @@ class SceneDeleteCommand(store.Command):
     db_queue = store.injected("db_queue")
 
     uuid = dictobj.Field(
-        sb.string_spec, wrapper=sb.required, help="The uuid of the scene to delete"
+        sb.or_spec(sb.boolean(), sb.listof(sb.string_spec())),
+        wrapper=sb.required,
+        help="""
+        Which scenes to delete.
+
+        If this is a string or a list of strings, then those strings are seen as the
+        uuids of the scenes to delete.
+
+        If this option is given as 'true' then all scenes are removed
+        """,
     )
 
     async def execute(self):
-        def delete(db):
-            for thing in db.queries.get_scenes(uuid=self.uuid).all():
-                db.delete(thing)
-            for thing in db.queries.get_scene_infos(uuid=self.uuid).all():
-                db.delete(thing)
+        removed = []
 
-            return {"deleted": True, "uuid": self.uuid}
+        def delete(db):
+            if self.uuid is True:
+                for thing in db.queries.get_scenes().all():
+                    removed.append(thing.uuid)
+                    db.delete(thing)
+                db.queries.get_scene_infos().delete()
+            else:
+                for uu in self.uuid:
+                    removed.append(uu)
+                    for thing in db.queries.get_scenes(uuid=uu).all():
+                        db.delete(thing)
+                    for thing in db.queries.get_scene_infos(uuid=uu).all():
+                        db.delete(thing)
+
+            return {"deleted": True, "uuid": list(set(removed))}
 
         return await self.db_queue.request(delete)
 
