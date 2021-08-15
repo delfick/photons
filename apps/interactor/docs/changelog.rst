@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-9-0:
 
-0.9.0 - TBD
+0.9.0 - 15 August 2021
     * Make scene capture and application aware of candles
     * Changed the input and output of scene_delete. You may now supply uuid as a
       single uuid, a list of uuids or a boolean true (to say all uuids).
