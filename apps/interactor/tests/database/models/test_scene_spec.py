@@ -138,16 +138,16 @@ describe "hsbk":
         with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=1):
             spec.normalise(meta, [360, 1, 1.1, 3500])
 
-    it "complains if kelvin is outside 2500 and 9000", meta:
+    it "complains if kelvin is outside 1500 and 9000", meta:
         spec = scene_spec.hsbk()
 
         with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=2500, maximum=9000
+            BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000
         ):
-            spec.normalise(meta, [1, 0, 0, 2499])
+            spec.normalise(meta, [1, 0, 0, 1000])
 
         with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=2500, maximum=9000
+            BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000
         ):
             spec.normalise(meta, [360, 1, 1, 9001])
 

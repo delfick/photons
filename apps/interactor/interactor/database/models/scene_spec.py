@@ -43,7 +43,7 @@ class hsbk(sb.Spec):
             range_spec(0, 360),
             range_spec(0, 1),
             range_spec(0, 1),
-            range_spec(2500, 9000, spec=sb.integer_spec()),
+            range_spec(1500, 9000, spec=sb.integer_spec()),
         ]
 
     def normalise_filled(self, meta, val):
@@ -166,12 +166,17 @@ def make_spec(storing=True):
                 duration = self.determine_duration(overrides)
                 for i, lst in enumerate(self.chain):
                     colors = self.colors_from_hsbks(lst, overrides)
+
+                    width = 8
+                    if len(colors) == 30:
+                        width = 5
+
                     yield TileMessages.Set64(
                         tile_index=i,
                         length=1,
                         x=0,
                         y=0,
-                        width=8,
+                        width=width,
                         duration=duration,
                         colors=colors,
                         res_required=False,

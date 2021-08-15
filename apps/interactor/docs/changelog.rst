@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-9-1:
+
+0.9.1 - TBD
+    * Further fix applying scenes to candles
+
 .. _release-interactor-0-9-0:
 
 0.9.0 - 15 August 2021
