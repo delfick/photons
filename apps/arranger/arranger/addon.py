@@ -95,16 +95,16 @@ class arranger_assets(task.Task):
     async def execute_task(self, **kwargs):
         extra = self.photons_app.extra
         assets = self.collector.configuration["arranger"].assets
-        available = ["run", "add", "static", "watch"]
+        available = ["run", "install", "static", "watch"]
 
         if self.reference is sb.NotSpecified:
             raise PhotonsAppError("Please specify what command to run", available=available)
 
-        assets.ensure_yarn()
+        assets.ensure_npm()
 
         try:
-            if self.reference == "add":
-                assets.run("add", *shlex.split(extra))
+            if self.reference == "install":
+                assets.run("install", *shlex.split(extra))
                 return
 
             if self.reference == "run":

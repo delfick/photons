@@ -43,9 +43,9 @@ class Assets(dictobj.Spec):
         else:
             return os.path.join(self.src, "dist", "prod")
 
-    def ensure_yarn(self):
-        if not shutil.which("yarn"):
-            raise PhotonsAppError("Couldn't find yarn, I suggest you use nvm")
+    def ensure_npm(self):
+        if not shutil.which("npm"):
+            raise PhotonsAppError("Couldn't find npm, I suggest you use nvm")
 
     @property
     def needs_install(self):
@@ -58,7 +58,7 @@ class Assets(dictobj.Spec):
         env = dict(os.environ)
         if extra_env:
             env.update(extra_env)
-        subprocess.check_call(["yarn", *args], cwd=self.src, env=env)
+        subprocess.check_call(["npm", *args], cwd=self.src, env=env)
 
 
 class get_animation_options(sb.Spec):
