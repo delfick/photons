@@ -54,7 +54,7 @@ class hsbk(sb.Spec):
         return res
 
 
-chain_spec = sized_list_spec(hsbk(), 64)
+chain_spec = sb.listof(hsbk())
 
 
 class json_string_spec(sb.Spec):

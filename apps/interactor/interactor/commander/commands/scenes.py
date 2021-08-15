@@ -176,10 +176,10 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
                         ts.add(self.transform(fltr, scene, result, msgs))
 
                     elif scene.chain:
-                        fltr = self.cap_filter(scene.matcher, "chain")
+                        fltr = self.cap_filter(scene.matcher, "matrix")
                         ts.add(self.apply_chain(fltr, scene, result, msgs))
 
-                        fltr = self.cap_filter(scene.matcher, "not_chain")
+                        fltr = self.cap_filter(scene.matcher, "not_matrix")
                         ts.add(self.transform(fltr, scene, result, msgs))
 
                     else:
@@ -269,10 +269,10 @@ class SceneCaptureCommand(store.Command, DeviceChangeMixin):
             if device.cap.has_multizone:
                 part = parts[0]
                 state["zones"] = [list(color) for i, color in zip(range(part.width), part.colors)]
-            elif device.cap.has_chain:
+            elif device.cap.has_matrix:
                 chain = []
                 for part in parts:
-                    chain.append([list(color) for color in part.colors])
+                    chain.append([list(color) for color in part.colors[: part.width * part.height]])
                 state["chain"] = chain
             else:
                 color = parts[0].colors[0]

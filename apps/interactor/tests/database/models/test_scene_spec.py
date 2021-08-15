@@ -151,20 +151,6 @@ describe "hsbk":
         ):
             spec.normalise(meta, [360, 1, 1, 9001])
 
-describe "chain_spec":
-    it "complains if list is not 64", meta:
-        chain = []
-        for i in range(63):
-            chain.append([0, 0, 0, 2500])
-
-        spec = scene_spec.chain_spec
-        with assertRaises(BadSpecValue, "Expected certain number of parts", want=64, got=63):
-            spec.normalise(meta, chain)
-
-        chain.extend([[0, 0, 0, 2500], [1, 1, 1, 9000]])
-        with assertRaises(BadSpecValue, "Expected certain number of parts", want=64, got=65):
-            spec.normalise(meta, chain)
-
 describe "json_string_spec":
     describe "storing":
         it "loads if the val is a string and returns as dumps", meta:

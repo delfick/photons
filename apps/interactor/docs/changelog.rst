@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-9-0:
+
+0.9.0 - TBD
+    * Make scene capture and application aware of candles
+
 .. _release-interactor-0-8-7:
 
 0.8.7 - 27 June 2021
