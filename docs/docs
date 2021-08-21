@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 
-import runpy
-import os
+from venvstarter import manager
 
-this_dir = os.path.abspath(os.path.dirname(__file__))
-src_dir = os.path.join(this_dir, "..")
+m = manager("photons-docs")
 
-docs_version = runpy.run_path(os.path.join(this_dir, "photons_docs", "__init__.py"))["VERSION"]
-photons_version = runpy.run_path(os.path.join(this_dir, "..", "modules", "photons_app", "__init__.py"))["VERSION"]
+m.add_local_dep(
+    "{here}",
+    "..",
+    "modules",
+    editable=True,
+    version_file=("photons_app", "__init__.py"),
+    name="lifx-photons-core=={version}",
+)
 
-from venvstarter import ignite
-ignite(__file__, "photons-docs"
-    , deps = [
-        f"-e file:{src_dir}/modules#egg=lifx-photons-core=={photons_version}"
-      , f"-e file:{this_dir}#egg=lifx-photons-docs=={docs_version}"
-      ]
-    , env = {"LIFX_CONFIG": os.environ.get("LIFX_CONFIG", "{venv_parent}/docs.yml")}
-    , min_python_version = 3.6
-    )
+m.add_local_dep(
+    "{here}",
+    editable=True,
+    version_file=("photons_docs", "__init__.py"),
+    name="lifx-photons-docs=={version}",
+)
+
+m.add_env(LIFX_CONFIG=("{here}", "docs.yml"))
+
+m.run()
