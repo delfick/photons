@@ -46,6 +46,8 @@ async def server(
 
 describe "Scene Commands":
 
+    # sqlite is very slow on github actions for some reason
+    @pytest.mark.async_timeout(10)
     async it "has scene commands", devices, server, responses:
         await server.assertCommand("/v1/lifx/command", {"command": "scene_info"}, json_output={})
 

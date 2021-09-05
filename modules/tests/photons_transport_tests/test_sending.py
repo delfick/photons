@@ -135,7 +135,7 @@ describe "Sending messages":
 
                 got = []
                 with FakeTime() as t:
-                    async with MockedCallLater(t):
+                    async with MockedCallLater(t, precision=0.01):
                         async with sender(msg, V.device.serial) as pkts:
                             async for pkt in pkts:
                                 got.append(pkt)
@@ -370,7 +370,7 @@ describe "Sending messages":
                 errors = []
                 io2 = V.device2.io["UDP"]
                 with FakeTime() as t:
-                    async with MockedCallLater(t):
+                    async with MockedCallLater(t, precision=0.01):
                         with io2.packet_filter.lost_replies(DeviceMessages.EchoResponse):
                             async with sender(
                                 msg,
@@ -442,7 +442,7 @@ describe "Sending messages":
                 error = None
                 io2 = V.device2.io["UDP"]
                 with FakeTime() as t:
-                    async with MockedCallLater(t):
+                    async with MockedCallLater(t, precision=0.01):
                         try:
                             with io2.packet_filter.lost_replies(DeviceMessages.EchoResponse):
                                 async with sender(

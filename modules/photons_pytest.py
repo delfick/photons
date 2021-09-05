@@ -207,9 +207,10 @@ class FakeTimeImpl:
 
 
 class MockedCallLaterImpl(AsyncCMMixin):
-    def __init__(self, t):
+    def __init__(self, t, precision=0.1):
         self.t = t
         self.loop = asyncio.get_event_loop()
+        self.precision = precision
 
         self.task = None
         self.call_later_patch = None
@@ -309,10 +310,10 @@ class MockedCallLaterImpl(AsyncCMMixin):
             self.funcs = remaining
 
             if iterations >= 1 and iteration > 0:
-                self.t.add(0.1)
+                self.t.add(self.precision)
 
         if not executed and iterations == 0:
-            self.t.add(0.1)
+            self.t.add(self.precision)
 
         return executed
 
