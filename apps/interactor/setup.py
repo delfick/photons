@@ -15,7 +15,8 @@ setup(
     , install_requires =
       [ "lifx-photons-core>=0.40.3"
       , "tornado>=6.1"
-      , "SQLAlchemy==1.3.3"
+      , "SQLAlchemy[asyncio]==1.4.23"
+      , "aiosqlite==0.17.0"
       , "alembic==1.3.2"
       , "whirlwind-web==0.12.0"
       , "aiohttp==3.7.4"

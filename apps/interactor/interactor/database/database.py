@@ -1,11 +1,23 @@
-from interactor.database.connection import Base, DatabaseConnection
+from interactor.database.query import Query
+from interactor.database.base import Base
 
+from photons_app.errors import PhotonsAppError
+from photons_app import helpers as hp
+
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from delfick_project.norms import dictobj, sb
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 from urllib.parse import urlparse
 from sqlalchemy import pool
+import sqlalchemy
+import logging
 import shlex
 import sys
 import os
+
+
+log = logging.getLogger("interactor.database.database")
 
 
 class database_uri_spec(sb.Spec):
@@ -39,6 +51,84 @@ class Database(dictobj.Spec):
     )
 
 
+class DB(hp.AsyncCMMixin):
+    """
+    A wrapper for database logic.
+
+    Usage is as follows:
+
+        async def some_action(session, query):
+            await session.execute(...)
+        await db.request(some_action)
+
+    The `request` method takes in a function that takes in a database sesssion object and
+    a filled Query object.
+
+    The function you provide will be retried on operation errors otherwise, appropriate
+    rollbacks will be called, exceptions raised and logged.
+    """
+
+    def __init__(self, database, Base=Base):
+        self.Base = Base
+        self.database = database
+        if "postgresql" in self.database:
+            self.database = urlparse(self.database)._replace(scheme="postgresql+asyncpg").geturl()
+        if "sqlite" in self.database:
+            self.database = urlparse(self.database)._replace(scheme="sqlite+aiosqlite").geturl()
+        self.database = self.database.replace(":", "://", 1)
+
+    async def start(self):
+        self.engine = create_async_engine(self.database)
+        self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
+
+    async def finish(self, exc_typ=None, exc=None, tb=None):
+        await self.engine.dispose()
+
+    @hp.asynccontextmanager
+    async def session(self):
+        async with self.async_session() as session:
+            yield session, Query(session, self.Base)
+
+    async def request(self, func):
+        tries = 0
+        while True:
+            tries += 1
+            async with self.session() as (session, query):
+                async with self.catch_errors(session, tries):
+                    return await func(session, query)
+
+    @hp.asynccontextmanager
+    async def catch_errors(self, session, tries):
+        try:
+            yield
+            await session.commit()
+
+        except sqlalchemy.exc.OperationalError as error:
+            await session.rollback()
+            log.error(
+                hp.lc("Failed to use database, will rollback and maybe try again", error=error)
+            )
+
+            if tries > 1:
+                raise
+
+        except sqlalchemy.exc.InvalidRequestError as error:
+            await session.rollback()
+            log.error(hp.lc("Failed to perform database operation", error=error))
+            raise
+
+        except PhotonsAppError as error:
+            await session.rollback()
+            log.error(hp.lc("Failed to use database", error=error))
+            raise
+
+        except:
+            await session.rollback()
+            exc_info = sys.exc_info()
+            log.exception(hp.lc("Unexpected failure when using database", error=exc_info[1]))
+            raise
+
+
 async def migrate(database, extra=""):
     from alembic.config import CommandLine as AlembicCommandLine, Config as AlembicConfig
     from alembic.script import ScriptDirectory
@@ -57,9 +147,8 @@ async def migrate(database, extra=""):
                     alembic_context.run_migrations()
 
             def run_migrations_online():
-                connectable = DatabaseConnection(
-                    database=database.uri, poolclass=pool.NullPool
-                ).engine
+                connectable = create_engine(database.uri, poolclass=pool.NullPool)
+
                 with connectable.connect() as connection:
                     alembic_context.configure(
                         connection=connection, target_metadata=target_metadata
@@ -90,12 +179,3 @@ async def migrate(database, extra=""):
     else:
         cfg = AlembicConfig(cmd_opts=options)
         commandline.run_cmd(cfg, options)
-
-
-# And make all the models available so that the migrate command knows about them
-from interactor.database.models.scene_info import SceneInfo  # noqa
-from interactor.database.models.scene import Scene  # noqa
-
-# And make vim quiet about unused imports
-Scene = Scene
-SceneInfo = SceneInfo

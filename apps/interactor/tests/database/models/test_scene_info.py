@@ -26,27 +26,28 @@ describe "SceneInfo":
         assert info.as_dict() == {"uuid": "three", "label": "bathroom", "description": "blah"}
 
     describe "Interaction with database":
-        it "Must have unique uuid", runner:
+        async it "Must have unique uuid", runner:
             identifier = str(uuid.uuid1())
 
             kwargs = dict(uuid=identifier, label="blah", description="described")
 
-            info = runner.database.queries.create_scene_info(**kwargs)
-            runner.database.add(info)
-            runner.database.commit()
+            async with runner.database.session() as (session, query):
+                info = await query.create_scene_info(**kwargs)
+                session.add(info)
+                await session.commit()
 
-            info2 = runner.database.queries.create_scene_info(**kwargs)
-            runner.database.add(info2)
-            try:
-                with assertRaises(sqlalchemy.exc.IntegrityError):
-                    runner.database.commit()
-            finally:
-                runner.database.rollback()
+                info2 = await query.create_scene_info(**kwargs)
+                session.add(info2)
+                try:
+                    with assertRaises(sqlalchemy.exc.IntegrityError):
+                        await session.commit()
+                finally:
+                    await session.rollback()
 
-            info3 = runner.database.queries.create_scene_info(uuid=identifier)
-            runner.database.add(info3)
-            try:
-                with assertRaises(sqlalchemy.exc.IntegrityError):
-                    runner.database.commit()
-            finally:
-                runner.database.rollback()
+                info3 = await query.create_scene_info(uuid=identifier)
+                session.add(info3)
+                try:
+                    with assertRaises(sqlalchemy.exc.IntegrityError):
+                        await session.commit()
+                finally:
+                    await session.rollback()

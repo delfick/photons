@@ -1,5 +1,5 @@
 from interactor.database.models.scene_spec import make_spec
-from interactor.database.connection import Base
+from interactor.database.base import Base
 
 from sqlalchemy import Column, Integer, String, Text, Boolean
 from delfick_project.norms import sb

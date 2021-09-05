@@ -1,5 +1,6 @@
 from interactor.request_handlers import CommandHandler, WSHandler
 from interactor.commander.animations import Animations
+from interactor.database import DB
 
 from photons_app import helpers as hp
 
@@ -144,11 +145,10 @@ class Server(Server):
         self.tasks = tasks
         self.tasks._merged_options_formattable = True
 
-        self.db_queue = __import__("interactor.database.db_queue").database.db_queue.DBQueue(
-            self.final_future, 5, lambda exc: 1, self.server_options.database.uri
-        )
-        self.cleaners.append(self.db_queue.finish)
-        self.db_queue.start()
+        self.database = DB(self.server_options.database.uri)
+        self.database._merged_options_formattable = True
+        self.cleaners.append(self.database.finish)
+        await self.database.start()
 
         self.finder = Finder(sender, final_future=self.final_future)
         self.finder._merged_options_formattable = True
@@ -168,7 +168,7 @@ class Server(Server):
             tasks=self.tasks,
             sender=self.sender,
             finder=self.finder,
-            db_queue=self.db_queue,
+            database=self.database,
             animations=self.animations,
             final_future=self.final_future,
             server_options=self.server_options,

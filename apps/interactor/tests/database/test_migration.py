@@ -1,7 +1,7 @@
 # coding: spec
 
-from interactor.database.connection import DatabaseConnection
 from interactor.database.database import migrate, Database
+from sqlalchemy import create_engine
 
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app import helpers as hp
@@ -17,8 +17,7 @@ describe "DatabaseMigration":
             )
             await migrate(options, "upgrade head")
 
-            database = DatabaseConnection(database=options.uri)
-            inspector = inspect(database.engine)
+            inspector = inspect(create_engine(options.uri))
 
             tables = sorted(list(inspector.get_table_names()))
             assert tables == ["alembic_version", "scene", "sceneinfo"]

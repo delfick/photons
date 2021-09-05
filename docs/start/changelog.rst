@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-41-0:
+
+0.41.0 - TBD
+    * Removed hp.ThreadToAsyncQueue
+        * Relic of the time I created it in and isn't necessary.
+
 .. _release-core-0-40-4:
 
 0.40.4 - 9 July 2021

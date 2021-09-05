@@ -79,5 +79,3 @@ Objects for doing async work
 .. autoclass:: photons_app.helpers.TaskHolder
 
 .. autoclass:: photons_app.helpers.ResultStreamer
-
-.. autoclass:: photons_app.helpers.ThreadToAsyncQueue

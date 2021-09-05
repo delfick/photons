@@ -30,7 +30,11 @@ async def sender(devices, final_future):
 def V():
     class V:
         afr = mock.Mock(name="afr")
-        db_queue = mock.Mock(name="db_queue", finish=pytest.helpers.AsyncMock(name="finish"))
+        database = mock.Mock(
+            name="database",
+            start=pytest.helpers.AsyncMock(name="start"),
+            finish=pytest.helpers.AsyncMock(name="finish"),
+        )
         commander = mock.Mock(name="commander")
 
         @hp.memoized_property
@@ -43,8 +47,8 @@ def V():
             return m
 
         @hp.memoized_property
-        def FakeDBQueue(s):
-            return mock.Mock(name="DBQueue", return_value=s.db_queue)
+        def FakeDB(s):
+            return mock.Mock(name="DB", return_value=s.database)
 
         @hp.memoized_property
         def FakeCommander(s):
@@ -56,7 +60,7 @@ def V():
 @pytest.fixture(scope="module")
 async def server(V, server_wrapper, sender, final_future):
     commander_patch = mock.patch("interactor.server.Commander", V.FakeCommander)
-    db_patch = mock.patch("interactor.database.db_queue.DBQueue", V.FakeDBQueue)
+    db_patch = mock.patch("interactor.server.DB", V.FakeDB)
 
     with commander_patch, db_patch:
         async with server_wrapper(store, sender, final_future) as server:
@@ -82,13 +86,11 @@ describe "Server":
             tasks=server.tasks,
             sender=server.sender,
             finder=server.finder,
-            db_queue=V.db_queue,
+            database=V.database,
             animations=server.animations,
             final_future=server.final_future,
             server_options=server.server_options,
         )
-        V.FakeDBQueue.assert_called_once_with(
-            server.final_future, 5, mock.ANY, "sqlite:///:memory:"
-        )
+        V.FakeDB.assert_called_once_with("sqlite:///:memory:")
 
-        V.db_queue.start.assert_called_once_with()
+        V.database.start.assert_called_once_with()

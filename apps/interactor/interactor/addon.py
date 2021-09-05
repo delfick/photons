@@ -71,6 +71,9 @@ class migrate(task.Task):
     """
 
     async def execute_task(self, extra=None, **kwargs):
+        # make all the models available so that the migrate command knows about them
+        __import__("interactor.database.models")
+
         from interactor.database import database
 
         if extra is None:

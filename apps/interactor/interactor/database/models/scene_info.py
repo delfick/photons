@@ -1,4 +1,4 @@
-from interactor.database.connection import Base
+from interactor.database.base import Base
 
 from sqlalchemy import Column, String, Text
 

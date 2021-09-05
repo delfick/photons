@@ -51,7 +51,7 @@ describe "Scene":
             assert normalised.as_dict() == expect
 
     describe "Interaction with database":
-        it "can store and retrieve from a spec", runner:
+        async it "can store and retrieve from a spec", runner:
             identifier = str(uuid.uuid1())
 
             chain = []
@@ -71,13 +71,14 @@ describe "Scene":
                 duration=1,
             )
 
-            scene = Scene.Spec(storing=True).empty_normalise(**kwargs)
-            runner.database.add(runner.database.queries.create_scene(**scene))
-            runner.database.commit()
+            async with runner.database.session() as (session, query):
+                scene = Scene.Spec(storing=True).empty_normalise(**kwargs)
+                session.add(await query.create_scene(**scene))
+                await session.commit()
 
-            got = runner.database.queries.get_one_scene(uuid=identifier)
-            assert got.as_dict() == kwargs
+                got = await query.get_one_scene(uuid=identifier)
+                assert got.as_dict() == kwargs
 
-            obj = got.as_object()
-            for prop in kwargs.keys():
-                assert getattr(obj, prop) == kwargs[prop]
+                obj = got.as_object()
+                for prop in kwargs.keys():
+                    assert getattr(obj, prop) == kwargs[prop]

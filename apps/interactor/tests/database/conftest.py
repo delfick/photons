@@ -1,29 +1,36 @@
-from interactor.database.connection import DatabaseConnection
-from interactor.database.db_queue import DBQueue
+from interactor.database import DB, Base
 
 from photons_app import helpers as hp
 
+import sqlalchemy
 import tempfile
+import logging
 import pytest
 import os
 
+log = logging.getLogger("interactor.database")
+
 
 class DBRunner(hp.AsyncCMMixin):
-    def __init__(self, start_db_queue=False):
+    def __init__(self, Base=Base):
+        self.Base = Base
         self.final_future = hp.create_future(name="DBRunner.final_future")
-        self.start_db_queue = start_db_queue
 
     async def start(self):
         self.tmpfile = tempfile.NamedTemporaryFile(delete=False)
         self.filename = self.tmpfile.name
 
         uri = f"sqlite:///{self.filename}"
-        self.database = DatabaseConnection(database=uri).new_session()
-        self.database.create_tables()
+        self.database = DB(uri, self.Base)
+        await self.database.start()
 
-        if self.start_db_queue:
-            self.db_queue = DBQueue(self.final_future, 5, lambda exc: 1, uri)
-            self.db_queue.start()
+        async with self.database.engine.begin() as conn:
+            try:
+                await conn.run_sync(self.Base.metadata.drop_all)
+            except sqlalchemy.exc.OperationalError as error:
+                log.exception(error)
+
+            await conn.run_sync(self.Base.metadata.create_all)
 
         return self
 
@@ -38,10 +45,7 @@ class DBRunner(hp.AsyncCMMixin):
             os.remove(self.filename)
 
         if hasattr(self, "database"):
-            self.database.close()
-
-        if hasattr(self, "db_queue"):
-            await self.db_queue.finish()
+            await self.database.finish()
 
 
 @pytest.fixture(scope="session")

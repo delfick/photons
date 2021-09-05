@@ -1,5 +1,5 @@
 from interactor.commander.command import DeviceChangeMixin
-from interactor.database.database import Scene, SceneInfo
+from interactor.database.models import Scene, SceneInfo
 from interactor.commander.errors import NoSuchScene
 from interactor.commander import helpers as ihp
 from interactor.commander.store import store
@@ -23,7 +23,7 @@ class SceneInfoCommand(store.Command):
     Retrieve information about scenes in the database
     """
 
-    db_queue = store.injected("db_queue")
+    database = store.injected("database")
 
     uuid = dictobj.NullableField(
         sb.listof(sb.string_spec()), help="Only get information for scene with these uuid"
@@ -34,7 +34,7 @@ class SceneInfoCommand(store.Command):
     )
 
     async def execute(self):
-        def get(db):
+        async def get(session, query):
             info = defaultdict(lambda: {"meta": {}, "scene": []})
 
             fs = []
@@ -43,15 +43,17 @@ class SceneInfoCommand(store.Command):
                 fs.append(Scene.uuid.in_(self.uuid))
                 ifs.append(SceneInfo.uuid.in_(self.uuid))
 
-            for sinfo in db.query(SceneInfo).filter(*ifs):
+            for sinfo in await query.all(SceneInfo, *ifs):
                 info[sinfo.uuid]["meta"] = sinfo.as_dict()
 
-            for scene in db.query(Scene).filter(*fs):
+            for scene in await query.all(Scene, *fs, change=lambda q: q.order_by(Scene.matcher)):
                 # Make sure there is an entry if no SceneInfo for this scene
                 info[scene.uuid]
 
                 if not self.only_meta:
-                    dct = scene.as_dict()
+                    dct = dict(scene.as_dict())
+                    if "uuid" in dct:
+                        del dct["uuid"]
                     info[scene.uuid]["scene"].append(dct)
 
             if self.only_meta:
@@ -60,7 +62,7 @@ class SceneInfoCommand(store.Command):
 
             return dict(info)
 
-        return await self.db_queue.request(get)
+        return await self.database.request(get)
 
 
 @store.command(name="scene_change")
@@ -69,7 +71,7 @@ class SceneChangeCommand(store.Command):
     Set all the options for a scene
     """
 
-    db_queue = store.injected("db_queue")
+    database = store.injected("database")
 
     uuid = dictobj.NullableField(
         sb.string_spec, help="The uuid of the scene to change, if None we create a new scene"
@@ -84,27 +86,27 @@ class SceneChangeCommand(store.Command):
     )
 
     async def execute(self):
-        def make(db):
+        async def make(session, query):
             scene_uuid = self.uuid or str(uuid.uuid4())
 
             if self.scene is not None:
-                for thing in db.queries.get_scenes(uuid=scene_uuid).all():
-                    db.delete(thing)
+                for thing in await query.get_scenes(uuid=scene_uuid):
+                    await session.delete(thing)
 
                 for part in self.scene:
-                    made = db.queries.create_scene(**part(scene_uuid).as_dict())
-                    db.add(made)
+                    made = await query.create_scene(**part(scene_uuid).as_dict())
+                    session.add(made)
 
-            info, _ = db.queries.get_or_create_scene_info(uuid=scene_uuid)
+            info, _ = await query.get_or_create_scene_info(uuid=scene_uuid)
             if self.label is not None:
                 info.label = self.label
             if self.description is not None:
                 info.description = self.description
-            db.add(info)
+            session.add(info)
 
             return scene_uuid
 
-        return await self.db_queue.request(make)
+        return await self.database.request(make)
 
 
 @store.command(name="scene_delete")
@@ -113,7 +115,7 @@ class SceneDeleteCommand(store.Command):
     Delete a scene
     """
 
-    db_queue = store.injected("db_queue")
+    database = store.injected("database")
 
     uuid = dictobj.Field(
         sb.or_spec(sb.boolean(), sb.listof(sb.string_spec())),
@@ -131,23 +133,23 @@ class SceneDeleteCommand(store.Command):
     async def execute(self):
         removed = []
 
-        def delete(db):
+        async def delete(session, query):
             if self.uuid is True:
-                for thing in db.queries.get_scenes().all():
+                for thing in await query.get_scenes():
                     removed.append(thing.uuid)
-                    db.delete(thing)
-                db.queries.get_scene_infos().delete()
+                    await session.delete(thing)
+                (await query.get_scene_infos()).delete()
             else:
                 for uu in self.uuid:
                     removed.append(uu)
-                    for thing in db.queries.get_scenes(uuid=uu).all():
-                        db.delete(thing)
-                    for thing in db.queries.get_scene_infos(uuid=uu).all():
-                        db.delete(thing)
+                    for thing in await query.get_scenes(uuid=uu):
+                        await session.delete(thing)
+                    for thing in await query.get_scene_infos(uuid=uu):
+                        await session.delete(thing)
 
             return {"deleted": True, "uuid": list(set(removed))}
 
-        return await self.db_queue.request(delete)
+        return await self.database.request(delete)
 
 
 @store.command(name="scene_apply")
@@ -156,7 +158,7 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
     Apply a scene
     """
 
-    db_queue = store.injected("db_queue")
+    database = store.injected("database")
     request_future = store.injected("request_future")
 
     uuid = dictobj.Field(sb.string_spec, wrapper=sb.required, help="The uuid of the scene to apply")
@@ -174,9 +176,9 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
         result = ihp.ResultBuilder()
         self.sender.gatherer.clear_cache()
 
-        def get(db):
+        async def get(session, query):
             info = []
-            for scene in db.queries.get_scenes(uuid=self.uuid).all():
+            for scene in await query.get_scenes(uuid=self.uuid):
                 info.append(scene.as_object())
             if not info:
                 raise NoSuchScene(uuid=self.uuid)
@@ -186,7 +188,7 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
             msgs = []
 
             async with hp.TaskHolder(self.request_future, name="SceneApplyCommand") as ts:
-                for scene in await self.db_queue.request(get):
+                for scene in await self.database.request(get):
                     if scene.zones:
                         fltr = self.cap_filter(scene.matcher, "multizone")
                         ts.add(self.apply_zones(fltr, scene, result, msgs))
@@ -250,7 +252,6 @@ class SceneCaptureCommand(store.Command, DeviceChangeMixin):
     """
 
     path = store.injected("path")
-    db_queue = store.injected("db_queue")
     executor = store.injected("executor")
 
     uuid = dictobj.NullableField(
@@ -301,19 +302,17 @@ class SceneCaptureCommand(store.Command, DeviceChangeMixin):
 
             scene.append(state)
 
-        result.result["results"] = {"scene": scene}
+        result.result["results"] = {"scene": sorted(scene, key=lambda s: s["matcher"]["serial"])}
 
         if self.just_return:
             return result.as_dict()
 
         args = {
             "uuid": self.uuid,
+            "scene": scene,
             "label": self.label,
             "description": self.description,
         }
-
-        result.result["results"]["meta"] = dict(args)
-        args["scene"] = scene
 
         try:
             uuid = await self.executor.execute(self.path, {"command": "scene_change", "args": args})
@@ -321,7 +320,13 @@ class SceneCaptureCommand(store.Command, DeviceChangeMixin):
             raise
         except Exception as error:
             result.error(error)
-        else:
-            result.result["results"]["meta"]["uuid"] = uuid
+            return result.as_dict()
 
-        return result.as_dict()
+        info = await self.executor.execute(
+            self.path, {"command": "scene_info", "args": {"uuid": uuid}}
+        )
+
+        if uuid in info:
+            return info[uuid]
+        else:
+            return info
