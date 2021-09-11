@@ -1,9 +1,13 @@
-from photons_app.errors import PhotonsAppError
-
-from photons_messages import LightMessages, DeviceMessages, MultiZoneMessages, TileMessages
+from photons_messages import (
+    LightMessages,
+    DeviceMessages,
+    MultiZoneMessages,
+    TileMessages,
+)
 from photons_canvas.orientation import nearest_orientation, Orientation
 from photons_canvas.points import containers as cont
 from photons_messages.fields import Tile, Color
+from photons_app.errors import PhotonsAppError
 from photons_products import Products, Zones
 
 from delfick_project.norms import sb, dictobj
@@ -814,6 +818,111 @@ class FirmwarePlan(Plan):
 
         async def info(self):
             return self.firmware
+
+
+@a_plan("hev_status")
+class HevStatusPlan(Plan):
+    """
+    Returns the current and previous HEV cycle run info for a device. The duration,
+    remaining and power_off fields are only included if there is an HEV cycle currently
+    running.
+
+        {
+            current: {
+                active: <boolean>,
+                duration_s: <total time in seconds>
+                remaining: <time left in seconds>
+                power_off: <boolean>
+            },
+            last: {
+                result: <result of last cycle>
+            }
+       }
+
+    * current:
+        * active: (boolean) true if the device is currently in a cycle
+        * duration_s: the total time in seconds for the current cycle
+        * remaining: the remaining time in seconds for the current cycle
+        * power_off: (boolean) true if the device power itself off when the cycle completes
+    * last:
+        * result: either SUCCESS, BUSY or INTERRUPTED BY <source>
+
+    """
+
+    default_refresh = 1
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan()}
+
+    class Instance(Plan.Instance):
+        @property
+        def is_hev(self):
+            return self.deps["c"]["cap"].has_hev
+
+        @property
+        def messages(self):
+            if self.is_hev:
+                return [LightMessages.GetHevCycle(), LightMessages.GetLastHevCycleResult()]
+            return Skip
+
+        def process(self, pkt):
+            if pkt | LightMessages.StateHevCycle:
+                if pkt.remaining_s > 0:
+                    self.hev_current = {
+                        "active": True,
+                        "duration_s": pkt.duration_s,
+                        "remaining": pkt.remaining_s,
+                        "last_power": 65535 if pkt.last_power == 1 else 0,
+                    }
+                else:
+                    self.hev_current = {"active": False}
+
+            elif pkt | LightMessages.StateLastHevCycleResult:
+                self.hev_last = {"result": pkt.result}
+
+            return hasattr(self, "hev_current") and hasattr(self, "hev_last")
+
+        async def info(self):
+            return {"current": self.hev_current, "last": self.hev_last}
+
+
+@a_plan("hev_config")
+class HevConfigPlan(Plan):
+    """
+    Returns the default HEV configuration for the device:
+
+        {
+            "indication": <boolean>,
+            "duration_s": <time in seconds>
+        }
+
+    * indication: whether a short flashing indication occurs when the cycle ends
+    * duration_s: the total time in seconds for the current cycle
+    """
+
+    @property
+    def dependant_info(kls):
+        return {"c": CapabilityPlan()}
+
+    class Instance(Plan.Instance):
+        @property
+        def is_hev(self):
+            return self.deps["c"]["cap"].has_hev
+
+        @property
+        def messages(self):
+            if self.is_hev:
+                return [LightMessages.GetHevCycleConfiguration()]
+            return Skip
+
+        def process(self, pkt):
+            if pkt | LightMessages.StateHevCycleConfiguration:
+                self.hev_config = {"indication": bool(pkt.indication), "duration_s": pkt.duration_s}
+                return True
+
+        async def info(self):
+            return self.hev_config
 
 
 @a_plan("version")
