@@ -14,7 +14,7 @@ describe "Options":
         }
 
     it "can set values of it's own", options_maker:
-        options = options_maker("blah", 9001, database={"uri": "somewhere"},)
+        options = options_maker("blah", 9001, database={"uri": "somewhere"})
 
         assert options.host == "blah"
         assert options.port == 9001

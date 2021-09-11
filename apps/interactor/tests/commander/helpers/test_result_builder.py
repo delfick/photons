@@ -137,7 +137,7 @@ describe "ResultBuilder":
             assert builder.as_dict() == {
                 "results": {"d073d5000001": "ok"},
                 "errors": [
-                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400,}
+                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400}
                 ],
             }
 
@@ -154,7 +154,7 @@ describe "ResultBuilder":
             assert builder.as_dict() == {
                 "results": {"d073d5000001": "ok"},
                 "errors": [
-                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400,},
+                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400},
                     {
                         "error": {"message": "an error. wat", "thing": 1},
                         "error_code": "Error",
