@@ -31,3 +31,34 @@ class Options(dictobj.Spec):
         ),
         help="Database options",
     )
+
+    daemon_options = dictobj.Field(
+        sb.dictionary_spec(),
+        default={
+            "search_interval": 30 * 60,
+            "time_between_queries": {
+                "LIGHT_STATE": 10 * 60,
+                "GROUP": 13 * 60,
+                "LOCATION": 16 * 60,
+                "FIRMWARE": 24 * 3600,
+            },
+        },
+        help="""
+        Options for the device finder daemon. Defaults are::
+
+            { "search_interval": 1800 # do a discovery every 30 minutes
+            , "limit": 30 # Limit of 30 messages inflight at any one time
+            , "time_between_queries": <shown below>
+            }
+
+        The time_between_queries is used to determine how long to between asking devices
+        for particular information. It is a dictionary like the following::
+
+            { "LIGHT_STATE": 10 * 60 # label, power, hsbk every 10 minutes
+            , "VERSION": None # The type of product can be cached forever
+            , "FIRMWARE": 24 * 3600 # Cache the firmware version for a day
+            , "GROUP": 13 * 60 # Cache group information for 13 minutes
+            , "LOCATION": 16 * 600 # Cache location information for 16 minutes
+            }
+    """,
+    )

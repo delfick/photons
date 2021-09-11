@@ -31,3 +31,13 @@ following options which are all optional:
           # main configuration file. If a configuration file doesn't exist, then
           # this is made in the current working directory.
           uri: "{config_root}/interactor.db"
+
+        daemon_options:
+            limit: 30 # Limit of 30 messages inflight at any one time
+            search_interval: 1800 # do a discovery every 30 minutes
+            time_between_queries:
+              LIGHT_STATE: 600 # label, power, hsbk every 10 minutes
+              VERSION: null # The type of product can be cached forever
+              FIRMWARE: 86400 # Cache the firmware version for a day
+              GROUP: 780 # Cache group information for 13 minutes
+              LOCATION: 9600 # Cache location information for 16 minutes

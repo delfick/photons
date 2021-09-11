@@ -90,6 +90,26 @@ And help for specific commands::
       -HContent-Type:application/json \
       -d '{"command": "help", "args": {"command": "transform"}}'
 
+How accurate is discovery information?
+--------------------------------------
+
+There is no way to subscribe to changes from the lights and so the only way to
+know if a light has changed is to reach out to it.
+
+The server used to do this very often but it causes a lot of CPU usage when you
+have a lot of lights (the protocol code in Photons needs to be made more
+efficient).
+
+Since 0.10.0 the default is much less often. When you perform a ``discovery``
+command you will get the cache of information known by the server and this may
+be out of date.
+
+You can specify ``{"matcher": {"refresh_info": true}}`` when you run the request
+to ensure the cache is accurate when you make that request.
+
+You can also change how often the server refreshes information using the
+``daemon_options`` section of the :ref:`configuration <interactor_options>`.
+
 Running on a raspberry Pi
 -------------------------
 

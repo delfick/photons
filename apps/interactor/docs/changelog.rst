@@ -9,6 +9,11 @@ Changelog
     * Output from scene_capture no longer namespace'd by a "results" key
     * Migrated to asyncio sqlalchemy
     * Added ``clean/*`` commands from @Djelibeybi
+    * Added ``daemon_options`` to the server options
+    * Changed defaults time between queries to reduce CPU usage
+
+      * Light state every 10 minutes instead of 10 seconds
+      * Discovery every 30 minutes instead of 20 seconds
 
 .. _release-interactor-0-9-1:
 

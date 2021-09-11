@@ -154,7 +154,9 @@ class Server(Server):
         self.finder._merged_options_formattable = True
         self.cleaners.append(self.finder.finish)
 
-        self.daemon = DeviceFinderDaemon(sender, finder=self.finder)
+        self.daemon = DeviceFinderDaemon(
+            sender, finder=self.finder, **self.server_options.daemon_options
+        )
         self.cleaners.append(self.daemon.finish)
         await self.daemon.start()
 
