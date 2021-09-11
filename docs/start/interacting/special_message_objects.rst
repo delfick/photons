@@ -118,6 +118,8 @@ Existing message objects
 
 .. autofunction:: photons_control.script.Pipeline
 
+.. autofunction:: photons_control.script.ForCapability
+
 .. autofunction:: photons_control.transform.PowerToggle
 
 .. autofunction:: photons_control.transform.PowerToggleGroup

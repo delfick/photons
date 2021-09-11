@@ -210,6 +210,53 @@ class Stop(Exception):
 Repeater.Stop = Stop
 
 
+def ForCapability(**by_cap):
+    """
+    Send messages based on capability of the device.
+
+    For example::
+
+        ForCapability(hev=LightMessages.GetHevCycle())
+
+    Will send that message only to devices that have the hev capability. This generator
+    will use the capability plan to find devices with that capability.
+
+    You can also specify a group of capabilities::
+
+        ForCapability(**{"ir,buttons": LightMessages.SetPower(level=0)})
+
+    Will turn off any device that has infrared or buttons.
+    """
+
+    async def gen(reference, sender, **kwargs):
+        if not by_cap:
+            return
+
+        def allows(cap, *want):
+            for c in want:
+                if c.startswith("not_"):
+                    if not getattr(cap, f"has_{c[4:]}"):
+                        return True
+                else:
+                    if getattr(cap, f"has_{c}"):
+                        return True
+
+        plans = sender.make_plans("capability")
+        async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):
+            for caps, msgs in by_cap.items():
+
+                def make_gen(ms):
+                    async def gen(r, s, **kw):
+                        yield ms
+
+                    return gen
+
+                if allows(info["cap"], *caps.split(",")):
+                    yield FromGenerator(make_gen(msgs), reference_override=serial)
+
+    return FromGenerator(gen)
+
+
 def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     """
     Same as a FromGenerator except it will call your inner_gen per serial in

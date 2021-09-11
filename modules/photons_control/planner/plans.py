@@ -825,7 +825,7 @@ class HevStatusPlan(Plan):
     """
     Returns the current and previous HEV cycle run info for a device. The duration,
     remaining and power_off fields are only included if there is an HEV cycle currently
-    running.
+    running::
 
         {
             current: {
@@ -844,6 +844,7 @@ class HevStatusPlan(Plan):
         * duration_s: the total time in seconds for the current cycle
         * remaining: the remaining time in seconds for the current cycle
         * power_off: (boolean) true if the device power itself off when the cycle completes
+
     * last:
         * result: either SUCCESS, BUSY or INTERRUPTED BY <source>
 
@@ -890,7 +891,7 @@ class HevStatusPlan(Plan):
 @a_plan("hev_config")
 class HevConfigPlan(Plan):
     """
-    Returns the default HEV configuration for the device:
+    Returns the default HEV configuration for the device::
 
         {
             "indication": <boolean>,
