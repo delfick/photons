@@ -98,7 +98,7 @@ describe "Control Commands":
         results = responses.light_state_responses["results"]
         expected = {
             device.serial: results[device.serial]
-            for device in devices.for_attribute("power", 65535, expect=7)
+            for device in devices.for_attribute("power", 65535, expect=8)
         }
         await server.assertCommand(
             "/v1/lifx/command",

@@ -120,6 +120,10 @@ def effects_running_status():
                 },
                 "product": {"cap": mock.ANY, "name": "LCM3_TILE", "pid": 55, "vid": 1},
             },
+            "d073d5000009": {
+                "effect": {"type": "SKIP"},
+                "product": {"cap": mock.ANY, "name": "LCM3_A19_CLEAN", "pid": 90, "vid": 1},
+            },
         }
     }
 
@@ -342,6 +346,30 @@ def effects_stopped_status():
                     "vid": 1,
                 },
             },
+            "d073d5000009": {
+                "effect": {"type": "SKIP"},
+                "product": {
+                    "cap": {
+                        "has_buttons": False,
+                        "has_chain": False,
+                        "has_color": True,
+                        "has_extended_multizone": False,
+                        "has_hev": True,
+                        "has_ir": False,
+                        "has_relays": False,
+                        "has_matrix": False,
+                        "has_multizone": False,
+                        "has_unhandled": False,
+                        "has_variable_color_temp": True,
+                        "max_kelvin": 9000,
+                        "min_kelvin": 1500,
+                        "zones": "SINGLE",
+                    },
+                    "name": "LCM3_A19_CLEAN",
+                    "pid": 90,
+                    "vid": 1,
+                },
+            },
         }
     }
 
@@ -358,6 +386,7 @@ def success_result():
             "d073d5000006": "ok",
             "d073d5000007": "ok",
             "d073d5000008": "ok",
+            "d073d5000009": "ok",
         }
     }
 

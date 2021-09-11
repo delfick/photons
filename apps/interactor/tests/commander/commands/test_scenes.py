@@ -94,6 +94,11 @@ describe "Scene Commands":
                     "matcher": {"serial": devices["tile"].serial},
                     "power": True,
                 },
+                {
+                    "color": mock.ANY,
+                    "matcher": {"serial": devices["clean"].serial},
+                    "power": True,
+                },
             ],
         }
 

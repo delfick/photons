@@ -297,7 +297,7 @@ for i in range(16):
 
 
 ds.add("a19_1")(
-    "d073d5000001",
+    next(ds.serial_seq),
     Products.LCM2_A19,
     hp.Firmware(2, 75),
     value_store=dict(
@@ -310,7 +310,7 @@ ds.add("a19_1")(
 )
 
 ds.add("a19_2")(
-    "d073d5000002",
+    next(ds.serial_seq),
     Products.LCM2_A19,
     hp.Firmware(2, 75),
     value_store=dict(
@@ -323,7 +323,7 @@ ds.add("a19_2")(
 )
 
 ds.add("color1000")(
-    "d073d5000003",
+    next(ds.serial_seq),
     Products.LCMV4_A19_COLOR,
     hp.Firmware(1, 1),
     value_store=dict(
@@ -336,7 +336,7 @@ ds.add("color1000")(
 )
 
 ds.add("white800")(
-    "d073d5000004",
+    next(ds.serial_seq),
     Products.LCMV4_A19_WHITE_LV,
     hp.Firmware(1, 1),
     value_store=dict(
@@ -349,7 +349,7 @@ ds.add("white800")(
 )
 
 ds.add("strip1")(
-    "d073d5000005",
+    next(ds.serial_seq),
     Products.LCM2_Z,
     hp.Firmware(2, 75),
     value_store=dict(
@@ -363,7 +363,7 @@ ds.add("strip1")(
 )
 
 ds.add("strip2")(
-    "d073d5000006",
+    next(ds.serial_seq),
     Products.LCM1_Z,
     hp.Firmware(1, 1),
     value_store=dict(
@@ -377,7 +377,7 @@ ds.add("strip2")(
 )
 
 ds.add("candle")(
-    "d073d5000007",
+    next(ds.serial_seq),
     Products.LCM3_CANDLE,
     hp.Firmware(3, 50),
     value_store=dict(
@@ -390,12 +390,25 @@ ds.add("candle")(
 )
 
 ds.add("tile")(
-    "d073d5000008",
+    next(ds.serial_seq),
     Products.LCM3_TILE,
     hp.Firmware(3, 50),
     value_store=dict(
         color=hp.Color(0, 1, 1, 3500),
         label="wall",
+        power=65535,
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
+    ),
+)
+
+ds.add("clean")(
+    next(ds.serial_seq),
+    Products.LCM3_A19_CLEAN,
+    hp.Firmware(3, 70),
+    value_store=dict(
+        color=hp.Color(0, 1, 1, 3500),
+        label="dungeon",
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
@@ -546,6 +559,22 @@ def discovery_response():
             "saturation": 1.0,
             "serial": "d073d5000008",
         },
+        "d073d5000009": {
+            "brightness": 1.0,
+            "cap": pytest.helpers.has_caps_list("color", "hev", "variable_color_temp"),
+            "firmware_version": "3.70",
+            "group_id": mock.ANY,
+            "group_name": "desk",
+            "hue": 0.0,
+            "kelvin": 3500,
+            "label": "dungeon",
+            "location_id": mock.ANY,
+            "location_name": "Work",
+            "power": "on",
+            "product_id": 90,
+            "saturation": 1.0,
+            "serial": "d073d5000009",
+        },
     }
 
 
@@ -647,6 +676,18 @@ light_state_responses = {
             "pkt_name": "LightState",
             "pkt_type": 107,
         },
+        "d073d5000009": {
+            "payload": {
+                "brightness": 1.0,
+                "hue": 0.0,
+                "kelvin": 3500,
+                "label": "dungeon",
+                "power": 65535,
+                "saturation": 1.0,
+            },
+            "pkt_name": "LightState",
+            "pkt_type": 107,
+        },
     }
 }
 
@@ -664,6 +705,7 @@ label_state_responses = {
         "d073d5000006": {"payload": {"label": "tv"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000007": {"payload": {"label": "pretty"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000008": {"payload": {"label": "wall"}, "pkt_name": "StateLabel", "pkt_type": 25},
+        "d073d5000009": {"payload": {"label": "dungeon"}, "pkt_name": "StateLabel", "pkt_type": 25},
     }
 }
 
