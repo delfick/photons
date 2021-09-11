@@ -12,6 +12,12 @@ from unittest import mock
 import binascii
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def set_async_timeout(request):
+    request.applymarker(pytest.mark.async_timeout(10))
+
+
 describe "DeviceFinder":
     it "takes in filter":
         fltr = Filter.empty()

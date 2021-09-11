@@ -50,6 +50,11 @@ def m(make_server):
     return make_server[1]
 
 
+@pytest.fixture(autouse=True)
+def set_async_timeout(request):
+    request.applymarker(pytest.mark.async_timeout(15))
+
+
 describe "Animation Commands":
 
     async it "can get info and help", server, m:
@@ -75,7 +80,6 @@ describe "Animation Commands":
         assert b"This animation has the following options:" in got
         assert b"colour range options" in got
 
-    @pytest.mark.async_timeout(5)
     async it "can control an animation", server, m:
         await server.assertCommand(
             "/v1/lifx/command",
@@ -191,7 +195,6 @@ describe "Animation Commands":
         assert info["animations"] == {identity2: mock.ANY}
         assert info["paused"] == []
 
-    @pytest.mark.async_timeout(5)
     async it "pausing an animation actually pauses the animation", devices, server, m:
         tile = devices["tile"]
         io = tile.io["MEMORY"]
@@ -256,7 +259,6 @@ describe "Animation Commands":
             json_output={"animations": {}, "paused": []},
         )
 
-    @pytest.mark.async_timeout(5)
     async it "can get information", server, m:
         # start
         got = await server.assertCommand(

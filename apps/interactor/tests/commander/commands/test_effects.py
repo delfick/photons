@@ -49,7 +49,7 @@ async def reset_devices(devices):
 
 @pytest.fixture(autouse=True)
 def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(3))
+    request.applymarker(pytest.mark.async_timeout(15))
 
 
 @pytest.fixture()

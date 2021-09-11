@@ -77,6 +77,7 @@ def set_async_timeout(request):
 
 describe "ApplyTheme":
 
+    @pytest.mark.async_timeout(15)
     async it "can apply a theme", sender:
         msg = ApplyTheme.msg({})
         await sender(msg, FoundSerials())
@@ -105,6 +106,7 @@ describe "ApplyTheme":
 
         assert len(non_zero_hues) > 200
 
+    @pytest.mark.async_timeout(15)
     async it "can have options", sender:
         msg = ApplyTheme.msg({"power_on": False, "overrides": {"saturation": 0.2}})
         await sender(msg, FoundSerials())
