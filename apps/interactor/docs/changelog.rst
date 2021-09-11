@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-10-0:
 
-0.10.0 - TBD
+0.10.0 - 12 September 2021
     * Output from scene_capture no longer namespace'd by a "results" key
     * Migrated to asyncio sqlalchemy
     * Added ``clean/*`` commands from @Djelibeybi

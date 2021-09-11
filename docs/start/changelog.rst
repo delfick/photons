@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-41-0:
 
-0.41.0 - TBD
+0.41.0 - 12 September 2021
     * Removed hp.ThreadToAsyncQueue
         * Relic of the time I created it in and isn't necessary.
     * Added gatherer plans for ``hev_status`` and ``hev_config``
