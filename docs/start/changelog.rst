@@ -9,6 +9,8 @@ ChangeLog
     * Removed hp.ThreadToAsyncQueue
         * Relic of the time I created it in and isn't necessary.
     * Added gatherer plans for ``hev_status`` and ``hev_config``
+    * Added clean functionality to photons_control
+    * Many thanks for @Djelibeybi for most of the hev work in this release!
 
 .. _release-core-0-40-4:
 
