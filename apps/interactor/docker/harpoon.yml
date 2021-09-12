@@ -21,9 +21,9 @@ images:
 
       - - RUN
         - apt-get update
-          && apt-get install curl gcc -y
+          && apt-get install curl gcc g++ -y
           && pip install pip -U && pip install /project/modules /project/interactor
-          && apt-get purge -y gcc
+          && apt-get purge -y gcc g++
           && apt-get autoremove -y
           && rm -rf /var/lib/apt/lists/*
 
