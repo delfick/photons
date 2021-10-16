@@ -17,6 +17,18 @@ import asyncio
 import uuid
 
 
+class dictionary_without_none_spec(sb.Spec):
+    def normalise(self, meta, val):
+        val = sb.dictionary_spec().normalise(meta, val)
+        return self.filtered(val)
+
+    def filtered(self, val):
+        if isinstance(val, dict):
+            return {k: self.filtered(v) for k, v in val.items() if v is not None}
+        else:
+            return val
+
+
 @store.command(name="scene_info")
 class SceneInfoCommand(store.Command):
     """
@@ -163,7 +175,7 @@ class SceneApplyCommand(store.Command, DeviceChangeMixin):
 
     uuid = dictobj.Field(sb.string_spec, wrapper=sb.required, help="The uuid of the scene to apply")
 
-    overrides = dictobj.Field(sb.dictionary_spec, help="Overrides to the scene")
+    overrides = dictobj.Field(dictionary_without_none_spec, help="Overrides to the scene")
 
     def cap_filter(self, matcher, cap):
         fltr = self.make_filter(matcher)

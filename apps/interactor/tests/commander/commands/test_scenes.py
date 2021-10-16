@@ -185,3 +185,21 @@ describe "Scene Commands":
             assert any(
                 event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
             ), devices.store(d)
+
+        # Very naive test with an override that is None
+        for d in devices:
+            devices.store(d).clear()
+
+        await server.assertCommand(
+            "/v1/lifx/command",
+            {
+                "command": "scene_apply",
+                "args": {"uuid": got2["meta"]["uuid"], "overrides": {"kelvin": None}},
+            },
+            json_output={"results": {d.serial: "ok" for d in devices}},
+        )
+
+        for d in devices:
+            assert any(
+                event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
+            ), devices.store(d)
