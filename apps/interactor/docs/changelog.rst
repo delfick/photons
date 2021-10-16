@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-10-1:
 
-0.10.1 - TBD
+0.10.1 - 16 October 2021
     * values in overrides when doing a scene_apply command will be ignored if
       they are set to null.
 
