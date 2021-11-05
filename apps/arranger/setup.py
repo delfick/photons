@@ -10,7 +10,7 @@ setup(
     , packages = find_packages(include="arranger.*", exclude=["tests*"])
     , include_package_data = True
 
-    , python_requires = ">= 3.6"
+    , python_requires = ">= 3.7"
 
     , install_requires =
       [ "lifx-photons-core>=0.40.0"
