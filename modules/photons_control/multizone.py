@@ -104,7 +104,7 @@ class SetZonesPlan(Plan):
                         duration=duration,
                         ack_required=True,
                         res_required=False,
-                        **current
+                        **current,
                     )
                 )
                 start = i
@@ -120,7 +120,7 @@ class SetZonesPlan(Plan):
                     duration=duration,
                     ack_required=True,
                     res_required=False,
-                    **current
+                    **current,
                 )
             )
 

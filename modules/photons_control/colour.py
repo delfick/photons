@@ -142,7 +142,7 @@ def make_hsbks(colors, overrides=None):
 
 
 def split_color_string(color_string):
-    """Split a ``color_string`` by whitespace into a list of it's ``components``. """
+    """Split a ``color_string`` by whitespace into a list of it's ``components``."""
     if not color_string:
         return []
     return [thing for thing in regexes["whitespace"].split(color_string) if thing]
@@ -543,7 +543,7 @@ class Effects:
         transient=1,
         period=1.0,
         skew_ratio=sb.NotSpecified,
-        **kwargs
+        **kwargs,
     ):
         """Options to make the light(s) pulse `color` and then back to its original color"""
         if skew_ratio is sb.NotSpecified:

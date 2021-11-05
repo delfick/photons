@@ -112,7 +112,7 @@ class PacketSpecMixin:
 
     @classmethod
     def size_bits(kls, values):
-        """Return the number of bits this packet requires. """
+        """Return the number of bits this packet requires."""
         total = 0
         for name, typ in kls.Meta.field_types:
             multiple = 1

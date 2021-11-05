@@ -27,7 +27,7 @@ def V():
             width=8,
             height=8,
             orientation=Orientation.RightSideUp,
-            **kwargs
+            **kwargs,
         ):
             return cont.Part(
                 user_x, user_y, width, height, part_number, orientation, device, **kwargs

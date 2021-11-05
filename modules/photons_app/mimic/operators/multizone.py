@@ -139,7 +139,7 @@ class Multizone(Operator):
                 yield MultiZoneMessages.StateZone(
                     zones_count=len(self.device.attrs.zones),
                     zone_index=buf[0][0],
-                    **buf[0][1].as_dict()
+                    **buf[0][1].as_dict(),
                 )
                 continue
 

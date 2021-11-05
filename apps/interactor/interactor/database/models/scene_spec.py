@@ -148,7 +148,7 @@ def make_spec(storing=True):
                             end_index=i - 1,
                             **color,
                             duration=duration,
-                            res_required=False
+                            res_required=False,
                         )
                         color = colors[i]
                         start = i

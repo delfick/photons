@@ -287,7 +287,7 @@ class TaskRegister:
                 target, "instantiated_name", getattr(target, "__name__", repr(target))
             ),
             available_targets=sorted(set(possible_targets)),
-            **kw
+            **kw,
         )
 
     def fill_task(
@@ -298,7 +298,7 @@ class TaskRegister:
         target=sb.NotSpecified,
         reference=sb.NotSpecified,
         where=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Resolve our task and target and return a filled Task object
@@ -317,7 +317,7 @@ class TaskRegister:
             instantiated_name=task_name,
             target=target,
             reference=reference,
-            **kwargs
+            **kwargs,
         )
 
 

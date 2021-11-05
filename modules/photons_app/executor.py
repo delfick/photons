@@ -164,21 +164,21 @@ class App(App):
             "--task",
             help="The task to run",
             dest="photons_app_task_specifier",
-            **defaults["--task"]
+            **defaults["--task"],
         )
 
         parser.add_argument(
             "--artifact",
             help="Extra information",
             dest="photons_app_artifact",
-            **defaults["--artifact"]
+            **defaults["--artifact"],
         )
 
         parser.add_argument(
             "--reference",
             help="A selector for the lights",
             dest="photons_app_reference",
-            **defaults["--reference"]
+            **defaults["--reference"],
         )
 
         parser.add_argument(
@@ -186,7 +186,7 @@ class App(App):
             help="Config file to read from",
             dest="photons_app_config",
             type=OptionalFileType("r"),
-            **defaults["--config"]
+            **defaults["--config"],
         )
 
         return parser
