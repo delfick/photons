@@ -34,7 +34,7 @@ setup(
     , py_modules = py_modules
     , include_package_data = True
 
-    , python_requires = ">= 3.6"
+    , python_requires = ">= 3.7"
 
     , install_requires =
       [ "delfick_project==0.7.9"
@@ -54,10 +54,10 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti==2.0.2"
-        , "pytest==6.1.2"
+        [ "noseOfYeti==2.1.0"
+        , "pytest==6.2.5"
         , "mock==4.0.2"
-        , "alt-pytest-asyncio==0.5.3"
+        , "alt-pytest-asyncio==0.6.0"
         , "pytest-helpers-namespace==2019.1.8"
         ]
       }

@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-11-0:
+
+0.11.0 - TBD
+    * Now python3.7+ and supports python3.10
+
 .. _release-interactor-0-10-1:
 
 0.10.1 - 16 October 2021
