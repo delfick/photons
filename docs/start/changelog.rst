@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42-0:
+
+0.42.0 - TBD
+    * Reformatted code with new version of black
+
 .. _release-core-0-41-0:
 
 0.41.0 - 12 September 2021

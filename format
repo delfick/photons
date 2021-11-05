@@ -1,10 +1,12 @@
 #!/bin/bash
 
-cd $(git rev-parse --show-toplevel)
+set -e
 
-./tools/black/setup_venv
+cd "$(git rev-parse --show-toplevel)"
 
-./tools/black/.black/bin/noy_black \
+./tools/black
+
+./tools/black noy_black --target-version py39 \
     modules \
     apps/arranger/arranger \
     apps/interactor/interactor \

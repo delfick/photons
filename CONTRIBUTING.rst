@@ -100,7 +100,7 @@ In VSCode you will need the following options to enable formatting on save:
 .. code-block:: json
 
    "editor.formatOnSave": true,
-   "python.formatting.blackPath": "/path/to/photons/tools/black/vscode_black",
+   "python.formatting.blackPath": "/path/to/photons/tools/vscode_black",
    "python.formatting.provider": "black",
    "python.linting.pylamaArgs": ["-o", "/path/to/photons/pylama.ini"],
    "editor.formatOnSaveTimeout": 5000

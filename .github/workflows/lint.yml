@@ -34,7 +34,7 @@ jobs:
 
       - run: python -m pip install pip venvstarter -U
 
-      - run: ./tools/black/setup_venv
+      - run: ./tools/black
 
       - name: Ensure code is formatted
         run: |
