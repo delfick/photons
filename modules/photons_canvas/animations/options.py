@@ -22,10 +22,10 @@ class OneColor:
 
 class OneColorRange:
     def __init__(self, hs, ss, bb, kk):
-        self.hs = hs
-        self.ss = ss
-        self.bb = bb
-        self.kk = kk
+        self.hs = tuple(int(h) for h in hs)
+        self.ss = tuple(int(s) for s in ss)
+        self.bb = tuple(int(b) for b in bb)
+        self.kk = tuple(int(k) for k in kk)
 
     @property
     def color(self):
@@ -222,7 +222,7 @@ class Range:
         return f"<Range {self.mn} -> {self.mx}>"
 
     def choose_range(self):
-        choice = random.randrange(self.mn * self.multiplier, self.mx * self.multiplier)
+        choice = random.randrange(int(self.mn * self.multiplier), int(self.mx * self.multiplier))
         return self.spec.normalise(self.meta, choice / self.multiplier)
 
     @property
