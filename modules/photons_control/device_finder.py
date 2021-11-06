@@ -929,7 +929,7 @@ class Finder(hp.AsyncCMMixin):
         removed = []
 
         if self.final_future.done():
-            return [], []
+            return []
 
         for serial in serials:
             if serial not in self.devices:
