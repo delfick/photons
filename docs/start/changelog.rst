@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-42-0:
 
-0.42.0 - TBD
+0.42.0 - 6 November 2021
     * Reformatted code with new version of black
     * Photons now supports python 3.10
     * Photons is now 3.7+

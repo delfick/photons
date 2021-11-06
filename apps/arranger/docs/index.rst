@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0-6-0:
 
-0.6.0 - TBD
+0.6.0 - 6 November 2021
     * Now python3.7+ and supports python3.10
 
 .. _release-arranger-0-5-14:
