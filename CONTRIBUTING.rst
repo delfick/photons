@@ -160,10 +160,9 @@ Please follow Linus'
 `guide <https://github.com/torvalds/subsurface-for-dirk/blob/a48494d2fbed58c751e9b7e8fbff88582f9b2d02/README#L88>`_
 for good commit messages.
 
-And also have in the title the module or app you are working on in square
-brackets::
+And also have in the title the module or app you are working on:
 
-    [interactor] Fix some memory leaks
+    interactor: Fix some memory leaks
 
     It's possible for python to hold onto frame objects via exceptions so I
     need to be more careful about holding onto those
