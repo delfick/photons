@@ -2,6 +2,7 @@
 
 from interactor.commander.animations import Animations
 from interactor.commander.store import store
+from interactor.zeroconf import Zeroconf
 
 from photons_app import helpers as hp
 
@@ -54,15 +55,25 @@ def V():
         def FakeCommander(s):
             return mock.Mock(name="Commander", return_value=s.commander)
 
+        @hp.memoized_property
+        def FakeZeroconfRegisterer(s):
+            reg = mock.Mock(name="ZeroconfRegisterer")
+            reg.start = pytest.helpers.AsyncMock(name="start")
+            reg.finish = pytest.helpers.AsyncMock(name="start")
+            return reg
+
     return V()
 
 
 @pytest.fixture(scope="module")
 async def server(V, server_wrapper, sender, final_future):
     commander_patch = mock.patch("interactor.server.Commander", V.FakeCommander)
+    zeroconf_patch = mock.patch(
+        "interactor.zeroconf.ZeroconfRegisterer", lambda *a, **kw: V.FakeZeroconfRegisterer
+    )
     db_patch = mock.patch("interactor.server.DB", V.FakeDB)
 
-    with commander_patch, db_patch:
+    with commander_patch, db_patch, zeroconf_patch:
         async with server_wrapper(store, sender, final_future) as server:
             yield server
 
@@ -81,11 +92,14 @@ describe "Server":
         assert server.animations.sender is server.sender
         assert server.animations.final_future is server.final_future
 
+        assert isinstance(server.server_options.zeroconf, Zeroconf)
+
         V.FakeCommander.assert_called_once_with(
             store,
             tasks=server.tasks,
             sender=server.sender,
             finder=server.finder,
+            zeroconf=server.server_options.zeroconf,
             database=V.database,
             animations=server.animations,
             final_future=server.final_future,

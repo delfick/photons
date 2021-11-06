@@ -114,6 +114,10 @@ class Server(Server):
         self.wsconnections = {}
 
     async def wait_for_end(self):
+        # Wait till the server has successfully started to begin any zeroconf registration
+        await self.server_options.zeroconf.start(
+            self.tasks, self.host, self.port, self.sender, self.finder
+        )
         await hp.wait_for_all_futures(self.server_end_future, name="Server::wait_for_end")
 
     def make_application(self, *args, **kwargs):
@@ -170,6 +174,7 @@ class Server(Server):
             tasks=self.tasks,
             sender=self.sender,
             finder=self.finder,
+            zeroconf=self.server_options.zeroconf,
             database=self.database,
             animations=self.animations,
             final_future=self.final_future,
@@ -178,6 +183,7 @@ class Server(Server):
 
     async def cleanup(self):
         self.tasks.add(self.animations.stop())
+        self.tasks.add(self.server_options.zeroconf.finish())
         await hp.wait_for_all_futures(
             *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
         )

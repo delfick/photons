@@ -16,13 +16,28 @@ following options which are all optional:
     interactor:
         # The host the server is started on
         # If you want to expose the server externally and you aren't running
-        # this through docker, 0.0.0.0 is what you want.
+        # this in a container, set this to 0.0.0.0.
         # The server has no authentication, so it's not recommended to do that
-        # without it being behind a VPN
+        # without it being behind a firewall or only accessible via VPN.
         host: 127.0.0.1
 
         # The port used by the server
         port: 6100
+
+        # options for zeroconf setup
+        zeroconf:
+          # If true, Interactor will enable Zeroconf but only if the host is not
+          # set to 127.0.0.1 or localhost. Default is false.
+          # enabled: true
+
+          # Interactor can work out the IP of this computer automatically,
+          # or you can manually specify one. It must be assigned to an interface
+          # on the local machine.
+          # ip_address: 192.168.0.1
+
+          # The name of this Photons Interactor instance. Defaults to the hostname,
+          # but it can be customised. Should be unique on the network to avoid duplicates.
+          # name: <hostname>
 
         database:
           # Scenes use a sqlite3 database and one will be created when the server
