@@ -276,7 +276,7 @@ describe "Animation Commands":
         assert info["animations"][identity]["current_animation"] == {
             "name": "balls",
             "options": {
-                "ball_colors": "<ManyColor:[((0, 360), (1000.0, 1000.0), (1000.0, 1000.0), (3500.0, 3500.0))]>",
+                "ball_colors": "<ManyColor:[((0, 360), (1000, 1000), (1000, 1000), (3500, 3500))]>",
                 "fade_amount": 0.02,
                 "num_balls": 5,
                 "rate": "<Rate 0.9 -> 1>",
