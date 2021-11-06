@@ -85,7 +85,7 @@ class RunAsExternal:
         fut = hp.create_future()
 
         def ready(signum, frame):
-            fut.set_result(True)
+            hp.get_event_loop().call_soon_threadsafe(fut.set_result, True)
 
         signal.signal(signal.SIGUSR1, ready)
 

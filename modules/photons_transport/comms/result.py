@@ -1,3 +1,5 @@
+from photons_app import helpers as hp
+
 import asyncio
 import time
 
@@ -79,7 +81,7 @@ class Result(asyncio.Future):
         result
         """
         current = getattr(self, attr)
-        asyncio.get_event_loop().call_later(
+        hp.get_event_loop().call_later(
             self.retry_gaps.finish_multi_gap, self.maybe_finish, current, attr
         )
 

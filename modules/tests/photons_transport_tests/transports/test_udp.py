@@ -23,7 +23,7 @@ class FakeIO:
                 for msg in self.received(data, addr):
                     self.udp_transport.sendto(msg, addr)
 
-        self.remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(
+        self.remote, _ = await hp.get_event_loop().create_datagram_endpoint(
             ServerProtocol, local_addr=("0.0.0.0", self.port)
         )
 

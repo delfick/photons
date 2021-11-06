@@ -13,7 +13,7 @@ import time
 
 @pytest.fixture()
 def loop():
-    return asyncio.get_event_loop()
+    return hp.get_event_loop()
 
 
 describe "creating a future":

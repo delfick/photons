@@ -73,7 +73,9 @@ class Runner:
 
                 def stop_final_fut():
                     if not final_future.done():
-                        final_future.set_exception(ApplicationStopped())
+                        hp.get_event_loop().call_soon_threadsafe(
+                            final_future.set_exception, ApplicationStopped()
+                        )
 
                 self.loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
@@ -162,9 +164,7 @@ class Runner:
                 task.cancel()
 
             try:
-                self.loop.run_until_complete(
-                    asyncio.tasks.gather(task, loop=self.loop, return_exceptions=True)
-                )
+                self.loop.run_until_complete(asyncio.tasks.gather(task, return_exceptions=True))
             except KeyboardInterrupt:
                 pass
             except:
@@ -176,9 +176,7 @@ class Runner:
             log.debug("Waiting for waiter task to finish")
             waiter.cancel()
             try:
-                self.loop.run_until_complete(
-                    asyncio.tasks.gather(waiter, loop=self.loop, return_exceptions=True)
-                )
+                self.loop.run_until_complete(asyncio.tasks.gather(waiter, return_exceptions=True))
             except:
                 pass
 
@@ -227,7 +225,7 @@ class Runner:
             for task in to_cancel:
                 task.cancel()
 
-            gathered = asyncio.tasks.gather(*to_cancel, loop=self.loop, return_exceptions=True)
+            gathered = asyncio.tasks.gather(*to_cancel, return_exceptions=True)
             self.loop.run_until_complete(gathered)
 
             for task in to_cancel:

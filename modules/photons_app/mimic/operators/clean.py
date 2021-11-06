@@ -1,11 +1,11 @@
 from photons_app.mimic.operator import Operator, operator
 from photons_app.mimic.event import Events
+from photons_app import helpers as hp
 
 from photons_messages import LightMessages, DeviceMessages, LightLastHevCycleResult
 from photons_protocol.types import enum_spec
 
 from delfick_project.norms import dictobj, sb
-import asyncio
 import time
 
 # Ensure Device operator comes before this one
@@ -60,7 +60,7 @@ class CleanDetails(dictobj.Spec):
                 self.last_trigger = None
 
             self.triggered_at = time.time()
-            self.last_trigger = asyncio.get_event_loop().call_later(
+            self.last_trigger = hp.get_event_loop().call_later(
                 duration, lambda: self.device.io["MEMORY"].ts.add(self.stop_cycle(event))
             )
 

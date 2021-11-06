@@ -6,15 +6,17 @@ from photons_app.collector import Collector
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 import asyncio
 import pytest
 
 
 @pytest.fixture()
 def collector():
-    collector = Collector()
-    collector.prepare(None, {})
-    return collector
+    with OverrideLoop(new_loop=False):
+        collector = Collector()
+        collector.prepare(None, {})
+        yield collector
 
 
 describe "Runner":
@@ -110,9 +112,7 @@ describe "Runner":
                 called.append(2)
 
                 try:
-                    asyncio.get_event_loop().call_later(
-                        0.02, collector.photons_app.final_future.cancel
-                    )
+                    hp.get_event_loop().call_later(0.02, collector.photons_app.final_future.cancel)
                     await asyncio.sleep(10)
                     called.append("unexpected")
                 except:

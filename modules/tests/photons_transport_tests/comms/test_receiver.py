@@ -15,7 +15,7 @@ import pytest
 describe "Receiver":
     async it "inits some variables":
         receiver = Receiver()
-        assert receiver.loop is asyncio.get_event_loop()
+        assert receiver.loop is hp.get_event_loop()
         assert receiver.results == {}
         assert receiver.blank_target == b"\x00\x00\x00\x00\x00\x00\x00\x00"
 

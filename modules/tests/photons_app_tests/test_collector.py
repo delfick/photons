@@ -10,6 +10,7 @@ from delfick_project.norms import dictobj, sb, BadSpecValue
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.option_merge import MergedOptions
 from delfick_project.option_merge.path import Path
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.addons import Register
 from contextlib import contextmanager
 from textwrap import dedent
@@ -22,9 +23,14 @@ import os
 
 describe "Collector":
 
-    it "has a shortcut to the photons_app":
-        collector = Collector()
-        collector.prepare(None, {})
+    @pytest.fixture()
+    def collector(self):
+        with OverrideLoop(new_loop=False):
+            collector = Collector()
+            collector.prepare(None, {})
+            yield collector
+
+    it "has a shortcut to the photons_app", collector:
         assert collector.photons_app is collector.configuration["photons_app"]
 
     it "has a shortcut to resolve a target":
@@ -37,17 +43,15 @@ describe "Collector":
                 target_register.register_type("lan", Target.FieldSpec())
                 super().add_targets(target_register, targets)
 
-        collector = C()
-        collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
+        with OverrideLoop(new_loop=False):
+            collector = C()
+            collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
 
-        lan = collector.configuration["target_register"].resolve("lan")
-        assert collector.resolve_target("lan") is lan
+            lan = collector.configuration["target_register"].resolve("lan")
+            assert collector.resolve_target("lan") is lan
 
-    it "has a shortcut to the run helper":
+    it "has a shortcut to the run helper", collector:
         coro = mock.Mock(name="coro")
-        collector = Collector()
-        collector.prepare(None, {})
-
         run = mock.Mock(name="run", spec=[])
         Run = mock.Mock(name="Run", return_value=mock.Mock("RunInstance", run=run))
         Runner = mock.Mock(name="Runner", Run=Run, spec=["Run"])
@@ -62,42 +66,43 @@ describe "Collector":
         run.assert_called_once_with()
 
     it "can be cloned":
-        collector = Collector()
+        with OverrideLoop(new_loop=False):
+            collector = Collector()
 
-        prepare = mock.Mock(name="prepare")
-        with hp.a_temp_file() as fle:
-            fle.write(
-                dedent(
-                    """
-            ---
+            prepare = mock.Mock(name="prepare")
+            with hp.a_temp_file() as fle:
+                fle.write(
+                    dedent(
+                        """
+                ---
 
-            photons_app:
-               artifact: "blah"
-               ignored: "an option"
+                photons_app:
+                   artifact: "blah"
+                   ignored: "an option"
 
-            """
-                ).encode()
-            )
-            fle.close()
-            collector.prepare(fle.name, {"one": 2})
+                """
+                    ).encode()
+                )
+                fle.close()
+                collector.prepare(fle.name, {"one": 2})
 
-            with mock.patch.object(Collector, "prepare", prepare):
-                clone = collector.clone({"two": 3})
+                with mock.patch.object(Collector, "prepare", prepare):
+                    clone = collector.clone({"two": 3})
 
-            clone2 = collector.clone()
+                clone2 = collector.clone()
 
-        assert clone is not collector
+            assert clone is not collector
 
-        call = prepare.mock_calls[0].call_list()[0][1]
-        assert call[0] == fle.name
-        assert call[1].storage.data == [
-            (Path(""), {"two": 3}, None),
-            (Path(""), {"photons_app": collector.photons_app.as_dict()}, None),
-            (Path(""), {"one": 2}, None),
-        ]
+            call = prepare.mock_calls[0].call_list()[0][1]
+            assert call[0] == fle.name
+            assert call[1].storage.data == [
+                (Path(""), {"two": 3}, None),
+                (Path(""), {"photons_app": collector.photons_app.as_dict()}, None),
+                (Path(""), {"one": 2}, None),
+            ]
 
-        assert clone2.configuration["photons_app"].artifact == "blah"
-        assert clone2.configuration["photons_app"] is not collector.photons_app
+            assert clone2.configuration["photons_app"].artifact == "blah"
+            assert clone2.configuration["photons_app"] is not collector.photons_app
 
     describe "extra_prepare":
 
@@ -698,26 +703,27 @@ describe "Collector":
                 """,
                 )
 
-                collector = Collector()
-                collector.prepare(rootyml, {})
+                with OverrideLoop(new_loop=False):
+                    collector = Collector()
+                    collector.prepare(rootyml, {})
 
-                expected = {
-                    "one": 9,
-                    "two": {
-                        "three": 3,
-                        "four": "plane",
-                        "tree": "tree",
-                        "first": True,
-                        "second": True,
-                        "last": True,
-                    },
-                    "config_root": d,
-                    "five": {"six": 9, "eight": "evenmorecloud"},
-                }
+                    expected = {
+                        "one": 9,
+                        "two": {
+                            "three": 3,
+                            "four": "plane",
+                            "tree": "tree",
+                            "first": True,
+                            "second": True,
+                            "last": True,
+                        },
+                        "config_root": d,
+                        "five": {"six": 9, "eight": "evenmorecloud"},
+                    }
 
-                dct = collector.configuration.as_dict()
-                for key, val in expected.items():
-                    assert dct[key] == val
+                    dct = collector.configuration.as_dict()
+                    for key, val in expected.items():
+                        assert dct[key] == val
 
         it "complains if a filename is not a file", a_temp_dir:
             with a_temp_dir() as (d, make_file):
@@ -745,25 +751,26 @@ describe "Collector":
                 """,
                 )
 
-                collector = Collector()
+                with OverrideLoop(new_loop=False):
+                    collector = Collector()
 
-                errs = []
-                try:
-                    collector.prepare(rootyml, {})
-                    assert False, "Expect an error"
-                except BadSpecValue as error:
-                    for err in error.errors:
-                        errs.extend(err.errors)
+                    errs = []
+                    try:
+                        collector.prepare(rootyml, {})
+                        assert False, "Expect an error"
+                    except BadSpecValue as error:
+                        for err in error.errors:
+                            errs.extend(err.errors)
 
-                paths = []
+                    paths = []
 
-                assert len(errs) == 3, errs
-                for err in errs:
-                    assert isinstance(err, BadSpecValue)
-                    assert err.message == "Got something that exists but isn't a file"
-                    paths.append(err.kwargs["filename"])
+                    assert len(errs) == 3, errs
+                    for err in errs:
+                        assert isinstance(err, BadSpecValue)
+                        assert err.message == "Got something that exists but isn't a file"
+                        paths.append(err.kwargs["filename"])
 
-                assert sorted(paths) == sorted([d1, d2, d3])
+                    assert sorted(paths) == sorted([d1, d2, d3])
 
     describe "extra_configuration_collection":
         it "registers converters for serveral things":
@@ -797,10 +804,7 @@ describe "Collector":
             assert type(reference_resolver_register) == ReferenceResolerRegister
 
     describe "stop_photons_app":
-        async it "cleans up photons":
-            collector = Collector()
-            collector.prepare(None, {})
-
+        async it "cleans up photons", collector:
             cleaners = collector.photons_app.cleaners
             final_future = collector.photons_app.final_future
 
@@ -821,15 +825,18 @@ describe "Collector":
             assert final_future.cancelled()
 
         async it "cleans up targets":
-            collector = Collector()
-            collector.prepare(
-                None, {}, extra_files=[{"photons_app": {"addons": {"lifx.photons": ["transport"]}}}]
-            )
-            target = collector.resolve_target("lan")
+            with OverrideLoop(new_loop=False):
+                collector = Collector()
+                collector.prepare(
+                    None,
+                    {},
+                    extra_files=[{"photons_app": {"addons": {"lifx.photons": ["transport"]}}}],
+                )
+                target = collector.resolve_target("lan")
 
-            finish = pytest.helpers.AsyncMock(name="finish")
+                finish = pytest.helpers.AsyncMock(name="finish")
 
-            with mock.patch.object(target, "finish", finish, create=True):
-                await collector.stop_photons_app()
+                with mock.patch.object(target, "finish", finish, create=True):
+                    await collector.stop_photons_app()
 
-            finish.assert_called_once_with()
+                finish.assert_called_once_with()

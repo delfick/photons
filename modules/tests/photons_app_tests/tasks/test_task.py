@@ -6,6 +6,7 @@ from photons_app.tasks.tasks import Task
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.norms import dictobj, sb
 from unittest import mock
 import asyncio
@@ -14,9 +15,15 @@ import time
 
 
 describe "Task":
-    it "has a create method":
-        collector = Collector()
-        collector.prepare(None, {})
+
+    @pytest.fixture()
+    def collector(self):
+        with OverrideLoop(new_loop=False):
+            collector = Collector()
+            collector.prepare(None, {})
+            yield collector
+
+    it "has a create method", collector:
         photons_app = collector.configuration["photons_app"]
         assert isinstance(photons_app, PhotonsApp)
 
@@ -40,13 +47,11 @@ describe "Task":
         assert t3.instantiated_name == "MyAmazingerTask"
         assert t3.thing == ["one"]
 
-    async it "has a run method":
+    async it "has a run method", collector:
         a = mock.Mock(name="a")
         b = mock.Mock(name="b")
         d = mock.Mock(name="d")
 
-        collector = Collector()
-        collector.prepare(None, {})
         task = Task.create(collector, instantiated_name="MyAmazingTask")
 
         post = pytest.helpers.AsyncMock(name="post")
@@ -68,7 +73,7 @@ describe "Task":
             execute_task.assert_called_once_with(a=a, c=b)
             post.assert_called_once_with((ValueError, error, mock.ANY), a=a, c=b)
 
-    it "has a shortcut to run in a loop":
+    it "has a shortcut to run in a loop", collector:
         got = []
 
         class T(Task):
@@ -78,15 +83,12 @@ describe "Task":
                 await fut
                 got.append(kwargs)
 
-        collector = Collector()
-        collector.prepare(None, {})
-
         task = T.create(collector, instantiated_name="Thing")
         task.run_loop(wat=1, blah=2)
 
         assert got == [{"wat": 1, "blah": 2}]
 
-    it "has order of cleanup and execution", FakeTime, MockedCallLater:
+    it "has order of cleanup and execution", FakeTime, MockedCallLater, collector:
 
         got = []
         m = None
@@ -145,9 +147,6 @@ describe "Task":
                     got.append((time.time(), "post"))
                     await asyncio.sleep(1)
                     got.append((time.time(), "post sleep"))
-
-            collector = Collector()
-            collector.prepare(None, {})
 
             task = T.create(collector, instantiated_name="Thing")
             task.run_loop()

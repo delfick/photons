@@ -2,7 +2,6 @@ from photons_app.errors import PhotonsAppError, DevicesNotFound
 from photons_app import helpers as hp
 
 import binascii
-import asyncio
 
 
 class SpecialReference:
@@ -47,7 +46,7 @@ class SpecialReference:
             return await self.found
 
         self.finding.set_result(True)
-        t = asyncio.get_event_loop().create_task(
+        t = hp.get_event_loop().create_task(
             self.find_serials(sender, timeout=timeout, broadcast=broadcast)
         )
 

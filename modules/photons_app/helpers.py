@@ -3,8 +3,8 @@ from photons_app.errors import PhotonsAppError
 from photons_messages import fields
 
 from queue import Queue as NormalQueue, Empty as NormalEmpty
+from contextlib import contextmanager, asynccontextmanager
 from delfick_project.logging import lc
-from contextlib import contextmanager
 from functools import total_ordering
 from collections import deque
 import traceback
@@ -19,11 +19,6 @@ log = logging.getLogger("photons_app.helpers")
 
 # Make vim be quiet
 lc = lc
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from photons_app.polyfill import asynccontextmanager
 
 
 if hasattr(asyncio, "exceptions"):
@@ -376,9 +371,7 @@ class ATicker(AsyncCMMixin):
     async def tick(self):
         final_handle = None
         if self.max_time:
-            final_handle = asyncio.get_event_loop().call_later(
-                self.max_time, self.final_future.cancel
-            )
+            final_handle = get_event_loop().call_later(self.max_time, self.final_future.cancel)
 
         try:
             async for info in self._tick():
@@ -410,7 +403,7 @@ class ATicker(AsyncCMMixin):
             self.waiter.reset()
             self.waiter.set_result(True)
         else:
-            self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
+            self._change_handle(get_event_loop().call_later(diff, self._waited))
 
     def _change_handle(self, handle=None):
         if self.handle:
@@ -484,7 +477,7 @@ class ATicker(AsyncCMMixin):
             if diff == 0:
                 diff = self.expected - now
 
-            self._change_handle(asyncio.get_event_loop().call_later(diff, self._waited))
+            self._change_handle(get_event_loop().call_later(diff, self._waited))
 
             if self.min_wait is not False or diff > 0:
                 iteration += 1
@@ -1139,7 +1132,7 @@ def async_as_background(coroutine, silent=False):
         # Kick off the function in the background
         hp.async_as_background(my_func())
     """
-    t = asyncio.get_event_loop().create_task(coroutine)
+    t = get_event_loop().create_task(coroutine)
     if silent:
         t.add_done_callback(silent_reporter)
     else:
@@ -1194,15 +1187,21 @@ async def async_with_timeout(coroutine, *, timeout=10, timeout_error=None, silen
             t.cancel()
             f.cancel()
 
-    handle = asyncio.get_event_loop().call_later(timeout, set_timeout)
+    handle = get_event_loop().call_later(timeout, set_timeout)
     try:
         return await f
     finally:
         handle.cancel()
 
 
+def get_event_loop():
+    return asyncio.get_event_loop_policy().get_event_loop()
+
+
 def create_future(*, name=None, loop=None):
-    future = (loop or asyncio.get_event_loop()).create_future()
+    if loop is None:
+        loop = get_event_loop()
+    future = loop.create_future()
     future.name = name
     future.add_done_callback(silent_reporter)
     return future

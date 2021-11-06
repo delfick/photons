@@ -8,6 +8,7 @@ from photons_app.collector import Collector
 from photons_app.registers import Target
 
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.norms import dictobj, sb
 from unittest import mock
 import pytest
@@ -107,11 +108,17 @@ describe "TaskRegister":
         assert isinstance(T.art.spec.spec, sb.any_spec)
 
     describe "task from a function":
-        async it "works", register:
+
+        @pytest.fixture()
+        def collector(self):
+            with OverrideLoop(new_loop=False):
+                collector = Collector()
+                collector.prepare(None, {})
+                yield collector
+
+        async it "works", register, collector:
             ran = {}
 
-            collector = Collector()
-            collector.prepare(None, {})
             target_register = collector.configuration["target_register"]
 
             InfraTarget = mock.Mock(name="InfraTarget")
@@ -386,11 +393,17 @@ describe "TaskRegister":
             ran.clear()
 
     describe "task from a class":
-        async it "works", register:
+
+        @pytest.fixture()
+        def collector(self):
+            with OverrideLoop(new_loop=False):
+                collector = Collector()
+                collector.prepare(None, {})
+                yield collector
+
+        async it "works", register, collector:
             ran = {}
 
-            collector = Collector()
-            collector.prepare(None, {})
             target_register = collector.configuration["target_register"]
 
             InfraTarget = mock.Mock(name="InfraTarget")
@@ -661,48 +674,53 @@ describe "TaskRegister":
 
         @pytest.fixture()
         def collector(self):
-            superman = mock.Mock(
-                name="resolvedsuperman", instantiated_name="superman", spec=["instantiated_name"]
-            )
-            batman = mock.Mock(
-                name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"]
-            )
-            vegemite = mock.Mock(
-                name="resolvedvegemite", instantiated_name="vegemite", spec=["instantiated_name"]
-            )
-            road = mock.Mock(
-                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-            )
+            with OverrideLoop(new_loop=False):
+                superman = mock.Mock(
+                    name="resolvedsuperman",
+                    instantiated_name="superman",
+                    spec=["instantiated_name"],
+                )
+                batman = mock.Mock(
+                    name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"]
+                )
+                vegemite = mock.Mock(
+                    name="resolvedvegemite",
+                    instantiated_name="vegemite",
+                    spec=["instantiated_name"],
+                )
+                road = mock.Mock(
+                    name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
+                )
 
-            collector = Collector()
-            collector.prepare(None, {})
-            reg = collector.configuration["target_register"]
+                collector = Collector()
+                collector.prepare(None, {})
+                reg = collector.configuration["target_register"]
 
-            HeroTarget = mock.Mock(name="HeroTarget")
-            herotarget = Target.FieldSpec().empty_normalise(type="hero")
-            reg.register_type("hero", HeroTarget)
+                HeroTarget = mock.Mock(name="HeroTarget")
+                herotarget = Target.FieldSpec().empty_normalise(type="hero")
+                reg.register_type("hero", HeroTarget)
 
-            VillianTarget = mock.Mock(name="VillianTarget")
-            villiantarget = Target.FieldSpec().empty_normalise(type="villian")
-            reg.register_type("villian", VillianTarget)
+                VillianTarget = mock.Mock(name="VillianTarget")
+                villiantarget = Target.FieldSpec().empty_normalise(type="villian")
+                reg.register_type("villian", VillianTarget)
 
-            InfraTarget = mock.Mock(name="InfraTarget")
-            infratarget = Target.FieldSpec().empty_normalise(type="infrastructure")
-            reg.register_type("infrastructure", InfraTarget)
+                InfraTarget = mock.Mock(name="InfraTarget")
+                infratarget = Target.FieldSpec().empty_normalise(type="infrastructure")
+                reg.register_type("infrastructure", InfraTarget)
 
-            supermancreator = mock.Mock(name="supermancreator", return_value=superman)
-            reg.add_target("superman", herotarget, supermancreator)
+                supermancreator = mock.Mock(name="supermancreator", return_value=superman)
+                reg.add_target("superman", herotarget, supermancreator)
 
-            batmancreator = mock.Mock(name="batmancreator", return_value=batman)
-            reg.add_target("batman", herotarget, batmancreator)
+                batmancreator = mock.Mock(name="batmancreator", return_value=batman)
+                reg.add_target("batman", herotarget, batmancreator)
 
-            vegemitecreator = mock.Mock(name="vegemitecreator", return_value=vegemite)
-            reg.add_target("vegemite", villiantarget, vegemitecreator)
+                vegemitecreator = mock.Mock(name="vegemitecreator", return_value=vegemite)
+                reg.add_target("vegemite", villiantarget, vegemitecreator)
 
-            roadcreator = mock.Mock(name="roadcreator", return_value=road)
-            reg.add_target("road", infratarget, roadcreator)
+                roadcreator = mock.Mock(name="roadcreator", return_value=road)
+                reg.add_target("road", infratarget, roadcreator)
 
-            return collector
+                yield collector
 
         @pytest.fixture()
         def superman(self, collector):

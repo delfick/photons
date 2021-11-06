@@ -2,12 +2,11 @@
 
 from photons_app import helpers as hp
 
-import asyncio
 import time
 
 
 def call_later(*args):
-    return asyncio.get_event_loop().call_later(*args)
+    return hp.get_event_loop().call_later(*args)
 
 
 describe "MockedCalledLater":

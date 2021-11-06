@@ -266,7 +266,7 @@ describe "ATicker":
 
                             if len(called) == 2:
                                 await pauser.acquire()
-                                asyncio.get_event_loop().call_later(28, pauser.release)
+                                hp.get_event_loop().call_later(28, pauser.release)
 
                             elif len(called) == 6:
                                 break
@@ -294,7 +294,7 @@ describe "ATicker":
 
                             if len(called) == 2:
                                 await pauser.acquire()
-                                asyncio.get_event_loop().call_later(14, ticks.final_future.cancel)
+                                hp.get_event_loop().call_later(14, ticks.final_future.cancel)
 
                 assert time.time() == 19
 

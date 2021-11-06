@@ -8,6 +8,7 @@ from photons_app.collector import Collector
 from photons_app.registers import Target
 
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.norms import Meta, sb
 from unittest import mock
 import pytest
@@ -16,6 +17,14 @@ import pytest
 @pytest.fixture()
 def meta():
     return Meta.empty()
+
+
+@pytest.fixture()
+def collector():
+    with OverrideLoop(new_loop=False):
+        collector = Collector()
+        collector.prepare(None, {})
+        yield collector
 
 
 describe "artifact_spec":
@@ -73,9 +82,7 @@ describe "target_spec":
             return mock.Mock(name="resolvedvegemite")
 
         @pytest.fixture()
-        def meta(self, superman, batman, vegemite):
-            collector = Collector()
-            collector.prepare(None, {})
+        def meta(self, superman, batman, vegemite, collector):
             reg = collector.configuration["target_register"]
 
             HeroTarget = mock.Mock(name="HeroTarget")
@@ -163,10 +170,7 @@ describe "reference_spec":
                 assert spec.normalise(Meta.empty(), val) is sb.NotSpecified
 
             @pytest.mark.parametrize("val", [None, "", sb.NotSpecified])
-            it "returns a reference object if nothing but not mandatory", val:
-                collector = Collector()
-                collector.prepare(None, {})
-
+            it "returns a reference object if nothing but not mandatory", val, collector:
                 spec = reference_spec(mandatory=False, special=True)
                 assert isinstance(
                     spec.normalise(Meta({"collector": collector}, []).at("test"), val), FoundSerials
@@ -175,10 +179,7 @@ describe "reference_spec":
     describe "with a value":
 
         @pytest.fixture()
-        def meta(self):
-            collector = Collector()
-            collector.prepare(None, {})
-
+        def meta(self, collector):
             def resolve(s):
                 return DeviceFinder.from_url_str(s)
 

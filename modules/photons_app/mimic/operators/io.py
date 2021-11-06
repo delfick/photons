@@ -1,9 +1,9 @@
 from photons_app.mimic.transport import MemoryService
 from photons_app.mimic.operator import operator, IO
 from photons_app.mimic.event import Events
+from photons_app import helpers as hp
 
 from photons_messages import DiscoveryMessages, Services
-from photons_app import helpers as hp
 
 from delfick_project.norms import dictobj, sb
 import asyncio
@@ -102,7 +102,7 @@ class UDPIO(MemoryIO):
                     port = make_port()
 
                 try:
-                    remote, _ = await asyncio.get_event_loop().create_datagram_endpoint(
+                    remote, _ = await hp.get_event_loop().create_datagram_endpoint(
                         ServerProtocol, local_addr=("0.0.0.0", port)
                     )
                     self.remote = remote
