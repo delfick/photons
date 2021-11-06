@@ -68,10 +68,10 @@ def options_maker():
     return make_options
 
 
-def make_options(host=None, port=None, database=None, memory=True):
-    options = {}
+def make_options(host=None, port=None, database=None, memory=True, zeroconf=False):
+    options = {"zeroconf": {"enabled": zeroconf}}
     if database or memory:
-        options = {"database": database or {"uri": ":memory:"}}
+        options.update({"database": database or {"uri": ":memory:"}})
 
     if host is not None:
         options["host"] = host

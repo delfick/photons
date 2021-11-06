@@ -40,7 +40,9 @@ class interactor(task.GracefulTask):
             await Server(
                 self.photons_app.final_future, server_end_future=graceful_final_future
             ).serve(
-                self.options.host,
+                self.options.zeroconf.ip_address
+                if self.options.host not in ["127.0.0.1", "localhost"]
+                else self.options.host,
                 self.options.port,
                 self.options,
                 tasks=self.task_holder,

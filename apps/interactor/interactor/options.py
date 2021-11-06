@@ -1,4 +1,5 @@
 from photons_app.formatter import MergedOptionStringFormatter
+from interactor.zeroconf import Zeroconf
 
 from delfick_project.norms import dictobj, sb
 import os
@@ -24,6 +25,11 @@ class Options(dictobj.Spec):
     host = dictobj.Field(host_spec, help="The host to serve the server on")
 
     port = dictobj.Field(port_spec, help="The port to serve the server on")
+
+    zeroconf = dictobj.Field(
+        Zeroconf.FieldSpec(formatter=MergedOptionStringFormatter),
+        help="Options for zeroconf dns discovery",
+    )
 
     database = dictobj.Field(
         lambda: __import__("interactor.database.database").database.database.Database.FieldSpec(

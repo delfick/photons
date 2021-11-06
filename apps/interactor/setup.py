@@ -20,6 +20,8 @@ setup(
       , "alembic==1.3.2"
       , "whirlwind-web==0.12.0"
       , "aiohttp==3.7.4"
+      , "zeroconf==0.36.12"
+      , "netifaces==0.11.0"
       ]
 
     , entry_points =

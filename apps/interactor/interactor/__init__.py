@@ -1,4 +1,5 @@
 VERSION = "0.11.0"
+ZEROCONF_TYPE = "_photons._tcp.local."
 
 
 def run_pytest():
