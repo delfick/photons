@@ -2,7 +2,6 @@ from photons_canvas import point_helpers as php
 from photons_app import helpers as hp
 
 import itertools
-import asyncio
 import random
 
 
@@ -22,7 +21,7 @@ class PixelBrightness:
         self.return_handle = None
 
     def finish(self):
-        self.return_handle = asyncio.get_event_loop().call_later(
+        self.return_handle = hp.get_event_loop().call_later(
             0.5, lambda: setattr(self, "returning", True)
         )
 

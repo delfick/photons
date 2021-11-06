@@ -68,6 +68,7 @@ class PhotonsApp(dictobj.Spec):
     def loop(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        asyncio.get_event_loop_policy().set_event_loop(loop)
         if self.debug:
             loop.set_debug(True)
         return loop
@@ -99,7 +100,7 @@ class PhotonsApp(dictobj.Spec):
         other_future = hp.create_future(name="PhotonsApp::separate_final_future")
 
         def stop():
-            other_future.cancel()
+            hp.get_event_loop().call_soon_threadsafe(other_future.cancel)
 
         self.loop.remove_signal_handler(signal.SIGTERM)
         self.loop.add_signal_handler(signal.SIGTERM, stop)
@@ -142,7 +143,9 @@ class PhotonsApp(dictobj.Spec):
 
             def stop():
                 if not graceful_future.done():
-                    graceful_future.set_exception(ApplicationStopped)
+                    hp.get_event_loop().call_soon_threadsafe(
+                        graceful_future.set_exception, ApplicationStopped()
+                    )
 
             reinstate_handler = self.loop.remove_signal_handler(signal.SIGTERM)
             self.loop.add_signal_handler(signal.SIGTERM, stop)
@@ -156,7 +159,9 @@ class PhotonsApp(dictobj.Spec):
 
             def stop():
                 if not final_future.done():
-                    final_future.set_exception(ApplicationStopped)
+                    hp.get_event_loop().call_soon_threadsafe(
+                        final_future.set_exception, ApplicationStopped()
+                    )
 
             self.loop.remove_signal_handler(signal.SIGTERM)
             self.loop.add_signal_handler(signal.SIGTERM, stop)

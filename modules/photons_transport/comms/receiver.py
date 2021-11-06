@@ -2,7 +2,6 @@ from photons_app import helpers as hp
 
 from bitarray import bitarray
 import logging
-import asyncio
 
 log = logging.getLogger("photons_transport.comms.receiver")
 
@@ -18,7 +17,7 @@ class Receiver:
 
     @property
     def loop(self):
-        return asyncio.get_event_loop()
+        return hp.get_event_loop()
 
     def register(self, packet, result, original):
         """Register a future waiting for a result"""

@@ -12,6 +12,7 @@ from photons_transport.targets import LanTarget
 
 from delfick_project.norms import Meta, sb, dictobj, BadSpecValue
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 from textwrap import dedent
 from unittest import mock
 import pytest
@@ -46,7 +47,7 @@ describe "task_specifier_spec":
                     if hasattr(s, "patch"):
                         s.patch.stop()
 
-            with Prepare(), open(fle.name) as realfile:
+            with OverrideLoop(new_loop=False), Prepare(), open(fle.name) as realfile:
                 args_dict = {"photons_app": {"config": realfile}}
 
                 app = App()

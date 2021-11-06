@@ -34,6 +34,11 @@ except:
     pytest = FakePytest()
 
 
+def get_event_loop():
+    hp = __import__("photons_app.helpers").helpers
+    return hp.get_event_loop()
+
+
 class AsyncCMMixin:
     """
     Copied from photons_app.helpers
@@ -209,7 +214,7 @@ class FakeTimeImpl:
 class MockedCallLaterImpl(AsyncCMMixin):
     def __init__(self, t, precision=0.1):
         self.t = t
-        self.loop = asyncio.get_event_loop()
+        self.loop = get_event_loop()
         self.precision = precision
 
         self.task = None
@@ -238,7 +243,7 @@ class MockedCallLaterImpl(AsyncCMMixin):
 
     async def resume_after(self, amount):
         fut = self.hp.create_future()
-        asyncio.get_event_loop().call_later(amount, fut.set_result, True)
+        get_event_loop().call_later(amount, fut.set_result, True)
         await fut
 
     @property
@@ -277,7 +282,7 @@ class MockedCallLaterImpl(AsyncCMMixin):
 
     async def _allow_real_loop(self, until=0):
         while True:
-            ready = asyncio.get_event_loop()._ready
+            ready = get_event_loop()._ready
             ready_len = len(ready)
             await asyncio.sleep(0)
             if ready_len <= until:
@@ -365,7 +370,7 @@ class FutureDominoes(AsyncCMMixin):
                     await futs[8]
                     called.append("final")
 
-                loop = asyncio.get_event_loop()
+                loop = get_event_loop()
                 loop.create_task(three())
                 loop.create_task(one())
 
@@ -443,11 +448,11 @@ class FutureDominoes(AsyncCMMixin):
 
     async def _allow_real_loop(self):
         until = 0
-        if "mock" in str(asyncio.get_event_loop().call_later).lower():
+        if "mock" in str(get_event_loop().call_later).lower():
             until = 1
 
         while True:
-            ready = asyncio.get_event_loop()._ready
+            ready = get_event_loop()._ready
             ready_len = len(ready)
             await asyncio.sleep(0)
             if ready_len <= until:
@@ -459,7 +464,7 @@ class FutureDominoes(AsyncCMMixin):
 
     @property
     def loop(self):
-        return asyncio.get_event_loop()
+        return get_event_loop()
 
     def make(self, num):
         if num > self.expected or self.finished.done():

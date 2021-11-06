@@ -727,7 +727,6 @@ describe "LostEvent":
         )
 
 
-@pytest.mark.focus
 describe "AttributeChangeEvent":
 
     @pytest.fixture()

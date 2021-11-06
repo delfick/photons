@@ -6,6 +6,7 @@ from photons_app.errors import BadOption
 from photons_app import helpers as hp
 
 from delfick_project.errors_pytest import assertRaises
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.norms import Meta
 from unittest import mock
 import asyncio
@@ -13,6 +14,11 @@ import pytest
 import os
 
 describe "PhotonsApp":
+
+    @pytest.fixture(autouse=True)
+    def override_loop(self):
+        with OverrideLoop(new_loop=False):
+            yield
 
     def make_photons_app(self, **kwargs):
         meta = Meta.empty().at("photons_app")

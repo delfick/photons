@@ -4,12 +4,20 @@ from photons_app.collector import Collector
 from photons_app import helpers as hp
 from photons_app.executor import App
 
+from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
 from textwrap import dedent
 from unittest import mock
 import pytest
 import os
+
+
+@pytest.fixture(autouse=True)
+def override_loop():
+    with OverrideLoop(new_loop=False):
+        yield
+
 
 describe "App":
     describe "setup_collector":

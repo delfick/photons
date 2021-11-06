@@ -1,8 +1,9 @@
+from photons_app import helpers as hp
+
 from photons_transport.transports.socket import Socket
 
 import platform
 import logging
-import asyncio
 import socket
 
 log = logging.getLogger("photons_transport.transports.udp")
@@ -15,7 +16,7 @@ class UDP(Socket):
         sock = self.make_socket()
         fut, Protocol = self.make_socket_protocol()
 
-        loop = asyncio.get_event_loop()
+        loop = hp.get_event_loop()
 
         def canceler():
             if not fut.done():
