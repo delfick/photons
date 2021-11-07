@@ -462,9 +462,10 @@ class InfoPoints(enum.Enum):
 
     LIGHT_STATE = Point(
         LightMessages.GetColor(),
-        ["label", "power", "hue", "saturation", "brightness", "kelvin"],
+        ["power", "hue", "saturation", "brightness", "kelvin"],
         10,
     )
+    LABEL = Point(DeviceMessages.GetLabel(), ["label"], 60)
     VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
@@ -584,13 +585,16 @@ class Device(dictobj.Spec):
         We return a InfoPoints enum representing what type of information was set.
         """
         if pkt | LightMessages.LightState:
-            self.label = pkt.label
             self.power = "off" if pkt.power == 0 else "on"
             self.hue = pkt.hue
             self.saturation = pkt.saturation
             self.brightness = pkt.brightness
             self.kelvin = pkt.kelvin
             return InfoPoints.LIGHT_STATE
+
+        elif pkt | DeviceMessages.StateLabel:
+            self.label = pkt.label
+            return InfoPoints.LABEL
 
         elif pkt | DeviceMessages.StateGroup:
             uuid = binascii.hexlify(pkt.group).decode()
