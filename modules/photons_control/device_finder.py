@@ -4,6 +4,7 @@ from photons_app.tasks import task_register as task
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
+from photons_products.enums import VendorRegistry
 from photons_control.script import FromGenerator
 from photons_products import Products
 
@@ -366,6 +367,9 @@ class Filter(dictobj.Spec):
     def points(self):
         """Provide InfoPoints enums that match the keys on this filter with values"""
         for e in InfoPoints:
+            if e == InfoPoints.LABEL and self.product_type == ProductTypes.LIGHT:
+                continue
+
             for key in e.value.keys:
                 if self[key] != sb.NotSpecified:
                     yield e
@@ -373,6 +377,19 @@ class Filter(dictobj.Spec):
     @property
     def label_fields(self):
         return ("label", "location_name", "group_name")
+
+    @property
+    def product_type(self):
+        return (
+            ProductTypes.SWITCH
+            if ProductTypes.SWITCH.value.keys
+            in Products[VendorRegistry.LIFX, self.product_id].cap.as_dict()
+            else ProductTypes.LIGHT
+        )
+
+    @property
+    def product_name(self):
+        return Products[VendorRegistry.LIFX, self.product_id].friendly
 
 
 class DeviceFinder(SpecialReference):
@@ -457,18 +474,36 @@ class Point:
 
 class InfoPoints(enum.Enum):
     """
-    Enum used to determine what information is required for what keys
+    Enum used to determine what information is required for what keys.
     """
 
+    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
     LIGHT_STATE = Point(
         LightMessages.GetColor(),
         ["label", "power", "hue", "saturation", "brightness", "kelvin"],
         10,
     )
-    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
+    LABEL = Point(DeviceMessages.GetLabel(), ["label"], 60)
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"], 60)
+
+
+class ProductType:
+    """
+    Used as the value in the DeviceTypes enum. The ensure parameter
+    determines of the existence or lack of existence of the nominated keys
+    identifies the device.
+    """
+
+    def __init__(self, ensure, keys):
+        self.ensure = ensure
+        self.keys = keys
+
+
+class ProductTypes(enum.Enum):
+    LIGHT = ProductType("not", ["relays", "buttons"])
+    SWITCH = ProductType("has", ["relays", "buttons"])
 
 
 class Device(dictobj.Spec):
@@ -541,6 +576,23 @@ class Device(dictobj.Spec):
             return sb.NotSpecified
         return self.location.uuid
 
+    @property
+    def product_name(self):
+        if self.product_id is sb.NotSpecified:
+            return sb.NotSpecified
+        return Products[VendorRegistry.LIFX, self.product_id].friendly
+
+    @property
+    def product_type(self):
+        if self.cap is sb.NotSpecified:
+            return sb.NotSpecified
+
+        for key in ProductTypes.SWITCH.value.keys:
+            if key in self.cap:
+                return ProductTypes.SWITCH
+
+        return ProductTypes.LIGHT
+
     def as_dict(self):
         actual = super(Device, self).as_dict()
         del actual["group"]
@@ -583,6 +635,7 @@ class Device(dictobj.Spec):
 
         We return a InfoPoints enum representing what type of information was set.
         """
+        log.info("Packet: %s for device: %s", type(pkt), self.serial)
         if pkt | LightMessages.LightState:
             self.label = pkt.label
             self.power = "off" if pkt.power == 0 else "on"
@@ -591,6 +644,10 @@ class Device(dictobj.Spec):
             self.brightness = pkt.brightness
             self.kelvin = pkt.kelvin
             return InfoPoints.LIGHT_STATE
+
+        elif pkt | DeviceMessages.StateLabel:
+            self.label = pkt.label
+            return InfoPoints.LABEL
 
         elif pkt | DeviceMessages.StateGroup:
             uuid = binascii.hexlify(pkt.group).decode()
@@ -609,6 +666,7 @@ class Device(dictobj.Spec):
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
             product = Products[pkt.vendor, pkt.product]
+
             cap = []
             for prop in (
                 "has_ir",
@@ -676,6 +734,9 @@ class Device(dictobj.Spec):
                         return
 
                     e = next(points)
+                    if e == DeviceMessages.GetLabel and self.product_type == ProductTypes.LIGHT:
+                        continue
+
                     fut = self.point_futures[e]
 
                     if fut.done():
@@ -704,10 +765,24 @@ class Device(dictobj.Spec):
 
         async def gen(reference, sender, **kwargs):
             for e in self.points_from_fltr(fltr):
+                if e == InfoPoints.VERSION:
+                    continue
+
+                if (e == InfoPoints.LIGHT_STATE and self.product_type == ProductTypes.SWITCH) or (
+                    e == InfoPoints.LABEL and self.product_type == ProductTypes.LIGHT
+                ):
+                    print(f"e: {e} AND type: {self.product_type} for {self.serial}")
+                    continue
+
                 if self.final_future.done():
                     return
                 if not self.point_futures[e].done():
                     yield e.value.msg
+
+        async for pkt in sender(DeviceMessages.GetVersion(), self.serial):
+            point = self.set_from_pkt(pkt, collections)
+            self.point_futures[point].reset()
+            self.point_futures[point].set_result(time.time())
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit):

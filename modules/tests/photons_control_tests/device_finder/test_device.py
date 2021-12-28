@@ -20,12 +20,7 @@ describe "Device":
         return Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
     it "has property_fields", device:
-        assert device.property_fields == [
-            "group_id",
-            "group_name",
-            "location_name",
-            "location_id",
-        ]
+        assert device.property_fields == ["group_id", "group_name", "location_name", "location_id"]
         for field in device.property_fields:
             assert getattr(device, field) == sb.NotSpecified
 
@@ -189,6 +184,11 @@ describe "Device":
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
             assert device.power == "on"
 
+        it "can take in a StateLabel", device, collections:
+            pkt = DeviceMessages.StateLabel.create(label="office")
+            assert device.set_from_pkt(pkt, collections) is InfoPoints.LABEL
+            assert device.label == "office"
+
         it "can take in StateGroup", device, collections:
             group_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.create(group=group_uuid, updated_at=1, label="group1")
@@ -270,6 +270,7 @@ describe "Device":
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 
             assert device.product_id == 22
+            assert device.product_name == "LIFX Color 1000"
             assert device.cap == [
                 "color",
                 "not_buttons",

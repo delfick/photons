@@ -82,6 +82,7 @@ describe "Device":
 
             def assertTimes(s, points):
                 for p, f in s.device.point_futures.items():
+                    print(f"p: {p}, f: {f}")
                     if p in points:
                         assert f.done() and f.result() == points[p]
                     else:
@@ -96,8 +97,8 @@ describe "Device":
         V.received()
 
         assert await V.matches(Filter.from_kwargs(label="kitchen"))
-        V.received(LightMessages.GetColor())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 1})
+        V.received(DeviceMessages.GetVersion(), LightMessages.GetColor())
+        V.assertTimes({InfoPoints.VERSION: 1, InfoPoints.LIGHT_STATE: 1})
         V.t.add(5)
 
         assert not (await V.matches(Filter.from_kwargs(label="den")))
@@ -106,8 +107,8 @@ describe "Device":
         V.t.add(2)
 
         assert not (await V.matches(Filter.from_kwargs(label="attic", refresh_info=True)))
-        V.received(LightMessages.GetColor())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8})
+        V.received(DeviceMessages.GetVersion(), LightMessages.GetColor())
+        V.assertTimes({InfoPoints.VERSION: 6, InfoPoints.LIGHT_STATE: 8})
         V.t.add(1)
 
         assert not (await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"])))
@@ -132,8 +133,9 @@ describe "Device":
 
         msgs = [e.value.msg for e in list(InfoPoints)]
         assert msgs == [
-            LightMessages.GetColor(),
             DeviceMessages.GetVersion(),
+            LightMessages.GetColor(),
+            DeviceMessages.GetLabel(),
             DeviceMessages.GetHostFirmware(),
             DeviceMessages.GetGroup(),
             DeviceMessages.GetLocation(),
@@ -169,8 +171,9 @@ describe "Device":
                 return message_futs[s.name].done()
 
         for name, kls in [
-            ("color", LightMessages.GetColor),
             ("version", DeviceMessages.GetVersion),
+            ("color", LightMessages.GetColor),
+            ("label", DeviceMessages.GetLabel),
             ("firmware", DeviceMessages.GetHostFirmware),
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
@@ -182,7 +185,7 @@ describe "Device":
 
             assert V.device.info == info
             await hp.wait_for_all_futures(*[V.device.point_futures[kls] for kls in InfoPoints])
-
+            print(V.device)
             found = []
             for kls in list(InfoPoints):
                 found.append(V.device.point_futures[kls].result())
@@ -202,6 +205,8 @@ describe "Device":
                     "kelvin": 3500,
                     "firmware_version": "2.80",
                     "product_id": 27,
+                    "product_name": "LIFX A19",
+                    "product_type": "light",
                     "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",
@@ -212,12 +217,12 @@ describe "Device":
             assert V.device.info == info
 
             await hp.wait_for_all_futures(Futs.color)
-            V.received(LightMessages.GetColor(), keep_duplicates=True)
+            V.received(DeviceMessages.GetVersion(), LightMessages.GetColor(), keep_duplicates=True)
             assert V.t.time == 11
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
-                *([LightMessages.GetColor()] * 5),
+                *([DeviceMessages.GetVersion(), LightMessages.GetColor()] * 5),
                 DeviceMessages.GetGroup(),
                 DeviceMessages.GetLocation(),
                 keep_duplicates=True,
@@ -270,8 +275,9 @@ describe "Device":
 
         msgs = [e.value.msg for e in list(InfoPoints)]
         assert msgs == [
-            LightMessages.GetColor(),
             DeviceMessages.GetVersion(),
+            LightMessages.GetColor(),
+            DeviceMessages.GetLabel(),
             DeviceMessages.GetHostFirmware(),
             DeviceMessages.GetGroup(),
             DeviceMessages.GetLocation(),
@@ -307,8 +313,9 @@ describe "Device":
                 return message_futs[s.name].done()
 
         for name, kls in [
-            ("color", LightMessages.GetColor),
             ("version", DeviceMessages.GetVersion),
+            ("color", LightMessages.GetColor),
+            ("label", DeviceMessages.GetLabel),
             ("firmware", DeviceMessages.GetHostFirmware),
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
@@ -324,9 +331,9 @@ describe "Device":
             found = []
             for kls in list(InfoPoints):
                 found.append(V.device.point_futures[kls].result())
-            assert found == [1, 2, 3, 4, 5]
+            assert found == [1, 2, 3, 4, 5, 6]
 
-            assert V.t.time == 5
+            assert V.t.time == 6
 
             V.received(*msgs)
 
@@ -350,12 +357,12 @@ describe "Device":
             assert V.device.info == info
 
             await hp.wait_for_all_futures(Futs.color)
-            V.received(LightMessages.GetColor(), keep_duplicates=True)
+            V.received(DeviceMessages.GetVersion(), LightMessages.GetColor(), keep_duplicates=True)
             assert V.t.time == 11
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
-                *([LightMessages.GetColor()] * 5),
+                *(DeviceMessages.GetVersion(), [LightMessages.GetColor()] * 5),
                 DeviceMessages.GetGroup(),
                 DeviceMessages.GetLocation(),
                 keep_duplicates=True,
