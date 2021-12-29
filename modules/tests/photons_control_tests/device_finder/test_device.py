@@ -47,9 +47,6 @@ describe "Device":
 
         device.firmware = hp.Firmware(1, 2, 0, 0)
         device.product = Products[VendorRegistry.LIFX, 22]
-        device.capabilities = Products[VendorRegistry.LIFX, 22].cap(
-            device.firmware.major, device.firmware.minor
-        )
 
         assert device.group_id == "uuidg"
         assert device.group_name == "blah"
@@ -128,8 +125,6 @@ describe "Device":
 
         assertChange("product", Products[VendorRegistry.LIFX, 22])
         assertChange("firmware", hp.Firmware(1, 2, 0, 0))
-        assertChange("capabilities", Products[VendorRegistry.LIFX, 22].cap(1, 2))
-
         assertChange("label", "kitchen")
         assertChange(
             "group", Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")

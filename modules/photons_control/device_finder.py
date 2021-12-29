@@ -522,7 +522,6 @@ class Device(dictobj.Spec):
 
     firmware = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
     product = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
-    capabilities = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -550,7 +549,7 @@ class Device(dictobj.Spec):
             "product_name",
             "product_type",
             "firmware_version",
-            "cap",
+            "cap"
         ]
 
     @property
@@ -591,11 +590,7 @@ class Device(dictobj.Spec):
 
     @property
     def product_type(self):
-        if self.capabilities is not sb.NotSpecified:
-            return (
-                ProductType.LIGHT.value if self.capabilities.is_light else ProductType.SWITCH.value
-            )
-        elif self.product is not sb.NotSpecified:
+        if self.product is not sb.NotSpecified:
             return (
                 ProductType.LIGHT.value
                 if Products[VendorRegistry.LIFX, self.product.pid].cap.is_light
@@ -612,15 +607,13 @@ class Device(dictobj.Spec):
 
     @property
     def cap(self):
-        if self.capabilities is not sb.NotSpecified:
-            _caps = self.capabilities
-        elif self.product is not sb.NotSpecified and self.firmware is not sb.NotSpecified:
-            _caps = Products[VendorRegistry.LIFX, self.product.pid].cap(
-                self.firmware.major, self.firmware.minor
-            )
-        elif self.product is not sb.NotSpecified:
-            _caps = Products[VendorRegistry.LIFX, self.product.pid].cap
-        else:
+        """
+        Returns capabilities in a list as either "<cap>" or "not_<cap>".
+        and is provided for backwards compatibility. To return the original
+        capabilities as defined in products.json, use the "capabilities"
+        property
+        """
+        if self.capabilities is sb.NotSpecified:
             return sb.NotSpecified
 
         caps = []
@@ -636,11 +629,22 @@ class Device(dictobj.Spec):
             "has_unhandled",
             "has_variable_color_temp",
         ):
-            if getattr(_caps, prop):
+            if getattr(self.capabilities, prop):
                 caps.append(prop[4:])
             else:
                 caps.append("not_{}".format(prop[4:]))
         return sorted(caps)
+
+    @property
+    def capabilities(self):
+        if self.product is not sb.NotSpecified and self.firmware is not sb.NotSpecified:
+            return Products[VendorRegistry.LIFX, self.product.pid].cap(
+                self.firmware.major, self.firmware.minor
+            )
+        elif self.product is not sb.NotSpecified:
+            return Products[VendorRegistry.LIFX, self.product.pid].cap
+        else:
+            return sb.NotSpecified
 
     def as_dict(self):
         actual = super(Device, self).as_dict()
@@ -649,7 +653,6 @@ class Device(dictobj.Spec):
         del actual["location"]
         del actual["product"]
         del actual["firmware"]
-        del actual["capabilities"]
         for key in self.property_fields:
             actual[key] = self[key]
 
@@ -716,18 +719,11 @@ class Device(dictobj.Spec):
             self.firmware = hp.Firmware(
                 major=pkt.version_major, minor=pkt.version_minor, build=pkt.build
             )
-            if self.product is not sb.NotSpecified:
-                self.capabilities = self.product.cap(self.firmware.major, self.firmware.minor)
 
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:
             self.product = Products[pkt.vendor, pkt.product]
-            self.capabilities = (
-                self.product.cap(self.firmware.major, self.firmware.minor)
-                if self.firmware is not sb.NotSpecified
-                else self.product.cap
-            )
 
             return InfoPoints.VERSION
 
