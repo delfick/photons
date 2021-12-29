@@ -471,7 +471,8 @@ class Point:
 
 class InfoPoints(enum.Enum):
     """
-    Enum used to determine what information is required for what keys.
+    Enum used to determine which packet should be sent for each device type
+    to return the right data for the specified keys
     """
 
     VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
