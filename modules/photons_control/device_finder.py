@@ -367,7 +367,7 @@ class Filter(dictobj.Spec):
     def points(self):
         """Provide InfoPoints enums that match the keys on this filter with values"""
         for e in InfoPoints:
-            if e == InfoPoints.LABEL and self.product_type == ProductTypes.LIGHT:
+            if e.value.condition is not None and not e.value.condition(self):
                 continue
 
             for key in e.value.keys:
@@ -375,21 +375,17 @@ class Filter(dictobj.Spec):
                     yield e
 
     @property
+    def product_type(self):
+        """Set the product type based on which fields are being filtered"""
+        for field in ["hue", "saturation", "brightness", "kelvin"]:
+            if self[field] != sb.NotSpecified:
+                return ProductType.LIGHT.value
+
+        return ProductType.SWITCH.value
+
+    @property
     def label_fields(self):
         return ("label", "location_name", "group_name")
-
-    @property
-    def product_type(self):
-        return (
-            ProductTypes.SWITCH
-            if ProductTypes.SWITCH.value.keys
-            in Products[VendorRegistry.LIFX, self.product_id].cap.as_dict()
-            else ProductTypes.LIGHT
-        )
-
-    @property
-    def product_name(self):
-        return Products[VendorRegistry.LIFX, self.product_id].friendly
 
 
 class DeviceFinder(SpecialReference):
@@ -466,10 +462,11 @@ class DeviceFinder(SpecialReference):
 class Point:
     """Used as the value in the InfoPoints enum"""
 
-    def __init__(self, msg, keys, refresh):
+    def __init__(self, msg, keys, refresh, condition=None):
         self.msg = msg
         self.keys = keys
         self.refresh = refresh
+        self.condition = condition
 
 
 class InfoPoints(enum.Enum):
@@ -482,28 +479,23 @@ class InfoPoints(enum.Enum):
         LightMessages.GetColor(),
         ["label", "power", "hue", "saturation", "brightness", "kelvin"],
         10,
+        lambda device: device.product_type is ProductType.LIGHT.value,
     )
-    LABEL = Point(DeviceMessages.GetLabel(), ["label"], 60)
+    LABEL = Point(
+        DeviceMessages.GetLabel(),
+        ["label"],
+        60,
+        lambda device: device.product_type is not ProductType.LIGHT.value,
+    )
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"], 60)
 
 
-class ProductType:
-    """
-    Used as the value in the DeviceTypes enum. The ensure parameter
-    determines of the existence or lack of existence of the nominated keys
-    identifies the device.
-    """
-
-    def __init__(self, ensure, keys):
-        self.ensure = ensure
-        self.keys = keys
-
-
-class ProductTypes(enum.Enum):
-    LIGHT = ProductType("not", ["relays", "buttons"])
-    SWITCH = ProductType("has", ["relays", "buttons"])
+class ProductType(enum.Enum):
+    LIGHT = "light"
+    SWITCH = "switch"
+    UNKNOWN = "unknown"
 
 
 class Device(dictobj.Spec):
@@ -527,11 +519,9 @@ class Device(dictobj.Spec):
     brightness = dictobj.Field(sb.float_spec, wrapper=sb.optional_spec)
     kelvin = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
 
-    firmware_version = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
-
-    product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
-
-    cap = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
+    firmware = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
+    product = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
+    capabilities = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -550,7 +540,17 @@ class Device(dictobj.Spec):
 
     @property
     def property_fields(self):
-        return ["group_id", "group_name", "location_name", "location_id"]
+        return [
+            "group_id",
+            "group_name",
+            "location_name",
+            "location_id",
+            "product_id",
+            "product_name",
+            "product_type",
+            "firmware_version",
+            "cap",
+        ]
 
     @property
     def group_id(self):
@@ -577,29 +577,81 @@ class Device(dictobj.Spec):
         return self.location.uuid
 
     @property
+    def product_id(self):
+        if self.product is sb.NotSpecified:
+            return sb.NotSpecified
+        return self.product.pid
+
+    @property
     def product_name(self):
         if self.product_id is sb.NotSpecified:
             return sb.NotSpecified
-        return Products[VendorRegistry.LIFX, self.product_id].friendly
+        return self.product.friendly
 
     @property
     def product_type(self):
-        if self.cap is sb.NotSpecified:
+        if self.capabilities is not sb.NotSpecified:
+            return (
+                ProductType.LIGHT.value if self.capabilities.is_light else ProductType.SWITCH.value
+            )
+        elif self.product is not sb.NotSpecified:
+            return (
+                ProductType.LIGHT.value
+                if Products[VendorRegistry.LIFX, self.product.pid].cap.is_light
+                else ProductType.SWITCH.value
+            )
+        else:
             return sb.NotSpecified
 
-        for key in ProductTypes.SWITCH.value.keys:
-            if key in self.cap:
-                return ProductTypes.SWITCH
+    @property
+    def firmware_version(self):
+        if self.firmware is sb.NotSpecified:
+            return sb.NotSpecified
+        return str(self.firmware)
 
-        return ProductTypes.LIGHT
+    @property
+    def cap(self):
+        if self.capabilities is not sb.NotSpecified:
+            _caps = self.capabilities
+        elif self.product is not sb.NotSpecified and self.firmware is not sb.NotSpecified:
+            _caps = Products[VendorRegistry.LIFX, self.product.pid].cap(
+                self.firmware.major, self.firmware.minor
+            )
+        elif self.product is not sb.NotSpecified:
+            _caps = Products[VendorRegistry.LIFX, self.product.pid].cap
+        else:
+            return sb.NotSpecified
+
+        caps = []
+        for prop in (
+            "has_ir",
+            "has_hev",
+            "has_color",
+            "has_chain",
+            "has_relays",
+            "has_matrix",
+            "has_buttons",
+            "has_multizone",
+            "has_unhandled",
+            "has_variable_color_temp",
+        ):
+            if getattr(_caps, prop):
+                caps.append(prop[4:])
+            else:
+                caps.append("not_{}".format(prop[4:]))
+        return sorted(caps)
 
     def as_dict(self):
         actual = super(Device, self).as_dict()
         del actual["group"]
         del actual["limit"]
         del actual["location"]
+        del actual["product"]
+        del actual["firmware"]
+        del actual["capabilities"]
         for key in self.property_fields:
             actual[key] = self[key]
+
         return actual
 
     @property
@@ -635,7 +687,7 @@ class Device(dictobj.Spec):
 
         We return a InfoPoints enum representing what type of information was set.
         """
-        log.info("Packet: %s for device: %s", type(pkt), self.serial)
+
         if pkt | LightMessages.LightState:
             self.label = pkt.label
             self.power = "off" if pkt.power == 0 else "on"
@@ -660,31 +712,22 @@ class Device(dictobj.Spec):
             return InfoPoints.LOCATION
 
         elif pkt | DeviceMessages.StateHostFirmware:
-            self.firmware_version = f"{pkt.version_major}.{pkt.version_minor}"
+            self.firmware = hp.Firmware(
+                major=pkt.version_major, minor=pkt.version_minor, build=pkt.build
+            )
+            if self.product is not sb.NotSpecified:
+                self.capabilities = self.product.cap(self.firmware.major, self.firmware.minor)
+
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:
-            self.product_id = pkt.product
-            product = Products[pkt.vendor, pkt.product]
+            self.product = Products[pkt.vendor, pkt.product]
+            self.capabilities = (
+                self.product.cap(self.firmware.major, self.firmware.minor)
+                if self.firmware is not sb.NotSpecified
+                else self.product.cap
+            )
 
-            cap = []
-            for prop in (
-                "has_ir",
-                "has_hev",
-                "has_color",
-                "has_chain",
-                "has_relays",
-                "has_matrix",
-                "has_buttons",
-                "has_multizone",
-                "has_unhandled",
-                "has_variable_color_temp",
-            ):
-                if getattr(product.cap, prop):
-                    cap.append(prop[4:])
-                else:
-                    cap.append("not_{}".format(prop[4:]))
-            self.cap = sorted(cap)
             return InfoPoints.VERSION
 
     def points_from_fltr(self, fltr):
@@ -734,7 +777,7 @@ class Device(dictobj.Spec):
                         return
 
                     e = next(points)
-                    if e == DeviceMessages.GetLabel and self.product_type == ProductTypes.LIGHT:
+                    if e.value.condition is not None and not e.value.condition(self):
                         continue
 
                     fut = self.point_futures[e]
@@ -767,13 +810,8 @@ class Device(dictobj.Spec):
             for e in self.points_from_fltr(fltr):
                 if e == InfoPoints.VERSION:
                     continue
-
-                if (e == InfoPoints.LIGHT_STATE and self.product_type == ProductTypes.SWITCH) or (
-                    e == InfoPoints.LABEL and self.product_type == ProductTypes.LIGHT
-                ):
-                    print(f"e: {e} AND type: {self.product_type} for {self.serial}")
+                if e.value.condition is not None and not e.value.condition(self):
                     continue
-
                 if self.final_future.done():
                     return
                 if not self.point_futures[e].done():
