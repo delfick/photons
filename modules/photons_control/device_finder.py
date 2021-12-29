@@ -549,7 +549,7 @@ class Device(dictobj.Spec):
             "product_name",
             "product_type",
             "firmware_version",
-            "cap"
+            "cap",
         ]
 
     @property
