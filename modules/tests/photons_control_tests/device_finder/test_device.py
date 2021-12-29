@@ -1,6 +1,9 @@
 # coding: spec
 
 from photons_control.device_finder import Device, Collection, Collections, Filter, InfoPoints, Point
+from photons_products.enums import VendorRegistry
+from photons_products.registry import Products
+
 
 from photons_app import helpers as hp
 
@@ -20,7 +23,18 @@ describe "Device":
         return Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
     it "has property_fields", device:
-        assert device.property_fields == ["group_id", "group_name", "location_name", "location_id"]
+        assert device.property_fields == [
+            "group_id",
+            "group_name",
+            "location_name",
+            "location_id",
+            "product_id",
+            "product_name",
+            "product_type",
+            "firmware_version",
+            "cap",
+        ]
+
         for field in device.property_fields:
             assert getattr(device, field) == sb.NotSpecified
 
@@ -31,11 +45,34 @@ describe "Device":
             typ="location", uuid="uuidl", name="meh"
         )
 
+        device.firmware = hp.Firmware(1, 2, 0, 0)
+        device.product = Products[VendorRegistry.LIFX, 22]
+        device.capabilities = Products[VendorRegistry.LIFX, 22].cap(
+            device.firmware.major, device.firmware.minor
+        )
+
         assert device.group_id == "uuidg"
         assert device.group_name == "blah"
 
         assert device.location_id == "uuidl"
         assert device.location_name == "meh"
+
+        assert device.product_id == 22
+        assert device.product_name == "LIFX Color 1000"
+        assert device.product_type == "light"
+        assert device.firmware_version == "1.2"
+        assert device.cap == [
+            "color",
+            "not_buttons",
+            "not_chain",
+            "not_hev",
+            "not_ir",
+            "not_matrix",
+            "not_multizone",
+            "not_relays",
+            "not_unhandled",
+            "variable_color_temp",
+        ]
 
     it "has as_dict and info with modified values", device:
         values = {
@@ -52,12 +89,31 @@ describe "Device":
             "kelvin": 2500,
             "firmware_version": "1.2",
             "product_id": 22,
-            "cap": ["multizone", "color"],
+            "product_name": "LIFX Color 1000",
+            "product_type": "light",
+            "cap": [
+                "color",
+                "not_buttons",
+                "not_chain",
+                "not_hev",
+                "not_ir",
+                "not_matrix",
+                "not_multizone",
+                "not_relays",
+                "not_unhandled",
+                "variable_color_temp",
+            ],
         }
 
-        info = {"serial": values["serial"]}
+        info = {
+            "serial": values["serial"],
+            "cap": values["cap"],
+            "product_type": values["product_type"],
+        }
+
         expected = {key: sb.NotSpecified for key in values}
         expected["serial"] = values["serial"]
+        expected["cap"] = values["cap"]
 
         def assertChange(field, value):
             setattr(device, field, value)
@@ -70,8 +126,11 @@ describe "Device":
             assert device.info == info
             assert device.as_dict() == expected
 
+        assertChange("product", Products[VendorRegistry.LIFX, 22])
+        assertChange("firmware", hp.Firmware(1, 2, 0, 0))
+        assertChange("capabilities", Products[VendorRegistry.LIFX, 22].cap(1, 2))
+
         assertChange("label", "kitchen")
-        assertChange("power", "on")
         assertChange(
             "group", Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
         )
@@ -79,13 +138,11 @@ describe "Device":
             "location",
             Collection.FieldSpec().empty_normalise(typ="location", uuid="uuidl", name="meh"),
         )
+        assertChange("power", "on")
         assertChange("hue", 20)
         assertChange("saturation", 0.5)
         assertChange("brightness", 0.6)
         assertChange("kelvin", 2500)
-        assertChange("firmware_version", "1.2")
-        assertChange("product_id", 22)
-        assertChange("cap", ["multizone", "color"])
 
         assert device.info == values
         assert device.as_dict() == values
@@ -123,7 +180,7 @@ describe "Device":
 
             device.label = "kitchen"
             device.power = "on"
-            device.product_id = 22
+            device.product = Products[VendorRegistry.LIFX, 22]
             device.group = Collection.FieldSpec().empty_normalise(
                 typ="group", uuid="uuidg", name="blah"
             )
@@ -133,9 +190,13 @@ describe "Device":
             assert sorted(filtr.has.mock_calls) == (
                 sorted(
                     [
+                        mock.call("cap"),
                         mock.call("label"),
                         mock.call("power"),
+                        mock.call("product"),
                         mock.call("product_id"),
+                        mock.call("product_name"),
+                        mock.call("product_type"),
                         mock.call("group"),
                         mock.call("group_id"),
                         mock.call("group_name"),
@@ -147,9 +208,27 @@ describe "Device":
             assert sorted(filtr.matches.mock_calls) == (
                 sorted(
                     [
+                        mock.call(
+                            "cap",
+                            [
+                                "color",
+                                "not_buttons",
+                                "not_chain",
+                                "not_hev",
+                                "not_ir",
+                                "not_matrix",
+                                "not_multizone",
+                                "not_relays",
+                                "not_unhandled",
+                                "variable_color_temp",
+                            ],
+                        ),
                         mock.call("label", "kitchen"),
                         mock.call("power", "on"),
+                        mock.call("product", Products[VendorRegistry.LIFX, 22]),
                         mock.call("product_id", 22),
+                        mock.call("product_name", "LIFX Color 1000"),
+                        mock.call("product_type", "light"),
                         mock.call("group_id", "uuidg"),
                         mock.call("group_name", "blah"),
                         mock.call("serial", "d073d5000001"),

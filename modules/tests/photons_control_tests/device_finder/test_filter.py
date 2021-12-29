@@ -261,7 +261,7 @@ describe "Filter":
     describe "points":
         it "returns the InfoPoint enums for the fields that have values":
             filtr = Filter.from_kwargs(label="kitchen", product_id=22)
-            assert set(filtr.points) == set([InfoPoints.LIGHT_STATE, InfoPoints.VERSION])
+            assert set(filtr.points) == set([InfoPoints.LABEL, InfoPoints.VERSION])
 
             filtr = Filter.from_kwargs(group_name="one")
             assert set(filtr.points) == set([InfoPoints.GROUP])
