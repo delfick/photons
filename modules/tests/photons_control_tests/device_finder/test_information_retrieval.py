@@ -82,7 +82,6 @@ describe "Device":
 
             def assertTimes(s, points):
                 for p, f in s.device.point_futures.items():
-                    print(f"p: {p}, f: {f}")
                     if p in points:
                         assert f.done() and f.result() == points[p]
                     else:
@@ -97,23 +96,23 @@ describe "Device":
         V.received()
 
         assert await V.matches(Filter.from_kwargs(label="kitchen"))
-        V.received(DeviceMessages.GetVersion(), LightMessages.GetColor())
-        V.assertTimes({InfoPoints.VERSION: 1, InfoPoints.LIGHT_STATE: 1})
+        V.received(DeviceMessages.GetLabel())
+        V.assertTimes({InfoPoints.LABEL: 1})
         V.t.add(5)
 
         assert not (await V.matches(Filter.from_kwargs(label="den")))
         V.received()
-        V.assertTimes({InfoPoints.LIGHT_STATE: 1})
+        V.assertTimes({InfoPoints.LABEL: 1})
         V.t.add(2)
 
         assert not (await V.matches(Filter.from_kwargs(label="attic", refresh_info=True)))
-        V.received(DeviceMessages.GetVersion(), LightMessages.GetColor())
-        V.assertTimes({InfoPoints.VERSION: 6, InfoPoints.LIGHT_STATE: 8})
+        V.received(DeviceMessages.GetLabel())
+        V.assertTimes({InfoPoints.LABEL: 8})
         V.t.add(1)
 
         assert not (await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"])))
-        V.received(DeviceMessages.GetVersion(), DeviceMessages.GetGroup())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 9, InfoPoints.VERSION: 9})
+        V.received(DeviceMessages.GetGroup())
+        V.assertTimes({InfoPoints.VERSION: 9, InfoPoints.LABEL: 8, InfoPoints.GROUP: 9})
         V.t.add(2)
 
         # It never refreshes version
@@ -121,12 +120,12 @@ describe "Device":
             await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"], refresh_info=True))
         )
         V.received(DeviceMessages.GetGroup())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
         V.t.add(3)
 
         assert await V.matches(Filter.from_kwargs(cap=["not_matrix"], refresh_info=True))
         V.received()
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
 
     async it "can start an information loop", V, fake_time:
         fake_time.set(1)
@@ -185,7 +184,7 @@ describe "Device":
 
             assert V.device.info == info
             await hp.wait_for_all_futures(*[V.device.point_futures[kls] for kls in InfoPoints])
-            print(V.device)
+
             found = []
             for kls in list(InfoPoints):
                 found.append(V.device.point_futures[kls].result())
