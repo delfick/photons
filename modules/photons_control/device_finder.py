@@ -814,10 +814,16 @@ class Device(dictobj.Spec):
                 if not self.point_futures[e].done():
                     yield e.value.msg
 
-        async for pkt in sender(DeviceMessages.GetVersion(), self.serial):
-            point = self.set_from_pkt(pkt, collections)
-            self.point_futures[point].reset()
-            self.point_futures[point].set_result(time.time())
+        for e in self.points_from_fltr(fltr):
+            if (
+                e == InfoPoints.VERSION
+                and not self.final_future.done()
+                and not self.point_futures[e].done()
+            ):
+                async for pkt in sender(DeviceMessages.GetVersion(), self.serial):
+                    point = self.set_from_pkt(pkt, collections)
+                    self.point_futures[point].reset()
+                    self.point_futures[point].set_result(time.time())
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit):
