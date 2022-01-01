@@ -172,7 +172,6 @@ describe "Device":
         for name, kls in [
             ("version", DeviceMessages.GetVersion),
             ("color", LightMessages.GetColor),
-            ("label", DeviceMessages.GetLabel),
             ("firmware", DeviceMessages.GetHostFirmware),
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
@@ -188,9 +187,9 @@ describe "Device":
             found = []
             for kls in list(InfoPoints):
                 found.append(V.device.point_futures[kls].result())
-            assert found == [1, 2, 3, 4, 5]
+            assert found == [1, 2, 3, 4, 5, 6]
 
-            assert V.t.time == 5
+            assert V.t.time == 6
 
             V.received(*msgs)
 
@@ -215,36 +214,39 @@ describe "Device":
             )
             assert V.device.info == info
 
+
             await hp.wait_for_all_futures(Futs.color)
-            V.received(DeviceMessages.GetVersion(), LightMessages.GetColor(), keep_duplicates=True)
-            assert V.t.time == 11
+            V.received(LightMessages.GetColor(), keep_duplicates=True)
+            assert V.t.time == 14
+
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
-                *([DeviceMessages.GetVersion(), LightMessages.GetColor()] * 5),
+                *([LightMessages.GetColor()] * 5),
                 DeviceMessages.GetGroup(),
                 DeviceMessages.GetLocation(),
                 keep_duplicates=True,
             )
-            # First location was at t=5
+            # First location was at t=6
             # We then wait another 60
             # 60 is at 12 rounds, and next location after that is after 5
-            assert V.t.time == 65
+            assert V.t.time == 66
 
-            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 61
+            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 62
+
             await hp.wait_for_all_futures(Futs.color)
             V.received(LightMessages.GetColor(), keep_duplicates=True)
-            # 61 + 10 = 71
-            assert V.t.time == 71
+            # 62 + 12 = 74
+            assert V.t.time == 74
+
 
             await hp.wait_for_all_futures(Futs.firmware)
             # First firmware was at t=3
-            # So next refresh after 103 which is 2 after 101 which is where LIGHT_STATE last is
-            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 101
-            assert V.t.time == 103
+            # So next refresh after 106 which is 2 after 101 which is where LIGHT_STATE last is
+            assert V.device.point_futures[InfoPoints.LIGHT_STATE].result() == 98
+            assert V.t.time == 106
 
             V.received(
-                LightMessages.GetColor(),
                 LightMessages.GetColor(),
                 LightMessages.GetColor(),
                 DeviceMessages.GetHostFirmware(),
@@ -281,6 +283,7 @@ describe "Device":
             DeviceMessages.GetGroup(),
             DeviceMessages.GetLocation(),
         ]
+        msgs.remove(DeviceMessages.GetLabel())
 
         message_futs = {}
 
@@ -314,7 +317,6 @@ describe "Device":
         for name, kls in [
             ("version", DeviceMessages.GetVersion),
             ("color", LightMessages.GetColor),
-            ("label", DeviceMessages.GetLabel),
             ("firmware", DeviceMessages.GetHostFirmware),
             ("group", DeviceMessages.GetGroup),
             ("location", DeviceMessages.GetLocation),
@@ -347,6 +349,8 @@ describe "Device":
                     "firmware_version": "2.80",
                     "product_id": 27,
                     "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
+                    "product_name": "LIFX A19",
+                    "product_type": "light",
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",
                     "location_id": "bb000000000000000000000000000000",
@@ -356,20 +360,20 @@ describe "Device":
             assert V.device.info == info
 
             await hp.wait_for_all_futures(Futs.color)
-            V.received(DeviceMessages.GetVersion(), LightMessages.GetColor(), keep_duplicates=True)
-            assert V.t.time == 11
+            V.received(LightMessages.GetColor(), keep_duplicates=True)
+            assert V.t.time == 14
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
-                *(DeviceMessages.GetVersion(), [LightMessages.GetColor()] * 5),
+                *([LightMessages.GetColor()] * 5),
                 DeviceMessages.GetGroup(),
                 DeviceMessages.GetLocation(),
                 keep_duplicates=True,
             )
-            # First location was at t=5
+            # First location was at t=6
             # We then wait another 60
-            # 60 is at 12 rounds, and next location after that is after 5
-            assert V.t.time == 65
+            # 60 is at 12 rounds, and next location after that is after 6
+            assert V.t.time == 66
 
             # Now we remove knowledge of the device
             # And expect the information loop to end

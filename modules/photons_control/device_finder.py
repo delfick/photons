@@ -774,9 +774,6 @@ class Device(dictobj.Spec):
                         return
 
                     e = next(points)
-                    if e.value.condition is not None and not e.value.condition(self):
-                        continue
-
                     fut = self.point_futures[e]
 
                     if fut.done():
