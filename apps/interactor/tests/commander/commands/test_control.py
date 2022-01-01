@@ -224,7 +224,13 @@ describe "Control Commands":
         )
         for device in devices:
             if device is not kitchen_light:
-                devices.store(device).assertNoSetMessages()
+                assert devices.store(device).count(
+                    Events.INCOMING(
+                        device,
+                        device.io["MEMORY"],
+                        pkt=LightMessages.GetColor(),
+                    )
+                )
 
     async it "has power_toggle command", devices, server:
         expected = {"results": {device.serial: "ok" for device in devices}}

@@ -19,6 +19,8 @@ import json
 import uuid
 import sys
 
+from photons_products.enums import VendorRegistry
+
 log = logging.getLogger("interactor.test_helpers")
 
 ds = DeviceCollection()
@@ -306,6 +308,7 @@ ds.add("a19_1")(
         group={"label": group_one_label, "identity": group_one_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
         color=hp.Color(0, 1, 1, 2500),
+        product=Products[VendorRegistry.LIFX, 27],
     ),
 )
 
@@ -319,6 +322,7 @@ ds.add("a19_2")(
         color=hp.Color(100, 1, 1, 2500),
         group={"label": group_two_label, "identity": group_two_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
+        product=Products[VendorRegistry.LIFX, 27],
     ),
 )
 
@@ -332,6 +336,7 @@ ds.add("color1000")(
         color=hp.Color(100, 0, 1, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 22],
     ),
 )
 
@@ -345,6 +350,7 @@ ds.add("white800")(
         color=hp.Color(100, 0, 1, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 10],
     ),
 )
 
@@ -359,6 +365,7 @@ ds.add("strip1")(
         color=hp.Color(200, 0.5, 0.5, 2500),
         group={"label": group_one_label, "identity": group_one_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
+        product=Products[VendorRegistry.LIFX, 32],
     ),
 )
 
@@ -373,6 +380,7 @@ ds.add("strip2")(
         color=hp.Color(200, 0.5, 0.5, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 32],
     ),
 )
 
@@ -386,6 +394,7 @@ ds.add("candle")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 57],
     ),
 )
 
@@ -399,6 +408,7 @@ ds.add("tile")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 55],
     ),
 )
 
@@ -412,6 +422,7 @@ ds.add("clean")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
+        product=Products[VendorRegistry.LIFX, 90],
     ),
 )
 
@@ -446,6 +457,8 @@ def discovery_response():
             "product_id": 27,
             "saturation": 1.0,
             "serial": "d073d5000001",
+            "product_name": "LIFX A19",
+            "product_type": "light",
         },
         "d073d5000002": {
             "brightness": 1.0,
@@ -462,6 +475,8 @@ def discovery_response():
             "product_id": 27,
             "saturation": 1.0,
             "serial": "d073d5000002",
+            "product_name": "LIFX A19",
+            "product_type": "light",
         },
         "d073d5000003": {
             "brightness": 1.0,
@@ -478,6 +493,8 @@ def discovery_response():
             "product_id": 22,
             "saturation": 0.0,
             "serial": "d073d5000003",
+            "product_name": "LIFX Color 1000",
+            "product_type": "light",
         },
         "d073d5000004": {
             "brightness": 1.0,
@@ -494,6 +511,8 @@ def discovery_response():
             "product_id": 10,
             "saturation": 0.0,
             "serial": "d073d5000004",
+            "product_name": "LIFX White 800 (Low Voltage)",
+            "product_type": "light",
         },
         "d073d5000005": {
             "brightness": Around(0.5),
@@ -510,6 +529,8 @@ def discovery_response():
             "product_id": 32,
             "saturation": Around(0.5),
             "serial": "d073d5000005",
+            "product_name": "LIFX Z",
+            "product_type": "light",
         },
         "d073d5000006": {
             "brightness": Around(0.5),
@@ -526,6 +547,8 @@ def discovery_response():
             "product_id": 31,
             "saturation": Around(0.5),
             "serial": "d073d5000006",
+            "product_name": "LIFX Z",
+            "product_type": "light",
         },
         "d073d5000007": {
             "brightness": 1.0,
@@ -542,6 +565,8 @@ def discovery_response():
             "product_id": 57,
             "saturation": 1.0,
             "serial": "d073d5000007",
+            "product_name": "LIFX Candle",
+            "product_type": "light",
         },
         "d073d5000008": {
             "brightness": 1.0,
@@ -558,6 +583,8 @@ def discovery_response():
             "product_id": 55,
             "saturation": 1.0,
             "serial": "d073d5000008",
+            "product_name": "LIFX Tile",
+            "product_type": "light",
         },
         "d073d5000009": {
             "brightness": 1.0,
@@ -574,6 +601,8 @@ def discovery_response():
             "product_id": 90,
             "saturation": 1.0,
             "serial": "d073d5000009",
+            "product_name": "LIFX Clean",
+            "product_type": "light",
         },
     }
 
