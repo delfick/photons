@@ -214,11 +214,9 @@ describe "Device":
             )
             assert V.device.info == info
 
-
             await hp.wait_for_all_futures(Futs.color)
             V.received(LightMessages.GetColor(), keep_duplicates=True)
             assert V.t.time == 14
-
 
             await hp.wait_for_all_futures(Futs.group, Futs.location)
             V.received(
@@ -238,7 +236,6 @@ describe "Device":
             V.received(LightMessages.GetColor(), keep_duplicates=True)
             # 62 + 12 = 74
             assert V.t.time == 74
-
 
             await hp.wait_for_all_futures(Futs.firmware)
             # First firmware was at t=3

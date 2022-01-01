@@ -331,8 +331,7 @@ describe "finding devices":
 
         for device in V.devices:
             V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(),
-                DeviceMessages.GetVersion()
+                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
             )
             V.devices.store(device).clear()
 
@@ -344,8 +343,7 @@ describe "finding devices":
 
         for device in V.devices:
             V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(),
-                DeviceMessages.GetVersion()
+                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
             )
             V.devices.store(device).clear()
 
@@ -382,10 +380,10 @@ describe "finding devices":
             "product_name": "LIFX A19",
             "product_type": "light",
             "firmware_version": "2.80",
-            'group_id': 'aa000000000000000000000000000000',
-            'group_name': 'g1',
-            'location_id': 'bb000000000000000000000000000000',
-            'location_name': 'l1',
+            "group_id": "aa000000000000000000000000000000",
+            "group_name": "g1",
+            "location_id": "bb000000000000000000000000000000",
+            "location_name": "l1",
         }
 
         for device in V.devices:
@@ -404,11 +402,6 @@ describe "finding devices":
                     DiscoveryMessages.GetService(),
                     DeviceMessages.GetLabel(),
                 )
-            #V.devices.store(device).assertIncoming(
-            #    DiscoveryMessages.GetService(),
-            #    DeviceMessages.GetVersion(),
-            #    LightMessages.GetColor(),
-            #)
             V.devices.store(device).clear()
 
         found = []
@@ -450,7 +443,6 @@ describe "finding devices":
                 V.devices.store(device).assertIncoming(
                     DiscoveryMessages.GetService(),
                     DeviceMessages.GetLabel(),
-
                 )
             V.devices.store(device).clear()
 
