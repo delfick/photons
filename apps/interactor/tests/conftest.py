@@ -308,7 +308,6 @@ ds.add("a19_1")(
         group={"label": group_one_label, "identity": group_one_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
         color=hp.Color(0, 1, 1, 2500),
-        product=Products[VendorRegistry.LIFX, 27],
     ),
 )
 
@@ -322,7 +321,6 @@ ds.add("a19_2")(
         color=hp.Color(100, 1, 1, 2500),
         group={"label": group_two_label, "identity": group_two_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
-        product=Products[VendorRegistry.LIFX, 27],
     ),
 )
 
@@ -336,7 +334,6 @@ ds.add("color1000")(
         color=hp.Color(100, 0, 1, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 22],
     ),
 )
 
@@ -350,7 +347,6 @@ ds.add("white800")(
         color=hp.Color(100, 0, 1, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 10],
     ),
 )
 
@@ -365,7 +361,6 @@ ds.add("strip1")(
         color=hp.Color(200, 0.5, 0.5, 2500),
         group={"label": group_one_label, "identity": group_one_uuid},
         location={"label": location_one_label, "identity": location_one_uuid},
-        product=Products[VendorRegistry.LIFX, 32],
     ),
 )
 
@@ -380,7 +375,6 @@ ds.add("strip2")(
         color=hp.Color(200, 0.5, 0.5, 2500),
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 32],
     ),
 )
 
@@ -394,7 +388,6 @@ ds.add("candle")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 57],
     ),
 )
 
@@ -408,7 +401,6 @@ ds.add("tile")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 55],
     ),
 )
 
@@ -422,7 +414,6 @@ ds.add("clean")(
         power=65535,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
-        product=Products[VendorRegistry.LIFX, 90],
     ),
 )
 
