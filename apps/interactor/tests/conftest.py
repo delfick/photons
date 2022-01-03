@@ -19,7 +19,6 @@ import json
 import uuid
 import sys
 
-from photons_products.enums import VendorRegistry
 
 log = logging.getLogger("interactor.test_helpers")
 

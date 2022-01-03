@@ -590,11 +590,9 @@ class Device(dictobj.Spec):
 
     @property
     def product_type(self):
-        if self.product is not sb.NotSpecified:
+        if self.capabilities is not sb.NotSpecified:
             return (
-                ProductType.LIGHT.value
-                if Products[VendorRegistry.LIFX, self.product.pid].cap.is_light
-                else ProductType.SWITCH.value
+                ProductType.LIGHT.value if self.capabilities.is_light else ProductType.SWITCH.value
             )
         else:
             return sb.NotSpecified
@@ -603,7 +601,7 @@ class Device(dictobj.Spec):
     def firmware_version(self):
         if self.firmware is sb.NotSpecified:
             return sb.NotSpecified
-        return str(self.firmware)
+        return tuple(self.firmware)
 
     @property
     def cap(self):
@@ -651,8 +649,6 @@ class Device(dictobj.Spec):
         del actual["group"]
         del actual["limit"]
         del actual["location"]
-        del actual["product"]
-        del actual["firmware"]
         for key in self.property_fields:
             actual[key] = self[key]
 
@@ -719,12 +715,10 @@ class Device(dictobj.Spec):
             self.firmware = hp.Firmware(
                 major=pkt.version_major, minor=pkt.version_minor, build=pkt.build
             )
-
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:
             self.product = Products[pkt.vendor, pkt.product]
-
             return InfoPoints.VERSION
 
     def points_from_fltr(self, fltr):
@@ -800,27 +794,25 @@ class Device(dictobj.Spec):
         if fltr is None:
             return True
 
+        points_to_find = [e for e in self.points_from_fltr(fltr)]
+
+        if InfoPoints.VERSION in points_to_find:
+            if not self.final_future.done() and not self.point_futures[InfoPoints.VERSION].done():
+                async for pkt in sender(DeviceMessages.GetVersion(), self.serial):
+                    point = self.set_from_pkt(pkt, collections)
+                    self.point_futures[point].reset()
+                    self.point_futures[point].set_result(time.time())
+
+            points_to_find.remove(InfoPoints.VERSION)
+
         async def gen(reference, sender, **kwargs):
-            for e in self.points_from_fltr(fltr):
-                if e == InfoPoints.VERSION:
-                    continue
+            for e in points_to_find:
                 if e.value.condition is not None and not e.value.condition(self):
                     continue
                 if self.final_future.done():
                     return
                 if not self.point_futures[e].done():
                     yield e.value.msg
-
-        for e in self.points_from_fltr(fltr):
-            if (
-                e == InfoPoints.VERSION
-                and not self.final_future.done()
-                and not self.point_futures[e].done()
-            ):
-                async for pkt in sender(DeviceMessages.GetVersion(), self.serial):
-                    point = self.set_from_pkt(pkt, collections)
-                    self.point_futures[point].reset()
-                    self.point_futures[point].set_result(time.time())
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit):

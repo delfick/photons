@@ -110,6 +110,9 @@ class Firmware:
     def __repr__(self):
         return f"<Firmware {self.major},{self.minor}:{self.build},{self.install}>"
 
+    def __iter__(self):
+        yield from (self.major, self.minor)
+
     def __str__(self):
         return f"{self.major}.{self.minor}"
 
