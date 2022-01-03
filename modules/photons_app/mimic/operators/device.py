@@ -52,7 +52,7 @@ class Device(Operator):
 
     @classmethod
     def select(kls, device):
-        if not kls.only_io_and_viewer_operators(device.value_store) and device.cap.is_light:
+        if not kls.only_io_and_viewer_operators(device.value_store):
             return kls(device, device.value_store)
 
     attrs = [

@@ -178,13 +178,18 @@ describe "Scene Commands":
         await server.assertCommand(
             "/v1/lifx/command",
             {"command": "scene_apply", "args": {"uuid": got2["meta"]["uuid"]}},
-            json_output={"results": {d.serial: "ok" for d in devices}},
+            json_output={
+                "results": {d.serial: "ok" for d in devices if d.serial != "d073d500000a"}
+            },
         )
 
         for d in devices:
-            assert any(
-                event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
-            ), devices.store(d)
+            if d.serial == "d073d500000a":
+                continue
+            else:
+                assert any(
+                    event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
+                ), devices.store(d)
 
         # Very naive test with an override that is None
         for d in devices:
@@ -196,10 +201,15 @@ describe "Scene Commands":
                 "command": "scene_apply",
                 "args": {"uuid": got2["meta"]["uuid"], "overrides": {"kelvin": None}},
             },
-            json_output={"results": {d.serial: "ok" for d in devices}},
+            json_output={
+                "results": {d.serial: "ok" for d in devices if d.serial != "d073d500000a"}
+            },
         )
 
         for d in devices:
-            assert any(
-                event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
-            ), devices.store(d)
+            if d.serial == "d073d500000a":
+                continue
+            else:
+                assert any(
+                    event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
+                ), devices.store(d)

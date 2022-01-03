@@ -295,6 +295,10 @@ zones = []
 for i in range(16):
     zones.append(hp.Color(i * 10, 1, 1, 2500))
 
+relays = {}
+for i in range(4):
+    relays[i] = 65535
+
 
 ds.add("a19_1")(
     next(ds.serial_seq),
@@ -410,6 +414,18 @@ ds.add("clean")(
         color=hp.Color(0, 1, 1, 3500),
         label="dungeon",
         power=65535,
+        group={"label": group_three_label, "identity": group_three_uuid},
+        location={"label": location_two_label, "identity": location_two_uuid},
+    ),
+)
+
+ds.add("switch")(
+    next(ds.serial_seq),
+    Products.LCM3_32_SWITCH_I,
+    hp.Firmware(3, 82),
+    value_store=dict(
+        label="play",
+        relays=relays,
         group={"label": group_three_label, "identity": group_three_uuid},
         location={"label": location_two_label, "identity": location_two_uuid},
     ),
@@ -575,6 +591,17 @@ def discovery_response():
             "saturation": 1.0,
             "serial": "d073d5000009",
         },
+        "d073d500000a": {
+            "cap": pytest.helpers.has_caps_list("buttons", "relays", "unhandled"),
+            "firmware_version": "3.82",
+            "label": "play",
+            "group_id": mock.ANY,
+            "group_name": "desk",
+            "location_id": mock.ANY,
+            "location_name": "Work",
+            "product_id": 89,
+            "serial": "d073d500000a",
+        },
     }
 
 
@@ -688,6 +715,11 @@ light_state_responses = {
             "pkt_name": "LightState",
             "pkt_type": 107,
         },
+        "d073d500000a": {
+            "payload": {"unhandled_type": 101},
+            "pkt_name": "StateUnhandled",
+            "pkt_type": 223,
+        },
     }
 }
 
@@ -706,6 +738,7 @@ label_state_responses = {
         "d073d5000007": {"payload": {"label": "pretty"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000008": {"payload": {"label": "wall"}, "pkt_name": "StateLabel", "pkt_type": 25},
         "d073d5000009": {"payload": {"label": "dungeon"}, "pkt_name": "StateLabel", "pkt_type": 25},
+        "d073d500000a": {"payload": {"label": "play"}, "pkt_name": "StateLabel", "pkt_type": 25},
     }
 }
 

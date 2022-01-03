@@ -458,20 +458,26 @@ class ColorsPlan(Plan):
             self.result = []
 
         @property
+        def is_light(self):
+            return self.deps["c"]["cap"].is_light
+
+        @property
         def zones(self):
             return self.deps["c"]["cap"].zones
 
         @property
         def messages(self):
-            if self.zones is Zones.SINGLE:
-                return [LightMessages.GetColor()]
+            if self.is_light:
 
-            elif self.zones is Zones.MATRIX:
-                return [
-                    TileMessages.Get64(
-                        x=0, y=0, tile_index=0, length=255, width=self.deps["chain"]["width"]
-                    )
-                ]
+                if self.zones is Zones.SINGLE:
+                    return [LightMessages.GetColor()]
+
+                elif self.zones is Zones.MATRIX:
+                    return [
+                        TileMessages.Get64(
+                            x=0, y=0, tile_index=0, length=255, width=self.deps["chain"]["width"]
+                        )
+                    ]
 
             return []
 

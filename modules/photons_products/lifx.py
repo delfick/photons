@@ -104,7 +104,11 @@ class Capability(Capability):
                 "max_kelvin",
             ]
         else:
-            return ["has_relays", "has_buttons"]
+            return [
+                "has_relays",
+                "has_buttons",
+                "has_unhandled",
+            ]
 
     @property
     def has_multizone(self):
