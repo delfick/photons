@@ -649,6 +649,8 @@ class Device(dictobj.Spec):
         del actual["group"]
         del actual["limit"]
         del actual["location"]
+        del actual["product"]
+        del actual["firmware"]
         for key in self.property_fields:
             actual[key] = self[key]
 

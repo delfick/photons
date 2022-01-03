@@ -379,7 +379,7 @@ describe "finding devices":
             "product_id": 27,
             "product_name": "LIFX A19",
             "product_type": "light",
-            "firmware_version": "2.80",
+            "firmware_version": (2, 80),
             "group_id": "aa000000000000000000000000000000",
             "group_name": "g1",
             "location_id": "bb000000000000000000000000000000",
@@ -411,7 +411,7 @@ describe "finding devices":
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-            "firmware_version": "2.80",
+            "firmware_version": (2, 80),
             "hue": V.d3.attrs.color.hue,
             "label": "kitchen",
             "power": "off",
@@ -557,7 +557,7 @@ describe "finding devices":
         assert [f.serial for f in found] == [V.d3.serial]
         assert found[0].info == {
             "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
-            "firmware_version": "2.80",
+            "firmware_version": (2, 80),
             "hue": V.d3.attrs.color.hue,
             "label": "kitchen",
             "power": "off",

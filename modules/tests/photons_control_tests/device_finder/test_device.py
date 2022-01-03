@@ -4,7 +4,6 @@ from photons_control.device_finder import Device, Collection, Collections, Filte
 from photons_products.enums import VendorRegistry
 from photons_products.registry import Products
 
-
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
@@ -57,19 +56,8 @@ describe "Device":
         assert device.product_id == 22
         assert device.product_name == "LIFX Color 1000"
         assert device.product_type == "light"
-        assert device.firmware_version == "1.2"
-        assert device.cap == [
-            "color",
-            "not_buttons",
-            "not_chain",
-            "not_hev",
-            "not_ir",
-            "not_matrix",
-            "not_multizone",
-            "not_relays",
-            "not_unhandled",
-            "variable_color_temp",
-        ]
+        assert device.firmware_version == (1, 2)
+        assert device.cap == pytest.helpers.has_caps_list("color", "variable_color_temp")
 
     it "has as_dict and info with modified values", device:
         values = {
@@ -84,22 +72,11 @@ describe "Device":
             "saturation": 0.5,
             "brightness": 0.6,
             "kelvin": 2500,
-            "firmware_version": "1.2",
+            "firmware_version": (1, 2),
             "product_id": 22,
             "product_name": "LIFX Color 1000",
             "product_type": "light",
-            "cap": [
-                "color",
-                "not_buttons",
-                "not_chain",
-                "not_hev",
-                "not_ir",
-                "not_matrix",
-                "not_multizone",
-                "not_relays",
-                "not_unhandled",
-                "variable_color_temp",
-            ],
+            "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
         }
 
         info = {
@@ -124,7 +101,7 @@ describe "Device":
             assert device.as_dict() == expected
 
         assertChange("product", Products[VendorRegistry.LIFX, 22])
-        assertChange("firmware", hp.Firmware(1, 2, 0, 0))
+        assertChange("firmware", hp.Firmware(1, 2))
         assertChange("label", "kitchen")
         assertChange(
             "group", Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
@@ -205,18 +182,7 @@ describe "Device":
                     [
                         mock.call(
                             "cap",
-                            [
-                                "color",
-                                "not_buttons",
-                                "not_chain",
-                                "not_hev",
-                                "not_ir",
-                                "not_matrix",
-                                "not_multizone",
-                                "not_relays",
-                                "not_unhandled",
-                                "variable_color_temp",
-                            ],
+                            pytest.helpers.has_caps_list("color", "variable_color_temp"),
                         ),
                         mock.call("label", "kitchen"),
                         mock.call("power", "on"),
@@ -336,7 +302,7 @@ describe "Device":
         it "takes in StateHostFirmware", device, collections:
             pkt = DeviceMessages.StateHostFirmware.create(version_major=1, version_minor=20)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.FIRMWARE
-            assert device.firmware_version == "1.20"
+            assert device.firmware_version == (1, 20)
 
         it "takes in StateVersion", device, collections:
             pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)
@@ -345,18 +311,7 @@ describe "Device":
 
             assert device.product_id == 22
             assert device.product_name == "LIFX Color 1000"
-            assert device.cap == [
-                "color",
-                "not_buttons",
-                "not_chain",
-                "not_hev",
-                "not_ir",
-                "not_matrix",
-                "not_multizone",
-                "not_relays",
-                "not_unhandled",
-                "variable_color_temp",
-            ]
+            assert device.cap == pytest.helpers.has_caps_list("color", "variable_color_temp")
 
     describe "points_from_fltr":
 
