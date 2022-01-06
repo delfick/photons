@@ -234,12 +234,8 @@ def ForCapability(**by_cap):
 
         def allows(cap, *want):
             for c in want:
-                if c.startswith("not_"):
-                    if not getattr(cap, f"has_{c[4:]}"):
-                        return True
-                else:
-                    if getattr(cap, f"has_{c}"):
-                        return True
+                if c in cap:
+                    return True
 
         plans = sender.make_plans("capability")
         async for serial, _, info in sender.gatherer.gather(plans, reference, **kwargs):

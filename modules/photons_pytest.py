@@ -510,6 +510,7 @@ def pytest_configure(config):
             "hev",
             "matrix",
             "multizone",
+            "extended_multizone",
             "relays",
             "unhandled",
             "variable_color_temp",

@@ -57,7 +57,6 @@ describe "Device":
             "kelvin": 2500,
             "firmware_version": "1.2",
             "product_id": 22,
-            "cap": ["multizone", "color"],
         }
 
         info = {"serial": values["serial"]}
@@ -90,7 +89,6 @@ describe "Device":
         assertChange("kelvin", 2500)
         assertChange("firmware_version", "1.2")
         assertChange("product_id", 22)
-        assertChange("cap", ["multizone", "color"])
 
         assert device.info == values
         assert device.as_dict() == values
@@ -265,12 +263,14 @@ describe "Device":
             assert device.firmware_version == "1.20"
 
         it "takes in StateVersion", device, collections:
-            pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)
+            pkt = DeviceMessages.StateHostFirmware.create(version_major=1, version_minor=20)
+            device.set_from_pkt(pkt, collections)
 
+            pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 
             assert device.product_id == 22
-            assert device.cap == [
+            for cap in [
                 "color",
                 "not_buttons",
                 "not_chain",
@@ -281,7 +281,8 @@ describe "Device":
                 "not_relays",
                 "not_unhandled",
                 "variable_color_temp",
-            ]
+            ]:
+                assert cap in device.cap
 
     describe "points_from_fltr":
 

@@ -114,12 +114,33 @@ class Capability(metaclass=CapabilityDefinition):
     def __repr__(self):
         return f"<Capability {self.product.name}>"
 
+    def __iter__(self):
+        caps = []
+        for cap_name, cap_value in list(self.items()):
+            if cap_name[:4] == "has_" and cap_value is True:
+                caps.append(f"{cap_name[4:]}")
+            elif cap_name[:4] == "has_" and cap_value is False:
+                caps.append(f"not_{cap_name[4:]}")
+            elif cap_name[:4] != "has_":
+                continue
+        return iter(sorted(caps))
+
     def __eq__(self, other):
         return (
             self.product == other.product
             and self.firmware_major == other.firmware_major
             and self.firmware_minor == other.firmware_minor
         )
+
+    def __contains__(self, item):
+        if type(item) is list:
+            return any(item) in self.__iter__()
+        elif item in self.__iter__():
+            return True
+        return False
+
+    def __str__(self):
+        return ", ".join(x for x in self.__iter__())
 
     def items(self):
         for capability in self.capabilities_for_display():

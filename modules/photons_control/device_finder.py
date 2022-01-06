@@ -4,7 +4,9 @@ from photons_app.tasks import task_register as task
 from photons_app import helpers as hp
 
 from photons_messages import DeviceMessages, LightMessages
+from photons_products.enums import VendorRegistry
 from photons_control.script import FromGenerator
+from photons_products.base import Capability
 from photons_products import Products
 
 from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
@@ -344,7 +346,7 @@ class Filter(dictobj.Spec):
                         return fnmatch.fnmatch(val, f)
 
                 if type(f) is list:
-                    if type(val) is list:
+                    if type(val) is list or isinstance(val, Capability):
                         return any(v in val for v in f)
                     else:
                         return val in f
@@ -496,7 +498,7 @@ class Device(dictobj.Spec):
 
     product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
 
-    cap = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
+    cap = dictobj.Field(sb.any_spec, wrapper=sb.optional_spec)
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -548,6 +550,12 @@ class Device(dictobj.Spec):
         del actual["location"]
         for key in self.property_fields:
             actual[key] = self[key]
+        if self.cap is not sb.NotSpecified:
+            actual["cap"] = []
+            for prop in self.cap:
+                actual["cap"].append(prop)
+        else:
+            del actual["cap"]
         return actual
 
     @property
@@ -604,29 +612,20 @@ class Device(dictobj.Spec):
 
         elif pkt | DeviceMessages.StateHostFirmware:
             self.firmware_version = f"{pkt.version_major}.{pkt.version_minor}"
+            if self.product_id is not sb.NotSpecified:
+                self.cap = Products[VendorRegistry.LIFX, self.product_id].cap(
+                    pkt.version_major, pkt.version_minor
+                )
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
             product = Products[pkt.vendor, pkt.product]
-            cap = []
-            for prop in (
-                "has_ir",
-                "has_hev",
-                "has_color",
-                "has_chain",
-                "has_relays",
-                "has_matrix",
-                "has_buttons",
-                "has_multizone",
-                "has_unhandled",
-                "has_variable_color_temp",
-            ):
-                if getattr(product.cap, prop):
-                    cap.append(prop[4:])
-                else:
-                    cap.append("not_{}".format(prop[4:]))
-            self.cap = sorted(cap)
+            if self.firmware_version is not sb.NotSpecified and self.cap is sb.NotSpecified:
+                (major, minor) = self.firmware_version.split(".")
+                self.cap = product.cap(int(major), int(minor))
+            else:
+                self.cap = product.cap
             return InfoPoints.VERSION
 
     def points_from_fltr(self, fltr):
