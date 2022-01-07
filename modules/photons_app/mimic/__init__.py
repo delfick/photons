@@ -201,7 +201,7 @@ class Store:
 
     def assertNoSetMessages(self):
         for e in self.record:
-            if e | Events.INCOMING and "Set" in e.pkt.__name__:
+            if e | Events.INCOMING and "Set" in e.pkt.__class__.__name__:
                 for i, e in enumerate(self.record):
                     print(f"    Event {i}: {e}")
                 assert False, "Found a set message"
