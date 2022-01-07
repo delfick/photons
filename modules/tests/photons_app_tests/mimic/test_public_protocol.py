@@ -46,6 +46,8 @@ devices.add("striplcm2noextended")(next(devices.serial_seq), Products.LCM2_Z, hp
 
 devices.add("striplcm2extended")(next(devices.serial_seq), Products.LCM2_Z, hp.Firmware(2, 77))
 
+devices.add("switch")(next(devices.serial_seq), Products.LCM3_32_SWITCH_I, hp.Firmware(3, 80))
+
 
 @pytest.fixture(scope="module")
 def final_future():
@@ -93,7 +95,7 @@ def makeAssertUnhandled(device):
     return assertUnhandled
 
 
-describe "Device":
+describe "LightDevice":
 
     @pytest.fixture()
     def device(self):
@@ -124,6 +126,44 @@ describe "Device":
         await assertResponse(
             DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
         )
+
+
+describe "SwitchDevice":
+
+    @pytest.fixture()
+    def device(self):
+        device = devices["switch"]
+        devices.store(device).assertAttrs(label="")
+        return device
+
+    @pytest.fixture()
+    def assertResponse(self, device, **attrs):
+        return makeAssertResponse(device, **attrs)
+
+    @pytest.fixture()
+    def assertUnhandled(self, device):
+        async def assertUnhandled(send):
+            send = send.clone()
+            send.update(source=2, sequence=2, target=device.serial)
+            event = await device.event(Events.INCOMING, device.io["MEMORY"], pkt=send)
+            assert not event.handled and not event.replies
+
+        return assertUnhandled
+
+    async it "responds to label messages", device, assertResponse:
+        await assertResponse(DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="")])
+        await assertResponse(
+            DeviceMessages.SetLabel(label="sam"),
+            [DeviceMessages.StateLabel(label="sam")],
+            label="sam",
+        )
+        await assertResponse(
+            DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
+        )
+
+    async it "replies to light messages with a StateUnhandled packet", device, assertUnhandled:
+        await assertUnhandled(LightMessages.GetColor())
+        await assertUnhandled(LightMessages.GetLightPower())
 
 
 describe "LightState":

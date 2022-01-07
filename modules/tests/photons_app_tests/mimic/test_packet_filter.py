@@ -106,7 +106,7 @@ describe "SendUnhandled":
     it "takes in an event", incoming_event:
         assert SendUnhandled(incoming_event).event is incoming_event
 
-    async it "does not ends an StateUnhandled if firmware doesn't support it", device, incoming_event:
+    async it "does not send a StateUnhandled if firmware doesn't support it", device, incoming_event:
         assert not device.cap.has_unhandled
 
         su = SendUnhandled(incoming_event)

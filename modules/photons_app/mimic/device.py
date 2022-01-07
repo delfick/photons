@@ -181,7 +181,8 @@ class Device:
                 for op in group:
                     if hasattr(op, "respond"):
                         async with self.annotate_error(executing=event):
-                            await op.respond(event)
+                            if group is not self.operators or not getattr(event, "handled", False):
+                                await op.respond(event)
                         yield
 
         async with self.annotate_error(executing=event):
