@@ -124,6 +124,10 @@ def effects_running_status():
                 "effect": {"type": "SKIP"},
                 "product": {"cap": mock.ANY, "name": "LCM3_A19_CLEAN", "pid": 90, "vid": 1},
             },
+            "d073d500000a": {
+                "effect": {"type": "SKIP"},
+                "product": {"cap": mock.ANY, "name": "LCM3_32_SWITCH_I", "pid": 89, "vid": 1},
+            },
         }
     }
 
@@ -370,6 +374,18 @@ def effects_stopped_status():
                     "vid": 1,
                 },
             },
+            "d073d500000a": {
+                "effect": {"type": "SKIP"},
+                "product": {
+                    "cap": {
+                        "has_buttons": True,
+                        "has_relays": True,
+                    },
+                    "name": "LCM3_32_SWITCH_I",
+                    "pid": 89,
+                    "vid": 1,
+                },
+            },
         }
     }
 
@@ -387,6 +403,7 @@ def success_result():
             "d073d5000007": "ok",
             "d073d5000008": "ok",
             "d073d5000009": "ok",
+            "d073d500000a": "ok",
         }
     }
 

@@ -197,7 +197,7 @@ describe "Control Commands":
                         )
                         == 1
                     )
-                    devices.store(device).clear()
+                devices.store(device).clear()
 
         # With a matcher
         kitchen_light = devices.for_attribute("label", "kitchen", expect=1)[0]
@@ -222,6 +222,7 @@ describe "Control Commands":
             )
             == 1
         )
+
         for device in devices:
             if device is not kitchen_light:
                 devices.store(device).assertNoSetMessages()
@@ -275,6 +276,15 @@ describe "Control Commands":
                 assert (
                     devices.store(device).count(
                         Events.INCOMING(
+                            device, io, pkt=LightMessages.SetLightPower(level=0, duration=2)
+                        )
+                    )
+                    == 1
+                )
+            elif not device.cap.is_light:
+                assert (
+                    devices.store(device).count(
+                        Events.UNHANDLED(
                             device, io, pkt=LightMessages.SetLightPower(level=0, duration=2)
                         )
                     )
@@ -423,6 +433,13 @@ describe "Control Commands":
             io = device.io["MEMORY"]
             if device.attrs.label == "tv":
                 devices.store(device).assertNoSetMessages()
+            elif not device.cap.is_light:
+                assert (
+                    devices.store(device).count(
+                        Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())
+                    )
+                    == 1
+                )
             elif device.serial in ("d073d5000001", "d073d5000003"):
                 devices.store(device).count(
                     Events.INCOMING(
@@ -474,6 +491,13 @@ describe "Control Commands":
             io = device.io["MEMORY"]
             if device.attrs.label == "tv":
                 devices.store(device).assertNoSetMessages()
+            elif not device.cap.is_light:
+                assert (
+                    devices.store(device).count(
+                        Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())
+                    )
+                    == 1
+                )
             elif device.serial in ("d073d5000001", "d073d5000003"):
                 assert (
                     devices.store(device).count(
