@@ -86,6 +86,13 @@ light2 = devices.add("light2")(
     ),
 )
 
+switch = devices.add("switch")(
+    next(devices.serial_seq),
+    Products.LCM3_32_SWITCH_I,
+    hp.Firmware(3, 90),
+    value_store=dict(label="switchy"),
+)
+
 striplcm1 = devices.add("striplcm1")(
     next(devices.serial_seq),
     Products.LCM1_Z,
@@ -568,10 +575,17 @@ describe "Default Plans":
                 "firmware": {"build": 0, "version_major": 3, "version_minor": 70},
                 "state_version": make_version(1, 90),
             }
+            sc = {
+                "cap": Products.LCM3_32_SWITCH_I.cap(3, 90),
+                "product": Products.LCM3_32_SWITCH_I,
+                "firmware": {"build": 0, "version_major": 3, "version_minor": 90},
+                "state_version": make_version(1, 89),
+            }
 
             got = await self.gather(sender, devices.serials, "capability")
             assert got == {
                 clean.serial: (True, {"capability": cc}),
+                switch.serial: (True, {"capability": sc}),
                 light1.serial: (True, {"capability": l1c}),
                 light2.serial: (True, {"capability": l2c}),
                 striplcm1.serial: (True, {"capability": slcm1c}),
@@ -614,10 +628,12 @@ describe "Default Plans":
                 "version_minor": 77,
             }
             cc = {"build": 0, "version_major": 3, "version_minor": 70}
+            sc = {"build": 0, "version_major": 3, "version_minor": 90}
 
             got = await self.gather(sender, devices.serials, "firmware")
             assert got == {
                 clean.serial: (True, {"firmware": cc}),
+                switch.serial: (True, {"firmware": sc}),
                 light1.serial: (True, {"firmware": l1c}),
                 light2.serial: (True, {"firmware": l2c}),
                 striplcm1.serial: (True, {"firmware": slcm1c}),
@@ -631,6 +647,7 @@ describe "Default Plans":
             got = await self.gather(sender, devices.serials, "version")
             assert got == {
                 clean.serial: (True, {"version": Match({"product": 90, "vendor": 1})}),
+                switch.serial: (True, {"version": Match({"product": 89, "vendor": 1})}),
                 light1.serial: (True, {"version": Match({"product": 55, "vendor": 1})}),
                 light2.serial: (True, {"version": Match({"product": 1, "vendor": 1})}),
                 striplcm1.serial: (True, {"version": Match({"product": 31, "vendor": 1})}),
@@ -647,6 +664,7 @@ describe "Default Plans":
             got = await self.gather(sender, devices.serials, "zones")
             expected = {
                 clean.serial: (True, {"zones": Skip}),
+                switch.serial: (True, {"zones": Skip}),
                 light1.serial: (True, {"zones": Skip}),
                 light2.serial: (True, {"zones": Skip}),
                 striplcm1.serial: (True, {"zones": [(i, c) for i, c in enumerate(zones1)]}),
@@ -660,6 +678,7 @@ describe "Default Plans":
 
             expected = {
                 clean: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
+                switch: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                 light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                 light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                 striplcm1: [
@@ -722,6 +741,7 @@ describe "Default Plans":
 
             expected = {
                 clean: [],
+                switch: [],
                 light1: [
                     DeviceMessages.GetHostFirmware(),
                     DeviceMessages.GetVersion(),
@@ -1188,6 +1208,7 @@ describe "Default Plans":
 
             expected = {
                 clean: [],
+                switch: [],
                 light1: [
                     DeviceMessages.GetHostFirmware(),
                     DeviceMessages.GetVersion(),
