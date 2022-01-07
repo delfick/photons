@@ -707,7 +707,13 @@ describe "Default Plans":
     describe "ColorsPlan":
 
         async it "gets colors for different devices", sender:
-            serials = [light1.serial, light2.serial, striplcm1.serial, striplcm2extended.serial]
+            serials = [
+                light1.serial,
+                light2.serial,
+                striplcm1.serial,
+                striplcm2extended.serial,
+                switch.serial,
+            ]
 
             expectedlcm1 = []
             expectedlcm2 = []
@@ -734,6 +740,7 @@ describe "Default Plans":
 
             got = await self.gather(sender, serials, "colors")
 
+            assert got[switch.serial][1]["colors"] is Skip
             assert got[light1.serial][1]["colors"] == tile_expected
             assert got[light2.serial][1]["colors"] == [[hp.Color(100, 0.5, 0.8, 2500)]]
             assert got[striplcm1.serial][1]["colors"] == [expectedlcm1]
@@ -741,7 +748,7 @@ describe "Default Plans":
 
             expected = {
                 clean: [],
-                switch: [],
+                switch: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                 light1: [
                     DeviceMessages.GetHostFirmware(),
                     DeviceMessages.GetVersion(),
