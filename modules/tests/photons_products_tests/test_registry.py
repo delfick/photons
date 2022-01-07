@@ -177,4 +177,4 @@ describe "Capability":
         c = cap(P, firmware_major=3, firmware_minor=81)
         assert not c.is_light
 
-        assert dict(c.items()) == {"has_relays": True, "has_buttons": False}
+        assert dict(c.items()) == {"has_relays": True, "has_buttons": False, "has_unhandled": False}

@@ -380,6 +380,7 @@ def effects_stopped_status():
                     "cap": {
                         "has_buttons": True,
                         "has_relays": True,
+                        "has_unhandled": True,
                     },
                     "name": "LCM3_32_SWITCH_I",
                     "pid": 89,
