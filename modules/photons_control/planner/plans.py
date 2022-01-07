@@ -458,11 +458,18 @@ class ColorsPlan(Plan):
             self.result = []
 
         @property
+        def is_light(self):
+            return self.deps["c"]["cap"].is_light
+
+        @property
         def zones(self):
             return self.deps["c"]["cap"].zones
 
         @property
         def messages(self):
+            if not self.is_light:
+                return Skip
+
             if self.zones is Zones.SINGLE:
                 return [LightMessages.GetColor()]
 
@@ -473,7 +480,8 @@ class ColorsPlan(Plan):
                     )
                 ]
 
-            return []
+            else:
+                return []
 
         def process(self, pkt):
             if self.zones is Zones.LINEAR:
