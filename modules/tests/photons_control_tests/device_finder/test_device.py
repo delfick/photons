@@ -65,7 +65,10 @@ describe "Device":
         expected["serial"] = values["serial"]
 
         def assertChange(field, value):
-            setattr(device, field, value)
+            if field == "cap":
+                device.abilities = value
+            else:
+                setattr(device, field, value)
 
             for k in values:
                 if k.startswith(field):
@@ -270,7 +273,7 @@ describe "Device":
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
 
             assert device.product_id == 22
-            assert device.cap == [
+            assert device.abilities == [
                 "color",
                 "not_buttons",
                 "not_chain",

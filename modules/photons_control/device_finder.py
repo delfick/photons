@@ -496,7 +496,7 @@ class Device(dictobj.Spec):
 
     product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
 
-    cap = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
+    abilities = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -548,6 +548,8 @@ class Device(dictobj.Spec):
         del actual["location"]
         for key in self.property_fields:
             actual[key] = self[key]
+
+        actual["cap"] = actual.pop("abilities")
         return actual
 
     @property
@@ -566,6 +568,8 @@ class Device(dictobj.Spec):
 
         for field in fields:
             val = self[field]
+            if field == "abilities":
+                field = "cap"
             if val is not sb.NotSpecified:
                 has_field = fltr.has(field)
                 if has_field:
@@ -609,7 +613,7 @@ class Device(dictobj.Spec):
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
             product = Products[pkt.vendor, pkt.product]
-            cap = []
+            abilities = []
             for prop in (
                 "has_ir",
                 "has_hev",
@@ -623,10 +627,10 @@ class Device(dictobj.Spec):
                 "has_variable_color_temp",
             ):
                 if getattr(product.cap, prop):
-                    cap.append(prop[4:])
+                    abilities.append(prop[4:])
                 else:
-                    cap.append("not_{}".format(prop[4:]))
-            self.cap = sorted(cap)
+                    abilities.append("not_{}".format(prop[4:]))
+            self.abilities = sorted(abilities)
             return InfoPoints.VERSION
 
     def points_from_fltr(self, fltr):
