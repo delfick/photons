@@ -139,7 +139,7 @@ in when you create the ``DeviceFinder``:
             finder = Finder(sender)
 
             # Turn off the lights with label kitchen
-            reference = DeviceFinder.from_kwargs(label="kitcehn", finder=finder)
+            reference = DeviceFinder.from_kwargs(label="kitchen", finder=finder)
             await sender(DeviceMessages.SetPower(level=0), reference)
 
             # Turn on the lights with label attic

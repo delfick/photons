@@ -536,6 +536,7 @@ class Device(dictobj.Spec):
             "firmware_version",
             "abilities",
             "product_name",
+            "product_type",
         ]
 
     @property
@@ -578,6 +579,7 @@ class Device(dictobj.Spec):
             actual[key] = self[key]
 
         actual["cap"] = actual.pop("abilities")
+        actual["product_type"] = actual["product_type"].name.lower()
         return actual
 
     @property

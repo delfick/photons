@@ -1,6 +1,14 @@
 # coding: spec
 
-from photons_control.device_finder import Device, Collection, Collections, Filter, InfoPoints, Point
+from photons_control.device_finder import (
+    Device,
+    Collection,
+    Collections,
+    Filter,
+    InfoPoints,
+    Point,
+    DeviceType,
+)
 
 from photons_app import helpers as hp
 
@@ -28,9 +36,13 @@ describe "Device":
             "firmware_version",
             "abilities",
             "product_name",
+            "product_type",
         ]
         for field in device.property_fields:
-            assert getattr(device, field) == sb.NotSpecified
+            if field == "product_type":
+                assert device.product_type == DeviceType.UNKNOWN
+            else:
+                assert getattr(device, field) == sb.NotSpecified
 
         device.group = Collection.FieldSpec().empty_normalise(
             typ="group", uuid="uuidg", name="blah"
@@ -61,12 +73,14 @@ describe "Device":
             "firmware_version": sb.NotSpecified,
             "product_id": 22,
             "product_name": "LIFX A19",
+            "product_type": "light",
             "cap": pytest.helpers.has_caps_list("color"),
         }
 
-        info = {"serial": values["serial"]}
+        info = {"serial": values["serial"], "product_type": "unknown"}
         expected = {key: sb.NotSpecified for key in values}
         expected["serial"] = values["serial"]
+        expected["product_type"] = "unknown"
 
         def assertChange(field, value):
             setattr(device, field, value)
@@ -95,6 +109,7 @@ describe "Device":
 
         device.product_id = 32
         info["product_name"] = values["product_name"] = "LIFX Z"
+        info["product_type"] = "light"
         info["product_id"] = values["product_id"] = 32
         info["cap"] = values["cap"] = pytest.helpers.has_caps_list(
             "color", "multizone", "variable_color_temp"
@@ -158,6 +173,7 @@ describe "Device":
                         mock.call("power"),
                         mock.call("product_id"),
                         mock.call("product_name"),
+                        mock.call("product_type"),
                         mock.call("group"),
                         mock.call("group_id"),
                         mock.call("group_name"),
@@ -176,6 +192,7 @@ describe "Device":
                         mock.call("power", "on"),
                         mock.call("product_id", 22),
                         mock.call("product_name", "LIFX Color 1000"),
+                        mock.call("product_type", DeviceType.LIGHT),
                         mock.call("group_id", "uuidg"),
                         mock.call("group_name", "blah"),
                         mock.call("serial", "d073d5000001"),

@@ -193,7 +193,7 @@ describe "Device":
             setattr(Futs, name, Waiter(name, kls))
 
         async def checker(ff):
-            info = {"serial": V.fake_device.serial}
+            info = {"serial": V.fake_device.serial, "product_type": "unknown"}
 
             assert V.device.info == info
             await hp.wait_for_all_futures(
@@ -221,6 +221,7 @@ describe "Device":
                     "firmware_version": "2.80",
                     "product_id": 27,
                     "product_name": "LIFX A19",
+                    "product_type": "light",
                     "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",
@@ -335,7 +336,7 @@ describe "Device":
             setattr(Futs, name, Waiter(name, kls))
 
         async def checker(ff):
-            info = {"serial": V.fake_device.serial}
+            info = {"serial": V.fake_device.serial, "product_type": "unknown"}
 
             assert V.device.info == info
             await hp.wait_for_all_futures(
@@ -362,6 +363,7 @@ describe "Device":
                     "firmware_version": "3.90",
                     "product_id": 89,
                     "product_name": "LIFX Switch",
+                    "product_type": "non_light",
                     "cap": pytest.helpers.has_caps_list("buttons", "unhandled", "relays"),
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",
@@ -476,7 +478,7 @@ describe "Device":
             setattr(Futs, name, Waiter(name, kls))
 
         async def checker(ff, l):
-            info = {"serial": V.fake_device.serial}
+            info = {"serial": V.fake_device.serial, "product_type": "unknown"}
 
             assert V.device.info == info
             await hp.wait_for_all_futures(
@@ -504,6 +506,7 @@ describe "Device":
                     "firmware_version": "2.80",
                     "product_id": 27,
                     "product_name": "LIFX A19",
+                    "product_type": "light",
                     "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
                     "group_id": "aa000000000000000000000000000000",
                     "group_name": "g1",

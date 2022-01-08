@@ -425,6 +425,7 @@ describe "Getting devices from the daemon":
                 "group_id": "aa000000000000000000000000000000",
                 "product_id": 27,
                 "product_name": "LIFX A19",
+                "product_type": "light",
                 "group_name": "g1",
                 "location_id": "bb000000000000000000000000000000",
                 "location_name": "l1",
