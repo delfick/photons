@@ -520,6 +520,7 @@ class Device(dictobj.Spec):
             "location_id",
             "firmware_version",
             "abilities",
+            "product_name",
         ]
 
     @property
@@ -643,6 +644,12 @@ class Device(dictobj.Spec):
         if self.cap is sb.NotSpecified:
             return sb.NotSpecified
         return self.cap.abilities
+
+    @property
+    def product_name(self):
+        if self.cap is sb.NotSpecified:
+            return sb.NotSpecified
+        return self.cap.product.friendly
 
     def points_from_fltr(self, fltr):
         """Return the relevant messages from this filter"""

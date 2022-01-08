@@ -424,6 +424,7 @@ describe "Getting devices from the daemon":
                 "brightness": V.d3.attrs.color.brightness,
                 "group_id": "aa000000000000000000000000000000",
                 "product_id": 27,
+                "product_name": "LIFX A19",
                 "group_name": "g1",
                 "location_id": "bb000000000000000000000000000000",
                 "location_name": "l1",

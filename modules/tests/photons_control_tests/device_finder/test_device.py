@@ -27,6 +27,7 @@ describe "Device":
             "location_id",
             "firmware_version",
             "abilities",
+            "product_name",
         ]
         for field in device.property_fields:
             assert getattr(device, field) == sb.NotSpecified
@@ -59,6 +60,7 @@ describe "Device":
             "kelvin": 2500,
             "firmware_version": sb.NotSpecified,
             "product_id": 22,
+            "product_name": "LIFX A19",
             "cap": pytest.helpers.has_caps_list("color"),
         }
 
@@ -92,6 +94,7 @@ describe "Device":
         assertChange("kelvin", 2500)
 
         device.product_id = 32
+        info["product_name"] = values["product_name"] = "LIFX Z"
         info["product_id"] = values["product_id"] = 32
         info["cap"] = values["cap"] = pytest.helpers.has_caps_list(
             "color", "multizone", "variable_color_temp"
@@ -154,6 +157,7 @@ describe "Device":
                         mock.call("label"),
                         mock.call("power"),
                         mock.call("product_id"),
+                        mock.call("product_name"),
                         mock.call("group"),
                         mock.call("group_id"),
                         mock.call("group_name"),
@@ -171,6 +175,7 @@ describe "Device":
                         mock.call("label", "kitchen"),
                         mock.call("power", "on"),
                         mock.call("product_id", 22),
+                        mock.call("product_name", "LIFX Color 1000"),
                         mock.call("group_id", "uuidg"),
                         mock.call("group_name", "blah"),
                         mock.call("serial", "d073d5000001"),
