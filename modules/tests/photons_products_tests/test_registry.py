@@ -162,7 +162,7 @@ describe "Capability":
 
     it "has items for non light products":
 
-        class P(lifx.Product):
+        class P_SWITCH(lifx.Product):
             pid = 1
             name = "Product"
             family = Family.LCM3
@@ -174,7 +174,13 @@ describe "Capability":
         class cap(lifx.NonLightCapability):
             has_relays = True
 
-        c = cap(P, firmware_major=3, firmware_minor=81)
+        c = cap(P_SWITCH, firmware_major=3, firmware_minor=81)
         assert not c.is_light
 
-        assert dict(c.items()) == {"has_relays": True, "has_buttons": False}
+        caps = dict(c.items())
+        assert caps["has_relays"]
+        assert caps["has_unhandled"]
+        assert caps["has_buttons"] is False
+        for key, value in c.items():
+            if key not in ("has_relays", "has_buttons", "has_unhandled"):
+                assert value is None, key

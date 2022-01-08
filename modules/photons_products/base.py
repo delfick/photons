@@ -4,6 +4,10 @@ from photons_products.errors import IncompleteProduct
 from photons_app.errors import ProgrammerError
 
 
+class cap_property(property):
+    pass
+
+
 class CapabilityValue:
     def __init__(self, value):
         self._value = value
@@ -74,12 +78,17 @@ class CapabilityDefinition(type):
 
     def __new__(metaname, classname, baseclasses, attrs):
         caps = {}
+        props = []
+
         for kls in baseclasses:
             if hasattr(kls, "Meta") and hasattr(kls.Meta, "capabilities"):
                 caps.update(kls.Meta.capabilities)
+                props.extend(kls.Meta.properties)
 
         for name in list(attrs):
             value = attrs[name]
+            if isinstance(value, cap_property):
+                props.append(name)
             if isinstance(value, CapabilityValue):
                 attrs.pop(name)
                 caps[name] = value
@@ -94,9 +103,9 @@ class CapabilityDefinition(type):
         if with_meta:
             Meta = with_meta[-1].Meta
         else:
-            Meta = type("Meta", (), {"capabilities": {}})
+            Meta = type("Meta", (), {"capabilities": {}, "properties": []})
 
-        instance.Meta = type("Meta", (Meta,), {"capabilities": caps})
+        instance.Meta = type("Meta", (Meta,), {"capabilities": caps, "properties": props})
         return instance
 
 
@@ -122,7 +131,7 @@ class Capability(metaclass=CapabilityDefinition):
         )
 
     def items(self):
-        for capability in self.capabilities_for_display():
+        for capability in sorted(list(self.Meta.capabilities) + self.Meta.properties):
             yield capability, getattr(self, capability)
 
     def __getattribute__(self, key):
@@ -132,13 +141,24 @@ class Capability(metaclass=CapabilityDefinition):
         else:
             return object.__getattribute__(self, key)
 
-    def capabilities_for_display(self):
-        return self.Meta.capabilities
-
     def as_dict(self):
         return dict(self.items())
 
+    @property
+    def abilities(self):
+        abilities = []
+
+        for capability, value in self.items():
+            if capability.startswith("has_"):
+                if value:
+                    abilities.append(capability[4:])
+                else:
+                    abilities.append(f"not_{capability[4:]}")
+
+        return sorted(abilities)
+
     class Meta:
+        properties = []
         capabilities = {}
 
 

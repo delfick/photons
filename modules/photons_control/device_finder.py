@@ -613,24 +613,7 @@ class Device(dictobj.Spec):
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
             product = Products[pkt.vendor, pkt.product]
-            abilities = []
-            for prop in (
-                "has_ir",
-                "has_hev",
-                "has_color",
-                "has_chain",
-                "has_relays",
-                "has_matrix",
-                "has_buttons",
-                "has_multizone",
-                "has_unhandled",
-                "has_variable_color_temp",
-            ):
-                if getattr(product.cap, prop):
-                    abilities.append(prop[4:])
-                else:
-                    abilities.append("not_{}".format(prop[4:]))
-            self.abilities = sorted(abilities)
+            self.abilities = product.cap.abilities
             return InfoPoints.VERSION
 
     def points_from_fltr(self, fltr):

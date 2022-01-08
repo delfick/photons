@@ -1,4 +1,4 @@
-from photons_products.base import Product, Capability, CapabilityValue
+from photons_products.base import Product, Capability, CapabilityValue, cap_property
 from photons_products.enums import VendorRegistry, Zones, Family
 from photons_products import conditions as cond
 
@@ -85,39 +85,19 @@ class Capability(Capability):
     min_kelvin = CapabilityValue(2500)
     max_kelvin = CapabilityValue(9000)
 
-    def capabilities_for_display(self):
-        if self.is_light:
-            return [
-                "zones",
-                "has_ir",
-                "has_hev",
-                "has_color",
-                "has_chain",
-                "has_matrix",
-                "has_relays",
-                "has_buttons",
-                "has_unhandled",
-                "has_multizone",
-                "has_extended_multizone",
-                "has_variable_color_temp",
-                "min_kelvin",
-                "max_kelvin",
-            ]
-        else:
-            return ["has_relays", "has_buttons"]
-
-    @property
+    @cap_property
     def has_multizone(self):
         """Return whether we have LINEAR zones"""
         return self.zones is Zones.LINEAR
 
-    @property
+    @cap_property
     def has_matrix(self):
         """Return whether we have MATRIX zones"""
         return self.zones is Zones.MATRIX
 
 
 class NonLightCapability(Capability):
+    zones = None
     is_light = False
 
     has_ir = None

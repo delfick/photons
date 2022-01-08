@@ -502,25 +502,17 @@ def pytest_configure(config):
 
     @pytest.helpers.register
     def has_caps_list(*have):
-        want = [
-            "buttons",
-            "color",
-            "chain",
-            "ir",
-            "hev",
-            "matrix",
-            "multizone",
-            "relays",
-            "unhandled",
-            "variable_color_temp",
-        ]
+        from photons_products.lifx import Capability
 
         result = []
-        for a in want:
-            if a in have:
-                result.append(a)
-            else:
-                result.append(f"not_{a}")
+        for capability in list(Capability.Meta.capabilities) + Capability.Meta.properties:
+            if capability.startswith("has_"):
+                a = capability[4:]
+                if a in have:
+                    result.append(a)
+                else:
+                    result.append(f"not_{a}")
+
         return sorted(result)
 
     @pytest.helpers.register
