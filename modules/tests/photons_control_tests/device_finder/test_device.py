@@ -25,6 +25,8 @@ describe "Device":
             "group_name",
             "location_name",
             "location_id",
+            "firmware_version",
+            "abilities",
         ]
         for field in device.property_fields:
             assert getattr(device, field) == sb.NotSpecified
@@ -55,9 +57,9 @@ describe "Device":
             "saturation": 0.5,
             "brightness": 0.6,
             "kelvin": 2500,
-            "firmware_version": "1.2",
+            "firmware_version": sb.NotSpecified,
             "product_id": 22,
-            "cap": ["multizone", "color"],
+            "cap": pytest.helpers.has_caps_list("color"),
         }
 
         info = {"serial": values["serial"]}
@@ -65,10 +67,7 @@ describe "Device":
         expected["serial"] = values["serial"]
 
         def assertChange(field, value):
-            if field == "cap":
-                device.abilities = value
-            else:
-                setattr(device, field, value)
+            setattr(device, field, value)
 
             for k in values:
                 if k.startswith(field):
@@ -91,10 +90,20 @@ describe "Device":
         assertChange("saturation", 0.5)
         assertChange("brightness", 0.6)
         assertChange("kelvin", 2500)
-        assertChange("firmware_version", "1.2")
-        assertChange("product_id", 22)
-        assertChange("cap", ["multizone", "color"])
 
+        device.product_id = 32
+        info["product_id"] = values["product_id"] = 32
+        info["cap"] = values["cap"] = pytest.helpers.has_caps_list(
+            "color", "multizone", "variable_color_temp"
+        )
+        assert device.info == info
+        assert device.as_dict() == values
+
+        device.firmware = hp.Firmware(2, 80)
+        values["firmware_version"] = "2.80"
+        values["cap"] = pytest.helpers.has_caps_list(
+            "color", "extended_multizone", "multizone", "variable_color_temp"
+        )
         assert device.info == values
         assert device.as_dict() == values
 
@@ -141,6 +150,7 @@ describe "Device":
             assert sorted(filtr.has.mock_calls) == (
                 sorted(
                     [
+                        mock.call("cap"),
                         mock.call("label"),
                         mock.call("power"),
                         mock.call("product_id"),
@@ -155,6 +165,9 @@ describe "Device":
             assert sorted(filtr.matches.mock_calls) == (
                 sorted(
                     [
+                        mock.call(
+                            "cap", pytest.helpers.has_caps_list("color", "variable_color_temp")
+                        ),
                         mock.call("label", "kitchen"),
                         mock.call("power", "on"),
                         mock.call("product_id", 22),
@@ -265,7 +278,7 @@ describe "Device":
         it "takes in StateHostFirmware", device, collections:
             pkt = DeviceMessages.StateHostFirmware.create(version_major=1, version_minor=20)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.FIRMWARE
-            assert device.firmware_version == "1.20"
+            assert str(device.firmware) == "1.20"
 
         it "takes in StateVersion", device, collections:
             pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)

@@ -110,6 +110,9 @@ class Firmware:
     def __repr__(self):
         return f"<Firmware {self.major},{self.minor}:{self.build},{self.install}>"
 
+    def __str__(self):
+        return f"{self.major}.{self.minor}"
+
     def __eq__(self, other):
         if isinstance(other, tuple) and len(other) == 2:
             return (self.major, self.minor) == other

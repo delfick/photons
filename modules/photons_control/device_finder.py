@@ -492,11 +492,9 @@ class Device(dictobj.Spec):
     brightness = dictobj.Field(sb.float_spec, wrapper=sb.optional_spec)
     kelvin = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
 
-    firmware_version = dictobj.Field(sb.string_spec, wrapper=sb.optional_spec)
+    firmware = dictobj.Field(sb.typed(hp.Firmware), wrapper=sb.optional_spec)
 
     product_id = dictobj.Field(sb.integer_spec, wrapper=sb.optional_spec)
-
-    abilities = dictobj.Field(sb.listof(sb.string_spec()), wrapper=sb.optional_spec)
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -515,7 +513,20 @@ class Device(dictobj.Spec):
 
     @property
     def property_fields(self):
-        return ["group_id", "group_name", "location_name", "location_id"]
+        return [
+            "group_id",
+            "group_name",
+            "location_name",
+            "location_id",
+            "firmware_version",
+            "abilities",
+        ]
+
+    @property
+    def firmware_version(self):
+        if self.firmware is sb.NotSpecified:
+            return self.firmware
+        return str(self.firmware)
 
     @property
     def group_id(self):
@@ -546,6 +557,7 @@ class Device(dictobj.Spec):
         del actual["group"]
         del actual["limit"]
         del actual["location"]
+        del actual["firmware"]
         for key in self.property_fields:
             actual[key] = self[key]
 
@@ -563,7 +575,7 @@ class Device(dictobj.Spec):
         if fltr.matches_all:
             return True
 
-        fields = [f for f in self.fields if f != "limit"] + self.property_fields
+        fields = [f for f in self.fields if f not in ("firmware", "limit")] + self.property_fields
         has_atleast_one_field = False
 
         for field in fields:
@@ -607,14 +619,30 @@ class Device(dictobj.Spec):
             return InfoPoints.LOCATION
 
         elif pkt | DeviceMessages.StateHostFirmware:
-            self.firmware_version = f"{pkt.version_major}.{pkt.version_minor}"
+            self.firmware = hp.Firmware(pkt.version_major, pkt.version_minor, pkt.build)
             return InfoPoints.FIRMWARE
 
         elif pkt | DeviceMessages.StateVersion:
             self.product_id = pkt.product
-            product = Products[pkt.vendor, pkt.product]
-            self.abilities = product.cap.abilities
             return InfoPoints.VERSION
+
+    @property
+    def cap(self):
+        if self.product_id is sb.NotSpecified:
+            return sb.NotSpecified
+
+        product = Products[1, self.product_id]
+
+        if self.firmware is sb.NotSpecified:
+            return product.cap
+
+        return product.cap(self.firmware.major, self.firmware.minor)
+
+    @property
+    def abilities(self):
+        if self.cap is sb.NotSpecified:
+            return sb.NotSpecified
+        return self.cap.abilities
 
     def points_from_fltr(self, fltr):
         """Return the relevant messages from this filter"""
