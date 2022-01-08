@@ -25,6 +25,12 @@ import re
 log = logging.getLogger("photons_control.device_finder")
 
 
+class DeviceType(enum.Enum):
+    UNKNOWN = "unknown"
+    LIGHT = "light"
+    NON_LIGHT = "non_light"
+
+
 def log_errors(msg, result):
     e = result.value
     traceback.clear_frames(e.__traceback__)
@@ -449,10 +455,11 @@ class DeviceFinder(SpecialReference):
 class Point:
     """Used as the value in the InfoPoints enum"""
 
-    def __init__(self, msg, keys, refresh):
+    def __init__(self, msg, keys, refresh, condition=None):
         self.msg = msg
         self.keys = keys
         self.refresh = refresh
+        self.condition = condition
 
 
 class InfoPoints(enum.Enum):
@@ -460,12 +467,20 @@ class InfoPoints(enum.Enum):
     Enum used to determine what information is required for what keys
     """
 
+    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
     LIGHT_STATE = Point(
         LightMessages.GetColor(),
         ["label", "power", "hue", "saturation", "brightness", "kelvin"],
         10,
+        # Non lights are unimportant enough at this time to risk sending too many messages to them
+        condition=lambda device: device.product_type is not DeviceType.NON_LIGHT,
     )
-    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
+    LABEL = Point(
+        DeviceMessages.GetLabel(),
+        ["label"],
+        10,
+        condition=lambda device: device.product_type is DeviceType.NON_LIGHT,
+    )
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"], 60)
@@ -609,6 +624,10 @@ class Device(dictobj.Spec):
             self.kelvin = pkt.kelvin
             return InfoPoints.LIGHT_STATE
 
+        elif pkt | DeviceMessages.StateLabel:
+            self.label = pkt.label
+            return InfoPoints.LABEL
+
         elif pkt | DeviceMessages.StateGroup:
             uuid = binascii.hexlify(pkt.group).decode()
             self.group = collections.add_group(uuid, pkt.updated_at, pkt.label)
@@ -638,6 +657,15 @@ class Device(dictobj.Spec):
             return product.cap
 
         return product.cap(self.firmware.major, self.firmware.minor)
+
+    @property
+    def product_type(self):
+        if self.cap is sb.NotSpecified:
+            return DeviceType.UNKNOWN
+        elif self.cap.is_light:
+            return DeviceType.LIGHT
+        else:
+            return DeviceType.NON_LIGHT
 
     @property
     def abilities(self):
@@ -677,6 +705,44 @@ class Device(dictobj.Spec):
 
     async def _refresh_information_loop(self, sender, time_between_queries, collections):
         points = iter(itertools.cycle(list(InfoPoints)))
+        nxt = next(points)
+
+        def should_send_point(point):
+            if point.value.condition and not point.value.condition(self):
+                return False
+
+            fut = self.point_futures[point]
+
+            if not fut.done():
+                return True
+
+            refresh = refreshes[point]
+            if refresh is None:
+                return False
+
+            if time.time() - fut.result() < refreshes[point]:
+                return False
+
+            return True
+
+        def find_point():
+            nonlocal nxt
+            started = nxt
+
+            if should_send_point(nxt):
+                e = nxt
+                nxt = next(points)
+                return e
+
+            while True:
+                nxt = next(points)
+                if nxt is started:
+                    return
+
+                if should_send_point(nxt):
+                    e = nxt
+                    nxt = next(points)
+                    return e
 
         time_between_queries = time_between_queries or {}
 
@@ -697,16 +763,9 @@ class Device(dictobj.Spec):
                     if self.final_future.done():
                         return
 
-                    e = next(points)
-                    fut = self.point_futures[e]
-
-                    if fut.done():
-                        refresh = refreshes[e]
-                        if refresh is None:
-                            continue
-
-                        if time.time() - fut.result() < refresh:
-                            continue
+                    e = find_point()
+                    if e is None:
+                        continue
 
                     if self.serial not in sender.found:
                         break
@@ -726,6 +785,8 @@ class Device(dictobj.Spec):
 
         async def gen(reference, sender, **kwargs):
             for e in self.points_from_fltr(fltr):
+                if e.value.condition and not e.value.condition(self):
+                    continue
                 if self.final_future.done():
                     return
                 if not self.point_futures[e].done():

@@ -597,6 +597,7 @@ def discovery_response():
         "d073d500000a": {
             "cap": pytest.helpers.has_caps_list("buttons", "relays", "unhandled"),
             "firmware_version": "3.82",
+            "label": "play",
             "group_id": mock.ANY,
             "group_name": "desk",
             "location_id": mock.ANY,
