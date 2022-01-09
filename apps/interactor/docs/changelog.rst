@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-11-1:
 
-0.12.0 - TBD
+0.12.0 - 9 January 2022
     * Introduced options to exist as a base ZeroConf server (disabled by default)
     * Will benefit from changes to the device finder introduced in new version
       of the core of Photons

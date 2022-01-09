@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0-6-1:
 
-0.6.1 - TBD
+0.6.1 - 9 January 2022
     * Upgrade Photons
     * lint and update the Javascript
 
