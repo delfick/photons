@@ -84,16 +84,16 @@ class PartsStateKls {
         [this.Error]: (state, error) => {
           return { ...state, error };
         },
-        [this.ClearError]: (state, _) => {
+        [this.ClearError]: (state) => {
           return { ...state, error: undefined };
         },
         [this.StartedStream]: (state, { messageId }) => {
           return { ...state, loading: false, messageId };
         },
-        [WSState.Error]: (state, _) => {
+        [WSState.Error]: (state) => {
           return { ...state, loading: false, parts: [] };
         },
-        [this.LoadingStream]: (state, _) => {
+        [this.LoadingStream]: (state) => {
           return {
             ...state,
             loading: true,

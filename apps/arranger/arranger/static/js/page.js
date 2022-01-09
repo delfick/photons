@@ -43,8 +43,10 @@ function makeGrid(dimensions, zerosState) {
     />,
   ];
 
+  var i;
+
   for (
-    var i = zerosState.zero_x + squareWidth;
+    i = zerosState.zero_x + squareWidth;
     i <= width + squareWidth * 2;
     i += squareWidth
   ) {
@@ -61,7 +63,7 @@ function makeGrid(dimensions, zerosState) {
   }
 
   for (
-    var i = zerosState.zero_x - squareWidth;
+    i = zerosState.zero_x - squareWidth;
     i >= -squareWidth * 2;
     i -= squareWidth
   ) {
@@ -78,7 +80,7 @@ function makeGrid(dimensions, zerosState) {
   }
 
   for (
-    var i = zerosState.zero_y + squareWidth;
+    i = zerosState.zero_y + squareWidth;
     i <= height + squareWidth * 2;
     i += squareWidth
   ) {
@@ -95,7 +97,7 @@ function makeGrid(dimensions, zerosState) {
   }
 
   for (
-    var i = zerosState.zero_y - squareWidth;
+    i = zerosState.zero_y - squareWidth;
     i >= -squareWidth * 2;
     i -= squareWidth
   ) {
@@ -181,8 +183,8 @@ export default () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  var zero_x = Math.floor(width / 2);
-  var zero_y = Math.floor(height / 2) - 100;
+  zero_x = Math.floor(width / 2);
+  zero_y = Math.floor(height / 2) - 100;
 
   return (
     <ReactReduxContext.Consumer>
@@ -195,7 +197,7 @@ export default () => {
                 height={height}
                 fill="#e6e6e6"
                 draggable={true}
-                dragBoundFunc={(_) => ({ x: 0, y: 0 })}
+                dragBoundFunc={() => ({ x: 0, y: 0 })}
                 onDragMove={(e) => dispatchZeros({ type: "drag_grid", e })}
                 onDragStart={(e) =>
                   dispatchZeros({ type: "drag_grid_start", e })

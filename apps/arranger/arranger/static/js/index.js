@@ -1,9 +1,7 @@
 import "core-js/stable";
-import React from "react";
-import ReactDOM from "react-dom";
+import { render } from "react-dom";
 import { Provider } from "react-redux";
 import { fork } from "redux-saga/effects";
-import "regenerator-runtime/runtime";
 import Page from "./page.js";
 import {
   makeReducer,
@@ -36,7 +34,7 @@ function* mainSaga() {
 
 sagaMiddleware.run(mainSaga);
 
-ReactDOM.render(
+render(
   <Provider store={store}>
     <Page />
   </Provider>,

@@ -31,7 +31,7 @@ class WSStateKls {
   reducer() {
     return createReducer(
       {
-        [this.Loading]: (state, payload) => {
+        [this.Loading]: (state) => {
           return { ...state, loading: true };
         },
         [this.Error]: (state, { error }) => {
@@ -52,7 +52,7 @@ class WSStateKls {
 
           return { ...state, error, errorStr, loading: true };
         },
-        [this.Connected]: (state, payload) => {
+        [this.Connected]: (state) => {
           return {
             ...state,
             error: undefined,
@@ -140,10 +140,9 @@ function* tickMessages(socket) {
   }
 }
 
-function* startWS(url, count, sendch, receivech, actions) {
+function* startWS(url, _, sendch, receivech, actions) {
   var socket = new WebSocket(url);
 
-  var onerrors = [];
   var oncloses = [];
 
   var ws = new Promise((resolve, reject) => {
@@ -256,7 +255,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
       }
     };
 
-    var doreply = (data, msgid) => {
+    var doreply = (data) => {
       if (done || !data) {
         return;
       }
@@ -305,6 +304,7 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
 
     return {
       data,
+      timeouter: undefined,
       messageId,
       timeout: timeout,
       onreply: doreply,
