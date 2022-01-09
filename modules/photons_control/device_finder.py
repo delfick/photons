@@ -3,7 +3,7 @@ from photons_app.special import FoundSerials, SpecialReference
 from photons_app.tasks import task_register as task
 from photons_app import helpers as hp
 
-from photons_messages import DeviceMessages, LightMessages
+from photons_messages import DeviceMessages, LightMessages, CoreMessages
 from photons_control.script import FromGenerator
 from photons_products import Products
 
@@ -467,7 +467,10 @@ class InfoPoints(enum.Enum):
     Enum used to determine what information is required for what keys
     """
 
-    VERSION = Point(DeviceMessages.GetVersion(), ["product_id", "cap"], None)
+    # We need to know what kind of product the device is to get the label correctly
+    VERSION = Point(DeviceMessages.GetVersion(), ["label", "product_id", "cap"], None)
+
+    # We get Label from LIGHT_STATE for lights and from STATE_LABEL for non lights
     LIGHT_STATE = Point(
         LightMessages.GetColor(),
         ["label", "power", "hue", "saturation", "brightness", "kelvin"],
@@ -481,6 +484,7 @@ class InfoPoints(enum.Enum):
         10,
         condition=lambda device: device.product_type is DeviceType.NON_LIGHT,
     )
+
     FIRMWARE = Point(DeviceMessages.GetHostFirmware(), ["firmware_version"], 300)
     GROUP = Point(DeviceMessages.GetGroup(), ["group_id", "group_name"], 60)
     LOCATION = Point(DeviceMessages.GetLocation(), ["location_id", "location_name"], 60)
@@ -777,16 +781,22 @@ class Device(dictobj.Spec):
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit, find_timeout=5):
+            if pkt | CoreMessages.StateUnhandled:
+                continue
             point = self.set_from_pkt(pkt, collections)
             self.point_futures[point].reset()
             self.point_futures[point].set_result(time.time())
 
-    async def matches(self, sender, fltr, collections):
+    async def matches(self, sender, fltr, collections, points=None):
         if fltr is None:
             return True
 
+        pts = points
+        if pts is None:
+            pts = list(self.points_from_fltr(fltr))
+
         async def gen(reference, sender, **kwargs):
-            for e in self.points_from_fltr(fltr):
+            for e in pts:
                 if e.value.condition and not e.value.condition(self):
                     continue
                 if self.final_future.done():
@@ -796,9 +806,19 @@ class Device(dictobj.Spec):
 
         msg = FromGenerator(gen, reference_override=self.serial)
         async for pkt in sender(msg, self.serial, limit=self.limit):
+            if pkt | CoreMessages.StateUnhandled:
+                continue
             point = self.set_from_pkt(pkt, collections)
             self.point_futures[point].reset()
             self.point_futures[point].set_result(time.time())
+
+        # Without the information loop we ask for all the messages before getting replies
+        # And so the switch doesn't respond to LIGHT_STATE
+        # And it doesn't know to send LABEL yet
+        # So we force that to happen!
+        if points is None and InfoPoints.LABEL in pts and self.product_type is DeviceType.NON_LIGHT:
+            if self.label is sb.NotSpecified:
+                await self.matches(sender, fltr, collections, points=[InfoPoints.LABEL])
 
         return self.matches_fltr(fltr)
 

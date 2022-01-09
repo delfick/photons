@@ -67,7 +67,7 @@ class VBase:
             nxt = store.count(
                 Events.INCOMING(self.fake_device, self.fake_device.io["MEMORY"], pkt=pkt)
             )
-            assert nxt > 0, (pkt.__type__, repr(pkt))
+            assert nxt > 0, (pkt.__class__.__name__, repr(pkt), nxt)
             total += nxt
 
         if keep_duplicates or len(pkts) == 0:
@@ -110,22 +110,22 @@ describe "Device":
 
         assert await V.matches(Filter.from_kwargs(label="kitchen"))
         V.received(LightMessages.GetColor())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 1})
+        V.assertTimes({InfoPoints.LIGHT_STATE: 1, InfoPoints.VERSION: 1})
         V.t.add(5)
 
         assert not (await V.matches(Filter.from_kwargs(label="den")))
         V.received()
-        V.assertTimes({InfoPoints.LIGHT_STATE: 1})
+        V.assertTimes({InfoPoints.LIGHT_STATE: 1, InfoPoints.VERSION: 1})
         V.t.add(2)
 
         assert not (await V.matches(Filter.from_kwargs(label="attic", refresh_info=True)))
         V.received(LightMessages.GetColor())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8})
+        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.VERSION: 1})
         V.t.add(1)
 
         assert not (await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"])))
-        V.received(DeviceMessages.GetVersion(), DeviceMessages.GetGroup())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 9, InfoPoints.VERSION: 9})
+        V.received(DeviceMessages.GetGroup())
+        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 9, InfoPoints.VERSION: 1})
         V.t.add(2)
 
         # It never refreshes version
@@ -133,12 +133,52 @@ describe "Device":
             await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"], refresh_info=True))
         )
         V.received(DeviceMessages.GetGroup())
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
+        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
         V.t.add(3)
 
         assert await V.matches(Filter.from_kwargs(cap=["not_matrix"], refresh_info=True))
         V.received()
-        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 9})
+        V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
+
+    async it "can match against a fltr for a non light", sender, finder, fake_time, final_future:
+        V = VBase(fake_time, sender, finder, final_future)
+        await V.choose_device("switch")
+        V.t.add(1)
+
+        assert await V.matches(None)
+        V.received()
+
+        assert await V.matches(Filter.from_kwargs(label="switcharoo"))
+        V.received(LightMessages.GetColor(), DeviceMessages.GetLabel())
+        V.assertTimes({InfoPoints.LABEL: 1, InfoPoints.VERSION: 1})
+        V.t.add(5)
+
+        assert not (await V.matches(Filter.from_kwargs(label="den")))
+        V.received()
+        V.assertTimes({InfoPoints.LABEL: 1, InfoPoints.VERSION: 1})
+        V.t.add(2)
+
+        assert not (await V.matches(Filter.from_kwargs(label="attic", refresh_info=True)))
+        V.received(DeviceMessages.GetLabel())
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.VERSION: 1})
+        V.t.add(1)
+
+        assert not (await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"])))
+        V.received(DeviceMessages.GetGroup())
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 9, InfoPoints.VERSION: 1})
+        V.t.add(2)
+
+        # It never refreshes version
+        assert not (
+            await V.matches(Filter.from_kwargs(group_name="aa", cap=["matrix"], refresh_info=True))
+        )
+        V.received(DeviceMessages.GetGroup())
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
+        V.t.add(3)
+
+        assert await V.matches(Filter.from_kwargs(cap=["not_matrix"], refresh_info=True))
+        V.received()
+        V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
 
     async it "can start an information loop", fake_time, sender, finder, final_future:
         V = VBase(fake_time, sender, finder, final_future)

@@ -263,7 +263,7 @@ describe "finding devices":
     @pytest.fixture()
     async def V(self, final_future):
         class V:
-            serials = ["d073d5000001", "d073d5000002", "d073d5000003"]
+            serials = ["d073d5000001", "d073d5000002", "d073d5000003", "d073d5000004"]
             devices = pytest.helpers.mimic()
 
             d1 = devices.add("d1")(serials[0], Products.LCM3_TILE, hp.Firmware(3, 50))
@@ -275,7 +275,17 @@ describe "finding devices":
                 Products.LCM2_A19,
                 hp.Firmware(2, 80),
                 value_store=dict(
-                    firmware=hp.Firmware(2, 80),
+                    label="deethree",
+                    group={"identity": "aa", "label": "g1", "updated_at": 42},
+                    location={"identity": "bb", "label": "l1", "updated_at": 56},
+                ),
+            )
+            d4 = devices.add("d4")(
+                serials[3],
+                Products.LCM3_32_SWITCH_I,
+                hp.Firmware(3, 90),
+                value_store=dict(
+                    label="switchstacle",
                     group={"identity": "aa", "label": "g1", "updated_at": 42},
                     location={"identity": "bb", "label": "l1", "updated_at": 56},
                 ),
@@ -303,9 +313,14 @@ describe "finding devices":
         assert ss == []
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(), LightMessages.GetColor()
-            )
+            expected = [
+                DiscoveryMessages.GetService(),
+                DeviceMessages.GetVersion(),
+                LightMessages.GetColor(),
+            ]
+            if device is V.devices["d4"]:
+                expected.append(DeviceMessages.GetLabel)
+            V.devices.store(device).assertIncoming(*expected)
             V.devices.store(device).clear()
 
         await V.d3.change_one("label", "kitchen", event=None)
@@ -316,9 +331,14 @@ describe "finding devices":
         assert ss == [V.d3.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(), LightMessages.GetColor()
-            )
+            expected = [
+                DiscoveryMessages.GetService(),
+                DeviceMessages.GetVersion(),
+                LightMessages.GetColor(),
+            ]
+            if device is V.devices["d4"]:
+                expected.append(DeviceMessages.GetLabel())
+            V.devices.store(device).assertIncoming(*expected)
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap="matrix")
@@ -352,11 +372,19 @@ describe "finding devices":
         assert ss == [V.d3.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(),
-                LightMessages.GetColor(),
-                DeviceMessages.GetVersion(),
-            )
+            if device is V.devices["d4"]:
+                V.devices.store(device).assertIncoming(
+                    DiscoveryMessages.GetService(),
+                    LightMessages.GetColor(),
+                    DeviceMessages.GetVersion(),
+                    DeviceMessages.GetLabel(),
+                )
+            else:
+                V.devices.store(device).assertIncoming(
+                    DiscoveryMessages.GetService(),
+                    LightMessages.GetColor(),
+                    DeviceMessages.GetVersion(),
+                )
             V.devices.store(device).clear()
 
         found = []
@@ -369,16 +397,24 @@ describe "finding devices":
             "label": "kitchen",
             "power": "off",
             "serial": V.d3.serial,
-            "product_type": "unknown",
+            "product_type": "light",
             "kelvin": V.d3.attrs.color.kelvin,
             "saturation": V.d3.attrs.color.saturation,
             "brightness": V.d3.attrs.color.brightness,
+            "product_id": 27,
+            "product_name": "LIFX A19",
+            "cap": pytest.helpers.has_caps_list("color", "variable_color_temp"),
         }
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(), LightMessages.GetColor()
-            )
+            expected = [
+                DiscoveryMessages.GetService(),
+                DeviceMessages.GetVersion(),
+                LightMessages.GetColor(),
+            ]
+            if device is V.devices["d4"]:
+                expected.append(DeviceMessages.GetLabel())
+            V.devices.store(device).assertIncoming(*expected)
             V.devices.store(device).clear()
 
         found = []
@@ -415,9 +451,18 @@ describe "finding devices":
                     DeviceMessages.GetGroup(),
                     DeviceMessages.GetLocation(),
                 )
+            elif device is V.d4:
+                V.devices.store(device).assertIncoming(
+                    DiscoveryMessages.GetService(),
+                    DeviceMessages.GetVersion(),
+                    LightMessages.GetColor(),
+                    DeviceMessages.GetLabel(),
+                )
             else:
                 V.devices.store(device).assertIncoming(
-                    DiscoveryMessages.GetService(), LightMessages.GetColor()
+                    DiscoveryMessages.GetService(),
+                    DeviceMessages.GetVersion(),
+                    LightMessages.GetColor(),
                 )
             V.devices.store(device).clear()
 
@@ -441,7 +486,10 @@ describe "finding devices":
         assert ss == []
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(LightMessages.GetColor())
+            expected = [DeviceMessages.GetVersion(), LightMessages.GetColor()]
+            if device is V.d4:
+                expected.append(DeviceMessages.GetLabel())
+            V.devices.store(device).assertIncoming(*expected)
             V.devices.store(device).clear()
 
         await V.d3.change_one("label", "kitchen", event=None)
@@ -465,7 +513,10 @@ describe "finding devices":
         assert ss == [V.d3.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(LightMessages.GetColor())
+            if device is V.d4:
+                V.devices.store(device).assertIncoming(DeviceMessages.GetLabel())
+            else:
+                V.devices.store(device).assertIncoming(LightMessages.GetColor())
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap="matrix", finder=finder)
@@ -475,7 +526,7 @@ describe "finding devices":
         assert ss == [V.d1.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(DeviceMessages.GetVersion())
+            V.devices.store(device).assertIncoming()
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"], finder=finder)
