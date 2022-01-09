@@ -112,7 +112,7 @@ class arranger_assets(task.Task):
                 return
 
             if assets.needs_install:
-                assets.run("install")
+                assets.run("ci", no_node_env=True)
 
             if self.reference == "static":
                 assets.run("run", "build")

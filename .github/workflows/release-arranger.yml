@@ -26,7 +26,6 @@ jobs:
           python3 -m venv /tmp/photons
           /tmp/photons/bin/python -m pip install -e modules
           /tmp/photons/bin/python -m pip install -e apps/arranger
-          yarn add webpack-cli webpack
           NODE_ENV=production /tmp/photons/bin/lifx arranger_assets static
           if ! ls apps/arranger/arranger/static/dist/prod/static/*.js > /dev/null; then
             ls -R apps/arranger/arranger/static/dist/prod

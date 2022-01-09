@@ -54,11 +54,13 @@ class Assets(dictobj.Spec):
             or os.environ.get("REBUILD") == 1
         )
 
-    def run(self, *args, extra_env=None):
-        env = dict(os.environ)
-        if extra_env:
-            env.update(extra_env)
-        subprocess.check_call(["npm", *args], cwd=self.src, env=env)
+    def run(self, *args, no_node_env=False):
+        env = None
+        if no_node_env:
+            env = dict(os.environ)
+            if "NODE_ENV" in env:
+                del env["NODE_ENV"]
+        subprocess.check_call(["npm", *args], cwd=self.src, **({} if env is None else {"env": env}))
 
 
 class get_animation_options(sb.Spec):
