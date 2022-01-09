@@ -1,53 +1,67 @@
-const RemovePlugin = require("remove-files-webpack-plugin");
-var HtmlWebpackPlugin = require("html-webpack-plugin");
-var webpack = require("webpack");
-var path = require("path");
+import ESLintPlugin from "eslint-webpack-plugin";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import path from "path";
+import RemovePlugin from "remove-files-webpack-plugin";
+import webpack, { Configuration } from "webpack";
 
-var mode = process.env.NODE_ENV || "development";
+const environment =
+  process.env.NODE_ENV == "production" || process.env.NODE_ENV == "staging"
+    ? "production"
+    : "development";
 
-var prefix = mode == "development" ? "dev" : "prod";
+var prefix = environment == "development" ? "dev" : "prod";
 
-var publicPath = (p) => (url, resourcePath, resourceQuery) => {
+var publicPath = (p: string) => (url: string) => {
   return `/static/${p}/${url}`;
 };
 
-var outputPath = (p) => (url, resourcePath, resourceQuery) => {
+var outputPath = (p: string) => (url: string) => {
   return `${p}/${url}`;
 };
 
-var name = (resourcePath, resourceQuery) => {
-  if (mode === "development") {
+var name = () => {
+  if (environment === "development") {
     return "[path][name].[ext]";
   }
 
   return "[contenthash].[ext]";
 };
 
-module.exports = {
-  mode: mode,
+const config: Configuration = {
+  mode: environment,
+
   entry: ["./js/index.js"],
+
   output: {
-    filename: `app.${mode == "development" ? "[name]" : "[contenthash]"}.js`,
+    filename: `app.${
+      environment == "development" ? "[name]" : "[contenthash]"
+    }.js`,
     path: path.resolve(__dirname, "dist", prefix, "static"),
     publicPath: "/static",
   },
-  devtool: mode == "development" ? "eval-source-map" : "eval-cheap-source-map",
+
+  devtool:
+    environment == "development" ? "eval-source-map" : "eval-cheap-source-map",
+
   optimization: {
     splitChunks: {
       chunks: "all",
     },
   },
+
   performance: {
     hints: false,
   },
+
   plugins: [
+    new ESLintPlugin(),
     new RemovePlugin({
       before: {
-        include: mode == "development" ? [] : ["./dist/prod"],
+        include: environment == "development" ? [] : ["./dist/prod"],
       },
     }),
     new webpack.DefinePlugin({
-      "process.env.NODE_ENV": JSON.stringify(mode),
+      "process.env.NODE_ENV": JSON.stringify(environment),
     }),
     new webpack.ProvidePlugin({ React: "react" }),
     new HtmlWebpackPlugin({
@@ -55,6 +69,7 @@ module.exports = {
       filename: "../index.html",
     }),
   ],
+
   module: {
     rules: [
       {
@@ -117,3 +132,5 @@ module.exports = {
     ],
   },
 };
+
+export default config;
