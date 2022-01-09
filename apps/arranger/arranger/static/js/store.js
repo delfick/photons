@@ -1,9 +1,7 @@
+import { applyMiddleware, combineReducers, createStore } from "redux";
 import { devToolsEnhancer } from "redux-devtools-extension";
-import { applyMiddleware, createStore } from "redux";
 import createSagaMiddleware from "redux-saga";
-import { combineReducers } from "redux";
-
-import { PartState, partsSaga } from "./state.js";
+import { partsSaga, PartState } from "./state.js";
 import { WSState } from "./wsclient.js";
 
 export const makeReducer = (extra) => {

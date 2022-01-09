@@ -1,7 +1,6 @@
-import { takeEvery, select, takeLatest, put } from "redux-saga/effects";
 import { createAction, createReducer } from "redux-act";
-
-import { WSState, WSCommand } from "./wsclient.js";
+import { put, select, takeEvery, takeLatest } from "redux-saga/effects";
+import { WSCommand, WSState } from "./wsclient.js";
 
 var combine_parts = (parts, existing) => {
   var by_key = {};

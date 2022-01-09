@@ -1,12 +1,9 @@
-import "regenerator-runtime/runtime";
 import "core-js/stable";
-
-import { fork } from "redux-saga/effects";
-import { Provider } from "react-redux";
-import ReactDOM from "react-dom";
 import React from "react";
-
-import { listen } from "./wsclient.js";
+import ReactDOM from "react-dom";
+import { Provider } from "react-redux";
+import { fork } from "redux-saga/effects";
+import "regenerator-runtime/runtime";
 import Page from "./page.js";
 import {
   makeReducer,
@@ -14,6 +11,7 @@ import {
   makeStore,
   runSagaMiddleware,
 } from "./store.js";
+import { listen } from "./wsclient.js";
 
 const reducer = makeReducer();
 const sagaMiddleware = makeSagaMiddleware();

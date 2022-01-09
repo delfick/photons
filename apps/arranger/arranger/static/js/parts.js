@@ -1,7 +1,6 @@
-import { Layer, Group, Rect, Line } from "react-konva";
-import { useDispatch, useSelector } from "react-redux";
 import { useState } from "react";
-
+import { Group, Layer, Line, Rect } from "react-konva";
+import { useDispatch, useSelector } from "react-redux";
 import { PartState } from "./state.js";
 
 var PartPixels = ({ part, pixelWidth, lineWidth }) => {

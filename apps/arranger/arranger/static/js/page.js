@@ -1,7 +1,6 @@
 import { useEffect, useReducer, useState } from "react";
 import { Layer, Line, Rect, Stage } from "react-konva";
 import { Provider, ReactReduxContext } from "react-redux";
-
 import Parts from "./parts.js";
 
 function getPos(el) {

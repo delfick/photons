@@ -1,16 +1,16 @@
+import { createAction, createReducer } from "redux-act";
+import { channel, END } from "redux-saga";
 import {
-  call,
   all,
+  call,
   cancel,
+  delay,
   fork,
   put,
   race,
   spawn,
   take,
-  delay,
 } from "redux-saga/effects";
-import { createAction, createReducer } from "redux-act";
-import { END, channel } from "redux-saga";
 import { v4 as uuidv4 } from "uuid";
 
 class WSStateKls {
