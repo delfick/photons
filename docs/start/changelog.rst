@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.2:
+
+0.42.1 - 9 January 2022
+    * Fixed bug with device_finder getting labels for non lights
+
 .. _release-core-0-42.1:
 
 0.42.1 - 9 January 2022

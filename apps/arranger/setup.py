@@ -13,7 +13,7 @@ setup(
     , python_requires = ">= 3.7"
 
     , install_requires =
-      [ "lifx-photons-core>=0.42.1"
+      [ "lifx-photons-core>=0.42.2"
       , "tornado>=5.1.1"
       , "whirlwind-web>=0.11.0"
       ]

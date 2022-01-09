@@ -13,7 +13,7 @@ setup(
     , python_requires = ">= 3.7"
 
     , install_requires =
-      [ "lifx-photons-core>=0.42.1"
+      [ "lifx-photons-core>=0.42.2"
       , "tornado>=6.1"
       , "SQLAlchemy[asyncio]==1.4.23"
       , "aiosqlite==0.17.0"
