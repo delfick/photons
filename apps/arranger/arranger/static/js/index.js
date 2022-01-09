@@ -1,4 +1,4 @@
-import "core-js/stable";
+import "core-js";
 import { render } from "react-dom";
 import { Provider } from "react-redux";
 import { fork } from "redux-saga/effects";
