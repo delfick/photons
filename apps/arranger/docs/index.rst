@@ -49,6 +49,12 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-6-1:
+
+0.6.1 - TBD
+    * Upgrade Photons
+    * lint and update the Javascript
+
 .. _release-arranger-0-6-0:
 
 0.6.0 - 6 November 2021

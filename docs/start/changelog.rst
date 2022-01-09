@@ -3,6 +3,14 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.1:
+
+0.42.1 - TBD
+    * The device finder can now get labels from non lights (switches)
+    * The device finder now also returns ``product_name``, more capabilities and
+      ``product_type`` (``light``, ``non_light`` or ``unknown``).
+    * The ``colors`` plan no longer tries to get color from non lights
+
 .. _release-core-0-42-0:
 
 0.42.0 - 6 November 2021
