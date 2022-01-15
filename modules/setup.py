@@ -54,7 +54,7 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti==2.1.0"
+        [ "noseOfYeti==2.2.0"
         , "pytest==6.2.5"
         , "mock==4.0.2"
         , "alt-pytest-asyncio==0.6.0"

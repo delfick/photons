@@ -5,7 +5,7 @@ from venvstarter import manager
 (
     __import__("venvstarter")
     .manager("noy_pylama")
-    .add_pypi_deps("pylama==7.7.1", "noseOfYeti==2.1.0")
+    .add_pypi_deps("pylama==8.3.7", "noseOfYeti==2.2.0")
     .min_python("3.7")
     .run()
 )
