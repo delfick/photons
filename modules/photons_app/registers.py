@@ -348,7 +348,7 @@ class ProtocolRegister:
         pass
 
 
-class ReferenceResolerRegister:
+class ReferenceResolverRegister:
     """
     A register for special reference resolvers
 

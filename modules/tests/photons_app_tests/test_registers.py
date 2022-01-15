@@ -3,7 +3,7 @@
 from photons_app.registers import (
     ProtocolRegister,
     MessagesRegister,
-    ReferenceResolerRegister,
+    ReferenceResolverRegister,
 )
 from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
 from photons_app.errors import ResolverNotFound
@@ -112,11 +112,11 @@ describe "ProtocolRegister":
         unpickled = pickle.loads(pickled)
         assert isinstance(unpickled, ProtocolRegister)
 
-describe "ReferenceResolerRegister":
+describe "ReferenceResolverRegister":
 
     @pytest.fixture()
     def register(self):
-        return ReferenceResolerRegister()
+        return ReferenceResolverRegister()
 
     describe "initialization":
         it "has file resolver by default", register:
