@@ -3,7 +3,7 @@ Here we define the yaml specification for photons_app options and task options
 
 The specifications are responsible for sanitation, validation and normalisation.
 """
-from photons_app.registers import TargetRegister, Target, ReferenceResolerRegister
+from photons_app.registers import TargetRegister, Target, ReferenceResolverRegister
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.errors import BadOption, ApplicationStopped
 from photons_app.tasks.specifier import task_specifier_spec
@@ -216,9 +216,9 @@ class PhotonsAppSpec:
     @hp.memoized_property
     def reference_resolver_register_spec(self):
         """
-        Make a ReferenceResolerRegister object
+        Make a ReferenceResolverRegister object
         """
-        return sb.create_spec(ReferenceResolerRegister)
+        return sb.create_spec(ReferenceResolverRegister)
 
     @hp.memoized_property
     def targets_spec(self):

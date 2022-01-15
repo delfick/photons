@@ -1,6 +1,11 @@
 # coding: spec
 
-from photons_app.registers import Target, TargetRegister, ProtocolRegister, ReferenceResolerRegister
+from photons_app.registers import (
+    Target,
+    TargetRegister,
+    ProtocolRegister,
+    ReferenceResolverRegister,
+)
 from photons_app.errors import BadYaml, BadConfiguration, TargetNotFound
 from photons_app.photons_app import PhotonsApp
 from photons_app.collector import Collector
@@ -801,7 +806,7 @@ describe "Collector":
 
             assert type(target_register) == TargetRegister
             assert type(protocol_register) == ProtocolRegister
-            assert type(reference_resolver_register) == ReferenceResolerRegister
+            assert type(reference_resolver_register) == ReferenceResolverRegister
 
     describe "stop_photons_app":
         async it "cleans up photons", collector:
