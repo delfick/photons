@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from venvstarter import manager
-
 (
     __import__("venvstarter")
     .manager("mypy")
