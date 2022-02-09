@@ -580,7 +580,7 @@ class ProductRegistry:
     class LCM3_32_A19_US(lifx.Product):
         pid = 93
         family = Family.LCM3
-        friendly = "LIFX A19 US"
+        friendly = "LIFX A19"
 
         class cap(lifx.Capability):
             has_color = True
@@ -700,7 +700,7 @@ class ProductRegistry:
         pid = 112
         public = True
         family = Family.LCM3
-        friendly = "LIFX BR30 Night Vision Intl"
+        friendly = "LIFX BR30 Night Vision"
 
         class cap(lifx.Capability):
             has_ir = True
@@ -711,7 +711,7 @@ class ProductRegistry:
     class LCM3_MINI_WW_US(lifx.Product):
         pid = 113
         family = Family.LCM3
-        friendly = "LIFX Mini WW US"
+        friendly = "LIFX Mini WW"
 
         class cap(lifx.Capability):
             has_color = False
@@ -722,10 +722,246 @@ class ProductRegistry:
     class LCM3_MINI_WW_INTL(lifx.Product):
         pid = 114
         family = Family.LCM3
-        friendly = "LIFX Mini WW Intl"
+        friendly = "LIFX Mini WW"
 
         class cap(lifx.Capability):
             has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_SWITCH_US(lifx.Product):
+        pid = 115
+        family = Family.LCM3
+        friendly = "LIFX Switch"
+
+        class cap(lifx.NonLightCapability):
+            has_relays = True
+            has_buttons = True
+
+    class LCM3_SWITCH_INTL(lifx.Product):
+        pid = 116
+        family = Family.LCM3
+        friendly = "LIFX Switch"
+
+        class cap(lifx.NonLightCapability):
+            has_relays = True
+            has_buttons = True
+
+    class LCM3_Z_US(lifx.Product):
+        pid = 117
+        family = Family.LCM3
+        friendly = "LIFX Z"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_Z_INTL(lifx.Product):
+        pid = 118
+        family = Family.LCM3
+        friendly = "LIFX Z"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_BEAM_US(lifx.Product):
+        pid = 119
+        family = Family.LCM3
+        friendly = "LIFX Beam"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_BEAM_INTL(lifx.Product):
+        pid = 120
+        family = Family.LCM3
+        friendly = "LIFX Beam"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_COLOR_US(lifx.Product):
+        pid = 123
+        family = Family.LCM3
+        friendly = "LIFX Color"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_COLOR_INTL(lifx.Product):
+        pid = 124
+        family = Family.LCM3
+        friendly = "LIFX Color"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WW_US(lifx.Product):
+        pid = 125
+        family = Family.LCM3
+        friendly = "LIFX Warm to White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WW_INTL(lifx.Product):
+        pid = 126
+        family = Family.LCM3
+        friendly = "LIFX Warm to White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WHITE_US(lifx.Product):
+        pid = 127
+        family = Family.LCM3
+        friendly = "LIFX White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WHITE_INTL(lifx.Product):
+        pid = 128
+        family = Family.LCM3
+        friendly = "LIFX White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_COLOR_US_ANOTHER(lifx.Product):
+        pid = 129
+        family = Family.LCM3
+        friendly = "LIFX Color"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_COLOR_INTL_ANOTHER(lifx.Product):
+        pid = 130
+        family = Family.LCM3
+        friendly = "LIFX Color"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WW_US_ANOTHER(lifx.Product):
+        pid = 131
+        family = Family.LCM3
+        friendly = "LIFX Warm to White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WW_INTL_ANOTHER(lifx.Product):
+        pid = 132
+        family = Family.LCM3
+        friendly = "LIFX Warm to White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WHITE_US_ANOTHER(lifx.Product):
+        pid = 133
+        family = Family.LCM3
+        friendly = "LIFX White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_WHITE_INTL_ANOTHER(lifx.Product):
+        pid = 134
+        family = Family.LCM3
+        friendly = "LIFX White"
+
+        class cap(lifx.Capability):
+            has_color = False
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_GU10_COLOR_US(lifx.Product):
+        pid = 135
+        family = Family.LCM3
+        friendly = "LIFX GU10"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_GU10_COLOR_INTL(lifx.Product):
+        pid = 136
+        family = Family.LCM3
+        friendly = "LIFX GU10"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_CANDLE_US(lifx.Product):
+        pid = 137
+        family = Family.LCM3
+        friendly = "LIFX Candle Color"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+            has_variable_color_temp = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_32_CANDLE_INTL(lifx.Product):
+        pid = 138
+        family = Family.LCM3
+        friendly = "LIFX Candle Color"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
             has_variable_color_temp = True
 
             min_kelvin, max_kelvin = (1500, 9000)
