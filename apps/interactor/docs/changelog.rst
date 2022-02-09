@@ -3,7 +3,12 @@
 Changelog
 =========
 
-.. _release-interactor-0-11-1:
+.. _release-interactor-0-12-1:
+
+0.12.1 - TBD
+    * New products in the product registry
+
+.. _release-interactor-0-12-0:
 
 0.12.0 - 9 January 2022
     * Introduced options to exist as a base ZeroConf server (disabled by default)

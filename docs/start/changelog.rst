@@ -3,9 +3,14 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.3:
+
+0.42.3 - TBD
+    * New products in the registry
+
 .. _release-core-0-42.2:
 
-0.42.1 - 9 January 2022
+0.42.2 - 9 January 2022
     * Fixed bug with device_finder getting labels for non lights
 
 .. _release-core-0-42.1:
