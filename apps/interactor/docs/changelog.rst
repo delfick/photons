@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-12-1:
 
-0.12.1 - TBD
+0.12.1 - 13 February 2022
     * New products in the product registry
 
 .. _release-interactor-0-12-0:

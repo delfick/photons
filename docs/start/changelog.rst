@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-42.3:
 
-0.42.3 - TBD
+0.42.3 - 13 February 2022
     * New products in the registry
 
 .. _release-core-0-42.2:
