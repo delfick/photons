@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-(
-    __import__("venvstarter")
-    .manager(None)
-    .named(".black")
-    .add_pypi_deps("noy_black==0.3.0")
-    .min_python("3.7")
-    .run()
-)
+from pathlib import Path
+import runpy
+
+runpy.run_path(str(Path(__file__).parent / "bootstrap_venvstarter.py"))
+
+manager = __import__("venvstarter").manager(None).named(".black")
+manager.add_pypi_deps("noy-black==0.3.2", "noseOfYeti==2.3.1")
+manager.add_no_binary("black")
+manager.run()

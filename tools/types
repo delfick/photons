@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 
-(
-    __import__("venvstarter")
-    .manager("mypy")
-    .named(".types")
-    .add_pypi_deps("mypy==0.931", "noseOfYeti==2.2.0")
-    .add_local_dep(
-        "{here}",
-        "..",
-        "modules",
-        version_file=(
-            "photons_app",
-            "__init__.py",
-        ),
-        name="lifx-photons-core=={version}",
-        with_tests=True,
-    )
-    .min_python("3.7")
-    .run()
+from pathlib import Path
+import runpy
+
+runpy.run_path(str(Path(__file__).parent / "bootstrap_venvstarter.py"))
+
+manager = __import__("venvstarter").manager("mypy")
+manager.named(".types")
+manager.add_pypi_deps("mypy==0.931", "noseOfYeti==2.2.0")
+manager.add_local_dep(
+    "{here}",
+    "..",
+    "modules",
+    version_file=(
+        "photons_app",
+        "__init__.py",
+    ),
+    name="lifx-photons-core=={version}",
+    with_tests=True,
 )
+manager.min_python("3.7")
+manager.run()
