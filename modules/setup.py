@@ -43,11 +43,11 @@ setup(
       , "rainbow_logging_handler==2.2.2"
 
       # photons-tile-messages
-      , "lru-dict==1.1.6"
+      , "lru-dict==1.1.7"
 
       # photons-protocol
-      , "bitarray==1.6.1"
-    
+      , "bitarray>=2.1.2"
+
       # photons-canvas
       , "kdtree==0.16"
       ]
