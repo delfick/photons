@@ -6,6 +6,6 @@ import runpy
 runpy.run_path(str(Path(__file__).parent / "bootstrap_venvstarter.py"))
 
 manager = __import__("venvstarter").manager(None).named(".black")
-manager.add_pypi_deps("noy-black==0.3.2", "noseOfYeti==2.3.1")
+manager.add_pypi_deps("noy-black==0.3.4", "noseOfYeti==2.3.1")
 manager.add_no_binary("black")
 manager.run()
