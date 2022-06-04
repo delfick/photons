@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.4:
+
+0.42.4 - 4 June 2022
+    * Update lru-dict and bitarray
+
 .. _release-core-0-42.3:
 
 0.42.3 - 13 February 2022

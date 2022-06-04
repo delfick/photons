@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-120:
+
+0.12.2 - 4 June 2022
+    * Update dependencies of photons
+
 .. _release-interactor-0-12-1:
 
 0.12.1 - 13 February 2022
