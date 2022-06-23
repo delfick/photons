@@ -271,11 +271,6 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
         direction = Direction.__members__.get(direction.upper())
     if isinstance(direction, Direction):
         options["parameters"] = {"speed_direction": direction}
-    if direction is not None:
-        for e in Direction:
-            if e.name.lower() == direction.lower():
-                options["parameters"] = {"speed_direction": e}
-                break
 
     set_effect = MultiZoneMessages.SetMultiZoneEffect.create(**options)
 
