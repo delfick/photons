@@ -267,6 +267,10 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
     options["res_required"] = False
 
     direction = options.pop("direction", None)
+    if isinstance(direction, str):
+        direction = Direction.__members__.get(direction.upper())
+    if isinstance(direction, Direction):
+        options["parameters"] = {"speed_direction": direction}
     if direction is not None:
         for e in Direction:
             if e.name.lower() == direction.lower():
