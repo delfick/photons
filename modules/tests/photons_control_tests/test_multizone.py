@@ -780,7 +780,7 @@ describe "Multizone helpers":
             )
 
         async it "has options", sender:
-            msg = SetZonesEffect("move", speed=5, duration=10, power_on_duration=20)
+            msg = SetZonesEffect("move", speed=5, duration=10, direction="RIGHT", power_on_duration=20)
             got = await sender(msg, devices.serials)
             assert got == []
 
