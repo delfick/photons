@@ -3,7 +3,12 @@
 Changelog
 =========
 
-.. _release-interactor-0-120:
+.. _release-interactor-0-12-3:
+
+0.12.3 - 24 June 2022
+    * Allow specifying direction when doing a zone effect
+
+.. _release-interactor-0-12-2:
 
 0.12.2 - 4 June 2022
     * Update dependencies of photons

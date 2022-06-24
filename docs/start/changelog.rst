@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.5:
+
+0.42.5 - 24 June 2022
+    * SetZonesEffect can now take in a direction
+
 .. _release-core-0-42.4:
 
 0.42.4 - 4 June 2022
