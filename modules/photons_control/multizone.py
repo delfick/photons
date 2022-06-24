@@ -3,7 +3,7 @@ from photons_control.colour import make_hsbks
 from photons_app.tasks import task_register as task
 from photons_app.errors import PhotonsAppError
 
-from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessages
+from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessages, Direction
 from photons_control.planner import Skip, Plan, NoMessages
 from photons_control.planner.plans import CapabilityPlan
 from photons_control.script import FromGenerator
@@ -235,15 +235,15 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
 
     Options include:
 
-    * offset
-    * speed
-    * duration
+    * speed: duration in seconds to complete one cycle
+    * duration: in seconds or specify 0 (the default) to run until manually stopped
+    * direction: either "left" or "right" (default: "right")
 
     Usage looks like:
 
     .. code-block:: python
 
-        msg = SetZonesEffect("MOVE", speed=1)
+        msg = SetZonesEffect("MOVE", speed=1, duration=10, direction="left")
         await target.send(msg, reference)
 
     By default the devices will be powered on. If you don't want this to happen
@@ -251,6 +251,7 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
 
     If you want to target a particular device or devices, pass in reference.
     """
+
     typ = effect
     if type(effect) is str:
         for e in MultiZoneEffectType:
@@ -264,6 +265,13 @@ def SetZonesEffect(effect, power_on=True, power_on_duration=1, reference=None, *
 
     options["type"] = typ
     options["res_required"] = False
+
+    direction = options.pop("direction", None)
+    if isinstance(direction, str):
+        direction = Direction.__members__.get(direction.upper())
+    if isinstance(direction, Direction):
+        options["parameters"] = {"speed_direction": direction}
+
     set_effect = MultiZoneMessages.SetMultiZoneEffect.create(**options)
 
     async def gen(ref, sender, **kwargs):
@@ -348,9 +356,13 @@ class multizone_effect(task.Task):
         A moving animation
 
     Options include:
-    - offset
-    - speed
-    - duration
+      - speed: duration in seconds to complete one cycle of the effect
+      - duration: duration in seconds the effect will run.
+      - direction: either "left" or "right" (default: "right")
+
+    Example:
+        ``{"speed": 5, "duration": 0, "direction": "left"}``
+
     """
 
     target = task.requires_target()

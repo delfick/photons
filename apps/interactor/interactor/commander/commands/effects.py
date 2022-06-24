@@ -64,7 +64,15 @@ class RunEffectCommand(EffectCommand):
     linear_options = dictobj.Field(
         sb.dictionary_spec,
         help="""
-                Any options to give to the linear animation. For example duration
+                Options for the linear firmware effect:
+
+                - speed: duration in seconds to complete one cycle of the effect
+                - duration: time in seconds the effect will run.
+                - direction: either "left" or "right" (default: "right")
+
+                If duration is not specified or set to 0, the effect will run
+                until it is manually stopped.
+
             """,
     )
 

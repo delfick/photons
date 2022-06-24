@@ -780,7 +780,9 @@ describe "Multizone helpers":
             )
 
         async it "has options", sender:
-            msg = SetZonesEffect("move", speed=5, duration=10, power_on_duration=20)
+            msg = SetZonesEffect(
+                "move", speed=5, duration=10, direction="LEFT", power_on_duration=20
+            )
             got = await sender(msg, devices.serials)
             assert got == []
 
@@ -796,7 +798,10 @@ describe "Multizone helpers":
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
                         MultiZoneMessages.SetMultiZoneEffect.create(
-                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                            duration=10,
+                            type=MultiZoneEffectType.MOVE,
+                            speed=5,
+                            parameters={"speed_direction": "LEFT"},
                         ),
                     ],
                     striplcm2noextended: [
@@ -804,7 +809,10 @@ describe "Multizone helpers":
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
                         MultiZoneMessages.SetMultiZoneEffect.create(
-                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                            duration=10,
+                            type=MultiZoneEffectType.MOVE,
+                            speed=5,
+                            parameters={"speed_direction": "LEFT"},
                         ),
                     ],
                     striplcm2extended: [
@@ -812,7 +820,10 @@ describe "Multizone helpers":
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=20),
                         MultiZoneMessages.SetMultiZoneEffect.create(
-                            duration=10, type=MultiZoneEffectType.MOVE, speed=5
+                            duration=10,
+                            type=MultiZoneEffectType.MOVE,
+                            speed=5,
+                            parameters={"speed_direction": "LEFT"},
                         ),
                     ],
                 }
