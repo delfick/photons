@@ -133,6 +133,14 @@ class Firmware:
         else:
             raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
 
+    def as_dict(self):
+        return {
+            "major": self.major,
+            "minor": self.minor,
+            "build": self.build,
+            "install": self.install,
+        }
+
 
 def ensure_aexit(instance):
     """
