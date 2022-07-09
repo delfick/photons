@@ -123,6 +123,13 @@ def run_pytest():
                     "default_alt_async_timeout=1.5",
                     "-W",
                     "ignore:Using or importing the ABCs:DeprecationWarning",
+                    "-W",
+                    (
+                        "ignore:websockets.connection was renamed to websockets.protocol"
+                        " and Connection was renamed to Protocol:DeprecationWarning"
+                    ),
+                    "-W",
+                    "ignore:ServerConnection was renamed to ServerProtocol:DeprecationWarning",
                     "--log-level=INFO",
                     "-p",
                     "helpers_namespace",

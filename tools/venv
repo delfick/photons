@@ -33,8 +33,7 @@ manager.add_local_dep(
         "photons_app",
         "__init__.py",
     ),
-    name="lifx-photons-core=={version}",
-    with_tests=True,
+    name="lifx-photons-core[web-server,tests]=={version}",
 )
 manager.add_local_dep(
     "{here}",

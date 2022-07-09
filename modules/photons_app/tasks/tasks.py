@@ -1,4 +1,6 @@
+import asyncio
 import sys
+import typing as tp
 
 from delfick_project.norms import Meta, dictobj, sb
 from photons_app import helpers as hp
@@ -17,40 +19,9 @@ class TaskMeta(dictobj.Field.metaclass):
         return f"<Task {self.__name__}>"
 
 
-class Task(dictobj, metaclass=TaskMeta):
-    """
-    Responsible for managing the life cycle of a photons program
-
-    It has on it by default the following attributes:
-
-    instantiated_name
-        The name that was used when this task was created
-
-    collector
-        The :ref:`Collector <collector_root>` used for this Photons session
-
-    photons_app
-        The :ref:`PhotonsApp <collector_root>` object associated with this Photons
-        session
-
-    task_holder
-        A :class:`photons_app.helpers.TaskHolder` instance that wraps the
-        execution of the task
-
-    Extra attributes may be added using ``dictobj.Field`` objects via
-    `delfick_project.norms <https://delfick-project.readthedocs.io/en/latest/api/norms/index.html>`_.
-
-    The life cycle of the task is contained within the ``run`` method, which
-    is responsible for managing the ``task_holder``, running ``execute_task``
-    and ensuring ``post`` is run when ``execute_task`` is done regardless of
-    whether it raised an exception or not.
-
-    ``execute_task`` must be implemented and is where the body of the task
-    should go.
-
-    ``post`` is an optional hook that may be implemented to execute code
-    regardless of how ``execute_task`` finished.
-    """
+class TaskBase(dictobj, metaclass=TaskMeta):
+    post: tp.Callable
+    execute_task: tp.Callable
 
     instantiated_name = dictobj.Field(sb.string_spec)
 
@@ -124,12 +95,6 @@ class Task(dictobj, metaclass=TaskMeta):
                 hidden_exc_info[1].__traceback__ = hidden_exc_info[2]
                 raise hidden_exc_info[1]
 
-    async def execute_task(self, **kwargs):
-        raise NotImplementedError()
-
-    async def post(self, exc_info, **kwargs):
-        pass
-
     def hide_exception_from_task_holder(self, exc_info):
         return False
 
@@ -137,7 +102,49 @@ class Task(dictobj, metaclass=TaskMeta):
         return f"<Task Instance {self.instantiated_name}>"
 
 
-class GracefulTask(Task):
+class Task(TaskBase):
+    """
+    Responsible for managing the life cycle of a photons program
+
+    It has on it by default the following attributes:
+
+    instantiated_name
+        The name that was used when this task was created
+
+    collector
+        The :ref:`Collector <collector_root>` used for this Photons session
+
+    photons_app
+        The :ref:`PhotonsApp <collector_root>` object associated with this Photons
+        session
+
+    task_holder
+        A :class:`photons_app.helpers.TaskHolder` instance that wraps the
+        execution of the task
+
+    Extra attributes may be added using ``dictobj.Field`` objects via
+    `delfick_project.norms <https://delfick-project.readthedocs.io/en/latest/api/norms/index.html>`_.
+
+    The life cycle of the task is contained within the ``run`` method, which
+    is responsible for managing the ``task_holder``, running ``execute_task``
+    and ensuring ``post`` is run when ``execute_task`` is done regardless of
+    whether it raised an exception or not.
+
+    ``execute_task`` must be implemented and is where the body of the task
+    should go.
+
+    ``post`` is an optional hook that may be implemented to execute code
+    regardless of how ``execute_task`` finished.
+    """
+
+    async def execute_task(self, **kwargs):
+        raise NotImplementedError()
+
+    async def post(self, exc_info, **kwargs):
+        pass
+
+
+class GracefulTask(TaskBase):
     """
     Responsible for managing the life cycle of a photons program that uses the graceful future
     """
@@ -146,6 +153,12 @@ class GracefulTask(Task):
         with self.photons_app.using_graceful_future() as graceful:
             kwargs["graceful_final_future"] = graceful
             super().run_loop(**kwargs)
+
+    async def execute_task(self, graceful_final_future: asyncio.Future, **kwargs: object) -> None:
+        raise NotImplementedError()
+
+    async def post(self, exc_info, graceful_final_future: asyncio.Future, **kwargs: object) -> None:
+        pass
 
     def hide_exception_from_task_holder(self, exc_info):
         return exc_info[0] is ApplicationStopped
