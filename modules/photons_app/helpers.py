@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import traceback
+import typing as tp
 from collections import deque
 from contextlib import asynccontextmanager, contextmanager
 from functools import total_ordering
@@ -19,6 +20,8 @@ log = logging.getLogger("photons_app.helpers")
 
 # Make vim be quiet
 lc = lc
+
+T = tp.TypeVar("T")
 
 
 if hasattr(asyncio, "exceptions"):
@@ -1298,7 +1301,7 @@ async def cancel_futures_and_wait(*futs, name=None):
     )
 
 
-class memoized_property:
+class memoized_property(tp.Generic[T]):
     """
     Decorator to make a descriptor that memoizes it's value
 
@@ -1338,7 +1341,7 @@ class memoized_property:
         self.__doc__ = func.__doc__
         self.cache_name = "_{0}".format(self.name)
 
-    def __get__(self, instance=None, owner=None):
+    def __get__(self, instance: object = None, owner: object = None) -> T:
         if instance is None:
             return self
 

@@ -28,11 +28,24 @@ dependencies = [
 
 [project.optional-dependencies]
 tests = [
+    "typing-extensions==4.8.0",
     "alt-pytest-asyncio==0.6.0",
     "noseOfYeti[black]==2.4.8",
     "pytest-helpers-namespace==2021.12.29",
-    "pytest==8.0.0",
+    "pytest==8.0.1",
+    "sanic==23.12.1",
+    "aiohttp==3.9.3",
+    "ulid-py==1.1.0",
+    "strcs==0.4.0",
+    "attrs==23.2.0",
 ]
+web-server = [
+    "aiohttp>=3.9.0",
+    "sanic>=23.12.1",
+    "ulid-py>=1.1.0",
+    "strcs>=0.4.0",
+    "attrs>=23.2.0",
+]       
 
 [project.scripts]
 lifx = "photons_app.executor:lifx_main"

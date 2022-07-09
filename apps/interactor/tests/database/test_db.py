@@ -5,7 +5,7 @@ import sqlalchemy.exc
 from delfick_project.errors_pytest import assertRaises
 from photons_app.errors import PhotonsAppError
 from sqlalchemy import Boolean, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import declarative_base, declared_attr
 
 
 class Base:
