@@ -1,7 +1,6 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from whirlwind.store import Store
+from photons_web_server.commander.store import Store
 
-store = Store(default_path="/v1/lifx/command", formatter=MergedOptionStringFormatter)
+store = Store(default_path="/v1/lifx/command")
 
 
 def load_commands():

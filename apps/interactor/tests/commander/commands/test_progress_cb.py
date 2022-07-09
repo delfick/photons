@@ -7,7 +7,7 @@ from delfick_project.norms import dictobj, sb
 from interactor.errors import InteractorError
 from photons_app import helpers as hp
 from photons_app.formatter import MergedOptionStringFormatter
-from whirlwind.store import Store
+from photons_web_server.commander.store import Store
 
 store = Store(default_path="/v1/lifx/command", formatter=MergedOptionStringFormatter)
 
