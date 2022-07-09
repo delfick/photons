@@ -79,7 +79,8 @@ class DB(hp.AsyncCMMixin):
         self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 
     async def finish(self, exc_typ=None, exc=None, tb=None):
-        await self.engine.dispose()
+        if hasattr(self, "engine"):
+            await self.engine.dispose()
 
     @hp.asynccontextmanager
     async def session(self):
