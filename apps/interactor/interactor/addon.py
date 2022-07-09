@@ -5,8 +5,10 @@ from delfick_project.addons import addon_hook
 from interactor.errors import InteractorError
 from interactor.options import Options
 from interactor.server import Server
+from photons_app import helpers as hp
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
+from photons_web_server.server import WebServerTask
 
 log = logging.getLogger("interactor.addon")
 
@@ -19,31 +21,32 @@ def __lifx__(collector, *args, **kwargs):
 
 
 @task.register(task_group="Interactor")
-class interactor(task.GracefulTask):
+class interactor(WebServerTask):
     """
     Start a daemon that will watch your network for LIFX lights and interact with them
     """
 
+    ServerKls = Server
     target = task.requires_target()
 
     @property
     def options(self):
         return self.collector.configuration["interactor"]
 
-    async def execute_task(self, graceful_final_future, **kwargs):
-        logging.getLogger("tornado.access").disabled = True
+    @property
+    def host(self):
+        return self.options.host
 
-        await task.fill_task(self.collector, "migrate").run(extra="upgrade head")
+    @property
+    def port(self):
+        return self.options.port
 
+    @hp.asynccontextmanager
+    async def server_kwargs(self):
         async with self.target.session() as sender:
-            await Server(
-                self.photons_app.final_future, server_end_future=graceful_final_future
-            ).serve(
-                self.options.host,
-                self.options.port,
-                self.options,
-                tasks=self.task_holder,
+            yield dict(
                 sender=sender,
+                options=self.options,
                 cleaners=self.photons_app.cleaners,
                 animation_options=self.collector.configuration.get("animation_options", {}),
             )

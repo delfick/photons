@@ -1,191 +1,80 @@
-import logging
 import time
-import uuid
+import typing as tp
 
-import tornado.web
 from interactor.commander.animations import Animations
 from interactor.database import DB
-from interactor.request_handlers import CommandHandler, WSHandler
 from photons_app import helpers as hp
 from photons_control.device_finder import DeviceFinderDaemon, Finder
-from whirlwind.commander import Commander
-from whirlwind.server import Server
-
-log = logging.getLogger("interactor.server")
-
-REQUEST_IDENTIFIER_HEADER = "X-Request-ID"
-
-
-class StatusHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("working")
-
-
-class Commander(Commander):
-    def peek_valid_request(self, meta, command, path, body):
-        request = meta.everything["request_handler"].request
-
-        if isinstance(body, dict) and "command" in body:
-            request.__whirlwind_commander_command__ = body["command"]
-
-            if body["command"] == "status":
-                return
-
-        command = getattr(request, "__whirlwind_commander_command__", None)
-        remote_ip = request.remote_ip
-        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
-
-        matcher = None
-        if (
-            isinstance(body, dict)
-            and isinstance(body.get("args"), dict)
-            and "matcher" in body["args"]
-        ):
-            matcher = body["args"]["matcher"]
-
-        log.info(
-            hp.lc(
-                "Command",
-                method=request.method,
-                uri=request.uri,
-                path=path,
-                command=command,
-                matcher=matcher,
-                remote_ip=remote_ip,
-                request_identifier=identifier,
-            )
-        )
-
-
-class WithRequestTracing:
-    def __init__(self, app):
-        self.app = app
-
-    def __call__(self, request):
-        request.__interactor_request_start__ = time.time()
-        if REQUEST_IDENTIFIER_HEADER not in request.headers:
-            request.headers[REQUEST_IDENTIFIER_HEADER] = str(uuid.uuid4())
-        return self.app(request)
-
-
-class OutputRequestID(tornado.web.OutputTransform):
-    def __init__(self, request):
-        self.request = request
-        self.identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
-        super().__init__(request)
-
-    def transform_first_chunk(self, status_code, headers, chunk, finishing):
-        headers[REQUEST_IDENTIFIER_HEADER] = self.identifier
-
-        request = self.request
-        took = time.time() - request.__interactor_request_start__
-        command = getattr(request, "__whirlwind_commander_command__", None)
-        remote_ip = request.remote_ip
-        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
-
-        if command != "status":
-            method = "error"
-            if status_code < 400:
-                method = "info"
-
-            getattr(log, method)(
-                hp.lc(
-                    "Response",
-                    method=request.method,
-                    uri=request.uri,
-                    status=status_code,
-                    command=command,
-                    remote_ip=remote_ip,
-                    took_seconds=round(took, 2),
-                    request_identifier=identifier,
-                )
-            )
-
-        return super().transform_first_chunk(status_code, headers, chunk, finishing)
+from photons_web_server.commander import Commander, Store
+from photons_web_server.server import Server
+from strcs import Meta
 
 
 class Server(Server):
-    def __init__(self, final_future, *, server_end_future, store=None):
-        super().__init__(final_future, server_end_future=server_end_future)
-
+    async def setup(
+        self, *, options, sender, cleaners, store: tp.Optional[Store] = None, animation_options=None
+    ):
         if store is None:
             from interactor.commander.store import load_commands, store
 
             load_commands()
 
         self.store = store
-        self.wsconnections = {}
-
-    async def wait_for_end(self):
-        # Wait till the server has successfully started to begin any zeroconf registration
-        await self.server_options.zeroconf.start(
-            self.tasks, self.host, self.port, self.sender, self.finder
-        )
-        await hp.wait_for_all_futures(self.server_end_future, name="Server::wait_for_end")
-
-    def make_application(self, *args, **kwargs):
-        app = super().make_application(*args, **kwargs)
-        app.add_transform(OutputRequestID)
-        return WithRequestTracing(app)
-
-    def tornado_routes(self):
-        return [
-            ("/v1/lifx/command", CommandHandler, {"commander": self.commander}),
-            (
-                "/v1/ws",
-                WSHandler,
-                {
-                    "commander": self.commander,
-                    "server_time": time.time(),
-                    "final_future": self.server_end_future,
-                    "wsconnections": self.wsconnections,
-                },
-            ),
-            ("/v1/lifx/status", StatusHandler),
-        ]
-
-    async def setup(self, server_options, *, tasks, sender, cleaners, animation_options=None):
         self.sender = sender
         self.cleaners = cleaners
-        self.server_options = server_options
+        self.wsconnections = {}
+        self.server_options = options
         self.animation_options = animation_options
-
-        self.tasks = tasks
-        self.tasks._merged_options_formattable = True
 
         self.database = DB(self.server_options.database.uri)
         self.database._merged_options_formattable = True
         self.cleaners.append(self.database.finish)
-        await self.database.start()
 
         self.finder = Finder(sender, final_future=self.final_future)
-        self.finder._merged_options_formattable = True
         self.cleaners.append(self.finder.finish)
 
         self.daemon = DeviceFinderDaemon(
             sender, finder=self.finder, **self.server_options.daemon_options
         )
         self.cleaners.append(self.daemon.finish)
-        await self.daemon.start()
 
         self.animations = Animations(
             self.final_future, self.tasks, self.sender, self.animation_options
         )
-        self.animations._merged_options_formattable = True
 
         self.commander = Commander(
             self.store,
-            tasks=self.tasks,
-            sender=self.sender,
-            finder=self.finder,
-            zeroconf=self.server_options.zeroconf,
-            database=self.database,
-            animations=self.animations,
-            final_future=self.final_future,
-            server_options=self.server_options,
+            meta=Meta(
+                dict(
+                    tasks=self.tasks,
+                    sender=self.sender,
+                    finder=self.finder,
+                    zeroconf=self.server_options.zeroconf,
+                    database=self.database,
+                    animations=self.animations,
+                    final_future=self.final_future,
+                    server_options=self.server_options,
+                )
+            ),
         )
 
-    async def cleanup(self):
+        self.app.ctx.commander = self.commander
+        self.app.ctx.server_time = time.time()
+        self.app.ctx.server_options = self.server_options
+
+    async def setup_routes(self):
+        await super().setup_routes()
+        self.app.add_route(self.commander.http_handler, "/v1/lifx/command", methods=["PUT"])
+        self.app.add_websocket_route(self.commander.ws_handler, "/v1/ws")
+
+    async def before_start(self):
+        await self.server_options.zeroconf.start(
+            self.tasks, self.server_options.host, self.server_options.port, self.sender, self.finder
+        )
+        await self.database.start()
+        await self.daemon.start()
+
+    async def before_stop(self):
         self.tasks.add(self.animations.stop())
         self.tasks.add(self.server_options.zeroconf.finish())
         await hp.wait_for_all_futures(
