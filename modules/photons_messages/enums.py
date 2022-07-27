@@ -8,6 +8,25 @@ class Direction(Enum):
     FORWARD = 1
 
 
+class ButtonGesture(Enum):
+    PRESS = 1
+    HOLD = 2
+    PRESS_PRESS = 3
+    PRESS_HOLD = 4
+    HOLD_HOLD = 5
+
+
+class ButtonTargetType(Enum):
+    RESERVED1 = 0
+    RESERVED2 = 1
+    RELAYS = 2
+    DEVICE = 3
+    LOCATION = 4
+    GROUP = 5
+    SCENE = 6
+    DEVICE_RELAYS = 7
+
+
 class Services(Enum):
     UDP = 1
     RESERVED1 = 2
