@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-12-4:
+
+0.12.4 - 27 July 2022
+    * Upgrade photons core to get new button messages
+
 .. _release-interactor-0-12-3:
 
 0.12.3 - 24 June 2022
