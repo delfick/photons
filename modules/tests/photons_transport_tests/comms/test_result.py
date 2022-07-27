@@ -15,7 +15,7 @@ import time
 
 
 @pytest.fixture()
-def V():
+def VBase():
     class V:
         original = mock.Mock(name="original")
         Meta = mock.NonCallableMock(name="Meta", spec=["multi"])
@@ -37,6 +37,11 @@ def V():
             ).empty_normalise()
 
     return V()
+
+
+@pytest.fixture()
+def V(VBase):
+    return VBase
 
 
 gaps = Gaps(
@@ -78,7 +83,9 @@ describe "Result":
     describe "add_packet":
 
         @pytest.fixture()
-        def V(self, V):
+        def V(self, VBase):
+            V = VBase
+
             class V(V.__class__):
                 pkt = mock.NonCallableMock(name="pkt", spec=["represents_ack"])
                 addr = mock.Mock(name="addr")

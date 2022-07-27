@@ -19,7 +19,7 @@ import pytest
 
 
 @pytest.fixture()
-def V():
+def VBase():
     class V:
         final_future = hp.create_future()
 
@@ -37,6 +37,11 @@ def V():
             return Communication(s.transport_target)
 
     return V()
+
+
+@pytest.fixture()
+def V(VBase):
+    return VBase
 
 
 @pytest.fixture(autouse=True)
@@ -375,7 +380,9 @@ describe "Communication":
     describe "find_specific_serials":
 
         @pytest.fixture()
-        def V(self, V):
+        def V(self, VBase):
+            V = VBase
+
             class V(V.__class__):
                 info1 = mock.Mock(name="info1")
                 info2 = mock.Mock(name="info2")
@@ -673,7 +680,9 @@ describe "Communication":
     describe "private transport_for_send":
 
         @pytest.fixture()
-        def V(self, V):
+        def V(self, VBase):
+            V = VBase
+
             class V(V.__class__):
                 packet = mock.Mock(name="packet")
                 original = mock.Mock(name="original")
