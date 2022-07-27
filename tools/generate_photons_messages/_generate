@@ -5,14 +5,17 @@ import os
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
 env = {
-      "SRC": os.path.join(this_dir, "public-protocol", "protocol.yml")
-    , "ADJUSTMENTS": os.path.join(this_dir, "adjustments.yml")
-    , "OUTPUT_FOLDER": os.path.join(this_dir, "..", "..", "modules", "photons_messages")
-    }
+    "SRC": os.path.join(this_dir, "public-protocol", "protocol.yml"),
+    "ADJUSTMENTS": os.path.join(this_dir, "adjustments.yml"),
+    "OUTPUT_FOLDER": os.path.join(this_dir, "..", "..", "modules", "photons_messages"),
+}
 
 from venvstarter import ignite
-ignite(__file__, "generate_photons_messages"
-    , deps = ["lifx-photons-messages-generator==0.6.3"]
-    , min_python_version = 3.6
-    , env = env
-    )
+
+ignite(
+    __file__,
+    "generate_photons_messages",
+    deps=["lifx-photons-messages-generator==0.6.8"],
+    min_python_version=3.6,
+    env=env,
+)
