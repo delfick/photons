@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.6:
+
+0.42.6 - 27 July 2022
+    * Added new Button messages
+      https://github.com/LIFX/public-protocol/issues/6
+
 .. _release-core-0-42.5:
 
 0.42.5 - 24 June 2022
