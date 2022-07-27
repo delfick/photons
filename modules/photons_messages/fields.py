@@ -26,6 +26,26 @@ def multizone_effect_parameters_for(typ):
 
 # fmt: off
 
+
+def union_fields_ButtonTarget(typ):
+    if typ is enums.ButtonTargetType.RESERVED6:
+        yield from (("reserved6", T.Reserved(128)), )
+    if typ is enums.ButtonTargetType.RESERVED7:
+        yield from (("reserved7", T.Reserved(128)), )
+    if typ is enums.ButtonTargetType.RELAYS:
+        yield from (*button_target_relays, )
+    if typ is enums.ButtonTargetType.DEVICE:
+        yield from (*button_target_device, )
+    if typ is enums.ButtonTargetType.LOCATION:
+        yield from (("location", T.Bytes(16 * 8)), )
+    if typ is enums.ButtonTargetType.GROUP:
+        yield from (("group", T.Bytes(16 * 8)), )
+    if typ is enums.ButtonTargetType.SCENE:
+        yield from (("scene", T.Bytes(16 * 8)), )
+    if typ is enums.ButtonTargetType.DEVICE_RELAYS:
+        yield from (*button_target_device_relays, )
+
+
 duration_type = T.Uint32.default(0).transform(
       lambda _, value: int(1000 * float(value))
     , lambda _, value: float(value) / 1000
@@ -67,6 +87,39 @@ hsbk_with_optional = [
     , ("brightness", scaled_to_65535.optional())
     , ("kelvin", T.Uint16.optional())
     ]
+
+button_target_relays = [
+      ("relays_count", T.Uint8)
+    , ("relays", T.Uint8.multiple(15))
+    ]
+
+button_target_device = [
+      ("serial", T.Bytes(6 * 8))
+    , ("reserved6", T.Reserved(80))
+    ]
+
+button_target_device_relays = [
+      ("serial", T.Bytes(6 * 8))
+    , ("relays_count", T.Uint8)
+    , ("relays", T.Uint8.multiple(9))
+    ]
+
+button_action = [
+      ("gesture", T.Uint16.enum(enums.ButtonGesture))
+    , ("target_type", T.Uint16.enum(enums.ButtonTargetType))
+    , ("target", T.Bytes(16 * 8).dynamic(lambda pkt: fields.union_fields_ButtonTarget(pkt.target_value)))
+    ]
+
+class ButtonAction(dictobj.PacketSpec):
+    fields = button_action
+
+button = [
+      ("actions_count", T.Uint8)
+    , ("actions", T.Bytes(160).multiple(5, kls=ButtonAction))
+    ]
+
+class Button(dictobj.PacketSpec):
+    fields = button
 
 hsbk = [
       ("hue", scaled_hue)

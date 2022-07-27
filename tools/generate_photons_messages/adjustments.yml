@@ -13,6 +13,8 @@ ignore:
   MultiZoneEffectParameter: {}
   TileAccelMeas:
     expanded: true
+  ButtonBacklightHsbk:
+    expanded: true
 
 output:
   - create: enums
@@ -178,6 +180,30 @@ clones:
         more_extras: ["optional()"]
 
 changes:
+  ButtonAction:
+    fields:
+      Target:
+        union_enum: ButtonTargetType
+        union_switch_field: target_value
+    multi_options:
+      name: ButtonAction
+
+  Button:
+    multi_options:
+      name: Button
+
+  ButtonSet:
+    fields:
+      Index:
+        rename: button_index
+
+  ButtonState:
+    fields:
+      Index:
+        rename: button_index
+      Count:
+        rename: total_count
+
   DeviceStateUnhandled:
     namespace: core
 

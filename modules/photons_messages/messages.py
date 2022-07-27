@@ -237,6 +237,52 @@ class LightMessages(Messages):
         )
 
 ########################
+###   BUTTON
+########################
+
+class ButtonMessages(Messages):
+    GetButton = msg(905)
+
+    SetButton = msg(906
+        , ("button_index", T.Uint8)
+        , ("buttons_count", T.Uint8)
+        , ("buttons", T.Bytes(808).multiple(8, kls=fields.Button))
+        )
+
+    ButtonState = msg(907
+        , ("total_count", T.Uint8)
+        , ("button_index", T.Uint8)
+        , ("buttons_count", T.Uint8)
+        , ("buttons", T.Bytes(808).multiple(8, kls=fields.Button))
+        )
+
+    GetConfig = msg(909)
+
+    SetConfig = msg(910
+        , ("haptic_duration_ms", T.Uint16)
+        , ("backlight_on_color_hue", T.Uint16)
+        , ("backlight_on_color_saturation", T.Uint16)
+        , ("backlight_on_color_brightness", T.Uint16)
+        , ("backlight_on_color_kelvin", T.Uint16)
+        , ("backlight_off_color_hue", T.Uint16)
+        , ("backlight_off_color_saturation", T.Uint16)
+        , ("backlight_off_color_brightness", T.Uint16)
+        , ("backlight_off_color_kelvin", T.Uint16)
+        )
+
+    StateConfig = msg(911
+        , ("haptic_duration_ms", T.Uint16)
+        , ("backlight_on_color_hue", T.Uint16)
+        , ("backlight_on_color_saturation", T.Uint16)
+        , ("backlight_on_color_brightness", T.Uint16)
+        , ("backlight_on_color_kelvin", T.Uint16)
+        , ("backlight_off_color_hue", T.Uint16)
+        , ("backlight_off_color_saturation", T.Uint16)
+        , ("backlight_off_color_brightness", T.Uint16)
+        , ("backlight_off_color_kelvin", T.Uint16)
+        )
+
+########################
 ###   MULTI_ZONE
 ########################
 
@@ -388,6 +434,7 @@ __all__ = [
     "DiscoveryMessages",
     "DeviceMessages",
     "LightMessages",
+    "ButtonMessages",
     "MultiZoneMessages",
     "RelayMessages",
     "TileMessages",
