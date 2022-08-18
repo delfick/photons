@@ -6,6 +6,7 @@ import sys
 import time
 import typing as tp
 from contextlib import asynccontextmanager
+from unittest import mock
 
 import aiohttp
 import pytest
@@ -51,6 +52,23 @@ def used_port():
         yield port
     finally:
         sock.close()
+
+
+class Between:
+    compare: object | None
+
+    def __init__(self, frm: float, to: float):
+        self.frm = frm
+        self.to = to
+
+    def __eq__(self, compare: object) -> bool:
+        self.compare = compare
+        if not isinstance(self.compare, float):
+            return False
+        return self.frm <= self.compare <= self.to
+
+    def __repr__(self):
+        return f"<Between {self.frm} and {self.to}/>"
 
 
 describe "Task":
@@ -311,3 +329,88 @@ describe "Server":
 
             with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
                 await req
+
+    describe "logging":
+
+        async it "records commands and responses", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+
+            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+                await asyncio.sleep(2)
+                return sanic.text("route")
+
+            async def ws(request: Request, ws: Websocket, first: dict):
+                assert first == {"command": "two", "path": "/route"}
+                await asyncio.sleep(6)
+
+            async def setup_routes(server):
+                server.app.add_route(route, "route", methods=["PUT"])
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+                await srv.start_request("PUT", "/route", {"command": "one"})
+                await srv.run_stream("/stream", {"command": "two", "path": "/route"})
+                srv.stop()
+
+            records = [
+                r.msg
+                for r in caplog.records
+                if isinstance(r.msg, dict) and r.msg["msg"] in ("Response", "Request")
+            ]
+
+            assert records == [
+                {
+                    "msg": "Request",
+                    "command": "one",
+                    "method": "PUT",
+                    "uri": "/route",
+                    "path": None,
+                    "scheme": "http",
+                    "remote_addr": "",
+                    "request_identifier": mock.ANY,
+                },
+                {
+                    "msg": "Response",
+                    "method": "PUT",
+                    "uri": "/route",
+                    "status": 200,
+                    "command": "one",
+                    "remote_addr": "",
+                    "took_seconds": Between(1.0, 3.0),
+                    "request_identifier": mock.ANY,
+                },
+                {
+                    "msg": "Request",
+                    "command": None,
+                    "method": "GET",
+                    "uri": "/stream",
+                    "path": None,
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "request_identifier": mock.ANY,
+                },
+                {
+                    "msg": "Request",
+                    "command": "two",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "path": None,
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "request_identifier": mock.ANY,
+                },
+                {
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 200,
+                    "command": "two",
+                    "remote_addr": "",
+                    "took_seconds": Between(5.0, 7.0),
+                    "request_identifier": mock.ANY,
+                },
+            ]
+
+            assert records[0]["request_identifier"] == records[1]["request_identifier"]
+            assert all(
+                r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:]
+            )

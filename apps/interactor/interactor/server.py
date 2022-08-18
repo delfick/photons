@@ -7,6 +7,7 @@ from photons_app import helpers as hp
 from photons_control.device_finder import DeviceFinderDaemon, Finder
 from photons_web_server.commander import Commander, Store
 from photons_web_server.server import Server
+from sanic.request import Request
 from strcs import Meta
 
 
@@ -65,7 +66,9 @@ class Server(Server):
     async def setup_routes(self):
         await super().setup_routes()
         self.app.add_route(self.commander.http_handler, "/v1/lifx/command", methods=["PUT"])
-        self.app.add_websocket_route(self.commander.ws_handler, "/v1/ws")
+        self.app.add_websocket_route(
+            self.wrap_websocket_handler(self.commander.ws_handler), "/v1/ws"
+        )
 
     async def before_start(self):
         await self.server_options.zeroconf.start(
@@ -80,3 +83,24 @@ class Server(Server):
         await hp.wait_for_all_futures(
             *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
         )
+
+    def log_request_dict(
+        self,
+        request: Request,
+        command: tp.Optional[str],
+        path: tp.Optional[str],
+        remote_addr: str,
+        identifier: str,
+    ) -> tp.Optional[dict[str, tp.Any]]:
+        matcher = None
+        if (
+            isinstance(request.json, dict)
+            and isinstance(request.json.get("args"), dict)
+            and "matcher" in request.json["args"]
+        ):
+            matcher = request.json["args"]["matcher"]
+
+        return {
+            **super().log_request_dict(request, command, path, remote_addr, identifier),
+            "matcher": matcher,
+        }

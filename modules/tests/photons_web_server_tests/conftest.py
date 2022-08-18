@@ -1,4 +1,5 @@
 import asyncio
+import json
 import typing as tp
 
 import aiohttp
@@ -88,10 +89,12 @@ class WebServerRoutes(hp.AsyncCMMixin):
     def stop(self):
         self.graceful_final_future.cancel()
 
-    def start_request(self, method: str, route: str):
+    def start_request(self, method: str, route: str, body: tp.Optional[dict] = None):
         async def request():
             async with aiohttp.ClientSession() as session:
-                await getattr(session, method.lower())(f"http://127.0.0.1:{self.port}{route}")
+                await getattr(session, method.lower())(
+                    f"http://127.0.0.1:{self.port}{route}", json=body
+                )
 
         return hp.get_event_loop().create_task(request())
 
@@ -100,7 +103,10 @@ class WebServerRoutes(hp.AsyncCMMixin):
             res = []
             async with websockets.connect(f"ws://127.0.0.1:{self.port}{route}") as websocket:
                 for item in items:
-                    await websocket.send(item)
+                    if not isinstance(item, str):
+                        await websocket.send(json.dumps(item))
+                    else:
+                        await websocket.send(item)
 
                 while True:
                     try:
