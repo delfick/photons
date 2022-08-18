@@ -1,9 +1,12 @@
 import asyncio
 import inspect
+import json
 import logging
+import sys
 import time
 import typing as tp
 import uuid
+from functools import wraps
 from textwrap import dedent
 
 from delfick_project.option_merge import MergedOptions
@@ -11,8 +14,12 @@ from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks.tasks import GracefulTask
 from photons_web_server.commander import REQUEST_IDENTIFIER_HEADER
+from photons_web_server.commander.messages import ExcInfo
+from sanic import Websocket
+from sanic.models.handler_types import RouteHandler
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
+from sanic.response import HTTPResponse
 from sanic.server import AsyncioServer
 from sanic.server.protocols.websocket_protocol import WebSocketProtocol
 
@@ -176,12 +183,80 @@ class Server:
         if REQUEST_IDENTIFIER_HEADER not in request.headers:
             request.headers[REQUEST_IDENTIFIER_HEADER] = str(uuid.uuid4())
 
-    def log_request(self, request: Request) -> None:
+    def wrap_websocket_handler(
+        self, handler: tp.Callable[[Request, Websocket, dict], tp.Awaitable[Response]]
+    ) -> RouteHandler:
+        @wraps(handler)
+        async def handle(request: Request, ws: Websocket):
+            try:
+                first = await ws.recv()
+            except asyncio.CancelledError:
+                raise
+            except:
+                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+                raise
+
+            if first is None:
+                self.log_response(
+                    request, HTTPResponse(status=400, body="Must provide a dictionary")
+                )
+                raise ValueError("Message must be a dictionary")
+
+            try:
+                first = json.loads(first)
+            except (ValueError, TypeError):
+                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+                raise
+
+            if not isinstance(first, dict):
+                self.log_response(
+                    request, HTTPResponse(status=400, body="Must provide a dictionary")
+                )
+                raise ValueError("Message must be a dictionary")
+
+            try:
+                self.log_request(request, first)
+                res = await handler(request, ws, first)
+            except:
+                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+            else:
+                self.log_response(request, HTTPResponse(status=200))
+
+            return res
+
+        return handle
+
+    def log_request_dict(
+        self,
+        request: Request,
+        command: tp.Optional[str],
+        path: tp.Optional[str],
+        remote_addr: str,
+        identifier: str,
+    ) -> tp.Optional[dict[str, tp.Any]]:
+        return dict(
+            command=command,
+            method=request.method,
+            uri=request.path,
+            path=path,
+            scheme=request.scheme,
+            remote_addr=remote_addr,
+            request_identifier=identifier,
+        )
+
+    def log_request(
+        self,
+        request: Request,
+        body: tp.Optional[dict] = None,
+        exc_info: tp.Optional[ExcInfo] = None,
+    ) -> None:
         path = None
         command = None
-        if isinstance(request.json, dict) and "command" in request.json:
-            path = request.ctx.commander_path = request.json.get("path", None)
-            command = request.ctx.commander_command = request.json["command"]
+        if body is None:
+            body = request.json
+        if isinstance(body, dict) and "command" in body:
+            request.ctx.commander_path = body.get("path", None)
+            command = request.ctx.commander_command = body["command"]
 
             if command == "status":
                 return
@@ -189,28 +264,15 @@ class Server:
         remote_addr = request.remote_addr
         identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
 
-        matcher = None
-        if (
-            isinstance(request.json, dict)
-            and isinstance(request.json.get("args"), dict)
-            and "matcher" in request.json["args"]
-        ):
-            matcher = request.json["args"]["matcher"]
+        dct = self.log_request_dict(request, command, path, remote_addr, identifier)
+        if dct is None:
+            return
 
-        log.info(
-            hp.lc(
-                "Command",
-                method=request.method,
-                uri=request.path,
-                path=path,
-                command=command,
-                matcher=matcher,
-                remote_addr=remote_addr,
-                request_identifier=identifier,
-            )
-        )
+        log.info(hp.lc("Request", **dct), exc_info=exc_info)
 
-    def log_response(self, request: Request, response: Response) -> None:
+    def log_response(
+        self, request: Request, response: Response, exc_info: tp.Optional[ExcInfo] = None
+    ) -> None:
         took = time.time() - request.ctx.interactor_request_start
         command = getattr(request.ctx, "commander_command", None)
         remote_addr = request.remote_addr
@@ -231,7 +293,8 @@ class Server:
                     remote_addr=remote_addr,
                     took_seconds=round(took, 2),
                     request_identifier=identifier,
-                )
+                ),
+                exc_info=exc_info,
             )
 
 

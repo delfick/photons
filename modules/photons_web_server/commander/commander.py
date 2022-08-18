@@ -25,5 +25,5 @@ class Commander:
     def http_handler(self, request: Request) -> HTTPResponse:
         return text("OK")
 
-    async def ws_handler(self, request: Request, ws: Websocket):
+    async def ws_handler(self, request: Request, ws: Websocket, first: dict):
         pass
