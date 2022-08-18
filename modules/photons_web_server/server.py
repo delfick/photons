@@ -14,6 +14,7 @@ from photons_web_server.commander import REQUEST_IDENTIFIER_HEADER
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 from sanic.server import AsyncioServer
+from sanic.server.protocols.websocket_protocol import WebSocketProtocol
 
 try:
     import sanic
@@ -85,6 +86,7 @@ class Server:
             for k, v in dict(
                 host=host,
                 port=port,
+                protocol=WebSocketProtocol,
                 **MergedOptions.using(
                     kwargs,
                     {

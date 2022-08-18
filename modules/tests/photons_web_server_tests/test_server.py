@@ -3,6 +3,7 @@
 import asyncio
 import socket
 import sys
+import time
 import typing as tp
 from contextlib import asynccontextmanager
 
@@ -13,7 +14,7 @@ from alt_pytest_asyncio.plugin import OverrideLoop
 from photons_app import helpers as hp
 from photons_app.collector import Collector
 from photons_web_server.server import Server, WebServerTask
-from sanic import Sanic
+from sanic import Sanic, Websocket
 from sanic.config import Config
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -243,3 +244,70 @@ describe "Server":
 
             with pytest.raises(ValueError):
                 task.run_loop(collector=collector)
+
+    describe "stopping server":
+
+        async it "waits for requests based on a default 15 second timeout from sanic", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
+            started = hp.create_future()
+            startedws = hp.create_future()
+
+            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+                started.set_result(True)
+                await hp.create_future()
+                return sanic.text("route")
+
+            async def ws(request: Request, ws: Websocket):
+                got = await ws.recv()
+                assert got == "HI"
+                await ws.send(got)
+                startedws.set_result(True)
+                await hp.create_future()
+
+            async def setup_routes(server):
+                server.app.add_route(route, "route", methods=["PUT"])
+                server.app.add_websocket_route(ws, "stream")
+
+            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+                req = srv.start_request("PUT", "/route")
+                wsreq = srv.run_stream("/stream", "HI")
+                await started
+                await startedws
+                assert time.time() < 0.3
+                fake_time.set(0)
+                srv.stop()
+                await hp.wait_for_all_futures(req, wsreq)
+                assert time.time() == 15
+
+            with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
+                await req
+            assert await wsreq == ["HI"]
+
+        async it "waits for requests based on sanic config GRACEFUL_SHUTDOWN_TIMEOUT", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
+            started = hp.create_future()
+
+            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+                started.set_result(True)
+                await hp.create_future()
+                return sanic.text("route")
+
+            async def setup_routes(server):
+                server.app.add_route(route, "route", methods=["PUT"])
+
+            class Config(Server.Config):
+                GRACEFUL_SHUTDOWN_TIMEOUT = 7
+
+            server_properties = {"Config": Config}
+
+            async with pytest.helpers.WebServerRoutes(
+                final_future, setup_routes, server_properties
+            ) as srv:
+                req = srv.start_request("PUT", "/route")
+                await started
+                assert time.time() < 0.3
+                fake_time.set(0)
+                srv.stop()
+                await hp.wait_for_all_futures(req)
+                assert time.time() == 7
+
+            with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
+                await req

@@ -88,7 +88,10 @@ from _typeshed import Incomplete
 
 set_trace: Incomplete
 
+import typing as tp
 from unittest import mock
+
+from tests.photons_web_server_tests.conftest import WebServerRoutes
 
 class helpers:
     @staticmethod
@@ -96,4 +99,5 @@ class helpers:
     @staticmethod
     async def wait_for_port(port: int, timeout: float = 3, gap: float = 0.01) -> None: ...
 
-    AsyncMock: mock.AsyncMock
+    AsyncMock: tp.ClassVar[type[mock.AsyncMock]]
+    WebServerRoutes: tp.ClassVar[type[WebServerRoutes]]
