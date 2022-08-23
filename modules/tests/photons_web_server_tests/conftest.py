@@ -14,6 +14,14 @@ def pytest_configure(config):
     pytest.helpers.register(WebServerRoutes)
 
 
+@pytest.fixture()
+def call_from_conftest():
+    def call_from_conftest(cb):
+        return cb()
+
+    return call_from_conftest
+
+
 @pytest.fixture(autouse=True, scope="module")
 def sanic_test_mode():
     Sanic.test_mode = True
