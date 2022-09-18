@@ -43,7 +43,7 @@ setup(
       , "rainbow_logging_handler==2.2.2"
 
       # photons-tile-messages
-      , "lru-dict==1.1.7"
+      , "lru-dict==1.1.8"
 
       # photons-protocol
       , "bitarray>=2.1.2"
