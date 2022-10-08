@@ -3,6 +3,8 @@
 import asyncio
 import inspect
 import logging
+import sys
+import typing as tp
 from unittest import mock
 
 import pytest
@@ -14,10 +16,14 @@ from photons_web_server.commander.messages import (
     ErrorMessage,
     MessageFromExc,
     ProgressMessageMaker,
+    catch_ErrorMessage,
     get_logger,
     get_logger_name,
     reprer,
 )
+from sanic.exceptions import SanicException
+from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
 
 describe "reprer":
     it "turns bitarray into hex":
@@ -40,7 +46,37 @@ describe "reprer":
         assert reprer("wat") == "'wat'"
         assert reprer(None) == "None"
 
+describe "catch_ErrorMessage":
+    it "returns a sanic json response":
+        exc = ErrorMessage(error_code="Bad", error="very bad", status=418)
+        request = mock.Mock(name="request")
+        res = catch_ErrorMessage(tp.cast(Request, request), exc)
+        assert isinstance(res, Response)
+        assert res.status == 418
+        assert res.content_type == "application/json"
+        assert res.body == b'{"error_code":"Bad","error":"very bad"}'
+
 describe "MessageFromExc":
+    it "re raises SanicExceptions":
+        with pytest.raises(SanicException):
+            MessageFromExc(lc=hp.lc.using(), logger_name="logs")(
+                SanicException, SanicException("wat"), None
+            )
+
+    it "can see SanicExceptions":
+        try:
+            raise Exception()
+        except:
+            tb = sys.exc_info()[2]
+
+        see_exception = mock.Mock(name="see_exception")
+        exc = SanicException("NOPE")
+        with pytest.raises(SanicException):
+            MessageFromExc(lc=hp.lc.using(), logger_name="logs", see_exception=see_exception)(
+                type(exc), exc, tb
+            )
+        see_exception.assert_called_once_with(type(exc), exc, tb)
+
     it "does not log DelfickError or cancelledError", caplog:
         exc1 = asyncio.CancelledError()
         exc2 = DelfickError("wat")

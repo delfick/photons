@@ -5,10 +5,14 @@ import logging
 import types
 import typing as tp
 
+import sanic
 from attrs import asdict, define
 from bitarray import bitarray
 from delfick_project.errors import DelfickError
 from delfick_project.logging import LogContext
+from sanic.exceptions import SanicException
+from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
 
 log = logging.getLogger("photons_web_server.commander.messages")
 
@@ -51,6 +55,13 @@ class ErrorMessage(Exception):
     error: dict | str
     error_code: str
 
+    def response_dict(self) -> dict:
+        return {"error_code": self.error_code, "error": self.error}
+
+
+def catch_ErrorMessage(request: Request, exception: ErrorMessage) -> Response:
+    return sanic.json(exception.response_dict(), status=exception.status)
+
 
 class TMessageFromExc(tp.Protocol):
     def __init__(
@@ -84,7 +95,10 @@ class MessageFromExc:
         if self.see_exception:
             self.see_exception(exc_type, exc, tb)
 
-        if isinstance(exc, DelfickError):
+        if isinstance(exc, SanicException):
+            raise exc
+
+        elif isinstance(exc, DelfickError):
             return ErrorMessage(status=400, error=exc.as_dict(), error_code=exc.__class__.__name__)
 
         elif exc_type is asyncio.CancelledError:
