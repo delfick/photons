@@ -18,6 +18,7 @@ from photons_web_server.commander import (
     Command,
     WithCommanderClass,
 )
+from photons_web_server.commander.messages import ErrorMessage, catch_ErrorMessage
 from sanic import Websocket
 from sanic.models.handler_types import RouteHandler
 from sanic.request import Request
@@ -124,6 +125,7 @@ class Server:
         self.app.register_middleware(self.log_request, "request")
         self.app.exception(Exception)(self.attach_exception)
         self.app.register_middleware(self.log_response, "response")
+        self.app.error_handler.add(ErrorMessage, catch_ErrorMessage)
 
     async def serve(self, host, port, **kwargs) -> None:
         create_server_kwargs = await self.make_create_server_kwargs(host, port, kwargs)
