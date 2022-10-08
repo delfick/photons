@@ -12,8 +12,10 @@ from strcs import Meta
 
 
 class Server(Server):
+    store: Store | None
+
     async def setup(
-        self, *, options, sender, cleaners, store: tp.Optional[Store] = None, animation_options=None
+        self, *, options, sender, cleaners, store: Store | None = None, animation_options=None
     ):
         if store is None:
             from interactor.commander.store import load_commands, store
@@ -85,11 +87,11 @@ class Server(Server):
     def log_request_dict(
         self,
         request: Request,
-        command: tp.Optional[str],
-        path: tp.Optional[str],
+        command: str | None,
+        path: str | None,
         remote_addr: str,
         identifier: str,
-    ) -> tp.Optional[dict[str, tp.Any]]:
+    ) -> dict[str, tp.Any] | None:
         matcher = None
         if (
             isinstance(request.json, dict)

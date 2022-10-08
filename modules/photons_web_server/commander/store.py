@@ -43,8 +43,8 @@ class Command:
         request: Request,
         identifier: str,
         dct: dict,
-        exc_info: tp.Optional[ExcInfo] = None,
-    ) -> tp.Optional[dict]:
+        exc_info: ExcInfo | None = None,
+    ) -> dict | None:
         return dct
 
     @classmethod
@@ -54,7 +54,7 @@ class Command:
         request: Request,
         identifier: str,
         dct: dict,
-        exc_info: tp.Optional[ExcInfo] = None,
+        exc_info: ExcInfo | None = None,
     ):
         info = kls.log_request_dict(request, identifier, dct, exc_info)
         if not info:
@@ -69,8 +69,8 @@ class Command:
         identifier: str,
         dct: dict,
         first: dict,
-        exc_info: tp.Optional[ExcInfo] = None,
-    ) -> tp.Optional[dict]:
+        exc_info: ExcInfo | None = None,
+    ) -> dict | None:
         return dct
 
     @classmethod
@@ -81,7 +81,7 @@ class Command:
         identifier: str,
         dct: dict,
         first: dict,
-        exc_info: tp.Optional[ExcInfo] = None,
+        exc_info: ExcInfo | None = None,
     ):
         info = kls.log_ws_request_dict(request, identifier, dct, first, exc_info)
         if not info:
@@ -97,7 +97,7 @@ class Command:
         response: Response,
         identifier: str,
         took: float,
-        exc_info: tp.Optional[ExcInfo] = None,
+        exc_info: ExcInfo | None = None,
     ) -> dict:
         return dict(
             method=request.method,
@@ -116,7 +116,7 @@ class Command:
         response: Response,
         identifier: str,
         took: float,
-        exc_info: tp.Optional[ExcInfo] = None,
+        exc_info: ExcInfo | None = None,
     ) -> None:
         level = "error"
         if response.status < 400:

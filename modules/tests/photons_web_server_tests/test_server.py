@@ -16,7 +16,7 @@ from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
-from photons_web_server.commander import Command
+from photons_web_server.commander import Command, WithCommanderClass
 from photons_web_server.commander.messages import ExcInfo, get_logger
 from photons_web_server.server import Server, WebServerTask
 from sanic import Sanic, Websocket
@@ -27,7 +27,7 @@ from sanic.response import HTTPResponse
 
 
 @asynccontextmanager
-async def make_server(ServerKls: tp.Type[Server]):
+async def make_server(ServerKls: type[Server]):
     stop_future = hp.create_future(name="::make_server[stop_future]")
     final_future = hp.create_future(name="::make_server[final_future]")
     try:
@@ -105,7 +105,7 @@ describe "Task":
 
         p = pytest.helpers.free_port()
 
-        def stop(request: Request) -> tp.Optional[HTTPResponse]:
+        def stop(request: Request) -> HTTPResponse | None:
             task.photons_app.graceful_final_future.set_result(True)
             return None
 
@@ -158,8 +158,8 @@ describe "Server":
             calledlong = hp.create_future()
             p = pytest.helpers.free_port()
 
-            server: tp.Optional[Server] = None
-            lp: tp.Optional[asyncio.AbstractEventLoop] = None
+            server: Server | None = None
+            lp: asyncio.AbstractEventLoop | None = None
 
             async def before_init(app: Sanic, loop: asyncio.AbstractEventLoop):
                 called.append(("sanic_before_init", app, loop))
@@ -173,12 +173,12 @@ describe "Server":
             async def after_shutdown(app: Sanic, loop: asyncio.AbstractEventLoop):
                 called.append(("sanic_after_shutdown", app, loop))
 
-            def stop(request: Request) -> tp.Optional[HTTPResponse]:
+            def stop(request: Request) -> HTTPResponse | None:
                 called.append("stopcalled")
                 task.photons_app.graceful_final_future.set_result(True)
                 return sanic.text("stopped")
 
-            async def long(request: Request) -> tp.Optional[HTTPResponse]:
+            async def long(request: Request) -> HTTPResponse | None:
                 called.append("longreq")
                 calledlong.cancel()
                 try:
@@ -253,7 +253,7 @@ describe "Server":
 
         it "fails if the server wants a port already in use", used_port: int, collector: Collector:
 
-            def route(request: Request) -> tp.Optional[HTTPResponse]:
+            def route(request: Request) -> HTTPResponse | None:
                 return sanic.text("route")
 
             class S(Server):
@@ -295,7 +295,7 @@ describe "Server":
             started = hp.create_future()
             startedws = hp.create_future()
 
-            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+            async def route(request: Request) -> HTTPResponse | None:
                 started.set_result(True)
                 await hp.create_future()
                 return sanic.text("route")
@@ -329,7 +329,7 @@ describe "Server":
         async it "waits for requests based on sanic config GRACEFUL_SHUTDOWN_TIMEOUT", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
             started = hp.create_future()
 
-            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+            async def route(request: Request) -> HTTPResponse | None:
                 started.set_result(True)
                 await hp.create_future()
                 return sanic.text("route")
@@ -360,7 +360,7 @@ describe "Server":
 
         async it "records commands and responses", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
 
-            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+            async def route(request: Request) -> HTTPResponse | None:
                 await asyncio.sleep(2)
                 return sanic.text("route")
 
@@ -474,18 +474,18 @@ describe "Server":
                     request: Request,
                     identifier: str,
                     dct: dict,
-                    first: tp.Optional[dict] = None,
-                    exc_info: tp.Optional[ExcInfo] = None,
+                    first: dict | None = None,
+                    exc_info: ExcInfo | None = None,
                 ):
                     assert identifier == lc.context["request_identifier"]
                     get_logger(1).info(lc("Test WS Request", **dct, body=first))
 
-            async def route_error(request: Request) -> tp.Optional[HTTPResponse]:
+            async def route_error(request: Request) -> HTTPResponse | None:
                 error = ValueError("asdf")
                 expected_called.append((request, (ValueError, error, IsTraceback())))
                 raise error
 
-            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+            async def route(request: Request) -> HTTPResponse | None:
                 expected_called.append((request, None))
                 return sanic.text("hi")
 
@@ -499,10 +499,10 @@ describe "Server":
                 else:
                     expected_called.append((request, None))
 
-            async def setup_routes(server):
-                ws.__commander_class__ = C
-                route.__commander_class__ = C
-                route_error.__commander_class__ = C
+            async def setup_routes(server: Server):
+                tp.cast(WithCommanderClass, ws).__commander_class__ = C
+                tp.cast(WithCommanderClass, route).__commander_class__ = C
+                tp.cast(WithCommanderClass, route_error).__commander_class__ = C
 
                 server.app.add_route(route, "route", methods=["PUT"])
                 server.app.add_route(route_error, "route_error", methods=["PUT"])

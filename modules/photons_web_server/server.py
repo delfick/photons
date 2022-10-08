@@ -249,7 +249,7 @@ class Server:
 
     def log_request_dict(
         self, request: Request, remote_addr: str, identifier: str
-    ) -> tp.Optional[dict[str, tp.Any]]:
+    ) -> dict[str, tp.Any] | None:
         return dict(
             method=request.method,
             uri=request.path,
