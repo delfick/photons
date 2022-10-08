@@ -52,8 +52,8 @@ class WebServerRoutes(hp.AsyncCMMixin):
     def __init__(
         self,
         final_future: asyncio.Future,
-        setup_routes: tp.Optional[tp.Callable[["WebServerRoutes"], None]] = None,
-        server_properties: tp.Optional[dict] = None,
+        setup_routes: tp.Callable[["WebServerRoutes"], None] | None = None,
+        server_properties: dict | None = None,
     ):
         self.final_future = final_future
         self.setup_routes = setup_routes
@@ -97,9 +97,7 @@ class WebServerRoutes(hp.AsyncCMMixin):
     def stop(self):
         self.graceful_final_future.cancel()
 
-    def start_request(
-        self, method: str, route: str, body: tp.Optional[dict] = None
-    ) -> asyncio.Task:
+    def start_request(self, method: str, route: str, body: dict | None = None) -> asyncio.Task:
         async def request() -> aiohttp.ClientResponse:
             async with aiohttp.ClientSession() as session:
                 return await getattr(session, method.lower())(
