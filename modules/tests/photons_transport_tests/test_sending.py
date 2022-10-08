@@ -395,26 +395,24 @@ describe "Sending messages":
                 assert len(got) == 3
                 device = V.device
                 io = device.io["UDP"]
-                assert (
-                    devices.store(device)
-                    == [
-                        Events.INCOMING(device, io, pkt=original),
-                        Events.OUTGOING(device, io, pkt=ack, replying_to=original),
-                        Events.OUTGOING(device, io, pkt=reply, replying_to=original),
-                    ]
-                    * 3
-                )
+                records = devices.store(device)
+                assert 9 <= len(records.record) <= 15
+                assert len(records.record) % 3 == 0
+                assert records == [
+                    Events.INCOMING(device, io, pkt=original),
+                    Events.OUTGOING(device, io, pkt=ack, replying_to=original),
+                    Events.OUTGOING(device, io, pkt=reply, replying_to=original),
+                ] * (len(records.record) // 3)
 
                 device2 = V.device2
                 io2 = device2.io["UDP"]
-                assert (
-                    devices.store(device2)
-                    == [
-                        Events.INCOMING(device2, io2, pkt=original),
-                        Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
-                    ]
-                    * 8
-                )
+                records = devices.store(device2)
+                assert 14 <= len(records.record) <= 16
+                assert len(records.record) % 2 == 0
+                assert records == [
+                    Events.INCOMING(device2, io2, pkt=original),
+                    Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
+                ] * (len(records.record) // 2)
 
             async it "doesn't stop errors", V, FakeTime, MockedCallLater, sender:
                 ack = CoreMessages.Acknowledgement()
@@ -469,26 +467,24 @@ describe "Sending messages":
                         assert len(got) == 4
                         device = V.device
                         io = device.io["UDP"]
-                        assert (
-                            devices.store(device)
-                            == [
-                                Events.INCOMING(device, io, pkt=original),
-                                Events.OUTGOING(device, io, pkt=ack, replying_to=original),
-                                Events.OUTGOING(device, io, pkt=reply, replying_to=original),
-                            ]
-                            * 4
-                        )
+                        records = devices.store(device)
+                        assert 12 <= len(records.record) <= 18
+                        assert len(records.record) % 3 == 0
+                        assert records == [
+                            Events.INCOMING(device, io, pkt=original),
+                            Events.OUTGOING(device, io, pkt=ack, replying_to=original),
+                            Events.OUTGOING(device, io, pkt=reply, replying_to=original),
+                        ] * (len(records.record) // 3)
 
                         device2 = V.device2
                         io2 = device2.io["UDP"]
-                        assert (
-                            devices.store(device2)
-                            == [
-                                Events.INCOMING(device2, io2, pkt=original),
-                                Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
-                            ]
-                            * 17
-                        )
+                        records = devices.store(device2)
+                        assert 30 <= len(records.record) <= 40
+                        assert len(records.record) % 2 == 0
+                        assert records == [
+                            Events.INCOMING(device2, io2, pkt=original),
+                            Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
+                        ] * (len(records.record) // 2)
 
     describe "run_with api":
 
