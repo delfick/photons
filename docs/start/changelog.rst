@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.7:
+
+0.42.7 - 16 October 2022
+    * Updated lru-dict
+
 .. _release-core-0-42.6:
 
 0.42.6 - 27 July 2022
