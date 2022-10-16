@@ -85,12 +85,7 @@ class Server(Server):
         )
 
     def log_request_dict(
-        self,
-        request: Request,
-        command: str | None,
-        path: str | None,
-        remote_addr: str,
-        identifier: str,
+        self, request: Request, remote_addr: str, identifier: str
     ) -> dict[str, tp.Any] | None:
         matcher = None
         if (
@@ -101,6 +96,6 @@ class Server(Server):
             matcher = request.json["args"]["matcher"]
 
         return {
-            **super().log_request_dict(request, command, path, remote_addr, identifier),
+            **super().log_request_dict(request, remote_addr, identifier),
             "matcher": matcher,
         }

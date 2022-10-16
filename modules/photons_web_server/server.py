@@ -5,7 +5,6 @@ import logging
 import sys
 import time
 import typing as tp
-import uuid
 from functools import wraps
 from textwrap import dedent
 
@@ -29,6 +28,7 @@ from sanic.server.protocols.websocket_protocol import WebSocketProtocol
 
 try:
     import sanic
+    import ulid
 except ImportError:
     raise PhotonsAppError(
         dedent(
@@ -188,7 +188,8 @@ class Server:
     def create_request_id(self, request: Request) -> None:
         request.ctx.interactor_request_start = time.time()
         if REQUEST_IDENTIFIER_HEADER not in request.headers:
-            request.headers[REQUEST_IDENTIFIER_HEADER] = str(uuid.uuid4())
+            request.headers[REQUEST_IDENTIFIER_HEADER] = str(ulid.new())
+        request.ctx.request_identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
 
     def wrap_websocket_handler(
         self, handler: tp.Callable[[Request, Websocket, dict], tp.Awaitable[Response]]
@@ -259,18 +260,18 @@ class Server:
             remote_addr=remote_addr,
         )
 
-    def log_request(self, request: Request) -> None:
+    def log_request(self, request: Request, **extra_lc_context) -> None:
         if request.scheme == "ws":
             return
 
         remote_addr = request.remote_addr
-        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+        identifier = request.ctx.request_identifier
 
         dct = self.log_request_dict(request, remote_addr, identifier)
         if dct is None:
             return
 
-        lc = self.lc.using(request_identifier=identifier)
+        lc = self.lc.using(request_identifier=identifier, **extra_lc_context)
 
         for cmd in self.maybe_commander(request):
             cmd.log_request(lc, request, identifier, dct)
@@ -278,15 +279,15 @@ class Server:
 
         log.info(lc("Request", **dct))
 
-    def log_ws_request(self, request: Request, first: tp.Any) -> None:
+    def log_ws_request(self, request: Request, first: tp.Any, **extra_lc_context) -> None:
         remote_addr = request.remote_addr
-        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+        identifier = request.ctx.request_identifier
 
         dct = self.log_request_dict(request, remote_addr, identifier)
         if dct is None:
             return
 
-        lc = self.lc.using(request_identifier=identifier)
+        lc = self.lc.using(request_identifier=identifier, **extra_lc_context)
 
         for cmd in self.maybe_commander(request):
             cmd.log_ws_request(lc, request, identifier, dct, first)
@@ -294,13 +295,13 @@ class Server:
 
         log.info(lc("Websocket Request", **dct, body=first))
 
-    def log_response(self, request: Request, response: Response) -> None:
+    def log_response(self, request: Request, response: Response, **extra_lc_context) -> None:
         exc_info = getattr(request.ctx, "exc_info", None)
         took = time.time() - request.ctx.interactor_request_start
         remote_addr = request.remote_addr
-        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+        identifier = request.ctx.request_identifier
 
-        lc = self.lc.using(request_identifier=identifier)
+        lc = self.lc.using(request_identifier=identifier, **extra_lc_context)
 
         for cmd in self.maybe_commander(request):
             cmd.log_response(lc, request, response, identifier, took, exc_info)
