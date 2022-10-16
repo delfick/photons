@@ -3,6 +3,7 @@
 import asyncio
 import time
 import types
+from textwrap import dedent
 
 import pytest
 import sanic
@@ -85,6 +86,109 @@ describe "Store":
 
         assert made == [pytest.helpers.IsInstance(asyncio.Task), 3]
         assert time.time() == 3 + time_at_wait
+
+    async it "understands when the route itself raises a CancelledError", final_future: asyncio.Future, fake_event_loop:
+        store = Store()
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.route1, "route1")
+
+            async def route1(s, request: Request) -> Response | None:
+                fut = hp.create_future()
+                fut.cancel()
+                await fut
+                return sanic.text("route1")
+
+        async def setup_routes(server: Server):
+            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+
+        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            res1 = await srv.start_request("GET", "/route1")
+
+        assert (
+            await res1.text()
+        ) == '{"error_code":"RequestCancelled","error":"Request was cancelled"}'
+        assert res1.content_type == "application/json"
+
+    async it "server stopping is a 503 cancelled", final_future: asyncio.Future, fake_event_loop:
+        store = Store()
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.route1, "route1")
+
+            async def route1(s, request: Request) -> Response | None:
+                await hp.create_future()
+                return sanic.text("route1")
+
+        async def setup_routes(server: Server):
+            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+
+        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            t1 = srv.start_request("GET", "/route1")
+            await asyncio.sleep(5)
+
+        assert 5 < time.time() < 6
+        res = await t1
+        assert (
+            (await res.text())
+            == dedent(
+                """
+            ⚠️ 503 — Service Unavailable
+            ============================
+            Cancelled
+            """
+            ).strip()
+            + "\n\n"
+        )
+
+    async it "understands when the route was cancelled above the route", final_future: asyncio.Future, fake_event_loop:
+        store = Store()
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                wrapped = routes.wrap_http(kls.route1)
+
+                async def my_route(request: Request) -> Response | None:
+                    task = routes.server.tasks.add(wrapped(request))
+                    await asyncio.sleep(5)
+                    task.cancel()
+                    await task
+                    return None
+
+                routes.app.add_route(my_route, "route1")
+
+            async def route1(s, request: Request) -> Response | None:
+                await asyncio.sleep(20)
+                return sanic.text("route1")
+
+        async def setup_routes(server):
+            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+
+        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            t1 = srv.start_request("GET", "/route1")
+            await asyncio.sleep(5)
+
+        assert 5 < time.time() < 6
+        res = await t1
+        assert (
+            (await res.text())
+            == dedent(
+                """
+            ⚠️ 503 — Service Unavailable
+            ============================
+            Cancelled
+            """
+            ).strip()
+            + "\n\n"
+        )
 
     async it "logs random exceptions and returns InternalServerError", final_future: asyncio.Future, fake_event_loop, caplog:
         identifier: str

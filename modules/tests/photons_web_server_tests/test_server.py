@@ -317,10 +317,10 @@ describe "Server":
                 await started
                 await startedws
                 assert time.time() < 0.3
-                fake_time.set(0)
+                time_now = time.time()
                 srv.stop()
                 await hp.wait_for_all_futures(req, wsreq)
-                assert time.time() == 15
+                assert time.time() == time_now + 15
 
             with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
                 await req

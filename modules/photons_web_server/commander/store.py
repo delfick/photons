@@ -6,6 +6,7 @@ import typing as tp
 from contextlib import contextmanager
 from functools import wraps
 
+import sanic.exceptions
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_web_server.commander.const import REQUEST_IDENTIFIER_HEADER
@@ -110,15 +111,32 @@ class RouteTransformer(tp.Generic[C]):
         @wraps(method)
         async def route(request: Request, *args: tp.Any, **kwargs: tp.Any) -> Response | None:
             with self._an_instance(request, method) as (lc, name, logger_name, instance):
+                ret = False
                 try:
                     route = getattr(instance, method.__name__)
                     if inspect.iscoroutinefunction(route):
-                        return await route(request, *args, **kwargs)
+                        t = hp.async_as_background(route(request, *args, **kwargs))
+                        await hp.wait_for_first_future(
+                            t,
+                            instance.final_future,
+                            name=f"{name}[run_route]",
+                        )
+                        if t.cancelled():
+                            ret = True
+
+                        t.cancel()
+                        return await t
                     else:
                         return route(request, *args, **kwargs)
                 except:
                     exc_info = sys.exc_info()
-                    raise self.message_from_exc_maker(lc=lc, logger_name=logger_name)(*exc_info)
+                    if ret or exc_info[0] is not asyncio.CancelledError:
+                        raise self.message_from_exc_maker(lc=lc, logger_name=logger_name)(*exc_info)
+
+                    if exc_info[0] is asyncio.CancelledError:
+                        raise sanic.exceptions.ServiceUnavailable("Cancelled")
+
+                    raise
 
         tp.cast(WithCommanderClass, route).__commander_class__ = self.kls
         return tp.cast(RouteHandler, route)
