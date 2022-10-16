@@ -474,11 +474,11 @@ describe "Server":
                     request: Request,
                     identifier: str,
                     dct: dict,
-                    first: dict | None = None,
+                    body: dict | None = None,
                     exc_info: ExcInfo | None = None,
                 ):
                     assert identifier == lc.context["request_identifier"]
-                    get_logger(1).info(lc("Test WS Request", **dct, body=first))
+                    get_logger(1).info(lc("Test WS Request", **dct, body=body), exc_info=exc_info)
 
             async def route_error(request: Request) -> HTTPResponse | None:
                 error = ValueError("asdf")
