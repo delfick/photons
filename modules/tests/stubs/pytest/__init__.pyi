@@ -91,7 +91,7 @@ set_trace: Incomplete
 import typing as tp
 from unittest import mock
 
-from tests.photons_web_server_tests.conftest import WebServerRoutes
+from tests.photons_web_server_tests.conftest import IsInstance, WebServerRoutes
 
 class helpers:
     @staticmethod
@@ -100,4 +100,5 @@ class helpers:
     async def wait_for_port(port: int, timeout: float = 3, gap: float = 0.01) -> None: ...
 
     AsyncMock: tp.ClassVar[type[mock.AsyncMock]]
+    IsInstance: tp.ClassVar[type[IsInstance]]
     WebServerRoutes: tp.ClassVar[type[WebServerRoutes]]
