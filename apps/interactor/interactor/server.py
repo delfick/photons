@@ -69,6 +69,7 @@ class Server(Server):
         self.app.add_websocket_route(
             self.wrap_websocket_handler(self.commander.ws_handler), "/v1/ws"
         )
+        self.store.register_commands(self.server_stop_future, self.meta, self.app, self)
 
     async def before_start(self):
         await self.server_options.zeroconf.start(

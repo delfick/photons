@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import typing as tp
 
 from delfick_project.logging import LogContext
@@ -9,7 +10,44 @@ from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 from strcs import Meta
 
-from .messages import TProgressMessageMaker, TReprer, get_logger
+from .messages import (
+    MessageFromExc,
+    ProgressMessageMaker,
+    TMessageFromExc,
+    TProgressMessageMaker,
+    TReprer,
+    get_logger,
+    reprer,
+)
+
+if tp.TYPE_CHECKING:
+    from photons_web_server.server import Server
+
+C = tp.TypeVar("C", bound="Command")
+
+
+class RouteTransformer(tp.Generic[C]):
+    def __init__(
+        self,
+        store: "Store",
+        kls: type[C],
+        final_future: asyncio.Future,
+        meta: Meta,
+        app: Sanic,
+        server: "Server",
+        reprer: TReprer,
+        message_from_exc_maker: type[TMessageFromExc],
+        progress_message_maker: type[TProgressMessageMaker],
+    ):
+        self.kls = kls
+        self.app = app
+        self.meta = meta
+        self.store = store
+        self.server = server
+        self.reprer = reprer
+        self.final_future = final_future
+        self.message_from_exc_maker = message_from_exc_maker
+        self.progress_message_maker = progress_message_maker
 
 
 @tp.runtime_checkable
@@ -21,21 +59,32 @@ class Command:
     def __init__(
         self,
         final_future: asyncio.Future,
+        request: Request,
+        store: "Store",
         meta: Meta,
         app: Sanic,
+        server: "Server",
         reprer: TReprer,
         progress: TProgressMessageMaker,
         identifier: str,
+        logger: logging.Logger,
     ):
         self.app = app
         self.meta = meta
+        self.store = store
+        self.server = server
         self.reprer = reprer
-        self.progress = progress
+        self.request = request
+        self._progress = progress
         self.identifier = identifier
         self.final_future = final_future
 
         self.lc = hp.lc.using(request_identifier=self.identifier)
-        self.log = get_logger(stack_level=1)
+        self.log = logger
+
+    @classmethod
+    def add_routes(kls, routes: RouteTransformer) -> None:
+        pass
 
     @classmethod
     def log_request_dict(
@@ -43,7 +92,7 @@ class Command:
         request: Request,
         identifier: str,
         dct: dict,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ) -> dict | None:
         return dct
 
@@ -54,7 +103,7 @@ class Command:
         request: Request,
         identifier: str,
         dct: dict,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ):
         info = kls.log_request_dict(request, identifier, dct, exc_info)
         if not info:
@@ -69,7 +118,7 @@ class Command:
         identifier: str,
         dct: dict,
         first: dict,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ) -> dict | None:
         return dct
 
@@ -81,7 +130,7 @@ class Command:
         identifier: str,
         dct: dict,
         first: dict,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ):
         info = kls.log_ws_request_dict(request, identifier, dct, first, exc_info)
         if not info:
@@ -97,7 +146,7 @@ class Command:
         response: Response,
         identifier: str,
         took: float,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ) -> dict:
         return dict(
             method=request.method,
@@ -116,7 +165,7 @@ class Command:
         response: Response,
         identifier: str,
         took: float,
-        exc_info: ExcInfo | None = None,
+        exc_info: ExcInfo = None,
     ) -> None:
         level = "error"
         if response.status < 400:
@@ -132,4 +181,14 @@ class Command:
         )
 
 
-class Store: ...
+class Store:
+    def register_commands(
+        self,
+        final_future: asyncio.Future,
+        meta: Meta,
+        app: Sanic,
+        server: "Server",
+        reprer: TReprer = reprer,
+        message_from_exc: type[TMessageFromExc] = MessageFromExc,
+        progress_message_maker: type[TProgressMessageMaker] = ProgressMessageMaker,
+    ) -> None: ...
