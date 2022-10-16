@@ -1,6 +1,6 @@
 from photons_web_server.commander.store import Store
 
-store = Store(default_path="/v1/lifx/command")
+store = Store()
 
 
 def load_commands():
