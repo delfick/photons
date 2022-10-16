@@ -12,6 +12,7 @@ from sanic import Sanic
 
 def pytest_configure(config):
     pytest.helpers.register(WebServerRoutes)
+    pytest.helpers.register(IsInstance)
 
 
 @pytest.fixture()
@@ -46,6 +47,24 @@ def final_future() -> tp.Generator[asyncio.Future, None, None]:
         yield fut
     finally:
         fut.cancel()
+
+
+class IsInstance:
+    got: object | None
+
+    def __init__(self, kls: type):
+        self.got = None
+        self.kls = kls
+
+    def __eq__(self, other: object) -> bool:
+        self.got = other
+        return isinstance(other, self.kls)
+
+    def __repr__(self) -> str:
+        if self.got is None:
+            return f"<INSTANCE OF {self.kls}>"
+        else:
+            return repr(self.got)
 
 
 class WebServerRoutes(hp.AsyncCMMixin):
