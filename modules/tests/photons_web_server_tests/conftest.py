@@ -97,10 +97,12 @@ class WebServerRoutes(hp.AsyncCMMixin):
     def stop(self):
         self.graceful_final_future.cancel()
 
-    def start_request(self, method: str, route: str, body: tp.Optional[dict] = None):
-        async def request():
+    def start_request(
+        self, method: str, route: str, body: tp.Optional[dict] = None
+    ) -> asyncio.Task:
+        async def request() -> aiohttp.ClientResponse:
             async with aiohttp.ClientSession() as session:
-                await getattr(session, method.lower())(
+                return await getattr(session, method.lower())(
                     f"http://127.0.0.1:{self.port}{route}", json=body
                 )
 

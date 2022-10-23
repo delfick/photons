@@ -4,6 +4,7 @@ import asyncio
 import socket
 import sys
 import time
+import types
 import typing as tp
 from contextlib import asynccontextmanager
 from unittest import mock
@@ -12,12 +13,16 @@ import aiohttp
 import pytest
 import sanic
 from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
+from photons_web_server.commander import Command
+from photons_web_server.commander.messages import ExcInfo, get_logger
 from photons_web_server.server import Server, WebServerTask
 from sanic import Sanic, Websocket
 from sanic.config import Config
 from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
 from sanic.response import HTTPResponse
 
 
@@ -54,12 +59,30 @@ def used_port():
         sock.close()
 
 
+class IsTraceback:
+    traceback: object | None
+
+    def __init__(self):
+        self.traceback = None
+
+    def __eq__(self, other: object) -> bool:
+        self.traceback = other
+        return isinstance(self.traceback, types.TracebackType)
+
+    def __repr__(self) -> str:
+        if self.traceback is not None:
+            return repr(self.traceback)
+        else:
+            return "<TRACEBACK>"
+
+
 class Between:
     compare: object | None
 
     def __init__(self, frm: float, to: float):
         self.frm = frm
         self.to = to
+        self.compare = None
 
     def __eq__(self, compare: object) -> bool:
         self.compare = compare
@@ -67,8 +90,11 @@ class Between:
             return False
         return self.frm <= self.compare <= self.to
 
-    def __repr__(self):
-        return f"<Between {self.frm} and {self.to}/>"
+    def __repr__(self) -> str:
+        if self.compare is None:
+            return f"<Between {self.frm} and {self.to}/>"
+        else:
+            return repr(self.compare)
 
 
 describe "Task":
@@ -354,16 +380,15 @@ describe "Server":
             records = [
                 r.msg
                 for r in caplog.records
-                if isinstance(r.msg, dict) and r.msg["msg"] in ("Response", "Request")
+                if isinstance(r.msg, dict)
+                and any(m in r.msg["msg"] for m in ("Response", "Request"))
             ]
 
             assert records == [
                 {
                     "msg": "Request",
-                    "command": "one",
                     "method": "PUT",
                     "uri": "/route",
-                    "path": None,
                     "scheme": "http",
                     "remote_addr": "",
                     "request_identifier": mock.ANY,
@@ -373,37 +398,24 @@ describe "Server":
                     "method": "PUT",
                     "uri": "/route",
                     "status": 200,
-                    "command": "one",
                     "remote_addr": "",
                     "took_seconds": Between(1.0, 3.0),
                     "request_identifier": mock.ANY,
                 },
                 {
-                    "msg": "Request",
-                    "command": None,
+                    "msg": "Websocket Request",
                     "method": "GET",
                     "uri": "/stream",
-                    "path": None,
                     "scheme": "ws",
                     "remote_addr": "",
                     "request_identifier": mock.ANY,
-                },
-                {
-                    "msg": "Request",
-                    "command": "two",
-                    "method": "GET",
-                    "uri": "/stream",
-                    "path": None,
-                    "scheme": "ws",
-                    "remote_addr": "",
-                    "request_identifier": mock.ANY,
+                    "body": {"command": "two", "path": "/route"},
                 },
                 {
                     "msg": "Response",
                     "method": "GET",
                     "uri": "/stream",
                     "status": 200,
-                    "command": "two",
                     "remote_addr": "",
                     "took_seconds": Between(5.0, 7.0),
                     "request_identifier": mock.ANY,
@@ -414,3 +426,225 @@ describe "Server":
             assert all(
                 r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:]
             )
+
+        async it "lets the handler hook into the logging", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            called: list[object] = []
+            expected_called: list[object] = []
+
+            class C(Command):
+                @classmethod
+                def log_request(
+                    kls,
+                    lc: LogContext,
+                    request: Request,
+                    identifier: str,
+                    dct: dict,
+                    exc_info: ExcInfo = None,
+                ):
+                    assert identifier == lc.context["request_identifier"]
+                    get_logger(1).info(lc("Test Request", dct=dct))
+
+                @classmethod
+                def log_response(
+                    kls,
+                    lc: LogContext,
+                    request: Request,
+                    response: Response,
+                    identifier: str,
+                    took: float,
+                    exc_info: ExcInfo = None,
+                ):
+                    assert identifier == lc.context["request_identifier"]
+                    get_logger(1).info(
+                        lc(
+                            "Test Response",
+                            method=request.method,
+                            uri=request.path,
+                            status=response.status,
+                            remote_addr=request.remote_addr,
+                            took_seconds=took,
+                        )
+                    )
+                    called.append((request, exc_info))
+
+                @classmethod
+                def log_ws_request(
+                    kls,
+                    lc: LogContext,
+                    request: Request,
+                    identifier: str,
+                    dct: dict,
+                    first: tp.Optional[dict] = None,
+                    exc_info: tp.Optional[ExcInfo] = None,
+                ):
+                    assert identifier == lc.context["request_identifier"]
+                    get_logger(1).info(lc("Test WS Request", **dct, body=first))
+
+            async def route_error(request: Request) -> tp.Optional[HTTPResponse]:
+                error = ValueError("asdf")
+                expected_called.append((request, (ValueError, error, IsTraceback())))
+                raise error
+
+            async def route(request: Request) -> tp.Optional[HTTPResponse]:
+                expected_called.append((request, None))
+                return sanic.text("hi")
+
+            async def ws(request: Request, ws: Websocket, first: dict):
+                assert first == {"command": mock.ANY, "path": "/route"}
+                assert first["command"] in ("two", "three")
+                if first["command"] == "three":
+                    error = TypeError("HI")
+                    expected_called.append((request, (TypeError, error, IsTraceback())))
+                    raise error
+                else:
+                    expected_called.append((request, None))
+
+            async def setup_routes(server):
+                ws.__commander_class__ = C
+                route.__commander_class__ = C
+                route_error.__commander_class__ = C
+
+                server.app.add_route(route, "route", methods=["PUT"])
+                server.app.add_route(route_error, "route_error", methods=["PUT"])
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+                await srv.start_request("PUT", "/route", {"command": "one"})
+                await srv.start_request("PUT", "/route_error", {"command": "one"})
+                unknown = await srv.start_request("GET", "/unknown_route")
+                await srv.run_stream("/stream", {"command": "two", "path": "/route"})
+                await srv.run_stream("/stream", {"command": "three", "path": "/route"})
+                srv.stop()
+
+                assert (await unknown.text()).startswith(
+                    "⚠️ 404 — Not Found\n==================\nRequested URL /unknown_route not found"
+                )
+
+            records = [
+                r.msg
+                for r in caplog.records
+                if isinstance(r.msg, dict)
+                and any(m in r.msg["msg"] for m in ("Response", "Request"))
+            ]
+
+            identifiers = set()
+
+            class IdentifierMatch:
+                identifier: str | None
+
+                def __init__(self, *, count=2):
+                    self.identifier = None
+                    self.count = count
+
+                def __eq__(self, other: object) -> bool:
+                    if self.identifier is None:
+                        assert other not in identifiers
+                        assert isinstance(other, str)
+                        identifiers.add(other)
+                        self.identifier = other
+                        return True
+
+                    return self.identifier == other
+
+                def __repr__(self) -> str:
+                    if self.identifier is None:
+                        return "<IDENTIFIER>"
+                    else:
+                        return repr(self.identifier)
+
+            Ident1 = IdentifierMatch()
+            Ident2 = IdentifierMatch()
+            Ident3 = IdentifierMatch()
+            WSIdent1 = IdentifierMatch()
+            WSIdent2 = IdentifierMatch()
+
+            assert records == [
+                {
+                    "request_identifier": Ident1,
+                    "msg": "Test Request",
+                    "dct": {"method": "PUT", "uri": "/route", "scheme": "http", "remote_addr": ""},
+                },
+                {
+                    "request_identifier": Ident1,
+                    "msg": "Test Response",
+                    "method": "PUT",
+                    "uri": "/route",
+                    "status": 200,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+                {
+                    "request_identifier": Ident2,
+                    "msg": "Test Request",
+                    "dct": {
+                        "method": "PUT",
+                        "uri": "/route_error",
+                        "scheme": "http",
+                        "remote_addr": "",
+                    },
+                },
+                {
+                    "request_identifier": Ident2,
+                    "msg": "Test Response",
+                    "method": "PUT",
+                    "uri": "/route_error",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+                {
+                    "request_identifier": Ident3,
+                    "msg": "Request",
+                    "method": "GET",
+                    "uri": "/unknown_route",
+                    "scheme": "http",
+                    "remote_addr": "",
+                },
+                {
+                    "request_identifier": Ident3,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/unknown_route",
+                    "status": 404,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Test WS Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {"command": "two", "path": "/route"},
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Test Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 200,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+                {
+                    "request_identifier": WSIdent2,
+                    "msg": "Test WS Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {"command": "three", "path": "/route"},
+                },
+                {
+                    "request_identifier": WSIdent2,
+                    "msg": "Test Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+            ]
+
+            assert called == expected_called

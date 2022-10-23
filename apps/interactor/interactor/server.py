@@ -5,7 +5,7 @@ from interactor.commander.animations import Animations
 from interactor.database import DB
 from photons_app import helpers as hp
 from photons_control.device_finder import DeviceFinderDaemon, Finder
-from photons_web_server.commander import Commander, Store
+from photons_web_server.commander import Store
 from photons_web_server.server import Server
 from sanic.request import Request
 from strcs import Meta
@@ -42,10 +42,8 @@ class Server(Server):
         self.animations = Animations(
             self.final_future, self.tasks, self.sender, self.animation_options
         )
-
-        self.commander = Commander(
-            self.store,
-            meta=Meta(
+        self.meta = (
+            Meta(
                 dict(
                     tasks=self.tasks,
                     sender=self.sender,
@@ -59,7 +57,7 @@ class Server(Server):
             ),
         )
 
-        self.app.ctx.commander = self.commander
+        self.app.ctx.server = self
         self.app.ctx.server_time = time.time()
         self.app.ctx.server_options = self.server_options
 
