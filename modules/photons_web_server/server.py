@@ -13,8 +13,11 @@ from delfick_project.option_merge import MergedOptions
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks.tasks import GracefulTask
-from photons_web_server.commander import REQUEST_IDENTIFIER_HEADER
-from photons_web_server.commander.messages import ExcInfo
+from photons_web_server.commander import (
+    REQUEST_IDENTIFIER_HEADER,
+    Command,
+    WithCommanderClass,
+)
 from sanic import Websocket
 from sanic.models.handler_types import RouteHandler
 from sanic.request import Request
@@ -65,6 +68,7 @@ class Server:
         final_future: asyncio.Future,
         server_stop_future: asyncio.Future,
     ):
+        self.lc = hp.lc.using()
         self.tasks = task_holder
         self.final_future = final_future
         self.server_stop_future = server_stop_future
@@ -118,6 +122,7 @@ class Server:
         self.app.config.ACCESS_LOG = False
         self.app.register_middleware(self.create_request_id, "request")
         self.app.register_middleware(self.log_request, "request")
+        self.app.exception(Exception)(self.attach_exception)
         self.app.register_middleware(self.log_response, "response")
 
     async def serve(self, host, port, **kwargs) -> None:
@@ -188,15 +193,22 @@ class Server:
     ) -> RouteHandler:
         @wraps(handler)
         async def handle(request: Request, ws: Websocket):
+            if request.route and not isinstance(request.route.handler, WithCommanderClass):
+                if isinstance(handler, WithCommanderClass):
+                    request.route.handler.__commander_class__ = handler.__commander_class__
+
             try:
                 first = await ws.recv()
             except asyncio.CancelledError:
                 raise
             except:
-                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+                request.ctx.exc_info = sys.exc_info()
+                self.log_ws_request(request, None)
+                self.log_response(request, HTTPResponse(status=500))
                 raise
 
             if first is None:
+                self.log_ws_request(request, None)
                 self.log_response(
                     request, HTTPResponse(status=400, body="Must provide a dictionary")
                 )
@@ -205,97 +217,116 @@ class Server:
             try:
                 first = json.loads(first)
             except (ValueError, TypeError):
-                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+                request.ctx.exc_info = sys.exc_info()
+                self.log_ws_request(request, None)
+                self.log_response(request, HTTPResponse(status=500))
                 raise
 
             if not isinstance(first, dict):
+                self.log_ws_request(request, None)
                 self.log_response(
                     request, HTTPResponse(status=400, body="Must provide a dictionary")
                 )
                 raise ValueError("Message must be a dictionary")
 
             try:
-                self.log_request(request, first)
-                res = await handler(request, ws, first)
+                self.log_ws_request(request, first)
+            except Exception:
+                log.exception("Failed to log websocket request")
+
+            try:
+                await handler(request, ws, first)
             except:
-                self.log_response(request, HTTPResponse(status=500), exc_info=sys.exc_info())
+                request.ctx.exc_info = sys.exc_info()
+                self.log_response(request, HTTPResponse(status=500))
             else:
                 self.log_response(request, HTTPResponse(status=200))
 
-            return res
-
         return handle
 
+    def attach_exception(self, request: Request, exception: BaseException) -> None:
+        request.ctx.exc_info = (type(exception), exception, exception.__traceback__)
+
     def log_request_dict(
-        self,
-        request: Request,
-        command: tp.Optional[str],
-        path: tp.Optional[str],
-        remote_addr: str,
-        identifier: str,
+        self, request: Request, remote_addr: str, identifier: str
     ) -> tp.Optional[dict[str, tp.Any]]:
         return dict(
-            command=command,
             method=request.method,
             uri=request.path,
-            path=path,
             scheme=request.scheme,
             remote_addr=remote_addr,
-            request_identifier=identifier,
         )
 
-    def log_request(
-        self,
-        request: Request,
-        body: tp.Optional[dict] = None,
-        exc_info: tp.Optional[ExcInfo] = None,
-    ) -> None:
-        path = None
-        command = None
-        if body is None:
-            body = request.json
-        if isinstance(body, dict) and "command" in body:
-            request.ctx.commander_path = body.get("path", None)
-            command = request.ctx.commander_command = body["command"]
-
-            if command == "status":
-                return
+    def log_request(self, request: Request) -> None:
+        if request.scheme == "ws":
+            return
 
         remote_addr = request.remote_addr
         identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
 
-        dct = self.log_request_dict(request, command, path, remote_addr, identifier)
+        dct = self.log_request_dict(request, remote_addr, identifier)
         if dct is None:
             return
 
-        log.info(hp.lc("Request", **dct), exc_info=exc_info)
+        lc = self.lc.using(request_identifier=identifier)
 
-    def log_response(
-        self, request: Request, response: Response, exc_info: tp.Optional[ExcInfo] = None
-    ) -> None:
-        took = time.time() - request.ctx.interactor_request_start
-        command = getattr(request.ctx, "commander_command", None)
+        for cmd in self.maybe_commander(request):
+            cmd.log_request(lc, request, identifier, dct)
+            return
+
+        log.info(lc("Request", **dct))
+
+    def log_ws_request(self, request: Request, first: tp.Any) -> None:
         remote_addr = request.remote_addr
         identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
 
-        if command != "status":
-            method = "error"
-            if response.status < 400:
-                method = "info"
+        dct = self.log_request_dict(request, remote_addr, identifier)
+        if dct is None:
+            return
 
-            getattr(log, method)(
-                hp.lc(
-                    "Response",
-                    method=request.method,
-                    uri=request.path,
-                    status=response.status,
-                    command=command,
-                    remote_addr=remote_addr,
-                    took_seconds=round(took, 2),
-                    request_identifier=identifier,
-                ),
-                exc_info=exc_info,
-            )
+        lc = self.lc.using(request_identifier=identifier)
+
+        for cmd in self.maybe_commander(request):
+            cmd.log_ws_request(lc, request, identifier, dct, first)
+            return
+
+        log.info(lc("Websocket Request", **dct, body=first))
+
+    def log_response(self, request: Request, response: Response) -> None:
+        exc_info = getattr(request.ctx, "exc_info", None)
+        took = time.time() - request.ctx.interactor_request_start
+        remote_addr = request.remote_addr
+        identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
+
+        lc = self.lc.using(request_identifier=identifier)
+
+        for cmd in self.maybe_commander(request):
+            cmd.log_response(lc, request, response, identifier, took, exc_info)
+            return
+
+        method = "error"
+        if response.status < 400:
+            method = "info"
+
+        getattr(log, method)(
+            lc(
+                "Response",
+                method=request.method,
+                uri=request.path,
+                status=response.status,
+                remote_addr=remote_addr,
+                took_seconds=round(took, 2),
+            ),
+            exc_info=exc_info,
+        )
+
+    def maybe_commander(self, request: Request) -> tp.Generator[type[Command], None, None]:
+        if hasattr(request, "route") and request.route is not None:
+            handler = request.route.handler
+            if hasattr(handler, "__commander_class__"):
+                cmd = handler.__commander_class__
+                if isinstance(cmd, type) and issubclass(cmd, Command):
+                    yield cmd
 
 
 class WebServerTask(GracefulTask):
