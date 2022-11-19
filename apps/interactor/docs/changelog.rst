@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-12-5:
+
+0.12.5 - TBD
+    * Added GET /v1/lifx/status that returns "working"
+    * Updated the homeassistant docker image and documentation
+
 .. _release-interactor-0-12-4:
 
 0.12.4 - 27 July 2022

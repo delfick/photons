@@ -32,3 +32,8 @@ Interactor do things to your devices:
         }
 
 Will use the interactor to change all of your lights to red.
+
+A custom lifx.yml configuration may also be provided by placing a ``lifx.yml``
+file in a ``photons`` folder in the home assistant ``config`` share.
+
+See https://www.home-assistant.io/docs/configuration/

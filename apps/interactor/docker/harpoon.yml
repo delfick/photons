@@ -32,9 +32,32 @@ images:
       - CMD ["lifx", "lan:interactor"]
 
   lifx-photons-interactor-homeassistant:
-    context: false
+    context:
+      parent_dir: "{config_root}/../../../"
 
     commands:
-      - [FROM, "delfick/lifx-photons-interactor:{VERSION:from_env}"]
-      - WORKDIR /data
-      - LABEL io.hass.version="0.8.5" io.hass.type="addon" io.hass.arch="aarch64|amd64|armhf|armv7|i386"
+      - ARG BUILD_FROM
+      - FROM $BUILD_FROM
+
+      - RUN apk add --no-cache python3 py3-pip gcc python3-dev musl-dev linux-headers g++
+
+      - ADD apps/interactor /project/interactor
+      - ADD modules /project/modules
+
+      - RUN pip install /project/modules /project/interactor
+
+      - WORKDIR /config/photons
+
+      - - ADD
+        - dest: /run.sh
+          content: |
+            #!/usr/bin/with-contenv bashio
+
+            CONFIG="$(bashio::config 'config')"
+            echo "$CONFIG" >config.json
+
+            lifx lan:interactor
+
+      - RUN chmod a+x /run.sh
+
+      - CMD [ "/run.sh" ]

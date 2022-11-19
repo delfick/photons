@@ -1,0 +1,17 @@
+name: "Photons Interactor"
+description: "A http server for interacting with LIFX devices on the local network"
+slug: "lifx-photons-interactor-homeassistant"
+init: false
+map: ["config:rw"]
+environment:
+  INTERACTOR_HOST: "0.0.0.0"
+watchdog: "tcp://[HOST]:[PORT:6100]"
+startup: before
+host_network: true
+url: "https://photons.delfick.com/apps/interactor/homeassistant.html"
+ports:
+  6100/tcp: 6100
+raw_image: "delfick/lifx-photons-interactor-homeassistant-{arch}"
+image: "delfick/lifx-photons-interactor-homeassistant-{arch}"
+arch:
+  - aarch64
