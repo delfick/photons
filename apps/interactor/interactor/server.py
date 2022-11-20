@@ -18,6 +18,11 @@ log = logging.getLogger("interactor.server")
 REQUEST_IDENTIFIER_HEADER = "X-Request-ID"
 
 
+class StatusHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("working")
+
+
 class Commander(Commander):
     def peek_valid_request(self, meta, command, path, body):
         request = meta.everything["request_handler"].request
@@ -138,6 +143,7 @@ class Server(Server):
                     "wsconnections": self.wsconnections,
                 },
             ),
+            ("/v1/lifx/status", StatusHandler),
         ]
 
     async def setup(self, server_options, *, tasks, sender, cleaners, animation_options=None):

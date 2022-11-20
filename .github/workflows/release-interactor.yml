@@ -28,6 +28,7 @@ jobs:
       - run: python3 -m pip install venvstarter
 
       - name: Enable experimental features for the Docker daemon and CLI
+        if: github.event.inputs.skipdockermain == '0'
         run: |
           echo $'{\n  "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           mkdir -p ~/.docker
@@ -42,12 +43,15 @@ jobs:
 
       - id: version
         run: |
-          printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'])")
-          printf "::set-output name=versiondash::%s\n" $(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'].replace('.', '-'))")
+          version=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'])")
+          versiondash=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'].replace('.', '-'))")
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "versiondash=$versiondash" >> $GITHUB_OUTPUT
 
       - id: package
         run: >
-          printf "::set-output name=package::lifx-photons-interactor-${{ steps.version.outputs.version}}.tar.gz"
+          echo "package=lifx-photons-interactor-${{ steps.version.outputs.version}}.tar.gz" >> $GITHUB_OUTPUT
 
       - id: create_release
         uses: actions/create-release@v1
@@ -91,13 +95,6 @@ jobs:
           tar xf context_lifx-photons-interactor.tar
           rm context_lifx-photons-interactor.tar
 
-          cd ..
-          mkdir staging-homeassistant
-          cd staging-homeassistant
-          ../apps/interactor/docker/harpoon get_docker_context lifx-photons-interactor-homeassistant
-          tar xf context_lifx-photons-interactor-homeassistant.tar
-          rm context_lifx-photons-interactor-homeassistant.tar
-
       - uses: docker/setup-qemu-action@v1
       - uses: docker/setup-buildx-action@v1
 
@@ -105,10 +102,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-
-      - id: repository_owner
-        run: |
-          printf "::set-output name=lowercase::%s\n" $(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
 
       - name: Build and push
         uses: docker/build-push-action@v2
@@ -119,17 +112,5 @@ jobs:
           platforms: linux/386,linux/arm64,linux/amd64,linux/arm/v7,linux/arm/v6 
           push: true
           tags: |
-            ${{ steps.repository_owner.outputs.lowercase }}/lifx-photons-interactor:latest
-            ${{ steps.repository_owner.outputs.lowercase }}/lifx-photons-interactor:${{ steps.version.outputs.version }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        if: github.event.inputs.skipdockerha == '0'
-        with:
-          context: staging-homeassistant
-          file: ./staging-homeassistant/Dockerfile
-          platforms: linux/386,linux/arm64,linux/amd64,linux/arm/v7,linux/arm/v6 
-          push: true
-          tags: |
-            ${{ steps.repository_owner.outputs.lowercase }}/lifx-photons-interactor-homeassistant:latest
-            ${{ steps.repository_owner.outputs.lowercase }}/lifx-photons-interactor-homeassistant:${{ steps.version.outputs.version }}
+            ${{ github.repository_owner }}/lifx-photons-interactor:latest
+            ${{ github.repository_owner }}/lifx-photons-interactor:${{ steps.version.outputs.version }}
