@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-12-5:
 
-0.12.5 - TBD
+0.12.5 - 20 November 2022
     * Added GET /v1/lifx/status that returns "working"
     * Removed prebuilt homeassistant image and changed the plugin to offer
       a Dockerfile that is built on installation instead
