@@ -55,35 +55,10 @@ session as a ``source run.sh activate`` or that they run::
 
    $ ./format
 
-Import statement groups
-+++++++++++++++++++++++
+Import sorting
+++++++++++++++
 
-I group import blocks into groups and then by length of line within the group.
-
-.. code-block:: plain
-
-    <imports from to the current module>
-
-    <imports from photons_app>
-
-    <imports from other photons modules>
-
-    <other imports>
-
-For example, inside ``photons_socket``:
-
-.. code-block:: python
-
-    from photons_socket.connection import Sockets
-
-    from photons_app.errors import TimedOut, FoundNoDevices
-
-    from photons_transport.base import TransportItem, TransportBridge, TransportTarget
-    from photons_messages import DiscoveryMessages, Services
-    from photons_protocol.messages import Messages
-
-    from delfick_project.norms import dictobj, sb
-    import logging
+Photons uses default settings on isort to sort imports
 
 Using import as
 +++++++++++++++

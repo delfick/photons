@@ -4,8 +4,10 @@ pylama==8.4.1
 neovim==0.3.1
 tox==3.27.0
 mypy==0.991
+isort==5.11.4
 python-language-server==0.36.2
 pylsp-mypy==0.6.3
+pyls-isort==0.2.2
 tox-asdf==0.1.0
 python-lsp-black==1.2.1
 mslex==0.3.0

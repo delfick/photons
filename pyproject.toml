@@ -18,6 +18,22 @@ exclude = '''
 )/
 '''
 
+[tool.isort]
+profile = "black"
+skip_glob = [
+   ".git/*",
+   ".tox/*",
+   "examples/.lifx/*",
+   "dist/*",
+   "docs/res/*",
+   "tools/.python/*",
+   "tools/deps/*",
+   "apps/interactor/docker/.harpoon/*",
+   "docs/res/*",
+   "docs/gh-pages/*",
+   "tools/generate_photons_messages/.generate_photons_messages/*",
+]
+
 [tool.mypy]
 plugins = 'noseOfYeti.plugins.mypy'
 ignore_missing_imports = true
