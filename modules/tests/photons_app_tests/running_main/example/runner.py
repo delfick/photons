@@ -1,9 +1,8 @@
+from delfick_project.addons import addon_hook
+from delfick_project.norms import dictobj, sb
+from photons_app.actions import an_action
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
-from photons_app.actions import an_action
-
-from delfick_project.addons import addon_hook
-from delfick_project.norms import sb, dictobj
 
 
 class Wat(dictobj.Spec):

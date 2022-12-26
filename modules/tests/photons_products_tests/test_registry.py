@@ -1,6 +1,6 @@
 # coding: spec
 
-from photons_products import VendorRegistry, Family, Zones, lifx
+from photons_products import Family, VendorRegistry, Zones, lifx
 from photons_products.base import CapabilityValue
 
 describe "lifx.Product":

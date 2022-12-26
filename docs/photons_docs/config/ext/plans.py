@@ -1,8 +1,8 @@
-from photons_control.planner.plans import Plan, plan_by_key
-
-from docutils.parsers.rst import Directive
-from docutils import statemachine
 import inspect
+
+from docutils import statemachine
+from docutils.parsers.rst import Directive
+from photons_control.planner.plans import Plan, plan_by_key
 
 
 def plans():

@@ -1,6 +1,5 @@
 from photons_docs import VERSION
-
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # fmt: off
 

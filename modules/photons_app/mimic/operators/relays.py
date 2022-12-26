@@ -1,10 +1,9 @@
-from photons_app.mimic.operator import Operator, operator
-from photons_app.mimic.event import Events, Event
-
-from photons_messages import RelayMessages, DeviceMessages
+import typing as tp
 
 from delfick_project.norms import dictobj, sb
-import typing as tp
+from photons_app.mimic.event import Event, Events
+from photons_app.mimic.operator import Operator, operator
+from photons_messages import DeviceMessages, RelayMessages
 
 # Ensure Device operator comes before this one
 __import__("photons_app.mimic.operators.device")

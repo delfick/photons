@@ -1,12 +1,10 @@
 #!/usr/bin/python3 -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
+from delfick_project.logging import setup_logging
 from photons_app.executor import library_setup
 from photons_app.special import FoundSerials
-
 from photons_control.colour import ColourParser
 from photons_messages import DeviceMessages
-
-from delfick_project.logging import setup_logging
 
 
 async def doit(collector):

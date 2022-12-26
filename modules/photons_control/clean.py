@@ -1,13 +1,11 @@
-from photons_control.script import ForCapability
-from photons_control.planner import Skip
-
-from photons_app.tasks import task_register as task
-from photons_app.errors import ProgrammerError
-
-from photons_messages import LightMessages
-
-from delfick_project.norms import sb, Meta
 from datetime import timedelta
+
+from delfick_project.norms import Meta, sb
+from photons_app.errors import ProgrammerError
+from photons_app.tasks import task_register as task
+from photons_control.planner import Skip
+from photons_control.script import ForCapability
+from photons_messages import LightMessages
 
 try:
     import humanize

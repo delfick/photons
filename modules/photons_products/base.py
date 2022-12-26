@@ -1,7 +1,6 @@
-from photons_products.enums import VendorRegistry, Family
-from photons_products.errors import IncompleteProduct
-
 from photons_app.errors import ProgrammerError
+from photons_products.enums import Family, VendorRegistry
+from photons_products.errors import IncompleteProduct
 
 
 class cap_property(property):

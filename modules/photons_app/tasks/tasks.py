@@ -1,10 +1,10 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import ApplicationStopped
-from photons_app.tasks.runner import Runner
-from photons_app import helpers as hp
-
-from delfick_project.norms import dictobj, sb, Meta
 import sys
+
+from delfick_project.norms import Meta, dictobj, sb
+from photons_app import helpers as hp
+from photons_app.errors import ApplicationStopped
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks.runner import Runner
 
 
 class photons_app_spec(sb.Spec):

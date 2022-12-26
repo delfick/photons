@@ -1,11 +1,10 @@
-from photons_canvas.animations.infrastructure.events import AnimationEvent
-from photons_canvas.points import rearrange
+import asyncio
+import logging
+import time
 
 from photons_app import helpers as hp
-
-import logging
-import asyncio
-import time
+from photons_canvas.animations.infrastructure.events import AnimationEvent
+from photons_canvas.points import rearrange
 
 log = logging.getLogger("photons_canvas.animations.infrastructure.animation")
 

@@ -1,21 +1,22 @@
 # coding: spec
 
-from photons_transport.session.discovery_options import NoDiscoveryOptions, NoEnvDiscoveryOptions
-from photons_transport.errors import NoDesiredService, UnknownService, InvalidBroadcast
-from photons_transport.session.network import NetworkSession
-from photons_transport.transports.udp import UDP
-from photons_transport.retry_options import Gaps
-from photons_transport.comms.base import Found
-
-from photons_app import helpers as hp
-
-from photons_messages import Services, DeviceMessages, DiscoveryMessages
-
-from delfick_project.errors_pytest import assertRaises
+import binascii
 from contextlib import contextmanager
 from unittest import mock
-import binascii
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_messages import DeviceMessages, DiscoveryMessages, Services
+from photons_transport.comms.base import Found
+from photons_transport.errors import InvalidBroadcast, NoDesiredService, UnknownService
+from photons_transport.retry_options import Gaps
+from photons_transport.session.discovery_options import (
+    NoDiscoveryOptions,
+    NoEnvDiscoveryOptions,
+)
+from photons_transport.session.network import NetworkSession
+from photons_transport.transports.udp import UDP
 
 describe "NetworkSession":
 

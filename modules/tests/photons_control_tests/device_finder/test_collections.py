@@ -1,10 +1,10 @@
 # coding: spec
 
-from photons_control.device_finder import Collection, Collections
-
-from unittest import mock
-import pytest
 import uuid
+from unittest import mock
+
+import pytest
+from photons_control.device_finder import Collection, Collections
 
 describe "Collection":
     it "has properties":

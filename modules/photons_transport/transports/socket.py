@@ -1,8 +1,7 @@
-from photons_transport.transports.base import Transport
+import logging
 
 from photons_app import helpers as hp
-
-import logging
+from photons_transport.transports.base import Transport
 
 log = logging.getLogger("photons_transport.transports.socket")
 

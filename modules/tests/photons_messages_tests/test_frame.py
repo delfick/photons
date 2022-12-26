@@ -1,21 +1,20 @@
 # coding: spec
 
-from photons_protocol.types import Type as T, MultiOptions
-from photons_protocol.packing import PacketPacking
-from photons_protocol.messages import Messages
-from photons_protocol.packets import dictobj
-
-from photons_app.errors import ProgrammerError
-
-from photons_messages import frame
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
-from bitarray import bitarray
+import binascii
 from textwrap import dedent
 from unittest import mock
-import binascii
+
 import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import sb
+from photons_app.errors import ProgrammerError
+from photons_messages import frame
+from photons_protocol.messages import Messages
+from photons_protocol.packets import dictobj
+from photons_protocol.packing import PacketPacking
+from photons_protocol.types import MultiOptions
+from photons_protocol.types import Type as T
 
 
 @pytest.fixture()

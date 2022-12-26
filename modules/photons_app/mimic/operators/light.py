@@ -1,10 +1,8 @@
-from photons_app.mimic.operator import Operator, operator
+from delfick_project.norms import BadSpecValue, dictobj, sb
 from photons_app import helpers as hp
-
-from photons_messages import LightMessages, DeviceMessages
+from photons_app.mimic.operator import Operator, operator
+from photons_messages import DeviceMessages, LightMessages
 from photons_products import Family
-
-from delfick_project.norms import dictobj, sb, BadSpecValue
 
 
 class color_spec(sb.Spec):

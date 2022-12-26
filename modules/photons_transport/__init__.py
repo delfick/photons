@@ -6,14 +6,14 @@ way. You use these targets to create one or more sessions, which each have one
 or more connections to your devices that it uses to send a receive messages.
 """
 
-from photons_app.errors import RunErrors, PhotonsAppError, UserQuit
-from photons_transport.retry_options import RetryTicker, Gaps
-from photons_transport.errors import StopPacketStream
-from photons_app import helpers as hp
-
-from contextlib import contextmanager
-import logging
 import asyncio
+import logging
+from contextlib import contextmanager
+
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError, RunErrors, UserQuit
+from photons_transport.errors import StopPacketStream
+from photons_transport.retry_options import Gaps, RetryTicker
 
 log = logging.getLogger("photons_transport")
 

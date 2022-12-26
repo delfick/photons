@@ -1,20 +1,18 @@
-from interactor.commander.command import DeviceChangeMixin
-from interactor.database.models import Scene, SceneInfo
-from interactor.commander.errors import NoSuchScene
-from interactor.commander import helpers as ihp
-from interactor.commander.store import store
-
-from photons_app import helpers as hp
-
-from photons_control.transform import Transformer
-from photons_control.script import FromGenerator
-from photons_transport import catch_errors
-
-from delfick_project.norms import dictobj, sb
-from collections import defaultdict
-from itertools import chain
 import asyncio
 import uuid
+from collections import defaultdict
+from itertools import chain
+
+from delfick_project.norms import dictobj, sb
+from interactor.commander import helpers as ihp
+from interactor.commander.command import DeviceChangeMixin
+from interactor.commander.errors import NoSuchScene
+from interactor.commander.store import store
+from interactor.database.models import Scene, SceneInfo
+from photons_app import helpers as hp
+from photons_control.script import FromGenerator
+from photons_control.transform import Transformer
+from photons_transport import catch_errors
 
 
 class dictionary_without_none_spec(sb.Spec):

@@ -1,11 +1,11 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
-from queue import Queue as NormalQueue
-from collections import deque
 import asyncio
+from collections import deque
+from queue import Queue as NormalQueue
+
 import pytest
+from photons_app import helpers as hp
 
 
 @pytest.fixture()

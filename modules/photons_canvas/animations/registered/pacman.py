@@ -1,19 +1,16 @@
 # Characters borrowed from https://github.com/devonbeckett/LifxTile2DEngine
 
+from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
+from photons_canvas.animations import an_animation
 from photons_canvas.animations.registered.marquee import (
     MarqueeAnimation,
     MarqueeDirection,
-    direction_spec,
-    State,
     Options,
+    State,
+    direction_spec,
 )
-
-from photons_app import helpers as hp
-
 from photons_canvas.font import Character, Characters, Space
-from photons_canvas.animations import an_animation
-
-from delfick_project.norms import dictobj, sb
 
 
 class PacmanCharacter(Character):

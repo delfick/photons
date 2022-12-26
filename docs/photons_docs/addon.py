@@ -1,23 +1,23 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.tasks.default_tasks import list_tasks, help
-from photons_app.tasks import task_register as task
-from photons_app.errors import PhotonsAppError
+import asyncio
+import logging
+import os
+import shlex
+import shutil
+import socket
+import sys
+import time
+import webbrowser
 
-from tornado.web import StaticFileHandler, Application
+import pkg_resources
 from delfick_project.addons import addon_hook
 from delfick_project.norms import dictobj, sb
-from tornado.httpserver import HTTPServer
+from photons_app.errors import PhotonsAppError
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks import task_register as task
+from photons_app.tasks.default_tasks import help, list_tasks
 from sphinx.cmd.build import build_main
-import pkg_resources
-import webbrowser
-import logging
-import asyncio
-import socket
-import shutil
-import shlex
-import time
-import sys
-import os
+from tornado.httpserver import HTTPServer
+from tornado.web import Application, StaticFileHandler
 
 log = logging.getLogger("photons_docs")
 

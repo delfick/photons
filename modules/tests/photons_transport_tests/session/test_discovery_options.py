@@ -1,14 +1,13 @@
 # coding: spec
 
-from photons_transport.session import discovery_options as do
-
-from photons_messages import Services
-
-from delfick_project.norms import Meta, sb, BadSpecValue
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import binascii
+from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta, sb
+from photons_messages import Services
+from photons_transport.session import discovery_options as do
 
 
 @pytest.fixture()

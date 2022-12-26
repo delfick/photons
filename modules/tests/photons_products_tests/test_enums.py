@@ -2,7 +2,6 @@
 
 from photons_products.enums import Vendor, VendorRegistry
 
-
 describe "Vendor":
     it "takes in vid and has default name":
         v = Vendor(99)

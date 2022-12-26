@@ -1,18 +1,17 @@
 # coding: spec
 
-from photons_app.mimic.attrs import Path, Attrs, ChangeAttr, ReduceLength
-from photons_app.mimic.device import Device
-from photons_app import helpers as hp
-
-from photons_products import Products
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import dictobj, sb
+import io
 from textwrap import dedent
 from unittest import mock
+
 import pytest
-import io
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import dictobj, sb
+from delfick_project.option_merge import MergedOptions
+from photons_app import helpers as hp
+from photons_app.mimic.attrs import Attrs, ChangeAttr, Path, ReduceLength
+from photons_app.mimic.device import Device
+from photons_products import Products
 
 
 @pytest.fixture()

@@ -1,12 +1,11 @@
-from photons_app.mimic.operator import Operator, operator
-from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages, DeviceMessages, LightLastHevCycleResult
-from photons_protocol.types import enum_spec
+import time
 
 from delfick_project.norms import dictobj, sb
-import time
+from photons_app import helpers as hp
+from photons_app.mimic.event import Events
+from photons_app.mimic.operator import Operator, operator
+from photons_messages import DeviceMessages, LightLastHevCycleResult, LightMessages
+from photons_protocol.types import enum_spec
 
 # Ensure Device operator comes before this one
 __import__("photons_app.mimic.operators.device")

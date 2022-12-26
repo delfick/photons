@@ -1,11 +1,11 @@
 # coding: spec
 
-from photons_transport.comms.base import Found
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import binascii
+from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_transport.comms.base import Found
 
 
 @pytest.fixture()

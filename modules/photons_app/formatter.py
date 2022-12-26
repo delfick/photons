@@ -14,11 +14,11 @@ To do this we define the MergedOptionStringFormatter below that uses the magic
 of MergedOptions to do the lookup for us.
 """
 
-from photons_app import helpers as hp
-
-from delfick_project.option_merge import MergedOptionStringFormatter
-import pkg_resources
 import asyncio
+
+import pkg_resources
+from delfick_project.option_merge import MergedOptionStringFormatter
+from photons_app import helpers as hp
 
 
 class MergedOptionStringFormatter(MergedOptionStringFormatter):

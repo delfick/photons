@@ -1,11 +1,10 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
 import asyncio
-import pytest
 
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
 
 describe "ResettableFuture":
     async it "ensure_future returns the ResettableFuture as is":

@@ -1,11 +1,11 @@
 # coding: spec
 
-from photons_control.device_finder import Filter, InvalidJson, InfoPoints
+import json
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from unittest import mock
-import json
+from delfick_project.norms import Meta, sb
+from photons_control.device_finder import Filter, InfoPoints, InvalidJson
 
 describe "Filter":
     describe "construction":

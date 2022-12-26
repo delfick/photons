@@ -1,11 +1,11 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import TargetNotFound
-from photons_app.registers import Target
-
-from delfick_project.norms import sb, BadSpecValue
+import ast
 import tokenize
 import uuid
-import ast
+
+from delfick_project.norms import BadSpecValue, sb
+from photons_app.errors import TargetNotFound
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.registers import Target
 
 
 class task_specifier_spec(sb.Spec):

@@ -1,5 +1,6 @@
-from sqlalchemy.future import select
 import logging
+
+from sqlalchemy.future import select
 
 log = logging.getLogger("interactor.database.connection")
 

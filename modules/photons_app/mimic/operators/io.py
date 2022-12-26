@@ -1,14 +1,13 @@
-from photons_app.mimic.transport import MemoryService
-from photons_app.mimic.operator import operator, IO
-from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import DiscoveryMessages, Services
-
-from delfick_project.norms import dictobj, sb
 import asyncio
 import logging
 import socket
+
+from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
+from photons_app.mimic.event import Events
+from photons_app.mimic.operator import IO, operator
+from photons_app.mimic.transport import MemoryService
+from photons_messages import DiscoveryMessages, Services
 
 
 def make_port():

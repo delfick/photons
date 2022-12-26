@@ -1,18 +1,17 @@
 # coding: spec
 
-from photons_protocol.packets import dictobj
-from photons_protocol.types import Type as T
-
-from photons_app import helpers as hp
-
-from delfick_project.norms import Meta
-from contextlib import contextmanager
-from bitarray import bitarray
-from unittest import mock
 import binascii
-import pytest
 import enum
 import uuid
+from contextlib import contextmanager
+from unittest import mock
+
+import pytest
+from bitarray import bitarray
+from delfick_project.norms import Meta
+from photons_app import helpers as hp
+from photons_protocol.packets import dictobj
+from photons_protocol.types import Type as T
 
 
 @pytest.fixture()

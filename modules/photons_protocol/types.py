@@ -2,17 +2,16 @@
 Here we create classes that represent the individual fields in the LIFX packets
 """
 
-from photons_protocol.errors import BadSpecValue, BadConversion
-
-from photons_app.errors import ProgrammerError
-
-from delfick_project.norms import sb
-from bitarray import bitarray
 import binascii
-import logging
-import json
 import enum
+import json
+import logging
 import re
+
+from bitarray import bitarray
+from delfick_project.norms import sb
+from photons_app.errors import ProgrammerError
+from photons_protocol.errors import BadConversion, BadSpecValue
 
 log = logging.getLogger("photons_protocol.packets.builder")
 

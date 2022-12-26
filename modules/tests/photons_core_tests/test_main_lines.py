@@ -1,10 +1,10 @@
 # coding: spec
 
-from photons_core import run, CommandSplitter
-
-from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_core import CommandSplitter, run
 
 describe "CommandSplitter":
     it "can format argv":

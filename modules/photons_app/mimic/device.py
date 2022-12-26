@@ -1,11 +1,11 @@
-from photons_app.mimic.operator import register, IO
-from photons_app.errors import PhotonsAppError
-from photons_app.mimic.event import Events
-from photons_app.mimic.attrs import Attrs
-from photons_app import helpers as hp
-
-import logging
 import asyncio
+import logging
+
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_app.mimic.attrs import Attrs
+from photons_app.mimic.event import Events
+from photons_app.mimic.operator import IO, register
 
 
 class ExpectedMessages(PhotonsAppError):

@@ -1,7 +1,7 @@
-from photons_control.colour import make_hsbk
-
-from delfick_project.norms import sb, BadSpecValue, Meta
 import random
+
+from delfick_project.norms import BadSpecValue, Meta, sb
+from photons_control.colour import make_hsbk
 
 
 class ZeroColor:

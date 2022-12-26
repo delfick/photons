@@ -1,8 +1,8 @@
+import json
+import logging
+
 from photons_app import helpers as hp
 from photons_app.executor import App
-
-import logging
-import json
 
 log = logging.getLogger("photons_docs.executor")
 

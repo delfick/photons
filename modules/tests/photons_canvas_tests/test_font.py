@@ -1,10 +1,9 @@
 # coding: spec
 
+import pytest
+from photons_canvas import font
 from photons_canvas.points import helpers as php
 from photons_canvas.points.canvas import Canvas
-from photons_canvas import font
-
-import pytest
 
 describe "Space":
     it "is a character with a particular width":

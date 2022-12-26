@@ -1,8 +1,8 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from interactor.zeroconf import Zeroconf
+import os
 
 from delfick_project.norms import dictobj, sb
-import os
+from interactor.zeroconf import Zeroconf
+from photons_app.formatter import MergedOptionStringFormatter
 
 
 class host_spec(sb.Spec):

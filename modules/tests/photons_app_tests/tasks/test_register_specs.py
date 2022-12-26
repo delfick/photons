@@ -1,17 +1,17 @@
 # coding: spec
 
-from photons_app.errors import BadTarget, TargetNotFound, BadOption, ResolverNotFound
-from photons_app.tasks.register import artifact_spec, target_spec, reference_spec
-from photons_app.special import HardCodedSerials, FoundSerials
-from photons_control.device_finder import DeviceFinder
-from photons_app.collector import Collector
-from photons_app.registers import Target
-
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
-from delfick_project.norms import Meta, sb
 from unittest import mock
+
 import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+from photons_app.collector import Collector
+from photons_app.errors import BadOption, BadTarget, ResolverNotFound, TargetNotFound
+from photons_app.registers import Target
+from photons_app.special import FoundSerials, HardCodedSerials
+from photons_app.tasks.register import artifact_spec, reference_spec, target_spec
+from photons_control.device_finder import DeviceFinder
 
 
 @pytest.fixture()

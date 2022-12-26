@@ -1,20 +1,19 @@
 # coding: spec
 
+import binascii
+
+import pytest
+from delfick_project.errors_pytest import assertSameError
+from photons_app import helpers as hp
+from photons_app.errors import TimedOut
+from photons_app.mimic.device import Device
+from photons_app.mimic.operator import Operator
 from photons_app.mimic.transport import MemoryTarget
 from photons_app.special import HardCodedSerials
-from photons_app.mimic.operator import Operator
-from photons_app.mimic.device import Device
-from photons_app.errors import TimedOut
-from photons_app import helpers as hp
-
 from photons_messages import DeviceMessages, Services, protocol_register
+from photons_products import Products
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.targets import LanTarget
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertSameError
-import binascii
-import pytest
 
 
 class Responder(Operator):

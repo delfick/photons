@@ -1,13 +1,13 @@
-from photons_canvas.animations.infrastructure.register import an_animation, Animator
-from photons_canvas.animations.run_options import RunOptions, make_run_options
-from photons_canvas.animations.infrastructure.animation import Animation
-from photons_canvas.animations.action import print_help, AnimationTask
-from photons_canvas.animations.infrastructure.finish import Finish
-from photons_canvas.animations.infrastructure import register
-from photons_canvas.animations.runner import AnimationRunner
-from photons_canvas.animations import options
-
 import os
+
+from photons_canvas.animations import options
+from photons_canvas.animations.action import AnimationTask, print_help
+from photons_canvas.animations.infrastructure import register
+from photons_canvas.animations.infrastructure.animation import Animation
+from photons_canvas.animations.infrastructure.finish import Finish
+from photons_canvas.animations.infrastructure.register import Animator, an_animation
+from photons_canvas.animations.run_options import RunOptions, make_run_options
+from photons_canvas.animations.runner import AnimationRunner
 
 this_dir = os.path.dirname(__file__)
 

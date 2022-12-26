@@ -1,14 +1,16 @@
-from photons_control.colour import make_hsbks
-
-from photons_app.tasks import task_register as task
+from delfick_project.norms import sb
 from photons_app.errors import PhotonsAppError
-
-from photons_messages import MultiZoneMessages, MultiZoneEffectType, LightMessages, Direction
-from photons_control.planner import Skip, Plan, NoMessages
+from photons_app.tasks import task_register as task
+from photons_control.colour import make_hsbks
+from photons_control.planner import NoMessages, Plan, Skip
 from photons_control.planner.plans import CapabilityPlan
 from photons_control.script import FromGenerator
-
-from delfick_project.norms import sb
+from photons_messages import (
+    Direction,
+    LightMessages,
+    MultiZoneEffectType,
+    MultiZoneMessages,
+)
 
 
 async def find_multizone(reference, sender, **kwargs):

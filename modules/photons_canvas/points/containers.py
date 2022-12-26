@@ -1,12 +1,11 @@
-from photons_canvas.orientation import Orientation, reorient, reverse_orientation
-from photons_canvas.points.simple_messages import Set64, MultizoneMessagesMaker
-from photons_canvas.points import helpers as php
-
-from photons_messages import LightMessages
-
 import itertools
 import random
 import time
+
+from photons_canvas.orientation import Orientation, reorient, reverse_orientation
+from photons_canvas.points import helpers as php
+from photons_canvas.points.simple_messages import MultizoneMessagesMaker, Set64
+from photons_messages import LightMessages
 
 NO_MESSAGES = ()
 

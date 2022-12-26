@@ -1,14 +1,13 @@
-from photons_app.errors import PhotonsAppError
-
-from photons_transport.session.network import NetworkSession
-from photons_transport.transports.base import Transport
-from photons_transport.retry_options import Gaps
-from photons_transport.targets import LanTarget
-from photons_messages import protocol_register
-from photons_protocol.messages import Messages
+import time
 
 from delfick_project.norms import dictobj, sb
-import time
+from photons_app.errors import PhotonsAppError
+from photons_messages import protocol_register
+from photons_protocol.messages import Messages
+from photons_transport.retry_options import Gaps
+from photons_transport.session.network import NetworkSession
+from photons_transport.targets import LanTarget
+from photons_transport.transports.base import Transport
 
 
 def make_message(bts):

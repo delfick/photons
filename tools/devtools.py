@@ -1,17 +1,17 @@
-from pathlib import Path
-import typing as tp
-import socketserver
 import http.server
-import webbrowser
-import threading
-import platform
 import inspect
-import socket
-import shutil
-import shlex
-import time
-import sys
 import os
+import platform
+import shlex
+import shutil
+import socket
+import socketserver
+import sys
+import threading
+import time
+import typing as tp
+import webbrowser
+from pathlib import Path
 
 here = Path(__file__).parent
 

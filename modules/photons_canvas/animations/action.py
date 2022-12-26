@@ -1,12 +1,11 @@
-from photons_canvas.animations.infrastructure.finish import Finish
-from photons_canvas.animations.runner import AnimationRunner
+import logging
+import os
+import sys
+from textwrap import dedent
 
 from photons_app.tasks import task_register as task
-
-from textwrap import dedent
-import logging
-import sys
-import os
+from photons_canvas.animations.infrastructure.finish import Finish
+from photons_canvas.animations.runner import AnimationRunner
 
 log = logging.getLogger("photons_canvas.animations.action")
 

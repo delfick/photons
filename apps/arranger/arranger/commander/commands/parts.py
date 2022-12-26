@@ -1,11 +1,10 @@
-from arranger.commander.store import store
-
-from delfick_project.norms import dictobj, sb, BadSpecValue
-
+import asyncio
 import binascii
 import logging
-import asyncio
 import sys
+
+from arranger.commander.store import store
+from delfick_project.norms import BadSpecValue, dictobj, sb
 
 log = logging.getLogger("arranger.commander.commands.parts")
 

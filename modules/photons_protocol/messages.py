@@ -8,14 +8,14 @@ of ``photons_protocol.messages.Messages``.
 This class is a combination of a mixin class for functionality and a meta class
 for defining ``by_type`` on the class.
 """
-from photons_protocol.types import Type, MultiOptions
-from photons_protocol.errors import BadConversion
-
-from bitarray import bitarray
-from textwrap import dedent
 import binascii
 import inspect
 import logging
+from textwrap import dedent
+
+from bitarray import bitarray
+from photons_protocol.errors import BadConversion
+from photons_protocol.types import MultiOptions, Type
 
 log = logging.getLogger("photons_protocol.messages")
 

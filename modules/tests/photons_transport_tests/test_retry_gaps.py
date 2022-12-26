@@ -2,7 +2,6 @@
 
 from photons_transport.retry_options import Gaps
 
-
 describe "Gaps":
     it "can be given defaults":
         gaps = Gaps(gap_between_ack_and_res=0.5, gap_between_results=0.9, timeouts=[(0.1, 0.5)])

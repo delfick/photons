@@ -1,7 +1,7 @@
-from photons_app import helpers as hp
+import time
 
 from delfick_project.norms import dictobj, sb
-import time
+from photons_app import helpers as hp
 
 
 def Gaps(*, gap_between_results, gap_between_ack_and_res, timeouts):

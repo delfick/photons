@@ -1,15 +1,13 @@
 #!/usr/bin/python3 -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.executor import library_setup
-
-from photons_control.script import Pipeline, Repeater
-from photons_control.colour import ColourParser
-from photons_messages import DeviceMessages
-
-from delfick_project.logging import setup_logging
 import argparse
 import logging
 
+from delfick_project.logging import setup_logging
+from photons_app.executor import library_setup
+from photons_control.colour import ColourParser
+from photons_control.script import Pipeline, Repeater
+from photons_messages import DeviceMessages
 
 log = logging.getLogger("cycle_rainbow")
 

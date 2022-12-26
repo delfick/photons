@@ -1,16 +1,13 @@
-from photons_control.device_finder import DeviceFinder
-
-from photons_app.tasks import task_register as task
-
-from photons_messages import Services
-
-from delfick_project.addons import addon_hook
-from delfick_project.norms import sb, Meta
-import ipaddress
 import binascii
+import ipaddress
 import json
 import os
 
+from delfick_project.addons import addon_hook
+from delfick_project.norms import Meta, sb
+from photons_app.tasks import task_register as task
+from photons_control.device_finder import DeviceFinder
+from photons_messages import Services
 
 # Get us our actions
 for filename in os.listdir(os.path.dirname(__file__)):

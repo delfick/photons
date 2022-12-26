@@ -1,11 +1,10 @@
-from photons_canvas.animations.infrastructure.register import resolve
-
-from photons_app.formatter import MergedOptionStringFormatter
-
-from delfick_project.norms import dictobj, sb, BadSpecValue, Meta
 import asyncio
-import random
 import os
+import random
+
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_canvas.animations.infrastructure.register import resolve
 
 
 class Chooser:

@@ -1,16 +1,16 @@
 # coding: spec
 
-from photons_app.collector import Collector
-from photons_app import helpers as hp
-from photons_app.executor import App
+import os
+from textwrap import dedent
+from unittest import mock
 
+import pytest
 from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
-from textwrap import dedent
-from unittest import mock
-import pytest
-import os
+from photons_app import helpers as hp
+from photons_app.collector import Collector
+from photons_app.executor import App
 
 
 @pytest.fixture(autouse=True)

@@ -1,9 +1,9 @@
-from photons_canvas.animations import Animation, Finish, an_animation, options
-from photons_canvas import font
-
-from delfick_project.norms import dictobj, sb
 import itertools
 import random
+
+from delfick_project.norms import dictobj, sb
+from photons_canvas import font
+from photons_canvas.animations import Animation, Finish, an_animation, options
 
 
 class Options(dictobj.Spec):

@@ -1,17 +1,22 @@
 # coding: spec
 
-from photons_protocol.packets import dictobj, PacketSpecMixin, Initial, Optional, Information
-from photons_protocol.types import Type as T
-
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from bitarray import bitarray
-from unittest import mock
 import binascii
-import pytest
 import uuid
+from unittest import mock
+
+import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+from photons_app import helpers as hp
+from photons_protocol.packets import (
+    Information,
+    Initial,
+    Optional,
+    PacketSpecMixin,
+    dictobj,
+)
+from photons_protocol.types import Type as T
 
 describe "Packet attributes":
     describe "__getitem__":

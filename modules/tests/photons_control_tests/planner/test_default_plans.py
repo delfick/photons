@@ -1,28 +1,26 @@
 # coding: spec
 
-from photons_control.planner import Skip, PacketPlan
+from unittest import mock
 
-from photons_app.special import FoundSerials
+import pytest
 from photons_app import helpers as hp
-
-from photons_messages import (
-    DeviceMessages,
-    LightMessages,
-    MultiZoneMessages,
-    TileMessages,
-    TileEffectType,
-    MultiZoneEffectType,
-    LightLastHevCycleResult,
-    Direction,
-)
+from photons_app.special import FoundSerials
+from photons_canvas import orientation as co
 from photons_canvas.orientation import Orientation, reorient
 from photons_canvas.points import containers as cont
-from photons_canvas import orientation as co
+from photons_control.planner import PacketPlan, Skip
+from photons_messages import (
+    DeviceMessages,
+    Direction,
+    LightLastHevCycleResult,
+    LightMessages,
+    MultiZoneEffectType,
+    MultiZoneMessages,
+    TileEffectType,
+    TileMessages,
+)
 from photons_messages.fields import Color
 from photons_products import Products
-
-from unittest import mock
-import pytest
 
 
 class Match:

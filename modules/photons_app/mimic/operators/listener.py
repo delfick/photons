@@ -1,9 +1,7 @@
-from photons_app.mimic.operator import operator, Viewer
-from photons_app.mimic.event import Events
-
-from photons_app import helpers as hp
-
 from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
+from photons_app.mimic.event import Events
+from photons_app.mimic.operator import Viewer, operator
 
 
 @operator

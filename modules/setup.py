@@ -1,7 +1,7 @@
-from photons_app import VERSION
-
-from setuptools import setup, find_packages
 import os
+
+from photons_app import VERSION
+from setuptools import find_packages, setup
 
 packages = []
 py_modules = []

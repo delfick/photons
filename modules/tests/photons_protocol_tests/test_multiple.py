@@ -1,15 +1,16 @@
 # coding: spec
 
-from photons_protocol.types import Type as T, UnknownEnum
-from photons_protocol.errors import BadConversion
-from photons_protocol.packets import dictobj
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import BadSpecValue, Meta
-from bitarray import bitarray
-from functools import partial
 import enum
 import json
+from functools import partial
+
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta
+from photons_protocol.errors import BadConversion
+from photons_protocol.packets import dictobj
+from photons_protocol.types import Type as T
+from photons_protocol.types import UnknownEnum
 
 
 def ba(val):

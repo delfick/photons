@@ -1,25 +1,23 @@
 # coding: spec
 
+import asyncio
+import enum
+import uuid
+from unittest import mock
+
+import pytest
+from delfick_project.norms import sb
+from photons_app import helpers as hp
 from photons_control.device_finder import (
-    Device,
     Collection,
     Collections,
+    Device,
+    DeviceType,
     Filter,
     InfoPoints,
     Point,
-    DeviceType,
 )
-
-from photons_app import helpers as hp
-
 from photons_messages import DeviceMessages, LightMessages
-
-from delfick_project.norms import sb
-from unittest import mock
-import asyncio
-import pytest
-import enum
-import uuid
 
 describe "Device":
 

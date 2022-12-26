@@ -1,12 +1,10 @@
 # coding: spec
 
-from photons_control.device_finder import Finder, Collections, Device, Filter
-
-from photons_app import helpers as hp
-
 from unittest import mock
-import pytest
 
+import pytest
+from photons_app import helpers as hp
+from photons_control.device_finder import Collections, Device, Filter, Finder
 
 describe "Finder":
     it "takes in a sender and uses it's stop_fut if final_future not specified":

@@ -1,9 +1,10 @@
-from photons_canvas.animations import Animation, Finish, an_animation, options
-from photons_canvas import Canvas, point_helpers as php
-from photons_canvas.animations.lines import LineOptions
+import random
 
 from delfick_project.norms import dictobj
-import random
+from photons_canvas import Canvas
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import Animation, Finish, an_animation, options
+from photons_canvas.animations.lines import LineOptions
 
 
 class Options(LineOptions):

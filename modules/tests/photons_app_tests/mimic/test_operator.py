@@ -1,16 +1,15 @@
 # coding: spec
 
-from photons_app.mimic.operator import Operator, LambdaSetter, StaticSetter, Viewer
+import sys
+
+import pytest
+from delfick_project.errors_pytest import assertSameError
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from photons_app import helpers as hp
 from photons_app.mimic.device import Device
 from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
+from photons_app.mimic.operator import LambdaSetter, Operator, StaticSetter, Viewer
 from photons_products import Products
-
-from delfick_project.norms import dictobj, sb, BadSpecValue, Meta
-from delfick_project.errors_pytest import assertSameError
-import pytest
-import sys
 
 
 @pytest.fixture()

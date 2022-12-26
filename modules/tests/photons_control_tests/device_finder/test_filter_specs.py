@@ -1,9 +1,8 @@
 # coding: spec
 
-from photons_control.device_finder import boolean, str_ranges
-
 from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import Meta, BadSpecValue
+from delfick_project.norms import BadSpecValue, Meta
+from photons_control.device_finder import boolean, str_ranges
 
 describe "boolean":
     it "transforms int into a boolean":

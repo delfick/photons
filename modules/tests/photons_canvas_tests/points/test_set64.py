@@ -1,13 +1,12 @@
 # coding: spec
 
-from photons_canvas.points.simple_messages import Set64
+import binascii
 
+import pytest
+from delfick_project.norms import sb
+from photons_canvas.points.simple_messages import Set64
 from photons_messages import TileMessages
 from photons_messages.fields import Color
-
-from delfick_project.norms import sb
-import binascii
-import pytest
 
 
 @pytest.fixture

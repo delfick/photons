@@ -1,8 +1,7 @@
 # coding: spec
 
-from photons_control.colour import ColourParser, make_hsbks
-
 import pytest
+from photons_control.colour import ColourParser, make_hsbks
 
 describe "make_hsbks":
 

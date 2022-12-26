@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_control.planner.plans import Plan, Skip, NoMessages
-from photons_control.planner.gatherer import PlanInfo
-
-from photons_messages import DeviceMessages
-
 from unittest import mock
+
 import pytest
+from photons_control.planner.gatherer import PlanInfo
+from photons_control.planner.plans import NoMessages, Plan, Skip
+from photons_messages import DeviceMessages
 
 describe "PlanInfo":
 

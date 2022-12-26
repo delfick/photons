@@ -1,10 +1,10 @@
 # coding: spec
 
-from interactor.database.models.scene import Scene
-
-from delfick_project.norms import Meta
-import pytest
 import uuid
+
+import pytest
+from delfick_project.norms import Meta
+from interactor.database.models.scene import Scene
 
 
 @pytest.fixture()

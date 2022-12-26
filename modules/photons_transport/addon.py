@@ -1,9 +1,7 @@
+from delfick_project.addons import addon_hook
+from photons_app.formatter import MergedOptionStringFormatter
 from photons_transport.session.discovery_options import DiscoveryOptions
 from photons_transport.targets import LanTarget
-
-from photons_app.formatter import MergedOptionStringFormatter
-
-from delfick_project.addons import addon_hook
 
 
 @addon_hook()

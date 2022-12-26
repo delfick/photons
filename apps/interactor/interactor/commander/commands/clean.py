@@ -1,12 +1,10 @@
-from interactor.commander.command import DeviceChangeMixin
+from delfick_project.norms import dictobj, sb
+from delfick_project.option_merge import MergedOptions
 from interactor.commander import helpers as ihp
+from interactor.commander.command import DeviceChangeMixin
 from interactor.commander.store import store
-
 from photons_control.clean import ChangeCleanCycle
 from photons_control.planner import Skip
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import dictobj, sb
 
 
 @store.command(name="clean/start")

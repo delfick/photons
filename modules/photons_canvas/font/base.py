@@ -1,6 +1,6 @@
-from photons_canvas.points import helpers as php
-
 from textwrap import dedent
+
+from photons_canvas.points import helpers as php
 
 
 def Space(width):

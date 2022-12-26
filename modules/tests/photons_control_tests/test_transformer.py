@@ -1,16 +1,15 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
-from photons_control.transform import Transformer, PowerToggle, PowerToggleGroup
-from photons_messages import DeviceMessages, LightMessages, DiscoveryMessages
-from photons_control.colour import ColourParser
-from photons_products import Products
-
-from unittest import mock
 import itertools
 import random
+from unittest import mock
+
 import pytest
+from photons_app import helpers as hp
+from photons_control.colour import ColourParser
+from photons_control.transform import PowerToggle, PowerToggleGroup, Transformer
+from photons_messages import DeviceMessages, DiscoveryMessages, LightMessages
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

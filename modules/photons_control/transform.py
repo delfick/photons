@@ -1,12 +1,9 @@
-from photons_control.script import FromGenerator, Pipeline
-
-from photons_app.tasks import task_register as task
+from delfick_project.norms import Meta, sb
 from photons_app.errors import PhotonsAppError
-
-from photons_messages import LightMessages, DeviceMessages
+from photons_app.tasks import task_register as task
 from photons_control.colour import ColourParser
-
-from delfick_project.norms import sb, Meta
+from photons_control.script import FromGenerator, Pipeline
+from photons_messages import DeviceMessages, LightMessages
 
 
 def PowerToggle(duration=1, group=False, **kwargs):

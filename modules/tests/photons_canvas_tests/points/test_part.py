@@ -1,14 +1,13 @@
 # coding: spec
 
-from photons_canvas.points.simple_messages import Set64
-from photons_canvas.points import containers as cont
-from photons_canvas.orientation import Orientation
+from unittest import mock
 
-from photons_messages import TileMessages, LightMessages
+from photons_canvas.orientation import Orientation
+from photons_canvas.points import containers as cont
+from photons_canvas.points.simple_messages import Set64
+from photons_messages import LightMessages, TileMessages
 from photons_messages.fields import Color
 from photons_products import Products
-
-from unittest import mock
 
 describe "Part":
     it "takes in some properties", V:

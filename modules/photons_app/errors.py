@@ -18,8 +18,8 @@ The `app <https://delfick-project.readthedocs.io/en/latest/api/app.html>`_
 integration will catch these errors and display them relatively nicely.
 """
 from delfick_project.errors import DelfickError, ProgrammerError, UserQuit
-from delfick_project.option_merge import BadOptionFormat
 from delfick_project.norms import BadSpec, BadSpecValue
+from delfick_project.option_merge import BadOptionFormat
 
 
 class PhotonsAppError(DelfickError):

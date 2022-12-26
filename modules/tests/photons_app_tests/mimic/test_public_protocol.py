@@ -1,22 +1,20 @@
 # coding: spec
 
-from photons_app.mimic.operators.device import Collection
-from photons_app.mimic.event import Events
+import pytest
 from photons_app import helpers as hp
-
-from photons_products import Products, Family
+from photons_app.mimic.event import Events
+from photons_app.mimic.operators.device import Collection
 from photons_messages import (
     DeviceMessages,
-    LightMessages,
-    TileMessages,
-    MultiZoneMessages,
-    Waveform,
-    TileEffectType,
-    MultiZoneEffectType,
     LightLastHevCycleResult,
+    LightMessages,
+    MultiZoneEffectType,
+    MultiZoneMessages,
+    TileEffectType,
+    TileMessages,
+    Waveform,
 )
-
-import pytest
+from photons_products import Family, Products
 
 devices = pytest.helpers.mimic()
 

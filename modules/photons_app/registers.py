@@ -3,15 +3,19 @@ Collection objects for various information.
 
 These allow addons to be able to register more functionality.
 """
+from delfick_project.norms import dictobj, sb
+from photons_app.errors import (
+    ProgrammerError,
+    ResolverNotFound,
+    TargetNotFound,
+    TargetTypeNotFound,
+)
 from photons_app.special import (
+    FoundSerials,
+    HardCodedSerials,
     ResolveReferencesFromFile,
     SpecialReference,
-    HardCodedSerials,
-    FoundSerials,
 )
-from photons_app.errors import TargetNotFound, ResolverNotFound, TargetTypeNotFound, ProgrammerError
-
-from delfick_project.norms import sb, dictobj
 
 
 class ReadOnlyDictionary(dict):

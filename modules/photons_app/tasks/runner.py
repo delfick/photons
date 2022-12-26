@@ -1,12 +1,11 @@
-from photons_app.errors import ApplicationCancelled, ApplicationStopped
-from photons_app.errors import UserQuit
-from photons_app import helpers as hp
-
-import platform
 import asyncio
 import logging
+import platform
 import signal
 import sys
+
+from photons_app import helpers as hp
+from photons_app.errors import ApplicationCancelled, ApplicationStopped, UserQuit
 
 log = logging.getLogger("photons_app.tasks.runner")
 

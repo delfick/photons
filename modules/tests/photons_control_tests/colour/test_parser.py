@@ -1,14 +1,17 @@
 # coding: spec
 
-from photons_control.colour import split_color_string, ColourParser, InvalidColor, ValueOutOfRange
-
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages, Waveform
-
-from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_control.colour import (
+    ColourParser,
+    InvalidColor,
+    ValueOutOfRange,
+    split_color_string,
+)
+from photons_messages import LightMessages, Waveform
 
 describe "split_color_string":
     it "returns empty list if not color_string":

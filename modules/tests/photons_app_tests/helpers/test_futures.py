@@ -1,14 +1,14 @@
 # coding: spec
 
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import asyncio
-import pytest
-import uuid
 import time
+import uuid
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
 
 
 @pytest.fixture()

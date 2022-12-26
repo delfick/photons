@@ -1,23 +1,23 @@
 """pytest-cov: avoid already-imported warning: PYTEST_DONT_REWRITE."""
 
 
-from contextlib import contextmanager
-from delfick_project.norms import sb
+import asyncio
+import errno
+import inspect
+import json
+import os
+import re
+import shutil
+import socket
+import sys
+import tempfile
+import time
 from collections import defaultdict
+from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
-import tempfile
-import inspect
-import asyncio
-import socket
-import shutil
-import errno
-import time
-import json
-import sys
-import re
-import os
 
+from delfick_project.norms import sb
 
 try:
     import pytest

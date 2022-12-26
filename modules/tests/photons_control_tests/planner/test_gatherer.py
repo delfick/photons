@@ -1,18 +1,16 @@
 # coding: spec
 
-from photons_control.planner import Gatherer, make_plans, Plan, NoMessages, Skip
-
-from photons_app.errors import TimedOut, BadRunWithResults
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, LightMessages, DiscoveryMessages
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises, assertSameError
+import itertools
 from contextlib import contextmanager
 from unittest import mock
-import itertools
+
 import pytest
+from delfick_project.errors_pytest import assertRaises, assertSameError
+from photons_app import helpers as hp
+from photons_app.errors import BadRunWithResults, TimedOut
+from photons_control.planner import Gatherer, NoMessages, Plan, Skip, make_plans
+from photons_messages import DeviceMessages, DiscoveryMessages, LightMessages
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

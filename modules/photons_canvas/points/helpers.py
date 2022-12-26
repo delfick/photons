@@ -1,8 +1,8 @@
+import math
 from collections import defaultdict
 from functools import wraps
-from lru import LRU
-import math
 
+from lru import LRU
 
 BoundCache = defaultdict(lambda: LRU(3000))
 

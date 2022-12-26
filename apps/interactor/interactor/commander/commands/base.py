@@ -1,9 +1,9 @@
-from interactor.commander.errors import NoSuchCommand
-from interactor.commander import helpers as ihp
-from interactor.commander.store import store
+from textwrap import dedent
 
 from delfick_project.norms import dictobj, sb
-from textwrap import dedent
+from interactor.commander import helpers as ihp
+from interactor.commander.errors import NoSuchCommand
+from interactor.commander.store import store
 
 
 @store.command(name="help")

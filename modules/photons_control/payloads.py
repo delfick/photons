@@ -1,10 +1,9 @@
-from photons_app.tasks import task_register as task
-
-from photons_protocol.messages import Messages
-from photons_messages import protocol_register
-
-import binascii
 import base64
+import binascii
+
+from photons_app.tasks import task_register as task
+from photons_messages import protocol_register
+from photons_protocol.messages import Messages
 
 
 @task

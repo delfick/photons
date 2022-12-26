@@ -1,14 +1,12 @@
-from photons_transport.errors import InvalidBroadcast, UnknownService, NoDesiredService
-from photons_transport.retry_options import RetryTicker
-from photons_transport.comms.base import Communication
-from photons_transport.transports.udp import UDP
-
-from photons_app import helpers as hp
-
-from photons_messages import DiscoveryMessages, Services
-
 import binascii
 import logging
+
+from photons_app import helpers as hp
+from photons_messages import DiscoveryMessages, Services
+from photons_transport.comms.base import Communication
+from photons_transport.errors import InvalidBroadcast, NoDesiredService, UnknownService
+from photons_transport.retry_options import RetryTicker
+from photons_transport.transports.udp import UDP
 
 log = logging.getLogger("photons_transport.session.network")
 

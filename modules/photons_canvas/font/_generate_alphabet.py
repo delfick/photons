@@ -1,6 +1,7 @@
-from PIL import ImageFont, ImageDraw, Image
 import argparse
 import os
+
+from PIL import Image, ImageDraw, ImageFont
 
 this_dir = os.path.dirname(__file__)
 

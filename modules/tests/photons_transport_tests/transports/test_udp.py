@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_transport.transports.udp import UDP
-
-from photons_app import helpers as hp
-
-from unittest import mock
 import asyncio
+from unittest import mock
+
 import pytest
+from photons_app import helpers as hp
+from photons_transport.transports.udp import UDP
 
 
 class FakeIO:

@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_control.planner.gatherer import Session, Planner
-
-from photons_app import helpers as hp
-
-from unittest import mock
-import pytest
 import uuid
+from unittest import mock
+
+import pytest
+from photons_app import helpers as hp
+from photons_control.planner.gatherer import Planner, Session
 
 
 @pytest.fixture()

@@ -1,15 +1,13 @@
 # coding: spec
 
-from photons_app.mimic.packet_filter import SendAck, SendReplies, SendUnhandled, Filter
-from photons_app.mimic.operator import Operator
+import pytest
+from photons_app import helpers as hp
 from photons_app.mimic.device import Device
 from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, CoreMessages
+from photons_app.mimic.operator import Operator
+from photons_app.mimic.packet_filter import Filter, SendAck, SendReplies, SendUnhandled
+from photons_messages import CoreMessages, DeviceMessages
 from photons_products import Products
-
-import pytest
 
 
 @pytest.fixture()

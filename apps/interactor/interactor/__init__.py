@@ -3,8 +3,9 @@ ZEROCONF_TYPE = "_photons._tcp.local."
 
 
 def run_pytest():
-    import pytest
     import sys
+
+    import pytest
 
     class EditConfig:
         @pytest.hookimpl(hookwrapper=True)

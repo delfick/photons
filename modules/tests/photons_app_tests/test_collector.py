@@ -1,30 +1,29 @@
 # coding: spec
 
-from photons_app.registers import (
-    Target,
-    TargetRegister,
-    ProtocolRegister,
-    ReferenceResolverRegister,
-)
-from photons_app.errors import BadYaml, BadConfiguration, TargetNotFound
-from photons_app.photons_app import PhotonsApp
-from photons_app.collector import Collector
-from photons_app import helpers as hp
-
-from delfick_project.norms import dictobj, sb, BadSpecValue
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.option_merge import MergedOptions
-from delfick_project.option_merge.path import Path
-from alt_pytest_asyncio.plugin import OverrideLoop
-from delfick_project.addons import Register
+import asyncio
+import os
+import uuid
 from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
-import asyncio
-import pytest
-import uuid
-import os
 
+import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.addons import Register
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, dictobj, sb
+from delfick_project.option_merge import MergedOptions
+from delfick_project.option_merge.path import Path
+from photons_app import helpers as hp
+from photons_app.collector import Collector
+from photons_app.errors import BadConfiguration, BadYaml, TargetNotFound
+from photons_app.photons_app import PhotonsApp
+from photons_app.registers import (
+    ProtocolRegister,
+    ReferenceResolverRegister,
+    Target,
+    TargetRegister,
+)
 
 describe "Collector":
 

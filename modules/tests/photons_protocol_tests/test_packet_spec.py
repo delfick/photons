@@ -1,16 +1,15 @@
 # coding: spec
 
-from photons_protocol.packets import PacketSpecMetaKls, dictobj, Initial
-from photons_protocol.types import Type as T
+import uuid
+from unittest import mock
 
-from photons_app.errors import ProgrammerError
-from photons_app import helpers as hp
-
+import pytest
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
-from unittest import mock
-import pytest
-import uuid
+from photons_app import helpers as hp
+from photons_app.errors import ProgrammerError
+from photons_protocol.packets import Initial, PacketSpecMetaKls, dictobj
+from photons_protocol.types import Type as T
 
 describe "PacketSpecMetaKls":
     it "complains if we have fields that are already attributes":

@@ -1,15 +1,14 @@
-from photons_canvas import Canvas, point_helpers as php
-
-from photons_app import helpers as hp
-
-from photons_control.script import FromGenerator
-from photons_control.colour import make_hsbk
-from photons_messages import LightMessages
-
-from delfick_project.norms import sb, dictobj, Meta
 import logging
-import kdtree
 import random
+
+import kdtree
+from delfick_project.norms import Meta, dictobj, sb
+from photons_app import helpers as hp
+from photons_canvas import Canvas
+from photons_canvas import point_helpers as php
+from photons_control.colour import make_hsbk
+from photons_control.script import FromGenerator
+from photons_messages import LightMessages
 
 log = logging.getLogger("photons_canvas.themes.addon")
 

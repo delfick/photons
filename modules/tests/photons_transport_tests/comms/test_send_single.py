@@ -1,21 +1,20 @@
 # coding: spec
 
-from photons_app.special import FoundSerials
-from photons_app.errors import TimedOut
-from photons_app import helpers as hp
+import time
 
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import TimedOut
+from photons_app.special import FoundSerials
 from photons_messages import (
-    DeviceMessages,
     CoreMessages,
-    MultiZoneMessages,
+    DeviceMessages,
     DiscoveryMessages,
+    MultiZoneMessages,
     Services,
 )
 from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-import pytest
-import time
 
 devices = pytest.helpers.mimic()
 devices.add("strip")(

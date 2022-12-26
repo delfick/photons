@@ -1,15 +1,13 @@
 # coding: spec
 
-from interactor.commander.store import store, load_commands
+from unittest import mock
 
-from photons_app.mimic.event import Events
+import pytest
+from interactor.commander.store import load_commands, store
 from photons_app import helpers as hp
-
+from photons_app.mimic.event import Events
 from photons_control.tile import default_tile_palette
 from photons_messages.fields import Color
-
-from unittest import mock
-import pytest
 
 
 @pytest.fixture()

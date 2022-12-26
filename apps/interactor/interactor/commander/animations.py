@@ -1,15 +1,14 @@
-from photons_canvas.animations import register, AnimationRunner
-from photons_canvas.animations.action import expand
-
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import sb
-from textwrap import dedent
-import logging
 import asyncio
 import io
+import logging
+from textwrap import dedent
+
+from delfick_project.norms import sb
+from delfick_project.option_merge import MergedOptions
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_canvas.animations import AnimationRunner, register
+from photons_canvas.animations.action import expand
 
 log = logging.getLogger("interactor.commander.animations")
 

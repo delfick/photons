@@ -1,10 +1,9 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
 import asyncio
 import time
 
+from photons_app import helpers as hp
 
 describe "tick":
 

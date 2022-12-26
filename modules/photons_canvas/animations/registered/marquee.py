@@ -1,12 +1,10 @@
-from photons_canvas.animations import Animation, an_animation, options, Finish
-from photons_canvas.font import alphabet_8, Characters
-
-from photons_app import helpers as hp
-
-from photons_protocol.types import enum_spec
+import enum
 
 from delfick_project.norms import dictobj, sb
-import enum
+from photons_app import helpers as hp
+from photons_canvas.animations import Animation, Finish, an_animation, options
+from photons_canvas.font import Characters, alphabet_8
+from photons_protocol.types import enum_spec
 
 
 class MarqueeDirection(enum.Enum):

@@ -1,10 +1,10 @@
-from photons_canvas.animations import Animation, an_animation
-from photons_canvas import point_helpers as php
+import math
+import random
+from collections import defaultdict
 
 from delfick_project.norms import dictobj, sb
-from collections import defaultdict
-import random
-import math
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import Animation, an_animation
 
 changers = {}
 

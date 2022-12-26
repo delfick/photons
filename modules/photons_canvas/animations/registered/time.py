@@ -1,9 +1,10 @@
-from photons_canvas.animations import options, Animation, an_animation
-from photons_canvas import font, point_helpers as php
+import math
+import time
 
 from delfick_project.norms import dictobj, sb
-import time
-import math
+from photons_canvas import font
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import Animation, an_animation, options
 
 
 class Options(dictobj.Spec):

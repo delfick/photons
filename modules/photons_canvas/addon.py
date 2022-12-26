@@ -1,13 +1,12 @@
-from photons_canvas.animations import register, AnimationRunner, print_help
-from photons_canvas.theme import ApplyTheme
+import logging
 
-from photons_app.tasks import task_register as task
-from photons_app.errors import PhotonsAppError
-
-from delfick_project.option_merge import MergedOptions
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb
-import logging
+from delfick_project.option_merge import MergedOptions
+from photons_app.errors import PhotonsAppError
+from photons_app.tasks import task_register as task
+from photons_canvas.animations import AnimationRunner, print_help, register
+from photons_canvas.theme import ApplyTheme
 
 log = logging.getLogger("photons_canvas.addons")
 

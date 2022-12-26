@@ -1,8 +1,7 @@
-from interactor.database.models.scene_spec import make_spec
-from interactor.database.base import Base
-
-from sqlalchemy import Column, Integer, String, Text, Boolean
 from delfick_project.norms import sb
+from interactor.database.base import Base
+from interactor.database.models.scene_spec import make_spec
+from sqlalchemy import Boolean, Column, Integer, String, Text
 
 
 class Scene(Base):

@@ -1,14 +1,13 @@
 # coding: spec
 
-from photons_app.photons_app import PhotonsAppSpec, PhotonsApp
-from photons_app.registers import TargetRegister
-from photons_app.registers import Target
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import Meta, BadSpecValue
 from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta
+from photons_app import helpers as hp
+from photons_app.photons_app import PhotonsApp, PhotonsAppSpec
+from photons_app.registers import Target, TargetRegister
 
 
 @pytest.fixture()

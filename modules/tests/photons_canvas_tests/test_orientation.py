@@ -1,7 +1,7 @@
 # coding: spec
 
-from photons_canvas.orientation import Orientation as O
 from photons_canvas import orientation
+from photons_canvas.orientation import Orientation as O
 
 describe "rotated_index":
     it "works":

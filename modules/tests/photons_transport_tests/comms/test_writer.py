@@ -1,11 +1,10 @@
 # coding: spec
 
-from photons_transport.comms.writer import Writer
-
-from photons_app import helpers as hp
-
 from unittest import mock
+
 import pytest
+from photons_app import helpers as hp
+from photons_transport.comms.writer import Writer
 
 describe "Writer":
 

@@ -1,16 +1,14 @@
 # coding: spec
 
-from photons_control.device_finder import DeviceFinder, Filter, Finder
-
-from photons_app.special import SpecialReference
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, LightMessages, DiscoveryMessages
-from photons_products import Products
-
-from unittest import mock
 import binascii
+from unittest import mock
+
 import pytest
+from photons_app import helpers as hp
+from photons_app.special import SpecialReference
+from photons_control.device_finder import DeviceFinder, Filter, Finder
+from photons_messages import DeviceMessages, DiscoveryMessages, LightMessages
+from photons_products import Products
 
 
 @pytest.fixture(autouse=True)

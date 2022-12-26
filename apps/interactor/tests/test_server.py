@@ -1,15 +1,13 @@
 # coding: spec
 
+from unittest import mock
+
+import pytest
 from interactor.commander.animations import Animations
 from interactor.commander.store import store
 from interactor.zeroconf import Zeroconf
-
 from photons_app import helpers as hp
-
-from photons_control.device_finder import Finder, DeviceFinderDaemon
-
-from unittest import mock
-import pytest
+from photons_control.device_finder import DeviceFinderDaemon, Finder
 
 
 @pytest.fixture(scope="module")

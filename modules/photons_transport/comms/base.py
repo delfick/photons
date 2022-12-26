@@ -1,20 +1,18 @@
-from photons_transport.errors import FailedToFindDevice, StopPacketStream
-from photons_transport.comms.receiver import Receiver
-from photons_transport.comms.writer import Writer
-
-from photons_app.errors import TimedOut, FoundNoDevices, RunErrors, BadRunWithResults
-from photons_app import helpers as hp
-
-from photons_protocol.packets import Information
-from photons_protocol.messages import Messages
-from photons_transport import catch_errors
-
-import binascii
-import logging
 import asyncio
+import binascii
+import json
+import logging
 import random
 import struct
-import json
+
+from photons_app import helpers as hp
+from photons_app.errors import BadRunWithResults, FoundNoDevices, RunErrors, TimedOut
+from photons_protocol.messages import Messages
+from photons_protocol.packets import Information
+from photons_transport import catch_errors
+from photons_transport.comms.receiver import Receiver
+from photons_transport.comms.writer import Writer
+from photons_transport.errors import FailedToFindDevice, StopPacketStream
 
 log = logging.getLogger("photons_transport.comms")
 

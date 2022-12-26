@@ -1,5 +1,5 @@
-from docutils.parsers.rst import Directive
 from docutils import statemachine
+from docutils.parsers.rst import Directive
 
 
 class ShowListDirective(Directive):

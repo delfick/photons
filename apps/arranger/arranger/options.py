@@ -1,11 +1,11 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import PhotonsAppError
-
-from delfick_project.norms import dictobj, sb
-import subprocess
+import os
 import shutil
 import socket
-import os
+import subprocess
+
+from delfick_project.norms import dictobj, sb
+from photons_app.errors import PhotonsAppError
+from photons_app.formatter import MergedOptionStringFormatter
 
 
 class port_spec(sb.Spec):

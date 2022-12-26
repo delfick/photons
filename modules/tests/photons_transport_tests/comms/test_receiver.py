@@ -1,16 +1,14 @@
 # coding: spec
 
-from photons_transport.comms.receiver import Receiver
-
-from photons_app import helpers as hp
-
-from photons_messages import LIFXPacket
-
-from unittest import mock
-import binascii
 import asyncio
+import binascii
 import random
+from unittest import mock
+
 import pytest
+from photons_app import helpers as hp
+from photons_messages import LIFXPacket
+from photons_transport.comms.receiver import Receiver
 
 describe "Receiver":
     async it "inits some variables":

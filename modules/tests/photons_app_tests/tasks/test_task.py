@@ -1,18 +1,17 @@
 # coding: spec
 
-from photons_app.photons_app import PhotonsApp
-from photons_app.collector import Collector
-from photons_app.tasks.tasks import Task
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
-from delfick_project.norms import dictobj, sb
-from unittest import mock
 import asyncio
-import pytest
 import time
+from unittest import mock
 
+import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
+from photons_app.collector import Collector
+from photons_app.photons_app import PhotonsApp
+from photons_app.tasks.tasks import Task
 
 describe "Task":
 

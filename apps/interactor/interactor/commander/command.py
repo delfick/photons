@@ -1,11 +1,8 @@
+from delfick_project.norms import dictobj, sb
 from interactor.commander import helpers as ihp
 from interactor.commander.store import store
-
 from photons_app import helpers as hp
-
-from photons_control.device_finder import Filter, DeviceFinder
-
-from delfick_project.norms import dictobj, sb
+from photons_control.device_finder import DeviceFinder, Filter
 
 
 class DeviceChangeMixin(dictobj.Spec):

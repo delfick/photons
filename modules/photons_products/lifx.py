@@ -1,6 +1,6 @@
-from photons_products.base import Product, Capability, CapabilityValue, cap_property
-from photons_products.enums import VendorRegistry, Zones, Family
 from photons_products import conditions as cond
+from photons_products.base import Capability, CapabilityValue, Product, cap_property
+from photons_products.enums import Family, VendorRegistry, Zones
 
 
 class Product(Product):

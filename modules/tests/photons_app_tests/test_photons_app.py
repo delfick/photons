@@ -1,17 +1,17 @@
 # coding: spec
 
+import asyncio
+import os
+from unittest import mock
+
+import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta
+from photons_app import helpers as hp
+from photons_app.errors import BadOption
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.photons_app import PhotonsApp
-from photons_app.errors import BadOption
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
-from delfick_project.norms import Meta
-from unittest import mock
-import asyncio
-import pytest
-import os
 
 describe "PhotonsApp":
 

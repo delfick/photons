@@ -1,13 +1,12 @@
-from arranger.request_handlers.command import WSHandler
+import logging
+import time
+
 from arranger.arranger import Arranger
-
+from arranger.request_handlers.command import WSHandler
 from photons_app import helpers as hp
-
 from tornado.web import StaticFileHandler
 from whirlwind.commander import Commander
 from whirlwind.server import Server
-import logging
-import time
 
 log = logging.getLogger("arranger.server")
 
@@ -22,7 +21,7 @@ class Server(Server):
         super().__init__(final_future, server_end_future=server_end_future)
 
         if store is None:
-            from arranger.commander.store import store, load_commands
+            from arranger.commander.store import load_commands, store
 
             load_commands()
 

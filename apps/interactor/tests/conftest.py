@@ -1,23 +1,21 @@
+import asyncio
+import json
+import logging
+import shutil
+import sys
+import tempfile
+import uuid
+from unittest import mock
+
+import aiohttp
+import pytest
 from interactor.options import Options
 from interactor.server import Server
-
+from photons_app import helpers as hp
+from photons_app.errors import BadRun
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.mimic import DeviceCollection
-from photons_app.errors import BadRun
-from photons_app import helpers as hp
-
 from photons_products import Products
-
-from unittest import mock
-import tempfile
-import aiohttp
-import logging
-import asyncio
-import pytest
-import shutil
-import json
-import uuid
-import sys
 
 log = logging.getLogger("interactor.test_helpers")
 

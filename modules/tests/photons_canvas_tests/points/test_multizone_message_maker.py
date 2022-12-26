@@ -1,12 +1,9 @@
 # coding: spec
 
-from photons_canvas.points.simple_messages import MultizoneMessagesMaker
-
-from photons_app import helpers as hp
-
-from photons_products import Products
-
 import pytest
+from photons_app import helpers as hp
+from photons_canvas.points.simple_messages import MultizoneMessagesMaker
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

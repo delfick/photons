@@ -1,11 +1,11 @@
 # coding: spec
 
-from interactor.database.models.scene_info import SceneInfo
-
-from delfick_project.errors_pytest import assertRaises
-import sqlalchemy.exc
-import pytest
 import uuid
+
+import pytest
+import sqlalchemy.exc
+from delfick_project.errors_pytest import assertRaises
+from interactor.database.models.scene_info import SceneInfo
 
 
 @pytest.fixture()

@@ -1,19 +1,19 @@
 # coding: spec
 
-from photons_app.registers import (
-    ProtocolRegister,
-    MessagesRegister,
-    ReferenceResolverRegister,
-)
-from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
-from photons_app.errors import ResolverNotFound
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
-from unittest import mock
 import binascii
 import pickle
+from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import sb
+from photons_app.errors import ResolverNotFound
+from photons_app.registers import (
+    MessagesRegister,
+    ProtocolRegister,
+    ReferenceResolverRegister,
+)
+from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
 
 
 @pytest.fixture()

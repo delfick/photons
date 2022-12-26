@@ -1,8 +1,8 @@
 # coding: spec
 
+import os
 import subprocess
 import sys
-import os
 
 this_dir = os.path.dirname(__file__)
 example_dir = os.path.join(this_dir, "example")

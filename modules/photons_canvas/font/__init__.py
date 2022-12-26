@@ -1,5 +1,5 @@
-from .alphabet_16 import characters as alphabet_16
 from .alphabet_8 import characters as alphabet_8
+from .alphabet_16 import characters as alphabet_16
 from .base import Character, Characters, Space
 from .dice import dice_8
 

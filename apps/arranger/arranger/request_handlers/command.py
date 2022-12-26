@@ -1,12 +1,11 @@
-from whirlwind.request_handlers.command import ProgressMessageMaker, WSHandler
-from whirlwind.request_handlers.base import reprer, MessageFromExc
-
-from photons_app import helpers as hp
-
-from delfick_project.errors import DelfickError
-from bitarray import bitarray
 import binascii
 import logging
+
+from bitarray import bitarray
+from delfick_project.errors import DelfickError
+from photons_app import helpers as hp
+from whirlwind.request_handlers.base import MessageFromExc, reprer
+from whirlwind.request_handlers.command import ProgressMessageMaker, WSHandler
 
 
 class ProgressMessageMaker(ProgressMessageMaker):

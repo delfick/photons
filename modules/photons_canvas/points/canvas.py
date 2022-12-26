@@ -1,7 +1,7 @@
-from photons_canvas.points import helpers as php
+from collections import defaultdict
 
 from delfick_project.norms import sb
-from collections import defaultdict
+from photons_canvas.points import helpers as php
 
 
 class Canvas:

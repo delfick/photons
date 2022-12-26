@@ -2,8 +2,9 @@ VERSION = "0.6.1"
 
 
 def run_pytest():
-    import pytest
     import sys
+
+    import pytest
 
     class EditConfig:
         @pytest.hookimpl(hookwrapper=True)

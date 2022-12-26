@@ -1,21 +1,19 @@
 # coding: spec
 
-from photons_transport.comms.base import Communication, Found, FakeAck
-from photons_transport.errors import FailedToFindDevice
-from photons_transport.comms.receiver import Receiver
-
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import FoundNoDevices
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, protocol_register, LIFXPacket, CoreMessages
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import dictobj, sb, Meta
+import binascii
 from contextlib import contextmanager
 from unittest import mock
-import binascii
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, dictobj, sb
+from photons_app import helpers as hp
+from photons_app.errors import FoundNoDevices
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_messages import CoreMessages, DeviceMessages, LIFXPacket, protocol_register
+from photons_transport.comms.base import Communication, FakeAck, Found
+from photons_transport.comms.receiver import Receiver
+from photons_transport.errors import FailedToFindDevice
 
 
 @pytest.fixture()

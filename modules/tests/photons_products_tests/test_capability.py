@@ -1,12 +1,10 @@
 # coding: spec
 
-from photons_products.base import Product, Capability, CapabilityValue, CapabilityRange
-from photons_products import conditions as cond
-
-from photons_app.errors import ProgrammerError
-
-from delfick_project.errors_pytest import assertRaises
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app.errors import ProgrammerError
+from photons_products import conditions as cond
+from photons_products.base import Capability, CapabilityRange, CapabilityValue, Product
 
 
 @pytest.fixture

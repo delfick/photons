@@ -1,8 +1,7 @@
 # coding: spec
 
-from photons_canvas.points import helpers as php
-
 import pytest
+from photons_canvas.points import helpers as php
 
 describe "Color":
     it "has ZERO":

@@ -1,18 +1,16 @@
 # coding: spec
 
-from interactor.database.models import scene_spec
-
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages, MultiZoneMessages, TileMessages
-
-from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import random
-import pytest
 import json
+import random
 import uuid
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from interactor.database.models import scene_spec
+from photons_app import helpers as hp
+from photons_messages import LightMessages, MultiZoneMessages, TileMessages
 
 
 @pytest.fixture()

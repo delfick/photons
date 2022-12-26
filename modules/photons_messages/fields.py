@@ -1,11 +1,10 @@
-from photons_messages import enums
-
-from photons_protocol.packets import dictobj
-from photons_protocol.messages import T
+import random
 
 from delfick_project.norms import sb
 from lru import LRU
-import random
+from photons_messages import enums
+from photons_protocol.messages import T
+from photons_protocol.packets import dictobj
 
 
 def tile_effect_parameters_for(typ):

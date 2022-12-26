@@ -1,14 +1,13 @@
 # coding: spec
 
-from photons_transport.targets.script import sender_wrapper, ScriptRunner
-
-from photons_app.errors import PhotonsAppError, BadRunWithResults
-from photons_app import helpers as hp
-
-from delfick_project.norms import sb
-from unittest import mock
 import asyncio
+from unittest import mock
+
 import pytest
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_app.errors import BadRunWithResults, PhotonsAppError
+from photons_transport.targets.script import ScriptRunner, sender_wrapper
 
 
 class Sem:

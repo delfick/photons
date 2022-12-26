@@ -1,15 +1,13 @@
 # coding: spec
 
-from photons_canvas.points import containers as cont
-from photons_canvas.points import rearrange as rea
-from photons_canvas.orientation import Orientation
-from photons_canvas.points import helpers as php
-from photons_canvas.points.canvas import Canvas
-
-from photons_products import Products
-
 from unittest import mock
 
+from photons_canvas.orientation import Orientation
+from photons_canvas.points import containers as cont
+from photons_canvas.points import helpers as php
+from photons_canvas.points import rearrange as rea
+from photons_canvas.points.canvas import Canvas
+from photons_products import Products
 
 describe "rearrange":
     it "creates a new canvas from the parts given by the rearranger":

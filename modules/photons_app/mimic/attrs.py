@@ -1,7 +1,7 @@
-from photons_app.mimic.event import Events
+import fnmatch
 
 from delfick_project.norms import sb
-import fnmatch
+from photons_app.mimic.event import Events
 
 
 class Path:

@@ -1,8 +1,7 @@
 # coding: spec
 
-from photons_products.base import Product, Capability
 from photons_products import conditions as cond
-
+from photons_products.base import Capability, Product
 
 describe "Family":
     it "compares family":

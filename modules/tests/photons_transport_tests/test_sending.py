@@ -1,20 +1,19 @@
 # coding: spec
 
+import asyncio
+import sys
+from collections import defaultdict
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertSameError
+from photons_app import helpers as hp
 from photons_app.errors import RunErrors, TimedOut
 from photons_app.mimic.attrs import ChangeAttr
 from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, CoreMessages
 from photons_control.script import FromGenerator
+from photons_messages import CoreMessages, DeviceMessages
 from photons_products import Products
-
-from delfick_project.errors_pytest import assertSameError
-from collections import defaultdict
-from unittest import mock
-import asyncio
-import pytest
-import sys
 
 devices = pytest.helpers.mimic(has_udp=True, has_memory=False)
 

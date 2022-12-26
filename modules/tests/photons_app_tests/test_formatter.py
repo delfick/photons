@@ -1,15 +1,15 @@
 # coding: spec
 
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import BadOptionFormat
-from photons_app import helpers as hp
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from unittest import mock
-import pytest
 import uuid
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+from delfick_project.option_merge import MergedOptions
+from photons_app import helpers as hp
+from photons_app.errors import BadOptionFormat
+from photons_app.formatter import MergedOptionStringFormatter
 
 describe "MergedOptionStringFormatter":
 

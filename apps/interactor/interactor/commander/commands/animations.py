@@ -1,8 +1,8 @@
-from interactor.commander.command import DeviceChangeMixin
-from interactor.commander.store import store
+import secrets
 
 from delfick_project.norms import dictobj, sb
-import secrets
+from interactor.commander.command import DeviceChangeMixin
+from interactor.commander.store import store
 
 
 @store.command(name="animation/help")

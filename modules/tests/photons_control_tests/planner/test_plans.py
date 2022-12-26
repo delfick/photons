@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_control.planner.plans import a_plan, make_plans, Plan
-
-from photons_app.errors import PhotonsAppError
+import uuid
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import uuid
+from photons_app.errors import PhotonsAppError
+from photons_control.planner.plans import Plan, a_plan, make_plans
 
 describe "a_plan":
     it "puts items in plan_by_key":

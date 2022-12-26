@@ -1,21 +1,19 @@
 #!/usr/bin/python3 -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.executor import library_setup
-from photons_app.errors import UserQuit
-from photons_app import helpers as hp
-
-from photons_control.device_finder import DeviceFinderDaemon, Filter
-from photons_control.colour import ColourParser
+import asyncio
+import json
+import logging
+import readline
+import sys
+import threading
+from textwrap import dedent
 
 from delfick_project.logging import setup_logging
-from textwrap import dedent
-import threading
-import readline
-import asyncio
-import logging
-import json
-import sys
-
+from photons_app import helpers as hp
+from photons_app.errors import UserQuit
+from photons_app.executor import library_setup
+from photons_control.colour import ColourParser
+from photons_control.device_finder import DeviceFinderDaemon, Filter
 
 log = logging.getLogger("device_finder")
 

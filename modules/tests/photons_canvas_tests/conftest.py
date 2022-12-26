@@ -1,10 +1,9 @@
-from photons_app import helpers as hp
-
-from photons_messages.fields import scaled_hue, scaled_to_65535
-
-from delfick_project.norms import sb
 from unittest import mock
+
 import pytest
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_messages.fields import scaled_hue, scaled_to_65535
 
 
 @pytest.fixture(scope="module", autouse=True)

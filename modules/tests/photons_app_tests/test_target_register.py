@@ -1,13 +1,12 @@
 # coding: spec
 
-from photons_app.errors import TargetNotFound, TargetTypeNotFound, ProgrammerError
-from photons_app.registers import Target, TargetRegister
+from unittest import mock
 
+import pytest
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
-from unittest import mock
-import pytest
-
+from photons_app.errors import ProgrammerError, TargetNotFound, TargetTypeNotFound
+from photons_app.registers import Target, TargetRegister
 
 describe "Target":
     it "takes in things":

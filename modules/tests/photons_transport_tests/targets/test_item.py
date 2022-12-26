@@ -1,25 +1,18 @@
 # coding: spec
 
-from photons_transport.targets.item import Item, NoLimit
-from photons_transport.comms.base import Found
+import asyncio
+import binascii
+from unittest import mock
 
-from photons_app.errors import (
-    PhotonsAppError,
-    TimedOut,
-    DevicesNotFound,
-    RunErrors,
-)
-from photons_app.special import SpecialReference
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages
-
+import pytest
 from delfick_project.errors_pytest import assertRaises, assertSameError
 from delfick_project.norms import sb
-from unittest import mock
-import binascii
-import asyncio
-import pytest
+from photons_app import helpers as hp
+from photons_app.errors import DevicesNotFound, PhotonsAppError, RunErrors, TimedOut
+from photons_app.special import SpecialReference
+from photons_messages import DeviceMessages
+from photons_transport.comms.base import Found
+from photons_transport.targets.item import Item, NoLimit
 
 
 @pytest.fixture()

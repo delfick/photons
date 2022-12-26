@@ -1,14 +1,14 @@
 # coding: spec
 
-from photons_app.errors import PhotonsAppError, ApplicationCancelled, ApplicationStopped
-from photons_app.tasks.tasks import Task, GracefulTask
-from photons_app.collector import Collector
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
 import asyncio
+
 import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.collector import Collector
+from photons_app.errors import ApplicationCancelled, ApplicationStopped, PhotonsAppError
+from photons_app.tasks.tasks import GracefulTask, Task
 
 
 @pytest.fixture()

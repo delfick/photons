@@ -1,17 +1,16 @@
-from interactor.commander.command import DeviceChangeMixin
-from interactor.commander import helpers as ihp
-from interactor.commander.store import store
-
-from photons_messages.enums import TileEffectType, MultiZoneEffectType
-from photons_control.script import FromGeneratorPerSerial
-from photons_control.multizone import SetZonesEffect
-from photons_control.tile import SetTileEffect
-from photons_protocol.types import enum_spec
-from photons_canvas.theme import ApplyTheme
-from photons_control.planner import Skip
+import enum
 
 from delfick_project.norms import dictobj, sb
-import enum
+from interactor.commander import helpers as ihp
+from interactor.commander.command import DeviceChangeMixin
+from interactor.commander.store import store
+from photons_canvas.theme import ApplyTheme
+from photons_control.multizone import SetZonesEffect
+from photons_control.planner import Skip
+from photons_control.script import FromGeneratorPerSerial
+from photons_control.tile import SetTileEffect
+from photons_messages.enums import MultiZoneEffectType, TileEffectType
+from photons_protocol.types import enum_spec
 
 
 class EffectCommand(store.Command, DeviceChangeMixin):

@@ -1,11 +1,9 @@
+from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
 from photons_app.mimic.operator import Operator, operator
 from photons_app.mimic.operators.light import color_spec
-from photons_app import helpers as hp
-
-from photons_messages import TileMessages, TileEffectType
+from photons_messages import TileEffectType, TileMessages
 from photons_protocol.types import enum_spec
-
-from delfick_project.norms import dictobj, sb
 
 
 class TileChild(dictobj.Spec):

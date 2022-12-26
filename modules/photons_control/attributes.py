@@ -1,16 +1,14 @@
-from photons_control.multizone import SetZonesEffect
-from photons_control.script import FromGenerator
-from photons_control.tile import SetTileEffect
-from photons_control.planner import Skip
-
-from photons_app.errors import BadOption, DeprecatedTask
-from photons_app.tasks import task_register as task
-
-from photons_messages import LightMessages
+import sys
+from textwrap import dedent
 
 from delfick_project.norms import sb
-from textwrap import dedent
-import sys
+from photons_app.errors import BadOption, DeprecatedTask
+from photons_app.tasks import task_register as task
+from photons_control.multizone import SetZonesEffect
+from photons_control.planner import Skip
+from photons_control.script import FromGenerator
+from photons_control.tile import SetTileEffect
+from photons_messages import LightMessages
 
 
 def find_packet(protocol_register, value, prefix):

@@ -1,23 +1,27 @@
 # coding: spec
 
-from photons_app.mimic.event import ConsoleFormat, Event, Events, EventsHolder
-from photons_app.mimic.operator import Operator
-from photons_app.errors import PhotonsAppError
-from photons_app.mimic.attrs import ChangeAttr
-from photons_app.mimic.device import Device
-from photons_app import helpers as hp
-from photons_app.mimic import event
-
-from photons_messages import CoreMessages, DeviceMessages, LightMessages, MultiZoneMessages
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb
+import logging
 from itertools import zip_longest
 from unittest import mock
+
 import dateutil.tz
-import logging
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_app.mimic import event
+from photons_app.mimic.attrs import ChangeAttr
+from photons_app.mimic.device import Device
+from photons_app.mimic.event import ConsoleFormat, Event, Events, EventsHolder
+from photons_app.mimic.operator import Operator
+from photons_messages import (
+    CoreMessages,
+    DeviceMessages,
+    LightMessages,
+    MultiZoneMessages,
+)
+from photons_products import Products
 
 
 def assertLines(func, original, *lines):

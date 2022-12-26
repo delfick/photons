@@ -1,21 +1,18 @@
-from interactor.database.query import Query
-from interactor.database.base import Base
-
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from delfick_project.norms import dictobj, sb
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from urllib.parse import urlparse
-from sqlalchemy import pool
-import sqlalchemy
 import logging
+import os
 import shlex
 import sys
-import os
+from urllib.parse import urlparse
 
+import sqlalchemy
+from delfick_project.norms import dictobj, sb
+from interactor.database.base import Base
+from interactor.database.query import Query
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from sqlalchemy import create_engine, pool
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 log = logging.getLogger("interactor.database.database")
 
@@ -130,7 +127,8 @@ class DB(hp.AsyncCMMixin):
 
 
 async def migrate(database, extra=""):
-    from alembic.config import CommandLine as AlembicCommandLine, Config as AlembicConfig
+    from alembic.config import CommandLine as AlembicCommandLine
+    from alembic.config import Config as AlembicConfig
     from alembic.script import ScriptDirectory
 
     class Script(ScriptDirectory):

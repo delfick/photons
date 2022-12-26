@@ -1,15 +1,15 @@
 #!/usr/bin/python3 -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.tasks import task_register as task
-
-from photons_canvas import Canvas, point_helpers as php
-from photons_control.script import FromGenerator
-from photons_control.colour import make_hsbk
-from photons_messages import TileMessages
-
-from collections import defaultdict
 import logging
 import sys
+from collections import defaultdict
+
+from photons_app.tasks import task_register as task
+from photons_canvas import Canvas
+from photons_canvas import point_helpers as php
+from photons_control.colour import make_hsbk
+from photons_control.script import FromGenerator
+from photons_messages import TileMessages
 
 log = logging.getLogger("positions")
 

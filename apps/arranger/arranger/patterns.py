@@ -1,8 +1,8 @@
-from photons_canvas import point_helpers as php
-from photons_app import helpers as hp
-
 import itertools
 import random
+
+from photons_app import helpers as hp
+from photons_canvas import point_helpers as php
 
 
 class Black:

@@ -1,16 +1,14 @@
-from arranger.colors import convert_K_to_RGB
-from arranger.patterns import Patterns
-
-from photons_app import helpers as hp
-
-from photons_canvas.animations import Animation, AnimationRunner
-from photons_canvas import point_helpers as php
-from photons_messages import TileMessages
-
-from delfick_project.norms import dictobj, sb
+import asyncio
 import colorsys
 import logging
-import asyncio
+
+from arranger.colors import convert_K_to_RGB
+from arranger.patterns import Patterns
+from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import Animation, AnimationRunner
+from photons_messages import TileMessages
 
 log = logging.getLogger("arranger.arranger")
 

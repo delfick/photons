@@ -1,13 +1,12 @@
 # coding: spec
 
-from photons_transport.comms.base import timeout_task
-
-from photons_app.errors import TimedOut
-from photons_app import helpers as hp
+import asyncio
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import asyncio
+from photons_app import helpers as hp
+from photons_app.errors import TimedOut
+from photons_transport.comms.base import timeout_task
 
 describe "timeout_task":
 

@@ -1,14 +1,17 @@
-from photons_messages.fields import multizone_effect_parameters_for, tile_effect_parameters_for
-from photons_messages import protocol_register, enums
-from photons_protocol.types import Type as T
+import enum
+import inspect
+from enum import EnumMeta
+from textwrap import dedent
 
-from docutils.parsers.rst import Directive
 from delfick_project.norms import sb
 from docutils import statemachine
-from textwrap import dedent
-from enum import EnumMeta
-import inspect
-import enum
+from docutils.parsers.rst import Directive
+from photons_messages import enums, protocol_register
+from photons_messages.fields import (
+    multizone_effect_parameters_for,
+    tile_effect_parameters_for,
+)
+from photons_protocol.types import Type as T
 
 enum_description = """
 Some fields are enum values. This means the value on the binary packet is a

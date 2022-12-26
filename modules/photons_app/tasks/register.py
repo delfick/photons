@@ -1,9 +1,8 @@
-from photons_app.errors import BadTarget, BadOption, BadTask
-from photons_app.tasks.tasks import Task, GracefulTask
-
-from delfick_project.norms import sb, dictobj
 from collections import namedtuple
 
+from delfick_project.norms import dictobj, sb
+from photons_app.errors import BadOption, BadTarget, BadTask
+from photons_app.tasks.tasks import GracefulTask, Task
 
 artifact_spec = lambda: sb.optional_spec(sb.any_spec())
 

@@ -1,10 +1,10 @@
-from photons_canvas.animations import Animation, an_animation, options
-from photons_canvas import point_helpers as php
-
-from delfick_project.norms import dictobj, sb
+import enum
 import random
 import uuid
-import enum
+
+from delfick_project.norms import dictobj, sb
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import Animation, an_animation, options
 
 
 class Direction(enum.Enum):

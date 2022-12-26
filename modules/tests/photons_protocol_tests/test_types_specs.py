@@ -1,20 +1,19 @@
 # coding: spec
 
-from photons_protocol.errors import BadSpecValue, BadConversion
-from photons_protocol.types import Type as T
-from photons_protocol.packets import dictobj
-from photons_protocol import types
-
-from photons_app.errors import ProgrammerError
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, Meta
-from bitarray import bitarray
-from unittest import mock
-from enum import Enum
 import binascii
-import pytest
 import uuid
+from enum import Enum
+from unittest import mock
+
+import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import Meta, sb
+from photons_app.errors import ProgrammerError
+from photons_protocol import types
+from photons_protocol.errors import BadConversion, BadSpecValue
+from photons_protocol.packets import dictobj
+from photons_protocol.types import Type as T
 
 
 @pytest.fixture()

@@ -1,19 +1,17 @@
-from photons_canvas.animations.infrastructure.finish import Finish
-from photons_canvas.animations.run_options import make_run_options
-from photons_canvas.animations.infrastructure.state import State
-from photons_canvas.animations.infrastructure import cannons
-from photons_canvas import Canvas
-
-from photons_app.special import SpecialReference
-from photons_app.errors import FoundNoDevices
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages
-
-from collections import defaultdict
-import logging
 import asyncio
+import logging
 import time
+from collections import defaultdict
+
+from photons_app import helpers as hp
+from photons_app.errors import FoundNoDevices
+from photons_app.special import SpecialReference
+from photons_canvas import Canvas
+from photons_canvas.animations.infrastructure import cannons
+from photons_canvas.animations.infrastructure.finish import Finish
+from photons_canvas.animations.infrastructure.state import State
+from photons_canvas.animations.run_options import make_run_options
+from photons_messages import LightMessages
 
 log = logging.getLogger("photons_canvas.animations.runner")
 

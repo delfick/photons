@@ -1,11 +1,8 @@
-from photons_canvas.points import containers as cont
-from photons_canvas.orientation import Orientation
-
-from photons_app import helpers as hp
-
-from photons_products import Products
-
 import pytest
+from photons_app import helpers as hp
+from photons_canvas.orientation import Orientation
+from photons_canvas.points import containers as cont
+from photons_products import Products
 
 
 @pytest.fixture

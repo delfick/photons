@@ -1,17 +1,15 @@
 # coding: spec
 
-from photons_transport.comms.result import Result
-from photons_transport import Gaps
-
-from photons_app import helpers as hp
-
-from photons_protocol.messages import MultiOptions
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import asyncio
-import pytest
 import time
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_protocol.messages import MultiOptions
+from photons_transport import Gaps
+from photons_transport.comms.result import Result
 
 
 @pytest.fixture()

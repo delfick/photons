@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
 import time
+
+from photons_app import helpers as hp
 
 
 def call_later(*args):

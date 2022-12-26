@@ -1,11 +1,10 @@
 # coding: spec
 
-from photons_control.colour import Effects, Waveform, NoSuchEffect
-
-from photons_messages import LightMessages
+import random
 
 from delfick_project.errors_pytest import assertRaises
-import random
+from photons_control.colour import Effects, NoSuchEffect, Waveform
+from photons_messages import LightMessages
 
 describe "Effects":
     it "supports a None effect":

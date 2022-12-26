@@ -1,17 +1,17 @@
-from photons_app.errors import ApplicationStopped, PhotonsAppError
-from photons_app.tasks.tasks import Task, GracefulTask
-from photons_app import helpers as hp
-
-from contextlib import ExitStack
-from textwrap import dedent
-import subprocess
-import platform
 import asyncio
 import inspect
-import signal
-import pytest
-import sys
 import os
+import platform
+import signal
+import subprocess
+import sys
+from contextlib import ExitStack
+from textwrap import dedent
+
+import pytest
+from photons_app import helpers as hp
+from photons_app.errors import ApplicationStopped, PhotonsAppError
+from photons_app.tasks.tasks import GracefulTask, Task
 
 if hasattr(asyncio, "exceptions"):
     cancelled_error_name = "asyncio.exceptions.CancelledError"

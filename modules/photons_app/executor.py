@@ -5,14 +5,14 @@ the argument parsing and for starting up the App.
 This class is extended in Photons Apps to provide custom startup functionalities.
 """
 
-from photons_app.tasks import task_register
-from photons_app.collector import Collector
-from photons_app import VERSION
+import os
+import sys
 
 from delfick_project.app import App, OptionalFileType
 from delfick_project.norms import sb
-import sys
-import os
+from photons_app import VERSION
+from photons_app.collector import Collector
+from photons_app.tasks import task_register
 
 
 def library_setup(

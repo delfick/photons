@@ -1,21 +1,21 @@
+import random
+import struct
+from collections import defaultdict
+from functools import partial
+
+from delfick_project.norms import dictobj, sb
+from lru import LRU
+from photons_app.errors import PhotonsAppError
+from photons_canvas.orientation import Orientation, nearest_orientation
+from photons_canvas.points import containers as cont
 from photons_messages import (
-    LightMessages,
     DeviceMessages,
+    LightMessages,
     MultiZoneMessages,
     TileMessages,
 )
-from photons_canvas.orientation import nearest_orientation, Orientation
-from photons_canvas.points import containers as cont
-from photons_messages.fields import Tile, Color
-from photons_app.errors import PhotonsAppError
+from photons_messages.fields import Color, Tile
 from photons_products import Products, Zones
-
-from delfick_project.norms import sb, dictobj
-from collections import defaultdict
-from functools import partial
-from lru import LRU
-import random
-import struct
 
 plan_by_key = {}
 

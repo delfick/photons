@@ -1,4 +1,4 @@
-from photons_app.tasks.register import task_register, Task, GracefulTask
+from photons_app.tasks.register import GracefulTask, Task, task_register
 
 __import__("photons_app.tasks.default_tasks")
 

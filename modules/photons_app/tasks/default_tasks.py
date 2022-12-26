@@ -1,13 +1,13 @@
-from photons_app.tasks.specifier import task_specifier_spec
-from photons_app.tasks.register import task_register
-from photons_app.errors import PhotonsAppError
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import sb, Meta
-from collections import defaultdict
-from textwrap import dedent
-from io import StringIO
 import sys
+from collections import defaultdict
+from io import StringIO
+from textwrap import dedent
+
+from delfick_project.norms import Meta, sb
+from delfick_project.option_merge import MergedOptions
+from photons_app.errors import PhotonsAppError
+from photons_app.tasks.register import task_register
+from photons_app.tasks.specifier import task_specifier_spec
 
 task = task_register
 

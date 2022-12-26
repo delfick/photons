@@ -1,8 +1,8 @@
 # coding: spec
 
-from photons_protocol.messages import Messages
-
 from unittest import mock
+
+from photons_protocol.messages import Messages
 
 describe "MessagesMeta":
     it "calls any _lifx_packet_message attribute with the name and put onto resulting kls":

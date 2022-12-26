@@ -1,21 +1,20 @@
 # coding: spec
 
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.tasks.specifier import task_specifier_spec
-from photons_app.errors import TargetNotFound
-from photons_app.collector import Collector
-from photons_app import helpers as hp
-from photons_app.executor import App
-
-from photons_transport.targets.base import Target
-from photons_transport.targets import LanTarget
-
-from delfick_project.norms import Meta, sb, dictobj, BadSpecValue
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
 from textwrap import dedent
 from unittest import mock
+
 import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from photons_app import helpers as hp
+from photons_app.collector import Collector
+from photons_app.errors import TargetNotFound
+from photons_app.executor import App
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks.specifier import task_specifier_spec
+from photons_transport.targets import LanTarget
+from photons_transport.targets.base import Target
 
 describe "task_specifier_spec":
 

@@ -1,14 +1,11 @@
 # coding: spec
 
-from photons_control.script import find_serials
-
-from photons_app.special import FoundSerials
-from photons_app import helpers as hp
-
-from photons_products import Products
-
-from delfick_project.norms import sb
 import pytest
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_app.special import FoundSerials
+from photons_control.script import find_serials
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

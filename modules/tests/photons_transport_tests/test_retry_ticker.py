@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_transport import RetryTicker
-
-from photons_app import helpers as hp
-
-from unittest import mock
-import pytest
 import time
+from unittest import mock
+
+import pytest
+from photons_app import helpers as hp
+from photons_transport import RetryTicker
 
 
 @pytest.fixture()

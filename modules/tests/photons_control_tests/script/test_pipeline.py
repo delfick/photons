@@ -1,19 +1,17 @@
 # coding: spec
 
-from photons_control.script import Pipeline
+import asyncio
+import time
+from collections import defaultdict
 
+import pytest
+from delfick_project.errors_pytest import assertSameError
+from photons_app import helpers as hp
 from photons_app.errors import RunErrors, TimedOut
 from photons_app.special import FoundSerials
-from photons_app import helpers as hp
-
+from photons_control.script import Pipeline
 from photons_messages import DeviceMessages, LightMessages
 from photons_products import Products
-
-from delfick_project.errors_pytest import assertSameError
-from collections import defaultdict
-import asyncio
-import pytest
-import time
 
 devices = pytest.helpers.mimic()
 

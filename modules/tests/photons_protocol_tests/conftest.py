@@ -1,9 +1,7 @@
+import pytest
+from photons_messages import LIFXPacket
 from photons_protocol.messages import Messages
 from photons_protocol.types import Type as T
-from photons_messages import LIFXPacket
-
-import pytest
-
 
 msg = LIFXPacket.message
 

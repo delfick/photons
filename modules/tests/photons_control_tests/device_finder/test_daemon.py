@@ -1,15 +1,19 @@
 # coding: spec
 
-from photons_control.device_finder import DeviceFinderDaemon, Finder, Filter, DeviceFinder, Device
-
-from photons_app import helpers as hp
-
-from photons_products import Products
-
-from unittest import mock
 import asyncio
-import pytest
 import time
+from unittest import mock
+
+import pytest
+from photons_app import helpers as hp
+from photons_control.device_finder import (
+    Device,
+    DeviceFinder,
+    DeviceFinderDaemon,
+    Filter,
+    Finder,
+)
+from photons_products import Products
 
 describe "DeviceFinderDaemon":
     it "takes in a sender":

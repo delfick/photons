@@ -1,21 +1,20 @@
 # coding: spec
 
-from photons_app.mimic.device import Device, DeviceSession, ExpectedOneMessage
-from photons_app.mimic.operator import IO, Viewer, Operator
-from photons_app.mimic.operators.listener import Listener
-from photons_app.mimic.attrs import Attrs, ChangeAttr
-from photons_app.mimic.event import Events
-
-from photons_messages import protocol_register, Services, DeviceMessages
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-from delfick_project.norms import sb, dictobj
-from contextlib import contextmanager
-from unittest import mock
 import itertools
 import logging
+from contextlib import contextmanager
+from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import dictobj, sb
+from photons_app.mimic.attrs import Attrs, ChangeAttr
+from photons_app.mimic.device import Device, DeviceSession, ExpectedOneMessage
+from photons_app.mimic.event import Events
+from photons_app.mimic.operator import IO, Operator, Viewer
+from photons_app.mimic.operators.listener import Listener
+from photons_messages import DeviceMessages, Services, protocol_register
+from photons_products import Products
 
 
 @pytest.fixture()

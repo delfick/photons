@@ -1,7 +1,6 @@
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
 from delfick_project.norms import Meta, sb
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
 
 
 class NoSuchAnimation(PhotonsAppError):

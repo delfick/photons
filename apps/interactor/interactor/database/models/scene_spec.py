@@ -1,7 +1,7 @@
-from photons_messages import LightMessages, MultiZoneMessages, TileMessages
-
-from delfick_project.norms import dictobj, sb, BadSpecValue
 import json
+
+from delfick_project.norms import BadSpecValue, dictobj, sb
+from photons_messages import LightMessages, MultiZoneMessages, TileMessages
 
 
 class range_spec(sb.Spec):

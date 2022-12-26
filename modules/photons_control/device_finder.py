@@ -1,26 +1,25 @@
-from photons_app.errors import PhotonsAppError, FoundNoDevices, RunErrors
+import asyncio
+import binascii
+import enum
+import fnmatch
+import itertools
+import json
+import logging
+import re
+import sys
+import time
+import traceback
+from functools import partial
+from urllib.parse import parse_qs
+
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from photons_app import helpers as hp
+from photons_app.errors import FoundNoDevices, PhotonsAppError, RunErrors
 from photons_app.special import FoundSerials, SpecialReference
 from photons_app.tasks import task_register as task
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, LightMessages, CoreMessages
 from photons_control.script import FromGenerator
+from photons_messages import CoreMessages, DeviceMessages, LightMessages
 from photons_products import Products
-
-from delfick_project.norms import dictobj, sb, Meta, BadSpecValue
-from urllib.parse import parse_qs
-from functools import partial
-import traceback
-import itertools
-import binascii
-import logging
-import fnmatch
-import asyncio
-import json
-import time
-import enum
-import sys
-import re
 
 log = logging.getLogger("photons_control.device_finder")
 

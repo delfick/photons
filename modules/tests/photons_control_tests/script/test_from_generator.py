@@ -1,23 +1,21 @@
 # coding: spec
 
-from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeline
-
-from photons_app.errors import BadRun, TimedOut, BadRunWithResults
-from photons_app.special import FoundSerials
-from photons_app import helpers as hp
-
-from photons_messages import DeviceMessages, DiscoveryMessages
-from photons_transport.errors import FailedToFindDevice
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises, assertSameError
-from contextlib import contextmanager
-from collections import defaultdict
-from functools import partial
 import asyncio
-import pytest
-import time
 import sys
+import time
+from collections import defaultdict
+from contextlib import contextmanager
+from functools import partial
+
+import pytest
+from delfick_project.errors_pytest import assertRaises, assertSameError
+from photons_app import helpers as hp
+from photons_app.errors import BadRun, BadRunWithResults, TimedOut
+from photons_app.special import FoundSerials
+from photons_control.script import FromGenerator, FromGeneratorPerSerial, Pipeline
+from photons_messages import DeviceMessages, DiscoveryMessages
+from photons_products import Products
+from photons_transport.errors import FailedToFindDevice
 
 devices = pytest.helpers.mimic()
 

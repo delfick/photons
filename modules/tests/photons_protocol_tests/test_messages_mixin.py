@@ -1,18 +1,16 @@
 # coding: spec
 
-from photons_protocol.messages import Messages, PacketTypeExtractor, sources_for
-from photons_protocol.errors import BadConversion
-
-from photons_app.registers import ProtocolRegister
-
-from photons_messages import LIFXPacket
-
-from delfick_project.errors_pytest import assertRaises
-from bitarray import bitarray
+import binascii
 from textwrap import dedent
 from unittest import mock
-import binascii
+
 import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from photons_app.registers import ProtocolRegister
+from photons_messages import LIFXPacket
+from photons_protocol.errors import BadConversion
+from photons_protocol.messages import Messages, PacketTypeExtractor, sources_for
 
 msg = LIFXPacket.message
 

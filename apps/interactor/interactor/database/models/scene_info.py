@@ -1,5 +1,4 @@
 from interactor.database.base import Base
-
 from sqlalchemy import Column, String, Text
 
 

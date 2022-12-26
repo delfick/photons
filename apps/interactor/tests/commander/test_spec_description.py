@@ -1,8 +1,7 @@
 # coding: spec
 
-from interactor.commander.spec_description import signature
-
 from delfick_project.norms import sb
+from interactor.commander.spec_description import signature
 
 describe "signature":
 

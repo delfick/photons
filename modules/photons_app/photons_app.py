@@ -3,22 +3,22 @@ Here we define the yaml specification for photons_app options and task options
 
 The specifications are responsible for sanitation, validation and normalisation.
 """
-from photons_app.registers import TargetRegister, Target, ReferenceResolverRegister
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.errors import BadOption, ApplicationStopped
-from photons_app.tasks.specifier import task_specifier_spec
-from photons_app import helpers as hp
-
-from delfick_project.norms import sb, dictobj, va
-from urllib.parse import urlparse, unquote
-from contextlib import contextmanager
-import platform
 import asyncio
-import logging
-import signal
 import json
-import sys
+import logging
 import os
+import platform
+import signal
+import sys
+from contextlib import contextmanager
+from urllib.parse import unquote, urlparse
+
+from delfick_project.norms import dictobj, sb, va
+from photons_app import helpers as hp
+from photons_app.errors import ApplicationStopped, BadOption
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.registers import ReferenceResolverRegister, Target, TargetRegister
+from photons_app.tasks.specifier import task_specifier_spec
 
 log = logging.getLogger("photons_app.photons_app")
 

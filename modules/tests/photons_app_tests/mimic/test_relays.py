@@ -1,13 +1,11 @@
 # coding: spec
 
-from photons_app.mimic.operators.relays import Relay, RelayPowerGetter
-from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_products import Products
-from photons_messages import DeviceMessages, RelayMessages
-
 import pytest
+from photons_app import helpers as hp
+from photons_app.mimic.event import Events
+from photons_app.mimic.operators.relays import Relay, RelayPowerGetter
+from photons_messages import DeviceMessages, RelayMessages
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

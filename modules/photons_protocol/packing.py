@@ -1,10 +1,10 @@
-from photons_protocol.errors import BadConversion
-from photons_protocol.types import Optional
-
-from delfick_project.norms import sb, dictobj
-from bitarray import bitarray
 import binascii
 import struct
+
+from bitarray import bitarray
+from delfick_project.norms import dictobj, sb
+from photons_protocol.errors import BadConversion
+from photons_protocol.types import Optional
 
 
 def val_to_bitarray(val, doing):

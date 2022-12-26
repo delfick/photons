@@ -1,20 +1,19 @@
+import logging
+import os
+import shlex
+import socket
+import subprocess
+import webbrowser
+
+import pkg_resources
 from arranger.options import Options
 from arranger.server import Server
-
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app.tasks import task_register as task
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb
-import pkg_resources
-import webbrowser
-import subprocess
-import logging
-import socket
-import shlex
-import os
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_app.formatter import MergedOptionStringFormatter
+from photons_app.tasks import task_register as task
 
 log = logging.getLogger("arranger.addon")
 

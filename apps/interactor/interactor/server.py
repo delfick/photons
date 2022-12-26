@@ -1,17 +1,15 @@
-from interactor.request_handlers import CommandHandler, WSHandler
-from interactor.commander.animations import Animations
-from interactor.database import DB
-
-from photons_app import helpers as hp
-
-from photons_control.device_finder import DeviceFinderDaemon, Finder
-
-from whirlwind.commander import Commander
-from whirlwind.server import Server
-import tornado.web
 import logging
 import time
 import uuid
+
+import tornado.web
+from interactor.commander.animations import Animations
+from interactor.database import DB
+from interactor.request_handlers import CommandHandler, WSHandler
+from photons_app import helpers as hp
+from photons_control.device_finder import DeviceFinderDaemon, Finder
+from whirlwind.commander import Commander
+from whirlwind.server import Server
 
 log = logging.getLogger("interactor.server")
 
@@ -111,7 +109,7 @@ class Server(Server):
         super().__init__(final_future, server_end_future=server_end_future)
 
         if store is None:
-            from interactor.commander.store import store, load_commands
+            from interactor.commander.store import load_commands, store
 
             load_commands()
 

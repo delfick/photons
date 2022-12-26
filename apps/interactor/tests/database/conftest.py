@@ -1,12 +1,11 @@
-from interactor.database import DB, Base
-
-from photons_app import helpers as hp
-
-import sqlalchemy
-import tempfile
 import logging
-import pytest
 import os
+import tempfile
+
+import pytest
+import sqlalchemy
+from interactor.database import DB, Base
+from photons_app import helpers as hp
 
 log = logging.getLogger("interactor.database")
 

@@ -1,7 +1,7 @@
 # coding: spec
 
-from unittest import mock
 import os
+from unittest import mock
 
 describe "Options":
     it "has defaults", options_maker:

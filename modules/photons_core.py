@@ -1,14 +1,13 @@
 """
 Requiring this module will in turn require all the lifx-photons-core modules
 """
-from photons_app.executor import main
-
-from delfick_project.option_merge import MergedOptionStringFormatter
-from delfick_project.addons import addon_hook
+import os
 import shlex
 import sys
-import os
 
+from delfick_project.addons import addon_hook
+from delfick_project.option_merge import MergedOptionStringFormatter
+from photons_app.executor import main
 
 wanted = [
     "control",

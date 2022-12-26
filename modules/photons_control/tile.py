@@ -1,14 +1,12 @@
-from photons_canvas.orientation import nearest_orientation
-from photons_control.script import FromGenerator
-from photons_control.colour import make_hsbks
-
-from photons_app.tasks import task_register as task
-from photons_app.errors import PhotonsAppError
-
-from photons_messages import TileMessages, TileEffectType, LightMessages
-
-from delfick_project.norms import BadSpecValue, sb, Meta
 import logging
+
+from delfick_project.norms import BadSpecValue, Meta, sb
+from photons_app.errors import PhotonsAppError
+from photons_app.tasks import task_register as task
+from photons_canvas.orientation import nearest_orientation
+from photons_control.colour import make_hsbks
+from photons_control.script import FromGenerator
+from photons_messages import LightMessages, TileEffectType, TileMessages
 
 log = logging.getLogger(name="photons_control.tiles")
 

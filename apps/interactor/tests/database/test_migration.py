@@ -1,12 +1,9 @@
 # coding: spec
 
-from interactor.database.database import migrate, Database
-from sqlalchemy import create_engine
-
-from photons_app.formatter import MergedOptionStringFormatter
+from interactor.database.database import Database, migrate
 from photons_app import helpers as hp
-
-from sqlalchemy import inspect
+from photons_app.formatter import MergedOptionStringFormatter
+from sqlalchemy import create_engine, inspect
 
 describe "DatabaseMigration":
     async it "can create a database":

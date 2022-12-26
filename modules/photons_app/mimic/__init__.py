@@ -1,14 +1,13 @@
-from photons_app.mimic.transport import MemoryTarget
+import itertools
+import os
+import sys
+
+from photons_app import helpers as hp
 from photons_app.mimic.device import Device
 from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import protocol_register, Services
+from photons_app.mimic.transport import MemoryTarget
+from photons_messages import Services, protocol_register
 from photons_transport.targets import LanTarget
-
-import itertools
-import sys
-import os
 
 this_dir = os.path.dirname(__file__)
 for fle in os.listdir(os.path.join(this_dir, "operators")):

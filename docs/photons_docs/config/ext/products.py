@@ -1,8 +1,8 @@
-from photons_products import Products
-
-from docutils.parsers.rst import Directive
-from docutils import statemachine
 import enum
+
+from docutils import statemachine
+from docutils.parsers.rst import Directive
+from photons_products import Products
 
 
 class ShowProductsDirective(Directive):

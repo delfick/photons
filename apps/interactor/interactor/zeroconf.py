@@ -1,12 +1,11 @@
-from interactor import VERSION, ZEROCONF_TYPE
-
-from photons_app import helpers as hp
-
-from zeroconf.asyncio import AsyncServiceInfo, AsyncZeroconf
-from delfick_project.norms import dictobj, sb
-from zeroconf import IPVersion
-import socket
 import logging
+import socket
+
+from delfick_project.norms import dictobj, sb
+from interactor import VERSION, ZEROCONF_TYPE
+from photons_app import helpers as hp
+from zeroconf import IPVersion
+from zeroconf.asyncio import AsyncServiceInfo, AsyncZeroconf
 
 log = logging.getLogger("interactor.zeroconf")
 

@@ -1,9 +1,7 @@
 # coding: spec
 
 from photons_canvas.points import containers as cont
-
 from photons_products import Products
-
 
 describe "Device":
     it "has serial, cap and width":

@@ -1,14 +1,13 @@
 # coding: spec
 
-from interactor.errors import InteractorError
-
-from photons_app.formatter import MergedOptionStringFormatter
-from photons_app import helpers as hp
-
-from delfick_project.norms import dictobj, sb
-from whirlwind.store import Store
 import random
+
 import pytest
+from delfick_project.norms import dictobj, sb
+from interactor.errors import InteractorError
+from photons_app import helpers as hp
+from photons_app.formatter import MergedOptionStringFormatter
+from whirlwind.store import Store
 
 store = Store(default_path="/v1/lifx/command", formatter=MergedOptionStringFormatter)
 

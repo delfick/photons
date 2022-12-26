@@ -1,16 +1,15 @@
 # coding: spec
 
-from interactor.request_handlers import WSHandler
-from interactor.commander import helpers as ihp
-from interactor.server import Server
-
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from unittest import mock
-import pytest
 import types
 import uuid
+from unittest import mock
+
+import pytest
+from interactor.commander import helpers as ihp
+from interactor.request_handlers import WSHandler
+from interactor.server import Server
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
 
 
 @pytest.fixture()

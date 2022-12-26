@@ -1,17 +1,17 @@
 # coding: spec
 
-from photons_app.tasks.register import TaskRegister, RegisteredTask
-from photons_app.errors import BadTask, BadOption, BadTarget
-from photons_app.tasks import register as specs
-from photons_app.special import FoundSerials
-from photons_app.collector import Collector
-from photons_app.registers import Target
-
-from delfick_project.errors_pytest import assertRaises
-from alt_pytest_asyncio.plugin import OverrideLoop
-from delfick_project.norms import dictobj, sb
 from unittest import mock
+
 import pytest
+from alt_pytest_asyncio.plugin import OverrideLoop
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import dictobj, sb
+from photons_app.collector import Collector
+from photons_app.errors import BadOption, BadTarget, BadTask
+from photons_app.registers import Target
+from photons_app.special import FoundSerials
+from photons_app.tasks import register as specs
+from photons_app.tasks.register import RegisteredTask, TaskRegister
 
 
 @pytest.fixture()

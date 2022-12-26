@@ -1,12 +1,12 @@
 # Get the parent packet
-from photons_messages.frame import LIFXPacket
-
-# Get the messages
-from photons_messages.messages import *  # noqa
 from photons_messages import messages
 
 # Make the enums available straight from photons_messages
 from photons_messages.enums import *  # noqa
+from photons_messages.frame import LIFXPacket
+
+# Get the messages
+from photons_messages.messages import *  # noqa
 
 # Make this explicitly part of this module
 LIFXPacket = LIFXPacket

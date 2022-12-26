@@ -25,10 +25,11 @@ Animations
 .. automodule:: photons_canvas.animations
 """
 
-from photons_canvas.points import helpers as point_helpers, rearrange
+from photons_canvas import font
+from photons_canvas.points import helpers as point_helpers
+from photons_canvas.points import rearrange
 from photons_canvas.points.canvas import Canvas
 from photons_canvas.theme import ApplyTheme
-from photons_canvas import font
 
 __all__ = [
     "Canvas",

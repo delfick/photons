@@ -1,31 +1,27 @@
 # coding: spec
 
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_control.colour import ColourParser
 from photons_control.multizone import (
-    find_multizone,
-    zones_from_reference,
-    SetZonesPlan,
     SetZones,
     SetZonesEffect,
+    SetZonesPlan,
+    find_multizone,
+    zones_from_reference,
 )
-from photons_control.planner import Skip, NoMessages
-from photons_control.colour import ColourParser
-
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
+from photons_control.planner import NoMessages, Skip
 from photons_messages import (
     DeviceMessages,
-    LightMessages,
-    MultiZoneMessages,
-    MultiZoneEffectType,
     DiscoveryMessages,
+    LightMessages,
+    MultiZoneEffectType,
+    MultiZoneMessages,
 )
-from photons_products.lifx import Capability
 from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-import pytest
-
+from photons_products.lifx import Capability
 
 zeroColor = hp.Color(0, 0, 0, 3500)
 zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]

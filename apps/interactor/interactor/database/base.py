@@ -1,6 +1,7 @@
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy import Column, Integer
 import logging
+
+from sqlalchemy import Column, Integer
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 log = logging.getLogger("interactor.database.connection")
 

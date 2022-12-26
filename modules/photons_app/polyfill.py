@@ -2,9 +2,10 @@
 Copied from python3.8 and python3.6 contextlib
 """
 
-from functools import wraps
-import _collections_abc
 import abc
+from functools import wraps
+
+import _collections_abc
 
 
 class AbstractAsyncContextManager(abc.ABC):

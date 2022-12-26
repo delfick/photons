@@ -1,8 +1,7 @@
 # coding: spec
 
-from interactor.commander import helpers as ihp
-
 from delfick_project.norms import dictobj, sb
+from interactor.commander import helpers as ihp
 
 describe "fields_description":
     it "only gets fields that have help specified":

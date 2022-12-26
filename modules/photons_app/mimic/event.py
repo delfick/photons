@@ -1,19 +1,17 @@
-from photons_protocol.packets import dictobj, reprer
-
-from photons_app.errors import ProgrammerError
-
-from photons_protocol.errors import PhotonsProtocolError
-from photons_messages import TileMessages
-
-from delfick_project.norms import sb, BadSpecValue
+import json
+import logging
+import re
+import time
+import traceback
 from datetime import datetime
 from unittest import mock
+
 import dateutil.tz
-import traceback
-import logging
-import time
-import json
-import re
+from delfick_project.norms import BadSpecValue, sb
+from photons_app.errors import ProgrammerError
+from photons_messages import TileMessages
+from photons_protocol.errors import PhotonsProtocolError
+from photons_protocol.packets import dictobj, reprer
 
 
 class ConsoleFormat:

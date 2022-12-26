@@ -1,13 +1,10 @@
 # coding: spec
 
-from photons_control.script import ForCapability
-
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages, DeviceMessages, DiscoveryMessages
-from photons_products import Products
-
 import pytest
+from photons_app import helpers as hp
+from photons_control.script import ForCapability
+from photons_messages import DeviceMessages, DiscoveryMessages, LightMessages
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

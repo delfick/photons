@@ -1,10 +1,10 @@
-from photons_messages import Services
-
-from delfick_project.norms import dictobj, sb, BadSpecValue, Meta
-from delfick_project.option_merge import MergedOptions
 import binascii
 import json
 import os
+
+from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
+from delfick_project.option_merge import MergedOptions
+from photons_messages import Services
 
 
 class service_type_spec(sb.Spec):

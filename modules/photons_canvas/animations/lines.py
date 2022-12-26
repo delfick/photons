@@ -1,8 +1,8 @@
-from photons_canvas import point_helpers as php
-from photons_canvas.animations import options
+import math
 
 from delfick_project.norms import dictobj, sb
-import math
+from photons_canvas import point_helpers as php
+from photons_canvas.animations import options
 
 
 def clamp(val, mn=0, mx=1):

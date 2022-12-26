@@ -1,9 +1,9 @@
-from photons_protocol.packets import dictobj
-from photons_protocol.messages import T
-
-from delfick_project.norms import sb
-from bitarray import bitarray
 import binascii
+
+from bitarray import bitarray
+from delfick_project.norms import sb
+from photons_protocol.messages import T
+from photons_protocol.packets import dictobj
 
 emptybt = bitarray("0000000000000000000000000000000000000000000000000000000000000000")
 target_cache = {}

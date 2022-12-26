@@ -1,19 +1,17 @@
 # coding: spec
 
-from photons_control.device_finder import Device, Filter, Finder, InfoPoints
-
-from photons_app.errors import FoundNoDevices
-from photons_app.special import FoundSerials
-from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_messages import LightMessages, DeviceMessages
-from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
 import asyncio
+from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import FoundNoDevices
+from photons_app.mimic.event import Events
+from photons_app.special import FoundSerials
+from photons_control.device_finder import Device, Filter, Finder, InfoPoints
+from photons_messages import DeviceMessages, LightMessages
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 devices.add("light")(

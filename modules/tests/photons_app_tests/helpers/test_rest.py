@@ -1,12 +1,11 @@
 # coding: spec
 
-from photons_app import helpers as hp
-
-from photons_messages import fields
+import os
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import os
+from photons_app import helpers as hp
+from photons_messages import fields
 
 describe "future to string":
     it "just repr's a not future":

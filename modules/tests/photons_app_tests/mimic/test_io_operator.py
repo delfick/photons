@@ -1,20 +1,19 @@
 # coding: spec
 
-from photons_app.mimic.operators.listener import RecordEvents, Listener
-from photons_app.mimic.operator import IO, Operator
-from photons_app.mimic.packet_filter import Filter
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.mimic.attrs import ChangeAttr
 from photons_app.mimic.device import Device
 from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
+from photons_app.mimic.operator import IO, Operator
+from photons_app.mimic.operators.listener import Listener, RecordEvents
+from photons_app.mimic.packet_filter import Filter
 from photons_messages import DeviceMessages, DiscoveryMessages, Services
 from photons_products import Products
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import pytest
 
 
 def make_packet(kls, **kwargs):

@@ -1,9 +1,9 @@
 # coding: spec
 
-from photons_messages import Services, DiscoveryMessages, protocol_register
-
 import binascii
+
 import pytest
+from photons_messages import DiscoveryMessages, Services, protocol_register
 
 describe "DiscoveryMessages":
     it "can unpack":

@@ -1,13 +1,12 @@
 #!/usr/bin/python3 -ci=__import__;o=i("os");s=i("sys");a=s.argv;p=o.path;y=p.join(p.dirname(a[1]),".python");o.execv(y,a)
 
-from photons_app.tasks import task_register as task
-
-from photons_control.script import FromGenerator
-from photons_messages import DeviceMessages
-from photons_canvas import Canvas
-
 import logging
 import random
+
+from photons_app.tasks import task_register as task
+from photons_canvas import Canvas
+from photons_control.script import FromGenerator
+from photons_messages import DeviceMessages
 
 log = logging.getLogger("info")
 

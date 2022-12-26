@@ -1,16 +1,14 @@
 # coding: spec
 
-from photons_control.script import Repeater, Pipeline
+import time
+from collections import defaultdict
 
-from photons_app.special import FoundSerials
+import pytest
 from photons_app import helpers as hp
-
+from photons_app.special import FoundSerials
+from photons_control.script import Pipeline, Repeater
 from photons_messages import DeviceMessages, LightMessages
 from photons_products import Products
-
-from collections import defaultdict
-import pytest
-import time
 
 devices = pytest.helpers.mimic()
 

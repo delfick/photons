@@ -1,9 +1,7 @@
+from delfick_project.norms import BadSpecValue, dictobj, sb
 from photons_app.mimic.operator import Operator, operator
-
-from photons_protocol.types import bytes_spec
 from photons_messages import DeviceMessages
-
-from delfick_project.norms import dictobj, sb, BadSpecValue
+from photons_protocol.types import bytes_spec
 
 
 class identity_spec(sb.Spec):

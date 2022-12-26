@@ -1,11 +1,9 @@
 # coding: spec
 
-from photons_transport import catch_errors
-
-from photons_app.errors import RunErrors, PhotonsAppError
-from photons_app import helpers as hp
-
 from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError, RunErrors
+from photons_transport import catch_errors
 
 describe "throw_error":
     it "passes on errors if error_catcher is a callable":

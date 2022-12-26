@@ -1,11 +1,11 @@
 # coding: spec
 
-from photons_products import base, Family, VendorRegistry
-from photons_products.errors import IncompleteProduct
-
-from delfick_project.errors_pytest import assertRaises
 from unittest import mock
+
 import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_products import Family, VendorRegistry, base
+from photons_products.errors import IncompleteProduct
 
 describe "Capability":
     it "takes in product and firmware info":

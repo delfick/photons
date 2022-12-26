@@ -1,13 +1,10 @@
 # coding: spec
 
-from photons_canvas.theme import ApplyTheme
-
-from photons_app.special import FoundSerials
-from photons_app import helpers as hp
-
-from photons_products import Products
-
 import pytest
+from photons_app import helpers as hp
+from photons_app.special import FoundSerials
+from photons_canvas.theme import ApplyTheme
+from photons_products import Products
 
 devices = pytest.helpers.mimic()
 

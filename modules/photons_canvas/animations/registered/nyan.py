@@ -1,17 +1,14 @@
+from delfick_project.norms import dictobj
+from photons_app import helpers as hp
+from photons_canvas.animations import an_animation
 from photons_canvas.animations.registered.marquee import (
     MarqueeAnimation,
     MarqueeDirection,
-    direction_spec,
-    State,
     Options,
+    State,
+    direction_spec,
 )
-
-from photons_app import helpers as hp
-
 from photons_canvas.font import Character, Characters
-from photons_canvas.animations import an_animation
-
-from delfick_project.norms import dictobj
 
 
 class Options(Options):

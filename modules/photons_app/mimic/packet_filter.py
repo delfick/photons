@@ -1,8 +1,8 @@
-from photons_messages.frame import emptybt
-from photons_messages import CoreMessages
-
 from contextlib import contextmanager
+
 from delfick_project.norms import sb
+from photons_messages import CoreMessages
+from photons_messages.frame import emptybt
 
 
 class Cont(Exception):

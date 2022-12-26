@@ -1,11 +1,10 @@
 # coding: spec
 
-from interactor.commander.store import store, load_commands
-
-from photons_app import helpers as hp
-
 from unittest import mock
+
 import pytest
+from interactor.commander.store import load_commands, store
+from photons_app import helpers as hp
 
 
 @pytest.fixture()

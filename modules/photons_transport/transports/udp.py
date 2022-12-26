@@ -1,10 +1,9 @@
-from photons_app import helpers as hp
-
-from photons_transport.transports.socket import Socket
-
-import platform
 import logging
+import platform
 import socket
+
+from photons_app import helpers as hp
+from photons_transport.transports.socket import Socket
 
 log = logging.getLogger("photons_transport.transports.udp")
 

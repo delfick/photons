@@ -22,17 +22,17 @@ Usage looks like:
 where the ``*_type`` objects have information related to the type for that
 field. See ``photons_protocol.types`` for builtin types.
 """
-from photons_protocol.packing import PacketPacking, val_to_bitarray
-from photons_protocol.types import Optional, Type as T
-
-from photons_app.errors import PhotonsAppError, ProgrammerError
-
-from delfick_project.norms import dictobj, sb, Meta
-from bitarray import bitarray
-from functools import partial
 import binascii
-import logging
 import json
+import logging
+from functools import partial
+
+from bitarray import bitarray
+from delfick_project.norms import Meta, dictobj, sb
+from photons_app.errors import PhotonsAppError, ProgrammerError
+from photons_protocol.packing import PacketPacking, val_to_bitarray
+from photons_protocol.types import Optional
+from photons_protocol.types import Type as T
 
 log = logging.getLogger("photons_protocol.packets")
 

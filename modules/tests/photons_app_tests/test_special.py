@@ -1,20 +1,20 @@
 # coding: spec
 
+import asyncio
+import binascii
+import os
+from unittest import mock
+
+import pytest
+from delfick_project.errors_pytest import assertRaises
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
 from photons_app.special import (
-    SpecialReference,
     FoundSerials,
     HardCodedSerials,
     ResolveReferencesFromFile,
+    SpecialReference,
 )
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from unittest import mock
-import binascii
-import asyncio
-import pytest
-import os
 
 describe "SpecialReference":
     async it "gives itself a finding and found future":

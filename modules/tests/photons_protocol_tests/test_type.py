@@ -1,20 +1,21 @@
 # coding: spec
 
-from photons_protocol.types import Type, Optional, static_conversion_from_spec, json_spec
-from photons_protocol.types import Type as T, UnknownEnum
-from photons_protocol.errors import BadConversion
-
-from photons_app.errors import ProgrammerError
-from photons_app import helpers as hp
-
-from delfick_project.norms import sb, Meta, BadSpecValue
-from delfick_project.errors_pytest import assertRaises
-from contextlib import contextmanager
-from bitarray import bitarray
-from unittest import mock
-import pytest
-import json
 import enum
+import json
+from contextlib import contextmanager
+from unittest import mock
+
+import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import BadSpecValue, Meta, sb
+from photons_app import helpers as hp
+from photons_app.errors import ProgrammerError
+from photons_protocol.errors import BadConversion
+from photons_protocol.types import Optional
+from photons_protocol.types import Type
+from photons_protocol.types import Type as T
+from photons_protocol.types import UnknownEnum, json_spec, static_conversion_from_spec
 
 describe "the json spec":
     it "can match just static types":

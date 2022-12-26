@@ -1,13 +1,12 @@
 # coding: spec
 
-from interactor.commander.store import store, load_commands
-
-from photons_app import helpers as hp
-
-from delfick_project.norms import dictobj, sb
 from textwrap import dedent
 from unittest import mock
+
 import pytest
+from delfick_project.norms import dictobj, sb
+from interactor.commander.store import load_commands, store
+from photons_app import helpers as hp
 
 
 @pytest.fixture(autouse=True)

@@ -1,14 +1,13 @@
-from photons_app.tasks import task_register as task
-from photons_app.errors import PhotonsAppError
-
-from photons_messages import LightMessages, Waveform
-
-from delfick_project.option_merge import MergedOptions
-from delfick_project.norms import sb
 import colorsys
 import logging
 import random
 import re
+
+from delfick_project.norms import sb
+from delfick_project.option_merge import MergedOptions
+from photons_app.errors import PhotonsAppError
+from photons_app.tasks import task_register as task
+from photons_messages import LightMessages, Waveform
 
 log = logging.getLogger("photons_control.colour")
 

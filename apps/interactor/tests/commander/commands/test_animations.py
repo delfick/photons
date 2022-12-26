@@ -1,14 +1,12 @@
 # coding: spec
 
-from interactor.commander.store import store, load_commands
-
-from photons_app.mimic.event import Events
-from photons_app import helpers as hp
-
-from photons_canvas.points.simple_messages import Set64
-
 from unittest import mock
+
 import pytest
+from interactor.commander.store import load_commands, store
+from photons_app import helpers as hp
+from photons_app.mimic.event import Events
+from photons_canvas.points.simple_messages import Set64
 
 
 @pytest.fixture()

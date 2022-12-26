@@ -1,15 +1,14 @@
+import asyncio
+import logging
+import sys
+from collections import defaultdict
+from contextlib import contextmanager
+
+from photons_app import helpers as hp
+from photons_app.errors import PhotonsAppError
+from photons_canvas import Canvas
 from photons_canvas.animations.infrastructure.events import AnimationEvent
 from photons_canvas.animations.infrastructure.finish import Finish
-from photons_canvas import Canvas
-
-from photons_app.errors import PhotonsAppError
-from photons_app import helpers as hp
-
-from contextlib import contextmanager
-from collections import defaultdict
-import logging
-import asyncio
-import sys
 
 log = logging.getLogger("photons_canvas.infrastructure.state")
 

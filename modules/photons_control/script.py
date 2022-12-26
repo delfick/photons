@@ -1,13 +1,12 @@
-from photons_app.special import SpecialReference, HardCodedSerials, FoundSerials
-from photons_app.errors import RunErrors
-from photons_app import helpers as hp
-
-from photons_transport.errors import FailedToFindDevice
-
-from delfick_project.norms import sb
 import asyncio
 import logging
 import sys
+
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_app.errors import RunErrors
+from photons_app.special import FoundSerials, HardCodedSerials, SpecialReference
+from photons_transport.errors import FailedToFindDevice
 
 log = logging.getLogger("photons_control.script")
 

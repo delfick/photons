@@ -1,22 +1,20 @@
-from photons_app.errors import BadYaml, BadConfiguration, UserQuit
+import logging
+import os
+import sys
+
+import pkg_resources
+import ruamel.yaml
+from delfick_project.addons import Addon, AddonGetter, Register, Result
+from delfick_project.errors import DelfickError
+from delfick_project.norms import Meta, dictobj, sb
+from delfick_project.option_merge import Collector, MergedOptions
+from photons_app import helpers as hp
+from photons_app.errors import BadConfiguration, BadYaml, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.photons_app import PhotonsAppSpec
 from photons_app.tasks.runner import Runner
-from photons_app import helpers as hp
-
 from photons_messages import protocol_register
-
-from delfick_project.addons import Result, Addon, Register, AddonGetter
-from delfick_project.option_merge import Collector, MergedOptions
-from delfick_project.norms import sb, dictobj, Meta
-from delfick_project.errors import DelfickError
-
 from ruamel.yaml import YAML
-import pkg_resources
-import ruamel.yaml
-import logging
-import sys
-import os
 
 log = logging.getLogger("photons_app.collector")
 

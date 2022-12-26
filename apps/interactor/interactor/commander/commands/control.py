@@ -1,11 +1,9 @@
-from interactor.commander.command import DeviceChangeMixin
-from interactor.commander import helpers as ihp
-from interactor.commander.store import store
-
-from photons_control.transform import Transformer, PowerToggle
-from photons_canvas.theme import ApplyTheme
-
 from delfick_project.norms import dictobj, sb
+from interactor.commander import helpers as ihp
+from interactor.commander.command import DeviceChangeMixin
+from interactor.commander.store import store
+from photons_canvas.theme import ApplyTheme
+from photons_control.transform import PowerToggle, Transformer
 
 pkt_type_field = dictobj.Field(
     sb.or_spec(sb.integer_spec(), sb.string_spec()),

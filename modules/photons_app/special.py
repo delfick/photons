@@ -1,7 +1,7 @@
-from photons_app.errors import PhotonsAppError, DevicesNotFound
-from photons_app import helpers as hp
-
 import binascii
+
+from photons_app import helpers as hp
+from photons_app.errors import DevicesNotFound, PhotonsAppError
 
 
 class SpecialReference:

@@ -1,22 +1,27 @@
 # coding: spec
 
-from photons_protocol.packing import val_to_bitarray, BitarraySlice, FieldInfo, PacketPacking
-from photons_protocol.types import Type as T, Optional
-from photons_protocol.errors import BadConversion
-from photons_protocol.packets import dictobj
-
-from photons_app import helpers as hp
-
-from delfick_project.errors_pytest import assertRaises
-from contextlib import contextmanager
-from delfick_project.norms import sb
-from bitarray import bitarray
-from textwrap import dedent
-from unittest import mock
 import binascii
-import pytest
 import struct
 import uuid
+from contextlib import contextmanager
+from textwrap import dedent
+from unittest import mock
+
+import pytest
+from bitarray import bitarray
+from delfick_project.errors_pytest import assertRaises
+from delfick_project.norms import sb
+from photons_app import helpers as hp
+from photons_protocol.errors import BadConversion
+from photons_protocol.packets import dictobj
+from photons_protocol.packing import (
+    BitarraySlice,
+    FieldInfo,
+    PacketPacking,
+    val_to_bitarray,
+)
+from photons_protocol.types import Optional
+from photons_protocol.types import Type as T
 
 
 def ba(thing):

@@ -1,14 +1,12 @@
+import asyncio
+from textwrap import dedent
+
+from delfick_project.norms import Meta, dictobj
+from interactor.commander.errors import NoSuchPacket
 from interactor.commander.spec_description import signature
 from interactor.request_handlers import MessageFromExc
-from interactor.commander.errors import NoSuchPacket
-
 from photons_app.formatter import MergedOptionStringFormatter
-
 from photons_messages import protocol_register
-
-from delfick_project.norms import dictobj, Meta
-from textwrap import dedent
-import asyncio
 
 
 def find_packet(pkt_type):

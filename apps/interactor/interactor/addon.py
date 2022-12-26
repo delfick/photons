@@ -1,13 +1,12 @@
+import logging
+
+import aiohttp
+from delfick_project.addons import addon_hook
 from interactor.errors import InteractorError
 from interactor.options import Options
 from interactor.server import Server
-
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
-
-from delfick_project.addons import addon_hook
-import aiohttp
-import logging
 
 log = logging.getLogger("interactor.addon")
 

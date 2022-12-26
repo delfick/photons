@@ -1,12 +1,10 @@
 # coding: spec
 
-from interactor.commander import helpers as ihp
-
-from photons_app.errors import PhotonsAppError
-
-from photons_messages import DeviceMessages
-
 import types
+
+from interactor.commander import helpers as ihp
+from photons_app.errors import PhotonsAppError
+from photons_messages import DeviceMessages
 
 
 class ATraceback:

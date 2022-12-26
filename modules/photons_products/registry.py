@@ -1,6 +1,6 @@
-from photons_products.base import CapabilityRange, ProductsHolder
-from photons_products.enums import Zones, Family
 from photons_products import lifx
+from photons_products.base import CapabilityRange, ProductsHolder
+from photons_products.enums import Family, Zones
 
 
 class ProductRegistry:

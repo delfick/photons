@@ -1,13 +1,11 @@
 # coding: spec
 
-from interactor.commander.errors import NoSuchPacket
-from interactor.commander import helpers as ihp
-
-from photons_messages import DeviceMessages, LightMessages
-
+from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
-from unittest import mock
+from interactor.commander import helpers as ihp
+from interactor.commander.errors import NoSuchPacket
+from photons_messages import DeviceMessages, LightMessages
 
 describe "find_packet":
 
