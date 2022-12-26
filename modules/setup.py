@@ -38,7 +38,7 @@ setup(
 
     , install_requires =
       [ "delfick_project==0.7.9"
-      , "ruamel.yaml==0.16.12"
+      , "ruyaml==0.91.0"
       , "python-dateutil>=2.8.1"
       , "rainbow_logging_handler==2.2.2"
 

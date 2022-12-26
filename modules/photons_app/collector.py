@@ -3,7 +3,7 @@ import os
 import sys
 
 import pkg_resources
-import ruamel.yaml
+import ruyaml as yaml
 from delfick_project.addons import Addon, AddonGetter, Register, Result
 from delfick_project.errors import DelfickError
 from delfick_project.norms import Meta, dictobj, sb
@@ -14,7 +14,6 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.photons_app import PhotonsAppSpec
 from photons_app.tasks.runner import Runner
 from photons_messages import protocol_register
-from ruamel.yaml import YAML
 
 log = logging.getLogger("photons_app.collector")
 
@@ -272,8 +271,8 @@ class Collector(Collector):
         """Read in a yaml file and return as a python object"""
         with open(location) as fle:
             try:
-                return YAML(typ="safe").load(fle)
-            except (ruamel.yaml.parser.ParserError, ruamel.yaml.scanner.ScannerError) as error:
+                return yaml.YAML(typ="safe").load(fle)
+            except (yaml.parser.ParserError, yaml.scanner.ScannerError) as error:
                 raise self.BadFileErrorKls(
                     "Failed to read yaml",
                     location=location,

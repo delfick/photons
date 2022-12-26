@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.8:
+
+0.42.8 - TBD
+    * Replace ruamel.yaml with the ruyaml fork
+
 .. _release-core-0-42.7:
 
 0.42.7 - 16 October 2022
