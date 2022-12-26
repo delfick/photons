@@ -15,8 +15,8 @@ jobs:
         with:
           python-version: 3.9
 
-      - id: sdist
-        run: cd modules && python setup.py sdist
+      - id: build
+        run: cd apps/arranger && pip install hatch==1.6.3 && hatch build
 
       - id: version
         run: |

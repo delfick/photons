@@ -38,8 +38,8 @@ jobs:
       - id: see_built_assets
         run: ls -R apps/arranger/arranger/static/dist
 
-      - id: sdist
-        run: cd apps/arranger && python setup.py sdist
+      - id: build
+        run: cd apps/arranger && pip install hatch==1.6.3 && hatch build
 
       - id: version
         run: |

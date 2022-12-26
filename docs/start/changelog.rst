@@ -7,6 +7,7 @@ ChangeLog
 
 0.42.8 - TBD
     * Replace ruamel.yaml with the ruyaml fork
+    * Convert from setuptools to hatchling
 
 .. _release-core-0-42.7:
 

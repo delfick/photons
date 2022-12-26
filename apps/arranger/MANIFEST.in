@@ -1,2 +1,0 @@
-recursive-include arranger/static/dist/prod *
-include LICENSE
