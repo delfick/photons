@@ -30,3 +30,6 @@ venv/
 # Photons stuff
 scripts/secrets.yml
 interactor.db
+
+# mypy
+.dmypy.json

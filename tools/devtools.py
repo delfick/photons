@@ -113,7 +113,7 @@ class App:
 
         args = ["run", *args]
         if "--" not in args:
-            args.extend(["--", "."])
+            args.extend(["--", ".", "--show-column-numbers"])
 
         run(bin_dir / "dmypy", *args)
 
