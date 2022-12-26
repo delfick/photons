@@ -210,3 +210,8 @@ To make this possible, Photons supplies ``hp.AsyncCMMixin`` and you implement
 This means all async context managers in Photons will run finish even if an
 exception is raised in start, and have ``start`` and ``finish`` if you are not
 using the ``with`` syntax.
+
+Visual studio code
+==================
+
+See ``.vscode/README.rst``.

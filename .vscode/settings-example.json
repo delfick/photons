@@ -1,0 +1,12 @@
+{
+    "python.defaultInterpreterPath": "tools/.python/bin/python",
+    "python.formatting.blackPath": "tools/.python/bin/black",
+    "python.formatting.pylamaPath": "tools/.python/bin/pyalma",
+    "python.formatting.provider": "black",
+    "python.linting.enabled": true,
+    "python.linting.pylamaEnabled": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    }
+}
