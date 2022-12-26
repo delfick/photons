@@ -28,8 +28,8 @@ source_suffix = ".rst"
 
 pygments_style = "pastie"
 
-copyright = u"Stephen Moore"
-project = u"Photons"
+copyright = "Stephen Moore"
+project = "Photons"
 
 version = "0.1"
 release = "0.1"

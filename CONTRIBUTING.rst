@@ -6,32 +6,33 @@ Issues and Pull Requests are very welcome!
 Here are some notes about the project that may help make pull requests easier to
 merge.
 
+The environment
+---------------
+
+Everything that is needed is available in a virtualenv in the current terminal
+session by doing::
+
+    > source run.sh activate
+
+Even if this has been done before, doing it again will install new dependencies
+if the version of Photons has changed.
+
 The tests
 ---------
 
-To run the tests you need to be inside a virtualenv that has lifx-photons-core
-installed.
+For the core tests run from any folder::
 
-I like virtualenvwrapper for this:
+    > ./modules/test.sh
 
-.. code-block:: plain
+For the interactor tests run from any folder::
 
-    # Install python3.6 or above
-    # Install virtualenvwrapper (see https://virtualenvwrapper.readthedocs.io/en/latest/)
-    
-    $ mkvirtualenv photons -p $(which python3)
-    $ workon photons
-    $ pip install -e .
-    $ pip install -e ".[tests]"
-    $ ./test.sh
+    > ./apps/interactor/test.sh
 
-Alternatively you may use tox to run the tests:
+Alternatively tox may be used::
 
-.. code-block:: plain
-
-    # Ensure python3.6 is installed
-    $ pip3 install tox
-    $ tox
+    > source run.sh activate
+    > cd modules
+    > tox
 
 The tests are written using http://noseofyeti.readthedocs.io which is a project
 that uses python codecs to create a basic RSpec style DSL for writing tests.
@@ -46,66 +47,13 @@ Code style
 We use the black project (https://black.readthedocs.io/en/stable/) to format the
 python code in this repository.
 
-Note that because of the noseOfYeti tests, I need to use the master branch of
-black combined with a monkey patch of black to support the different grammar.
+Note that because of the noseOfYeti tests, the environment needs a particular
+version of black and also NOSE_OF_YETI_BLACK_COMPAT=true
 
-All you need to know is that you can run from the root of this project::
+All the developer needs to know is that either their editor is run in the same
+session as a ``source run.sh activate`` or that they run::
 
    $ ./format
-
-And everything will be formatted.
-
-You can setup vim to do this for you with something like:
-
-.. code-block:: vim
-
-   Plug 'sbdchd/neoformat'
-
-   augroup fmt
-      autocmd!
-      autocmd BufWritePre *.py Neoformat
-      autocmd BufWritePre */photons/scripts/* Neoformat
-   augroup END
-
-   let g:neoformat_enabled_python = ['black']
-
-   function SetBlackOptions()
-      let g:neoformat_enabled_python = ['black']
-   endfunction
-
-   function SetNoyBlackOptions()
-      let g:neoformat_enabled_python = ['noy_black']
-   endfunction
-
-   function SetNoBlackOptions()
-      let g:neoformat_enabled_python = []
-   endfunction
-
-   autocmd BufEnter * call SetBlackOptions()
-   autocmd BufEnter *test*.py call SetNoyBlackOptions()
-   autocmd BufEnter */site-packages/*.py call SetNoBlackOptions()
-
-Note that for this to work you need black and noy_black in your python
-environment when you open up vim.
-
-I recommend creating a virtualenv somewhere and doing::
-
-   $ cd tools/black/black
-   $ pip install -e .
-   $ cd ../noy_black
-   $ pip install -e .
-
-In VSCode you will need the following options to enable formatting on save:
-
-.. code-block:: json
-
-   "editor.formatOnSave": true,
-   "python.formatting.blackPath": "/path/to/photons/tools/vscode_black",
-   "python.formatting.provider": "black",
-   "python.linting.pylamaArgs": ["-o", "/path/to/photons/pylama.ini"],
-   "editor.formatOnSaveTimeout": 5000
-
-The formatOnSaveTimeout is so that black has enough time to format the test files.
 
 Import statement groups
 +++++++++++++++++++++++

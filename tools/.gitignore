@@ -1,3 +1,2 @@
-.noy_pylama
-.black
-.types
+.python
+deps

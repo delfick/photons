@@ -8,16 +8,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      - run: python -m pip install pip venvstarter -U
-
-      - run: ./tools/pylama --help
+      - name: Install deps
+        shell: bash
+        env:
+          VENVSTARTER_ONLY_MAKE_VENV: "1"
+        run: python ./tools/venv
 
       - name: Ensure linter is happy
         run: ./lint
@@ -25,16 +27,18 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      - run: python -m pip install pip venvstarter -U
-
-      - run: ./tools/black
+      - name: Install deps
+        shell: bash
+        env:
+          VENVSTARTER_ONLY_MAKE_VENV: "1"
+        run: python ./tools/venv
 
       - name: Ensure code is formatted
         run: |

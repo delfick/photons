@@ -13,9 +13,9 @@ jobs:
         os: [ubuntu-latest, macos-latest] # TODO: make this pass on github hosted windows: , windows-latest]
         python-version: [3.7, 3.8, 3.9, "3.10"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -24,11 +24,9 @@ jobs:
 
       - name: Install deps
         shell: bash
-        run: |
-          set -e
-          python -m pip install --user --upgrade pip
-          python -m pip install -e "modules[tests]"
-          python -m pip install -e "apps/interactor"
+        env:
+          VENVSTARTER_ONLY_MAKE_VENV: "1"
+        run: python ./tools/venv
 
       - name: Run module tests
         shell: bash

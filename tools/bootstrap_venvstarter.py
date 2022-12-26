@@ -1,26 +1,29 @@
-import importlib
-import sys
 import os
+import runpy
+import sys
+from pathlib import Path
 
-try:
-    __import__("venvstarter")
-    have_venvstarter = True
-except ImportError:
-    have_venvstarter = False
+deps_dir = Path(__file__).parent / "deps"
+if not deps_dir.exists():
+    deps_dir.mkdir()
 
-if not have_venvstarter:
-    os.system(f"{sys.executable} -m pip install venvstarter")
-    importlib.reload(__import__("venvstarter"))
+if not (deps_dir / "venvstarter.py").exists():
+    os.system(f"{sys.executable} -m pip install venvstarter -t {deps_dir}")
 
-venvstarter_version = None
-if have_venvstarter:
-    venvstarter = __import__("venvstarter")
-    if hasattr(venvstarter, "VERSION") and hasattr(venvstarter, "Version"):
-        venvstarter_version = venvstarter.Version(venvstarter.VERSION)
-    else:
-        venvstarter_version = None
+venvstarter_module = runpy.run_path(str(deps_dir / "venvstarter.py"))
 
 wanted_version = "0.11.0"
-if venvstarter_version is None or venvstarter_version < venvstarter.Version(wanted_version):
-    os.system(f"{sys.executable} -m pip install 'venvstarter>={wanted_version}'")
-    importlib.reload(__import__("venvstarter"))
+
+upgrade = False
+VERSION = venvstarter_module.get("VERSION")
+if VERSION is None:
+    upgrade = True
+else:
+    Version = venvstarter_module["Version"]
+    if Version(wanted_version) < Version(VERSION):
+        upgrade = True
+
+if upgrade:
+    os.system(f"{sys.executable} -m pip install 'venvstarter>={wanted_version}' -t {deps_dir}")
+
+manager = runpy.run_path(str(deps_dir / "venvstarter.py"))["manager"]

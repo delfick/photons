@@ -14,7 +14,6 @@ pip-wheel-metadata/
 
 # documentation
 docs/res/
-docs/.photons-docs/
 docs/gh-pages/
 
 # pyenv

@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import typing as tp
+import subprocess
+import shutil
+import runpy
+import glob
+import sys
+import os
+
+here = Path(__file__).parent
+manager = runpy.run_path(str(Path(__file__).parent / "bootstrap_venvstarter.py"))["manager"]
+
+
+def run(venv_location: Path, args: tp.List[str]) -> tp.Union[None, str, tp.List[str]]:
+    os.environ["NOSE_OF_YETI_BLACK_COMPAT"] = "true"
+    devtools_location = Path(__file__).parent / "devtools.py"
+    if args and args[0] in ["docs", "format", "lint", "tests", "tox", "types"]:
+        return ["python", str(devtools_location)]
+    else:
+        return "lifx"
+
+
+manager = manager(run).named(".python")
+manager.add_no_binary("black")
+manager.add_requirements_file("{here}", "requirements.dev.txt")
+manager.add_env(NOSE_OF_YETI_BLACK_COMPAT="true")
+manager.add_local_dep(
+    "{here}",
+    "..",
+    "modules",
+    version_file=(
+        "photons_app",
+        "__init__.py",
+    ),
+    name="lifx-photons-core=={version}",
+    with_tests=True,
+)
+manager.add_local_dep(
+    "{here}",
+    "..",
+    "docs",
+    version_file=(
+        "photons_docs",
+        "__init__.py",
+    ),
+    name="lifx-photons-docs=={version}",
+)
+manager.add_local_dep(
+    "{here}",
+    "..",
+    "apps",
+    "arranger",
+    version_file=(
+        "arranger",
+        "__init__.py",
+    ),
+    name="lifx-photons-arranger=={version}",
+)
+manager.add_local_dep(
+    "{here}",
+    "..",
+    "apps",
+    "interactor",
+    version_file=(
+        "interactor",
+        "__init__.py",
+    ),
+    name="lifx-photons-interactor=={version}",
+)
+manager.run()

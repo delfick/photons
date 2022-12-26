@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
-(
-    __import__("venvstarter")
-    .manager("harpoon")
-    .add_pypi_deps("docker-harpoon==0.16.1")
-    .min_python("3.7")
-    .add_env(HARPOON_CONFIG=("{here}", "harpoon.yml"))
-    .run()
-)
+from pathlib import Path
+import runpy
+
+here = Path(__file__).parent
+tools_folder = here.parent.parent.parent / "tools"
+manager = runpy.run_path(str(tools_folder / "bootstrap_venvstarter.py"))["manager"]
+
+manager = manager("harpoon")
+manager.add_pypi_deps("docker-harpoon==0.16.1")
+manager.min_python("3.7")
+manager.add_env(HARPOON_CONFIG=("{here}", "harpoon.yml"))
+manager.run()

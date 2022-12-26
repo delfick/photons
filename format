@@ -4,25 +4,4 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-./tools/black
-
-./tools/black noy_black \
-    modules \
-    apps/arranger/arranger \
-    apps/interactor/interactor \
-    apps/interactor/tests
-
-if ! which prettier >/dev/null; then
-    echo "Couldn't find prettier, not formatting javascript files"
-else
-    echo ""
-    echo "==="
-    echo "--- Formatting javascript"
-    echo "==="
-    echo ""
-    if ! npm list -g | grep prettier-plugin-organize-imports >/dev/null; then
-        npm install -g prettier-plugin-organize-imports
-    fi
-
-    prettier --write "apps/arranger/arranger/static/js/**"
-fi
+./tools/venv format "$@"

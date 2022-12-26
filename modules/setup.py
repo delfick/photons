@@ -54,11 +54,11 @@ setup(
 
     , extras_require =
       { "tests":
-        [ "noseOfYeti==2.2.0"
-        , "pytest==6.2.5"
-        , "mock==4.0.2"
+        [ "noseOfYeti[black]==2.4.1"
+        , "pytest==7.2.0"
+        , "mock==4.0.3"
         , "alt-pytest-asyncio==0.6.0"
-        , "pytest-helpers-namespace==2019.1.8"
+        , "pytest-helpers-namespace==2021.12.29"
         ]
       }
 
