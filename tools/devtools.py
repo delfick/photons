@@ -111,9 +111,20 @@ class App:
             args.pop(0)
             run(bin_dir / "dmypy", "stop")
 
-        args = ["run", *args]
+        files = []
+        ags = ["run"]
+        for a in args:
+            if Path(a).exists():
+                files.append(a)
+            else:
+                ags.append(a)
+
+        args = ags
+        if not files:
+            files.append(".")
+
         if "--" not in args:
-            args.extend(["--", ".", "--show-column-numbers"])
+            args.extend(["--", *files, "--show-column-numbers"])
 
         run(bin_dir / "dmypy", *args)
 
