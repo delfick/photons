@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cwd="$(pwd)"
+
 # Bash does not make it easy to find where this file is
 # Here I'm making it so it doesn't matter what directory you are in
 # when you execute this script. And it doesn't matter whether you're
@@ -26,6 +28,7 @@ if [[ "$0" != "$BASH_SOURCE" ]]; then
     if [[ "activate" == "$1" ]]; then
         VENVSTARTER_ONLY_MAKE_VENV=1 ./tools/venv
         source ./tools/.python/bin/activate
+        cd "$cwd"
     else
         echo "only say \`source run.sh activate\`"
     fi
