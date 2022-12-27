@@ -96,10 +96,33 @@ class App:
             if unwanted in env:
                 del env[unwanted]
 
+        files: list[str] = []
         if "TESTS_CHDIR" in env:
-            os.chdir(env["TESTS_CHDIR"])
+            ags: list[str] = []
+            test_dir = Path(env["TESTS_CHDIR"]).absolute()
+            for a in args:
+                test_name = ""
+                if "::" in a:
+                    filename, test_name = a.split("::", 1)
+                else:
+                    filename = a
+                try:
+                    p = Path(filename).absolute()
+                except:
+                    ags.append(a)
+                else:
+                    if p.exists():
+                        rel = p.relative_to(test_dir)
+                        if test_name:
+                            files.append(f"{rel}::{test_name}")
+                        else:
+                            files.append(str(rel))
+                    else:
+                        ags.append(a)
+            args = ags
+            os.chdir(test_dir)
 
-        run(bin_dir / "run_photons_core_tests", *args)
+        run(bin_dir / "run_photons_core_tests", *files, *args)
 
     @command
     def tox(self, bin_dir: Path, args: List[str]) -> None:
