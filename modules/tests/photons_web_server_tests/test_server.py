@@ -255,7 +255,7 @@ describe "Server":
 
         it "fails if the server wants a port already in use", used_port: int, collector: Collector:
 
-            def route(request: Request) -> HTTPResponse | None:
+            def route(request: Request, /) -> HTTPResponse | None:
                 return sanic.text("route")
 
             class S(Server):
@@ -371,7 +371,7 @@ describe "Server":
 
         async it "records commands and responses", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
 
-            async def route(request: Request) -> HTTPResponse | None:
+            async def route(request: Request, /) -> HTTPResponse | None:
                 await asyncio.sleep(2)
                 return sanic.text("route")
 
@@ -493,12 +493,12 @@ describe "Server":
                     assert identifier == lc.context["request_identifier"]
                     get_logger(1).info(lc("Test WS Request", **dct, body=body), exc_info=exc_info)
 
-            async def route_error(request: Request) -> HTTPResponse | None:
+            async def route_error(request: Request, /) -> HTTPResponse | None:
                 error = ValueError("asdf")
                 expected_called.append((request, (ValueError, error, IsTraceback())))
                 raise error
 
-            async def route(request: Request) -> HTTPResponse | None:
+            async def route(request: Request, /) -> HTTPResponse | None:
                 expected_called.append((request, None))
                 return sanic.text("hi")
 
