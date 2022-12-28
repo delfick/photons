@@ -17,16 +17,9 @@ from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 from strcs import Meta
 
-from .messages import (
-    MessageFromExc,
-    ProgressMessageMaker,
-    TMessageFromExc,
-    TProgressMessageMaker,
-    TReprer,
-    get_logger,
-    get_logger_name,
-    reprer,
-)
+from .messages import MessageFromExc, ProgressMessageMaker, TMessageFromExc
+from .messages import TProgressMessageMaker as Progress
+from .messages import TReprer, get_logger, get_logger_name, reprer
 
 if tp.TYPE_CHECKING:
     from photons_web_server.server import Server
@@ -53,7 +46,7 @@ class RouteTransformer(tp.Generic[C]):
         server: "Server",
         reprer: TReprer,
         message_from_exc_maker: type[TMessageFromExc],
-        progress_message_maker: type[TProgressMessageMaker],
+        progress_message_maker: type[Progress],
     ):
         self.kls = kls
         self.app = app
@@ -115,7 +108,9 @@ class RouteTransformer(tp.Generic[C]):
                 try:
                     route = getattr(instance, method.__name__)
                     if inspect.iscoroutinefunction(route):
-                        t = hp.async_as_background(route(request, *args, **kwargs))
+                        t = hp.async_as_background(
+                            route(instance._progress, request, *args, **kwargs)
+                        )
                         await hp.wait_for_first_future(
                             t,
                             instance.final_future,
@@ -127,7 +122,7 @@ class RouteTransformer(tp.Generic[C]):
                         t.cancel()
                         return await t
                     else:
-                        return route(request, *args, **kwargs)
+                        return route(instance._progress, request, *args, **kwargs)
                 except:
                     exc_info = sys.exc_info()
                     if ret or exc_info[0] is not asyncio.CancelledError:
@@ -184,7 +179,7 @@ class Command:
         app: Sanic,
         server: "Server",
         reprer: TReprer,
-        progress: TProgressMessageMaker,
+        progress: Progress,
         identifier: str,
         logger: logging.Logger,
     ):
@@ -200,13 +195,13 @@ class Command:
 
         self.lc = hp.lc.using(request_identifier=self.identifier)
         self.log = logger
+        self.setup()
+
+    def setup(self) -> None: ...
 
     @classmethod
     def add_routes(kls, routes: RouteTransformer) -> None:
         pass
-
-    async def progress_cb(self, message: tp.Any, do_log=True, **kwargs) -> dict:
-        return await self._progress(message, do_log=do_log, **kwargs)
 
     @classmethod
     def log_request_dict(
@@ -319,7 +314,7 @@ class Store:
         server: "Server",
         reprer: TReprer = reprer,
         message_from_exc: type[TMessageFromExc] = MessageFromExc,
-        progress_message_maker: type[TProgressMessageMaker] = ProgressMessageMaker,
+        progress_message_maker: type[Progress] = ProgressMessageMaker,
     ) -> None:
         for kls in self.commands:
             kls.add_routes(

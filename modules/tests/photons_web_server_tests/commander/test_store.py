@@ -9,7 +9,7 @@ import pytest
 import sanic
 from photons_app import helpers as hp
 from photons_web_server import pytest_helpers as pws_thp
-from photons_web_server.commander import Command, RouteTransformer, Store
+from photons_web_server.commander import Command, Progress, RouteTransformer, Store
 from photons_web_server.server import Server
 from sanic.request import Request
 from sanic.response import HTTPResponse as Response
@@ -28,11 +28,11 @@ describe "Store":
                 routes.http(kls.route1, "route1/<one:int>")
                 routes.http(kls.route2, "route2", methods=["PUT"])
 
-            def route1(s, request: Request, one: int) -> Response | None:
+            def route1(s, progress: Progress, request: Request, /, one: int) -> Response | None:
                 made.append((s, one))
                 return sanic.text("route1")
 
-            def route2(s, request: Request) -> Response | None:
+            def route2(s, progress: Progress, request: Request, /) -> Response | None:
                 made.append((s, -1))
                 return sanic.text("route2")
 
@@ -62,7 +62,7 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(s, request: Request) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 async def things():
                     t = time.time()
                     await hp.wait_for_first_future(s.final_future)
@@ -97,7 +97,7 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(s, request: Request) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 fut = hp.create_future()
                 fut.cancel()
                 await fut
@@ -123,7 +123,7 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(s, request: Request, /) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 await hp.create_future()
                 return sanic.text("route1")
 
@@ -166,7 +166,7 @@ describe "Store":
 
                 routes.app.add_route(my_route, "route1")
 
-            async def route1(s, request: Request) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 await asyncio.sleep(20)
                 return sanic.text("route1")
 
@@ -202,7 +202,7 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            def route1(s, request: Request) -> Response | None:
+            def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 nonlocal identifier
                 identifier = request.ctx.request_identifier
                 raise error
@@ -240,7 +240,7 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            def route1(s, request: Request) -> Response | None:
+            def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 nonlocal identifier
                 identifier = request.ctx.request_identifier
                 s.log.info(s.lc("Hello there", one=2))
@@ -273,11 +273,11 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(s, request: Request) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 nonlocal identifier
                 identifier = request.ctx.request_identifier
-                await s.progress_cb("hi", there=True)
-                await s.progress_cb(ValueError("asdf"))
+                await progress("hi", there=True)
+                await progress(ValueError("asdf"))
                 return sanic.text("hi")
 
         async def setup_routes(server):

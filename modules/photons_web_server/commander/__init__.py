@@ -1,5 +1,7 @@
 from .const import REQUEST_IDENTIFIER_HEADER
-from .messages import MessageFromExc, ProgressMessageMaker, reprer
+from .messages import MessageFromExc, ProgressMessageMaker
+from .messages import TProgressMessageMaker as Progress
+from .messages import reprer
 from .store import Command, RouteTransformer, Store, WithCommanderClass
 from .websocket_wrap import WebsocketWrap, WrappedWebsocketHandler
 
@@ -8,6 +10,7 @@ __all__ = [
     "Store",
     "REQUEST_IDENTIFIER_HEADER",
     "reprer",
+    "Progress",
     "MessageFromExc",
     "ProgressMessageMaker",
     "RouteTransformer",
