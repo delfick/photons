@@ -230,3 +230,79 @@ describe "TaskHolder":
             wait.set_result(True)
             await asyncio.sleep(0)
             assert called == ["ONE", "TWO", "CANC_ONE", "FIN_ONE", "DONE_TWO", "FIN_TWO"]
+
+    async it "doesn't lose tasks from race condition", FakeTime, MockedCallLater, final_future:
+        with FakeTime() as t:
+            async with MockedCallLater(t):
+                called = []
+                made = {}
+
+                class TaskHolderManualClean(hp.TaskHolder):
+                    async def cleaner(self):
+                        await hp.create_future()
+
+                async with TaskHolderManualClean(final_future) as ts:
+
+                    async def one():
+                        called.append("ONE")
+                        try:
+                            await asyncio.sleep(10)
+                        except asyncio.CancelledError:
+                            called.append("CANC_ONE")
+                            raise
+                        finally:
+                            called.append("FIN_ONE")
+
+                    async def two():
+                        called.append("TWO")
+                        try:
+                            await asyncio.sleep(200)
+                        except asyncio.CancelledError:
+                            called.append("CANC_TWO")
+                            # Don't re-raise the exception to trigger race condition
+                        finally:
+                            called.append("FIN_TWO")
+
+                    t1 = ts.add(two())
+
+                    def add_one(res):
+                        called.append("ADD_ONE")
+                        made["t2"] = ts.add(one())
+
+                    t1.add_done_callback(add_one)
+
+                    assert called == []
+                    await asyncio.sleep(0)
+                    assert called == ["TWO"]
+
+                    assert ts.ts == [t1]
+                    await ts.clean()
+                    assert ts.ts == [t1]
+
+                    t1.cancel()
+                    await asyncio.sleep(0)
+
+                    assert called == ["TWO", "CANC_TWO", "FIN_TWO"]
+                    assert ts.ts == [t1]
+
+                    # The task holder only knows about t1
+                    # And after the clean, we expect it to have made the t2
+                    assert "t2" not in made
+                    await ts.clean()
+                    assert called == ["TWO", "CANC_TWO", "FIN_TWO", "ADD_ONE", "ONE"]
+                    assert ts.ts == [made["t2"]]
+
+                    made["t2"].cancel()
+                    await asyncio.sleep(0)
+                    assert ts.ts == [made["t2"]]
+                    await ts.clean()
+                    assert ts.ts == []
+                    assert called == [
+                        "TWO",
+                        "CANC_TWO",
+                        "FIN_TWO",
+                        "ADD_ONE",
+                        "ONE",
+                        "CANC_ONE",
+                        "FIN_ONE",
+                    ]

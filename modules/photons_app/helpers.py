@@ -708,7 +708,7 @@ class TaskHolder(AsyncCMMixin):
         await wait_for_all_futures(
             *destroyed, name=f"TaskHolder({self.name})::clean[wait_for_destroyed]"
         )
-        self.ts = remaining
+        self.ts = remaining + [t for t in self.ts if t not in destroyed and t not in remaining]
 
 
 class ResultStreamer(AsyncCMMixin):
