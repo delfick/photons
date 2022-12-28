@@ -8,6 +8,7 @@ from textwrap import dedent
 import pytest
 import sanic
 from photons_app import helpers as hp
+from photons_web_server import pytest_helpers as pws_thp
 from photons_web_server.commander import Command, RouteTransformer, Store
 from photons_web_server.server import Server
 from sanic.request import Request
@@ -35,10 +36,10 @@ describe "Store":
                 made.append((s, -1))
                 return sanic.text("route2")
 
-        async def setup_routes(server: Server):
+        async def setup_routes(server: Server) -> None:
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1/20")
             res2 = await srv.start_request("PUT", "/route2", {"command": "one"})
 
@@ -78,7 +79,7 @@ describe "Store":
         async def setup_routes(server: Server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
         assert (await res1.text()) == "route1"
@@ -105,7 +106,7 @@ describe "Store":
         async def setup_routes(server: Server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
         assert (
@@ -122,14 +123,14 @@ describe "Store":
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(s, request: Request) -> Response | None:
+            async def route1(s, request: Request, /) -> Response | None:
                 await hp.create_future()
                 return sanic.text("route1")
 
         async def setup_routes(server: Server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             t1 = srv.start_request("GET", "/route1")
             await asyncio.sleep(5)
 
@@ -172,7 +173,7 @@ describe "Store":
         async def setup_routes(server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             t1 = srv.start_request("GET", "/route1")
             await asyncio.sleep(5)
 
@@ -209,7 +210,7 @@ describe "Store":
         async def setup_routes(server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
         assert (
@@ -248,7 +249,7 @@ describe "Store":
         async def setup_routes(server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
         assert (await res1.text()) == "hi"
@@ -282,7 +283,7 @@ describe "Store":
         async def setup_routes(server):
             store.register_commands(server.server_stop_future, Meta(), server.app, server)
 
-        async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
         assert (await res1.text()) == "hi"

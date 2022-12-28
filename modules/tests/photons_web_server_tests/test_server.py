@@ -1,6 +1,7 @@
 # coding: spec
 
 import asyncio
+import json
 import socket
 import sys
 import time
@@ -16,6 +17,7 @@ from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
+from photons_web_server import pytest_helpers as pws_thp
 from photons_web_server.commander import Command, WithCommanderClass
 from photons_web_server.commander.messages import ExcInfo, get_logger
 from photons_web_server.server import Server, WebServerTask
@@ -303,7 +305,7 @@ describe "Server":
             async def ws(request: Request, ws: Websocket):
                 got = await ws.recv()
                 assert got == "HI"
-                await ws.send(got)
+                await ws.send(json.dumps({"got": got}))
                 startedws.set_result(True)
                 await hp.create_future()
 
@@ -311,9 +313,18 @@ describe "Server":
                 server.app.add_route(route, "route", methods=["PUT"])
                 server.app.add_websocket_route(ws, "stream")
 
-            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 req = srv.start_request("PUT", "/route")
-                wsreq = srv.run_stream("/stream", "HI")
+                wsres: list[dict] = []
+
+                async def run_stream():
+                    async with srv.stream("/stream") as stream:
+                        await stream.send("HI")
+                        wsres.append(await stream.recv())
+                        wsres.append(await stream.recv())
+
+                wsreq = hp.get_event_loop().create_task(run_stream())
+
                 await started
                 await startedws
                 assert time.time() < 0.3
@@ -324,12 +335,12 @@ describe "Server":
 
             with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
                 await req
-            assert await wsreq == ["HI"]
+            assert wsres == [{"got": "HI"}, None]
 
         async it "waits for requests based on sanic config GRACEFUL_SHUTDOWN_TIMEOUT", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
             started = hp.create_future()
 
-            async def route(request: Request) -> HTTPResponse | None:
+            async def route(request: Request, /) -> HTTPResponse | None:
                 started.set_result(True)
                 await hp.create_future()
                 return sanic.text("route")
@@ -342,7 +353,7 @@ describe "Server":
 
             server_properties = {"Config": Config}
 
-            async with pytest.helpers.WebServerRoutes(
+            async with pws_thp.WebServerRoutes(
                 final_future, setup_routes, server_properties
             ) as srv:
                 req = srv.start_request("PUT", "/route")
@@ -372,9 +383,11 @@ describe "Server":
                 server.app.add_route(route, "route", methods=["PUT"])
                 server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
 
-            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 await srv.start_request("PUT", "/route", {"command": "one"})
-                await srv.run_stream("/stream", {"command": "two", "path": "/route"})
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"command": "two", "path": "/route"})
+                    await stream.recv()
                 srv.stop()
 
             records = [
@@ -508,12 +521,16 @@ describe "Server":
                 server.app.add_route(route_error, "route_error", methods=["PUT"])
                 server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
 
-            async with pytest.helpers.WebServerRoutes(final_future, setup_routes) as srv:
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 await srv.start_request("PUT", "/route", {"command": "one"})
                 await srv.start_request("PUT", "/route_error", {"command": "one"})
                 unknown = await srv.start_request("GET", "/unknown_route")
-                await srv.run_stream("/stream", {"command": "two", "path": "/route"})
-                await srv.run_stream("/stream", {"command": "three", "path": "/route"})
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"command": "two", "path": "/route"})
+                    await stream.recv()
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"command": "three", "path": "/route"})
+                    await stream.recv()
                 srv.stop()
 
                 assert (await unknown.text()).startswith(
@@ -527,36 +544,14 @@ describe "Server":
                 and any(m in r.msg["msg"] for m in ("Response", "Request"))
             ]
 
-            identifiers = set()
+            identifiers: set[str] = set()
 
-            class IdentifierMatch:
-                identifier: str | None
+            Ident1 = pws_thp.IdentifierMatch(identifiers)
+            Ident2 = pws_thp.IdentifierMatch(identifiers)
+            Ident3 = pws_thp.IdentifierMatch(identifiers)
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
 
-                def __init__(self, *, count=2):
-                    self.identifier = None
-                    self.count = count
-
-                def __eq__(self, other: object) -> bool:
-                    if self.identifier is None:
-                        assert other not in identifiers
-                        assert isinstance(other, str)
-                        identifiers.add(other)
-                        self.identifier = other
-                        return True
-
-                    return self.identifier == other
-
-                def __repr__(self) -> str:
-                    if self.identifier is None:
-                        return "<IDENTIFIER>"
-                    else:
-                        return repr(self.identifier)
-
-            Ident1 = IdentifierMatch()
-            Ident2 = IdentifierMatch()
-            Ident3 = IdentifierMatch()
-            WSIdent1 = IdentifierMatch()
-            WSIdent2 = IdentifierMatch()
+            WSIdent2 = pws_thp.IdentifierMatch(identifiers)
 
             assert records == [
                 {
