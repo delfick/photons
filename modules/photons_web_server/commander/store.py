@@ -87,18 +87,16 @@ class RouteTransformer(tp.Generic[C]):
             return self.app.add_route(self.wrap_http(method), *args, **kwargs)
 
     @contextmanager
-    def a_final_future(
+    def a_request_future(
         self, request: Request, name: str
     ) -> tp.Generator[asyncio.Future, None, None]:
-        if hasattr(request.ctx, "final_future"):
-            yield request.ctx.final_future
+        if hasattr(request.ctx, "request_future"):
+            yield request.ctx.request_future
             return
 
-        with hp.ChildOfFuture(
-            self.final_future, name="{name}[request_final_future]"
-        ) as final_future:
-            request.ctx.final_future = final_future
-            yield final_future
+        with hp.ChildOfFuture(self.final_future, name="{name}[request_future]") as request_future:
+            request.ctx.request_future = request_future
+            yield request_future
 
     def wrap_http(self, method: tp.Callable) -> RouteHandler:
         @wraps(method)
@@ -113,7 +111,7 @@ class RouteTransformer(tp.Generic[C]):
                         )
                         await hp.wait_for_first_future(
                             t,
-                            instance.final_future,
+                            instance.request_future,
                             name=f"{name}[run_route]",
                         )
                         if t.cancelled():
@@ -153,9 +151,9 @@ class RouteTransformer(tp.Generic[C]):
         logger_name = get_logger_name(method=method)
         logger = logging.getLogger(logger_name)
 
-        with self.a_final_future(request, name) as final_future:
+        with self.a_request_future(request, name) as request_future:
             instance = self.kls(
-                final_future,
+                request_future,
                 request,
                 self.store,
                 self.meta,
@@ -172,7 +170,7 @@ class RouteTransformer(tp.Generic[C]):
 class Command:
     def __init__(
         self,
-        final_future: asyncio.Future,
+        request_future: asyncio.Future,
         request: Request,
         store: "Store",
         meta: Meta,
@@ -191,7 +189,7 @@ class Command:
         self.request = request
         self._progress = progress
         self.identifier = identifier
-        self.final_future = final_future
+        self.request_future = request_future
 
         self.lc = hp.lc.using(request_identifier=self.identifier)
         self.log = logger

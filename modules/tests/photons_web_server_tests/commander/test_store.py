@@ -65,7 +65,7 @@ describe "Store":
             async def route1(s, progress: Progress, request: Request, /) -> Response | None:
                 async def things():
                     t = time.time()
-                    await hp.wait_for_first_future(s.final_future)
+                    await hp.wait_for_first_future(s.request_future)
                     made.append(time.time() - t)
                     done_things.set_result(True)
 
