@@ -1,11 +1,8 @@
 import asyncio
 import inspect
-import json
 import logging
-import sys
 import time
 import typing as tp
-from functools import wraps
 from textwrap import dedent
 
 from delfick_project.option_merge import MergedOptions
@@ -15,14 +12,13 @@ from photons_app.tasks.tasks import GracefulTask
 from photons_web_server.commander import (
     REQUEST_IDENTIFIER_HEADER,
     Command,
-    WithCommanderClass,
+    WebsocketWrap,
+    WrappedWebsocketHandler,
 )
 from photons_web_server.commander.messages import ErrorMessage, catch_ErrorMessage
-from sanic import Websocket
 from sanic.models.handler_types import RouteHandler
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
-from sanic.response import HTTPResponse
 from sanic.server import AsyncioServer
 from sanic.server.protocols.websocket_protocol import WebSocketProtocol
 
@@ -185,67 +181,15 @@ class Server:
             await self.server.close()
             await self.server.wait_closed()
 
+    def wrap_websocket_handler(self, handler: WrappedWebsocketHandler) -> RouteHandler:
+        wrap = WebsocketWrap(self.server_stop_future, self.log_ws_request, self.log_response)
+        return wrap(handler)
+
     def create_request_id(self, request: Request) -> None:
         request.ctx.interactor_request_start = time.time()
         if REQUEST_IDENTIFIER_HEADER not in request.headers:
             request.headers[REQUEST_IDENTIFIER_HEADER] = str(ulid.new())
         request.ctx.request_identifier = request.headers[REQUEST_IDENTIFIER_HEADER]
-
-    def wrap_websocket_handler(
-        self, handler: tp.Callable[[Request, Websocket, dict], tp.Awaitable[Response]]
-    ) -> RouteHandler:
-        @wraps(handler)
-        async def handle(request: Request, ws: Websocket):
-            if request.route and not isinstance(request.route.handler, WithCommanderClass):
-                if isinstance(handler, WithCommanderClass):
-                    request.route.handler.__commander_class__ = handler.__commander_class__
-
-            try:
-                first = await ws.recv()
-            except asyncio.CancelledError:
-                raise
-            except:
-                request.ctx.exc_info = sys.exc_info()
-                self.log_ws_request(request, None)
-                self.log_response(request, HTTPResponse(status=500))
-                raise
-
-            if first is None:
-                self.log_ws_request(request, None)
-                self.log_response(
-                    request, HTTPResponse(status=400, body="Must provide a dictionary")
-                )
-                raise ValueError("Message must be a dictionary")
-
-            try:
-                first = json.loads(first)
-            except (ValueError, TypeError):
-                request.ctx.exc_info = sys.exc_info()
-                self.log_ws_request(request, None)
-                self.log_response(request, HTTPResponse(status=500))
-                raise
-
-            if not isinstance(first, dict):
-                self.log_ws_request(request, None)
-                self.log_response(
-                    request, HTTPResponse(status=400, body="Must provide a dictionary")
-                )
-                raise ValueError("Message must be a dictionary")
-
-            try:
-                self.log_ws_request(request, first)
-            except Exception:
-                log.exception("Failed to log websocket request")
-
-            try:
-                await handler(request, ws, first)
-            except:
-                request.ctx.exc_info = sys.exc_info()
-                self.log_response(request, HTTPResponse(status=500))
-            else:
-                self.log_response(request, HTTPResponse(status=200))
-
-        return handle
 
     def attach_exception(self, request: Request, exception: BaseException) -> None:
         request.ctx.exc_info = (type(exception), exception, exception.__traceback__)

@@ -18,8 +18,9 @@ from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
 from photons_web_server import pytest_helpers as pws_thp
-from photons_web_server.commander import Command, WithCommanderClass
+from photons_web_server.commander import Command, Message, WithCommanderClass
 from photons_web_server.commander.messages import ExcInfo, get_logger
+from photons_web_server.commander.websocket_wrap import WSSender
 from photons_web_server.server import Server, WebServerTask
 from sanic import Sanic, Websocket
 from sanic.config import Config
@@ -107,7 +108,7 @@ describe "Task":
 
         p = pytest.helpers.free_port()
 
-        def stop(request: Request) -> HTTPResponse | None:
+        def stop(request: Request, /) -> HTTPResponse | None:
             task.photons_app.graceful_final_future.set_result(True)
             return None
 
@@ -175,12 +176,12 @@ describe "Server":
             async def after_shutdown(app: Sanic, loop: asyncio.AbstractEventLoop):
                 called.append(("sanic_after_shutdown", app, loop))
 
-            def stop(request: Request) -> HTTPResponse | None:
+            def stop(request: Request, /) -> HTTPResponse | None:
                 called.append("stopcalled")
                 task.photons_app.graceful_final_future.set_result(True)
                 return sanic.text("stopped")
 
-            async def long(request: Request) -> HTTPResponse | None:
+            async def long(request: Request, /) -> HTTPResponse | None:
                 called.append("longreq")
                 calledlong.cancel()
                 try:
@@ -297,7 +298,7 @@ describe "Server":
             started = hp.create_future()
             startedws = hp.create_future()
 
-            async def route(request: Request) -> HTTPResponse | None:
+            async def route(request: Request, /) -> HTTPResponse | None:
                 started.set_result(True)
                 await hp.create_future()
                 return sanic.text("route")
@@ -370,14 +371,21 @@ describe "Server":
     describe "logging":
 
         async it "records commands and responses", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            Ident1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
             async def route(request: Request, /) -> HTTPResponse | None:
                 await asyncio.sleep(2)
                 return sanic.text("route")
 
-            async def ws(request: Request, ws: Websocket, first: dict):
-                assert first == {"command": "two", "path": "/route"}
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                assert message.body == {"command": "two", "path": "/route"}
                 await asyncio.sleep(6)
+                await wssend({"got": "two"})
+                return False
 
             async def setup_routes(server):
                 server.app.add_route(route, "route", methods=["PUT"])
@@ -387,7 +395,11 @@ describe "Server":
                 await srv.start_request("PUT", "/route", {"command": "one"})
                 async with srv.stream("/stream") as stream:
                     await stream.send({"command": "two", "path": "/route"})
-                    await stream.recv()
+                    assert await stream.recv() == {
+                        "reply": {"got": "two"},
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                    }
                 srv.stop()
 
             records = [
@@ -404,7 +416,7 @@ describe "Server":
                     "uri": "/route",
                     "scheme": "http",
                     "remote_addr": "",
-                    "request_identifier": mock.ANY,
+                    "request_identifier": Ident1,
                 },
                 {
                     "msg": "Response",
@@ -413,7 +425,7 @@ describe "Server":
                     "status": 200,
                     "remote_addr": "",
                     "took_seconds": Between(1.0, 3.0),
-                    "request_identifier": mock.ANY,
+                    "request_identifier": Ident1,
                 },
                 {
                     "msg": "Websocket Request",
@@ -421,8 +433,9 @@ describe "Server":
                     "uri": "/stream",
                     "scheme": "ws",
                     "remote_addr": "",
-                    "request_identifier": mock.ANY,
+                    "request_identifier": WSIdent1,
                     "body": {"command": "two", "path": "/route"},
+                    "message_id": WSIdentM1,
                 },
                 {
                     "msg": "Response",
@@ -431,7 +444,8 @@ describe "Server":
                     "status": 200,
                     "remote_addr": "",
                     "took_seconds": Between(5.0, 7.0),
-                    "request_identifier": mock.ANY,
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
                 },
             ]
 
@@ -443,6 +457,17 @@ describe "Server":
         async it "lets the handler hook into the logging", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
             called: list[object] = []
             expected_called: list[object] = []
+
+            identifiers: set[str] = set()
+
+            Ident1 = pws_thp.IdentifierMatch(identifiers)
+            Ident2 = pws_thp.IdentifierMatch(identifiers)
+            Ident3 = pws_thp.IdentifierMatch(identifiers)
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            WSIdent2 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM2 = pws_thp.IdentifierMatch(identifiers)
 
             class C(Command):
                 @classmethod
@@ -476,7 +501,8 @@ describe "Server":
                             status=response.status,
                             remote_addr=request.remote_addr,
                             took_seconds=took,
-                        )
+                        ),
+                        exc_info=exc_info,
                     )
                     called.append((request, exc_info))
 
@@ -502,15 +528,18 @@ describe "Server":
                 expected_called.append((request, None))
                 return sanic.text("hi")
 
-            async def ws(request: Request, ws: Websocket, first: dict):
-                assert first == {"command": mock.ANY, "path": "/route"}
-                assert first["command"] in ("two", "three")
-                if first["command"] == "three":
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                assert message.body == {"command": mock.ANY, "path": "/route"}
+                assert message.body["command"] in ("two", "three")
+                if message.body["command"] == "three":
+                    await wssend({"got": "three"})
                     error = TypeError("HI")
-                    expected_called.append((request, (TypeError, error, IsTraceback())))
+                    expected_called.append((message.request, (TypeError, error, IsTraceback())))
                     raise error
                 else:
-                    expected_called.append((request, None))
+                    await wssend({"got": "notthree"})
+                    expected_called.append((message.request, None))
+                    return False
 
             async def setup_routes(server: Server):
                 tp.cast(WithCommanderClass, ws).__commander_class__ = C
@@ -527,10 +556,18 @@ describe "Server":
                 unknown = await srv.start_request("GET", "/unknown_route")
                 async with srv.stream("/stream") as stream:
                     await stream.send({"command": "two", "path": "/route"})
-                    await stream.recv()
+                    assert await stream.recv() == {
+                        "reply": {"got": "notthree"},
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                    }
                 async with srv.stream("/stream") as stream:
                     await stream.send({"command": "three", "path": "/route"})
-                    await stream.recv()
+                    assert await stream.recv() == {
+                        "reply": {"got": "three"},
+                        "request_identifier": WSIdent2,
+                        "message_id": WSIdentM2,
+                    }
                 srv.stop()
 
                 assert (await unknown.text()).startswith(
@@ -543,15 +580,6 @@ describe "Server":
                 if isinstance(r.msg, dict)
                 and any(m in r.msg["msg"] for m in ("Response", "Request"))
             ]
-
-            identifiers: set[str] = set()
-
-            Ident1 = pws_thp.IdentifierMatch(identifiers)
-            Ident2 = pws_thp.IdentifierMatch(identifiers)
-            Ident3 = pws_thp.IdentifierMatch(identifiers)
-            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
-
-            WSIdent2 = pws_thp.IdentifierMatch(identifiers)
 
             assert records == [
                 {
@@ -606,6 +634,7 @@ describe "Server":
                 },
                 {
                     "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
                     "msg": "Test WS Request",
                     "method": "GET",
                     "uri": "/stream",
@@ -615,6 +644,7 @@ describe "Server":
                 },
                 {
                     "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
                     "msg": "Test Response",
                     "method": "GET",
                     "uri": "/stream",
@@ -624,6 +654,7 @@ describe "Server":
                 },
                 {
                     "request_identifier": WSIdent2,
+                    "message_id": WSIdentM2,
                     "msg": "Test WS Request",
                     "method": "GET",
                     "uri": "/stream",
@@ -633,6 +664,7 @@ describe "Server":
                 },
                 {
                     "request_identifier": WSIdent2,
+                    "message_id": WSIdentM2,
                     "msg": "Test Response",
                     "method": "GET",
                     "uri": "/stream",
@@ -643,3 +675,624 @@ describe "Server":
             ]
 
             assert called == expected_called
+
+    describe "websocket streams":
+
+        async it "complains if the message isn't valid json", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                raise AssertionError("Never reaches here")
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send("[")
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": "unknown",
+                        "error": "failed to interpret json",
+                        "error_code": "InvalidRequest",
+                    }
+                    await stream.send("{")
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": "unknown",
+                        "error": "failed to interpret json",
+                        "error_code": "InvalidRequest",
+                    }
+
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+
+            assert records == [
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": None,
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": None,
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+            ]
+
+        async it "can use message id that is provided", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = "my amazing message id"
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                assert message.id == "my amazing message id"
+                await wssend({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
+                return False
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"message_id": WSIdentM1, "echo": "there"})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "reply": {"echo": "ereht"},
+                    }
+                    assert await stream.recv() is None
+
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+
+            assert records == [
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {"message_id": WSIdentM1, "echo": "there"},
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 200,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+            ]
+
+        async it "can not override the request identifier", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            PWSIdent1 = "my amazing request id"
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                assert message.request.ctx.request_identifier != PWSIdent1
+                await wssend({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
+                return False
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"request_identifier": PWSIdent1, "echo": "there"})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "reply": {"echo": "ereht"},
+                    }
+                    assert await stream.recv() is None
+
+            assert PWSIdent1 != WSIdent1
+
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+
+            assert records == [
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {"request_identifier": PWSIdent1, "echo": "there"},
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 200,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+            ]
+
+        async it "only stops connection upon returning False", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            async with pytest.helpers.FutureDominoes(expected=11) as futs:
+                start = hp.create_future()
+                identifiers: set[str] = set()
+
+                WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+                WSIdent2 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM2 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM3 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM4 = pws_thp.IdentifierMatch(identifiers)
+
+                async def ws(wssend: WSSender, message: Message) -> bool | None:
+                    assert "command" in message.body
+                    if message.body["command"] == "echo":
+                        assert "value" in message.body
+                        assert isinstance(message.body["wait"], list)
+                        await futs[message.body["wait"][0]]
+                        await wssend({"value": message.body["value"]})
+                        await futs[message.body["wait"][1]]
+                        await wssend({"value": message.body["value"]})
+                        return None
+                    else:
+                        assert message.body["command"] == "stop"
+                        return False
+
+                async def setup_routes(server):
+                    server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+                async def stream1(streamer: hp.ResultStreamer) -> tp.AsyncIterable[dict]:
+                    await start
+                    async with srv.stream("/stream") as stream:
+                        count = 0
+                        await futs[1]
+                        await stream.send({"command": "echo", "value": "one", "wait": [2, 5]})
+                        await stream.send({"command": "echo", "value": "two", "wait": [4, 7]})
+
+                        while True:
+                            nxt = await stream.recv()
+                            yield nxt
+                            count += 1
+                            if count == 4:
+                                break
+
+                        await stream.send({"command": "stop"})
+                        nxt = await stream.recv()
+                        assert nxt is None
+                        await futs[10]
+
+                async def stream2(streamer: hp.ResultStreamer) -> tp.AsyncIterator[dict]:
+                    await start
+
+                    async with srv.stream("/stream") as stream:
+                        count = 0
+                        await stream.send({"command": "echo", "value": "three", "wait": [3, 8]})
+                        await stream.send({"command": "echo", "value": "four", "wait": [6, 9]})
+
+                        while True:
+                            nxt = await stream.recv()
+                            yield nxt
+                            count += 1
+                            if count == 4:
+                                break
+
+                        await stream.send({"command": "stop"})
+                        nxt = await stream.recv()
+                        assert nxt is None
+                        await futs[11]
+
+                results: list[dict] = []
+                async with hp.ResultStreamer(final_future) as streamer:
+                    async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                        await streamer.add_generator(stream1(streamer))
+                        await streamer.add_generator(stream2(streamer))
+                        streamer.no_more_work()
+
+                        start.set_result(True)
+
+                        async for result in streamer:
+                            if not result.successful:
+                                raise result.value
+
+                            assert isinstance(result.value, dict)
+                            results.append(result.value)
+
+                        srv.stop()
+
+                assert results == [
+                    {
+                        "message_id": WSIdentM1,
+                        "request_identifier": WSIdent1,
+                        "reply": {"value": "one"},
+                    },
+                    {
+                        "message_id": WSIdentM2,
+                        "request_identifier": WSIdent2,
+                        "reply": {"value": "three"},
+                    },
+                    {
+                        "message_id": WSIdentM3,
+                        "request_identifier": WSIdent1,
+                        "reply": {"value": "two"},
+                    },
+                    {
+                        "message_id": WSIdentM1,
+                        "request_identifier": WSIdent1,
+                        "reply": {"value": "one"},
+                    },
+                    {
+                        "message_id": WSIdentM4,
+                        "request_identifier": WSIdent2,
+                        "reply": {"value": "four"},
+                    },
+                    {
+                        "message_id": WSIdentM3,
+                        "request_identifier": WSIdent1,
+                        "reply": {"value": "two"},
+                    },
+                    {
+                        "message_id": WSIdentM2,
+                        "request_identifier": WSIdent2,
+                        "reply": {"value": "three"},
+                    },
+                    {
+                        "message_id": WSIdentM4,
+                        "request_identifier": WSIdent2,
+                        "reply": {"value": "four"},
+                    },
+                ]
+
+        async it "doesn't close connection on an exception", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            async with pytest.helpers.FutureDominoes(expected=7) as futs:
+                identifiers: set[str] = set()
+
+                WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM2 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM3 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM4 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM5 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM6 = pws_thp.IdentifierMatch(identifiers)
+                WSIdentM7 = pws_thp.IdentifierMatch(identifiers)
+
+                async def ws(wssend: WSSender, message: Message) -> bool | None:
+                    if "fut" in message.body:
+                        await futs[message.body["fut"]]
+                        await wssend(message.body["fut"])
+                    else:
+                        await wssend("stop")
+                    if "error" in message.body:
+                        raise Exception(message.body["error"])
+
+                    if "stop" in message.body:
+                        return False
+                    else:
+                        return None
+
+                async def setup_routes(server):
+                    server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+                results: list[dict] = []
+                async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                    async with srv.stream("/stream") as stream:
+                        await stream.send({"fut": 1})
+                        await stream.send({"fut": 2, "error": "stuff"})
+                        await stream.send({"fut": 3})
+                        await stream.send({"fut": 4})
+                        await stream.send({"fut": 5, "error": "things"})
+                        await stream.send({"fut": 6})
+                        await futs[7]
+                        await stream.send({"stop": True})
+
+                        while True:
+                            nxt = await stream.recv()
+                            if nxt is None:
+                                break
+                            results.append(nxt)
+                            pass
+
+                    srv.stop()
+
+                assert results == [
+                    {
+                        "message_id": WSIdentM1,
+                        "request_identifier": WSIdent1,
+                        "reply": 1,
+                    },
+                    {
+                        "message_id": WSIdentM2,
+                        "request_identifier": WSIdent1,
+                        "reply": 2,
+                    },
+                    {
+                        "message_id": WSIdentM2,
+                        "request_identifier": WSIdent1,
+                        "error": "Internal Server Error",
+                        "error_code": "InternalServerError",
+                    },
+                    {
+                        "message_id": WSIdentM3,
+                        "request_identifier": WSIdent1,
+                        "reply": 3,
+                    },
+                    {
+                        "message_id": WSIdentM4,
+                        "request_identifier": WSIdent1,
+                        "reply": 4,
+                    },
+                    {
+                        "message_id": WSIdentM5,
+                        "request_identifier": WSIdent1,
+                        "reply": 5,
+                    },
+                    {
+                        "message_id": WSIdentM5,
+                        "request_identifier": WSIdent1,
+                        "error": "Internal Server Error",
+                        "error_code": "InternalServerError",
+                    },
+                    {
+                        "message_id": WSIdentM6,
+                        "request_identifier": WSIdent1,
+                        "reply": 6,
+                    },
+                    {
+                        "message_id": WSIdentM7,
+                        "request_identifier": WSIdent1,
+                        "reply": "stop",
+                    },
+                ]
+
+        async it "doesn't cause havoc if couldn't handle because connection closed", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            called: list[str] = []
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                await wssend("one")
+                try:
+                    await asyncio.sleep(1)
+                except asyncio.CancelledError:
+                    called.append("cancelled")
+                try:
+                    await wssend("two")
+                except sanic.exceptions.WebsocketClosed:
+                    called.append("closed")
+                    raise
+                return None
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "reply": "one",
+                    }
+                srv.stop()
+
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+
+            assert records == [
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {},
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0.0, 1.0),
+                },
+            ]
+            assert called == ["cancelled", "closed"]
+
+        async it "logs response if abruptly closed", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                await wssend("one")
+                await asyncio.sleep(10)
+                return None
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "reply": "one",
+                    }
+                srv.stop()
+
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+
+            assert records == [
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Websocket Request",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "scheme": "ws",
+                    "remote_addr": "",
+                    "body": {},
+                },
+                {
+                    "request_identifier": WSIdent1,
+                    "message_id": WSIdentM1,
+                    "msg": "Response",
+                    "method": "GET",
+                    "uri": "/stream",
+                    "status": 500,
+                    "remote_addr": "",
+                    "took_seconds": Between(0, 1.0),
+                },
+            ]
+
+        async it "has access to a future representing the stream", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            called: list[object] = []
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM2 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM3 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM4 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                called.append(("before", message.body["id"]))
+                try:
+                    match message.body["command"]:
+                        case "wait":
+                            await message.stream_fut
+                            called.append(("after", message.body["id"]))
+                        case "echo":
+                            await wssend("".join(reversed(tp.cast(str, message.body["echo"]))))
+                        case "stop":
+                            return False
+                        case _:
+                            raise AssertionError(f"Unknown command, {message.body['command']}")
+                finally:
+                    called.append(("after", message.body["id"]))
+
+                return None
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"command": "echo", "echo": "hello", "id": 1})
+                    await stream.send({"command": "echo", "echo": "there", "id": 2})
+                    await stream.send({"command": "wait", "id": 3})
+                    await stream.send({"command": "echo", "echo": "mate", "id": 4})
+                    await stream.send({"command": "wait", "id": 5})
+
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "reply": "olleh",
+                    }
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM2,
+                        "reply": "ereht",
+                    }
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM3,
+                        "reply": "etam",
+                    }
+                    await asyncio.sleep(5)
+                    assert called == [
+                        ("before", 1),
+                        ("after", 1),
+                        ("before", 2),
+                        ("after", 2),
+                        ("before", 3),
+                        ("before", 4),
+                        ("after", 4),
+                        ("before", 5),
+                    ]
+
+                    await stream.send({"command": "echo", "echo": "blah", "id": 6})
+                    await stream.send({"command": "stop", "id": 7})
+                    await asyncio.sleep(5)
+                    assert called == [
+                        ("before", 1),
+                        ("after", 1),
+                        ("before", 2),
+                        ("after", 2),
+                        ("before", 3),
+                        ("before", 4),
+                        ("after", 4),
+                        ("before", 5),
+                        ("before", 6),
+                        ("after", 6),
+                        ("before", 7),
+                        ("after", 7),
+                        ("after", 3),
+                        ("after", 5),
+                    ]
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM4,
+                        "reply": "halb",
+                    }
+
+                srv.stop()
+
+            assert called == [
+                ("before", 1),
+                ("after", 1),
+                ("before", 2),
+                ("after", 2),
+                ("before", 3),
+                ("before", 4),
+                ("after", 4),
+                ("before", 5),
+                ("before", 6),
+                ("after", 6),
+                ("before", 7),
+                ("after", 7),
+                ("after", 3),
+                ("after", 5),
+            ]

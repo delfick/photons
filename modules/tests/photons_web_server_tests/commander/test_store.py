@@ -66,7 +66,7 @@ describe "Store":
                 async def things():
                     t = time.time()
                     await hp.wait_for_first_future(s.request_future)
-                    made.append(time.time() - t)
+                    made.append(int(time.time() - t))
                     done_things.set_result(True)
 
                 made.append(s.server.tasks.add(things()))
