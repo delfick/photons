@@ -91,6 +91,7 @@ set_trace: Incomplete
 import typing as tp
 from unittest import mock
 
+from photons_pytest import FutureDominoes
 from tests.photons_web_server_tests.conftest import IsInstance
 
 class helpers:
@@ -101,3 +102,4 @@ class helpers:
 
     AsyncMock: tp.ClassVar[type[mock.AsyncMock]]
     IsInstance: tp.ClassVar[type[IsInstance]]
+    FutureDominoes: tp.ClassVar[type[FutureDominoes]]
