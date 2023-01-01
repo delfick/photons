@@ -18,7 +18,12 @@ from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
 from photons_web_server import pytest_helpers as pws_thp
-from photons_web_server.commander import Command, Message, WithCommanderClass
+from photons_web_server.commander import (
+    Command,
+    Message,
+    ProgressMessageMaker,
+    WithCommanderClass,
+)
 from photons_web_server.commander.messages import ExcInfo, get_logger
 from photons_web_server.commander.websocket_wrap import WSSender
 from photons_web_server.server import Server, WebServerTask
@@ -677,6 +682,58 @@ describe "Server":
             assert called == expected_called
 
     describe "websocket streams":
+
+        async it "can send progress messages", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                await wssend.progress(message.body["echo"])
+                return False
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"echo": "there"})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "progress": "there",
+                    }
+                    await stream.recv() is None
+
+        async it "can provide a progress callback", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+            identifiers: set[str] = set()
+            progress = pytest.helpers.AsyncMock(
+                name="progress", return_value={"ret": "from progress"}
+            )
+
+            WSIdent1 = pws_thp.IdentifierMatch(identifiers)
+            WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
+
+            async def ws(wssend: WSSender, message: Message) -> bool | None:
+                wssend = wssend.with_progress(tp.cast(ProgressMessageMaker, progress))
+                await wssend.progress(message.body["echo"], one=1, two=2)
+                return False
+
+            async def setup_routes(server):
+                server.app.add_websocket_route(server.wrap_websocket_handler(ws), "stream")
+
+            async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+                async with srv.stream("/stream") as stream:
+                    await stream.send({"echo": "there"})
+                    assert await stream.recv() == {
+                        "request_identifier": WSIdent1,
+                        "message_id": WSIdentM1,
+                        "progress": {"ret": "from progress"},
+                    }
+                    await stream.recv() is None
+
+            progress.assert_called_once_with("there", do_log=True, one=1, two=2)
 
         async it "complains if the message isn't valid json", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
             identifiers: set[str] = set()
