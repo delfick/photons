@@ -110,22 +110,22 @@ class WrappedWebsocketHandlerWithName(WrappedWebsocketHandler):
 
 
 class WSSender:
-    _progress: Progress
+    _progress: Progress | None
 
     def __init__(
         self,
         ws: Websocket,
         reprer: TReprer,
         message: Message,
+        progress: Progress | None = None,
     ):
         self.ws = ws
         self._reprer = reprer
         self._message = message
+        self._progress = progress
 
     def with_progress(self, progress: Progress) -> "WSSender":
-        sender = WSSender(self.ws, self._reprer, self._message)
-        sender._progress = progress
-        return sender
+        return WSSender(self.ws, self._reprer, self._message, progress=progress)
 
     async def __call__(self, res: BaseException | object, progress: bool = False) -> None:
         msg = {
@@ -147,7 +147,10 @@ class WSSender:
         await self.ws.send(json_dumps(msg, default=self._reprer))
 
     async def progress(self, message: tp.Any, do_log=True, **kwargs) -> dict:
-        info = await self._progress(message, do_log=do_log, **kwargs)
+        info = message
+        if self._progress is not None:
+            info = await self._progress(message, do_log=do_log, **kwargs)
+
         await self(info, progress=True)
         return info
 
