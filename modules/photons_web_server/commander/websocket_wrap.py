@@ -18,6 +18,7 @@ from sanic.response import BaseHTTPResponse as Response
 from sanic.response import HTTPResponse
 from sanic.response.types import json_dumps
 
+from .messages import TBO, ErrorMessage, ExcO, ExcTypO
 from .messages import TProgressMessageMaker as Progress
 from .messages import TReprer, reprer
 
@@ -105,10 +106,6 @@ WrappedWebsocketHandlerOnClass: tp.TypeAlias = tp.Callable[
 ]
 
 
-class WrappedWebsocketHandlerWithName(WrappedWebsocketHandler):
-    __name__: str
-
-
 class WSSender:
     _progress: Progress | None
 
@@ -156,17 +153,38 @@ class WSSender:
 
 
 class WebsocketWrap:
+    setup: tp.Callable
+
     def __init__(
         self,
         final_future: asyncio.Future,
         log_ws_request: WSRequestLogger,
         log_response: ResponseLogger,
+        *args,
         reprer: TReprer = reprer,
+        **kwargs,
     ):
         self.reprer = reprer
         self.final_future = final_future
         self.log_response = log_response
         self.log_ws_request = log_ws_request
+        if hasattr(self, "setup"):
+            self.setup(*args, **kwargs)
+
+    def message_from_exc(self, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
+        return InternalServerError("Internal Server Error")
+
+    def make_wssend(
+        self,
+        ws: Websocket,
+        reprer: TReprer,
+        message: Message,
+    ) -> WSSender:
+        return WSSender(
+            ws,
+            reprer,
+            message,
+        )
 
     def __call__(self, handler: WrappedWebsocketHandler) -> RouteHandler:
         @wraps(handler)
@@ -246,7 +264,7 @@ class WebsocketWrap:
             self.log_ws_request(request, None)
             self.log_response(request, HTTPResponse(status=500))
             with Message.unknown(request, stream_fut, nxt) as message:
-                wssend = WSSender(ws, self.reprer, message)
+                wssend = self.make_wssend(ws, self.reprer, message)
                 await wssend(InvalidRequest("failed to interpret json"))
             return
 
@@ -266,7 +284,7 @@ class WebsocketWrap:
         async def process():
             with Message.create(message_id, body, request, stream_fut) as message:
                 status = 500
-                wssend = WSSender(ws, self.reprer, message)
+                wssend = self.make_wssend(ws, self.reprer, message)
 
                 try:
                     if await handler(wssend=wssend, message=message) is False:
@@ -275,7 +293,11 @@ class WebsocketWrap:
                 except:
                     request.ctx.exc_info = sys.exc_info()
                     try:
-                        await wssend(InternalServerError("Internal Server Error"))
+                        res = self.message_from_exc(*request.ctx.exc_info)
+                        if isinstance(res, Exception):
+                            await wssend(res)
+                        else:
+                            await wssend({"error_code": res.error_code, "error": res.error})
                     except sanic.exceptions.WebsocketClosed:
                         loop_stop.cancel()
                 finally:

@@ -4,7 +4,7 @@ import logging
 import sys
 import typing as tp
 from contextlib import contextmanager
-from functools import wraps
+from functools import partial, wraps
 
 import sanic.exceptions
 from delfick_project.logging import LogContext
@@ -17,7 +17,15 @@ from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 from strcs import Meta
 
-from .messages import MessageFromExc, ProgressMessageMaker, TMessageFromExc
+from .messages import (
+    TBO,
+    ErrorMessage,
+    ExcO,
+    ExcTypO,
+    MessageFromExc,
+    ProgressMessageMaker,
+    TMessageFromExc,
+)
 from .messages import TProgressMessageMaker as Progress
 from .messages import TReprer, get_logger, get_logger_name, reprer
 
@@ -101,14 +109,15 @@ class RouteTransformer(tp.Generic[C]):
     def wrap_http(self, method: tp.Callable) -> RouteHandler:
         @wraps(method)
         async def route(request: Request, *args: tp.Any, **kwargs: tp.Any) -> Response | None:
-            with self._an_instance(request, method) as (lc, name, logger_name, instance):
+            with self._an_instance(request, method) as (name, instance):
                 ret = False
                 try:
-                    route = getattr(instance, method.__name__)
+                    route = partial(method, instance)
+                    progress = instance.progress_message_maker(
+                        lc=instance.lc, logger_name=instance.logger_name
+                    )
                     if inspect.iscoroutinefunction(route):
-                        t = hp.async_as_background(
-                            route(instance._progress, request, *args, **kwargs)
-                        )
+                        t = hp.async_as_background(route(progress, request, *args, **kwargs))
                         await hp.wait_for_first_future(
                             t,
                             instance.request_future,
@@ -120,11 +129,13 @@ class RouteTransformer(tp.Generic[C]):
                         t.cancel()
                         return await t
                     else:
-                        return route(instance._progress, request, *args, **kwargs)
+                        return route(progress, request, *args, **kwargs)
                 except:
                     exc_info = sys.exc_info()
                     if ret or exc_info[0] is not asyncio.CancelledError:
-                        raise self.message_from_exc_maker(lc=lc, logger_name=logger_name)(*exc_info)
+                        raise self.message_from_exc_maker(
+                            lc=instance.lc, logger_name=instance.logger_name
+                        )(*exc_info)
 
                     if exc_info[0] is asyncio.CancelledError:
                         raise sanic.exceptions.ServiceUnavailable("Cancelled")
@@ -137,7 +148,7 @@ class RouteTransformer(tp.Generic[C]):
     @contextmanager
     def _an_instance(
         self, request: Request, method: tp.Callable
-    ) -> tp.Generator[tuple[LogContext, str, str, C], None, None]:
+    ) -> tp.Generator[tuple[str, C], None, None]:
         name = f"RouteTransformer::__call__({self.kls.__name__}:{method.__name__})"
 
         lc = hp.lc.using(
@@ -160,11 +171,13 @@ class RouteTransformer(tp.Generic[C]):
                 self.app,
                 self.server,
                 self.reprer,
-                self.progress_message_maker(lc=lc, logger_name=logger_name),
+                self.progress_message_maker,
                 identifier=request.headers[REQUEST_IDENTIFIER_HEADER],
+                lc=lc,
+                logger_name=logger_name,
                 logger=logger,
             )
-            yield lc, name, logger_name, instance
+            yield name, instance
 
 
 class Command:
@@ -177,21 +190,25 @@ class Command:
         app: Sanic,
         server: "Server",
         reprer: TReprer,
-        progress: Progress,
+        progress_message_maker: type[Progress],
         identifier: str,
+        *,
+        lc: LogContext,
         logger: logging.Logger,
+        logger_name: str,
     ):
+        self.lc = lc
         self.app = app
         self.meta = meta
         self.store = store
         self.server = server
         self.reprer = reprer
         self.request = request
-        self._progress = progress
+        self.logger_name = logger_name
         self.identifier = identifier
         self.request_future = request_future
+        self.progress_message_maker = progress_message_maker
 
-        self.lc = hp.lc.using(request_identifier=self.identifier)
         self.log = logger
         self.setup()
 
