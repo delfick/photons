@@ -1,11 +1,10 @@
-types-setuptools==65.5.0.2
-pylama-dmypy==0.3
+types-setuptools==65.6.0.2
+pylama-dmypy==0.4
 pylama==8.4.1
 neovim==0.3.1
 tox==3.27.0
-mypy==0.991
 isort==5.11.4
-python-lsp-server==1.6.0
+python-lsp-server==1.7.0
 pylsp-mypy==0.6.4
 pyls-isort==0.2.2
 tox-asdf==0.1.0
