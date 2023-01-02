@@ -7,8 +7,8 @@ import typing as tp
 
 import sanic
 from attrs import asdict, define
+from attrs import has as attrs_has
 from bitarray import bitarray
-from delfick_project.errors import DelfickError
 from delfick_project.logging import LogContext
 from sanic.exceptions import SanicException
 from sanic.request import Request
@@ -98,8 +98,11 @@ class MessageFromExc:
         if isinstance(exc, SanicException):
             raise exc
 
-        elif isinstance(exc, DelfickError):
+        elif exc and hasattr(exc, "as_dict"):
             return ErrorMessage(status=400, error=exc.as_dict(), error_code=exc.__class__.__name__)
+
+        elif exc_type and attrs_has(exc_type):
+            return ErrorMessage(status=500, error=asdict(exc), error_code=exc.__class__.__name__)
 
         elif exc_type is asyncio.CancelledError:
             return ErrorMessage(
