@@ -3,7 +3,13 @@ from .messages import MessageFromExc, ProgressMessageMaker
 from .messages import TProgressMessageMaker as Progress
 from .messages import reprer
 from .store import Command, RouteTransformer, Store, WithCommanderClass
-from .websocket_wrap import Message, WebsocketWrap, WrappedWebsocketHandler
+from .websocket_wrap import (
+    Message,
+    Websocket,
+    WebsocketWrap,
+    WrappedWebsocketHandler,
+    WSSender,
+)
 
 __all__ = [
     "Command",
@@ -17,5 +23,7 @@ __all__ = [
     "RouteTransformer",
     "WrappedWebsocketHandler",
     "WebsocketWrap",
+    "WSSender",
+    "Websocket",
     "WithCommanderClass",
 ]

@@ -28,6 +28,13 @@ from .messages import (
 )
 from .messages import TProgressMessageMaker as Progress
 from .messages import TReprer, get_logger, get_logger_name, reprer
+from .websocket_wrap import (
+    Message,
+    Websocket,
+    WebsocketWrap,
+    WrappedWebsocketHandlerOnClass,
+    WSSender,
+)
 
 if tp.TYPE_CHECKING:
     from photons_web_server.server import Server
@@ -41,6 +48,40 @@ C = tp.TypeVar("C", bound="Command")
 @tp.runtime_checkable
 class WithCommanderClass(tp.Protocol):
     __commander_class__: type["Command"]
+
+
+class CommandWebsocketWrap(WebsocketWrap):
+    lc: LogContext
+    logger_name: str
+    instance: "Command"
+    message_from_exc_maker: type[TMessageFromExc]
+
+    def setup(self, *, instance: "Command", message_from_exc_maker: type[TMessageFromExc]):
+        self.instance = instance
+        self.message_from_exc_maker = message_from_exc_maker
+
+    def message_from_exc(
+        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
+    ) -> ErrorMessage | Exception:
+        return self.message_from_exc_maker(
+            lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name
+        )(exc_type, exc, tb)
+
+    def make_wssend(
+        self,
+        ws: Websocket,
+        reprer: TReprer,
+        message: Message,
+    ) -> WSSender:
+        return WSSender(
+            ws,
+            reprer,
+            message,
+            self.instance.progress_message_maker(
+                lc=self.instance.lc.using(message_id=message.id),
+                logger_name=self.instance.logger_name,
+            ),
+        )
 
 
 class RouteTransformer(tp.Generic[C]):
@@ -94,6 +135,36 @@ class RouteTransformer(tp.Generic[C]):
         def http(self, method: tp.Callable, *args, **kwargs) -> RouteHandler:
             return self.app.add_route(self.wrap_http(method), *args, **kwargs)
 
+    if tp.TYPE_CHECKING:
+
+        def ws(
+            self,
+            method: WrappedWebsocketHandlerOnClass,
+            uri: str,
+            host: None | str | list[str] = None,
+            strict_slashes: None | bool = None,
+            subprotocols: None | list[str] = None,
+            version: None | int | str | float = None,
+            name: None | str = None,
+            apply: bool = True,
+            version_prefix: str = "/v",
+            error_format: None | str = None,
+            websocket: bool = True,
+            unquote: bool = False,
+            static: bool = False,
+            **ctx_kwargs: tp.Any,
+        ) -> RouteHandler: ...
+
+    else:
+
+        def ws(
+            self,
+            method: WrappedWebsocketHandlerOnClass,
+            *args: P.args,
+            **kwargs: P.kwargs,
+        ) -> RouteHandler:
+            return self.app.add_websocket_route(self.wrap_ws(method), *args, **kwargs)
+
     @contextmanager
     def a_request_future(
         self, request: Request, name: str
@@ -105,6 +176,22 @@ class RouteTransformer(tp.Generic[C]):
         with hp.ChildOfFuture(self.final_future, name="{name}[request_future]") as request_future:
             request.ctx.request_future = request_future
             yield request_future
+
+    def wrap_ws(self, method: WrappedWebsocketHandlerOnClass) -> RouteHandler:
+        @wraps(method)
+        async def handle(request: Request, ws: Websocket):
+            with self._an_instance(request, method) as (_, instance):
+                handler = CommandWebsocketWrap(
+                    self.final_future,
+                    self.server.log_ws_request,
+                    self.server.log_response,
+                    reprer=self.reprer,
+                    instance=instance,
+                    message_from_exc_maker=self.message_from_exc_maker,
+                )(partial(method, instance))
+                return await handler(request, ws)
+
+        return handle
 
     def wrap_http(self, method: tp.Callable) -> RouteHandler:
         @wraps(method)
