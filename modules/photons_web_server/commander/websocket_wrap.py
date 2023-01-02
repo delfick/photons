@@ -134,7 +134,9 @@ class WSSender:
 
         if isinstance(res, dict):
             if "error" in res:
-                msg["error"] = str(res.pop("error"))
+                msg["error"] = res.pop("error")
+                if not isinstance(msg["error"], dict):
+                    msg["error"] = str(msg["error"])
             if "error_code" in res:
                 msg["error_code"] = res.pop("error_code")
 
@@ -171,7 +173,9 @@ class WebsocketWrap:
         if hasattr(self, "setup"):
             self.setup(*args, **kwargs)
 
-    def message_from_exc(self, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
+    def message_from_exc(
+        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
+    ) -> ErrorMessage | Exception:
         return InternalServerError("Internal Server Error")
 
     def make_wssend(
@@ -293,11 +297,11 @@ class WebsocketWrap:
                 except:
                     request.ctx.exc_info = sys.exc_info()
                     try:
-                        res = self.message_from_exc(*request.ctx.exc_info)
-                        if isinstance(res, Exception):
-                            await wssend(res)
-                        else:
+                        res = self.message_from_exc(message, *request.ctx.exc_info)
+                        if isinstance(res, ErrorMessage):
                             await wssend({"error_code": res.error_code, "error": res.error})
+                        else:
+                            await wssend(res)
                     except sanic.exceptions.WebsocketClosed:
                         loop_stop.cancel()
                 finally:
