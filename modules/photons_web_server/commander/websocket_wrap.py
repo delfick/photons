@@ -64,6 +64,10 @@ class Message:
     stream_fut: asyncio.Future
     message_fut: asyncio.Future
 
+    @property
+    def stream_id(self) -> str:
+        return self.request.ctx.request_identifier
+
     @classmethod
     @contextmanager
     def unknown(

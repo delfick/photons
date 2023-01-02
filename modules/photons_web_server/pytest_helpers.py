@@ -19,6 +19,10 @@ class IdentifierMatch:
         self.identifiers = identifiers
         self.count = count
 
+    def __hash__(self) -> int:
+        assert self.identifier is not None
+        return hash(self.identifier)
+
     def __eq__(self, other: object) -> bool:
         if self.identifier is None:
             assert other not in self.identifiers

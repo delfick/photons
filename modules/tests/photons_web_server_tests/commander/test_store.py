@@ -1,19 +1,51 @@
 # coding: spec
-
 import asyncio
 import time
 import types
+import typing as tp
+from collections import defaultdict
 from textwrap import dedent
 
 import pytest
 import sanic
+from attrs import define
+from delfick_project.errors import DelfickError
 from photons_app import helpers as hp
 from photons_web_server import pytest_helpers as pws_thp
-from photons_web_server.commander import Command, Progress, RouteTransformer, Store
+from photons_web_server.commander import (
+    Command,
+    Message,
+    Progress,
+    RouteTransformer,
+    Store,
+    WSSender,
+)
 from photons_web_server.server import Server
 from sanic.request import Request
 from sanic.response import HTTPResponse as Response
 from strcs import Meta
+
+
+class Between:
+    compare: object | None
+
+    def __init__(self, frm: float, to: float):
+        self.frm = frm
+        self.to = to
+        self.compare = None
+
+    def __eq__(self, compare: object) -> bool:
+        self.compare = compare
+        if not isinstance(self.compare, float):
+            return False
+        return self.frm <= self.compare <= self.to
+
+    def __repr__(self) -> str:
+        if self.compare is None:
+            return f"<Between {self.frm} and {self.to}/>"
+        else:
+            return repr(self.compare)
+
 
 describe "Store":
     async it "makes it easy to add routes to particular methods of new instances of the command", final_future: asyncio.Future, fake_event_loop:
@@ -304,3 +336,426 @@ describe "Store":
         )
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
+
+    async it "supports websocket commands", final_future: asyncio.Future, fake_event_loop, caplog:
+        store = Store()
+        identifiers: set[str] = set()
+
+        RI1 = pws_thp.IdentifierMatch(identifiers)
+        MI11 = pws_thp.IdentifierMatch(identifiers)
+        MI12 = pws_thp.IdentifierMatch(identifiers)
+        MI13 = pws_thp.IdentifierMatch(identifiers)
+        MI14 = pws_thp.IdentifierMatch(identifiers)
+
+        RI2 = pws_thp.IdentifierMatch(identifiers)
+        MI21 = pws_thp.IdentifierMatch(identifiers)
+        MI22 = pws_thp.IdentifierMatch(identifiers)
+        MI23 = pws_thp.IdentifierMatch(identifiers)
+        MI24 = pws_thp.IdentifierMatch(identifiers)
+        MI25 = pws_thp.IdentifierMatch(identifiers)
+
+        by_stream_id: dict[str, int] = defaultdict(int)
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.ws(kls.adder, "adder")
+
+            async def adder(
+                s,
+                wssend: WSSender,
+                message: Message,
+            ) -> bool | None:
+                if message.body["command"] == "echo":
+                    await wssend(message.body["echo"])
+                if message.body["command"] == "totals":
+                    await wssend.progress(dict(by_stream_id))
+                elif message.body["command"] == "add":
+                    add = tp.cast(int, message.body.get("add", 0))
+                    identifier = message.request.ctx.request_identifier
+                    assert identifier == message.stream_id
+                    await wssend.progress("added", was=by_stream_id[message.stream_id], adding=add)
+                    by_stream_id[message.stream_id] += add
+                elif message.body["command"] == "stop":
+                    await wssend("stopped!")
+                    return False
+
+                return None
+
+        async def setup_routes(server):
+            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+            res: list[dict | str] = []
+            async with srv.stream("/adder") as stream:
+                await stream.send({"command": "totals"})
+                res.append(await stream.recv())
+                await stream.send({"command": "add", "add": 10})
+                res.append(await stream.recv())
+                await stream.send({"command": "add", "add": 30})
+                res.append(await stream.recv())
+                await stream.send({"command": "stop"})
+                res.append(await stream.recv())
+                res.append(await stream.recv())
+                res.append("__BREAK__")
+
+            async with srv.stream("/adder") as stream:
+                await stream.send({"command": "echo", "echo": "echo"})
+                res.append(await stream.recv())
+                await stream.send({"command": "totals"})
+                res.append(await stream.recv())
+                await stream.send({"command": "add", "add": 10})
+                res.append(await stream.recv())
+                await stream.send({"command": "totals"})
+                res.append(await stream.recv())
+                await stream.send({"command": "stop"})
+                res.append(await stream.recv())
+                res.append(await stream.recv())
+                res.append("__OVER__")
+
+        assert res[:7] == [
+            {
+                "message_id": MI11,
+                "request_identifier": RI1,
+                "progress": {},
+            },
+            {
+                "message_id": MI12,
+                "request_identifier": RI1,
+                "progress": {"info": "added", "was": 0, "adding": 10},
+            },
+            {
+                "message_id": MI13,
+                "request_identifier": RI1,
+                "progress": {"info": "added", "was": 10, "adding": 30},
+            },
+            {
+                "message_id": MI14,
+                "request_identifier": RI1,
+                "reply": "stopped!",
+            },
+            None,
+            "__BREAK__",
+            {
+                "message_id": MI21,
+                "request_identifier": RI2,
+                "reply": "echo",
+            },
+        ]
+        assert res[7:] == [
+            {
+                "message_id": MI22,
+                "request_identifier": RI2,
+                "progress": {RI1: 40},
+            },
+            {
+                "message_id": MI23,
+                "request_identifier": RI2,
+                "progress": {"info": "added", "was": 0, "adding": 10},
+            },
+            {
+                "message_id": MI24,
+                "request_identifier": RI2,
+                "progress": {RI1: 40, RI2: 10},
+            },
+            {
+                "message_id": MI25,
+                "request_identifier": RI2,
+                "reply": "stopped!",
+            },
+            None,
+            "__OVER__",
+        ]
+
+        records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
+        assert records == [
+            {
+                "request_identifier": RI1,
+                "message_id": MI11,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "totals"},
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI11,
+                "msg": "progress",
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI11,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI12,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "add", "add": 10},
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI12,
+                "msg": "progress",
+                "info": "added",
+                "was": 0,
+                "adding": 10,
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI12,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI13,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "add", "add": 30},
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI13,
+                "msg": "progress",
+                "info": "added",
+                "was": 10,
+                "adding": 30,
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI13,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI14,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "stop"},
+            },
+            {
+                "request_identifier": RI1,
+                "message_id": MI14,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI21,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "echo", "echo": "echo"},
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI21,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI22,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "totals"},
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI22,
+                "msg": "progress",
+                RI1: 40,
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI22,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI23,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "add", "add": 10},
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI23,
+                "msg": "progress",
+                "info": "added",
+                "was": 0,
+                "adding": 10,
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI23,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI24,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "totals"},
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI24,
+                "msg": "progress",
+                RI1: 40,
+                RI2: 10,
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI24,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI25,
+                "msg": "Websocket Request",
+                "method": "GET",
+                "uri": "/adder",
+                "scheme": "ws",
+                "remote_addr": "",
+                "body": {"command": "stop"},
+            },
+            {
+                "request_identifier": RI2,
+                "message_id": MI25,
+                "msg": "Response",
+                "method": "GET",
+                "uri": "/adder",
+                "status": 200,
+                "remote_addr": "",
+                "took_seconds": Between(0, 1),
+            },
+        ]
+
+    async it "supports message from exc from commands", final_future: asyncio.Future, fake_event_loop, caplog:
+        store = Store()
+        identifiers: set[str] = set()
+
+        RI1 = pws_thp.IdentifierMatch(identifiers)
+        MI1 = pws_thp.IdentifierMatch(identifiers)
+        MI2 = pws_thp.IdentifierMatch(identifiers)
+        MI3 = pws_thp.IdentifierMatch(identifiers)
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.ws(kls.excs, "excs")
+
+            async def excs(
+                s,
+                wssend: WSSender,
+                message: Message,
+            ) -> bool | None:
+                if message.body["command"] == "valueerror":
+                    raise ValueError("nup")
+                if message.body["command"] == "delfickerror":
+
+                    class MyError(DelfickError):
+                        desc = "my error"
+
+                    raise MyError("hello there", mate=True)
+                if message.body["command"] == "attrserror":
+
+                    @define
+                    class TheError(Exception):
+                        one: int
+                        two: str
+
+                    raise TheError(one=2, two="two")
+
+                return None
+
+        async def setup_routes(server):
+            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+            async with srv.stream("/excs") as stream:
+                await stream.send({"command": "valueerror"})
+                assert await stream.recv() == {
+                    "request_identifier": RI1,
+                    "message_id": MI1,
+                    "error_code": "InternalServerError",
+                    "error": "Internal Server Error",
+                }
+                await stream.send({"command": "delfickerror"})
+                assert await stream.recv() == {
+                    "request_identifier": RI1,
+                    "message_id": MI2,
+                    "error_code": "MyError",
+                    "error": {"message": "my error. hello there", "mate": True},
+                }
+                await stream.send({"command": "attrserror"})
+                assert await stream.recv() == {
+                    "request_identifier": RI1,
+                    "message_id": MI3,
+                    "error_code": "TheError",
+                    "error": {"one": 2, "two": "two"},
+                }
