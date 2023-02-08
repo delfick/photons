@@ -792,6 +792,26 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCM3_DOWNLIGHT_INTL(lifx.Product):
+        pid = 121
+        family = Family.LCM3
+        friendly = "LIFX Downlight Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_DOWNLIGHT_US(lifx.Product):
+        pid = 122
+        family = Family.LCM3
+        friendly = "LIFX Downlight US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
     class LCM3_32_COLOR_US(lifx.Product):
         pid = 123
         family = Family.LCM3
