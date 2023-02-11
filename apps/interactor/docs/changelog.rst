@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-12-6:
+
+0.12.6 - 11 February 2023
+    * Upgrade photons core to get new products
+
 .. _release-interactor-0-12-5:
 
 0.12.5 - 20 November 2022

@@ -5,9 +5,10 @@ ChangeLog
 
 .. _release-core-0-42.8:
 
-0.42.8 - TBD
+0.42.8 - 11 February 2023
     * Replace ruamel.yaml with the ruyaml fork
     * Convert from setuptools to hatchling
+    * Add new products to the product registry
 
 .. _release-core-0-42.7:
 
