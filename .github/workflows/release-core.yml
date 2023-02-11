@@ -16,16 +16,19 @@ jobs:
           python-version: 3.9
 
       - id: build
-        run: cd apps/arranger && pip install hatch==1.6.3 && hatch build
+        run: cd modules && pip install hatch==1.6.3 && hatch build
 
       - id: version
         run: |
-          printf "::set-output name=version::%s\n" $(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'])")
-          printf "::set-output name=versiondash::%s\n" $(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'].replace('.', '-'))")
+          VERSION=$(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'])")
+          VERSIONDASH=$(python -c "import runpy; print(runpy.run_path('modules/photons_app/__init__.py')['VERSION'].replace('.', '-'))")
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "versiondash=$VERSIONDASH" >> $GITHUB_OUTPUT
 
       - id: package
         run: >
-          printf "::set-output name=package::lifx-photons-core-${{ steps.version.outputs.version}}.tar.gz"
+          echo "package=lifx_photons_core-${{ steps.version.outputs.version }}.tar.gz" >> $GITHUB_OUTPUT
 
       - id: create_release
         uses: actions/create-release@v1

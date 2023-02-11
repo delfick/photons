@@ -39,19 +39,19 @@ jobs:
           docker buildx version
 
       - id: build
-        run: cd apps/arranger && pip install hatch==1.6.3 && hatch build
+        run: cd apps/interactor && pip install hatch==1.6.3 && hatch build
 
       - id: version
         run: |
-          version=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'])")
-          versiondash=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'].replace('.', '-'))")
+          VERSION=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'])")
+          VERSIONDASH=$(python -c "import runpy; print(runpy.run_path('apps/interactor/interactor/__init__.py')['VERSION'].replace('.', '-'))")
 
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "versiondash=$versiondash" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "versiondash=$VERSIONDASH" >> $GITHUB_OUTPUT
 
       - id: package
         run: >
-          echo "package=lifx-photons-interactor-${{ steps.version.outputs.version}}.tar.gz" >> $GITHUB_OUTPUT
+          echo "package=lifx_photons_interactor-${{ steps.version.outputs.version}}.tar.gz" >> $GITHUB_OUTPUT
 
       - id: create_release
         uses: actions/create-release@v1
