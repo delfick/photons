@@ -20,7 +20,7 @@ dependencies = [
     "bitarray>=2.1.2",
     "delfick_project==0.7.9",
     "kdtree==0.16",
-    "lru-dict==1.1.8",
+    "lru-dict==1.2.0",
     "python-dateutil>=2.8.1",
     "rainbow_logging_handler==2.2.2",
     "ruyaml==0.91.0",
