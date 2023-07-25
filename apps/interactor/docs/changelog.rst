@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-12-7:
+
+0.12.7 - 25 July 2023
+    * Upgrade photons core to get new version of lru-dict dependency
+
 .. _release-interactor-0-12-6:
 
 0.12.6 - 11 February 2023

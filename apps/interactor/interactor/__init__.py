@@ -1,4 +1,4 @@
-VERSION = "0.12.6"
+VERSION = "0.12.7"
 ZEROCONF_TYPE = "_photons._tcp.local."
 
 
