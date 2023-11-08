@@ -12,7 +12,7 @@ if not (deps_dir / "venvstarter.py").exists():
 
 venvstarter_module = runpy.run_path(str(deps_dir / "venvstarter.py"))
 
-wanted_version = "0.11.0"
+wanted_version = "0.12.0"
 
 upgrade = False
 VERSION = venvstarter_module.get("VERSION")
@@ -20,10 +20,10 @@ if VERSION is None:
     upgrade = True
 else:
     Version = venvstarter_module["Version"]
-    if Version(wanted_version) < Version(VERSION):
+    if Version(VERSION) != Version(wanted_version):
         upgrade = True
 
 if upgrade:
-    os.system(f"{sys.executable} -m pip install 'venvstarter>={wanted_version}' -t {deps_dir}")
+    os.system(f"{sys.executable} -m pip install -U 'venvstarter=={wanted_version}' -t {deps_dir}")
 
 manager = runpy.run_path(str(deps_dir / "venvstarter.py"))["manager"]
