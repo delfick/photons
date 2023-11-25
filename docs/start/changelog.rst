@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-42.10:
+
+0.42.10 - 26 November 2023
+    * Added String and Neon to the product registry
+
 .. _release-core-0-42.9:
 
 0.42.9 - 25 July 2023

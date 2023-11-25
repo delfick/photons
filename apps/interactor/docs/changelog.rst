@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-12-8:
+
+0.12.8 - 26 November 2023
+    * Upgrade photons core to get String and Neon to the product registry
+
 .. _release-interactor-0-12-7:
 
 0.12.7 - 25 July 2023
