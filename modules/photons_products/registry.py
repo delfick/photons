@@ -986,5 +986,49 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCM3_NEON_US(lifx.Product):
+        pid = 141
+        family = Family.LCM3
+        friendly = "LIFX Neon US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_NEON_INTL(lifx.Product):
+        pid = 142
+        family = Family.LCM3
+        friendly = "LIFX Neon Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_STRING_US(lifx.Product):
+        pid = 143
+        family = Family.LCM3
+        friendly = "LIFX String US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCM3_STRING_INTL(lifx.Product):
+        pid = 144
+        family = Family.LCM3
+        friendly = "LIFX String Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
 
 Products = ProductsHolder(ProductRegistry, lifx.Capability)
