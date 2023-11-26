@@ -3,55 +3,60 @@
 ChangeLog
 =========
 
-.. _release-core-0-42.10:
+.. _release-core-0-43-0:
+
+0.43.0 - 26 November 2023
+    * Added support for python 3.12
+
+.. _release-core-0-42-10:
 
 0.42.10 - 26 November 2023
     * Added String and Neon to the product registry
 
-.. _release-core-0-42.9:
+.. _release-core-0-42-9:
 
 0.42.9 - 25 July 2023
     * Updated lru-dict dependency
 
-.. _release-core-0-42.8:
+.. _release-core-0-42-8:
 
 0.42.8 - 11 February 2023
     * Replace ruamel.yaml with the ruyaml fork
     * Convert from setuptools to hatchling
     * Add new products to the product registry
 
-.. _release-core-0-42.7:
+.. _release-core-0-42-7:
 
 0.42.7 - 16 October 2022
     * Updated lru-dict
 
-.. _release-core-0-42.6:
+.. _release-core-0-42-6:
 
 0.42.6 - 27 July 2022
     * Added new Button messages
       https://github.com/LIFX/public-protocol/issues/6
 
-.. _release-core-0-42.5:
+.. _release-core-0-42-5:
 
 0.42.5 - 24 June 2022
     * SetZonesEffect can now take in a direction
 
-.. _release-core-0-42.4:
+.. _release-core-0-42-4:
 
 0.42.4 - 4 June 2022
     * Update lru-dict and bitarray
 
-.. _release-core-0-42.3:
+.. _release-core-0-42-3:
 
 0.42.3 - 13 February 2022
     * New products in the registry
 
-.. _release-core-0-42.2:
+.. _release-core-0-42-2:
 
 0.42.2 - 9 January 2022
     * Fixed bug with device_finder getting labels for non lights
 
-.. _release-core-0-42.1:
+.. _release-core-0-42-1:
 
 0.42.1 - 9 January 2022
     * The device finder can now get labels from non lights (switches)
