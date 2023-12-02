@@ -3,6 +3,10 @@
 ChangeLog
 =========
 
+0.44.0 - TBD
+    * Remove pkg_resources from dependent package
+    * Photons is now python3.11+
+
 .. _release-core-0-43-0:
 
 0.43.0 - 26 November 2023

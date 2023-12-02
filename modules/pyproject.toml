@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "The core modules of the photons framework"
 readme = "README.rst"
 license = "MIT"
-requires-python = ">= 3.7"
+requires-python = ">= 3.11"
 authors = [
     { name = "Stephen Moore", email = "github@delfick.com" },
 ]
@@ -18,7 +18,7 @@ keywords = [
 ]
 dependencies = [
     "bitarray>=2.1.2",
-    "delfick_project==0.7.9",
+    "delfick_project==0.8.0",
     "kdtree==0.16",
     "lru-dict==1.2.0",
     "python-dateutil>=2.8.1",
@@ -29,10 +29,9 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     "alt-pytest-asyncio==0.6.0",
-    "mock==4.0.3",
     "noseOfYeti[black]==2.4.3",
     "pytest-helpers-namespace==2021.12.29",
-    "pytest==7.2.0",
+    "pytest==7.4.3",
 ]
 
 [project.scripts]

@@ -12,7 +12,7 @@ if not (deps_dir / "venvstarter.py").exists():
 
 venvstarter_module = runpy.run_path(str(deps_dir / "venvstarter.py"))
 
-wanted_version = "0.12.0"
+wanted_version = "0.12.1"
 
 upgrade = False
 VERSION = venvstarter_module.get("VERSION")

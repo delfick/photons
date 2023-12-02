@@ -1,7 +1,7 @@
 Photons
 =======
 
-Photons is Python3.6+ framework for interacting with LIFX products.
+Photons is Python3.11+ framework for interacting with LIFX products.
 
 See full documentation at https://photons.delfick.com
 
