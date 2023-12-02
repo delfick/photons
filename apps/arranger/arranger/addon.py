@@ -1,3 +1,4 @@
+import importlib.resources
 import logging
 import os
 import shlex
@@ -5,7 +6,6 @@ import socket
 import subprocess
 import webbrowser
 
-import pkg_resources
 from arranger.options import Options
 from arranger.server import Server
 from delfick_project.addons import addon_hook
@@ -127,5 +127,5 @@ class arranger_assets(task.Task):
             raise PhotonsAppError("Failed to run command", error=error)
 
 
-if os.path.exists(pkg_resources.resource_filename("arranger", "static/js")):
+if (importlib.resources.files("arranger") / "static" / "js").exists():
     task.register(task_group="Arranger")(arranger_assets)

@@ -1,4 +1,4 @@
-import pkg_resources
+import importlib.resources
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -19,7 +19,7 @@ html_theme_options = {
     "titles_only": True,
 }
 
-html_static_path = [pkg_resources.resource_filename("photons_docs", "config/static")]
+html_static_path = [str(importlib.resources.files("photons_docs") / "config" / "static")]
 
 exclude_patterns = ["_build/**", "venv/**"]
 

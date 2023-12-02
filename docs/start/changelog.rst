@@ -5,6 +5,7 @@ ChangeLog
 
 0.44.0 - TBD
     * Remove pkg_resources from dependent package
+    * Remove pkg_resources from photons
     * Photons is now python3.11+
 
 .. _release-core-0-43-0:

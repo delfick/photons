@@ -1,5 +1,6 @@
 # coding: spec
 
+import pathlib
 import uuid
 from unittest import mock
 
@@ -10,6 +11,8 @@ from delfick_project.option_merge import MergedOptions
 from photons_app import helpers as hp
 from photons_app.errors import BadOptionFormat
 from photons_app.formatter import MergedOptionStringFormatter
+
+photons_app_dir = pathlib.Path(__file__).parent.parent.parent / "photons_app"
 
 describe "MergedOptionStringFormatter":
 
@@ -56,13 +59,9 @@ describe "MergedOptionStringFormatter":
         with assertRaises(BadOptionFormat, "Recursive option", chain=["one", "one"]):
             V.spec.normalise(V.meta.at("one"), "{one}")
 
-    it "can use pkg_resources to find location of a resource", V:
-        res = mock.Mock(name="res")
-        resource_filename = mock.Mock(name="resource_filename", return_value=res)
-        with mock.patch("pkg_resources.resource_filename", resource_filename):
-            assert V.spec.normalise(V.meta, "{somewhere.nice/really/cool:resource}") is res
-
-        resource_filename.assert_called_once_with("somewhere.nice", "really/cool")
+    it "can find location of a resource", V:
+        got = V.spec.normalise(V.meta, "{photons_app/actions.py:resource}")
+        assert got == str((photons_app_dir / "actions.py").resolve())
 
     it "can return asyncio.Future objects", V:
         fut = hp.create_future()

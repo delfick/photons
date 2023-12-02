@@ -1,7 +1,7 @@
 # coding: spec
-
 import asyncio
 import os
+import sys
 import uuid
 from contextlib import contextmanager
 from textwrap import dedent
@@ -9,6 +9,7 @@ from unittest import mock
 
 import pytest
 from alt_pytest_asyncio.plugin import OverrideLoop
+from backports.entry_points_selectable import entry_points
 from delfick_project.addons import Register
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue, dictobj, sb
@@ -190,34 +191,30 @@ describe "Collector":
     describe "determine_mainline_module":
         it "does nothing if there is no __main__":
             fake__import__ = mock.Mock(name="__import__", side_effect=ImportError)
-            working_set = mock.Mock(name="working_set", spec=[])
-            with mock.patch("pkg_resources.working_set", working_set):
+
+            assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
+
+            with mock.patch("sys.meta_path", list(sys.meta_path)):
                 with mock.patch("builtins.__import__", fake__import__):
                     assert Collector().determine_mainline_module() is None
 
             fake__import__.assert_called_once_with("__main__")
+            assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
 
-        it "adds an entrypoint to the working_set if we have __main__":
+        it "adds an entrypoint if we have __main__":
             __main__ = mock.Mock(name="__main__")
             fake__import__ = mock.Mock(name="__import__", return_value=__main__)
-            working_set = mock.Mock(name="working_set")
-            with mock.patch("pkg_resources.working_set", working_set):
+
+            assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
+
+            with mock.patch("sys.meta_path", list(sys.meta_path)):
                 with mock.patch("builtins.__import__", fake__import__):
                     assert Collector().determine_mainline_module() is __main__
+                assert any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
+                assert entry_points(group="lifx.photons")["__main__"].load() is __main__
 
+            assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
             fake__import__.assert_called_once_with("__main__")
-
-            assert len(working_set.add.mock_calls) == 1
-            call = working_set.add.mock_calls[0].call_list()[0][1]
-            dist = call[0]
-            working_set.add.assert_called_once_with(dist, entry="__main__")
-
-            em = dist.get_entry_map("lifx.photons")
-            assert em["__main__"].name == "__main__"
-            assert em["__main__"].module_name == "__main__"
-
-            assert dist.get_entry_map("other") == {}
-            assert dist.get_entry_map() == {}
 
     describe "setup_addon_register":
         it "works":

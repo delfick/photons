@@ -1,4 +1,5 @@
 import asyncio
+import importlib.resources
 import logging
 import os
 import shlex
@@ -8,7 +9,6 @@ import sys
 import time
 import webbrowser
 
-import pkg_resources
 from delfick_project.addons import addon_hook
 from delfick_project.norms import dictobj, sb
 from photons_app.errors import PhotonsAppError
@@ -122,7 +122,8 @@ class build_docs(task.Task):
 
         srcdir = options.src
         outdir = os.path.join(options.out, "result")
-        confdir = pkg_resources.resource_filename("photons_docs", "config")
+
+        confdir = str((importlib.resources.files("photons_docs") / "config").resolve())
         doctreedir = os.path.join(options.out, "doctree")
 
         if self.is_fresh and os.path.exists(options.out):

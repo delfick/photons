@@ -1,8 +1,10 @@
+import importlib.abc
 import logging
 import os
 import sys
+import types
+from importlib.metadata import Distribution, DistributionFinder
 
-import pkg_resources
 import ruyaml as yaml
 from delfick_project.addons import Addon, AddonGetter, Register, Result
 from delfick_project.errors import DelfickError
@@ -16,6 +18,46 @@ from photons_app.tasks.runner import Runner
 from photons_messages import protocol_register
 
 log = logging.getLogger("photons_app.collector")
+
+
+class MainDistribution(Distribution):
+    """
+    Used to create the lifx.photons.__main__ entry point
+    """
+
+    def __init__(self, main_module: types.ModuleType):
+        self.main_module = main_module
+
+    def read_text(self, filename) -> str | None:
+        return None
+
+    def locate_file(self, path):
+        return path
+
+    @property
+    def entry_points(self):
+        __main__ = self.main_module
+
+        class EP:
+            name = "__main__"
+            group = "lifx.photons"
+
+            def load(self) -> types.ModuleType:
+                return __main__
+
+        return [EP()]
+
+
+class MainFinder(importlib.abc.MetaPathFinder):
+    """
+    Used to make python aware of our distribution finder for lifx.photons.__main__
+    """
+
+    def __init__(self, main_module: types.ModuleType):
+        self.main_module = main_module
+
+    def find_distributions(self, context: DistributionFinder.Context) -> list[Distribution]:
+        return [MainDistribution(self.main_module)]
 
 
 class Extras(dictobj.Spec):
@@ -173,7 +215,7 @@ class Collector(Collector):
         ).as_dict()
 
     def determine_mainline_module(self):
-        """Find us the __main__ module and add it to pkg_resources"""
+        """Find us the __main__ module and add it to the entry_points"""
         # Register __main__ as an entry point
         __main__ = None
         try:
@@ -185,17 +227,10 @@ class Collector(Collector):
                 hasattr(getattr(__main__, attr, None), "_delfick_project_addon_entry")
                 for attr in dir(__main__)
             ):
-                working_set = pkg_resources.working_set
-                dist = pkg_resources.Distribution("__main__")
-                mp = pkg_resources.EntryPoint.parse_group("lifx.photons", ["__main__ = __main__"])
-
-                def get_entry_map(group=None):
-                    if group == "lifx.photons":
-                        return mp
-                    return {}
-
-                dist.get_entry_map = get_entry_map
-                working_set.add(dist, entry="__main__")
+                sys.meta_path = [
+                    thing for thing in sys.meta_path if not isinstance(thing, MainFinder)
+                ]
+                sys.meta_path.append(MainFinder(__main__))
             else:
                 __main__ = None
 

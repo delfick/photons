@@ -15,8 +15,10 @@ of MergedOptions to do the lookup for us.
 """
 
 import asyncio
+import functools
+import importlib.resources
+import operator
 
-import pkg_resources
 from delfick_project.option_merge import MergedOptionStringFormatter
 from photons_app import helpers as hp
 
@@ -66,7 +68,11 @@ class MergedOptionStringFormatter(MergedOptionStringFormatter):
         """Know about any special formats"""
         if format_spec == "resource":
             parts = obj.split("/")
-            return pkg_resources.resource_filename(parts[0], "/".join(parts[1:]))
+            return str(
+                functools.reduce(
+                    operator.truediv, [importlib.resources.files(parts[0]), *parts[1:]]
+                ).resolve()
+            )
         elif any(
             isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)
         ):
