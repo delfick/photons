@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0-7-0:
 
-0.7.0 - TBD
+0.7.0 - 2 December 2023
     * Photons is now python3.11+
 
 .. _release-arranger-0-6-1:

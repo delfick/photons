@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-13-1:
 
-0.14.0 - TBD
+0.14.0 - 2 December 2023
     * Photons is now python3.11+
     * Remove pkg_resources from dependent package
 
