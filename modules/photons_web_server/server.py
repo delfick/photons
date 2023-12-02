@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import logging
+import sys
 import time
 import typing as tp
 from textwrap import dedent
@@ -152,8 +153,15 @@ class Server:
                 self.server_stop_future, name="Server::serve[wait_for_stop]"
             )
         finally:
+            exc_info = sys.exc_info()
             await self.finished()
-            await self.after_stop()
+            try:
+                await self.after_stop()
+            except sanic.exceptions.SanicException:
+                if exc_info:
+                    raise exc_info[1]
+                else:
+                    raise
 
     async def finished(self) -> None:
         if not hasattr(self, "server"):
