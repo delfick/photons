@@ -47,3 +47,8 @@ artifacts = [
 include = [
     "/interactor",
 ]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "/interactor",
+]

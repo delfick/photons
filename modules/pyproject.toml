@@ -66,3 +66,16 @@ include = [
     "/photons_core.py",
     "/photons_pytest.py",
 ]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "/photons_app",
+    "/photons_canvas",
+    "/photons_control",
+    "/photons_messages",
+    "/photons_products",
+    "/photons_protocol",
+    "/photons_transport",
+    "/photons_core.py",
+    "/photons_pytest.py",
+]
