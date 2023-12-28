@@ -41,3 +41,8 @@ artifacts = [
 include = [
     "/arranger",
 ]
+
+[tool.hatch.build.targets.wheel]
+include = [
+    "/arranger",
+]
