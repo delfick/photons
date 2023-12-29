@@ -3,7 +3,12 @@
 ChangeLog
 =========
 
-.. _release-core-0-43-1:
+.. _release-core-0-44-1:
+
+0.44.1 - 29 December 2023
+    * Fixed packaging instructions in pyproject.toml
+
+.. _release-core-0-44-0:
 
 0.44.0 - 2 December 2023
     * Remove pkg_resources from dependent package

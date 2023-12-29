@@ -77,4 +77,5 @@ else:
     manager.add_no_binary("black")
     manager.add_requirements_file("{here}", "requirements.dev.txt")
 
+manager.min_python("3.11")
 manager.run()

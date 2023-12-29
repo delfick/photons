@@ -3,7 +3,12 @@
 Changelog
 =========
 
-.. _release-interactor-0-13-1:
+.. _release-interactor-0-14-1:
+
+0.14.1 - 29 December 2023
+    * Fixed packaging instructions in pyproject.toml
+
+.. _release-interactor-0-14-0:
 
 0.14.0 - 2 December 2023
     * Photons is now python3.11+

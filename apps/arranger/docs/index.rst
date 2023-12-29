@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-7-1:
+
+0.7.1 - 29 December 2023
+    * Fixed packaging instructions in pyproject.toml
+
 .. _release-arranger-0-7-0:
 
 0.7.0 - 2 December 2023
