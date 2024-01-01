@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A web interface for changing the user co-ordinates of LIFX tiles"
 readme = "README.rst"
 license = "MIT"
-requires-python = ">= 3.11"
+requires-python = ">= 3.12"
 authors = [
     { name = "Stephen Moore", email = "github@delfick.com" },
 ]
@@ -18,7 +18,7 @@ keywords = [
     "photons",
 ]
 dependencies = [
-    "lifx-photons-core>=0.44.1",
+    "lifx-photons-core>=0.45.0",
     "tornado>=5.1.1",
     "whirlwind-web>=0.11.0",
 ]
