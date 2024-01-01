@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-45-0:
+
+0.45.0 - 2 January 2024
+    * Photons is now python3.12+
+
 .. _release-core-0-44-1:
 
 0.44.1 - 29 December 2023

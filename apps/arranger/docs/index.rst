@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-8-0:
+
+0.8.0 - 2 January 2024
+    * Photons is now python 3.12+
+
 .. _release-arranger-0-7-1:
 
 0.7.1 - 29 December 2023
