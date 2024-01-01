@@ -20,5 +20,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         --ignore-directory generate_photons_messages/.generate_photons_messages \
         --ignore-directory apps/tile_arranger/static/node_modules \
         --ignore-directory apps/tile_arranger/static/dist \
-        --ignore-directory apps/interactor/docker/.harpoon
+        --ignore-directory apps/interactor/docker/.harpoon \
+        --ignore-directory modules/.mypy_cache \
+        --ignore-directory apps/arranger/.mypy_cache \
+        --ignore-directory apps/interactor/.mypy_cache \
+        --ignore-directory .mypy_cache
 )
