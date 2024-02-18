@@ -3,10 +3,13 @@ import inspect
 import logging
 import sys
 import typing as tp
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import partial, wraps
 
+import attrs
 import sanic.exceptions
+import strcs
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_web_server.commander.const import REQUEST_IDENTIFIER_HEADER
@@ -28,6 +31,7 @@ from .messages import (
 )
 from .messages import TProgressMessageMaker as Progress
 from .messages import TReprer, get_logger, get_logger_name, reprer
+from .routes import Route
 from .websocket_wrap import (
     Message,
     Websocket,
@@ -43,6 +47,16 @@ P = tp.ParamSpec("P")
 T = tp.TypeVar("T")
 R = tp.TypeVar("R")
 C = tp.TypeVar("C", bound="Command")
+
+
+@attrs.define
+class NotEnoughArgs(Exception):
+    reason: str
+
+
+@attrs.define
+class IncorrectPositionalArgument(Exception):
+    reason: str
 
 
 @tp.runtime_checkable
@@ -401,8 +415,11 @@ class Command:
 
 
 class Store:
-    def __init__(self) -> None:
+    def __init__(self, *, strcs_register: strcs.CreateRegister | None = None) -> None:
         self.commands: list[type[Command]] = []
+        if strcs_register is None:
+            strcs_register = strcs.CreateRegister()
+        self.strcs_register = strcs_register
 
     def command(self, command: type[Command]) -> type[Command]:
         self.commands.append(command)
@@ -432,3 +449,92 @@ class Store:
                     progress_message_maker,
                 )
             )
+
+    def determine_http_args_and_kwargs(
+        self,
+        meta: Meta,
+        route: Route,
+        progress: Progress,
+        request: Request,
+        args: Sequence[object],
+        kwargs: dict[str, object],
+    ) -> list[object]:
+        signature = inspect.signature(route)
+        values = list(signature.parameters.values())
+        use: list[object] = []
+
+        if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY:
+            nxt = values.pop(0)
+            if nxt.annotation not in (inspect._empty, Progress):
+                raise IncorrectPositionalArgument(
+                    "First positional only argument must be a progress object"
+                )
+            use.append(progress)
+
+        if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY:
+            nxt = values.pop(0)
+            if nxt.annotation not in (inspect._empty, Request):
+                raise IncorrectPositionalArgument(
+                    "Second positional only argument must be a request object"
+                )
+            use.append(request)
+
+        remaining_args = list(args)
+
+        while values:
+            nxt = values.pop(0)
+            if remaining_args:
+                use.append(
+                    self.strcs_register.create(nxt.annotation, remaining_args.pop(0), meta=meta)
+                )
+                continue
+
+            if nxt.kind is not inspect.Parameter.POSITIONAL_ONLY:
+                values.insert(0, nxt)
+                break
+
+            if nxt.default is inspect._empty:
+                raise NotEnoughArgs(reason="request expected more positional arguments than it got")
+
+            use.append(self.strcs_register.create(nxt.annotation, nxt.default, meta=meta))
+
+        use.extend(self._determine_keyword_args_and_kwargs(values, meta, request, kwargs))
+        return use
+
+    def _determine_keyword_args_and_kwargs(
+        self,
+        values: Sequence[inspect.Parameter],
+        meta: strcs.Meta,
+        request: Request,
+        kwargs: dict[str, object],
+    ) -> Iterator[object]:
+        for nxt in values:
+            if nxt.name == "_params":
+                final: dict[str, object] = {}
+                for k, v in request.args.items():
+                    if len(v) == 1:
+                        v = v[0]
+                    final[k] = v
+                yield self.strcs_register.create(nxt.annotation, final, meta=meta)
+
+            elif nxt.name == "_body":
+                if request.content_type == "application/json":
+                    final = request.json
+                else:
+                    final: dict[str, object] = {}
+                    for k, v in request.form.items():
+                        if len(v) == 1:
+                            v = v[0]
+                        final[k] = v
+                yield self.strcs_register.create(nxt.annotation, final, meta=meta)
+
+            elif nxt.name in kwargs:
+                yield self.strcs_register.create(nxt.annotation, kwargs.pop(nxt.name), meta=meta)
+
+            else:
+                yield meta.retrieve_one(
+                    nxt.annotation,
+                    nxt.name,
+                    default=nxt.default,
+                    type_cache=self.strcs_register.type_cache,
+                )
