@@ -1,9 +1,10 @@
 # coding: spec
-
 import asyncio
 import inspect
+import json
 import logging
 import sys
+import types
 import typing as tp
 from unittest import mock
 
@@ -55,6 +56,23 @@ describe "catch_ErrorMessage":
         assert res.status == 418
         assert res.content_type == "application/json"
         assert res.body == b'{"error_code":"Bad","error":"very bad"}'
+
+    it "defaults to repr":
+
+        class Blah: ...
+
+        blah = Blah()
+
+        with pytest.raises(TypeError):
+            json.dumps(blah)
+
+        exc = ErrorMessage(error_code="Bad", error=blah, status=418)
+        request = mock.Mock(name="Request")
+        res = catch_ErrorMessage(tp.cast(request, request), exc)
+        assert isinstance(res, Response)
+        assert res.status == 418
+        assert res.content_type == "application/json"
+        assert json.loads(res.body.decode()) == {"error_code": "Bad", "error": repr(blah)}
 
 describe "MessageFromExc":
     it "re raises SanicExceptions":
@@ -122,6 +140,27 @@ describe "MessageFromExc":
         ) == ErrorMessage(
             status=500, error="Internal Server Error", error_code="InternalServerError"
         )
+
+    it "has the ability to modify the error information":
+
+        class MFE(MessageFromExc):
+            def modify_error_dict(
+                self,
+                exc_type: type[Exception],
+                exc: Exception,
+                tb: types.TracebackType,
+                dct: dict[str, object],
+            ) -> dict[str, object]:
+                return {"wrapped": dct}
+
+        class MyError(DelfickError):
+            desc = "hi"
+
+        exc = MyError("hi", one=5)
+        assert MFE(lc=hp.lc.using(), logger_name="logs")(type(exc), exc, None) == ErrorMessage(
+            status=400, error={"wrapped": {"one": 5, "message": "hi. hi"}}, error_code="MyError"
+        )
+
 
 describe "get_logger_name":
     it "defaults to getting from previous frame", call_from_conftest:

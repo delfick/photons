@@ -60,7 +60,7 @@ class ErrorMessage(Exception):
 
 
 def catch_ErrorMessage(request: Request, exception: ErrorMessage) -> Response:
-    return sanic.json(exception.response_dict(), status=exception.status)
+    return sanic.json(exception.response_dict(), status=exception.status, default=reprer)
 
 
 class TMessageFromExc(tp.Protocol):
@@ -99,10 +99,18 @@ class MessageFromExc:
             raise exc
 
         elif exc and hasattr(exc, "as_dict"):
-            return ErrorMessage(status=400, error=exc.as_dict(), error_code=exc.__class__.__name__)
+            return ErrorMessage(
+                status=400,
+                error=self.modify_error_dict(exc_type, exc, tb, exc.as_dict()),
+                error_code=exc.__class__.__name__,
+            )
 
         elif exc_type and attrs_has(exc_type):
-            return ErrorMessage(status=500, error=asdict(exc), error_code=exc.__class__.__name__)
+            return ErrorMessage(
+                status=500,
+                error=self.modify_error_dict(exc_type, exc, tb, asdict(exc)),
+                error_code=exc.__class__.__name__,
+            )
 
         elif exc_type is asyncio.CancelledError:
             return ErrorMessage(
@@ -118,6 +126,11 @@ class MessageFromExc:
         return ErrorMessage(
             status=500, error="Internal Server Error", error_code="InternalServerError"
         )
+
+    def modify_error_dict(
+        self, exc_type: ExcTypO, exc: ExcO, tb: TBO, dct: dict[str, object]
+    ) -> dict[str, object]:
+        return dct
 
     __call__ = process
 
