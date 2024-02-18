@@ -142,7 +142,7 @@ def get_logger_name(stack_level: int = 0, method: tp.Callable | None = None) -> 
             stack = inspect.stack()
             frm = stack[1 + stack_level]
             mod = inspect.getmodule(frm[0])
-        except:
+        except Exception:
             pass
     else:
         parts = method.__qualname__.split(".")
