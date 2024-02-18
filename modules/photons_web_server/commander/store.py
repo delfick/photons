@@ -217,8 +217,12 @@ class RouteTransformer(tp.Generic[C]):
                     progress = instance.progress_message_maker(
                         lc=instance.lc, logger_name=instance.logger_name
                     )
+                    route_args = self.store.determine_http_args_and_kwargs(
+                        instance.meta, route, progress, request, args, kwargs
+                    )
+
                     if inspect.iscoroutinefunction(route):
-                        t = hp.async_as_background(route(progress, request, *args, **kwargs))
+                        t = hp.async_as_background(route(*route_args))
                         await hp.wait_for_first_future(
                             t,
                             instance.request_future,
@@ -230,8 +234,8 @@ class RouteTransformer(tp.Generic[C]):
                         t.cancel()
                         return await t
                     else:
-                        return route(progress, request, *args, **kwargs)
-                except:
+                        return route(*route_args)
+                except (asyncio.CancelledError, Exception):
                     exc_info = sys.exc_info()
                     if ret or exc_info[0] is not asyncio.CancelledError:
                         raise self.message_from_exc_maker(
@@ -318,6 +322,19 @@ class Command:
     @classmethod
     def add_routes(kls, routes: RouteTransformer) -> None:
         pass
+
+    def create(
+        self,
+        typ: type[T] | strcs.Type[T],
+        value: object = strcs.NotSpecified,
+        meta: Meta | None = None,
+        once_only_creator: strcs.ConvertFunction[T] | None = None,
+    ) -> T:
+        if meta is None:
+            meta = self.meta
+        return self.store.strcs_register.create(
+            typ, value, meta=meta, once_only_creator=once_only_creator
+        )
 
     @classmethod
     def log_request_dict(
