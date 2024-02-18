@@ -1,3 +1,6 @@
+from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
+
 from .const import REQUEST_IDENTIFIER_HEADER
 from .messages import MessageFromExc, ProgressMessageMaker
 from .messages import TProgressMessageMaker as Progress
@@ -26,4 +29,6 @@ __all__ = [
     "WSSender",
     "Websocket",
     "WithCommanderClass",
+    "Request",
+    "Response",
 ]
