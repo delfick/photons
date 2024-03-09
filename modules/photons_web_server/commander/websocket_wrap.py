@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+import time
 import typing as tp
 from contextlib import contextmanager
 from functools import wraps
@@ -198,6 +199,8 @@ class WebsocketWrap:
         @wraps(handler)
         async def handle(request: Request, ws: Websocket):
             from .store import WithCommanderClass
+
+            await ws.send(json_dumps({"message_id": "__server_time__", "reply": time.time()}))
 
             if request.route and not isinstance(request.route.handler, WithCommanderClass):
                 if isinstance(handler, WithCommanderClass):

@@ -399,6 +399,7 @@ describe "Server":
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 await srv.start_request("PUT", "/route", {"command": "one"})
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"command": "two", "path": "/route"})
                     assert await stream.recv() == {
                         "reply": {"got": "two"},
@@ -561,12 +562,14 @@ describe "Server":
                 unknown = await srv.start_request("GET", "/unknown_route")
                 async with srv.stream("/stream") as stream:
                     await stream.send({"command": "two", "path": "/route"})
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     assert await stream.recv() == {
                         "reply": {"got": "notthree"},
                         "request_identifier": WSIdent1,
                         "message_id": WSIdentM1,
                     }
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"command": "three", "path": "/route"})
                     assert await stream.recv() == {
                         "reply": {"got": "three"},
@@ -698,6 +701,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"echo": "there"})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -725,6 +729,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"echo": "there"})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -748,6 +753,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send("[")
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -820,6 +826,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"message_id": WSIdentM1, "echo": "there"})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -870,6 +877,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"request_identifier": PWSIdent1, "echo": "there"})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -937,6 +945,8 @@ describe "Server":
                 async def stream1(streamer: hp.ResultStreamer) -> tp.AsyncIterable[dict]:
                     await start
                     async with srv.stream("/stream") as stream:
+                        assert (await stream.recv())["message_id"] == "__server_time__"
+
                         count = 0
                         await futs[1]
                         await stream.send({"command": "echo", "value": "one", "wait": [2, 5]})
@@ -958,6 +968,8 @@ describe "Server":
                     await start
 
                     async with srv.stream("/stream") as stream:
+                        assert (await stream.recv())["message_id"] == "__server_time__"
+
                         count = 0
                         await stream.send({"command": "echo", "value": "three", "wait": [3, 8]})
                         await stream.send({"command": "echo", "value": "four", "wait": [6, 9]})
@@ -988,6 +1000,8 @@ describe "Server":
                                 raise result.value
 
                             assert isinstance(result.value, dict)
+                            if result.value.get("message_id") == "__server_time__":
+                                continue
                             results.append(result.value)
 
                         srv.stop()
@@ -1068,6 +1082,8 @@ describe "Server":
                 results: list[dict] = []
                 async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                     async with srv.stream("/stream") as stream:
+                        assert (await stream.recv())["message_id"] == "__server_time__"
+
                         await stream.send({"fut": 1})
                         await stream.send({"fut": 2, "error": "stuff"})
                         await stream.send({"fut": 3})
@@ -1161,6 +1177,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -1211,6 +1228,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({})
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
@@ -1277,6 +1295,7 @@ describe "Server":
 
             async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
                 async with srv.stream("/stream") as stream:
+                    assert (await stream.recv())["message_id"] == "__server_time__"
                     await stream.send({"command": "echo", "echo": "hello", "id": 1})
                     await stream.send({"command": "echo", "echo": "there", "id": 2})
                     await stream.send({"command": "wait", "id": 3})

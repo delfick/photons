@@ -5,6 +5,7 @@ import types
 import typing as tp
 from collections import defaultdict
 from textwrap import dedent
+from unittest.mock import ANY
 
 import pytest
 import sanic
@@ -389,6 +390,7 @@ describe "Store":
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res: list[dict | str] = []
             async with srv.stream("/adder") as stream:
+                res.append(await stream.recv())
                 await stream.send({"command": "totals"})
                 res.append(await stream.recv())
                 await stream.send({"command": "add", "add": 10})
@@ -401,6 +403,7 @@ describe "Store":
                 res.append("__BREAK__")
 
             async with srv.stream("/adder") as stream:
+                res.append(await stream.recv())
                 await stream.send({"command": "echo", "echo": "echo"})
                 res.append(await stream.recv())
                 await stream.send({"command": "totals"})
@@ -414,7 +417,8 @@ describe "Store":
                 res.append(await stream.recv())
                 res.append("__OVER__")
 
-        assert res[:7] == [
+        assert res[:9] == [
+            {"message_id": "__server_time__", "reply": ANY},
             {
                 "message_id": MI11,
                 "request_identifier": RI1,
@@ -437,13 +441,14 @@ describe "Store":
             },
             None,
             "__BREAK__",
+            {"message_id": "__server_time__", "reply": ANY},
             {
                 "message_id": MI21,
                 "request_identifier": RI2,
                 "reply": "echo",
             },
         ]
-        assert res[7:] == [
+        assert res[9:] == [
             {
                 "message_id": MI22,
                 "request_identifier": RI2,
@@ -739,6 +744,7 @@ describe "Store":
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             async with srv.stream("/excs") as stream:
                 await stream.send({"command": "valueerror"})
+                assert (await stream.recv())["message_id"] == "__server_time__"
                 assert await stream.recv() == {
                     "request_identifier": RI1,
                     "message_id": MI1,
