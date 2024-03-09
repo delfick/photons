@@ -12,9 +12,11 @@ if not (deps_dir / "venvstarter.py").exists():
         del os.environ["PIP_REQUIRE_VIRTUALENV"]
     os.system(f"{sys.executable} -m pip install venvstarter -t {deps_dir}")
 
+sys.path.append(str(deps_dir))
 venvstarter_module = runpy.run_path(str(deps_dir / "venvstarter.py"))
+sys.path.pop()
 
-wanted_version = "0.12.1"
+wanted_version = "0.12.2"
 
 upgrade = False
 VERSION = venvstarter_module.get("VERSION")

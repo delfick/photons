@@ -29,6 +29,8 @@ class MainDistribution(Distribution):
         self.main_module = main_module
 
     def read_text(self, filename) -> str | None:
+        if filename == "METADATA":
+            return "Metadata-Version: 2.1\nName: __main__"
         return None
 
     def locate_file(self, path):
