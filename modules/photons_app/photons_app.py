@@ -3,6 +3,7 @@ Here we define the yaml specification for photons_app options and task options
 
 The specifications are responsible for sanitation, validation and normalisation.
 """
+
 import asyncio
 import json
 import logging

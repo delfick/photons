@@ -150,7 +150,7 @@ describe "Path":
             assert attrs.holder.my_property == 4
 
             path = Path(attrs, ["holder", "my_property"])
-            await (ChangeAttr(path, 5))(event=event)
+            await ChangeAttr(path, 5)(event=event)
             assert called == [("attr_change", "my_property", 5, event)]
             called.clear()
             assert attrs.holder.my_property == 5
@@ -270,7 +270,7 @@ describe "Path":
             assert called == []
 
             path = Path(attrs, ["holder", "a_list"])
-            await (ChangeAttr(path, (1, 2, 3, 4)))(event=event)
+            await ChangeAttr(path, (1, 2, 3, 4))(event=event)
             assert called == [("attr_change", "a_list", (1, 2, 3, 4), event)]
             called.clear()
             assert attrs.holder.a_list == (1, 2, 3, 4)

@@ -24,8 +24,7 @@ if platform.system() == "Windows":
 class Command:
     __is_command__: bool
 
-    def __call__(self, bin_dir: Path, args: list[str]) -> None:
-        ...
+    def __call__(self, bin_dir: Path, args: list[str]) -> None: ...
 
 
 def command(func: tp.Callable) -> tp.Callable:

@@ -306,9 +306,9 @@ class SceneCaptureCommand(store.Command, DeviceChangeMixin):
                 state["chain"] = chain
             else:
                 color = parts[0].colors[0]
-                state[
-                    "color"
-                ] = f"kelvin:{color[3]} saturation:{color[1]} brightness:{color[2]} hue:{color[0]}"
+                state["color"] = (
+                    f"kelvin:{color[3]} saturation:{color[1]} brightness:{color[2]} hue:{color[0]}"
+                )
 
             scene.append(state)
 

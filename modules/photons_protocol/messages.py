@@ -8,6 +8,7 @@ of ``photons_protocol.messages.Messages``.
 This class is a combination of a mixin class for functionality and a meta class
 for defining ``by_type`` on the class.
 """
+
 import binascii
 import inspect
 import logging

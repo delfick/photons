@@ -3,6 +3,7 @@ Collection objects for various information.
 
 These allow addons to be able to register more functionality.
 """
+
 from delfick_project.norms import dictobj, sb
 from photons_app.errors import (
     ProgrammerError,

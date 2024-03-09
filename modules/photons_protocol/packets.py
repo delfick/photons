@@ -22,6 +22,7 @@ Usage looks like:
 where the ``*_type`` objects have information related to the type for that
 field. See ``photons_protocol.types`` for builtin types.
 """
+
 import binascii
 import json
 import logging

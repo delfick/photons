@@ -1,6 +1,5 @@
 """pytest-cov: avoid already-imported warning: PYTEST_DONT_REWRITE."""
 
-
 import asyncio
 import errno
 import inspect

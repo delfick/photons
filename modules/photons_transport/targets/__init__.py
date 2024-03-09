@@ -2,6 +2,7 @@
 A target encapsulates the logic for finding devices over a particular medium and
 then talking to them over that medium.
 """
+
 from delfick_project.norms import dictobj, sb
 from photons_transport.retry_options import Gaps
 from photons_transport.session.discovery_options import discovery_options_spec

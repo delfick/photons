@@ -243,7 +243,7 @@ describe "version_number_spec":
 
     describe "normalise":
         it "can go back and forward between string and integer", meta:
-            for (want_int, want_str) in [(65538, "1.2"), (131092, "2.20"), (131272, "2.200")]:
+            for want_int, want_str in [(65538, "1.2"), (131092, "2.20"), (131272, "2.200")]:
                 unpacker = types.version_number_spec(unpacking=False)
                 as_int = unpacker.normalise(meta, want_str)
                 assert as_int == want_int

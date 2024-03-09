@@ -287,7 +287,7 @@ class Item:
                         hp.add_error(error_catcher, exc)
 
     async def do_send(self, sender, original, packet, kwargs):
-        async with (kwargs.get("limit") or no_limit):
+        async with kwargs.get("limit") or no_limit:
             return await sender.send_single(
                 original,
                 packet,

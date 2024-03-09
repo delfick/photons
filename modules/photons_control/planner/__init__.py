@@ -5,6 +5,7 @@ information, information that depends on other information, and also handles
 getting information to you as it's received without having to wait for slower
 devices.
 """
+
 from photons_control.planner.gatherer import Gatherer
 from photons_control.planner.plans import (
     NoMessages,

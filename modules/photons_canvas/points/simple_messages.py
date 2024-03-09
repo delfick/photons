@@ -8,6 +8,7 @@ messages every 0.075 seconds we can't make them fast enough.
 This file contains a more manual implementation of the Set64 message that tries
 to be as efficient as possible to allow us to keep up with the animation.
 """
+
 import binascii
 import struct
 

@@ -921,7 +921,7 @@ describe "Packet attributes":
             assert pkt1.Information.remote_addr == ("127.0.0.1", 6789)
             assert pkt1.Information.sender_message is sender1
 
-            for (pkt, dct) in ((pkt1, {"g": "hello"}), (pkt2, {"g": "there"})):
+            for pkt, dct in ((pkt1, {"g": "hello"}), (pkt2, {"g": "there"})):
                 assert pkt.as_dict() == dct
                 assert sorted(pkt.keys()) == sorted(dct.keys())
                 assert sorted(pkt.values()) == sorted(dct.values())

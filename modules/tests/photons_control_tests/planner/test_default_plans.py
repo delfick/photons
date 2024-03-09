@@ -1334,7 +1334,9 @@ describe "Default Plans":
             }
 
             serials = [light1.serial, light2.serial, striplcm1.serial]
-            with process_outgoing_light1, process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
+            with (
+                process_outgoing_light1
+            ), process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
                 got = await self.gather(sender, serials, "firmware_effects")
             expected = {
                 light1.serial: (True, {"firmware_effects": l1}),

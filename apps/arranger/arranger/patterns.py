@@ -217,7 +217,7 @@ class Patterns:
     def set_split(self, canvas, bounds, hue):
         (left_x, _), (top_y, _), (width, height) = bounds
 
-        for (col, row) in php.Points.all_points(bounds):
+        for col, row in php.Points.all_points(bounds):
             h = Black
             if col > left_x + width / 2:
                 h = hue
