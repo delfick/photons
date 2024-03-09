@@ -7,6 +7,7 @@ from sanic import Sanic
 
 
 def pytest_configure(config):
+    Sanic.test_mode = True
     pytest.helpers.register(IsInstance)
 
 

@@ -115,7 +115,7 @@ describe "Task":
 
         def stop(request: Request, /) -> HTTPResponse | None:
             task.photons_app.graceful_final_future.set_result(True)
-            return None
+            return sanic.text("stop")
 
         class S(Server):
             async def after_start(self) -> None:
