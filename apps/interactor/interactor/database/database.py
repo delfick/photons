@@ -75,6 +75,7 @@ class DB(hp.AsyncCMMixin):
         self.database = self.database.replace(":", "://", 1)
 
     async def start(self):
+        __import__("interactor.database.models")
         self.engine = create_async_engine(self.database)
         self.async_session = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 

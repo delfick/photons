@@ -44,19 +44,17 @@ class Server(Server):
         self.animations = Animations(
             self.final_future, self.tasks, self.sender, self.animation_options
         )
-        self.meta = (
-            Meta(
-                dict(
-                    tasks=self.tasks,
-                    sender=self.sender,
-                    finder=self.finder,
-                    zeroconf=self.server_options.zeroconf,
-                    database=self.database,
-                    animations=self.animations,
-                    final_future=self.final_future,
-                    server_options=self.server_options,
-                )
-            ),
+        self.meta = Meta(
+            dict(
+                tasks=self.tasks,
+                sender=self.sender,
+                finder=self.finder,
+                zeroconf=self.server_options.zeroconf,
+                database=self.database,
+                animations=self.animations,
+                final_future=self.final_future,
+                server_options=self.server_options,
+            )
         )
 
         self.app.ctx.server = self
@@ -65,10 +63,10 @@ class Server(Server):
 
     async def setup_routes(self):
         await super().setup_routes()
-        self.app.add_route(self.commander.http_handler, "/v1/lifx/command", methods=["PUT"])
-        self.app.add_websocket_route(
-            self.wrap_websocket_handler(self.commander.ws_handler), "/v1/ws"
-        )
+        # self.app.add_route(self.commander.http_handler, "/v1/lifx/command", methods=["PUT"])
+        # self.app.add_websocket_route(
+        #     self.wrap_websocket_handler(self.commander.ws_handler), "/v1/ws"
+        # )
         self.store.register_commands(self.server_stop_future, self.meta, self.app, self)
 
     async def before_start(self):

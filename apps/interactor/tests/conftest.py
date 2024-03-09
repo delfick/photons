@@ -9,6 +9,7 @@ from unittest import mock
 
 import aiohttp
 import pytest
+import sanic
 from interactor.options import Options
 from interactor.server import Server
 from photons_app import helpers as hp
@@ -20,6 +21,11 @@ from photons_products import Products
 log = logging.getLogger("interactor.test_helpers")
 
 ds = DeviceCollection()
+
+
+@pytest.fixture(autouse=True)
+def _sanic_test_mode() -> None:
+    sanic.Sanic.test_mode = True
 
 
 @pytest.fixture(scope="session")
@@ -34,6 +40,13 @@ def final_future():
         yield fut
     finally:
         fut.cancel()
+
+
+@pytest.fixture(autouse=True)
+async def fake_the_time(FakeTime, MockedCallLater):
+    with FakeTime() as t:
+        async with MockedCallLater(t) as m:
+            yield t, m
 
 
 @pytest.fixture()
@@ -128,11 +141,13 @@ class WSTester(hp.AsyncCMMixin):
 
 
 class ServerWrapper(hp.AsyncCMMixin):
-    def __init__(self, store, sender, final_future, **kwargs):
+    def __init__(self, store, sender, final_future, ServerKls=None, **kwargs):
         self.store = store
         self.kwargs = kwargs
         self.sender = sender
         self.final_future = final_future
+        self.server_stop_future = hp.ChildOfFuture(self.final_future)
+        self.ServerKls = ServerKls
         self.cleaners = []
 
     def ws_stream(self, path="/v1/ws"):
@@ -213,7 +228,14 @@ class ServerWrapper(hp.AsyncCMMixin):
 
     @hp.memoized_property
     def server(self):
-        return Server(self.final_future, server_end_future=self.final_future, store=self.store)
+        server_kls = self.ServerKls
+        if server_kls is None:
+            server_kls = Server
+        return server_kls(
+            task_holder=self.ts,
+            final_future=self.final_future,
+            server_stop_future=self.server_stop_future,
+        )
 
     async def start(self):
         self.port = self.kwargs.get("port", None) or pytest.helpers.free_port()
@@ -225,8 +247,7 @@ class ServerWrapper(hp.AsyncCMMixin):
             self.server.serve(
                 "127.0.0.1",
                 self.options.port,
-                self.options,
-                tasks=self.ts,
+                options=self.options,
                 sender=self.sender,
                 cleaners=self.cleaners,
                 animation_options=self.animation_options,
@@ -238,10 +259,11 @@ class ServerWrapper(hp.AsyncCMMixin):
         return self
 
     async def finish(self, exc_typ=None, exc=None, tb=None):
-        self.final_future.cancel()
+        self.server_stop_future.cancel()
         if hasattr(self, "_task"):
             await asyncio.wait([self._task])
 
+        self.final_future.cancel()
         if hasattr(self.server.finder.finish, "mock_calls"):
             assert len(self.server.finder.finish.mock_calls) == 0
 
@@ -272,7 +294,9 @@ class ServerWrapper(hp.AsyncCMMixin):
             self.server.finder.finish.assert_called_once_with()
 
 
-identifier = lambda: str(uuid.uuid4()).replace("-", "")
+def identifier():
+    return str(uuid.uuid4()).replace("-", "")
+
 
 group_one_label = "Living Room"
 group_one_uuid = identifier()
