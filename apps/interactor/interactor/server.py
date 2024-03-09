@@ -13,6 +13,23 @@ from photons_web_server.server import Server
 from sanic.request import Request
 
 
+class InteractorMessageFromExc(commander.MessageFromExc):
+    def modify_error_dict(
+        self,
+        exc_type: commander.store.ExcTypO,
+        exc: commander.store.ExcO,
+        tb: commander.store.TBO,
+        dct: dict[str, object],
+    ) -> dict[str, object]:
+        if exc_type is strcs.errors.UnableToConvert:
+            if isinstance(dct.get("into"), dict):
+                into = dct["into"]
+                for k in ("cache", "_memoized_cache", "disassemble"):
+                    if k in into:
+                        del into[k]
+        return dct
+
+
 class InteractorServer(Server):
     store: commander.Store | None
 
@@ -74,11 +91,13 @@ class InteractorServer(Server):
 
     async def setup_routes(self):
         await super().setup_routes()
-        # self.app.add_route(self.commander.http_handler, "/v1/lifx/command", methods=["PUT"])
-        # self.app.add_websocket_route(
-        #     self.wrap_websocket_handler(self.commander.ws_handler), "/v1/ws"
-        # )
-        self.store.register_commands(self.server_stop_future, self.meta, self.app, self)
+        self.store.register_commands(
+            self.server_stop_future,
+            self.meta,
+            self.app,
+            self,
+            message_from_exc=InteractorMessageFromExc,
+        )
 
     async def before_start(self):
         await self.server_options.zeroconf.start(
