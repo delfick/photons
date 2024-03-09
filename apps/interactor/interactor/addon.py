@@ -4,7 +4,7 @@ import aiohttp
 from delfick_project.addons import addon_hook
 from interactor.errors import InteractorError
 from interactor.options import Options
-from interactor.server import Server
+from interactor.server import InteractorServer as Server
 from photons_app import helpers as hp
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
@@ -45,6 +45,9 @@ class interactor(WebServerTask):
     async def server_kwargs(self):
         async with self.target.session() as sender:
             yield dict(
+                reference_resolver_register=self.collector.configuration[
+                    "reference_resolver_register"
+                ],
                 sender=sender,
                 options=self.options,
                 cleaners=self.photons_app.cleaners,

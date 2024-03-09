@@ -8,6 +8,7 @@ from interactor.commander.store import store
 from interactor.database import DB
 from interactor.zeroconf import Zeroconf
 from photons_app import helpers as hp
+from photons_app.registers import ReferenceResolverRegister
 from photons_control.device_finder import DeviceFinderDaemon, Finder
 
 
@@ -83,6 +84,11 @@ describe "Server":
                 assert str(o.engine.url) == "sqlite+aiosqlite:///:memory:"
                 return True
 
+        class IsReferenceResolver:
+            def __eq__(self, o):
+                assert isinstance(o, ReferenceResolverRegister)
+                return True
+
         assert server.meta.data == dict(
             tasks=server.tasks,
             sender=server.sender,
@@ -92,6 +98,7 @@ describe "Server":
             animations=server.animations,
             final_future=server.final_future,
             server_options=server.server_options,
+            reference_resolver_register=IsReferenceResolver(),
         )
 
         async with server.database.engine.begin() as conn:

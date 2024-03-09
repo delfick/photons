@@ -11,11 +11,12 @@ import aiohttp
 import pytest
 import sanic
 from interactor.options import Options
-from interactor.server import Server
+from interactor.server import InteractorServer as Server
 from photons_app import helpers as hp
 from photons_app.errors import BadRun
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.mimic import DeviceCollection
+from photons_app.registers import ReferenceResolverRegister
 from photons_products import Products
 
 log = logging.getLogger("interactor.test_helpers")
@@ -251,6 +252,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                 sender=self.sender,
                 cleaners=self.cleaners,
                 animation_options=self.animation_options,
+                reference_resolver_register=ReferenceResolverRegister(),
             )
         )
 

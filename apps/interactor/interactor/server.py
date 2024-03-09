@@ -1,21 +1,30 @@
+import asyncio
 import time
 import typing as tp
 
+import strcs
 from interactor.commander.animations import Animations
 from interactor.database import DB
 from photons_app import helpers as hp
+from photons_app.registers import ReferenceResolverRegister
 from photons_control.device_finder import DeviceFinderDaemon, Finder
-from photons_web_server.commander import Store
+from photons_web_server import commander
 from photons_web_server.server import Server
 from sanic.request import Request
-from strcs import Meta
 
 
-class Server(Server):
-    store: Store | None
+class InteractorServer(Server):
+    store: commander.Store | None
 
     async def setup(
-        self, *, options, sender, cleaners, store: Store | None = None, animation_options=None
+        self,
+        *,
+        options,
+        sender,
+        cleaners,
+        store: commander.Store | None = None,
+        animation_options=None,
+        reference_resolver_register: ReferenceResolverRegister
     ):
         if store is None:
             from interactor.commander.store import load_commands, store
@@ -25,7 +34,7 @@ class Server(Server):
         self.store = store
         self.sender = sender
         self.cleaners = cleaners
-        self.wsconnections = {}
+        self.wsconnections: dict[str, asyncio.Future] = {}
         self.server_options = options
         self.animation_options = animation_options
 
@@ -44,12 +53,14 @@ class Server(Server):
         self.animations = Animations(
             self.final_future, self.tasks, self.sender, self.animation_options
         )
-        self.meta = Meta(
+
+        self.meta = strcs.Meta(
             dict(
                 tasks=self.tasks,
                 sender=self.sender,
                 finder=self.finder,
                 zeroconf=self.server_options.zeroconf,
+                reference_resolver_register=reference_resolver_register,
                 database=self.database,
                 animations=self.animations,
                 final_future=self.final_future,
