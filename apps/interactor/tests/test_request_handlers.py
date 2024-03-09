@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 from interactor.commander import helpers as ihp
-from interactor.server import Server
+from interactor.server import InteractorServer as Server
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_web_server.commander import Message, WSSender
