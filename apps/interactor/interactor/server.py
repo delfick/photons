@@ -98,14 +98,19 @@ class InteractorServer(Server):
         self, request: Request, remote_addr: str, identifier: str
     ) -> dict[str, tp.Any] | None:
         matcher = None
-        if (
-            isinstance(request.json, dict)
-            and isinstance(request.json.get("args"), dict)
-            and "matcher" in request.json["args"]
-        ):
-            matcher = request.json["args"]["matcher"]
+        key = "matcher"
+        if request.content_type == "application/json":
+            if isinstance(request.json.get("args"), dict) and "matcher" in request.json["args"]:
+                matcher = request.json["args"]["matcher"]
+            elif "selector" in request.json:
+                matcher = request.json["selector"]
+                key = "selector"
+        else:
+            if "selector" in request.form:
+                matcher = request.form["selector"][0]
+                key = "selector"
 
         return {
             **super().log_request_dict(request, remote_addr, identifier),
-            "matcher": matcher,
+            key: matcher,
         }
