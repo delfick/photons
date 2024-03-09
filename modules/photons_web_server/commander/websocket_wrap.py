@@ -251,7 +251,6 @@ class WebsocketWrap:
 
         if loop_stop.done():
             await ws.close()
-            await hp.wait_for_all_futures(get_nxt, name="WebsocketWrap::handle_next[stop_get_nxt]")
             return
 
         try:

@@ -181,7 +181,7 @@ class Server:
             tasks = []
             for conn in self.connections:
                 if hasattr(conn, "websocket") and conn.websocket:
-                    tasks.append(self.tasks.add(conn.websocket.close_connection()))
+                    tasks.append(self.tasks.add(conn.websocket.close()))
                 else:
                     conn.close()
 
