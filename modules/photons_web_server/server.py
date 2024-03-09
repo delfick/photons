@@ -89,7 +89,7 @@ class Server:
     def make_log_config(self) -> dict:
         return {"version": 1, "disable_existing_loggers": False}
 
-    async def make_create_server_kwargs(self, host, port, kwargs) -> dict:
+    async def make_create_server_kwargs(self, host: str, port: int, kwargs: dict) -> dict:
         return {
             k: v
             for k, v in dict(

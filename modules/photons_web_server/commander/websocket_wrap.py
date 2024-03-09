@@ -137,16 +137,22 @@ class WSSender:
         if isinstance(res, BaseException):
             res = {"error": res, "error_code": type(res).__name__}
 
-        if isinstance(res, dict):
-            if "error" in res:
-                msg["error"] = res.pop("error")
-                if not isinstance(msg["error"], dict):
-                    msg["error"] = str(msg["error"])
-            if "error_code" in res:
-                msg["error_code"] = res.pop("error_code")
+        if hasattr(res, "as_dict"):
+            res = res.as_dict()
 
-        if "error" not in msg:
-            msg["progress" if progress else "reply"] = res
+        if progress:
+            msg["progress"] = res
+        else:
+            if isinstance(res, dict):
+                if "error" in res:
+                    msg["error"] = res.pop("error")
+                    if not isinstance(msg["error"], dict):
+                        msg["error"] = str(msg["error"])
+                if "error_code" in res:
+                    msg["error_code"] = res.pop("error_code")
+
+            if "error" not in msg:
+                msg["reply"] = res
 
         await self.ws.send(json_dumps(msg, default=self._reprer))
 
