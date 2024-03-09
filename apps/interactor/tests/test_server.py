@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from interactor.commander.animations import Animations
 from interactor.commander.store import store
+from interactor.database import DB
 from interactor.zeroconf import Zeroconf
 from photons_app import helpers as hp
 from photons_control.device_finder import DeviceFinderDaemon, Finder
@@ -29,11 +30,6 @@ async def sender(devices, final_future):
 def V():
     class V:
         afr = mock.Mock(name="afr")
-        database = mock.Mock(
-            name="database",
-            start=pytest.helpers.AsyncMock(name="start"),
-            finish=pytest.helpers.AsyncMock(name="finish"),
-        )
         commander = mock.Mock(name="commander")
 
         @hp.memoized_property
@@ -44,14 +40,6 @@ def V():
             m.close_args_for_run = pytest.helpers.AsyncMock(name="close_args_for_run")
 
             return m
-
-        @hp.memoized_property
-        def FakeDB(s):
-            return mock.Mock(name="DB", return_value=s.database)
-
-        @hp.memoized_property
-        def FakeCommander(s):
-            return mock.Mock(name="Commander", return_value=s.commander)
 
         @hp.memoized_property
         def FakeZeroconfRegisterer(s):
@@ -65,13 +53,10 @@ def V():
 
 @pytest.fixture(scope="module")
 async def server(V, server_wrapper, sender, final_future):
-    commander_patch = mock.patch("interactor.server.Commander", V.FakeCommander)
     zeroconf_patch = mock.patch(
         "interactor.zeroconf.ZeroconfRegisterer", lambda *a, **kw: V.FakeZeroconfRegisterer
     )
-    db_patch = mock.patch("interactor.server.DB", V.FakeDB)
-
-    with commander_patch, db_patch, zeroconf_patch:
+    with zeroconf_patch:
         async with server_wrapper(store, sender, final_future) as server:
             yield server
 
@@ -92,17 +77,27 @@ describe "Server":
 
         assert isinstance(server.server_options.zeroconf, Zeroconf)
 
-        V.FakeCommander.assert_called_once_with(
-            store,
+        class IsDB:
+            def __eq__(self, o):
+                assert isinstance(o, DB)
+                assert str(o.engine.url) == "sqlite+aiosqlite:///:memory:"
+                return True
+
+        assert server.meta.data == dict(
             tasks=server.tasks,
             sender=server.sender,
             finder=server.finder,
             zeroconf=server.server_options.zeroconf,
-            database=V.database,
+            database=IsDB(),
             animations=server.animations,
             final_future=server.final_future,
             server_options=server.server_options,
         )
-        V.FakeDB.assert_called_once_with("sqlite:///:memory:")
 
-        V.database.start.assert_called_once_with()
+        async with server.database.engine.begin() as conn:
+            await conn.run_sync(server.database.Base.metadata.create_all)
+
+        async def get(session, query):
+            return await query.get_scenes()
+
+        assert await server.database.request(get) == []

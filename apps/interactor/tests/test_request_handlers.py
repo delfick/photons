@@ -1,15 +1,11 @@
-# coding: spec
-
-import types
 import uuid
-from unittest import mock
 
 import pytest
 from interactor.commander import helpers as ihp
-from interactor.request_handlers import WSHandler
 from interactor.server import Server
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
+from photons_web_server.commander import Message, WSSender
 
 
 @pytest.fixture()
@@ -34,131 +30,133 @@ def server_maker(server_wrapper, final_future, sender):
             self.Handler = Handler
 
         async def start(self):
-            original_tornado_routes = Server.tornado_routes
+            class ModifiedServer(Server):
+                async def setup_routes(ss):
+                    await super(Server, ss).setup_routes()
+                    ss.app.add_websocket_route(ss.wrap_websocket_handler(self.Handler), "/v1/ws")
 
-            def tornado_routes(s):
-                routes = original_tornado_routes(s)
-                routes[1] = ("/v1/ws", self.Handler, routes[1][-1])
-                return routes
+            self.wrapper = server_wrapper(
+                None,
+                sender,
+                final_future,
+                ServerKls=ModifiedServer,
+            )
 
-            self.patch = mock.patch.object(Server, "tornado_routes", tornado_routes)
-            self.patch.start()
-
-            self.wrapper = server_wrapper(None, sender, final_future)
             await self.wrapper.start()
             return self.wrapper
 
         async def finish(self, exc_typ=None, exc=None, tb=None):
             if hasattr(self, "wrapper"):
                 await self.wrapper.finish()
-            if hasattr(self, "patch"):
-                self.patch.stop()
 
     return Maker
 
 
-describe "SimpleWebSocketBase":
-    async it "can handle a ResultBuilder", server_maker:
-
-        class Handler(WSHandler):
-            async def process_message(s, path, body, message_id, message_key, progress_cb):
-                return ihp.ResultBuilder(serials=["d073d5000001"])
+class TestSimpleWebSocketBase:
+    async def test_it_can_handle_a_ResultBuilder(self, server_maker):
+        async def Handler(wssend: WSSender, message: Message) -> bool | None:
+            await wssend(ihp.ResultBuilder(serials=["d073d5000001"]))
+            return None
 
         async with server_maker(Handler) as server:
             connection = await server.ws_connect()
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(connection, {"path": "/thing", "body": {}, "message_id": msg_id})
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
+                "request_identifier": got["request_identifier"],
                 "reply": {"results": {"d073d5000001": "ok"}},
             }
 
-    async it "can process replies", server_maker:
-        replies = []
-
+    async def test_it_can_process_replies(self, server_maker):
         error1 = ValueError("Bad things happen")
         error2 = PhotonsAppError("Stuff")
         error3 = TypeError("NOPE")
         error4 = PhotonsAppError("Blah")
         error5 = PhotonsAppError("things", serial="d073d5000001")
 
-        class Handler(WSHandler):
-            def process_reply(s, msg, exc_info=None):
-                replies.append((msg, exc_info))
+        async def Handler(wssend: WSSender, message: Message) -> bool | None:
+            path = message.body["path"]
+            if path == "/no_error":
+                await wssend({"success": True})
+            elif path == "/internal_error":
+                raise error1
+            elif path == "/builder_error":
+                builder = ihp.ResultBuilder(["d073d5000001"])
+                builder.error(error2)
+                await wssend.progress({"error": "progress"})
+                await wssend(builder)
+            elif path == "/builder_serial_error":
+                builder = ihp.ResultBuilder(["d073d5000001"])
+                try:
+                    raise error5
+                except Exception as e:
+                    builder.error(e)
+                await wssend(builder)
+            elif path == "/builder_internal_error":
+                builder = ihp.ResultBuilder(["d073d5000001"])
+                try:
+                    raise error3
+                except Exception as error:
+                    builder.error(error)
+                await wssend(builder)
+            elif path == "/error":
+                await wssend(error4)
 
-            async def process_message(s, path, body, message_id, message_key, progress_cb):
-                if path == "/no_error":
-                    return {"success": True}
-                elif path == "/internal_error":
-                    raise error1
-                elif path == "/builder_error":
-                    builder = ihp.ResultBuilder(["d073d5000001"])
-                    builder.error(error2)
-                    s.reply({"progress": {"error": "progress"}}, message_id=message_id)
-                    return builder
-                elif path == "/builder_serial_error":
-                    builder = ihp.ResultBuilder(["d073d5000001"])
-                    try:
-                        raise error5
-                    except Exception as e:
-                        builder.error(e)
-                    return builder
-                elif path == "/builder_internal_error":
-                    builder = ihp.ResultBuilder(["d073d5000001"])
-                    try:
-                        raise error3
-                    except Exception as error:
-                        builder.error(error)
-                    return builder
-                elif path == "/error":
-                    raise error4
+            return None
 
         async with server_maker(Handler) as server:
             connection = await server.ws_connect()
 
             ##################
-            ### NO_ERROR
+            # NO_ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
                 connection, {"path": "/no_error", "body": {}, "message_id": msg_id}
             )
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
+                "request_identifier": got["request_identifier"],
                 "reply": {"success": True},
             }
 
             ##################
-            ### INTERNAL_ERROR
+            # INTERNAL_ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
                 connection, {"path": "/internal_error", "body": {}, "message_id": msg_id}
             )
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
-                "reply": {
-                    "error": "Internal Server Error",
-                    "error_code": "InternalServerError",
-                    "status": 500,
-                },
+                "request_identifier": got["request_identifier"],
+                "error": "Internal Server Error",
+                "error_code": "InternalServerError",
             }
 
             ##################
-            ### BUILDER_ERROR
+            # BUILDER_ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
                 connection, {"path": "/builder_error", "body": {}, "message_id": msg_id}
             )
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
-                "reply": {"progress": {"error": "progress"}},
+                "request_identifier": got["request_identifier"],
+                "progress": {"error": "progress"},
             }
 
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
+                "request_identifier": got["request_identifier"],
                 "reply": {
                     "results": {"d073d5000001": "ok"},
                     "errors": [
@@ -172,15 +170,17 @@ describe "SimpleWebSocketBase":
             }
 
             ##################
-            ### BUILDER_SERIAL_ERROR
+            # BUILDER_SERIAL_ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
                 connection, {"path": "/builder_serial_error", "body": {}, "message_id": msg_id}
             )
 
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
+                "request_identifier": got["request_identifier"],
                 "reply": {
                     "results": {
                         "d073d5000001": {
@@ -193,15 +193,17 @@ describe "SimpleWebSocketBase":
             }
 
             ##################
-            ### BUILDER_INTERNAL_ERROR
+            # BUILDER_INTERNAL_ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(
                 connection,
                 {"path": "/builder_internal_error", "body": {}, "message_id": msg_id},
             )
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
+                "request_identifier": got["request_identifier"],
                 "reply": {
                     "results": {"d073d5000001": "ok"},
                     "errors": [
@@ -215,82 +217,14 @@ describe "SimpleWebSocketBase":
             }
 
             ##################
-            ### ERROR
+            # ERROR
 
             msg_id = str(uuid.uuid1())
             await server.ws_write(connection, {"path": "/error", "body": {}, "message_id": msg_id})
-            assert await server.ws_read(connection) == {
+            got = await server.ws_read(connection)
+            assert got == {
                 "message_id": msg_id,
-                "reply": {
-                    "error": {"message": "Blah"},
-                    "error_code": "PhotonsAppError",
-                    "status": 400,
-                },
+                "request_identifier": got["request_identifier"],
+                "error": '"Blah"',
+                "error_code": "PhotonsAppError",
             }
-
-        class ATraceback:
-            def __eq__(s, other):
-                return isinstance(other, types.TracebackType)
-
-        want = [
-            ({"success": True}, None),
-            (
-                {
-                    "status": 500,
-                    "error": "Internal Server Error",
-                    "error_code": "InternalServerError",
-                },
-                (ValueError, error1, ATraceback()),
-            ),
-            ({"progress": {"error": "progress"}}, None),
-            (
-                {
-                    "results": {"d073d5000001": "ok"},
-                    "errors": [
-                        {
-                            "error": {"message": "Stuff"},
-                            "error_code": "PhotonsAppError",
-                            "status": 400,
-                        }
-                    ],
-                },
-                None,
-            ),
-            (
-                {
-                    "results": {
-                        "d073d5000001": {
-                            "error": {"message": "things"},
-                            "error_code": "PhotonsAppError",
-                            "status": 400,
-                        }
-                    }
-                },
-                None,
-            ),
-            (
-                {
-                    "results": {"d073d5000001": "ok"},
-                    "errors": [
-                        {
-                            "error": "Internal Server Error",
-                            "error_code": "InternalServerError",
-                            "status": 500,
-                        }
-                    ],
-                },
-                None,
-            ),
-            (
-                {"error": {"message": "Blah"}, "error_code": "PhotonsAppError", "status": 400},
-                (PhotonsAppError, error4, ATraceback()),
-            ),
-        ]
-
-        for i, (g, w) in enumerate(zip(replies, want)):
-            if g != w:
-                print(f"Incorrect reply: {i}")
-                print(f"GOT : {g}")
-                print(f"WANT: {w}")
-
-        assert replies == want
