@@ -199,12 +199,8 @@ describe "Store":
             ),
         ]
 
-    async it "provides the ability to make an instance of a command class", final_future: asyncio.Future, fake_event_loop:
-        made: list[object] = []
-        done_things = hp.create_future()
-
+    async it "provides the ability to turn a function on a Command class into a bound method", final_future: asyncio.Future, fake_event_loop:
         store = Store()
-        time_at_wait = 0
 
         @attrs.define
         class Thing:
@@ -230,11 +226,8 @@ describe "Store":
             async def route1(
                 s, progress: Progress, request: Request, /, route_transformer: RouteTransformer
             ) -> Response | None:
-                with route_transformer._an_instance(request, COther.route2, kls=COther) as (
-                    _,
-                    instance,
-                ):
-                    return await instance.route2(progress, request, thing=Thing(param="blah"))
+                with route_transformer.instantiate_route(request, COther, COther.route2) as route:
+                    return await route(progress, request, thing=Thing(param="blah"))
 
         async def setup_routes(server: Server):
             store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
