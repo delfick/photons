@@ -99,6 +99,7 @@ describe "Server":
             final_future=server.final_future,
             server_options=server.server_options,
             reference_resolver_register=IsReferenceResolver(),
+            store=server.store,
         )
 
         async with server.database.engine.begin() as conn:
