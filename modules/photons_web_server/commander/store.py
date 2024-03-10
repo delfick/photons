@@ -251,6 +251,15 @@ class RouteTransformer(tp.Generic[C]):
         tp.cast(WithCommanderClass, route).__commander_class__ = self.kls
         return tp.cast(RouteHandler, route)
 
+    @contextmanager
+    def instantiate_route(
+        self, request: Request, kls: type["Command"], method: tp.Callable[P, R]
+    ) -> tp.Generator[tp.Callable[P, R], None, None]:
+        with self._an_instance(request, method, kls=kls) as (_, instance):
+            route = getattr(instance, method.__name__)
+            assert route.__func__ is method
+            yield route
+
     @tp.overload
     @contextmanager
     def _an_instance(
