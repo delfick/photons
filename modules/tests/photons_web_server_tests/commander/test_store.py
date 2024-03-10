@@ -199,6 +199,51 @@ describe "Store":
             ),
         ]
 
+    async it "provides the ability to make an instance of a command class", final_future: asyncio.Future, fake_event_loop:
+        made: list[object] = []
+        done_things = hp.create_future()
+
+        store = Store()
+        time_at_wait = 0
+
+        @attrs.define
+        class Thing:
+            param: str
+
+        @store.command
+        class COther(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.route2, "route2")
+
+            async def route2(
+                s, progress: Progress, request: Request, /, thing: Thing
+            ) -> Response | None:
+                return sanic.text(thing.param)
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.route1, "route1")
+
+            async def route1(
+                s, progress: Progress, request: Request, /, route_transformer: RouteTransformer
+            ) -> Response | None:
+                with route_transformer._an_instance(request, COther.route2, kls=COther) as (
+                    _,
+                    instance,
+                ):
+                    return await instance.route2(progress, request, thing=Thing(param="blah"))
+
+        async def setup_routes(server: Server):
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
+
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+            res1 = await srv.start_request("GET", "/route1")
+
+        assert (await res1.text()) == "blah"
+
     async it "understands when the route itself raises a CancelledError", final_future: asyncio.Future, fake_event_loop:
         store = Store()
 
