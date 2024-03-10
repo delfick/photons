@@ -47,6 +47,7 @@ P = tp.ParamSpec("P")
 T = tp.TypeVar("T")
 R = tp.TypeVar("R")
 C = tp.TypeVar("C", bound="Command")
+C_Other = tp.TypeVar("C_Other", bound="Command")
 
 
 @attrs.define
@@ -113,7 +114,7 @@ class RouteTransformer(tp.Generic[C]):
     ):
         self.kls = kls
         self.app = app
-        self.meta = meta
+        self.meta = meta.clone({"route_transformer": self})
         self.store = store
         self.server = server
         self.reprer = reprer
@@ -250,9 +251,21 @@ class RouteTransformer(tp.Generic[C]):
         tp.cast(WithCommanderClass, route).__commander_class__ = self.kls
         return tp.cast(RouteHandler, route)
 
+    @tp.overload
     @contextmanager
     def _an_instance(
-        self, request: Request, method: tp.Callable
+        self, request: Request, method: tp.Callable[..., object], kls: type[C_Other]
+    ) -> tp.Generator[tuple[str, C_Other], None, None]: ...
+
+    @tp.overload
+    @contextmanager
+    def _an_instance(
+        self, request: Request, method: tp.Callable[..., object], kls: None
+    ) -> tp.Generator[tuple[str, C], None, None]: ...
+
+    @contextmanager
+    def _an_instance(
+        self, request: Request, method: tp.Callable[..., object], kls: type["Command"] | None = None
     ) -> tp.Generator[tuple[str, C], None, None]:
         name = f"RouteTransformer::__call__({self.kls.__name__}:{method.__name__})"
 
@@ -267,8 +280,11 @@ class RouteTransformer(tp.Generic[C]):
         logger_name = get_logger_name(method=method)
         logger = logging.getLogger(logger_name)
 
+        if kls is None:
+            kls = self.kls
+
         with self.a_request_future(request, name) as request_future:
-            instance = self.kls(
+            instance = kls(
                 request_future,
                 request,
                 self.store,
