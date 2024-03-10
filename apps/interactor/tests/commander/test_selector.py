@@ -105,3 +105,51 @@ describe "Selector":
             meta=strcs.Meta({"reference_resolver_register": reference_resolver_register}),
         )
         assert made is hard_coded
+
+
+describe "Matcher":
+    it "can be made from nothing":
+        made = reg.create(selector.Matcher)
+        assert isinstance(made, selector.Matcher)
+        assert made.raw == "_"
+
+    it "can be made from str":
+        made = reg.create(selector.Matcher, "label=kitchen")
+        assert isinstance(made, selector.Matcher)
+        assert made.raw == "match:label=kitchen"
+
+    it "can be made from dict":
+        made = reg.create(selector.Matcher, {"label": "kitchen"})
+        assert isinstance(made, selector.Matcher)
+        assert made.raw == {"label": "kitchen"}
+
+
+describe "Timeout":
+    it "can be made from nothing":
+        made = reg.create(selector.Timeout)
+        assert isinstance(made, selector.Timeout)
+        assert made.value == 20
+
+    it "can be made from str int":
+        made = reg.create(selector.Timeout, "40")
+        assert isinstance(made, selector.Timeout)
+        assert made.value == 40
+
+    it "can be made from str float":
+        made = reg.create(selector.Timeout, "50.566")
+        assert isinstance(made, selector.Timeout)
+        assert made.value == 50.566
+
+    it "can be made from int":
+        made = reg.create(selector.Timeout, 70)
+        assert isinstance(made, selector.Timeout)
+        assert made.value == 70
+
+    it "can be made from float":
+        made = reg.create(selector.Timeout, 70.665)
+        assert isinstance(made, selector.Timeout)
+        assert made.value == 70.665
+
+    it "won't convert bad string":
+        with pytest.raises(strcs.errors.UnableToConvert):
+            reg.create(selector.Timeout, "70.665.777")
