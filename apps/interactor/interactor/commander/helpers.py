@@ -258,3 +258,54 @@ class memoized_iterable:
     def __delete__(self, instance):
         if hasattr(instance, self.cache_name):
             delattr(instance, self.cache_name)
+
+
+class memoized_async:
+    """
+    A decorator that returns a descriptor providing a cache for an async
+    callable.
+    """
+
+    class Empty:
+        pass
+
+    class Proxy:
+        def __init__(self, instance, func):
+            self.func = func
+            self.instance = instance
+
+            self.gen = False
+            self.lock = asyncio.Lock()
+
+        def __await__(self):
+            if not hasattr(self, "result"):
+                self.result = yield from self.func(self.instance).__await__()
+            return self.result
+
+        def __repr__(self):
+            return f"<AsyncProxy: {repr(self.func)}>"
+
+        @property
+        def __name__(self):
+            return self.func.__name__
+
+        @property
+        def __doc__(self):
+            return self.func.__doc__
+
+    def __init__(self, func):
+        self.func = func
+        self.name = func.__name__
+        self.cache_name = "_{0}".format(self.name)
+
+    def __get__(self, instance=None, owner=None):
+        if instance is None:
+            return self
+
+        if getattr(instance, self.cache_name, self.Empty) is self.Empty:
+            setattr(instance, self.cache_name, self.Proxy(instance, self.func))
+        return getattr(instance, self.cache_name)
+
+    def __delete__(self, instance):
+        if hasattr(instance, self.cache_name):
+            delattr(instance, self.cache_name)
