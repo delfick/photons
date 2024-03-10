@@ -82,6 +82,7 @@ class InteractorServer(Server):
                 animations=self.animations,
                 final_future=self.final_future,
                 server_options=self.server_options,
+                store=self.store,
             )
         )
 
