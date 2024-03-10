@@ -7,6 +7,7 @@ from collections import defaultdict
 from textwrap import dedent
 from unittest.mock import ANY
 
+import attrs
 import pytest
 import sanic
 import strcs
@@ -120,6 +121,74 @@ describe "Store":
 
         assert made == [pytest.helpers.IsInstance(asyncio.Task), 3]
         assert time.time() == 3 + time_at_wait
+
+    async it "can do dependency injection based on signature args", final_future: asyncio.Future, fake_event_loop:
+        store = Store()
+
+        class Thing: ...
+
+        original_thing = Thing()
+
+        @attrs.define
+        class SyncBody:
+            one: int
+            two: str
+
+        @attrs.define
+        class SyncParams:
+            three: str
+            four: list[str]
+
+        called: list[tuple[object, ...]] = []
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.async_route, "async_route")
+                routes.http(kls.sync_route, "sync_route", methods=["PUT"])
+
+            async def async_route(
+                s, progress: Progress, request: Request, /, thing: Thing
+            ) -> Response | None:
+                called.append(("async_route", thing))
+                return sanic.text("async_route")
+
+            async def sync_route(
+                s,
+                progress: Progress,
+                request: Request,
+                /,
+                _body: SyncBody,
+                _params: SyncParams,
+                thing: Thing,
+            ) -> Response | None:
+                called.append(("sync_route", _body, _params, thing))
+                return sanic.text("sync_route")
+
+        meta = strcs.Meta({"thing": original_thing})
+
+        async def setup_routes(server: Server):
+            store.register_commands(server.server_stop_future, meta, server.app, server)
+
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+            res1 = await srv.start_request("GET", "/async_route")
+            res2 = await srv.start_request(
+                "PUT", "/sync_route?three=3&four=thing&four=stuff", {"one": 2, "two": "blah"}
+            )
+
+        assert (await res1.text()) == "async_route"
+        assert (await res2.text()) == "sync_route"
+
+        assert called == [
+            ("async_route", original_thing),
+            (
+                "sync_route",
+                SyncBody(one=2, two="blah"),
+                SyncParams(three="3", four=["thing", "stuff"]),
+                original_thing,
+            ),
+        ]
 
     async it "understands when the route itself raises a CancelledError", final_future: asyncio.Future, fake_event_loop:
         store = Store()
