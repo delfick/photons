@@ -272,7 +272,7 @@ class RouteTransformer(tp.Generic[C]):
                 request_future,
                 request,
                 self.store,
-                self.meta,
+                self.meta.clone(),
                 self.app,
                 self.server,
                 self.reprer,
@@ -544,6 +544,9 @@ class Store:
                             v = v[0]
                         final[k] = v
                 yield self.strcs_register.create(nxt.annotation, final, meta=meta)
+
+            elif nxt.name == "_meta":
+                yield meta
 
             elif nxt.name in kwargs:
                 yield self.strcs_register.create(nxt.annotation, kwargs.pop(nxt.name), meta=meta)
