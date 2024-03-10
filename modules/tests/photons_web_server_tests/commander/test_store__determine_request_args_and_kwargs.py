@@ -150,3 +150,16 @@ describe "Determining request args and kwargs":
             strcs.Meta({"one": 1}), route, progress, request, [], {}
         )
         assert use == [progress, request, 10]
+
+    async it "can get the meta object", store: Store, progress: Progress, app: sanic.Sanic:
+        request, _ = await app.asgi_client.get("/")
+
+        called: list[tuple[Progress, Request]] = []
+
+        def route(progress: Progress, request: Request, /, _meta: strcs.Meta) -> None:
+            called.append((progress, request, meta))
+            return None
+
+        meta = strcs.Meta({"one": 1})
+        use = store.determine_http_args_and_kwargs(meta, route, progress, request, [], {})
+        assert use == [progress, request, meta]

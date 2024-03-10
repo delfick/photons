@@ -149,9 +149,9 @@ describe "Store":
                 routes.http(kls.sync_route, "sync_route", methods=["PUT"])
 
             async def async_route(
-                s, progress: Progress, request: Request, /, thing: Thing
+                s, progress: Progress, request: Request, /, _meta: strcs.Meta, thing: Thing
             ) -> Response | None:
-                called.append(("async_route", thing))
+                called.append(("async_route", _meta, thing))
                 return sanic.text("async_route")
 
             async def sync_route(
@@ -180,8 +180,17 @@ describe "Store":
         assert (await res1.text()) == "async_route"
         assert (await res2.text()) == "sync_route"
 
+        class IsMeta:
+            def __eq__(self, o: object) -> bool:
+                assert (
+                    isinstance(o, strcs.Meta)
+                    and all(o.data[k] == v for k, v in meta.data.items())
+                    and o is not meta
+                )
+                return True
+
         assert called == [
-            ("async_route", original_thing),
+            ("async_route", IsMeta(), original_thing),
             (
                 "sync_route",
                 SyncBody(one=2, two="blah"),
