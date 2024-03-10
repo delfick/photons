@@ -79,6 +79,18 @@ describe "Determining request args and kwargs":
         )
         assert use == [progress, request]
 
+    async it "can reg.create missing positionals with NotSpecified", store: Store, progress: Progress, app: sanic.Sanic:
+        request, _ = await app.asgi_client.get("/")
+
+        called: list[tuple[Progress, Request]] = []
+
+        def route(progress: Progress, request: Request, thing: Thing, /) -> None:
+            called.append((progress, request, thing))
+            return None
+
+        use = store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [], {})
+        assert use == [progress, request, Thing(val="-1")]
+
     async it "can pass in progress and request when no annotations", store: Store, progress: Progress, app: sanic.Sanic:
         request, _ = await app.asgi_client.get("/")
 

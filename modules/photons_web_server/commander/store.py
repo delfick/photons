@@ -536,7 +536,18 @@ class Store:
                 break
 
             if nxt.default is inspect._empty:
-                raise NotEnoughArgs(reason="request expected more positional arguments than it got")
+                try:
+                    use.append(
+                        self.strcs_register.create(
+                            nxt.annotation, kwargs.pop(nxt.name, strcs.NotSpecified), meta=meta
+                        )
+                    )
+                except (TypeError, ValueError) as e:
+                    raise NotEnoughArgs(
+                        reason="request expected more positional arguments than it got"
+                    ) from e
+
+                continue
 
             use.append(self.strcs_register.create(nxt.annotation, nxt.default, meta=meta))
 
