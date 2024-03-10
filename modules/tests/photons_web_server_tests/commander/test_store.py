@@ -9,6 +9,7 @@ from unittest.mock import ANY
 
 import pytest
 import sanic
+import strcs
 from attrs import define
 from delfick_project.errors import DelfickError
 from photons_app import helpers as hp
@@ -24,7 +25,6 @@ from photons_web_server.commander import (
 from photons_web_server.server import Server
 from sanic.request import Request
 from sanic.response import HTTPResponse as Response
-from strcs import Meta
 
 
 class Between:
@@ -70,7 +70,7 @@ describe "Store":
                 return sanic.text("route2")
 
         async def setup_routes(server: Server) -> None:
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1/20")
@@ -110,7 +110,7 @@ describe "Store":
                 return sanic.text("route1")
 
         async def setup_routes(server: Server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
@@ -137,7 +137,7 @@ describe "Store":
                 return sanic.text("route1")
 
         async def setup_routes(server: Server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
@@ -161,7 +161,7 @@ describe "Store":
                 return sanic.text("route1")
 
         async def setup_routes(server: Server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             t1 = srv.start_request("GET", "/route1")
@@ -204,7 +204,7 @@ describe "Store":
                 return sanic.text("route1")
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             t1 = srv.start_request("GET", "/route1")
@@ -241,7 +241,7 @@ describe "Store":
                 raise error
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
@@ -280,7 +280,7 @@ describe "Store":
                 return sanic.text("hi")
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
@@ -314,7 +314,7 @@ describe "Store":
                 return sanic.text("hi")
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
@@ -385,7 +385,7 @@ describe "Store":
                 return None
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res: list[dict | str] = []
@@ -739,7 +739,7 @@ describe "Store":
                 return None
 
         async def setup_routes(server):
-            store.register_commands(server.server_stop_future, Meta(), server.app, server)
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             async with srv.stream("/excs") as stream:
