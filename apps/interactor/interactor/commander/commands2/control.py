@@ -26,12 +26,6 @@ pkt_args_field = dictobj.NullableField(
 )
 
 
-@store.command(name="status")
-class StatusCommand(store.Command):
-    async def execute(self):
-        return {"on": True}
-
-
 @store.command(name="query")
 class QueryCommand(store.Command, DeviceChangeMixin):
     """
