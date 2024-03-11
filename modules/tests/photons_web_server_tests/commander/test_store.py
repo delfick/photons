@@ -199,6 +199,37 @@ describe "Store":
             ),
         ]
 
+    async it "provides ability to get raw body and params", final_future: asyncio.Future, fake_event_loop:
+        store = Store()
+
+        called: list[tuple[object, ...]] = []
+
+        @store.command
+        class C(Command):
+            @classmethod
+            def add_routes(kls, routes: RouteTransformer) -> None:
+                routes.http(kls.route1, "route1", methods=["PUT"])
+
+            async def route1(
+                s,
+                progress: Progress,
+                request: Request,
+                /,
+                _body_raw: dict[str, object],
+                _params_raw: dict[str, object],
+            ) -> Response | None:
+                called.append((_body_raw, _params_raw))
+                return sanic.text("stuff")
+
+        async def setup_routes(server: Server):
+            store.register_commands(server.server_stop_future, strcs.Meta(), server.app, server)
+
+        async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
+            res1 = await srv.start_request("PUT", "/route1?one=1&two=2&two=3", body={"five": 5})
+
+        assert (await res1.text()) == "stuff"
+        assert called == [({"five": 5}, {"one": "1", "two": ["2", "3"]})]
+
     async it "provides the ability to turn a function on a Command class into a bound method", final_future: asyncio.Future, fake_event_loop:
         store = Store()
 
