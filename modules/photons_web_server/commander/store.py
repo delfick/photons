@@ -569,25 +569,38 @@ class Store:
         request: Request,
         kwargs: dict[str, object],
     ) -> Iterator[object]:
-        for nxt in values:
-            if nxt.name == "_params":
-                final: dict[str, object] = {}
-                for k, v in request.args.items():
+        body_raw: dict[str, object] = {}
+        params_raw: dict[str, object] = {}
+
+        if any(nxt.name in ("_body", "_body_raw") for nxt in values):
+            if "_body_raw" in kwargs and isinstance(kwargs["_body_raw"], dict):
+                body_raw.update(kwargs["_body_raw"])
+            elif request.content_type == "application/json":
+                body_raw = request.json
+            else:
+                for k, v in request.form.items():
                     if len(v) == 1:
                         v = v[0]
-                    final[k] = v
-                yield self.strcs_register.create(nxt.annotation, final, meta=meta)
+                    body_raw[k] = v
+
+        if any(nxt.name in ("_params", "_params_raw") for nxt in values):
+            for k, v in request.args.items():
+                if len(v) == 1:
+                    v = v[0]
+                params_raw[k] = v
+
+        for nxt in values:
+            if nxt.name == "_params":
+                yield self.strcs_register.create(nxt.annotation, params_raw, meta=meta)
+
+            elif nxt.name == "_params_raw":
+                yield params_raw
 
             elif nxt.name == "_body":
-                if request.content_type == "application/json":
-                    final = request.json
-                else:
-                    final: dict[str, object] = {}
-                    for k, v in request.form.items():
-                        if len(v) == 1:
-                            v = v[0]
-                        final[k] = v
-                yield self.strcs_register.create(nxt.annotation, final, meta=meta)
+                yield self.strcs_register.create(nxt.annotation, body_raw, meta=meta)
+
+            elif nxt.name == "_body_raw":
+                yield body_raw
 
             elif nxt.name == "_meta":
                 yield meta
