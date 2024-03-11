@@ -186,3 +186,47 @@ def create_timeout(val: object, /) -> strcs.ConvertResponse[Timeout]:
 
     else:
         return None
+
+
+def create_dict_without_none(value: object, /) -> strcs.ConvertResponse[dict[str, object]]:
+    if value is strcs.NotSpecified:
+        return {}
+
+    if not isinstance(value, dict):
+        return None
+
+    def filtered(val: dict[str, object]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for k, v in val.items():
+            if isinstance(v, dict):
+                result[k] = filtered(v)
+            elif isinstance(v, list):
+                result[k] = []
+                for vv in v:
+                    if isinstance(vv, dict):
+                        result[k].append(filtered(vv))
+                    else:
+                        result[k].append(vv)
+            elif v is not None:
+                result[k] = v
+        return result
+
+    return filtered(value)
+
+
+@attrs.define
+class AllOrSomeScenes:
+    uuid: list[str] = attrs.field(factory=list)
+    all_scenes: bool = False
+
+
+@creator(AllOrSomeScenes)
+def create_all_or_some_scenes(value: object, /) -> strcs.ConvertResponse[AllOrSomeScenes]:
+    if value is True:
+        return {"all_scenes": True}
+    elif isinstance(value, list):
+        return {"uuid": [str(s) for s in value]}
+    elif isinstance(value, str):
+        return {"uuid": [value]}
+    else:
+        return None
