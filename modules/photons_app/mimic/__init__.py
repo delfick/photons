@@ -325,8 +325,12 @@ class DeviceCollection:
 
             finally:
                 exc_typ, exc, tb = sys.exc_info()
+                ends = []
                 for session in sessions:
-                    ts.add(session.finish(exc_typ=exc_typ, exc=exc, tb=tb))
+                    ends.append(ts.add(session.finish(exc_typ=exc_typ, exc=exc, tb=tb)))
+                await hp.wait_for_all_futures(
+                    *ends, name="DeviceCollection::for_test[wait_for_session_ends]"
+                )
 
 
 __all__ = ["Device", "DeviceCollection"]
