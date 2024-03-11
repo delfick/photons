@@ -110,6 +110,10 @@ class ResultBuilder:
             },
         }
 
+        for k, v in list(info["payload"].items()):
+            if isinstance(v, list) and all(hasattr(vv, "as_dict") for vv in v):
+                info["payload"][k] = [vv.as_dict() for vv in v]
+
         if pkt.serial in self.result["results"]:
             existing = self.result["results"][pkt.serial]
             if type(existing) is list:

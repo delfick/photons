@@ -6,7 +6,32 @@ from interactor.commander.store import creator
 from photons_app.registers import ReferenceResolverRegister
 from photons_app.special import SpecialReference
 from photons_control.device_finder import DeviceFinder, Finder
+from photons_messages import protocol_register
 from photons_messages.enums import MultiZoneEffectType, TileEffectType
+
+
+@attrs.define
+class PacketType:
+    value: str
+
+
+@creator(PacketType)
+def create_packet_type(value: object, /) -> strcs.ConvertResponse[PacketType]:
+    if isinstance(value, str) and value.isdigit():
+        value = int(value)
+
+    if isinstance(value, int):
+        for messages in protocol_register.message_register(1024).message_classes:
+            if kls := messages.by_type.get(value):
+                return {"value": kls.__name__}
+
+    elif isinstance(value, str):
+        for messages in protocol_register.message_register(1024).message_classes:
+            for kls in messages.by_type.values():
+                if kls.__name__ == value:
+                    return {"value": value}
+
+    return None
 
 
 @attrs.define
