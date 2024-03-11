@@ -17,6 +17,7 @@ from photons_app import helpers as hp
 from photons_app.errors import BadRun
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.mimic import DeviceCollection
+from photons_app.mimic.event import Events
 from photons_app.registers import ReferenceResolverRegister
 from photons_control.device_finder import DeviceFinder
 from photons_products import Products
@@ -35,6 +36,12 @@ def _sanic_test_mode() -> None:
 @pytest.fixture(scope="session")
 def devices():
     return ds
+
+
+@pytest.fixture(autouse=True)
+async def reset_devices(devices):
+    for device in devices:
+        await device.event(Events.RESET, old_attrs={})
 
 
 @pytest.fixture()

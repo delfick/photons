@@ -41,7 +41,7 @@ class InteractorServer(Server):
         cleaners,
         store: commander.Store | None = None,
         animation_options=None,
-        reference_resolver_register: ReferenceResolverRegister
+        reference_resolver_register: ReferenceResolverRegister,
     ):
         if store is None:
             from interactor.commander.store import load_commands, store
@@ -119,13 +119,21 @@ class InteractorServer(Server):
     ) -> dict[str, tp.Any] | None:
         matcher = None
         key = "matcher"
+        add_command: dict[str, str] = {}
+
         if request.content_type == "application/json":
+            if command := request.json.get("command"):
+                add_command["command"] = command
+
             if isinstance(request.json.get("args"), dict) and "matcher" in request.json["args"]:
                 matcher = request.json["args"]["matcher"]
             elif "selector" in request.json:
                 matcher = request.json["selector"]
                 key = "selector"
         else:
+            if form_command := request.form.get("command"):
+                add_command["command"] = form_command[0]
+
             if "selector" in request.form:
                 matcher = request.form["selector"][0]
                 key = "selector"
@@ -133,4 +141,5 @@ class InteractorServer(Server):
         return {
             **super().log_request_dict(request, remote_addr, identifier),
             key: matcher,
+            **add_command,
         }

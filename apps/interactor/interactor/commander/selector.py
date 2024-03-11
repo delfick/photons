@@ -6,6 +6,52 @@ from interactor.commander.store import creator
 from photons_app.registers import ReferenceResolverRegister
 from photons_app.special import SpecialReference
 from photons_control.device_finder import DeviceFinder, Finder
+from photons_messages.enums import MultiZoneEffectType, TileEffectType
+
+
+@attrs.define
+class TileEffectTypeValue:
+    effect: TileEffectType | None = None
+
+
+@creator(TileEffectTypeValue)
+def create_tile_effect_type_value(value: object, /) -> strcs.ConvertResponse[TileEffectTypeValue]:
+    if value in (None, strcs.NotSpecified):
+        return {"effect": None}
+
+    elif isinstance(value, str | int | TileEffectType):
+        if isinstance(value, str | int):
+            for en in TileEffectType.__members__.values():
+                if value == en.name or value == en.value:
+                    return {"effect": en}
+        else:
+            return {"effect": value}
+
+    return None
+
+
+@attrs.define
+class MultiZoneEffectTypeValue:
+    effect: MultiZoneEffectType | None = None
+
+
+@creator(MultiZoneEffectTypeValue)
+def create_multi_zone_effect_type_value(
+    value: object,
+    /,
+) -> strcs.ConvertResponse[MultiZoneEffectTypeValue]:
+    if value in (None, strcs.NotSpecified):
+        return {"effect": None}
+
+    elif isinstance(value, str | int | MultiZoneEffectType):
+        if isinstance(value, str | int):
+            for en in MultiZoneEffectType.__members__.values():
+                if value == en.name or value == en.value:
+                    return {"effect": en}
+        else:
+            return {"effect": value}
+    else:
+        return None
 
 
 @attrs.define
