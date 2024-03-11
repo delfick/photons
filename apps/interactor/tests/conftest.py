@@ -6,6 +6,7 @@ import sys
 import tempfile
 import uuid
 from unittest import mock
+from urllib import parse
 
 import aiohttp
 import pytest
@@ -17,7 +18,9 @@ from photons_app.errors import BadRun
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.mimic import DeviceCollection
 from photons_app.registers import ReferenceResolverRegister
+from photons_control.device_finder import DeviceFinder
 from photons_products import Products
+from photons_transport.comms.base import Communication
 
 log = logging.getLogger("interactor.test_helpers")
 
@@ -73,6 +76,12 @@ def temp_dir_maker():
 @pytest.fixture(scope="session")
 async def server_wrapper():
     return ServerWrapper
+
+
+@pytest.fixture()
+async def server(server_wrapper, final_future: asyncio.Future, sender: Communication):
+    async with server_wrapper(None, sender, final_future) as server:
+        yield server
 
 
 @pytest.fixture(scope="session")
@@ -219,6 +228,75 @@ class ServerWrapper(hp.AsyncCMMixin):
                         print(f"WANT:\n{wanted}")
                     assert got == text_output
 
+    async def assertMethod(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, object] | None = None,
+        body: dict[str, object] | None = None,
+        status=200,
+        json_output=None,
+        text_output=None,
+    ) -> dict[str, object]:
+        params_qs = ""
+        if params is not None:
+            params_qs = f"?{parse.urlencode(params)}"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                got = None
+                try:
+                    if method == "GET":
+                        cm = session.get(f"http://127.0.0.1:{self.port}{path}{params_qs}")
+                    elif method == "PUT":
+                        cm = session.put(
+                            f"http://127.0.0.1:{self.port}{path}{params_qs}", json=body
+                        )
+                    else:
+                        raise AssertionError("Only Support GET or PUT")
+                    async with cm as response:
+                        content = await response.read()
+                        if "json" in response.headers.get("Content-Type", ""):
+                            got = await response.json()
+                        assert response.status == status, content
+                except aiohttp.ClientResponseError as error:
+                    raise BadRun("Failed to get a result", error=error, content=content)
+            return got
+        except BadRun as error:
+            assert error.kwargs["status"] == status
+            if json_output is not None:
+                assert error.kwargs["content"] == json_output
+            if text_output is not None:
+                assert error.kwargs["content"] == text_output
+        finally:
+            if sys.exc_info()[1] is None:
+                if isinstance(got, bytes):
+                    result = got.decode()
+                elif isinstance(got, str):
+                    result = got
+                else:
+                    result = json.dumps(got, sort_keys=True, indent="  ", default=lambda o: repr(o))
+
+                result = "\n".join([f"  {line}" for line in result.split("\n")])
+                desc = f"GOT :\n{result}"
+
+                if json_output is not None:
+                    if got != json_output:
+                        print(desc)
+                        wanted = json.dumps(
+                            json_output, sort_keys=True, indent="  ", default=lambda o: repr(o)
+                        )
+                        wanted = "\n".join([f"  {line}" for line in wanted.split("\n")])
+                        print(f"WANT:\n{wanted}")
+                    assert got == json_output
+                if text_output is not None:
+                    if got != text_output:
+                        print(desc)
+                        wanted = "\n".join([f"  {line}" for line in text_output.split("\n")])
+                        print(f"WANT:\n{wanted}")
+                    assert got == text_output
+
     @hp.memoized_property
     def ts(self):
         return hp.TaskHolder(self.final_future)
@@ -244,6 +322,9 @@ class ServerWrapper(hp.AsyncCMMixin):
 
         self.options = make_options(**{**self.kwargs, "port": self.port})
 
+        reference_resolver_register = ReferenceResolverRegister()
+        reference_resolver_register.add("match", DeviceFinder.from_url_str)
+
         self._task = hp.async_as_background(
             self.server.serve(
                 "127.0.0.1",
@@ -252,7 +333,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                 sender=self.sender,
                 cleaners=self.cleaners,
                 animation_options=self.animation_options,
-                reference_resolver_register=ReferenceResolverRegister(),
+                reference_resolver_register=reference_resolver_register,
             )
         )
 

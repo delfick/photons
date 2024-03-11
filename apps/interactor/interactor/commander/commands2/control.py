@@ -32,25 +32,6 @@ class StatusCommand(store.Command):
         return {"on": True}
 
 
-@store.command(name="discover")
-class DiscoverCommand(store.Command, DeviceChangeMixin):
-    """
-    Display information about all the devices that can be found on the network
-    """
-
-    just_serials = dictobj.Field(
-        sb.boolean,
-        default=False,
-        help="Just return a list of serials instead of all the information per device",
-    )
-
-    async def execute(self):
-        if self.just_serials:
-            return await self.serials
-        else:
-            return {device.serial: device.info for device in await self.devices}
-
-
 @store.command(name="query")
 class QueryCommand(store.Command, DeviceChangeMixin):
     """

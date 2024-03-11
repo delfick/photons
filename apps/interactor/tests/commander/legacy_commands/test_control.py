@@ -43,49 +43,6 @@ async def server(
 
 describe "Control Commands":
 
-    async it "has discovery commands", devices, server, responses:
-        await server.assertCommand(
-            "/v1/lifx/command",
-            {"command": "discover"},
-            json_output=responses.discovery_response,
-        )
-
-        serials = await server.assertCommand(
-            "/v1/lifx/command", {"command": "discover", "args": {"just_serials": True}}
-        )
-        assert sorted(serials) == sorted(device.serial for device in devices)
-
-        serials = await server.assertCommand(
-            "/v1/lifx/command",
-            {"command": "discover", "args": {"matcher": {"group_name": "Living Room"}}},
-        )
-        wanted = {
-            device.serial: responses.discovery_response[device.serial]
-            for device in devices
-            if device.attrs.group.label == "Living Room"
-        }
-        assert len(wanted) == 2
-        assert serials == wanted
-
-        serials = await server.assertCommand(
-            "/v1/lifx/command",
-            {"command": "discover", "args": {"just_serials": True, "matcher": "label=kitchen"}},
-        )
-        assert serials == [devices.for_attribute("label", "kitchen")[0].serial]
-
-        serials = await server.assertCommand(
-            "/v1/lifx/command",
-            {"command": "discover", "args": {"just_serials": True, "matcher": "label=lamp"}},
-        )
-        assert serials == [d.serial for d in devices.for_attribute("label", "lamp", 2)]
-
-        serials = await server.assertCommand(
-            "/v1/lifx/command",
-            {"command": "discover", "args": {"just_serials": True, "matcher": "label=blah"}},
-            status=200,
-        )
-        assert serials == []
-
     async it "has query commands", devices, server, responses:
         await server.assertCommand(
             "/v1/lifx/command",
