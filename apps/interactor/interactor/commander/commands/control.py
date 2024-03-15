@@ -20,19 +20,22 @@ class Timeout:
 @attrs.define(slots=False, kw_only=True)
 class PacketArgs:
     pkt_type: selector.PacketType
-    """
-    The type of packet to send to the lights. This can be a number or
-    the name of the packet as known by the photons framework.
-
-    A list of what's available can be found at
-    https://photons.delfick.com/interacting/packets.html
-    """
 
     pkt_args: dict[str, object] = attrs.field(factory=dict)
-    """
-    A dictionary of fields that make up the payload of the packet we
-    are sending to the lights.
-    """
+
+    class Docs:
+        pkt_type: str = """
+        The type of packet to send to the lights. This can be a number or
+        the name of the packet as known by the photons framework.
+
+        A list of what's available can be found at
+        https://photons.delfick.com/interacting/packets.html
+        """
+
+        pkt_args: str = """
+        A dictionary of fields that make up the payload of the packet we
+        are sending to the lights.
+        """
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -43,40 +46,50 @@ class PowerToggleArgs:
     group: bool = False
     """Whether to treat the lights as a group"""
 
+    class Docs:
+        duration: str = """Duration of the toggle"""
+
+        group: str = """Whether to treat the lights as a group"""
+
 
 @attrs.define(slots=False, kw_only=True)
 class TransformArgs:
     transform: dict[str, object]
-    """
-    A dictionary of what options to use to transform the lights with.
-
-    For example,
-    ``{"power": "on", "color": "red"}``
-
-    Or,
-    ``{"color": "blue", "effect": "breathe", "cycles": 5}``
-    """
 
     transform_options: dict[str, object] = attrs.field(factory=dict)
-    """
-    A dictionay of options that modify the way the tranform
-    is performed:
 
-    keep_brightness
-        Ignore brightness options in the request
+    class Docs:
+        transform: str = """
+        A dictionary of what options to use to transform the lights with.
 
-    transition_color
-        If the light is off and we power on, setting this to True will mean the
-        color of the light is not set to the new color before we make it appear
-        to be on. This defaults to False, which means it will appear to turn on
-        with the new color
-    """
+        For example,
+        ``{"power": "on", "color": "red"}``
+
+        Or,
+        ``{"color": "blue", "effect": "breathe", "cycles": 5}``
+        """
+
+        transform_options: str = """
+        A dictionay of options that modify the way the tranform
+        is performed:
+
+        keep_brightness
+            Ignore brightness options in the request
+
+        transition_color
+            If the light is off and we power on, setting this to True will mean the
+            color of the light is not set to the new color before we make it appear
+            to be on. This defaults to False, which means it will appear to turn on
+            with the new color
+        """
 
 
 @attrs.define(slots=False, kw_only=True)
 class ApplyThemeArgs:
     theme_options: dict[str, object]
-    """Any options to give to applying a theme"""
+
+    class Docs:
+        theme_options: str = """Any options to give to applying a theme"""
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -286,6 +299,28 @@ class ControlCommands(Command):
         "transform",
         "apply_theme",
     }
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        doc = cls.known_routes[command].__doc__
+        if command in ("query", "set"):
+            body_kls = V1Packet
+        elif command == "power_toggle":
+            body_kls = V1PowerToggle
+        elif command == "transform":
+            body_kls = V1Transform
+        elif command == "apply_theme":
+            body_kls = V1ApplyTheme
+        else:
+            return doc
+
+        return ihp.v1_help_text_from_body(
+            doc=doc,
+            body_typ=strcs.Type.create(body_kls, cache=type_cache),
+        )
 
     async def run_v1_http(
         self,

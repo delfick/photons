@@ -22,7 +22,9 @@ class V1Clean:
 @attrs.define
 class V1CleanStart(V1Clean):
     duration_s: int = 0
-    """(optional) duration of the cleaning cycle, in seconds"""
+
+    class Docs:
+        duration_s: str = """(optional) duration of the cleaning cycle, in seconds"""
 
 
 @attrs.define
@@ -184,6 +186,23 @@ class CleanCommands(Command):
             return route(progress, request, body.selector, _params=params)
 
     implements_v1_commands: ClassVar[set[str]] = {"clean/start", "clean/stop", "clean/status"}
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        doc = cls.known_routes[command.split("/")[1]].__doc__
+        if command == "clean/start":
+            return ihp.v1_help_text_from_body(
+                doc=doc,
+                body_typ=strcs.Type.create(V1CleanStart, cache=type_cache),
+            )
+        else:
+            return ihp.v1_help_text_from_body(
+                doc=doc,
+                body_typ=strcs.Type.create(V1Clean, cache=type_cache),
+            )
 
     async def run_v1_http(
         self,

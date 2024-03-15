@@ -24,9 +24,19 @@ class InvalidBody(Exception):
     body_type: str = ""
 
 
+@attrs.define(kw_only=True)
+class NoSuchCommand(Exception):
+    error: str = "Specified command is unknown"
+    wanted: str
+    available: list[str]
+
+
 @runtime_checkable
 class _WithV1Http(Protocol):
     implements_v1_commands: ClassVar[set[str]]
+
+    @classmethod
+    def help_for_v1_command(cls, command: str) -> str | None: ...
 
     async def run_v1_http(
         self,
@@ -97,19 +107,25 @@ class Store(commander.Store):
             )
             return None
 
+        available_commands: set[str] = set()
         for cmd in self.commands:
-            if isinstance(cmd, _WithV1Http) and command in cmd.implements_v1_commands:
-                with route_transformer.instantiate_route(
-                    message.request, cmd, cmd.run_v1_http
-                ) as route:
-                    response = await route(
-                        command=command,
-                        args=args,
-                        progress=wssend.progress,
-                        request=message.request,
-                        meta=_meta,
-                    )
-                    await wssend(response.raw_body)
+            if isinstance(cmd, _WithV1Http):
+                available_commands |= cmd.implements_v1_commands
+                if command in cmd.implements_v1_commands:
+                    with route_transformer.instantiate_route(
+                        message.request, cmd, cmd.run_v1_http
+                    ) as route:
+                        response = await route(
+                            command=command,
+                            args=args,
+                            progress=wssend.progress,
+                            request=message.request,
+                            meta=_meta,
+                        )
+                        await wssend(response.raw_body)
+                        return None
+
+        await wssend(NoSuchCommand(wanted=command, available=sorted(available_commands)))
 
 
 store = Store(strcs_register=reg)

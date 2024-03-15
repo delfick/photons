@@ -122,6 +122,9 @@ class InteractorServer(Server):
         add_command: dict[str, str] = {}
 
         if request.content_type == "application/json":
+            if not request.json:
+                return super().log_request_dict(request, remote_addr, identifier)
+
             if command := request.json.get("command"):
                 add_command["command"] = command
 
