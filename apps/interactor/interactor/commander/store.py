@@ -1,11 +1,27 @@
 from typing import ClassVar, Protocol, runtime_checkable
 
+import attrs
 import sanic
 import strcs
 from photons_web_server import commander
 
 reg = strcs.CreateRegister()
 creator = reg.make_decorator()
+
+
+@attrs.define(kw_only=True)
+class NoSuchPath(Exception):
+    error: str = "Specified path is invalid"
+    wanted: str
+    available: list[str]
+
+
+@attrs.define(kw_only=True)
+class InvalidBody(Exception):
+    error: str = "Body must be a dictionary with string command and dictionary args"
+    command_type: str = ""
+    args_type: str = ""
+    body_type: str = ""
 
 
 @runtime_checkable
@@ -58,11 +74,13 @@ class Store(commander.Store):
     ) -> bool | None:
         path = message.body.get("path")
         if path != "/v1/lifx/command":
+            await wssend(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
             return None
 
         body = message.body.get("body")
         if not isinstance(body, dict):
-            return
+            await wssend(InvalidBody(body_type=repr(type(body))))
+            return None
 
         command = body.get("command")
         args = body.get("args")
@@ -70,6 +88,13 @@ class Store(commander.Store):
             args = {}
 
         if not isinstance(command, str) or not isinstance(args, dict) or not command:
+            await wssend(
+                InvalidBody(
+                    body_type=repr(type(body)),
+                    command_type=repr(type(command)),
+                    args_type=repr(type(args)),
+                )
+            )
             return None
 
         for cmd in self.commands:
