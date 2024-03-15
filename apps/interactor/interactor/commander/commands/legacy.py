@@ -47,4 +47,7 @@ class LegacyCommands(Command):
             commander.RouteTransformer, type_cache=reg.type_cache
         )
         assert wssend.progress is not None
-        await store.run_v1_ws(wssend, message, _meta=self.meta, route_transformer=route_transformer)
+        store = self.meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
+        return await store.run_v1_ws(
+            wssend, message, _meta=self.meta, route_transformer=route_transformer
+        )

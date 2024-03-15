@@ -57,6 +57,11 @@ class SceneInfoBody:
     only_meta: bool = False
     """Only return meta info about the scenes"""
 
+    class Docs:
+        uuid: str = """Only get information for scene with these uuids"""
+
+        only_meta: str = """Only return meta info about the scenes"""
+
 
 @attrs.define(slots=False, kw_only=True)
 class SceneChangeBody:
@@ -77,20 +82,31 @@ class SceneChangeBody:
     def normalised_scene(self) -> list[Scene]:
         return sb.listof(Scene.DelayedSpec(storing=True)).normalise(norms_Meta.empty(), self.scene)
 
+    class Docs:
+        label: str = """The label to give this scene"""
+
+        description: str = """The description to give this scene"""
+
+        scene: str = """The options for the scene"""
+
+        uuid: str = """The uuid of the scene to change, if None we create a new scene"""
+
 
 @attrs.define(slots=False, kw_only=True)
 class SceneDeleteBody:
     database: Annotated[DB, strcs.FromMeta("database")]
 
     uuid: selector.AllOrSomeScenes
-    """
-    Which scenes to delete.
 
-    If this is a string or a list of strings, then those strings are seen as the
-    uuids of the scenes to delete.
+    class Docs:
+        uuid: str = """
+        Which scenes to delete.
 
-    If this option is given as 'true' then all scenes are removed
-    """
+        If this is a string or a list of strings, then those strings are seen as the
+        uuids of the scenes to delete.
+
+        If this option is given as 'true' then all scenes are removed
+        """
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -470,6 +486,30 @@ class ScenesCommands(Command):
         "scene_apply",
         "scene_capture",
     }
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        doc = cls.known_routes[command].__doc__
+        if command == "scene_info":
+            body_kls = SceneInfoBody
+        elif command == "scene_change":
+            body_kls = SceneChangeBody
+        elif command == "scene_delete":
+            body_kls = SceneDeleteBody
+        elif command == "scene_apply":
+            body_kls = SceneApplyBody
+        elif command == "scene_capture":
+            body_kls = V1SceneCaptureBody
+        else:
+            return doc
+
+        return ihp.v1_help_text_from_body(
+            doc=doc,
+            body_typ=strcs.Type.create(body_kls, cache=type_cache),
+        )
 
     async def run_v1_http(
         self,

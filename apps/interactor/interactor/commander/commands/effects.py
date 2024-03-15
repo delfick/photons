@@ -20,77 +20,91 @@ from photons_web_server import commander
 @attrs.define(slots=False, kw_only=True)
 class EffectsRunOptions:
     apply_theme: bool = False
-    """Whether to apply a theme to the devices before running an animation"""
 
     theme_options: dict[str, object] = attrs.field(factory=dict)
-    """Any options to give to applying a theme"""
 
     matrix_animation: selector.TileEffectTypeValue
-    """
-    The animation to run for matrix devices.
-
-    This can be FLAME, MORPH or OFF.
-
-    If you don't supply this these devices will not run any animation"
-    """
 
     matrix_options: dict[str, object] | None = None
-    """
-    Any options to give to the matrix animation. For example duration
-    """
 
     linear_animation: selector.MultiZoneEffectTypeValue
-    """
-    The animation to run for linear devices.
-
-    Currently only MOVE or OFF are supported
-
-    If you don't supply this these devices will not run any animation"
-    """
 
     linear_options: dict[str, object] | None = None
-    """
-    Options for the linear firmware effect:
 
-    - speed: duration in seconds to complete one cycle of the effect
-    - duration: time in seconds the effect will run.
-    - direction: either "left" or "right" (default: "right")
+    class Docs:
+        apply_theme: str = """Whether to apply a theme to the devices before running an animation"""
 
-    If duration is not specified or set to 0, the effect will run
-    until it is manually stopped.
-    """
+        theme_options: str = """Any options to give to applying a theme"""
+
+        matrix_animation: str = """
+        The animation to run for matrix devices.
+
+        This can be FLAME, MORPH or OFF.
+
+        If you don't supply this these devices will not run any animation"
+        """
+
+        matrix_options: str = """
+        Any options to give to the matrix animation. For example duration
+        """
+
+        linear_animation: str = """
+        The animation to run for linear devices.
+
+        Currently only MOVE or OFF are supported
+
+        If you don't supply this these devices will not run any animation"
+        """
+
+        linear_options: str = """
+        Options for the linear firmware effect:
+
+        - speed: duration in seconds to complete one cycle of the effect
+        - duration: time in seconds the effect will run.
+        - direction: either "left" or "right" (default: "right")
+
+        If duration is not specified or set to 0, the effect will run
+        until it is manually stopped.
+        """
 
 
 @attrs.define(slots=False, kw_only=True)
 class EffectsStopOptions:
     apply_theme: bool = False
-    """Whether to apply a theme to the devices before running an animation"""
 
     theme_options: dict[str, object] = attrs.field(factory=dict)
-    """Any options to give to applying a theme"""
 
     stop_matrix: bool = True
-    """Whether to stop any matrix animations"""
 
     matrix_options: dict[str, object] | None = None
-    """
-    Any options to give to the matrix animation. For example duration
-    """
 
     stop_linear: bool = True
-    """Whether to stop any linear animations"""
 
     linear_options: dict[str, object] | None = None
-    """
-    Options for the linear firmware effect:
 
-    - speed: duration in seconds to complete one cycle of the effect
-    - duration: time in seconds the effect will run.
-    - direction: either "left" or "right" (default: "right")
+    class Docs:
+        apply_theme: str = """Whether to apply a theme to the devices before running an animation"""
 
-    If duration is not specified or set to 0, the effect will run
-    until it is manually stopped.
-    """
+        theme_options: str = """Any options to give to applying a theme"""
+
+        stop_matrix: str = """Whether to stop any matrix animations"""
+
+        matrix_options: str = """
+        Any options to give to the matrix animation. For example duration
+        """
+
+        stop_linear: str = """Whether to stop any linear animations"""
+
+        linear_options: str = """
+        Options for the linear firmware effect:
+
+        - speed: duration in seconds to complete one cycle of the effect
+        - duration: time in seconds the effect will run.
+        - direction: either "left" or "right" (default: "right")
+
+        If duration is not specified or set to 0, the effect will run
+        until it is manually stopped.
+        """
 
 
 @attrs.define(kw_only=True)
@@ -295,6 +309,26 @@ class EffectsCommands(Command):
             return route(progress, request, body.selector, _params=params)
 
     implements_v1_commands: ClassVar[set[str]] = {"effects/run", "effects/stop", "effects/status"}
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        doc = cls.known_routes[command.split("/")[1]].__doc__
+        if command == "effects/run":
+            body_kls = V1EffectsRun
+        elif command == "effects/stop":
+            body_kls = V1EffectsStop
+        elif command == "effects/status":
+            body_kls = V1Effects
+        else:
+            return doc
+
+        return ihp.v1_help_text_from_body(
+            doc=doc,
+            body_typ=strcs.Type.create(body_kls, cache=type_cache),
+        )
 
     async def run_v1_http(
         self,

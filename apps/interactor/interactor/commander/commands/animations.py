@@ -6,6 +6,7 @@ import attrs
 import sanic
 import strcs
 from delfick_project.norms import sb
+from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.animations import Animations
 from interactor.commander.devices import DeviceFinder
@@ -32,31 +33,41 @@ def make_str_or_list(value: object, /) -> strcs.ConvertResponse[list[str]]:
 @attrs.define
 class V1AnimationBodyNotStart:
     animation_name: str | None = None
-    """Optionally the specific name of an animation to get help about"""
 
     identity: str | None = None
-    """optional identity of a specific animation you want info for"""
 
     pause: Annotated[list[str], strcs.Ann(creator=make_str_or_list)] = attrs.field(factory=list)
-    """The animation identities to pause"""
 
     resume: Annotated[list[str], strcs.Ann(creator=make_str_or_list)] = attrs.field(factory=list)
-    """The animation identities to resume"""
 
     stop: Annotated[list[str], strcs.Ann(creator=make_str_or_list)] = attrs.field(factory=list)
-    """The animation identities to stop"""
+
+    class Docs:
+        animation_name: str = """Optionally the specific name of an animation to get help about"""
+
+        identity: str = """optional identity of a specific animation you want info for"""
+
+        pause: str = """The animation identities to pause"""
+
+        resume: str = """The animation identities to resume"""
+
+        stop: str = """The animation identities to stop"""
 
 
 @attrs.define(slots=False, kw_only=True)
 class AnimationStartBody:
     animations: object | None = None
-    """The animations options!"""
 
     run_options: dict[str, object] | None = None
-    """The options for animations in general"""
 
     identity: str | None = None
-    """Optional identity for the animation"""
+
+    class Docs:
+        animations: str = """The animations options!"""
+
+        run_options: str = """The options for animations in general"""
+
+        identity: str = """Optional identity for the animation"""
 
 
 class TimeoutParams:
@@ -78,31 +89,45 @@ class V1AnimationStartBody(AnimationStartBody):
 @attrs.define
 class AnimationHelpBody:
     animation_name: str | None = None
-    """Optionally the specific name of an animation to get help about"""
+
+    class Docs:
+        animation_name: str = """Optionally the specific name of an animation to get help about"""
 
 
 @attrs.define
 class AnimationHelpParams:
     animation_name: str | None = None
-    """Optionally the specific name of an animation to get help about"""
+
+    class Docs:
+        animation_name: str = """Optionally the specific name of an animation to get help about"""
 
 
 @attrs.define
 class AnimationIdentitiesBody:
     identities: list[str] = attrs.field(factory=list)
-    """List of identities to operate on"""
 
     collapse_on_one: bool = True
-    """Whether to turn the result into a dictionary if only one identity is provided"""
+
+    class Docs:
+        identities: str = """List of identities to operate on"""
+
+        collapse_on_one: str = """
+        Whether to turn the result into a dictionary if only one identity is provided
+        """
 
 
 @attrs.define
 class AnimationIdentitiesParams:
     identities: list[str] = attrs.field(factory=list)
-    """List of identities to operate on"""
 
     collapse_on_one: bool = True
-    """Whether to turn the result into a dictionary if only one identity is provided"""
+
+    class Docs:
+        identities: str = """List of identities to operate on"""
+
+        collapse_on_one: str = """
+        Whether to turn the result into a dictionary if only one identity is provided
+        """
 
 
 @store.command
@@ -316,6 +341,23 @@ class AnimationCommands(Command):
         "animation/resume",
         "animation/stop",
     }
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        doc = cls.known_routes[command.split("/")[1]].__doc__
+        if command == "animation/start":
+            return ihp.v1_help_text_from_body(
+                doc=doc,
+                body_typ=strcs.Type.create(V1AnimationStartBody, cache=type_cache),
+            )
+        else:
+            return ihp.v1_help_text_from_body(
+                doc=doc,
+                body_typ=strcs.Type.create(V1AnimationBodyNotStart, cache=type_cache),
+            )
 
     async def run_v1_http(
         self,

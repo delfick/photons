@@ -1,11 +1,9 @@
 import asyncio
 from textwrap import dedent
 
-from delfick_project.norms import Meta, dictobj
+import strcs
 from interactor.commander.errors import NoSuchPacket
-from interactor.commander.spec_description import signature
 from interactor.request_handlers import MessageFromExc
-from photons_app.formatter import MergedOptionStringFormatter
 from photons_messages import protocol_register
 
 
@@ -37,6 +35,39 @@ def make_message(pkt_type, pkt_args):
         return kls.create(pkt_args)
     else:
         return kls()
+
+
+def v1_help_text_from_body(doc: str, body_typ: strcs.Type[object]) -> str:
+    fields = ["Arguments\n", "---------"]
+    for field in body_typ.fields:
+        docstring: str | None = None
+        if hasattr(field.owner, "Docs"):
+            docstring = getattr(field.owner.Docs, field.name, "")
+
+        if not docstring and hasattr(field.disassembled_type.original, "__doc__"):
+            if field.disassembled_type.original not in strcs.standard.builtin_types:
+                docstring = field.disassembled_type.original.__doc__
+
+        if docstring:
+            required_or_default: str
+            if field.default is None:
+                required_or_default = "required"
+            else:
+                required_or_default = f"default {field.default()}"
+
+            typ = field.disassembled_type
+            if typ.is_annotated:
+                typ = strcs.Type.create(typ.extracted, cache=typ.cache)
+
+            fields.append(f"\n\n{field.name}: " f"{typ.for_display()} ({required_or_default})\n")
+            fields.append(
+                "\n".join(
+                    [f"    {line}".rstrip() for line in dedent(docstring).strip().split("\n")]
+                )
+            )
+
+    doc = dedent(doc or "").strip()
+    return f"\n{doc}\n\n{''.join(fields)}\n"
 
 
 class ResultBuilder:
@@ -139,33 +170,6 @@ class ResultBuilder:
             if "errors" not in self.result:
                 self.result["errors"] = []
             self.result["errors"].append(msg)
-
-
-def fields_description(kls):
-    """
-    yield (name, type_info, help) for all the fields on our kls
-
-    Where type_info looks something like `integer (required)` or `string (default "blah")`
-
-    and fields that have no help are skipped
-    """
-    final_specs = (
-        kls.FieldSpec(formatter=MergedOptionStringFormatter).make_spec(Meta.empty()).kwargs
-    )
-
-    for name, field in kls.fields.items():
-        hlp = ""
-        if type(field) is tuple:
-            hlp, field = field
-        else:
-            hlp = field.help
-
-        spec = final_specs[name]
-        if isinstance(field, dictobj.NullableField):
-            spec = spec.spec.specs[1]
-
-        if hlp:
-            yield name, " ".join(signature(spec)), dedent(hlp).strip()
 
 
 class memoized_iterable:

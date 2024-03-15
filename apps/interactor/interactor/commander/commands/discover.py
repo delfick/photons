@@ -3,6 +3,7 @@ from typing import ClassVar
 import attrs
 import sanic
 import strcs
+from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.devices import DeviceFinder
 from interactor.commander.store import Command, reg, store
@@ -15,7 +16,11 @@ class V1Discover:
     timeout: selector.Timeout = attrs.field(default=20)
 
     just_serials: bool = attrs.field(default=False)
-    "Just return a list of serials instead of all the information per device",
+
+    class Docs:
+        just_serials: str = """
+        Just return a list of serials instead of all the information per device
+        """
 
 
 @attrs.define
@@ -106,6 +111,16 @@ class DiscoverCommands(Command):
         )
 
     implements_v1_commands: ClassVar[set[str]] = {"discover"}
+
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+
+        return ihp.v1_help_text_from_body(
+            doc=cls.discover_info.__doc__,
+            body_typ=strcs.Type.create(V1Discover, cache=type_cache),
+        )
 
     async def run_v1_http(
         self,

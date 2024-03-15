@@ -22,6 +22,12 @@ class StatusCommands(Command):
 
     implements_v1_commands: ClassVar[set[str]] = {"status"}
 
+    @classmethod
+    def help_for_v1_command(cls, command: str, type_cache: strcs.TypeCache) -> str | None:
+        if command not in cls.implements_v1_commands:
+            return None
+        return 'Return {"on": True}'
+
     async def run_v1_http(
         self,
         progress: commander.Progress,
