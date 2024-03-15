@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from functools import wraps
 from textwrap import dedent
 
+import attrs
 import sanic.exceptions
 from attrs import define
 from photons_app import helpers as hp
@@ -143,16 +144,18 @@ class WSSender:
         if progress:
             msg["progress"] = res
         else:
+            msg["reply"] = res
             if isinstance(res, dict):
                 if "error" in res:
-                    msg["error"] = res.pop("error")
-                    if not isinstance(msg["error"], dict):
-                        msg["error"] = str(msg["error"])
-                if "error_code" in res:
-                    msg["error_code"] = res.pop("error_code")
-
-            if "error" not in msg:
-                msg["reply"] = res
+                    error = res.pop("error")
+                    if not isinstance(error, dict):
+                        if attrs.has(type(error)):
+                            error = attrs.asdict(error)
+                        elif hasattr(error, "as_dict"):
+                            error = error.as_dict()
+                        else:
+                            error = str(error)
+                    msg["reply"]["error"] = error
 
         await self.ws.send(json_dumps(msg, default=self._reprer))
 

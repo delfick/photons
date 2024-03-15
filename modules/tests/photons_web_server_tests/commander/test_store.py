@@ -895,20 +895,26 @@ describe "Store":
                 assert await stream.recv() == {
                     "request_identifier": RI1,
                     "message_id": MI1,
-                    "error_code": "InternalServerError",
-                    "error": "Internal Server Error",
+                    "reply": {
+                        "error_code": "InternalServerError",
+                        "error": "Internal Server Error",
+                    },
                 }
                 await stream.send({"command": "delfickerror"})
                 assert await stream.recv() == {
                     "request_identifier": RI1,
                     "message_id": MI2,
-                    "error_code": "MyError",
-                    "error": {"message": "my error. hello there", "mate": True},
+                    "reply": {
+                        "error_code": "MyError",
+                        "error": {"message": "my error. hello there", "mate": True},
+                    },
                 }
                 await stream.send({"command": "attrserror"})
                 assert await stream.recv() == {
                     "request_identifier": RI1,
                     "message_id": MI3,
-                    "error_code": "TheError",
-                    "error": {"one": 2, "two": "two"},
+                    "reply": {
+                        "error_code": "TheError",
+                        "error": {"one": 2, "two": "two"},
+                    },
                 }
