@@ -758,15 +758,19 @@ describe "Server":
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
                         "message_id": "unknown",
-                        "error": "failed to interpret json",
-                        "error_code": "InvalidRequest",
+                        "reply": {
+                            "error": "failed to interpret json",
+                            "error_code": "InvalidRequest",
+                        },
                     }
                     await stream.send("{")
                     assert await stream.recv() == {
                         "request_identifier": WSIdent1,
                         "message_id": "unknown",
-                        "error": "failed to interpret json",
-                        "error_code": "InvalidRequest",
+                        "reply": {
+                            "error": "failed to interpret json",
+                            "error_code": "InvalidRequest",
+                        },
                     }
 
             records = [r.msg for r in caplog.records if isinstance(r.msg, dict)]
@@ -1116,8 +1120,10 @@ describe "Server":
                     {
                         "message_id": WSIdentM2,
                         "request_identifier": WSIdent1,
-                        "error": "Internal Server Error",
-                        "error_code": "InternalServerError",
+                        "reply": {
+                            "error": "Internal Server Error",
+                            "error_code": "InternalServerError",
+                        },
                     },
                     {
                         "message_id": WSIdentM3,
@@ -1137,8 +1143,10 @@ describe "Server":
                     {
                         "message_id": WSIdentM5,
                         "request_identifier": WSIdent1,
-                        "error": "Internal Server Error",
-                        "error_code": "InternalServerError",
+                        "reply": {
+                            "error": "Internal Server Error",
+                            "error_code": "InternalServerError",
+                        },
                     },
                     {
                         "message_id": WSIdentM6,

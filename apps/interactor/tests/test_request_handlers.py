@@ -135,8 +135,10 @@ class TestSimpleWebSocketBase:
             assert got == {
                 "message_id": msg_id,
                 "request_identifier": got["request_identifier"],
-                "error": "Internal Server Error",
-                "error_code": "InternalServerError",
+                "reply": {
+                    "error": "Internal Server Error",
+                    "error_code": "InternalServerError",
+                },
             }
 
             ##################
@@ -225,6 +227,8 @@ class TestSimpleWebSocketBase:
             assert got == {
                 "message_id": msg_id,
                 "request_identifier": got["request_identifier"],
-                "error": '"Blah"',
-                "error_code": "PhotonsAppError",
+                "reply": {
+                    "error": {"message": "Blah"},
+                    "error_code": "PhotonsAppError",
+                },
             }
