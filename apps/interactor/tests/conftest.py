@@ -150,11 +150,22 @@ class WSTester(hp.AsyncCMMixin):
 
     async def check_reply(self, reply, message_id=None):
         got = await self.ws.receive_json()
+        if "request_identifier" in got:
+            got = dict(got)
+            del got["request_identifier"]
+
+        if not isinstance(reply, dict) or "progress" not in reply:
+            reply = {"reply": reply}
+
         wanted = {
-            "reply": reply,
+            **reply,
             "message_id": self.message_id if message_id is None else message_id,
         }
-        return pytest.helpers.assertComparison(got, wanted, is_json=True)["reply"]
+        result = pytest.helpers.assertComparison(got, wanted, is_json=True)
+        if "progress" in result:
+            return result["progress"]
+        else:
+            return result["reply"]
 
 
 class ServerWrapper(hp.AsyncCMMixin):
@@ -342,6 +353,7 @@ class ServerWrapper(hp.AsyncCMMixin):
             self.server.serve(
                 "127.0.0.1",
                 self.options.port,
+                store=self.store,
                 options=self.options,
                 sender=self.sender,
                 cleaners=self.cleaners,
