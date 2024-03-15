@@ -222,11 +222,17 @@ class ServerWrapper(hp.AsyncCMMixin):
                         print(f"WANT:\n{wanted}")
                     assert got == json_output
                 if text_output is not None:
-                    if got != text_output:
+                    compare: str
+                    if isinstance(got, bytes):
+                        compare = got.decode()
+                    else:
+                        compare = got
+
+                    if compare != text_output:
                         print(desc)
                         wanted = "\n".join([f"  {line}" for line in text_output.split("\n")])
                         print(f"WANT:\n{wanted}")
-                    assert got == text_output
+                    assert compare == text_output
 
     async def assertMethod(
         self,
