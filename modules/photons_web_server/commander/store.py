@@ -505,6 +505,14 @@ class Store:
         values = list(signature.parameters.values())
         use: list[object] = []
 
+        if (
+            values
+            and values[0].kind is inspect.Parameter.POSITIONAL_ONLY
+            and values[0].name == "self"
+            and values[0].annotation is inspect._empty
+        ):
+            values.pop(0)
+
         if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY:
             nxt = values.pop(0)
             if nxt.annotation not in (inspect._empty, Progress):
