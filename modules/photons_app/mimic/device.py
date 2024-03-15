@@ -51,21 +51,24 @@ class DeviceSession(hp.AsyncCMMixin):
 
         made = []
 
-        async def run_and_wait(coro, *, name):
-            await hp.wait_for_all_futures(
-                self.parent_ts.add(coro), name=f"DeviceSession::finish[run_and_wait-{name}]"
-            )
-
         async def call_finishers():
             async with hp.TaskHolder(
                 self.final_future, name=f"DeviceSession({self.device.serial})::finish[ts]"
             ) as ts:
+                made.append(ts.add(self.device.delete()))
                 for io in self.managed:
                     made.append(ts.add(io.finish_session(), silent=True))
+
                 self.managed = []
 
-        await run_and_wait(call_finishers(), name="Call finish session")
-        await run_and_wait(self.device.delete(), name="delete device")
+                await hp.wait_for_all_futures(
+                    *made, name=f"DeviceSession({self.device.serial})::finish[all]"
+                )
+
+        await hp.wait_for_all_futures(
+            self.parent_ts.add(call_finishers()),
+            name=f"DeviceSession({self.device.serial})::finish[wait]",
+        )
 
         try:
             # Raise any exceptions
