@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-45-1:
 
-0.45.1 - TBD
+0.45.1 - 16 March 2024
     * Photons now has an optional ``web_server`` module.
 
       To install relevant deps when installing photons do::
