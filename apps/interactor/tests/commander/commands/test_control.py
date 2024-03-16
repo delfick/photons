@@ -37,7 +37,6 @@ describe "Control":
                         "sequence": mock.ANY,
                     },
                     "error_code": "TimedOut",
-                    "status": 400,
                 }
                 await server.assertCommand(
                     "/v1/lifx/command",
@@ -97,7 +96,6 @@ describe "Control":
                         "sequence": mock.ANY,
                     },
                     "error_code": "TimedOut",
-                    "status": 400,
                 }
 
                 await server.assertCommand(
@@ -349,7 +347,6 @@ describe "Control":
                         "sequence": mock.ANY,
                     },
                     "error_code": "TimedOut",
-                    "status": 400,
                 }
                 await server.assertCommand(
                     "/v1/lifx/command",
@@ -411,7 +408,6 @@ describe "Control":
                         "sequence": mock.ANY,
                     },
                     "error_code": "TimedOut",
-                    "status": 400,
                 }
                 await server.assertCommand(
                     "/v1/lifx/command",

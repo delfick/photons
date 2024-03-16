@@ -3,8 +3,9 @@ from textwrap import dedent
 
 import strcs
 from interactor.commander.errors import NoSuchPacket
-from interactor.request_handlers import MessageFromExc
+from photons_app import helpers as hp
 from photons_messages import protocol_register
+from photons_web_server.commander.messages import MessageFromExc
 
 
 def find_packet(pkt_type):
@@ -155,7 +156,11 @@ class ResultBuilder:
             self.result["results"][pkt.serial] = info
 
     def error(self, e):
-        msg = MessageFromExc()(type(e), e, e.__traceback__)
+        msg = (
+            MessageFromExc(lc=hp.lc.using(), logger_name="result_builder")
+            .process(type(e), e, e.__traceback__)
+            .response_dict()
+        )
 
         serial = None
         if hasattr(e, "kwargs") and "serial" in e.kwargs:

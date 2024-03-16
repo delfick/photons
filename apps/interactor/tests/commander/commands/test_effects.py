@@ -625,7 +625,6 @@ describe "Effects":
                     "source": mock.ANY,
                 },
                 "error_code": "TimedOut",
-                "status": 400,
             }
 
             for r in (results.success, results.effects_running, results.effects_stopped):

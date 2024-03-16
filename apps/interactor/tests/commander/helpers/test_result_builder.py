@@ -101,7 +101,6 @@ describe "ResultBuilder":
                     "d073d5000001": {
                         "error": {"message": "blah"},
                         "error_code": "BadError",
-                        "status": 400,
                     }
                 }
             }
@@ -122,7 +121,6 @@ describe "ResultBuilder":
                     "d073d5000001": {
                         "error": {"message": "an error. wat", "thing": 1},
                         "error_code": "Error",
-                        "status": 400,
                     }
                 }
             }
@@ -134,9 +132,7 @@ describe "ResultBuilder":
             builder.error(error)
             assert builder.as_dict() == {
                 "results": {"d073d5000001": "ok"},
-                "errors": [
-                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400}
-                ],
+                "errors": [{"error": {"message": "blah"}, "error_code": "PhotonsAppError"}],
             }
 
             class Error(PhotonsAppError):
@@ -152,11 +148,10 @@ describe "ResultBuilder":
             assert builder.as_dict() == {
                 "results": {"d073d5000001": "ok"},
                 "errors": [
-                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError", "status": 400},
+                    {"error": {"message": "blah"}, "error_code": "PhotonsAppError"},
                     {
                         "error": {"message": "an error. wat", "thing": 1},
                         "error_code": "Error",
-                        "status": 400,
                     },
                 ],
             }
@@ -170,7 +165,6 @@ describe "ResultBuilder":
                     {
                         "error": "Internal Server Error",
                         "error_code": "InternalServerError",
-                        "status": 500,
                     }
                 ],
             }

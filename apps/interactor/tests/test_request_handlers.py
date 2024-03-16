@@ -165,7 +165,6 @@ class TestSimpleWebSocketBase:
                         {
                             "error": {"message": "Stuff"},
                             "error_code": "PhotonsAppError",
-                            "status": 400,
                         }
                     ],
                 },
@@ -188,7 +187,6 @@ class TestSimpleWebSocketBase:
                         "d073d5000001": {
                             "error": {"message": "things"},
                             "error_code": "PhotonsAppError",
-                            "status": 400,
                         }
                     }
                 },
@@ -212,7 +210,6 @@ class TestSimpleWebSocketBase:
                         {
                             "error": "Internal Server Error",
                             "error_code": "InternalServerError",
-                            "status": 500,
                         }
                     ],
                 },
