@@ -3,11 +3,15 @@
 ChangeLog
 =========
 
-.. _release-core-0-45-1:
+.. _release-core-0-45-4:
+
+0.45.4 - 16 March 2024
+    * Don't fail if web-server deps aren't installed!
+
+.. _release-core-0-45-3:
 
 0.45.3 - 16 March 2024
     * Fixed another oversight. Been a while since I've added an new module!
-
 
 .. _release-core-0-45-2:
 
