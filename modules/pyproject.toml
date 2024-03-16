@@ -79,6 +79,7 @@ include = [
     "/photons_products",
     "/photons_protocol",
     "/photons_transport",
+    "/photons_web_server",
     "/photons_core.py",
     "/photons_pytest.py",
 ]
@@ -92,6 +93,7 @@ include = [
     "/photons_products",
     "/photons_protocol",
     "/photons_transport",
+    "/photons_web_server",
     "/photons_core.py",
     "/photons_pytest.py",
 ]
