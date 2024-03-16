@@ -12,6 +12,8 @@ images:
 
     commands:
       - FROM python:3.12-slim
+      - ARG TARGETPLATFORM
+      - RUN echo $TARGETPLATFORM
 
       - ADD apps/interactor /project/interactor
       - ADD modules /project/modules
@@ -19,8 +21,37 @@ images:
 
       - WORKDIR /project/config
 
-      - RUN pip install pip -U
-      - RUN pip install uvloop --extra-index-url=https://www.piwheels.org/simple
+      - - ADD
+        - dest: /make_uvloop.sh
+          content: |
+            set -e
+
+            if [[ "$1" = "linux/arm/v7" || "$1" = "linux/arm/v6" ]]; then
+              echo "Need to build uvloop for arm because piwheels no support python 3.12 yet"
+            else
+              exit 0
+            fi
+
+            apt-get update
+            apt-get install -y git curl build-essential libffi-dev libssl-dev autotools-dev automake libtool
+            git clone https://github.com/MagicStack/uvloop.git /uvloop
+            cd /uvloop
+            git checkout v0.19.0
+            git submodule update --init
+            python -m venv uvloop-dev
+            source uvloop-dev/bin/activate
+            pip install setuptools>=60 wheel "Cython(>=0.29.36,<0.30.0)"
+            make
+            deactivate
+            pip install .
+            apt-get purge -y gcc g++
+            apt-get autoremove -y
+            rm -rf /var/lib/apt/lists/*
+            rm -rf /uvloop
+
+      - RUN bash /make_uvloop.sh $TARGETPLATFORM
+      - RUN python -c "import uvloop"
+      - RUN pip install uvloop>=0.15.0
 
       - - RUN
         - apt-get update
