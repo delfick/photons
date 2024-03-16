@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-2:
+
+0.16.2 - 16 March 2024
+    * Fixed another oversight
+
 .. _release-interactor-0-16-1:
 
 0.16.1 - 16 March 2024
