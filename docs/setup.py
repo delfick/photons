@@ -9,9 +9,9 @@ setup(
     , packages = ["photons_docs"] + ["photons_docs.{0}".format(pkg) for pkg in find_packages("photons_docs")]
 
     , install_requires =
-      [ "Sphinx==4.3.2"
+      [ "Sphinx==7.2.6"
       , "tornado==6.1"
-      , "sphinx_rtd_theme==1.0.0"
+      , "sphinx_rtd_theme==2.0.0"
       ]
 
     , entry_points =

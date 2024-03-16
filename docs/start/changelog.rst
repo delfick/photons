@@ -3,6 +3,15 @@
 ChangeLog
 =========
 
+.. _release-core-0-45-1:
+
+0.45.1 - TBD
+    * Photons now has an optional ``web_server`` module.
+
+      To install relevant deps when installing photons do::
+
+        > python -m pip install lifx-photons-core[web-server]
+
 .. _release-core-0-45-0:
 
 0.45.0 - 2 January 2024

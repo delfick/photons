@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-0:
+
+0.16.0 - TBD
+    * Now using sanic instead of tornado
+    * The v1 api remains, though some error messages are slightly different
+
 .. _release-interactor-0-15-0:
 
 0.15.0 - 2 January 2024

@@ -5,4 +5,4 @@ For this task to work your virtualenv must already have the modules you want
 documented.
 """
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
