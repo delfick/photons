@@ -13,7 +13,7 @@ from photons_web_server.server import WebServerTask
 log = logging.getLogger("interactor.addon")
 
 
-@addon_hook(extras=[("lifx.photons", "core")])
+@addon_hook(extras=[("lifx.photons", "core"), ("lifx.photons", "web_server")])
 def __lifx__(collector, *args, **kwargs):
     collector.register_converters(
         {"interactor": Options.FieldSpec(formatter=MergedOptionStringFormatter)}

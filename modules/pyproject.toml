@@ -59,6 +59,7 @@ control = "photons_control.addon"
 core = "photons_core"
 pytest = "photons_pytest"
 transport = "photons_transport.addon"
+web_server = "photons_web_server.addon"
 
 [project.entry-points.pytest11]
 lifx_photons_core = "photons_pytest"

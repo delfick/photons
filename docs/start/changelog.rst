@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-45-2:
+
+0.45.2 - 16 March 2024
+    * Fixed oversight around registering ``web_server``
+
 .. _release-core-0-45-1:
 
 0.45.1 - 16 March 2024
