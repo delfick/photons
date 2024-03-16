@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-45-1:
+
+0.45.3 - 16 March 2024
+    * Fixed another oversight. Been a while since I've added an new module!
+
+
 .. _release-core-0-45-2:
 
 0.45.2 - 16 March 2024
