@@ -1,16 +1,9 @@
-import http.server
 import inspect
 import os
 import platform
 import shlex
-import shutil
-import socket
-import socketserver
 import sys
-import threading
-import time
 import typing as tp
-import webbrowser
 from pathlib import Path
 
 here = Path(__file__).parent
@@ -70,7 +63,7 @@ class App:
     def format(self, bin_dir: Path, args: list[str]) -> None:
         if not args:
             args = [".", *args]
-        run(bin_dir / "black", *args)
+        run(bin_dir / "python", "-m", "black", *args)
         run(bin_dir / "isort", *args)
 
     @command
