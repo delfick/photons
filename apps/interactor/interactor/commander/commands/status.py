@@ -11,6 +11,7 @@ class StatusCommands(Command):
     @classmethod
     def add_routes(kls, routes: commander.RouteTransformer) -> None:
         routes.http(kls.status, "/v2/status", name="v2_status_get")
+        routes.http(kls.status, "/v1/lifx/status", name="v1_status_get")
 
     async def status(
         self,

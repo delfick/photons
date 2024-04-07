@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-3:
+
+0.16.3 - TBD
+    * Add missing /v1/lifx/status route
+
 .. _release-interactor-0-16-2:
 
 0.16.2 - 16 March 2024
