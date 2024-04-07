@@ -379,7 +379,7 @@ class ControlCommands(Command):
         elif command == "apply_theme":
             v1body = self.create(V1ApplyTheme, args)
             match = self.create(selector.Selector, v1body.matcher.raw)
-            _params = Params(timeout=v1body.timeout.value).update_from_put_body(body)
+            _params = Params(timeout=v1body.timeout.value).update_from_put_body(v1body)
             body = self.create(
                 ApplyThemeBody,
                 {

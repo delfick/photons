@@ -7,6 +7,7 @@ Changelog
 
 0.16.3 - TBD
     * Add missing /v1/lifx/status route
+    * Fixed unbound variable error in apply_theme command
 
 .. _release-interactor-0-16-2:
 
