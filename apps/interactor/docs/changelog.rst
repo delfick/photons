@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-16-3:
 
-0.16.3 - TBD
+0.16.3 - 7 April 2024
     * Add missing /v1/lifx/status route
     * Fixed unbound variable error in apply_theme command
 
