@@ -10,6 +10,8 @@ describe "Status":
                 "/v1/lifx/command", {"command": "status"}, json_output={"on": True}
             )
 
+            await server.assertMethod("GET", "/v1/lifx/status", json_output={"on": True})
+
     describe "v2":
 
         async it "GET /v2/status", devices: mimic.DeviceCollection, server, responses:
