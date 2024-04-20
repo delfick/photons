@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0-9-0:
 
-0.9.0 - TBD
+0.9.0 - 20 April 2024
     * Removed tornado and whirlwind in favour of sanic
 
 .. _release-arranger-0-8-0:
