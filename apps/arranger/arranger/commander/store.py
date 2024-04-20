@@ -1,8 +1,32 @@
-from photons_app.formatter import MergedOptionStringFormatter
-from whirlwind.store import Store
+import binascii
 
-store = Store(default_path="/v1/lifx/command", formatter=MergedOptionStringFormatter)
+import strcs
+from photons_web_server import commander
+
+from .parts import PartsCommand
+from .selector import Serial
+
+reg = strcs.CreateRegister()
+creator = reg.make_decorator()
+
+store = commander.Store(strcs_register=reg)
+
+
+@creator(Serial)
+def create_serial(value: object, /) -> strcs.ConvertResponse[Serial]:
+    if not isinstance(value, str):
+        return None
+
+    if len(value) != 12:
+        raise ValueError("serial must be 12 characters long")
+
+    try:
+        binascii.unhexlify(value)
+    except binascii.Error:
+        raise ValueError("serial must be a hex value")
+
+    return {"serial": value}
 
 
 def load_commands():
-    __import__("arranger.commander.commands")
+    store.command(PartsCommand)

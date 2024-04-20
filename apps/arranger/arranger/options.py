@@ -73,7 +73,10 @@ class Options(dictobj.Spec):
 
     port = dictobj.Field(
         port_spec,
-        help="The port to serve the server on. Not Specifying this will result in choosing a port on your computer that isn't currently in use",
+        help="""
+        The port to serve the server on. Not Specifying this will result in choosing
+        a port on your computer that isn't currently in use
+        """,
     )
 
     assets = dictobj.Field(

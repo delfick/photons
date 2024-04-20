@@ -10,7 +10,6 @@ setup(
 
     , install_requires =
       [ "Sphinx==7.2.6"
-      , "tornado==6.1"
       , "sphinx_rtd_theme==2.0.0"
       ]
 

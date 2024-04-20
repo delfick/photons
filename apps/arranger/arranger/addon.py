@@ -1,3 +1,4 @@
+import asyncio
 import importlib.resources
 import logging
 import os
@@ -7,13 +8,14 @@ import subprocess
 import webbrowser
 
 from arranger.options import Options
-from arranger.server import Server
+from arranger.server import ArrangerServer
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
+from photons_web_server.server import WebServerTask
 
 log = logging.getLogger("arranger.addon")
 
@@ -40,7 +42,7 @@ def port_connected(port):
 
 
 @task.register(task_group="Arranger")
-class arrange(task.GracefulTask):
+class arrange(WebServerTask):
     """
     Start a web GUI you can use to change the positions of the panels in your tile sets
     such that the tile sets know where they are relative to each other.
@@ -49,12 +51,31 @@ class arrange(task.GracefulTask):
     in your environment.
     """
 
+    ServerKls = ArrangerServer
     target = task.requires_target()
     reference = task.provides_reference(special=True)
 
     @property
     def options(self):
         return self.collector.configuration["arranger"]
+
+    @property
+    def host(self):
+        return self.options.host
+
+    @property
+    def port(self):
+        return self.options.port
+
+    @hp.asynccontextmanager
+    async def server_kwargs(self):
+        async with self.target.session() as sender:
+            yield dict(
+                reference=self.reference,
+                sender=sender,
+                options=self.options,
+                cleaners=self.photons_app.cleaners,
+            )
 
     async def open_browser(self):
         async with hp.tick(0.1, max_time=3) as ticker:
@@ -71,21 +92,9 @@ class arrange(task.GracefulTask):
         if "NO_WEB_OPEN" not in os.environ:
             webbrowser.open(f"http://{self.options.host}:{self.options.port}")
 
-    async def execute_task(self, graceful_final_future, **kwargs):
+    async def execute_task(self, graceful_final_future: asyncio.Future, **kwargs) -> None:
         self.task_holder.add(self.open_browser())
-
-        async with self.target.session() as sender:
-            await Server(
-                self.photons_app.final_future, server_end_future=graceful_final_future
-            ).serve(
-                self.options.host,
-                self.options.port,
-                self.options,
-                self.task_holder,
-                sender,
-                self.reference,
-                self.photons_app.cleaners,
-            )
+        await super().execute_task(graceful_final_future=graceful_final_future, **kwargs)
 
 
 class arranger_assets(task.Task):

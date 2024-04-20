@@ -9,15 +9,15 @@ import sys
 import time
 import webbrowser
 
+from aiohttp import web
 from delfick_project.addons import addon_hook
 from delfick_project.norms import dictobj, sb
+from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
 from photons_app.tasks.default_tasks import help, list_tasks
 from sphinx.cmd.build import build_main
-from tornado.httpserver import HTTPServer
-from tornado.web import Application, StaticFileHandler
 
 log = logging.getLogger("photons_docs")
 
@@ -150,27 +150,21 @@ class view_docs(task.GracefulTask):
     and open your webbrowser to this address
     """
 
+    def make_server():
+        async def hello(request):
+            return web.Response(text="Hello, world")
+
     async def execute_task(self, graceful_final_future, **kwargs):
         directory = os.path.join(self.collector.configuration["documentation"].out, "result")
-        http_server = HTTPServer(
-            Application(
-                [
-                    (
-                        r"/(.*)",
-                        StaticFileHandler,
-                        {"path": directory, "default_filename": "index.html"},
-                    )
-                ]
-            )
-        )
-
         port = int(os.environ.get("PHOTONS_DOCS_PORT", 0))
 
+        app = web.Application()
+        app.router.add_static("/", directory)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(("0.0.0.0", port))
             port = s.getsockname()[1]
 
-        http_server.listen(port, "127.0.0.1")
+        task = self.task_holder.add(web._run_app(app, port=port, handle_signals=False, print=False))
 
         start = time.time()
         while not port_connected(port) and time.time() - start < 3:
@@ -181,7 +175,9 @@ class view_docs(task.GracefulTask):
 
         try:
             log.info(f"Running server on http://127.0.0.1:{port}")
-            webbrowser.open(f"http://127.0.0.1:{port}")
+            webbrowser.open(f"http://127.0.0.1:{port}/index.html")
             await graceful_final_future
         finally:
-            http_server.stop()
+            await app.shutdown()
+            task.cancel()
+            await hp.wait_for_all_futures(task, name="view_docs::execute_task[wait_for_server]")

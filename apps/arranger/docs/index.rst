@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-9-0:
+
+0.9.0 - TBD
+    * Removed tornado and whirlwind in favour of sanic
+
 .. _release-arranger-0-8-0:
 
 0.8.0 - 2 January 2024

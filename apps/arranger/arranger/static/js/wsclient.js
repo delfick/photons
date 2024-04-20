@@ -328,9 +328,9 @@ function* processWsSend(commandch, sendch, actions, defaultonerror) {
 
 function* processWsReceive(receivech, actions) {
   var makeResponse = (action, data) => {
-    if (data.reply) {
-      if (data.reply.progress) {
-        return action.onprogress(data.reply.progress);
+    if (data.reply || data.progress) {
+      if (data.progress) {
+        return action.onprogress(data.progress);
       } else {
         return action.onreply(data.reply, data.message_id);
       }
@@ -392,7 +392,7 @@ function* processWsReceive(receivech, actions) {
     }
 
     // Finished with this message if not a progress message
-    if (response && (!data.reply || !data.reply.progress)) {
+    if (response && (!data.reply && !data.progress)) {
       delete actions[data.message_id];
     }
   }

@@ -257,12 +257,6 @@ class MockedCallLaterImpl(AsyncCMMixin):
         return __import__("photons_app").helpers
 
     def _call_later(self, when, func, *args):
-        fr = inspect.currentframe()
-        while fr and "tornado/" not in fr.f_code.co_filename:
-            fr = fr.f_back
-        if fr:
-            return self.original_call_later(when, func, *args)
-
         called_from = inspect.currentframe().f_back.f_code.co_filename
         if any(exc in called_from for exc in ("alt_pytest_asyncio/",)):
             return self.original_call_later(when, func, *args)
