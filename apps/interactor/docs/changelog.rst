@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-4:
+
+0.16.4 - 24 April 2024
+    * Updated product registry
+
 .. _release-interactor-0-16-3:
 
 0.16.3 - 7 April 2024

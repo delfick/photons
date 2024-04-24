@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-45-5:
+
+0.45.5 - 24 April 2024
+    * Updated product registry
+
 .. _release-core-0-45-4:
 
 0.45.4 - 16 March 2024
