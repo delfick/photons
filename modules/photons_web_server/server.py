@@ -216,6 +216,10 @@ class Server:
         )
 
     def log_request(self, request: Request, **extra_lc_context) -> None:
+        method = "info"
+        if getattr(request, "route", None) and getattr(request.route.ctx, "only_debug_logs", False):
+            method = "debug"
+
         if request.scheme == "ws":
             return
 
@@ -232,7 +236,7 @@ class Server:
             cmd.log_request(lc, request, identifier, dct)
             return
 
-        log.info(lc("Request", **dct))
+        getattr(log, method)(lc("Request", **dct))
 
     def log_ws_request(
         self, request: Request, first: tp.Any, title: str = "Websocket Request", **extra_lc_context
@@ -267,6 +271,9 @@ class Server:
         method = "error"
         if response.status < 400:
             method = "info"
+
+        if getattr(request, "route", None) and getattr(request.route.ctx, "only_debug_logs", False):
+            method = "debug"
 
         getattr(log, method)(
             lc(

@@ -36,6 +36,7 @@ path = "interactor/__init__.py"
 
 [tool.hatch.build]
 artifacts = [
+    "interactor_webapp/interactor/build/*",
     "interactor/database/migrations/*",
     "!interactor/database/migrations/*.pyc",
 ]
