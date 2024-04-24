@@ -57,3 +57,4 @@ class Family(enum.Enum):
     LCM1 = "lcm1"
     LCM2 = "lcm2"
     LCM3 = "lcm3"
+    LCMX = "lcmx"

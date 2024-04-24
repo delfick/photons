@@ -78,6 +78,7 @@ class Capability(Capability):
 
     has_extended_multizone = (
         CapabilityValue(False)
+        .until(0, 0, cond.Family(Family.LCMX), cond.Capability(has_multizone=True), becomes=True)
         .until(0, 0, cond.Family(Family.LCM3), cond.Capability(has_multizone=True), becomes=True)
         .until(2, 77, cond.Family(Family.LCM2), cond.Capability(has_multizone=True), becomes=True)
     )

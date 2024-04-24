@@ -1030,5 +1030,285 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_OUTDOOR_NEON_US(lifx.Product):
+        pid = 161
+        family = Family.LCMX
+        friendly = "LIFX Outdoor Neon US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_OUTDOOR_NEON_INTL(lifx.Product):
+        pid = 162
+        family = Family.LCMX
+        friendly = "LIFX Outdoor Neon Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_A19_US(lifx.Product):
+        pid = 163
+        family = Family.LCMX
+        friendly = "LIFX A19 US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_BR30_US(lifx.Product):
+        pid = 164
+        family = Family.LCMX
+        friendly = "LIFX BR30 US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_A19_INTL(lifx.Product):
+        pid = 165
+        family = Family.LCMX
+        friendly = "LIFX A19 Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_BR30_INTL(lifx.Product):
+        pid = 166
+        family = Family.LCMX
+        friendly = "LIFX BR30 Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_DOWNLIGHT_US(lifx.Product):
+        pid = 167
+        family = Family.LCMX
+        friendly = "LIFX Downlight"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_DOWNLIGHT_INTL(lifx.Product):
+        pid = 168
+        family = Family.LCMX
+        friendly = "LIFX Downlight"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_A21_1600LM_US(lifx.Product):
+        pid = 169
+        family = Family.LCMX
+        friendly = "LIFX A21 1600lm US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_A21_1600LM_INTL(lifx.Product):
+        pid = 170
+        family = Family.LCMX
+        friendly = "LIFX A21 1600lm Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_ROUND_SPOT_US(lifx.Product):
+        pid = 171
+        family = Family.LCMX
+        friendly = "LIFX Round Spot US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_ROUND_PATH_US(lifx.Product):
+        pid = 173
+        family = Family.LCMX
+        friendly = "LIFX Round Path US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_SQUARE_PATH_US(lifx.Product):
+        pid = 174
+        family = Family.LCMX
+        friendly = "LIFX Square Path US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_PAR38_US(lifx.Product):
+        pid = 175
+        family = Family.LCMX
+        friendly = "LIFX PAR38 US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CEILING_US(lifx.Product):
+        pid = 176
+        family = Family.LCMX
+        friendly = "LIFX Ceiling US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CEILING_INTL(lifx.Product):
+        pid = 177
+        family = Family.LCMX
+        friendly = "LIFX Ceiling Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_COLOR_US(lifx.Product):
+        pid = 181
+        family = Family.LCMX
+        friendly = "LIFX Color US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_COLOR_INTL(lifx.Product):
+        pid = 182
+        family = Family.LCMX
+        friendly = "LIFX Color Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CANDLE_COLOR_US(lifx.Product):
+        pid = 185
+        family = Family.LCMX
+        friendly = "LIFX Candle Color US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CANDLE_COLOR_INTL(lifx.Product):
+        pid = 186
+        family = Family.LCMX
+        friendly = "LIFX Candle Color Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CANDLE_COLOR_US_ANOTHER(lifx.Product):
+        pid = 187
+        family = Family.LCMX
+        friendly = "LIFX Candle Color US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_CANDLE_COLOR_INTL_ANOTHER(lifx.Product):
+        pid = 188
+        family = Family.LCMX
+        friendly = "LIFX Candle Color Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_STRING_US(lifx.Product):
+        pid = 203
+        family = Family.LCMX
+        friendly = "LIFX String US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_STRING_INTL(lifx.Product):
+        pid = 204
+        family = Family.LCMX
+        friendly = "LIFX String Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_INDOOR_NEON_US(lifx.Product):
+        pid = 205
+        family = Family.LCMX
+        friendly = "LIFX Indoor Neon US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_INDOOR_NEON_INTL(lifx.Product):
+        pid = 206
+        family = Family.LCMX
+        friendly = "LIFX Indoor Neon Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
 
 Products = ProductsHolder(ProductRegistry, lifx.Capability)
