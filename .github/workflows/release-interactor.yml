@@ -11,12 +11,48 @@ on:
 name: Release Photons Interactor
 
 jobs:
+  interactor_static:
+    runs-on: ubuntu-latest
+    environment: docker
+
+    defaults:
+      run:
+        working-directory: apps/interactor/interactor_webapp/interactor
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21.7.3
+
+      - name: Install deps
+        shell: bash
+        run: npm ci
+
+      - name: Build
+        shell: bash
+        run: npm run build
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: apps/interactor/interactor_webapp/interactor/build/
+
   build:
     name: Create the package
     runs-on: ubuntu-latest
     environment: docker
+    needs: interactor_static
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Download static artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: apps/interactor/interactor_webapp/interactor/build/
 
       - uses: actions/setup-python@v4
         with:

@@ -2,6 +2,7 @@ import asyncio
 import time
 import typing as tp
 
+import sanic.exceptions
 import strcs
 from interactor.commander.animations import Animations
 from interactor.database import DB
@@ -10,7 +11,9 @@ from photons_app.registers import ReferenceResolverRegister
 from photons_control.device_finder import DeviceFinderDaemon, Finder
 from photons_web_server import commander
 from photons_web_server.server import Server
+from sanic.handlers import directory
 from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
 
 
 class InteractorMessageFromExc(commander.MessageFromExc):
@@ -98,6 +101,58 @@ class InteractorServer(Server):
             self.app,
             self,
             message_from_exc=InteractorMessageFromExc,
+        )
+
+        self.app.add_route(self.serve_static, "/", ctx_serve_index=True, name="static-spa")
+
+        self.app.add_route(
+            self.serve_static,
+            "/",
+            ctx_serve_index=True,
+            ctx_only_debug_logs=True,
+            name="static-spa",
+        )
+        self.app.add_route(
+            self.serve_static,
+            "/_app/<path:path>",
+            ctx_serve_app=True,
+            ctx_only_debug_logs=True,
+            name="static_app",
+        )
+        self.app.add_route(
+            self.serve_static,
+            "/favicon.png",
+            ctx_serve_favicon=True,
+            ctx_only_debug_logs=True,
+            name="static_favicon",
+        )
+
+    async def serve_static(self, request: Request, path: str = "") -> Response:
+        index = None
+        file_or_directory = self.server_options.assets.dist
+        if getattr(request.route.ctx, "serve_index", False):
+            uri = "/"
+            index = "index.html"
+            file_or_directory = file_or_directory / "index.html"
+        elif getattr(request.route.ctx, "serve_app", False):
+            uri = "/_app"
+            file_or_directory = file_or_directory / "_app"
+        elif getattr(request.route.ctx, "serve_favicon", False):
+            uri = "/favicon.png"
+            file_or_directory = file_or_directory / "favicon.png"
+        else:
+            raise sanic.exceptions.NotFound()
+
+        return await self.app._static_request_handler(
+            request,
+            file_or_directory=str(file_or_directory),
+            use_modified_since=True,
+            use_content_range=False,
+            stream_large_files=True,
+            directory_handler=directory.DirectoryHandler(
+                uri=uri, directory=str(self.server_options.assets.dist), index=index
+            ),
+            __file_uri__=path,
         )
 
     async def before_start(self):

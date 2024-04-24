@@ -1,7 +1,11 @@
 import os
+import pathlib
+import shutil
+import subprocess
 
 from delfick_project.norms import dictobj, sb
 from interactor.zeroconf import Zeroconf
+from photons_app.errors import PhotonsAppError
 from photons_app.formatter import MergedOptionStringFormatter
 
 
@@ -21,10 +25,41 @@ class port_spec(sb.Spec):
         return sb.integer_spec().normalise(meta, val)
 
 
+class Assets(dictobj.Spec):
+    src = dictobj.Field(
+        sb.overridden("{interactor/../interactor_webapp/interactor:resource}"),
+        formatted=True,
+        help="Folder where we can find the source of the assets",
+    )
+
+    @property
+    def dist(self) -> pathlib.Path:
+        return pathlib.Path(self.src) / "build"
+
+    def ensure_npm(self):
+        if not shutil.which("npm"):
+            raise PhotonsAppError("Couldn't find npm, I suggest you use nvm")
+
+    @property
+    def needs_install(self) -> bool:
+        return (
+            not os.path.exists(os.path.join(self.src, "node_modules"))
+            or os.environ.get("REBUILD") == 1
+        )
+
+    def run(self, *args) -> None:
+        subprocess.check_call(["npm", *args], cwd=self.src)
+
+
 class Options(dictobj.Spec):
     host = dictobj.Field(host_spec, help="The host to serve the server on")
 
     port = dictobj.Field(port_spec, help="The port to serve the server on")
+
+    assets = dictobj.Field(
+        Assets.FieldSpec(formatter=MergedOptionStringFormatter),
+        help="Options for where assets can be found",
+    )
 
     zeroconf = dictobj.Field(
         Zeroconf.FieldSpec(formatter=MergedOptionStringFormatter),
