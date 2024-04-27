@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import logging
 import sys
@@ -19,6 +20,7 @@ from sanic.request.types import json_loads
 from sanic.response import BaseHTTPResponse as Response
 from sanic.response import HTTPResponse
 from sanic.response.types import json_dumps
+from typing_extensions import Self
 
 from .messages import TBO, ErrorMessage, ExcO, ExcTypO
 from .messages import TProgressMessageMaker as Progress
@@ -113,24 +115,34 @@ WrappedWebsocketHandlerOnClass: tp.TypeAlias = tp.Callable[
     [tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
 ]
 
+WrappedSocketioHandlerOnClass: tp.TypeAlias = tp.Callable[
+    [tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
+]
 
-class WSSender:
+T_Handler = tp.TypeVar("T_Handler", WrappedWebsocketHandlerOnClass, WrappedSocketioHandlerOnClass)
+T_Transport = tp.TypeVar("T_Transport")
+
+
+class Sender(tp.Generic[T_Transport], abc.ABC):
     _progress: Progress | None
 
     def __init__(
         self,
-        ws: Websocket,
+        transport: T_Transport,
         reprer: TReprer,
         message: Message,
         progress: Progress | None = None,
     ):
-        self.ws = ws
+        self.transport = transport
         self._reprer = reprer
         self._message = message
         self._progress = progress
 
-    def with_progress(self, progress: Progress) -> "WSSender":
-        return WSSender(self.ws, self._reprer, self._message, progress=progress)
+    @abc.abstractmethod
+    def _send_response(self, msg: dict[str, object]) -> None: ...
+
+    def with_progress(self, progress: Progress) -> Self:
+        return self.__class__(self.transport, self._reprer, self._message, progress=progress)
 
     async def __call__(self, res: BaseException | object, progress: bool = False) -> None:
         msg = {
@@ -159,7 +171,7 @@ class WSSender:
                             error = str(error)
                     msg["reply"]["error"] = error
 
-        await self.ws.send(json_dumps(msg, default=self._reprer))
+        await self._send_response(msg)
 
     async def progress(self, message: tp.Any, do_log=True, **kwargs) -> dict:
         info = message
@@ -170,7 +182,12 @@ class WSSender:
         return info
 
 
-class WebsocketWrap:
+class WSSender(Sender[Websocket]):
+    async def _send_response(self, msg: dict[str, object]) -> None:
+        await self.transport.send(json_dumps(msg, default=self._reprer))
+
+
+class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
     setup: tp.Callable
 
     def __init__(
@@ -189,29 +206,38 @@ class WebsocketWrap:
         if hasattr(self, "setup"):
             self.setup(*args, **kwargs)
 
+    @abc.abstractmethod
     def message_from_exc(
         self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception:
-        return InternalServerError("Internal Server Error")
+    ) -> ErrorMessage | Exception: ...
 
+    @abc.abstractmethod
     def make_responder(
         self,
-        ws: Websocket,
+        transport: T_Transport,
         reprer: TReprer,
         message: Message,
-    ) -> Responder:
-        return WSSender(
-            ws,
-            reprer,
-            message,
-        )
+    ) -> Responder: ...
 
-    def __call__(self, handler: WrappedWebsocketHandler) -> RouteHandler:
+    @abc.abstractmethod
+    async def _send_server_time(self, transport: T_Transport) -> None: ...
+
+    @abc.abstractmethod
+    async def handle_request(
+        self,
+        handler: T_Handler,
+        request: Request,
+        transport: T_Transport,
+        tasks: hp.TaskHolder,
+        stream_fut: asyncio.Future,
+    ) -> None: ...
+
+    def __call__(self, handler: T_Handler) -> RouteHandler:
         @wraps(handler)
-        async def handle(request: Request, ws: Websocket):
+        async def handle(request: Request, transport: T_Transport):
             from .store import WithCommanderClass
 
-            await ws.send(json_dumps({"message_id": "__server_time__", "reply": time.time()}))
+            await self._send_server_time(transport)
 
             if request.route and not isinstance(request.route.handler, WithCommanderClass):
                 if isinstance(handler, WithCommanderClass):
@@ -221,19 +247,7 @@ class WebsocketWrap:
                 async with hp.TaskHolder(
                     stream_fut, name="WebsocketWrap::__call__[tasks]"
                 ) as tasks:
-                    with hp.ChildOfFuture(
-                        stream_fut, name="WebsocketWrap::__call__[loop_stop]"
-                    ) as loop_stop:
-                        try:
-                            while True:
-                                if loop_stop.done():
-                                    break
-
-                                await self.handle_next(
-                                    loop_stop, tasks, handler, request, stream_fut, ws
-                                )
-                        finally:
-                            await ws.close()
+                    await self.handle_request(handler, request, transport, tasks, stream_fut)
 
         return handle
 
@@ -249,6 +263,71 @@ class WebsocketWrap:
             request.ctx.request_future = stream_fut
             yield stream_fut
 
+    async def _process(
+        self,
+        handler: T_Handler,
+        transport: T_Transport,
+        message_id: str,
+        body: dict[str, object],
+        request: Request,
+        stream_fut: asyncio.Future,
+    ) -> bool | None:
+        with Message.create(message_id, body, request, stream_fut) as message:
+            status = 500
+            respond = self.make_responder(transport, self.reprer, message)
+
+            try:
+                result = await handler(respond=respond, message=message)
+                status = 200
+                return result
+            except:
+                request.ctx.exc_info = sys.exc_info()
+                res = self.message_from_exc(message, *request.ctx.exc_info)
+                if isinstance(res, ErrorMessage):
+                    await respond({"error_code": res.error_code, "error": res.error})
+                else:
+                    await respond(res)
+            finally:
+                self.log_response(request, HTTPResponse(status=status), message_id=message.id)
+
+
+class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
+    def message_from_exc(
+        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
+    ) -> ErrorMessage | Exception:
+        return InternalServerError("Internal Server Error")
+
+    def make_responder(
+        self,
+        transport: Websocket,
+        reprer: TReprer,
+        message: Message,
+    ) -> Responder:
+        return WSSender(transport, reprer, message)
+
+    async def _send_server_time(self, transport: Websocket) -> None:
+        await transport.send(json_dumps({"message_id": "__server_time__", "reply": time.time()}))
+
+    async def handle_request(
+        self,
+        handler: WrappedWebsocketHandler,
+        request: Request,
+        transport: Websocket,
+        tasks: hp.TaskHolder,
+        stream_fut: asyncio.Future,
+    ) -> None:
+        with hp.ChildOfFuture(stream_fut, name="WebsocketWrap::__call__[loop_stop]") as loop_stop:
+            try:
+                while True:
+                    if loop_stop.done():
+                        break
+
+                    await self.handle_next(
+                        loop_stop, tasks, handler, request, stream_fut, transport
+                    )
+            finally:
+                await transport.close()
+
     async def handle_next(
         self,
         loop_stop: asyncio.Future,
@@ -256,7 +335,7 @@ class WebsocketWrap:
         handler: WrappedWebsocketHandler,
         request: Request,
         stream_fut: asyncio.Future,
-        ws: Websocket,
+        ws: T_Transport,
     ) -> None:
         get_nxt = tasks.add(ws.recv())
         await hp.wait_for_first_future(
@@ -302,26 +381,13 @@ class WebsocketWrap:
         except Exception:
             log.exception("Failed to log websocket request")
 
-        async def process():
-            with Message.create(message_id, body, request, stream_fut) as message:
-                status = 500
-                respond = self.make_responder(ws, self.reprer, message)
-
-                try:
-                    if await handler(respond=respond, message=message) is False:
-                        loop_stop.cancel()
-                    status = 200
-                except:
-                    request.ctx.exc_info = sys.exc_info()
-                    try:
-                        res = self.message_from_exc(message, *request.ctx.exc_info)
-                        if isinstance(res, ErrorMessage):
-                            await respond({"error_code": res.error_code, "error": res.error})
-                        else:
-                            await respond(res)
-                    except sanic.exceptions.WebsocketClosed:
-                        loop_stop.cancel()
-                finally:
-                    self.log_response(request, HTTPResponse(status=status), message_id=message.id)
+        async def process() -> None:
+            try:
+                if (
+                    await self._process(handler, ws, message_id, body, request, stream_fut)
+                ) is False:
+                    loop_stop.cancel()
+            except sanic.exceptions.WebsocketClosed:
+                loop_stop.cancel()
 
         tasks.add(process())

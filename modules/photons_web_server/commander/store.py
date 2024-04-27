@@ -86,12 +86,12 @@ class CommandWebsocketWrap(WebsocketWrap):
 
     def make_responder(
         self,
-        ws: Websocket,
+        transport: Websocket,
         reprer: TReprer,
         message: Message,
     ) -> Responder:
         return WSSender(
-            ws,
+            transport,
             reprer,
             message,
             self.instance.progress_message_maker(
