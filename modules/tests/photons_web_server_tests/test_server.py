@@ -25,7 +25,7 @@ from photons_web_server.commander import (
     WithCommanderClass,
 )
 from photons_web_server.commander.messages import ExcInfo, get_logger
-from photons_web_server.commander.websocket_wrap import WSSender
+from photons_web_server.commander.stream_wrap import WSSender
 from photons_web_server.server import Server, WebServerTask
 from sanic import Sanic, Websocket
 from sanic.config import Config

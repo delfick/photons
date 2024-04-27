@@ -14,7 +14,7 @@ from .store import (
     Store,
     WithCommanderClass,
 )
-from .websocket_wrap import (
+from .stream_wrap import (
     Message,
     Websocket,
     WebsocketWrap,

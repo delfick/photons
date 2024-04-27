@@ -32,7 +32,7 @@ from .messages import (
 from .messages import TProgressMessageMaker as Progress
 from .messages import TReprer, get_logger, get_logger_name, reprer
 from .routes import Route
-from .websocket_wrap import (
+from .stream_wrap import (
     Message,
     Websocket,
     WebsocketWrap,
