@@ -22,7 +22,9 @@ from sanic.response.types import json_dumps
 
 from .messages import TBO, ErrorMessage, ExcO, ExcTypO
 from .messages import TProgressMessageMaker as Progress
-from .messages import TReprer, reprer
+from .messages import TReprer
+from .messages import TResponseMaker as Responder
+from .messages import reprer
 
 try:
     import ulid
@@ -104,11 +106,11 @@ class Message:
 
 
 class WrappedWebsocketHandler(tp.Protocol):
-    async def __call__(self, wssend: "WSSender", message: Message) -> bool | None: ...
+    async def __call__(self, respond: Responder, message: Message) -> bool | None: ...
 
 
 WrappedWebsocketHandlerOnClass: tp.TypeAlias = tp.Callable[
-    [tp.Any, "WSSender", Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
+    [tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
 ]
 
 
@@ -192,12 +194,12 @@ class WebsocketWrap:
     ) -> ErrorMessage | Exception:
         return InternalServerError("Internal Server Error")
 
-    def make_wssend(
+    def make_responder(
         self,
         ws: Websocket,
         reprer: TReprer,
         message: Message,
-    ) -> WSSender:
+    ) -> Responder:
         return WSSender(
             ws,
             reprer,
@@ -283,8 +285,8 @@ class WebsocketWrap:
             self.log_ws_request(request, None)
             self.log_response(request, HTTPResponse(status=500))
             with Message.unknown(request, stream_fut, nxt) as message:
-                wssend = self.make_wssend(ws, self.reprer, message)
-                await wssend(InvalidRequest("failed to interpret json"))
+                respond = self.make_responder(ws, self.reprer, message)
+                await respond(InvalidRequest("failed to interpret json"))
             return
 
         if not isinstance(body, dict):
@@ -303,10 +305,10 @@ class WebsocketWrap:
         async def process():
             with Message.create(message_id, body, request, stream_fut) as message:
                 status = 500
-                wssend = self.make_wssend(ws, self.reprer, message)
+                respond = self.make_responder(ws, self.reprer, message)
 
                 try:
-                    if await handler(wssend=wssend, message=message) is False:
+                    if await handler(respond=respond, message=message) is False:
                         loop_stop.cancel()
                     status = 200
                 except:
@@ -314,9 +316,9 @@ class WebsocketWrap:
                     try:
                         res = self.message_from_exc(message, *request.ctx.exc_info)
                         if isinstance(res, ErrorMessage):
-                            await wssend({"error_code": res.error_code, "error": res.error})
+                            await respond({"error_code": res.error_code, "error": res.error})
                         else:
-                            await wssend(res)
+                            await respond(res)
                     except sanic.exceptions.WebsocketClosed:
                         loop_stop.cancel()
                 finally:

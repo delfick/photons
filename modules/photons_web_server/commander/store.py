@@ -30,7 +30,9 @@ from .messages import (
     TMessageFromExc,
 )
 from .messages import TProgressMessageMaker as Progress
-from .messages import TReprer, get_logger, get_logger_name, reprer
+from .messages import TReprer
+from .messages import TResponseMaker as Responder
+from .messages import get_logger, get_logger_name, reprer
 from .routes import Route
 from .stream_wrap import (
     Message,
@@ -82,12 +84,12 @@ class CommandWebsocketWrap(WebsocketWrap):
             lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name
         )(exc_type, exc, tb)
 
-    def make_wssend(
+    def make_responder(
         self,
         ws: Websocket,
         reprer: TReprer,
         message: Message,
-    ) -> WSSender:
+    ) -> Responder:
         return WSSender(
             ws,
             reprer,

@@ -19,9 +19,9 @@ from photons_web_server.commander import (
     Command,
     Message,
     Progress,
+    Responder,
     RouteTransformer,
     Store,
-    WSSender,
 )
 from photons_web_server.server import Server
 from sanic.request import Request
@@ -512,21 +512,21 @@ describe "Store":
 
             async def adder(
                 s,
-                wssend: WSSender,
+                respond: Responder,
                 message: Message,
             ) -> bool | None:
                 if message.body["command"] == "echo":
-                    await wssend(message.body["echo"])
+                    await respond(message.body["echo"])
                 if message.body["command"] == "totals":
-                    await wssend.progress(dict(by_stream_id))
+                    await respond.progress(dict(by_stream_id))
                 elif message.body["command"] == "add":
                     add = tp.cast(int, message.body.get("add", 0))
                     identifier = message.request.ctx.request_identifier
                     assert identifier == message.stream_id
-                    await wssend.progress("added", was=by_stream_id[message.stream_id], adding=add)
+                    await respond.progress("added", was=by_stream_id[message.stream_id], adding=add)
                     by_stream_id[message.stream_id] += add
                 elif message.body["command"] == "stop":
-                    await wssend("stopped!")
+                    await respond("stopped!")
                     return False
 
                 return None
@@ -863,7 +863,7 @@ describe "Store":
 
             async def excs(
                 s,
-                wssend: WSSender,
+                respond: Responder,
                 message: Message,
             ) -> bool | None:
                 if message.body["command"] == "valueerror":

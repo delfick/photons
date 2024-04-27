@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-46-0:
+
+0.46.0 - TBD
+    * Changed web_server.WSSend to be a protocol named web_server.Responder
+
 .. _release-core-0-45-5:
 
 0.45.5 - 24 April 2024

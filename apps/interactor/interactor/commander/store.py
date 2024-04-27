@@ -76,7 +76,7 @@ class Store(commander.Store):
 
     async def run_v1_ws(
         self,
-        wssend: commander.WSSender,
+        respond: commander.Responder,
         message: commander.Message,
         /,
         _meta: strcs.Meta,
@@ -84,12 +84,12 @@ class Store(commander.Store):
     ) -> bool | None:
         path = message.body.get("path")
         if path != "/v1/lifx/command":
-            await wssend(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
+            await respond(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
             return None
 
         body = message.body.get("body")
         if not isinstance(body, dict):
-            await wssend(InvalidBody(body_type=repr(type(body))))
+            await respond(InvalidBody(body_type=repr(type(body))))
             return None
 
         command = body.get("command")
@@ -98,7 +98,7 @@ class Store(commander.Store):
             args = {}
 
         if not isinstance(command, str) or not isinstance(args, dict) or not command:
-            await wssend(
+            await respond(
                 InvalidBody(
                     body_type=repr(type(body)),
                     command_type=repr(type(command)),
@@ -118,14 +118,14 @@ class Store(commander.Store):
                         response = await route(
                             command=command,
                             args=args,
-                            progress=wssend.progress,
+                            progress=respond.progress,
                             request=message.request,
                             meta=_meta,
                         )
-                        await wssend(response.raw_body)
+                        await respond(response.raw_body)
                         return None
 
-        await wssend(NoSuchCommand(wanted=command, available=sorted(available_commands)))
+        await respond(NoSuchCommand(wanted=command, available=sorted(available_commands)))
 
 
 store = Store(strcs_register=reg)

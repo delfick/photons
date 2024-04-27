@@ -59,12 +59,12 @@ class ChangePositionBody:
 
 class PartRouter:
     def __init__(self) -> None:
-        self.registered: dict[str, commander.WSSender] = {}
+        self.registered: dict[str, commander.Responder] = {}
 
-    async def start(self, message_id: str, wssend: commander.WSSender) -> None:
-        await wssend.progress({"instruction": "started"}, do_log=False)
+    async def start(self, message_id: str, respond: commander.Responder) -> None:
+        await respond.progress({"instruction": "started"}, do_log=False)
 
-        self.registered[message_id] = wssend
+        self.registered[message_id] = respond
         try:
             await hp.create_future(name="PartRouter::start")
         except asyncio.CancelledError:
@@ -73,7 +73,7 @@ class PartRouter:
 
     async def command(
         self,
-        wssend: commander.WSSender,
+        respond: commander.Responder,
         message: commander.Message,
         create: Creator,
         parent_message_id: str,
@@ -81,31 +81,31 @@ class PartRouter:
         command = message.body["body"].get("command")
         available_commands = ["highlight", "change_position"]
         if command not in available_commands:
-            await wssend(NoSuchCommand(wanted=command, available=sorted(available_commands)))
+            await respond(NoSuchCommand(wanted=command, available=sorted(available_commands)))
 
-        parent_wssend = self.registered.get(parent_message_id)
-        if parent_wssend is None:
+        parent_respond = self.registered.get(parent_message_id)
+        if parent_respond is None:
             return
 
         if command == "highlight":
             try:
                 body = create(HighlightBody, message.body["body"].get("args"))
             except Exception as e:
-                await wssend(e)
+                await respond(e)
             else:
-                await self.highlight(body=body, wssend=parent_wssend)
+                await self.highlight(body=body, respond=parent_respond)
         elif command == "change_position":
             try:
                 body = create(ChangePositionBody, message.body["body"].get("args"))
             except Exception as e:
-                await wssend(e)
+                await respond(e)
             else:
-                await self.change_position(body=body, wssend=parent_wssend)
+                await self.change_position(body=body, respond=parent_respond)
 
-    async def highlight(self, wssend: commander.WSSender, body: HighlightBody) -> None:
+    async def highlight(self, respond: commander.Responder, body: HighlightBody) -> None:
         await body.arranger.add_highlight((body.serial.serial, body.part_number))
 
-    async def change_position(self, wssend: commander.WSSender, body: ChangePositionBody) -> None:
+    async def change_position(self, respond: commander.Responder, body: ChangePositionBody) -> None:
         await body.arranger.change_position(
             body.serial.serial, body.part_number, body.user_x, body.user_y
         )
@@ -118,7 +118,7 @@ class PartsCommand(commander.Command):
 
     async def parts(
         self,
-        wssend: commander.WSSender,
+        respond: commander.Responder,
         message: commander.Message,
     ) -> bool | None:
         path = message.body.get("path")
@@ -126,7 +126,7 @@ class PartsCommand(commander.Command):
             return
 
         if path != "/v1/lifx/command":
-            await wssend(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
+            await respond(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
 
         part_router = self.meta.retrieve_one(
             PartRouter, type_cache=self.store.strcs_register.type_cache
@@ -140,17 +140,17 @@ class PartsCommand(commander.Command):
         if isinstance(message_id, str):
             available_commands = ["parts/store"]
             if (command := message.body["body"].get("command")) not in available_commands:
-                await wssend(NoSuchCommand(wanted=command, available=sorted(available_commands)))
+                await respond(NoSuchCommand(wanted=command, available=sorted(available_commands)))
 
             def progress_cb(info: object, do_log: bool = True) -> None:
-                tasks.add(wssend.progress(info, do_log=do_log))
+                tasks.add(respond.progress(info, do_log=do_log))
 
             async with arranger.add_stream(progress_cb):
                 # Ensure arranger is running
                 tasks.add(arranger.run())
 
-                await part_router.start(message_id or None, wssend)
+                await part_router.start(message_id or None, respond)
         elif isinstance(message_id, list):
-            await part_router.command(wssend, message, self.create, message_id[0])
+            await part_router.command(respond, message, self.create, message_id[0])
         else:
-            await wssend(InvalidCommand)
+            await respond(InvalidCommand)

@@ -40,7 +40,7 @@ class Commands(Command):
 
     async def commands_ws(
         self,
-        wssend: commander.WSSender,
+        respond: commander.Responder,
         message: commander.Message,
     ) -> bool | None:
         _body = self.create(V1Body, message.body["body"])
@@ -49,13 +49,13 @@ class Commands(Command):
         )
         store = self.meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
         result = await self.commands(
-            wssend.progress,
+            respond.progress,
             message.request,
             _body=_body,
             route_transformer=route_transformer,
             store=store,
         )
-        await wssend(result.raw_body)
+        await respond(result.raw_body)
         return None
 
     async def commands(

@@ -25,7 +25,7 @@ from photons_web_server.commander import (
     WithCommanderClass,
 )
 from photons_web_server.commander.messages import ExcInfo, get_logger
-from photons_web_server.commander.stream_wrap import WSSender
+from photons_web_server.commander.stream_wrap import Responder
 from photons_web_server.server import Server, WebServerTask
 from sanic import Sanic, Websocket
 from sanic.config import Config
@@ -386,10 +386,10 @@ describe "Server":
                 await asyncio.sleep(2)
                 return sanic.text("route")
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 assert message.body == {"command": "two", "path": "/route"}
                 await asyncio.sleep(6)
-                await wssend({"got": "two"})
+                await respond({"got": "two"})
                 return False
 
             async def setup_routes(server):
@@ -534,16 +534,16 @@ describe "Server":
                 expected_called.append((request, None))
                 return sanic.text("hi")
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 assert message.body == {"command": mock.ANY, "path": "/route"}
                 assert message.body["command"] in ("two", "three")
                 if message.body["command"] == "three":
-                    await wssend({"got": "three"})
+                    await respond({"got": "three"})
                     error = TypeError("HI")
                     expected_called.append((message.request, (TypeError, error, IsTraceback())))
                     raise error
                 else:
-                    await wssend({"got": "notthree"})
+                    await respond({"got": "notthree"})
                     expected_called.append((message.request, None))
                     return False
 
@@ -692,8 +692,8 @@ describe "Server":
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
-                await wssend.progress(message.body["echo"])
+            async def ws(respond: Responder, message: Message) -> bool | None:
+                await respond.progress(message.body["echo"])
                 return False
 
             async def setup_routes(server):
@@ -719,9 +719,9 @@ describe "Server":
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
-                wssend = wssend.with_progress(tp.cast(ProgressMessageMaker, progress))
-                await wssend.progress(message.body["echo"], one=1, two=2)
+            async def ws(respond: Responder, message: Message) -> bool | None:
+                respond = respond.with_progress(tp.cast(ProgressMessageMaker, progress))
+                await respond.progress(message.body["echo"], one=1, two=2)
                 return False
 
             async def setup_routes(server):
@@ -745,7 +745,7 @@ describe "Server":
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 raise AssertionError("Never reaches here")
 
             async def setup_routes(server):
@@ -820,9 +820,9 @@ describe "Server":
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = "my amazing message id"
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 assert message.id == "my amazing message id"
-                await wssend({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
+                await respond({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
                 return False
 
             async def setup_routes(server):
@@ -871,9 +871,9 @@ describe "Server":
             PWSIdent1 = "my amazing request id"
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 assert message.request.ctx.request_identifier != PWSIdent1
-                await wssend({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
+                await respond({"echo": "".join(reversed(tp.cast(str, message.body["echo"])))})
                 return False
 
             async def setup_routes(server):
@@ -929,15 +929,15 @@ describe "Server":
                 WSIdentM3 = pws_thp.IdentifierMatch(identifiers)
                 WSIdentM4 = pws_thp.IdentifierMatch(identifiers)
 
-                async def ws(wssend: WSSender, message: Message) -> bool | None:
+                async def ws(respond: Responder, message: Message) -> bool | None:
                     assert "command" in message.body
                     if message.body["command"] == "echo":
                         assert "value" in message.body
                         assert isinstance(message.body["wait"], list)
                         await futs[message.body["wait"][0]]
-                        await wssend({"value": message.body["value"]})
+                        await respond({"value": message.body["value"]})
                         await futs[message.body["wait"][1]]
-                        await wssend({"value": message.body["value"]})
+                        await respond({"value": message.body["value"]})
                         return None
                     else:
                         assert message.body["command"] == "stop"
@@ -1066,12 +1066,12 @@ describe "Server":
                 WSIdentM6 = pws_thp.IdentifierMatch(identifiers)
                 WSIdentM7 = pws_thp.IdentifierMatch(identifiers)
 
-                async def ws(wssend: WSSender, message: Message) -> bool | None:
+                async def ws(respond: Responder, message: Message) -> bool | None:
                     if "fut" in message.body:
                         await futs[message.body["fut"]]
-                        await wssend(message.body["fut"])
+                        await respond(message.body["fut"])
                     else:
-                        await wssend("stop")
+                        await respond("stop")
                     if "error" in message.body:
                         raise Exception(message.body["error"])
 
@@ -1167,14 +1167,14 @@ describe "Server":
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
-                await wssend("one")
+            async def ws(respond: Responder, message: Message) -> bool | None:
+                await respond("one")
                 try:
                     await asyncio.sleep(1)
                 except asyncio.CancelledError:
                     called.append("cancelled")
                 try:
-                    await wssend("two")
+                    await respond("two")
                 except sanic.exceptions.WebsocketClosed:
                     called.append("closed")
                     raise
@@ -1226,8 +1226,8 @@ describe "Server":
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
-                await wssend("one")
+            async def ws(respond: Responder, message: Message) -> bool | None:
+                await respond("one")
                 await asyncio.sleep(10)
                 return None
 
@@ -1280,7 +1280,7 @@ describe "Server":
             WSIdentM3 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM4 = pws_thp.IdentifierMatch(identifiers)
 
-            async def ws(wssend: WSSender, message: Message) -> bool | None:
+            async def ws(respond: Responder, message: Message) -> bool | None:
                 called.append(("before", message.body["id"]))
                 try:
                     match message.body["command"]:
@@ -1288,7 +1288,7 @@ describe "Server":
                             await message.stream_fut
                             called.append(("after", message.body["id"]))
                         case "echo":
-                            await wssend("".join(reversed(tp.cast(str, message.body["echo"]))))
+                            await respond("".join(reversed(tp.cast(str, message.body["echo"]))))
                         case "stop":
                             return False
                         case _:

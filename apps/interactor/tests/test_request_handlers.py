@@ -5,7 +5,7 @@ from interactor.commander import helpers as ihp
 from interactor.server import InteractorServer as Server
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
-from photons_web_server.commander import Message, WSSender
+from photons_web_server.commander import Message, Responder
 
 
 @pytest.fixture()
@@ -54,8 +54,8 @@ def server_maker(server_wrapper, final_future, sender):
 
 class TestSimpleWebSocketBase:
     async def test_it_can_handle_a_ResultBuilder(self, server_maker):
-        async def Handler(wssend: WSSender, message: Message) -> bool | None:
-            await wssend(ihp.ResultBuilder(serials=["d073d5000001"]))
+        async def Handler(respond: Responder, message: Message) -> bool | None:
+            await respond(ihp.ResultBuilder(serials=["d073d5000001"]))
             return None
 
         async with server_maker(Handler) as server:
@@ -77,33 +77,33 @@ class TestSimpleWebSocketBase:
         error4 = PhotonsAppError("Blah")
         error5 = PhotonsAppError("things", serial="d073d5000001")
 
-        async def Handler(wssend: WSSender, message: Message) -> bool | None:
+        async def Handler(respond: Responder, message: Message) -> bool | None:
             path = message.body["path"]
             if path == "/no_error":
-                await wssend({"success": True})
+                await respond({"success": True})
             elif path == "/internal_error":
                 raise error1
             elif path == "/builder_error":
                 builder = ihp.ResultBuilder(["d073d5000001"])
                 builder.error(error2)
-                await wssend.progress({"error": "progress"})
-                await wssend(builder)
+                await respond.progress({"error": "progress"})
+                await respond(builder)
             elif path == "/builder_serial_error":
                 builder = ihp.ResultBuilder(["d073d5000001"])
                 try:
                     raise error5
                 except Exception as e:
                     builder.error(e)
-                await wssend(builder)
+                await respond(builder)
             elif path == "/builder_internal_error":
                 builder = ihp.ResultBuilder(["d073d5000001"])
                 try:
                     raise error3
                 except Exception as error:
                     builder.error(error)
-                await wssend(builder)
+                await respond(builder)
             elif path == "/error":
-                await wssend(error4)
+                await respond(error4)
 
             return None
 

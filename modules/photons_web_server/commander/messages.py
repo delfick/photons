@@ -167,6 +167,14 @@ class TProgressMessageMaker(tp.Protocol):
     async def __call__(self, message: tp.Any, do_log=True, **kwargs) -> dict: ...
 
 
+class TResponseMaker(tp.Protocol):
+    progress: TProgressMessageMaker
+
+    def __init__(self, *, lc: LogContext, logger_name: str): ...
+
+    async def __call__(self, message: tp.Any, do_log=True, **kwargs) -> dict: ...
+
+
 class ProgressMessageMaker:
     def __init__(self, *, lc: LogContext, logger_name: str):
         self.lc = lc

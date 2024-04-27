@@ -40,14 +40,14 @@ class LegacyCommands(Command):
 
     async def legacy_ws(
         self,
-        wssend: commander.WSSender,
+        respond: commander.Responder,
         message: commander.Message,
     ) -> bool | None:
         route_transformer = self.meta.retrieve_one(
             commander.RouteTransformer, type_cache=reg.type_cache
         )
-        assert wssend.progress is not None
+        assert respond.progress is not None
         store = self.meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
         return await store.run_v1_ws(
-            wssend, message, _meta=self.meta, route_transformer=route_transformer
+            respond, message, _meta=self.meta, route_transformer=route_transformer
         )
