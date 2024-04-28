@@ -110,7 +110,10 @@ class Server:
     @hp.memoized_property[sanic.Sanic]
     def app(self) -> sanic.Sanic:
         return sanic.Sanic(
-            self.sanic_server_name, config=self.make_config(), log_config=self.make_log_config()
+            self.sanic_server_name,
+            config=self.make_config(),
+            log_config=self.make_log_config(),
+            strict_slashes=True,
         )
 
     async def setup(self, **kwargs) -> None:
