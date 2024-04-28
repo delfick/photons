@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-5:
+
+0.16.5 - TBD
+    * Starting to add a webapp to the interactor
+      It currently does nothing.
+
 .. _release-interactor-0-16-4:
 
 0.16.4 - 24 April 2024
