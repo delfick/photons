@@ -3,6 +3,7 @@ import time
 import typing as tp
 
 import sanic.exceptions
+import socketio
 import strcs
 from interactor.commander.animations import Animations
 from interactor.database import DB
@@ -58,6 +59,18 @@ class InteractorServer(Server):
         self.server_options = options
         self.animation_options = animation_options
 
+        self.sio = socketio.AsyncServer(async_mode="sanic")
+        store.add_sio_server(self.sio)
+
+        @self.sio.on("connect")
+        async def on_connect(sid: str, *args: object) -> None:
+            async with self.sio.session(sid) as session:
+                if "lock" not in session:
+                    session["lock"] = asyncio.Lock()
+
+            async with (await self.sio.get_session(sid))["lock"]:
+                await self.sio.emit("server_time", time.time(), to=sid)
+
         self.database = DB(self.server_options.database.uri)
         self.database._merged_options_formattable = True
         self.cleaners.append(self.database.finish)
@@ -103,7 +116,8 @@ class InteractorServer(Server):
             message_from_exc=InteractorMessageFromExc,
         )
 
-        self.app.add_route(self.serve_static, "/", ctx_serve_index=True, name="static-spa")
+        self.sio.attach(self.app, socketio_path="webapp")
+        self.app.router.static_routes[("webapp", "")].routes[0].ctx.only_debug_logs = True
 
         self.app.add_route(
             self.serve_static,
