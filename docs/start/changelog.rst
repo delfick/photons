@@ -7,6 +7,7 @@ ChangeLog
 
 0.46.0 - TBD
     * Changed web_server.WSSend to be a protocol named web_server.Responder
+    * Added to photons_web_server some ability to add socketio routes 
 
 .. _release-core-0-45-5:
 

@@ -10,6 +10,7 @@ from textwrap import dedent
 
 import attrs
 import sanic.exceptions
+import socketio
 from attrs import define
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
@@ -54,12 +55,42 @@ class InternalServerError(Exception):
     pass
 
 
+class NeedOneData(Exception):
+    pass
+
+
 class WSRequestLogger(tp.Protocol):
-    def __call__(self, request: Request, first: tp.Any, **extra_lc_context) -> None: ...
+    def __call__(
+        self,
+        request: Request,
+        first: tp.Any,
+        *,
+        title: str = "Websocket Request",
+        **extra_lc_context,
+    ) -> None: ...
 
 
 class ResponseLogger(tp.Protocol):
     def __call__(self, request: Request, response: Response, **extra_lc_context) -> None: ...
+
+
+@attrs.frozen
+class SocketioRoomEvent:
+    lock: asyncio.Lock
+    sio: socketio.AsyncServer
+    sid: str
+    data: tuple[object]
+    event: str
+
+    async def emit(self, event: str, *data: object, default: TReprer) -> None:
+        async with self.lock:
+            ds: list[object] = []
+            for d in data:
+                if isinstance(data, dict):
+                    ds.append(json_loads(json_dumps(d, default=default)))
+                else:
+                    ds.append(d)
+            await self.sio.emit(event, tuple(ds), to=self.sid)
 
 
 @define
@@ -185,6 +216,17 @@ class Sender(tp.Generic[T_Transport], abc.ABC):
 class WSSender(Sender[Websocket]):
     async def _send_response(self, msg: dict[str, object]) -> None:
         await self.transport.send(json_dumps(msg, default=self._reprer))
+
+
+class SocketioSender(Sender[SocketioRoomEvent]):
+    async def _send_response(self, msg: dict[str, object]) -> None:
+        if "progress" in msg:
+            await self.transport.emit("progress", msg, default=self._reprer)
+        elif "reply" in msg:
+            if isinstance(msg["reply"], dict) and "error" in msg["reply"]:
+                await self.transport.emit("error", msg, default=self._reprer)
+            else:
+                await self.transport.emit("reply", msg, default=self._reprer)
 
 
 class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
@@ -391,3 +433,63 @@ class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
                 loop_stop.cancel()
 
         tasks.add(process())
+
+
+class SocketioWrap(StreamWrap[WrappedSocketioHandlerOnClass, str]):
+    def message_from_exc(
+        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
+    ) -> ErrorMessage | Exception:
+        return InternalServerError("Internal Server Error")
+
+    def make_responder(
+        self,
+        transport: SocketioRoomEvent,
+        reprer: TReprer,
+        message: Message,
+    ) -> Responder:
+        return SocketioSender(transport, reprer, message)
+
+    async def _send_server_time(self, transport: SocketioRoomEvent) -> None:
+        # Don't send server_time here cause this fires per message
+        pass
+
+    async def handle_request(
+        self,
+        handler: WrappedSocketioHandlerOnClass,
+        request: Request,
+        transport: SocketioRoomEvent,
+        tasks: hp.TaskHolder,
+        stream_fut: asyncio.Future,
+    ) -> None:
+        try:
+            if len(transport.data) != 1:
+                raise NeedOneData()
+        except NeedOneData:
+            request.ctx.exc_info = sys.exc_info()
+            self.log_ws_request(request, None)
+            self.log_response(request, HTTPResponse(status=500))
+            with Message.unknown(request, stream_fut, transport.data) as message:
+                respond = self.make_responder(transport, self.reprer, message)
+                await respond(InvalidRequest("didn't have exactly one piece of data"))
+            return
+
+        body = transport.data[0]
+        if not isinstance(body, dict):
+            body = {"body": body}
+
+        if "message_id" not in body:
+            message_id = str(ulid.new())
+        else:
+            message_id = body["message_id"]
+
+        try:
+            self.log_ws_request(
+                request,
+                {"event": transport.event, "data": body},
+                message_id=message_id,
+                title="Socketio Event",
+            )
+        except Exception:
+            log.exception("Failed to log socketio request")
+
+        tasks.add(self._process(handler, transport, message_id, body, request, stream_fut))

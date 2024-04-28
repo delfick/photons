@@ -9,6 +9,7 @@ from functools import partial, wraps
 
 import attrs
 import sanic.exceptions
+import socketio
 import strcs
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
@@ -36,8 +37,12 @@ from .messages import get_logger, get_logger_name, reprer
 from .routes import Route
 from .stream_wrap import (
     Message,
+    SocketioRoomEvent,
+    SocketioSender,
+    SocketioWrap,
     Websocket,
     WebsocketWrap,
+    WrappedSocketioHandlerOnClass,
     WrappedWebsocketHandlerOnClass,
     WSSender,
 )
@@ -50,6 +55,11 @@ T = tp.TypeVar("T")
 R = tp.TypeVar("R")
 C = tp.TypeVar("C", bound="Command")
 C_Other = tp.TypeVar("C_Other", bound="Command")
+
+
+@attrs.define
+class NoSocketIOServerSetup(Exception):
+    pass
 
 
 @attrs.define
@@ -91,6 +101,40 @@ class CommandWebsocketWrap(WebsocketWrap):
         message: Message,
     ) -> Responder:
         return WSSender(
+            transport,
+            reprer,
+            message,
+            self.instance.progress_message_maker(
+                lc=self.instance.lc.using(message_id=message.id),
+                logger_name=self.instance.logger_name,
+            ),
+        )
+
+
+class CommandSocketioWrap(SocketioWrap):
+    lc: LogContext
+    logger_name: str
+    instance: "Command"
+    message_from_exc_maker: type[TMessageFromExc]
+
+    def setup(self, *, instance: "Command", message_from_exc_maker: type[TMessageFromExc]):
+        self.instance = instance
+        self.message_from_exc_maker = message_from_exc_maker
+
+    def message_from_exc(
+        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
+    ) -> ErrorMessage | Exception:
+        return self.message_from_exc_maker(
+            lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name
+        )(exc_type, exc, tb)
+
+    def make_responder(
+        self,
+        transport: Websocket,
+        reprer: TReprer,
+        message: Message,
+    ) -> Responder:
+        return SocketioSender(
             transport,
             reprer,
             message,
@@ -182,6 +226,11 @@ class RouteTransformer(tp.Generic[C]):
         ) -> RouteHandler:
             return self.app.add_websocket_route(self.wrap_ws(method), *args, **kwargs)
 
+    def sio(self, event: str, method: WrappedSocketioHandlerOnClass) -> RouteHandler:
+        return self.store.sio.on(event)(
+            self.wrap_sio(method, specific_event=None if event == "*" else event)
+        )
+
     @contextmanager
     def a_request_future(
         self, request: Request, name: str
@@ -207,6 +256,40 @@ class RouteTransformer(tp.Generic[C]):
                     message_from_exc_maker=self.message_from_exc_maker,
                 )(partial(method, instance))
                 return await handler(request, ws)
+
+        return handle
+
+    def wrap_sio(
+        self, method: WrappedSocketioHandlerOnClass, specific_event: str | None
+    ) -> RouteHandler:
+        @wraps(method)
+        async def handle(sid: str, *data: object):
+            if specific_event is None:
+                event = sid
+                sid = data[0]
+                assert isinstance(sid, str)
+            else:
+                event = specific_event
+
+            async with self.store.sio.session(sid) as session:
+                if "lock" not in session:
+                    session["lock"] = asyncio.Lock()
+
+            room = SocketioRoomEvent(
+                lock=session["lock"], sio=self.store.sio, sid=sid, data=data, event=event
+            )
+            request = self.store.sio.get_environ(sid)["sanic.request"]
+
+            with self._an_instance(request, method) as (_, instance):
+                handler = CommandSocketioWrap(
+                    self.final_future,
+                    self.server.log_ws_request,
+                    self.server.log_response,
+                    reprer=self.reprer,
+                    instance=instance,
+                    message_from_exc_maker=self.message_from_exc_maker,
+                )(partial(method, instance))
+                return await handler(request, room)
 
         return handle
 
@@ -462,11 +545,22 @@ class Command:
 
 
 class Store:
+    _sio: socketio.AsyncServer | None = None
+
     def __init__(self, *, strcs_register: strcs.CreateRegister | None = None) -> None:
         self.commands: list[type[Command]] = []
         if strcs_register is None:
             strcs_register = strcs.CreateRegister()
         self.strcs_register = strcs_register
+
+    @property
+    def sio(self) -> socketio.AsyncServer:
+        if self._sio is None:
+            raise NoSocketIOServerSetup()
+        return self._sio
+
+    def add_sio_server(self, sio: socketio.AsyncServer) -> None:
+        self._sio = sio
 
     def command(self, command: type[Command]) -> type[Command]:
         self.commands.append(command)

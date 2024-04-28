@@ -5,6 +5,7 @@ import typing as tp
 
 import aiohttp
 import pytest
+import socketio
 import websockets
 import websockets.client
 from photons_app import helpers as hp
@@ -38,6 +39,45 @@ class IdentifierMatch:
             return "<IDENTIFIER>"
         else:
             return repr(self.identifier)
+
+
+class SocketioStream(hp.AsyncCMMixin):
+    _sio: socketio.AsyncSimpleClient
+
+    def __init__(self, address: str, socketio_path: str) -> None:
+        self.address = address
+        self.socketio_path = socketio_path
+
+    async def start(self) -> "Stream":
+        self._sio = socketio.AsyncSimpleClient()
+        await self._sio.connect(self.address, socketio_path=self.socketio_path)
+        return self
+
+    async def finish(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc: BaseException | None = None,
+        tb: types.TracebackType | None = None,
+    ):
+        if hasattr(self, "_sio"):
+            await self._sio.disconnect()
+            del self._sio
+
+    async def emit(self, event: str, data: dict[str, object]) -> None:
+        if not hasattr(self, "_sio"):
+            raise AssertionError("Need to use SocketioStream in a context manager")
+
+        await self._sio.emit(event, data)
+
+    async def recv(self) -> dict | None:
+        event = await self._sio.receive()
+        assert isinstance(event, list)
+        if len(event) == 1:
+            event, data = event[0], {}
+        else:
+            event, data = event
+
+        return {"event": event, "data": data}
 
 
 class Stream(hp.AsyncCMMixin):
@@ -150,6 +190,9 @@ class WebServerRoutes(hp.AsyncCMMixin):
 
     def stream(self, route: str, *items) -> Stream:
         return Stream(f"ws://127.0.0.1:{self.port}{route}")
+
+    def sio_stream(self, route: str) -> SocketioStream:
+        return SocketioStream(f"http://127.0.0.1:{self.port}", route)
 
     async def finish(
         self,
