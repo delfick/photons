@@ -241,7 +241,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
 
             if request.route and not isinstance(request.route.handler, WithCommanderClass):
                 if isinstance(handler, WithCommanderClass):
-                    request.route.handler.__commander_class__ = handler.__commander_class__
+                    request.ctx.__commander_class__ = handler.__commander_class__
 
             with self.a_stream_fut(request) as stream_fut:
                 async with hp.TaskHolder(

@@ -280,8 +280,11 @@ class Server:
     def maybe_commander(self, request: Request) -> tp.Generator[type[Command], None, None]:
         if hasattr(request, "route") and request.route is not None:
             handler = request.route.handler
-            if hasattr(handler, "__commander_class__"):
-                cmd = handler.__commander_class__
+            cmd = getattr(handler, "__commander_class__", None)
+            if cmd is None:
+                cmd = getattr(request.ctx, "__commander_class__", None)
+
+            if cmd is not None:
                 if isinstance(cmd, type) and issubclass(cmd, Command):
                     yield cmd
 
