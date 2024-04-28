@@ -521,6 +521,7 @@ describe "Server":
                     dct: dict,
                     body: dict | None = None,
                     exc_info: ExcInfo | None = None,
+                    title: str = "Websocket Request",
                 ):
                     assert identifier == lc.context["request_identifier"]
                     get_logger(1).info(lc("Test WS Request", **dct, body=body), exc_info=exc_info)

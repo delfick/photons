@@ -231,7 +231,9 @@ class Server:
 
         log.info(lc("Request", **dct))
 
-    def log_ws_request(self, request: Request, first: tp.Any, **extra_lc_context) -> None:
+    def log_ws_request(
+        self, request: Request, first: tp.Any, title: str = "Websocket Request", **extra_lc_context
+    ) -> None:
         remote_addr = request.remote_addr
         identifier = request.ctx.request_identifier
 
@@ -242,10 +244,10 @@ class Server:
         lc = self.lc.using(request_identifier=identifier, **extra_lc_context)
 
         for cmd in self.maybe_commander(request):
-            cmd.log_ws_request(lc, request, identifier, dct, first)
+            cmd.log_ws_request(lc, request, identifier, dct, first, title=title)
             return
 
-        log.info(lc("Websocket Request", **dct, body=first))
+        log.info(lc(title, **dct, body=first))
 
     def log_response(self, request: Request, response: Response, **extra_lc_context) -> None:
         exc_info = getattr(request.ctx, "exc_info", None)

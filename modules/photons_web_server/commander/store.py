@@ -408,12 +408,13 @@ class Command:
         dct: dict,
         first: dict,
         exc_info: ExcInfo = None,
+        title: str = "Websocket Request",
     ):
         info = kls.log_ws_request_dict(request, identifier, dct, first, exc_info)
         if not info:
             return
 
-        get_logger(1).info(lc("Websocket Request", **info, body=first))
+        get_logger(1).info(lc(title, **info, body=first))
 
     @classmethod
     def log_response_dict(

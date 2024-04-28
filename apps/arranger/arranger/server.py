@@ -92,12 +92,19 @@ class ArrangerServer(Server):
             *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
         )
 
-    def log_ws_request(self, request: Request, first: object, **extra_lc_context) -> None:
+    def log_ws_request(
+        self,
+        request: Request,
+        first: object,
+        *,
+        title: str = "Websocket Request",
+        **extra_lc_context,
+    ) -> None:
         if first == {"path": "__tick__"}:
             request.ctx.is_tick = True
             return
         else:
-            return super().log_ws_request(request, first, **extra_lc_context)
+            return super().log_ws_request(request, first, title=title, **extra_lc_context)
 
     def log_response(self, request: Request, response: Response, **extra_lc_context) -> None:
         if hasattr(request.ctx, "is_tick"):
