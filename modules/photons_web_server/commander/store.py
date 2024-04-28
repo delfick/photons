@@ -589,10 +589,13 @@ class Store:
                     body_raw[k] = v
 
         if any(nxt.name in ("_params", "_params_raw") for nxt in values):
-            for k, v in request.args.items():
-                if len(v) == 1:
-                    v = v[0]
-                params_raw[k] = v
+            if "_params_raw" in kwargs and isinstance(kwargs["_params_raw"], dict):
+                params_raw.update(kwargs["_params_raw"])
+            else:
+                for k, v in request.args.items():
+                    if len(v) == 1:
+                        v = v[0]
+                    params_raw[k] = v
 
         for nxt in values:
             if nxt.name == "_params":
