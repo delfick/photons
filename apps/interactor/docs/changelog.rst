@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-16-5:
 
-0.16.5 - TBD
+0.16.5 - 28 April 2024
     * Starting to add a webapp to the interactor
       It currently does nothing.
 
