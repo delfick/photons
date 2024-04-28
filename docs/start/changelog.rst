@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-46-0:
 
-0.46.0 - TBD
+0.46.0 - 28 April 2024
     * Changed web_server.WSSend to be a protocol named web_server.Responder
     * Added to photons_web_server some ability to add socketio routes 
 
