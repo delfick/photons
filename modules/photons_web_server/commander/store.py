@@ -259,7 +259,9 @@ class RouteTransformer(tp.Generic[C]):
     ) -> tp.Generator[tp.Callable[P, R], None, None]:
         with self._an_instance(request, method, kls=kls) as (_, instance):
             route = getattr(instance, method.__name__)
-            assert route.__func__ is method
+            route_name = f"{route.__func__.__module__}.{route.__func__.__qualname__}"
+            method_name = f"{method.__module__}.{method.__qualname__}"
+            assert route_name == method_name
             yield route
 
     @tp.overload
