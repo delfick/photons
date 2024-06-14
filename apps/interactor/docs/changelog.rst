@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-6:
+
+0.16.5 - 14 June 2024
+    * Updated photons-core for some LIFX Ceiling support
+
 .. _release-interactor-0-16-5:
 
 0.16.5 - 28 April 2024

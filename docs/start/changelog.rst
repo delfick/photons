@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-46-1:
+
+0.46.1 - 14 June 2024
+    * Beginning to add support for LIFX Ceiling
+
 .. _release-core-0-46-0:
 
 0.46.0 - 28 April 2024
