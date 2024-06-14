@@ -43,8 +43,19 @@ output:
 
 
       def tile_effect_parameters_for(typ):
-          for i in range(8):
-              yield ("parameter{0}".format(i), T.Reserved(32))
+          if typ is enums.TileEffectType.SKY:
+              yield (
+                  "skyType",
+                  T.Uint8.enum(enums.TileEffectSkyType).default(enums.TileEffectSkyType.CLOUDS),
+              )
+              yield ("parameter2", T.Reserved(24))
+              yield ("cloudSaturationMin", T.Uint8.default(51))
+              yield ("parameter4", T.Reserved(24))
+              yield ("cloudSaturationMax", T.Uint8.default(178))
+              yield ("parameter6", T.Reserved(184))
+          else:
+              for i in range(8):
+                  yield ("parameter{0}".format(i), T.Reserved(32))
 
 
       def multizone_effect_parameters_for(typ):
@@ -307,7 +318,7 @@ changes:
         special_type: scaled_to_65535
       Kelvin:
         default: "3500"
-  
+
   LightSetWaveformOptional:
     fields:
       Stream:

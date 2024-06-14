@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 
-import os
 
-this_dir = os.path.abspath(os.path.dirname(__file__))
-
-env = {
-    "SRC": os.path.join(this_dir, "public-protocol", "protocol.yml"),
-    "ADJUSTMENTS": os.path.join(this_dir, "adjustments.yml"),
-    "OUTPUT_FOLDER": os.path.join(this_dir, "..", "..", "modules", "photons_messages"),
-}
-
-from venvstarter import ignite
-
-ignite(
-    __file__,
-    "generate_photons_messages",
-    deps=["lifx-photons-messages-generator==0.6.8"],
-    min_python_version=3.6,
-    env=env,
+(
+    __import__("venvstarter")
+    .manager("generate_photons_messages")
+    .add_pypi_deps("lifx-photons-messages-generator==0.6.8")
+    .min_python(3.12)
+    .add_env(SRC=("{venv_parent}", "public-protocol", "protocol.yml"))
+    .add_env(ADJUSTMENTS=("{venv_parent}", "adjustments.yml"))
+    .add_env(OUTPUT_FOLDER=("{venv_parent}", "..", "..", "modules", "photons_messages"))
+    .run()
 )
