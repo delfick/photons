@@ -380,7 +380,8 @@ class TileMessages(Messages):
 
     SetUserPosition = msg(703
         , ("tile_index", T.Uint8)
-        , ("reserved6", T.Reserved(16))
+        , ("reserved6", T.Reserved(8))
+        , ("reserved7", T.Reserved(8))
         , ("user_x", T.Float)
         , ("user_y", T.Float)
         )

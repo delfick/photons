@@ -45,13 +45,13 @@ output:
       def tile_effect_parameters_for(typ):
           if typ is enums.TileEffectType.SKY:
               yield (
-                  "skyType",
+                  "sky_type",
                   T.Uint8.enum(enums.TileEffectSkyType).default(enums.TileEffectSkyType.CLOUDS),
               )
               yield ("parameter2", T.Reserved(24))
-              yield ("cloudSaturationMin", T.Uint8.default(51))
+              yield ("cloud_saturation_min", T.Uint8.default(51))
               yield ("parameter4", T.Reserved(24))
-              yield ("cloudSaturationMax", T.Uint8.default(178))
+              yield ("cloud_saturation_max", T.Uint8.default(178))
               yield ("parameter6", T.Reserved(184))
           else:
               for i in range(8):

@@ -8,8 +8,19 @@ from photons_protocol.packets import dictobj
 
 
 def tile_effect_parameters_for(typ):
-    for i in range(8):
-        yield ("parameter{0}".format(i), T.Reserved(32))
+    if typ is enums.TileEffectType.SKY:
+        yield (
+            "sky_type",
+            T.Uint8.enum(enums.TileEffectSkyType).default(enums.TileEffectSkyType.CLOUDS),
+        )
+        yield ("parameter2", T.Reserved(24))
+        yield ("cloud_saturation_min", T.Uint8.default(51))
+        yield ("parameter4", T.Reserved(24))
+        yield ("cloud_saturation_max", T.Uint8.default(178))
+        yield ("parameter6", T.Reserved(184))
+    else:
+        for i in range(8):
+            yield ("parameter{0}".format(i), T.Reserved(32))
 
 
 def multizone_effect_parameters_for(typ):
@@ -146,20 +157,21 @@ tile_state_device = [
       ("accel_meas_x", T.Int16)
     , ("accel_meas_y", T.Int16)
     , ("accel_meas_z", T.Int16)
-    , ("reserved6", T.Reserved(16))
+    , ("reserved6", T.Reserved(8))
+    , ("reserved7", T.Reserved(8))
     , ("user_x", T.Float)
     , ("user_y", T.Float)
     , ("width", T.Uint8)
     , ("height", T.Uint8)
-    , ("reserved7", T.Reserved(8))
+    , ("reserved8", T.Reserved(8))
     , ("device_version_vendor", T.Uint32)
     , ("device_version_product", T.Uint32)
-    , ("reserved8", T.Reserved(32))
+    , ("reserved9", T.Reserved(32))
     , ("firmware_build", T.Uint64)
-    , ("reserved9", T.Reserved(64))
+    , ("reserved10", T.Reserved(64))
     , ("firmware_version_minor", T.Uint16)
     , ("firmware_version_major", T.Uint16)
-    , ("reserved10", T.Reserved(32))
+    , ("reserved11", T.Reserved(32))
     ]
 
 class Tile(dictobj.PacketSpec):
