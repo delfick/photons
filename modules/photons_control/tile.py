@@ -6,7 +6,12 @@ from photons_app.tasks import task_register as task
 from photons_canvas.orientation import nearest_orientation
 from photons_control.colour import make_hsbks
 from photons_control.script import FromGenerator
-from photons_messages import LightMessages, TileEffectType, TileMessages
+from photons_messages import (
+    LightMessages,
+    TileEffectSkyType,
+    TileEffectType,
+    TileMessages,
+)
 
 log = logging.getLogger(name="photons_control.tiles")
 
@@ -14,6 +19,8 @@ default_tile_palette = [
     {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
     for hue in [0, 40, 60, 122, 239, 271, 294]
 ]
+
+default_sky_palette = []
 
 
 def tiles_from(state_pkt):
@@ -38,7 +45,7 @@ def orientations_from(pkt):
 
 def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **options):
     """
-    Set an effect on your tiles
+    Set a firmware effect on your Tiles, Candle, Spot, Path or Ceiling
 
     Where effect is one of the available effect types:
 
@@ -51,10 +58,16 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
     MORPH
         A Morph effect
 
+    SKY
+        A sky effect only supported on LIFX Ceiling, running firmware 4.4 or higher
+
     Options include:
 
     * speed
     * duration
+    * sky_type (SKY effect)
+    * cloud_saturation_min (SKY effect)
+    * cloud_saturation_max (SKY effect)
     * palette
 
     Usage looks like:
@@ -82,6 +95,18 @@ def SetTileEffect(effect, power_on=True, power_on_duration=1, reference=None, **
 
     options["type"] = typ
     options["res_required"] = False
+
+    if options["type"] is TileEffectType.SKY:
+        if "sky_type" not in options:
+            options["sky_type"] = TileEffectSkyType.CLOUDS
+        if "speed" not in options:
+            options["speed"] = 50
+        if "cloud_saturation_min" not in options:
+            options["cloud_saturation_min"] = 50
+        if "cloud_saturation_max" not in options:
+            options["cloud_saturation_max"] = 180
+        if "palette" not in options:
+            options["palette"] = default_sky_palette
 
     if "palette" not in options:
         options["palette"] = default_tile_palette
@@ -178,7 +203,7 @@ class get_chain_state(task.Task):
 @task
 class tile_effect(task.Task):
     """
-    Set an animation on your tile!
+    Start a firmware effect on your Tile, Candle, Path, Spot or Ceiling!
 
     ``lan:tile_effect d073d5000001 <type> -- '{<options>}'``
 
@@ -193,6 +218,9 @@ class tile_effect(task.Task):
 
     FLAME
         A flame effect
+
+    SKY
+        A sky effect only supported on LIFX Ceiling, running firmware 4.4 or higher
 
     For effects that take in a palette option, you may specify palette as
     ``[{"hue": 0, "saturation": 1, "brightness": 1, "kelvin": 2500}, ...]``
