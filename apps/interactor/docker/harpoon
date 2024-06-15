@@ -8,7 +8,7 @@ tools_folder = here.parent.parent.parent / "tools"
 manager = runpy.run_path(str(tools_folder / "bootstrap_venvstarter.py"))["manager"]
 
 manager = manager("harpoon")
-manager.add_pypi_deps("docker-harpoon==0.18.0")
+manager.add_pypi_deps("docker-harpoon==0.19.0")
 manager.min_python("3.12")
 manager.add_env(HARPOON_CONFIG=("{here}", "harpoon.yml"))
 manager.run()
