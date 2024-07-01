@@ -23,6 +23,7 @@ def run(venv_location: Path, args: tp.List[str]) -> tp.Union[None, str, tp.List[
 
 
 manager = manager(run).named(".python")
+manager.set_packaging_version("24.1")
 manager.add_no_binary("black")
 manager.add_env(NOSE_OF_YETI_BLACK_COMPAT="true")
 manager.add_local_dep(
