@@ -33,8 +33,8 @@ tests = [
     "noseOfYeti[black]==2.4.8",
     "pytest-helpers-namespace==2021.12.29",
     "pytest==8.0.1",
-    "sanic==23.12.1",
-    "sanic-testing==23.12.0",
+    "sanic==24.6.0",
+    "sanic-testing==24.6.0",
     "aiohttp==3.9.3",
     "ulid-py==1.1.0",
     "strcs==0.4.0",
@@ -42,8 +42,8 @@ tests = [
 ]
 web-server = [
     "aiohttp>=3.9.0",
-    "sanic>=23.12.1",
-    "sanic-testing>=23.12.0",
+    "sanic>=24.6.0",
+    "sanic-testing>=24.6.0",
     "ulid-py>=1.1.0",
     "strcs>=0.4.0",
     "attrs>=23.2.0",

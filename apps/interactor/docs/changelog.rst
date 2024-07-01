@@ -5,6 +5,11 @@ Changelog
 
 .. _release-interactor-0-16-6:
 
+0.16.6 - TBD
+    * Update sanic
+
+.. _release-interactor-0-16-6:
+
 0.16.5 - 14 June 2024
     * Updated photons-core for some LIFX Ceiling support
 
