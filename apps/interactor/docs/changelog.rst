@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-16-6:
 
-0.16.6 - TBD
+0.16.6 - 1 July 2024
     * Update sanic
 
 .. _release-interactor-0-16-6:

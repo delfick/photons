@@ -4,7 +4,7 @@ ChangeLog
 =========
 .. _release-core-0-46-2:
 
-0.46.2 - TBD
+0.46.2 - 1 July 2024
     * Update sanic
 
 .. _release-core-0-46-1:
