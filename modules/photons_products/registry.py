@@ -1310,5 +1310,45 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_LIFX_CANDLE_US(lifx.Product):
+        pid = 215
+        family = Family.LCMX
+        friendly = "LIFX Candle Color US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_CANDLE_INTL(lifx.Product):
+        pid = 216
+        family = Family.LCMX
+        friendly = "LIFX Candle Colour Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_TUBE_US(lifx.Product):
+        pid = 217
+        family = Family.LCMX
+        friendly = "LIFX Tube US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_TUBE_INTL(lifx.Product):
+        pid = 218
+        family = Family.LCMX
+        friendly = "LIFX Tube Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
 
 Products = ProductsHolder(ProductRegistry, lifx.Capability)
