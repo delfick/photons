@@ -2,6 +2,12 @@
 
 ChangeLog
 =========
+
+.. _release-core-0-46-3:
+
+0.46.3 - TBD
+    * Update strcs to impose a constraint on cattrs
+
 .. _release-core-0-46-2:
 
 0.46.2 - 1 July 2024
