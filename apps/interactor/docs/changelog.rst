@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-8:
+
+0.16.8 - 14 September 2024
+    * Update photons
+
 .. _release-interactor-0-16-7:
 
 0.16.7 - 1 July 2024

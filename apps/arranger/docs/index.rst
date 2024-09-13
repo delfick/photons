@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-9-2:
+
+0.9.2 - 14 September 2024
+    * Update photons
+
 .. _release-arranger-0-9-1:
 
 0.9.1 - 1 July 2024

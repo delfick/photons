@@ -5,8 +5,9 @@ ChangeLog
 
 .. _release-core-0-46-3:
 
-0.46.3 - TBD
+0.46.3 - 14 September 2024
     * Update strcs to impose a constraint on cattrs
+    * Added some more products to the product registry
 
 .. _release-core-0-46-2:
 
