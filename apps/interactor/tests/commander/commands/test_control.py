@@ -2,7 +2,6 @@
 
 from unittest import mock
 
-import pytest
 from photons_app.mimic.event import Events
 from photons_control.colour import ColourParser
 from photons_messages import DeviceMessages, LightMessages
@@ -287,8 +286,8 @@ describe "Control":
                 )
                 devices.store(device).clear()
 
-        @pytest.mark.async_timeout(5)
-        async it "has transform command", devices, server:
+        async it "has transform command", async_timeout, devices, server:
+            async_timeout.set_timeout_seconds(5)
             # Just power
             expected = {"results": {device.serial: "ok" for device in devices}}
 

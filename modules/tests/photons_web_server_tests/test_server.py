@@ -11,9 +11,9 @@ from contextlib import asynccontextmanager
 from unittest import mock
 
 import aiohttp
+import alt_pytest_asyncio
 import pytest
 import sanic
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
 from photons_app.collector import Collector
@@ -48,7 +48,7 @@ async def make_server(ServerKls: type[Server]):
 
 @pytest.fixture()
 def collector():
-    with OverrideLoop(new_loop=False):
+    with alt_pytest_asyncio.Loop(new_loop=False):
         collector = Collector()
         collector.prepare(None, {})
         yield collector

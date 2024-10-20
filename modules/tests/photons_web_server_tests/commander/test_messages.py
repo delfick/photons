@@ -166,7 +166,7 @@ describe "get_logger_name":
     it "defaults to getting from previous frame", call_from_conftest:
         assert get_logger_name() == "photons_web_server_tests.commander.test_messages"
 
-        assert get_logger_name(stack_level=1) == "_pytest.python"
+        assert get_logger_name(stack_level=1) == "alt_pytest_asyncio.machinery"
 
         name = call_from_conftest(get_logger_name)
         assert name == "photons_web_server_tests.conftest"

@@ -35,9 +35,9 @@ light3 = devices.add("light3")(
 )
 
 
-@pytest.fixture(autouse=True)
-def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(3))
+@pytest.fixture
+def default_async_timeout() -> float:
+    return 3
 
 
 @pytest.fixture(scope="module")

@@ -3,14 +3,14 @@
 import asyncio
 from unittest import mock
 
-import pytest
 from photons_app import mimic
 
 describe "Clean":
     describe "v1":
 
-        @pytest.mark.async_timeout(15)
-        async it "has v1 routes", devices: mimic.DeviceCollection, server, responses:
+        async it "has v1 routes", async_timeout, devices: mimic.DeviceCollection, server, responses:
+            async_timeout.set_timeout_seconds(15)
+
             all_ok = {"results": {d.serial: "ok" for d in devices}}
 
             result = {

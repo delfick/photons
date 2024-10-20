@@ -4,8 +4,8 @@ import asyncio
 import os
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta
 from photons_app import helpers as hp
@@ -17,7 +17,7 @@ describe "PhotonsApp":
 
     @pytest.fixture(autouse=True)
     def override_loop(self):
-        with OverrideLoop(new_loop=False):
+        with alt_pytest_asyncio.Loop(new_loop=False):
             yield
 
     def make_photons_app(self, **kwargs):

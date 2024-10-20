@@ -4,8 +4,8 @@ import os
 from textwrap import dedent
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.app import App as DelfickApp
 from delfick_project.norms import sb
 from photons_app import helpers as hp
@@ -15,7 +15,7 @@ from photons_app.executor import App
 
 @pytest.fixture(autouse=True)
 def override_loop():
-    with OverrideLoop(new_loop=False):
+    with alt_pytest_asyncio.Loop(new_loop=False):
         yield
 
 

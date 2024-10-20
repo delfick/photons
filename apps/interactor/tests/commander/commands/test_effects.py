@@ -7,9 +7,9 @@ from photons_control.tile import default_tile_palette
 from photons_messages.fields import Color
 
 
-@pytest.fixture(autouse=True)
-def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(15))
+@pytest.fixture
+def default_async_timeout() -> float:
+    return 15
 
 
 @pytest.fixture()

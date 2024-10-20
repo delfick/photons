@@ -2,8 +2,8 @@
 
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb
 from photons_app.collector import Collector
@@ -111,7 +111,7 @@ describe "TaskRegister":
 
         @pytest.fixture()
         def collector(self):
-            with OverrideLoop(new_loop=False):
+            with alt_pytest_asyncio.Loop(new_loop=False):
                 collector = Collector()
                 collector.prepare(None, {})
                 yield collector
@@ -396,7 +396,7 @@ describe "TaskRegister":
 
         @pytest.fixture()
         def collector(self):
-            with OverrideLoop(new_loop=False):
+            with alt_pytest_asyncio.Loop(new_loop=False):
                 collector = Collector()
                 collector.prepare(None, {})
                 yield collector
@@ -674,7 +674,7 @@ describe "TaskRegister":
 
         @pytest.fixture()
         def collector(self):
-            with OverrideLoop(new_loop=False):
+            with alt_pytest_asyncio.Loop(new_loop=False):
                 superman = mock.Mock(
                     name="resolvedsuperman",
                     instantiated_name="superman",

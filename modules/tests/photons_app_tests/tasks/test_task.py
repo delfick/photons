@@ -4,8 +4,8 @@ import asyncio
 import time
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import dictobj, sb
 from photons_app import helpers as hp
@@ -17,7 +17,7 @@ describe "Task":
 
     @pytest.fixture()
     def collector(self):
-        with OverrideLoop(new_loop=False):
+        with alt_pytest_asyncio.Loop(new_loop=False):
             collector = Collector()
             collector.prepare(None, {})
             yield collector

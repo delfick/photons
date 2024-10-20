@@ -11,9 +11,9 @@ from photons_messages import DeviceMessages, DiscoveryMessages, LightMessages
 from photons_products import Products
 
 
-@pytest.fixture(autouse=True)
-def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(10))
+@pytest.fixture
+def default_async_timeout() -> float:
+    return 10
 
 
 describe "DeviceFinder":

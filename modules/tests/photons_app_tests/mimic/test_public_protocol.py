@@ -190,8 +190,7 @@ describe "LightState":
             LightMessages.GetLightPower(), [DeviceMessages.StatePower(level=200)], power=200
         )
 
-    @pytest.mark.async_timeout(1e9)
-    async it "responds to Color messages", device, assertResponse:
+    async it "responds to Color messages", async_timeout, device, assertResponse:
 
         def light_state(label, power, hue, saturation, brightness, kelvin):
             return LightMessages.LightState.create(

@@ -2,8 +2,8 @@
 
 import asyncio
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_app.collector import Collector
@@ -13,7 +13,7 @@ from photons_app.tasks.tasks import GracefulTask, Task
 
 @pytest.fixture()
 def collector():
-    with OverrideLoop(new_loop=False):
+    with alt_pytest_asyncio.Loop(new_loop=False):
         collector = Collector()
         collector.prepare(None, {})
         yield collector

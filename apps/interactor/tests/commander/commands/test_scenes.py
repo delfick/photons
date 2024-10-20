@@ -14,9 +14,10 @@ async def start_database(server):
 
 describe "Scene":
     describe "v1":
-        # sqlite is very slow on github actions for some reason
-        @pytest.mark.async_timeout(20)
-        async it "has scene commands", devices, server, responses:
+        async it "has scene commands", async_timeout, devices, server, responses:
+            # sqlite is very slow on github actions for some reason
+            async_timeout.set_timeout_seconds(20)
+
             await server.assertCommand(
                 "/v1/lifx/command", {"command": "scene_info"}, json_output={}
             )

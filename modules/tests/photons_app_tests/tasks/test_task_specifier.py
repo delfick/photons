@@ -3,8 +3,8 @@
 from textwrap import dedent
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
 from photons_app import helpers as hp
@@ -46,7 +46,7 @@ describe "task_specifier_spec":
                     if hasattr(s, "patch"):
                         s.patch.stop()
 
-            with OverrideLoop(new_loop=False), Prepare(), open(fle.name) as realfile:
+            with alt_pytest_asyncio.Loop(new_loop=False), Prepare(), open(fle.name) as realfile:
                 args_dict = {"photons_app": {"config": realfile}}
 
                 app = App()

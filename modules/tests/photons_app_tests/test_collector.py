@@ -7,8 +7,8 @@ from contextlib import contextmanager
 from textwrap import dedent
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from backports.entry_points_selectable import entry_points
 from delfick_project.addons import Register
 from delfick_project.errors_pytest import assertRaises
@@ -30,7 +30,7 @@ describe "Collector":
 
     @pytest.fixture()
     def collector(self):
-        with OverrideLoop(new_loop=False):
+        with alt_pytest_asyncio.Loop(new_loop=False):
             collector = Collector()
             collector.prepare(None, {})
             yield collector
@@ -48,7 +48,7 @@ describe "Collector":
                 target_register.register_type("lan", Target.FieldSpec())
                 super().add_targets(target_register, targets)
 
-        with OverrideLoop(new_loop=False):
+        with alt_pytest_asyncio.Loop(new_loop=False):
             collector = C()
             collector.prepare(None, {}, extra_files=[{"targets": {"lan": {"type": "lan"}}}])
 
@@ -71,7 +71,7 @@ describe "Collector":
         run.assert_called_once_with()
 
     it "can be cloned":
-        with OverrideLoop(new_loop=False):
+        with alt_pytest_asyncio.Loop(new_loop=False):
             collector = Collector()
 
             prepare = mock.Mock(name="prepare")
@@ -704,7 +704,7 @@ describe "Collector":
                 """,
                 )
 
-                with OverrideLoop(new_loop=False):
+                with alt_pytest_asyncio.Loop(new_loop=False):
                     collector = Collector()
                     collector.prepare(rootyml, {})
 
@@ -752,7 +752,7 @@ describe "Collector":
                 """,
                 )
 
-                with OverrideLoop(new_loop=False):
+                with alt_pytest_asyncio.Loop(new_loop=False):
                     collector = Collector()
 
                     errs = []
@@ -826,7 +826,7 @@ describe "Collector":
             assert final_future.cancelled()
 
         async it "cleans up targets":
-            with OverrideLoop(new_loop=False):
+            with alt_pytest_asyncio.Loop(new_loop=False):
                 collector = Collector()
                 collector.prepare(
                     None,

@@ -133,6 +133,8 @@ def run_pytest():
                     "--log-level=INFO",
                     "-p",
                     "helpers_namespace",
+                    "-p",
+                    "alt_pytest_asyncio.enable",
                 ]
             )
             yield

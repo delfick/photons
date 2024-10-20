@@ -67,15 +67,15 @@ async def sender(final_future):
         yield sender
 
 
-@pytest.fixture(autouse=True)
-def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(3))
+@pytest.fixture
+def default_async_timeout() -> float:
+    return 3
 
 
 describe "ApplyTheme":
 
-    @pytest.mark.async_timeout(15)
-    async it "can apply a theme", sender:
+    async it "can apply a theme", async_timeout, sender:
+        async_timeout.set_timeout_seconds(15)
         msg = ApplyTheme.msg({})
         await sender(msg, FoundSerials())
 
@@ -103,8 +103,8 @@ describe "ApplyTheme":
 
         assert len(non_zero_hues) > 200
 
-    @pytest.mark.async_timeout(15)
-    async it "can have options", sender:
+    async it "can have options", async_timeout, sender:
+        async_timeout.set_timeout_seconds(15)
         msg = ApplyTheme.msg({"power_on": False, "overrides": {"saturation": 0.2}})
         await sender(msg, FoundSerials())
 

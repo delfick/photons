@@ -8,9 +8,9 @@ from photons_app.mimic.event import Events
 from photons_canvas.points.simple_messages import Set64
 
 
-@pytest.fixture(autouse=True)
-def set_async_timeout(request):
-    request.applymarker(pytest.mark.async_timeout(15))
+@pytest.fixture
+def default_async_timeout() -> float:
+    return 15
 
 
 describe "Animation Commands":

@@ -2,8 +2,8 @@
 
 from unittest import mock
 
+import alt_pytest_asyncio
 import pytest
-from alt_pytest_asyncio.plugin import OverrideLoop
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta, sb
 from photons_app.collector import Collector
@@ -21,7 +21,7 @@ def meta():
 
 @pytest.fixture()
 def collector():
-    with OverrideLoop(new_loop=False):
+    with alt_pytest_asyncio.Loop(new_loop=False):
         collector = Collector()
         collector.prepare(None, {})
         yield collector
