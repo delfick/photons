@@ -35,7 +35,6 @@ skip_glob = [
 ]
 
 [tool.mypy]
-plugins = 'noseOfYeti.plugins.mypy'
 mypy_path = 'modules:apps/arranger:apps/interactor'
 namespace_packages = true
 explicit_package_bases = true

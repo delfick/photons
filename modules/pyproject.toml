@@ -30,7 +30,6 @@ dependencies = [
 tests = [
     "typing-extensions==4.8.0",
     "alt-pytest-asyncio==0.9.0",
-    "noseOfYeti[black]==2.4.8",
     "pytest-helpers-namespace==2021.12.29",
     "pytest==8.0.1",
     "sanic==24.6.0",
