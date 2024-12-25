@@ -1,4 +1,3 @@
-# coding: spec
 
 import random
 
@@ -6,21 +5,21 @@ from delfick_project.errors_pytest import assertRaises
 from photons_control.colour import Effects, NoSuchEffect, Waveform
 from photons_messages import LightMessages
 
-describe "Effects":
-    it "supports a None effect":
+class TestEffects:
+    def test_it_supports_a_None_effect(self):
         assert Effects.make(None) == {}
 
-    it "complains if the effect doesn't exist":
+    def test_it_complains_if_the_effect_doesnt_exist(self):
         assert not hasattr(Effects, "blah")
         with assertRaises(NoSuchEffect, effect="blah"):
             Effects.make("blah")
 
-    it "complains if the effect does exist but isn't an effect":
+    def test_it_complains_if_the_effect_does_exist_but_isnt_an_effect(self):
         assert hasattr(Effects, "__dict__")
         with assertRaises(NoSuchEffect, effect="__dict__"):
             Effects.make("__dict__")
 
-    it "has built in effects":
+    def test_it_has_built_in_effects(self):
         available = ["pulse", "sine", "half_sine", "triangle", "saw", "breathe"]
 
         for effect in available:

@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -93,7 +92,7 @@ def makeAssertUnhandled(device):
     return assertUnhandled
 
 
-describe "LightDevice":
+class TestLightDevice:
 
     @pytest.fixture()
     def device(self):
@@ -105,7 +104,7 @@ describe "LightDevice":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
-    async it "responds to label messages", device, assertResponse:
+    async def test_it_responds_to_label_messages(self, device, assertResponse):
         await assertResponse(DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="")])
         await assertResponse(
             DeviceMessages.SetLabel(label="sam"),
@@ -116,7 +115,7 @@ describe "LightDevice":
             DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
         )
 
-    async it "responds to power messages", device, assertResponse:
+    async def test_it_responds_to_power_messages(self, device, assertResponse):
         await assertResponse(DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=0)])
         await assertResponse(
             DeviceMessages.SetPower(level=200), [DeviceMessages.StatePower(level=0)], power=200
@@ -126,7 +125,7 @@ describe "LightDevice":
         )
 
 
-describe "SwitchDevice":
+class TestSwitchDevice:
 
     @pytest.fixture()
     def device(self):
@@ -148,7 +147,7 @@ describe "SwitchDevice":
 
         return assertUnhandled
 
-    async it "responds to label messages", device, assertResponse:
+    async def test_it_responds_to_label_messages(self, device, assertResponse):
         await assertResponse(DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="")])
         await assertResponse(
             DeviceMessages.SetLabel(label="sam"),
@@ -159,12 +158,12 @@ describe "SwitchDevice":
             DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
         )
 
-    async it "replies to light messages with a StateUnhandled packet", device, assertUnhandled:
+    async def test_it_replies_to_light_messages_with_a_StateUnhandled_packet(self, device, assertUnhandled):
         await assertUnhandled(LightMessages.GetColor())
         await assertUnhandled(LightMessages.GetLightPower())
 
 
-describe "LightState":
+class TestLightState:
 
     @pytest.fixture()
     def device(self):
@@ -176,7 +175,7 @@ describe "LightState":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
-    async it "responds to light power messages", device, assertResponse:
+    async def test_it_responds_to_light_power_messages(self, device, assertResponse):
         await assertResponse(DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=0)])
         await assertResponse(
             LightMessages.SetLightPower(level=200),
@@ -190,7 +189,7 @@ describe "LightState":
             LightMessages.GetLightPower(), [DeviceMessages.StatePower(level=200)], power=200
         )
 
-    async it "responds to Color messages", async_timeout, device, assertResponse:
+    async def test_it_responds_to_Color_messages(self, async_timeout, device, assertResponse):
 
         def light_state(label, power, hue, saturation, brightness, kelvin):
             return LightMessages.LightState.create(
@@ -260,7 +259,7 @@ describe "LightState":
         )
         await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 333, 0, 1, 6789)])
 
-describe "Infrared":
+class TestInfrared:
 
     @pytest.fixture()
     def device(self):
@@ -273,7 +272,7 @@ describe "Infrared":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
-    async it "responds to infrared messages", device, assertResponse:
+    async def test_it_responds_to_infrared_messages(self, device, assertResponse):
         await assertResponse(
             LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)]
         )
@@ -288,7 +287,7 @@ describe "Infrared":
             infrared=100,
         )
 
-    async it "doesn't respond to infrared if the product doesn't have infrared":
+    async def test_it_doesnt_respond_to_infrared_if_the_product_doesnt_have_infrared(self):
         device = devices["a19"]
         assert not device.cap.has_ir
         assert device.cap.product.family is Family.LCM2
@@ -299,7 +298,7 @@ describe "Infrared":
         await assertUnhandled(LightMessages.GetInfrared())
         await assertUnhandled(LightMessages.SetInfrared(brightness=100))
 
-    async it "does respond to infrared if the product doesn't have infrared but is LCM3":
+    async def test_it_does_respond_to_infrared_if_the_product_doesnt_have_infrared_but_is_LCM3(self):
         device = devices["lcm3a19"]
         assert device.cap.product.family is Family.LCM3
         assert not device.cap.has_ir
@@ -321,7 +320,7 @@ describe "Infrared":
             infrared=100,
         )
 
-describe "Matrix":
+class TestMatrix:
 
     @pytest.fixture
     def device(self):
@@ -333,7 +332,7 @@ describe "Matrix":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
-    async it "responds to changing user position", device, assertResponse:
+    async def test_it_responds_to_changing_user_position(self, device, assertResponse):
         await assertResponse(
             TileMessages.SetUserPosition(tile_index=1, user_x=0, user_y=1),
             [],
@@ -361,7 +360,7 @@ describe "Matrix":
             [],
         )
 
-    async it "responds to tile effect messages", device, assertResponse:
+    async def test_it_responds_to_tile_effect_messages(self, device, assertResponse):
         await assertResponse(
             TileMessages.GetTileEffect(),
             [
@@ -397,7 +396,7 @@ describe "Matrix":
             matrix_effect=TileEffectType.FLAME,
         )
 
-    async it "doesn't respond to tile messages if the product doesn't have chain":
+    async def test_it_doesnt_respond_to_tile_messages_if_the_product_doesnt_have_chain(self):
         device = devices["a19"]
         assert "matrix_effect" not in device.attrs
 
@@ -410,7 +409,7 @@ describe "Matrix":
             )
         )
 
-describe "Zones":
+class TestZones:
 
     async def make_device(self, name, zones=None):
         device = devices[name]
@@ -418,7 +417,7 @@ describe "Zones":
             await device.change_one("zones", zones, event=None)
         return device
 
-    async it "doesn't respond if we aren't a multizone device":
+    async def test_it_doesnt_respond_if_we_arent_a_multizone_device(self):
         device = devices["a19"]
         assert "zones_effect" not in device.attrs
         assert "zones" not in device.attrs
@@ -444,7 +443,7 @@ describe "Zones":
             MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)], colors_count=1)
         )
 
-    async it "doesn't respond to extended multizone if we aren't extended multizone":
+    async def test_it_doesnt_respond_to_extended_multizone_if_we_arent_extended_multizone(self):
         for case in ["striplcm1", "striplcm2noextended"]:
             device = await self.make_device(case, zones=[hp.Color(0, 0, 0, 0)])
             devices.store(device).assertAttrs(
@@ -484,7 +483,7 @@ describe "Zones":
                 )
             )
 
-    async it "responds to all messages if we have extended multizone":
+    async def test_it_responds_to_all_messages_if_we_have_extended_multizone(self):
         device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)])
         devices.store(device).assertAttrs(
             zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
@@ -516,7 +515,7 @@ describe "Zones":
             True,
         )
 
-    async it "responds to effect messages":
+    async def test_it_responds_to_effect_messages(self):
         device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)])
         devices.store(device).assertAttrs(
             zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
@@ -540,7 +539,7 @@ describe "Zones":
             [MultiZoneMessages.StateMultiZoneEffect(type=MultiZoneEffectType.MOVE)],
         )
 
-    async it "responds to old multizone":
+    async def test_it_responds_to_old_multizone(self):
         zones = [
             hp.Color(0, 0, 0, 0),
             hp.Color(1, 0.1, 0.1, 3500),
@@ -605,7 +604,7 @@ describe "Zones":
             ],
         )
 
-    async it "responds to extended multizone":
+    async def test_it_responds_to_extended_multizone(self):
         zones = [
             hp.Color(0, 0, 0, 0),
             hp.Color(1, 0.1, 0.1, 3500),
@@ -662,7 +661,7 @@ describe "Zones":
             ],
         )
 
-describe "Product":
+class TestProduct:
 
     def make_device(self, name, product, firmware):
         device = devices[name]
@@ -670,7 +669,7 @@ describe "Product":
         assert device.firmware == firmware
         return device, makeAssertResponse(device)
 
-    async it "responds to GetVersion":
+    async def test_it_responds_to_GetVersion(self):
         device, assertResponse = self.make_device("a19", Products.LCM2_A19, hp.Firmware(2, 80))
         await assertResponse(
             DeviceMessages.GetVersion(),
@@ -683,7 +682,7 @@ describe "Product":
             [DeviceMessages.StateVersion(vendor=1, product=55)],
         )
 
-    async it "responds to GetHostFirmware":
+    async def test_it_responds_to_GetHostFirmware(self):
         device, assertResponse = self.make_device(
             "color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23)
         )
@@ -700,7 +699,7 @@ describe "Product":
             [DeviceMessages.StateHostFirmware(build=4, version_major=3, version_minor=50)],
         )
 
-    async it "responds to GetWifiFirmware":
+    async def test_it_responds_to_GetWifiFirmware(self):
         device, assertResponse = self.make_device(
             "color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23)
         )
@@ -715,7 +714,7 @@ describe "Product":
             [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
         )
 
-describe "Grouping":
+class TestGrouping:
 
     @pytest.fixture()
     def device(self):
@@ -725,7 +724,7 @@ describe "Grouping":
     def assertResponse(self, device, **attrs):
         return makeAssertResponse(device, **attrs)
 
-    async it "responds to group", device, assertResponse:
+    async def test_it_responds_to_group(self, device, assertResponse):
         getter = DeviceMessages.GetGroup()
         state = DeviceMessages.StateGroup(group="abcd", label="gl", updated_at=1)
         await assertResponse(getter, [state])
@@ -742,7 +741,7 @@ describe "Grouping":
         )
         await assertResponse(getter, [state])
 
-    async it "responds to location", device, assertResponse:
+    async def test_it_responds_to_location(self, device, assertResponse):
         getter = DeviceMessages.GetLocation()
         state = DeviceMessages.StateLocation(location="efef", label="ll", updated_at=2)
         await assertResponse(getter, [state])
@@ -756,7 +755,7 @@ describe "Grouping":
         )
         await assertResponse(getter, [state])
 
-describe "Clean":
+class TestClean:
 
     @pytest.fixture()
     def device(self):
@@ -776,7 +775,7 @@ describe "Clean":
     def m(self, fake_the_time):
         return fake_the_time[1]
 
-    async it "responds to starting a cycle when light is off", device, assertResponse, m:
+    async def test_it_responds_to_starting_a_cycle_when_light_is_off(self, device, assertResponse, m):
         await device.change_one("power", 0, event=None)
 
         assert device.attrs.clean_details.enabled is False
@@ -855,7 +854,7 @@ describe "Clean":
         await assertResponse(getter, [state])
         assert device.attrs.power == 0
 
-    async it "responds to starting a cycle when light is on", device, assertResponse, m:
+    async def test_it_responds_to_starting_a_cycle_when_light_is_on(self, device, assertResponse, m):
         await device.change_one("power", 0xFFFF, event=None)
 
         assert device.attrs.clean_details.enabled is False
@@ -915,7 +914,7 @@ describe "Clean":
         await assertResponse(getter, [state])
         assert device.attrs.power == 0xFFFF
 
-    async it "can change default duration", device, assertResponse, m:
+    async def test_it_can_change_default_duration(self, device, assertResponse, m):
         setter = LightMessages.SetHevCycle(enable=True, duration_s=0, res_required=False)
         await assertResponse(setter, True)
         getter = LightMessages.GetHevCycle()
@@ -941,7 +940,7 @@ describe "Clean":
         assert device.attrs.clean_details.indication is True
         assert device.attrs.clean_details.default_duration_s == 69420
 
-    async it "can interrupt a cycle", device, assertResponse, m:
+    async def test_it_can_interrupt_a_cycle(self, device, assertResponse, m):
 
         async def start(enable, duration):
             setter = LightMessages.SetHevCycle(

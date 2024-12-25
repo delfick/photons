@@ -1,13 +1,12 @@
-# coding: spec
 
 import asyncio
 import time
 
 from photons_app import helpers as hp
 
-describe "tick":
+class TestTick:
 
-    async it "keeps yielding such that yields are 'every' apart", FakeTime, MockedCallLater:
+    async def test_it_keeps_yielding_such_that_yields_are_every_apart(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -21,7 +20,7 @@ describe "tick":
         assert called == [(1, 3, 0), (2, 3, 3), (3, 3, 6), (4, 3, 9), (5, 3, 12)]
         assert m.called_times == [3, 6, 9, 12]
 
-    async it "works with 0 every", FakeTime, MockedCallLater:
+    async def test_it_works_with_0_every(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -36,7 +35,7 @@ describe "tick":
 
         assert called == [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 2.0), (5, 0, 2.0), (6, 0, 2.0)]
 
-    async it "works with 0 every and nonzero min_wait", FakeTime, MockedCallLater:
+    async def test_it_works_with_0_every_and_nonzero_min_wait(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -58,7 +57,7 @@ describe "tick":
             (6, 0.1, 2.4),
         ]
 
-    async it "keeps yielding until max_iterations", FakeTime, MockedCallLater:
+    async def test_it_keeps_yielding_until_max_iterations(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -69,7 +68,7 @@ describe "tick":
 
         assert called == [1, 2, 3, 4, 5]
 
-    async it "keeps yielding until max_time", FakeTime, MockedCallLater:
+    async def test_it_keeps_yielding_until_max_time(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -80,7 +79,7 @@ describe "tick":
 
         assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12), (6, 15), (7, 18)]
 
-    async it "keeps yielding until max_time or max_iterations", FakeTime, MockedCallLater:
+    async def test_it_keeps_yielding_until_max_time_or_max_iterations(self, FakeTime, MockedCallLater):
 
         with FakeTime() as t:
             async with MockedCallLater(t):
@@ -110,7 +109,7 @@ describe "tick":
                     (7, 18),
                 ]
 
-    async it "keeps yielding such that yields are best effort 'every' apart when tasks go over", FakeTime, MockedCallLater:
+    async def test_it_keeps_yielding_such_that_yields_are_best_effort_every_apart_when_tasks_go_over(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -134,7 +133,7 @@ describe "tick":
         assert called == [(1, 0), (2, 3), (3, 6), (4, 11), (5, 13), (6, 22), (7, 24)]
         assert m.called_times == [3, 6, 9, 12, 15, 24]
 
-    async it "stops if final_future stops", FakeTime, MockedCallLater:
+    async def test_it_stops_if_final_future_stops(self, FakeTime, MockedCallLater):
         called = []
 
         final_future = hp.create_future()
@@ -150,9 +149,9 @@ describe "tick":
         assert called == [0, 3, 6, 9, 12]
         assert m.called_times == [3, 6, 9, 12]
 
-describe "ATicker":
+class TestATicker:
 
-    async it "can change the after permanently", FakeTime, MockedCallLater:
+    async def test_it_can_change_the_after_permanently(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -187,7 +186,7 @@ describe "ATicker":
         ]
         assert m.called_times == [3, 6, 11, 16, 21, 26, 31, 36, 41]
 
-    async it "can change the after once", FakeTime, MockedCallLater:
+    async def test_it_can_change_the_after_once(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -205,7 +204,7 @@ describe "ATicker":
         assert called == [(1, 3, 0), (2, 3, 3), (3, 3, 6), (4, 1, 11), (5, 3, 12), (6, 3, 15)]
         assert m.called_times == [3, 6, 11, 12, 15]
 
-    async it "can have a minimum wait", FakeTime, MockedCallLater:
+    async def test_it_can_have_a_minimum_wait(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -223,7 +222,7 @@ describe "ATicker":
         assert called == [(1, 5, 0), (2, 5, 5), (3, 6, 14), (4, 5, 20)]
         assert m.called_times == [5, 10, 20]
 
-    async it "can be told to follow the schedule", FakeTime, MockedCallLater:
+    async def test_it_can_be_told_to_follow_the_schedule(self, FakeTime, MockedCallLater):
         called = []
 
         with FakeTime() as t:
@@ -251,8 +250,8 @@ describe "ATicker":
         ]
         assert m.called_times == [5, 10, 14, 15, 20, 27, 30]
 
-    describe "with a pauser":
-        async it "can be paused", FakeTime, MockedCallLater:
+    class TestWithAPauser:
+        async def test_it_can_be_paused(self, FakeTime, MockedCallLater):
             called = []
 
             pauser = asyncio.Semaphore()
@@ -280,7 +279,7 @@ describe "ATicker":
             ]
             assert m.called_times == [5.0, 10.0, 33.0, 33.0, 35.0, 40.0, 45.0]
 
-        async it "cancelled final_future not stopped by pauser", FakeTime, MockedCallLater:
+        async def test_it_cancelled_final_future_not_stopped_by_pauser(self, FakeTime, MockedCallLater):
             called = []
 
             pauser = asyncio.Semaphore()

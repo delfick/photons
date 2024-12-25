@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -18,7 +17,7 @@ class Sem:
         return isinstance(other, asyncio.Semaphore) and other._value == self.limit
 
 
-describe "sender_wrapper":
+class TestSenderWrapper:
 
     @pytest.fixture()
     def V(self):
@@ -54,7 +53,7 @@ describe "sender_wrapper":
 
         return V()
 
-    async it "does not impose a limit if limit is given as None", V:
+    async def test_it_does_not_impose_a_limit_if_limit_is_given_as_None(self, V):
         assert V.called == []
 
         a = mock.Mock(name="a")
@@ -67,7 +66,7 @@ describe "sender_wrapper":
         assert kwargs == {"b": a, "limit": None}
         assert V.called == []
 
-    async it "turns limit into a semaphore", V:
+    async def test_it_turns_limit_into_a_semaphore(self, V):
         a = mock.Mock(name="a")
         kwargs = {"b": a, "limit": 50}
         sender = mock.NonCallableMock(name="sender")
@@ -78,7 +77,7 @@ describe "sender_wrapper":
         assert kwargs == {"b": a, "limit": Sem(50)}
         assert V.called == []
 
-    async it "passes on limit if it has acquire", V:
+    async def test_it_passes_on_limit_if_it_has_acquire(self, V):
         a = mock.Mock(name="a")
         limit = mock.NonCallableMock(name="limit", spec=["acquire"])
         kwargs = {"b": a, "limit": limit}
@@ -90,7 +89,7 @@ describe "sender_wrapper":
         assert kwargs == {"b": a, "limit": limit}
         assert V.called == []
 
-    async it "passes on limit if it is already a Semaphore", V:
+    async def test_it_passes_on_limit_if_it_is_already_a_Semaphore(self, V):
         a = mock.Mock(name="a")
         limit = asyncio.Semaphore(1)
         kwargs = {"b": a, "limit": limit}
@@ -102,7 +101,7 @@ describe "sender_wrapper":
         assert kwargs == {"b": a, "limit": limit}
         assert V.called == []
 
-    async it "creates and closes the sender if none provided", V:
+    async def test_it_creates_and_closes_the_sender_if_none_provided(self, V):
         a = mock.Mock(name="a")
         kwargs = {"b": a}
 
@@ -116,7 +115,7 @@ describe "sender_wrapper":
             ("close_sender", (V.sender,), {}),
         ]
 
-describe "ScriptRunner":
+class TestScriptRunner:
 
     @pytest.fixture()
     def V(self):
@@ -155,7 +154,7 @@ describe "ScriptRunner":
 
         return V()
 
-    async it "takes in script and target":
+    async def test_it_takes_in_script_and_target(self):
         script = mock.Mock(name="script")
         target = mock.Mock(name="target")
 
@@ -164,8 +163,8 @@ describe "ScriptRunner":
         assert runner.script is script
         assert runner.target is target
 
-    describe "run":
-        async it "does nothing if no script":
+    class TestRun:
+        async def test_it_does_nothing_if_no_script(self):
             runner = ScriptRunner(None, mock.NonCallableMock(name="target"))
             reference = mock.Mock(name="reference")
 
@@ -175,7 +174,7 @@ describe "ScriptRunner":
 
             assert got == []
 
-        async it "calls run on the script", V:
+        async def test_it_calls_run_on_the_script(self, V):
             assert V.called == []
 
             a = mock.Mock(name="a")
@@ -189,7 +188,7 @@ describe "ScriptRunner":
             assert found == [V.res1, V.res2]
             assert V.called == [("run", (reference, sender), {"b": a, "limit": Sem(30)})]
 
-        async it "can create a sender", V:
+        async def test_it_can_create_a_sender(self, V):
             a = mock.Mock(name="a")
             reference = mock.Mock(name="reference")
 
@@ -206,8 +205,8 @@ describe "ScriptRunner":
                 ("close_sender", (V.sender,), {}),
             ]
 
-    describe "run_all":
-        async it "calls run on the script", V:
+    class TestRunAll:
+        async def test_it_calls_run_on_the_script(self, V):
             assert V.called == []
 
             a = mock.Mock(name="a")
@@ -219,7 +218,7 @@ describe "ScriptRunner":
             assert found == [V.res1, V.res2]
             assert V.called == [("run", (reference, sender), {"b": a, "limit": Sem(30)})]
 
-        async it "raises BadRunWithResults if we have risen exceptions", V:
+        async def test_it_raises_BadRunWithResults_if_we_have_risen_exceptions(self, V):
             error1 = PhotonsAppError("failure")
 
             class FakeScript:

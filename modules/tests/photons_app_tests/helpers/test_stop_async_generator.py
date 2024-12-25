@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import sys
@@ -7,8 +6,8 @@ from unittest import mock
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 
-describe "stop_async_generator":
-    async it "can cancel a generator":
+class TestStopAsyncGenerator:
+    async def test_it_can_cancel_a_generator(self):
         called = []
         ready = hp.create_future()
 
@@ -37,7 +36,7 @@ describe "stop_async_generator":
             "finally",
         ]
 
-    async it "can throw an arbitrary exception into the generator":
+    async def test_it_can_throw_an_arbitrary_exception_into_the_generator(self):
         called = []
         ready = hp.create_future()
 
@@ -67,7 +66,7 @@ describe "stop_async_generator":
             "finally",
         ]
 
-    async it "works if generator is already complete":
+    async def test_it_works_if_generator_is_already_complete(self):
 
         async def d():
             yield True
@@ -78,7 +77,7 @@ describe "stop_async_generator":
 
         await hp.stop_async_generator(gen)
 
-    async it "works if generator is already complete by cancellation":
+    async def test_it_works_if_generator_is_already_complete_by_cancellation(self):
 
         async def d():
             fut = hp.create_future()
@@ -93,7 +92,7 @@ describe "stop_async_generator":
 
         await hp.stop_async_generator(gen)
 
-    async it "works if generator is already complete by exception":
+    async def test_it_works_if_generator_is_already_complete_by_exception(self):
 
         async def d():
             raise ValueError("NOPE")
@@ -106,7 +105,7 @@ describe "stop_async_generator":
 
         await hp.stop_async_generator(gen)
 
-    async it "works if generator is half complete":
+    async def test_it_works_if_generator_is_half_complete(self):
 
         called = []
 
@@ -136,7 +135,7 @@ describe "stop_async_generator":
             await hp.stop_async_generator(gen)
         assert called == ["start", 0, 1, 2, 3, 4, 5, "cancel", "finally"]
 
-    async it "works if generator is cancelled inside":
+    async def test_it_works_if_generator_is_cancelled_inside(self):
         waiter = hp.create_future()
 
         called = []
@@ -168,7 +167,7 @@ describe "stop_async_generator":
         assert called == ["start", 0, 1, 2, 3, 4, 5, "cancel", "finally"]
         await hp.stop_async_generator(gen)
 
-    async it "works if generator is cancelled outside":
+    async def test_it_works_if_generator_is_cancelled_outside(self):
         waiter = hp.create_future()
 
         called = []

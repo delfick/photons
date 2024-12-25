@@ -1,12 +1,11 @@
-# coding: spec
 
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError, RunErrors
 from photons_transport import catch_errors
 
-describe "throw_error":
-    it "passes on errors if error_catcher is a callable":
+class TestThrowError:
+    def test_it_passes_on_errors_if_error_catcher_is_a_callable(self):
         es = []
 
         def ec(e):
@@ -22,7 +21,7 @@ describe "throw_error":
         assert error_catcher is ec
         assert es == [e1, e2]
 
-    it "passes on errors if error_catcher is a list":
+    def test_it_passes_on_errors_if_error_catcher_is_a_list(self):
         es = []
 
         e1 = ValueError("NOPE")
@@ -35,7 +34,7 @@ describe "throw_error":
         assert error_catcher is es
         assert es == [e1, e2]
 
-    it "does nothing if no errors":
+    def test_it_does_nothing_if_no_errors(self):
         with catch_errors():
             pass
 
@@ -52,12 +51,12 @@ describe "throw_error":
             pass
         assert es == []
 
-    it "throws the error if just one":
+    def test_it_throws_the_error_if_just_one(self):
         with assertRaises(ValueError, "NOPE"):
             with catch_errors():
                 raise ValueError("NOPE")
 
-    it "merges multiple of the same error together":
+    def test_it_merges_multiple_of_the_same_error_together(self):
         e1 = PhotonsAppError("yeap", a=1)
         e2 = PhotonsAppError("yeap", a=1)
 
@@ -71,7 +70,7 @@ describe "throw_error":
                 hp.add_error(ec, e1)
                 hp.add_error(ec, e2)
 
-    it "combines multiple of different  errors into a RunErrors":
+    def test_it_combines_multiple_of_different_errors_into_a_RunErrors(self):
         e1 = PhotonsAppError("yeap", a=1)
         e2 = PhotonsAppError("yeap", b=1)
 

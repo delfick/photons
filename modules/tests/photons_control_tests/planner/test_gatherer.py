@@ -1,4 +1,3 @@
-# coding: spec
 
 import itertools
 from contextlib import contextmanager
@@ -87,7 +86,7 @@ def compare_called(got, want):
     assert want == got
 
 
-describe "Gatherer":
+class TestGatherer:
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
@@ -111,9 +110,9 @@ describe "Gatherer":
         with mock.patch("time.time", t):
             yield t
 
-    describe "A plan saying NoMessages":
+    class TestAPlanSayingNoMessages:
 
-        async it "processes without needing messages", sender:
+        async def test_it_processes_without_needing_messages(self, sender):
             called = []
 
             i1 = mock.Mock(name="i1")
@@ -139,7 +138,7 @@ describe "Gatherer":
 
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
-        async it "does not process other messages", sender:
+        async def test_it_does_not_process_other_messages(self, sender):
             called = []
 
             i1 = mock.Mock(name="i1")
@@ -168,7 +167,7 @@ describe "Gatherer":
 
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
-        async it "can be determined by logic", sender:
+        async def test_it_can_be_determined_by_logic(self, sender):
             called = []
             i1 = mock.Mock(name="i1")
 
@@ -207,9 +206,9 @@ describe "Gatherer":
 
             self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
-    describe "A plan saying Skip":
+    class TestAPlanSayingSkip:
 
-        async it "has no processing or info", sender:
+        async def test_it_has_no_processing_or_info(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -231,7 +230,7 @@ describe "Gatherer":
 
             compare_called(called, [])
 
-        async it "does not process other messages", sender:
+        async def test_it_does_not_process_other_messages(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -256,7 +255,7 @@ describe "Gatherer":
 
             compare_called(called, [])
 
-        async it "can be determined by logic", sender:
+        async def test_it_can_be_determined_by_logic(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -288,9 +287,9 @@ describe "Gatherer":
 
             self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
-    describe "A plan with no messages":
+    class TestAPlanWithNoMessages:
 
-        async it "it gets all other messages", sender:
+        async def test_it_it_gets_all_other_messages(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -332,7 +331,7 @@ describe "Gatherer":
                 ],
             )
 
-        async it "still finishes if no messages processed but finished_after_no_more_messages", sender:
+        async def test_it_still_finishes_if_no_messages_processed_but_finished_after_no_more_messages(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -358,9 +357,9 @@ describe "Gatherer":
 
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
-    describe "a plan that never finishes":
+    class TestAPlanThatNeverFinishes:
 
-        async it "it doesn't get recorded", sender:
+        async def test_it_it_doesnt_get_recorded(self, sender):
             called = []
 
             class NeverFinishedPlan(Plan):
@@ -390,9 +389,9 @@ describe "Gatherer":
                 ],
             )
 
-    describe "A plan with messages":
+    class TestAPlanWithMessages:
 
-        async it "messages are processed until we say plan is done", sender:
+        async def test_it_messages_are_processed_until_we_say_plan_is_done(self, sender):
             called = []
 
             class SimplePlan(Plan):
@@ -439,7 +438,7 @@ describe "Gatherer":
                 ],
             )
 
-        async it "adds errors from info", sender:
+        async def test_it_adds_errors_from_info(self, sender):
             error = ValueError("ERROR")
 
             class ErrorPlan(Plan):
@@ -476,7 +475,7 @@ describe "Gatherer":
 
             assert found == [(light2.serial, "label", "sam"), (light3.serial, "label", "strip")]
 
-        async it "raises errors after yielding everything", sender:
+        async def test_it_raises_errors_after_yielding_everything(self, sender):
             called = []
 
             class LabelPlan(Plan):
@@ -621,7 +620,7 @@ describe "Gatherer":
                 light1.serial: (False, {"looker": True, "power": 0}),
             }
 
-        async it "doesn't raise errors if we have an error catcher", sender:
+        async def test_it_doesnt_raise_errors_if_we_have_an_error_catcher(self, sender):
             called = []
 
             class LabelPlan(Plan):
@@ -773,9 +772,9 @@ describe "Gatherer":
                 light1.serial: (False, {"looker": True, "power": 0}),
             }
 
-    describe "refreshing":
+    class TestRefreshing:
 
-        async it "it can refresh always", sender:
+        async def test_it_it_can_refresh_always(self, sender):
             called = []
 
             class LabelPlan(Plan):
@@ -829,7 +828,7 @@ describe "Gatherer":
             compare_called(called, [])
             self.compare_received({light1: [], light2: [], light3: []})
 
-        async it "it can refresh on time", sender:
+        async def test_it_it_can_refresh_on_time(self, sender):
             with self.modified_time() as t:
                 called = []
 
@@ -944,7 +943,7 @@ describe "Gatherer":
 
                 called.clear()
 
-        async it "cannot steal messages from completed plans if we refresh messages those other plans use", sender:
+        async def test_it_cannot_steal_messages_from_completed_plans_if_we_refresh_messages_those_other_plans_use(self, sender):
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -1039,7 +1038,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "has no cached completed data if instance has no key", sender:
+        async def test_it_has_no_cached_completed_data_if_instance_has_no_key(self, sender):
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -1131,9 +1130,9 @@ describe "Gatherer":
 
             self.compare_received({light1: [], light2: [], light3: []})
 
-    describe "dependencies":
+    class TestDependencies:
 
-        async it "it can get dependencies", sender:
+        async def test_it_it_can_get_dependencies(self, sender):
             called = []
 
             class PowerPlan(Plan):
@@ -1224,7 +1223,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "it can get dependencies of dependencies and messages can be shared", sender:
+        async def test_it_it_can_get_dependencies_of_dependencies_and_messages_can_be_shared(self, sender):
             called = []
 
             class Plan1(Plan):
@@ -1311,7 +1310,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "it can skip based on dependency", sender:
+        async def test_it_it_can_skip_based_on_dependency(self, sender):
             called = []
 
             class Plan1(Plan):
@@ -1382,7 +1381,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "can get results from deps as well", sender:
+        async def test_it_can_get_results_from_deps_as_well(self, sender):
             called = []
 
             class Plan1(Plan):
@@ -1453,7 +1452,7 @@ describe "Gatherer":
                 }
             )
 
-        async it "chain is broken when dep can't get results", sender:
+        async def test_it_chain_is_broken_when_dep_cant_get_results(self, sender):
             called = []
 
             class Plan1(Plan):

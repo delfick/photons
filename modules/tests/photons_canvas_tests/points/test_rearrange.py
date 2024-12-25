@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -9,8 +8,8 @@ from photons_canvas.points import rearrange as rea
 from photons_canvas.points.canvas import Canvas
 from photons_products import Products
 
-describe "rearrange":
-    it "creates a new canvas from the parts given by the rearranger":
+class TestRearrange:
+    def test_it_creates_a_new_canvas_from_the_parts_given_by_the_rearranger(self):
         device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
 
         rp1 = mock.Mock(name="rp1")
@@ -64,7 +63,7 @@ describe "rearrange":
         assert [n[p] for p in php.Points.all_points(n.bounds)] == expected
         assert set(p.real_part for p in n.parts) == set([rp1, rp2])
 
-    it "can create new canvas without colors":
+    def test_it_can_create_new_canvas_without_colors(self):
         device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
 
         rp1 = mock.Mock(name="rp1")
@@ -97,7 +96,7 @@ describe "rearrange":
         assert all(n[p] is None for p in php.Points.all_points(n.bounds))
         assert set(p.real_part for p in n.parts) == set([rp1, rp2])
 
-describe "Rearrangers":
+class TestRearrangers:
 
     def make_parts(self, *corner_and_sizes):
         device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
@@ -149,17 +148,17 @@ describe "Rearrangers":
 
         assert len(set(found)) == len(found)
 
-    describe "Separate alignment":
-        it "aligns separate user_x and leaves y alignment":
+    class TestSeparateAlignment:
+        def test_it_aligns_separate_user_x_and_leaves_y_alignment(self):
             parts = list(self.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8)))
             self.assertParts(rea.Separate(), parts, (0, 1), (8, 2), (12, 7), (15, 4))
 
-    describe "Straight alignment":
-        it "makes all parts line up on the same y axis":
+    class TestStraightAlignment:
+        def test_it_makes_all_parts_line_up_on_the_same_y_axis(self):
             parts = list(self.make_parts((0, 1, 7, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 20, 8)))
             self.assertParts(rea.Straight(), parts, (0, 0, 1), (4, 0, 0), (11, 0, 3), (31, 0, 2))
 
-    describe "Vertical alignment":
-        it "puts all parts at the same y level":
+    class TestVerticalAlignment:
+        def test_it_puts_all_parts_at_the_same_y_level(self):
             parts = list(self.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8)))
             self.assertParts(rea.VerticalAlignment(), parts, (0, 0), (-1, 0), (5, 0), (0, 0))

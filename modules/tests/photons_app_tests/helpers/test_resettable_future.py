@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 
@@ -6,12 +5,12 @@ import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 
-describe "ResettableFuture":
-    async it "ensure_future returns the ResettableFuture as is":
+class TestResettableFuture:
+    async def test_it_ensure_future_returns_the_ResettableFuture_as_is(self):
         fut = hp.ResettableFuture()
         assert asyncio.ensure_future(fut) is fut
 
-    async it "creates a future":
+    async def test_it_creates_a_future(self):
         fut = hp.ResettableFuture()
         assert isinstance(fut.fut, asyncio.Future)
         assert fut.name is None
@@ -22,13 +21,13 @@ describe "ResettableFuture":
         assert isinstance(fut.fut, asyncio.Future)
         assert fut.fut.name == "ResettableFuture(blah)::__init__[fut]"
 
-    async it "gets callbacks from the current future":
+    async def test_it_gets_callbacks_from_the_current_future(self):
         fut = hp.ResettableFuture()
         assert len(fut._callbacks) == 1
         pytest.helpers.assertFutCallbacks(fut, hp.silent_reporter)
         assert fut._callbacks == fut.fut._callbacks
 
-    async it "knows if the future is done":
+    async def test_it_knows_if_the_future_is_done(self):
         fut = hp.ResettableFuture()
         assert not fut.done()
         fut.set_result(True)
@@ -46,7 +45,7 @@ describe "ResettableFuture":
         fut.reset()
         assert not fut.done()
 
-    async it "can get and set a result":
+    async def test_it_can_get_and_set_a_result(self):
         fut = hp.ResettableFuture()
         fut.set_result(True)
         assert fut.result() is True
@@ -63,7 +62,7 @@ describe "ResettableFuture":
 
         assert await fut is False
 
-    async it "can get and set an exception":
+    async def test_it_can_get_and_set_an_exception(self):
         fut = hp.ResettableFuture()
         error = ValueError("NOPE")
         fut.set_exception(error)
@@ -84,7 +83,7 @@ describe "ResettableFuture":
         with assertRaises(TypeError, "HI"):
             await fut
 
-    async it "can be cancelled and be asked if cancelled":
+    async def test_it_can_be_cancelled_and_be_asked_if_cancelled(self):
         fut = hp.ResettableFuture()
         fut.cancel()
         assert fut.cancelled()
@@ -102,7 +101,7 @@ describe "ResettableFuture":
         with assertRaises(asyncio.CancelledError):
             await fut
 
-    async it "can have done callbacks":
+    async def test_it_can_have_done_callbacks(self):
         fut = hp.ResettableFuture()
 
         called = []
@@ -150,15 +149,15 @@ describe "ResettableFuture":
 
         assert called == ["ONE", "TWO"]
 
-    async it "has a repr":
+    async def test_it_has_a_repr(self):
         fut = hp.ResettableFuture()
         assert repr(fut) == "<ResettableFuture#None((pending))>"
 
         fut = hp.ResettableFuture(name="hello")
         assert repr(fut) == "<ResettableFuture#hello((pending))>"
 
-    describe "reset":
-        async it "does nothing if the future hasn't been resolved yet":
+    class TestReset:
+        async def test_it_does_nothing_if_the_future_hasnt_been_resolved_yet(self):
             fut = hp.ResettableFuture()
             f = fut.fut
 
@@ -187,7 +186,7 @@ describe "ResettableFuture":
             pytest.helpers.assertFutCallbacks(f)
             pytest.helpers.assertFutCallbacks(fut)
 
-        async it "can force the future to be closed":
+        async def test_it_can_force_the_future_to_be_closed(self):
             fut = hp.ResettableFuture()
             f = fut.fut
 

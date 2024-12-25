@@ -1,12 +1,11 @@
-# coding: spec
 
 import uuid
 
 from photons_app import mimic
 
-describe "Discovery":
-    describe "v1":
-        async it "has v1 routes", devices: mimic.DeviceCollection, server, responses:
+class TestDiscovery:
+    class TestV1:
+        async def test_it_has_v1_routes(self, devices: mimic.DeviceCollection, server, responses):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "discover"},
@@ -67,15 +66,15 @@ describe "Discovery":
                 "reply": [device.serial for device in devices],
             }
 
-    describe "v2":
-        async it "GET /v2/discover/serials", devices: mimic.DeviceCollection, server, responses:
+    class TestV2:
+        async def test_it_GET_v2_discover_serials(self, devices: mimic.DeviceCollection, server, responses):
             serials = await server.assertMethod("GET", "/v2/discover/serials")
             assert sorted(serials) == sorted(device.serial for device in devices)
 
             serials = await server.assertMethod("GET", "/v2/discover/serials/match:label=kitchen")
             assert serials == ["d073d5000001"]
 
-        async it "GET /v2/discover/info", devices: mimic.DeviceCollection, server, responses:
+        async def test_it_GET_v2_discover_info(self, devices: mimic.DeviceCollection, server, responses):
             await server.assertMethod(
                 "GET", "/v2/discover/info", json_output=responses.discovery_response
             )
@@ -83,7 +82,7 @@ describe "Discovery":
             info = await server.assertMethod("GET", "/v2/discover/info/match:label=kitchen")
             assert info == {"d073d5000001": responses.discovery_response["d073d5000001"]}
 
-        async it "PUT /v2/discover", devices: mimic.DeviceCollection, server, responses:
+        async def test_it_PUT_v2_discover(self, devices: mimic.DeviceCollection, server, responses):
             await server.assertMethod(
                 "PUT",
                 "/v2/discover",

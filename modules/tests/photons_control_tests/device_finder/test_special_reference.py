@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 from unittest import mock
@@ -16,15 +15,15 @@ def default_async_timeout() -> float:
     return 10
 
 
-describe "DeviceFinder":
-    it "takes in filter":
+class TestDeviceFinder:
+    def test_it_takes_in_filter(self):
         fltr = Filter.empty()
         reference = DeviceFinder(fltr)
         assert reference.fltr is fltr
         assert reference.finder is None
         assert isinstance(reference, SpecialReference)
 
-    it "can take in a finder":
+    def test_it_can_take_in_a_finder(self):
         fltr = Filter.empty()
         finder = mock.Mock(name="finder")
         reference = DeviceFinder(fltr, finder=finder)
@@ -32,7 +31,7 @@ describe "DeviceFinder":
         assert reference.finder is finder
         assert isinstance(reference, SpecialReference)
 
-    describe "usage":
+    class TestUsage:
 
         @pytest.fixture()
         def V(self):
@@ -48,8 +47,8 @@ describe "DeviceFinder":
 
             return V()
 
-        describe "a_finder context manager":
-            async it "uses the finder on the reference if it exists", V:
+        class TestAFinderContextManager:
+            async def test_it_uses_the_finder_on_the_reference_if_it_exists(self, V):
                 reference = DeviceFinder(V.fltr, finder=V.finder)
 
                 async with reference.a_finder(V.sender) as f:
@@ -57,7 +56,7 @@ describe "DeviceFinder":
                     V.finder.finish.assert_not_called()
                 V.finder.finish.assert_not_called()
 
-            async it "creates it's own finder if one isn't on the reference", V:
+            async def test_it_creates_its_own_finder_if_one_isnt_on_the_reference(self, V):
                 FakeFinder = mock.Mock(name="Finder", return_value=V.finder, spec=[])
                 reference = DeviceFinder(V.fltr)
 
@@ -70,8 +69,8 @@ describe "DeviceFinder":
                 V.finder.finish.assert_called_once_with(None, None, None)
                 FakeFinder.assert_called_once_with(V.sender)
 
-        describe "info":
-            async it "yields devices from the finder", V:
+        class TestInfo:
+            async def test_it_yields_devices_from_the_finder(self, V):
                 called = []
 
                 class a_finder:
@@ -120,8 +119,8 @@ describe "DeviceFinder":
                 ]
                 assert found == [d1, d2]
 
-        describe "serials":
-            async it "yields devices from the finder", V:
+        class TestSerials:
+            async def test_it_yields_devices_from_the_finder(self, V):
                 called = []
 
                 class a_finder:
@@ -170,13 +169,13 @@ describe "DeviceFinder":
                 ]
                 assert found == [d1, d2]
 
-        describe "Proxying Filter classmethods":
+        class TestProxyingFilterClassmethods:
 
             @pytest.fixture()
             def fltr(self):
                 return Filter.from_kwargs(label="kitchen", cap=["matrix", "chain"])
 
-            it "supports from_json_str", V, fltr:
+            def test_it_supports_from_json_str(self, V, fltr):
                 reference = DeviceFinder.from_json_str(
                     '{"label": "kitchen", "cap": ["matrix", "chain"]}'
                 )
@@ -189,7 +188,7 @@ describe "DeviceFinder":
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
-            it "supports from_key_value_str", V, fltr:
+            def test_it_supports_from_key_value_str(self, V, fltr):
                 reference = DeviceFinder.from_key_value_str("label=kitchen cap=matrix,chain")
                 assert reference.fltr == fltr
                 assert reference.finder is None
@@ -200,7 +199,7 @@ describe "DeviceFinder":
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
-            it "supports from_url_str", V, fltr:
+            def test_it_supports_from_url_str(self, V, fltr):
                 reference = DeviceFinder.from_url_str("label=kitchen&cap=matrix&cap=chain")
                 assert reference.fltr == fltr
                 assert reference.finder is None
@@ -211,7 +210,7 @@ describe "DeviceFinder":
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
-            it "supports from_kwargs", V, fltr:
+            def test_it_supports_from_kwargs(self, V, fltr):
                 reference = DeviceFinder.from_kwargs(label="kitchen", cap=["matrix", "chain"])
                 assert reference.fltr == fltr
                 assert reference.finder is None
@@ -222,7 +221,7 @@ describe "DeviceFinder":
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
-            it "supports empty", V, fltr:
+            def test_it_supports_empty(self, V, fltr):
                 for ri, rd in ((False, False), (True, True), (True, False), (False, True)):
                     expected = Filter.empty(refresh_info=ri, refresh_discovery=rd)
                     reference = DeviceFinder.empty(refresh_info=ri, refresh_discovery=rd)
@@ -243,7 +242,7 @@ describe "DeviceFinder":
                 assert reference.fltr == Filter.empty(refresh_info=False, refresh_discovery=False)
                 assert reference.finder is V.finder
 
-            it "supports from_options", V, fltr:
+            def test_it_supports_from_options(self, V, fltr):
                 reference = DeviceFinder.from_options(
                     {"label": "kitchen", "cap": ["matrix", "chain"]}
                 )
@@ -256,7 +255,7 @@ describe "DeviceFinder":
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
-describe "finding devices":
+class TestFindingDevices:
 
     @pytest.fixture()
     async def V(self, final_future):
@@ -294,7 +293,7 @@ describe "finding devices":
             v.sender = sender
             yield v
 
-    async it "can get serials and info", V:
+    async def test_it_can_get_serials_and_info(self, V):
         reference = DeviceFinder.empty()
         found, ss = await reference.find(V.sender, timeout=5)
         reference.raise_on_missing(found)
@@ -464,7 +463,7 @@ describe "finding devices":
                 )
             V.devices.store(device).clear()
 
-    async it "can reuse a finder", V:
+    async def test_it_can_reuse_a_finder(self, V):
 
         finder = Finder(V.sender)
 

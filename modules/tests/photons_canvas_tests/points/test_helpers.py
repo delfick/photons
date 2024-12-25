@@ -1,19 +1,18 @@
-# coding: spec
 
 import pytest
 from photons_canvas.points import helpers as php
 
-describe "Color":
-    it "has ZERO":
+class TestColor:
+    def test_it_has_ZERO(self):
         assert php.Color.ZERO == (0, 0, 0, 0)
 
-    it "has WHITE":
+    def test_it_has_WHITE(self):
         assert php.Color.WHITE == (0, 0, 1, 3500)
 
-    it "has EMPTIES":
+    def test_it_has_EMPTIES(self):
         assert php.Color.EMPTIES == (php.Color.ZERO, None)
 
-    it "can tell if a color is 'dead'":
+    def test_it_can_tell_if_a_color_is_dead(self):
         assert php.Color.dead(None)
         assert php.Color.dead((0, 0, 0, 0))
         assert php.Color.dead((40, 1, 0, 3500))
@@ -21,12 +20,12 @@ describe "Color":
         assert not php.Color.dead((1, 0, 0.2, 0))
         assert not php.Color.dead((40, 1, 0.1, 3500))
 
-    describe "override a color":
-        it "does nothing if no overrides":
+    class TestOverrideAColor:
+        def test_it_does_nothing_if_no_overrides(self):
             color = (0, 1, 2, 3)
             assert php.Color.override(color) is color
 
-        it "can override properties":
+        def test_it_can_override_properties(self):
             color = (0, 1, 2, 3)
 
             assert php.Color.override(color, hue=20) == (20, 1, 2, 3)
@@ -41,7 +40,7 @@ describe "Color":
                 color, hue=30, saturation=0.9, brightness=0.1, kelvin=9000
             ) == (30, 0.9, 0.1, 9000)
 
-        it "doesn't allow out of limits":
+        def test_it_doesnt_allow_out_of_limits(self):
             color = (40, 1, 2, 3)
 
             assert php.Color.override(color, hue=-1) == (0, 1, 2, 3)
@@ -61,8 +60,8 @@ describe "Color":
                 color, hue=361, saturation=1.1, brightness=1.1, kelvin=66666
             ) == (360, 1, 1, 65535)
 
-    describe "adjust":
-        it "can adjust hue":
+    class TestAdjust:
+        def test_it_can_adjust_hue(self):
             color = (100, 0.1, 0.3, 9000)
             assert php.Color.adjust(color, hue_change=-50) == (50, 0.1, 0.3, 9000)
             assert php.Color.adjust(color, hue_change=50) == (150, 0.1, 0.3, 9000)
@@ -70,7 +69,7 @@ describe "Color":
             assert php.Color.adjust(color, hue_change=-150) == (0, 0.1, 0.3, 9000)
             assert php.Color.adjust(color, hue_change=400) == (360, 0.1, 0.3, 9000)
 
-        it "can adjust saturation":
+        def test_it_can_adjust_saturation(self):
             color = (100, 0.5, 0.3, 9000)
             assert php.Color.adjust(color, saturation_change=-0.1) == (100, 0.4, 0.3, 9000)
             assert php.Color.adjust(color, saturation_change=0.2) == (100, 0.7, 0.3, 9000)
@@ -78,7 +77,7 @@ describe "Color":
             assert php.Color.adjust(color, saturation_change=-0.7) == (100, 0, 0.3, 9000)
             assert php.Color.adjust(color, saturation_change=0.9) == (100, 1, 0.3, 9000)
 
-        it "can adjust brightness":
+        def test_it_can_adjust_brightness(self):
             color = (100, 0.5, 0.3, 9000)
             assert php.Color.adjust(color, brightness_change=-0.1) == (100, 0.5, 0.3 - 0.1, 9000)
             assert php.Color.adjust(color, brightness_change=0.2) == (100, 0.5, 0.5, 9000)
@@ -86,7 +85,7 @@ describe "Color":
             assert php.Color.adjust(color, brightness_change=-0.7) == (100, 0.5, 0, 9000)
             assert php.Color.adjust(color, brightness_change=0.9) == (100, 0.5, 1, 9000)
 
-        it "can adjust kelvin":
+        def test_it_can_adjust_kelvin(self):
             color = (100, 0.5, 0.3, 9000)
             assert php.Color.adjust(color, kelvin_change=-1000) == (100, 0.5, 0.3, 8000)
             assert php.Color.adjust(color, kelvin_change=1000) == (100, 0.5, 0.3, 10000)
@@ -94,7 +93,7 @@ describe "Color":
             assert php.Color.adjust(color, kelvin_change=-45000) == (100, 0.5, 0.3, 0)
             assert php.Color.adjust(color, kelvin_change=66666) == (100, 0.5, 0.3, 65535)
 
-        it "can adjust combination":
+        def test_it_can_adjust_combination(self):
             got = php.Color.adjust(
                 (100, 0.5, 0.3, 9000),
                 hue_change=20,
@@ -104,7 +103,7 @@ describe "Color":
             )
             assert got == (120, 0.3, 0.8, 6000)
 
-describe "average_color":
+class TestAverageColor:
 
     def assertColorAlmostEqual(self, got, want):
         assert want[0] == pytest.approx(got[0], rel=1e-3)
@@ -112,14 +111,14 @@ describe "average_color":
         assert want[2] == pytest.approx(got[2], rel=1e-3)
         assert want[3] == pytest.approx(got[3], rel=1e-3)
 
-    it "returns None if no colors":
+    def test_it_returns_None_if_no_colors(self):
         color = php.average_color([])
         assert color is None
 
         color = php.average_color([None])
         assert color is None
 
-    it "averages saturation, brightness and kelvin":
+    def test_it_averages_saturation_brightness_and_kelvin(self):
         colors = [
             (0, 0.1, 0.2, 3500),
             (0, 0.2, 0.3, 4500),
@@ -129,7 +128,7 @@ describe "average_color":
         color = php.average_color(colors)
         self.assertColorAlmostEqual(color, (0, 0.2, 0.3, 4500))
 
-    it "it sets kelvin to 3500 if 0":
+    def test_it_it_sets_kelvin_to_3500_if_0(self):
         colors = [
             (0, 0.1, 0.2, 3500),
             (0, 0.2, 0.3, 0),
@@ -139,7 +138,7 @@ describe "average_color":
         color = php.average_color(colors)
         self.assertColorAlmostEqual(color, (0, 0.2, 0.3, 3500))
 
-    it "does special math to the hue":
+    def test_it_does_special_math_to_the_hue(self):
         #
         # NOTE: I'm not sure how to test this maths so I've just put these values into the algorithm
         #       and asserting the results I got back.
@@ -165,8 +164,8 @@ describe "average_color":
         color = php.average_color(colors)
         self.assertColorAlmostEqual(color, (20, 1, 1, 3500))
 
-describe "Points":
-    it "can get cols":
+class TestPoints:
+    def test_it_can_get_cols(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         cols = php.Points.cols(bounds)
 
@@ -178,7 +177,7 @@ describe "Points":
             [(7, 5), (7, 4), (7, 3), (7, 2)],
         ]
 
-    it "can get rows":
+    def test_it_can_get_rows(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         rows = php.Points.rows(bounds)
 
@@ -189,7 +188,7 @@ describe "Points":
             [(3, 2), (4, 2), (5, 2), (6, 2), (7, 2)],
         ]
 
-    it "can get all":
+    def test_it_can_get_all(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         all_points = php.Points.all_points(bounds)
 
@@ -199,7 +198,7 @@ describe "Points":
         r4 = [(3, 2), (4, 2), (5, 2), (6, 2), (7, 2)]
         assert all_points == [*r1, *r2, *r3, *r4]
 
-    it "can count points":
+    def test_it_can_count_points(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         assert php.Points.count_points(bounds) == 20
 
@@ -209,35 +208,35 @@ describe "Points":
         bounds = ((1, 1), (6, 6), (1, 1))
         assert php.Points.count_points(bounds) == 0
 
-    it "can get points for a row":
+    def test_it_can_get_points_for_a_row(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         row = php.Points.row(3, bounds)
         assert row == [(3, 3), (4, 3), (5, 3), (6, 3), (7, 3)]
 
-    it "can get points for a column":
+    def test_it_can_get_points_for_a_column(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         col = php.Points.col(2, bounds)
         assert col == [(2, 5), (2, 4), (2, 3), (2, 2)]
 
-    it "can expand a bounds":
+    def test_it_can_expand_a_bounds(self):
         bounds = ((3, 8), (5, 1), (5, 4))
 
         assert php.Points.expand(bounds, 5) == ((-2, 13), (10, -4), (15, 14))
         assert php.Points.expand(bounds, 3) == ((0, 11), (8, -2), (11, 10))
 
-    it "can get a point relative to bounds":
+    def test_it_can_get_a_point_relative_to_bounds(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         assert php.Points.relative((4, 4), bounds) == (1, 1)
         assert php.Points.relative((5, 2), bounds) == (2, 3)
 
-    it "can get the bottom row":
+    def test_it_can_get_the_bottom_row(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         assert php.Points.bottom_row(bounds) == 1
 
         bounds = ((3, 8), (11, 9), (5, 2))
         assert php.Points.bottom_row(bounds) == 9
 
-    it "can get the top row":
+    def test_it_can_get_the_top_row(self):
         bounds = ((3, 8), (5, 1), (5, 4))
         assert php.Points.top_row(bounds) == 5
 

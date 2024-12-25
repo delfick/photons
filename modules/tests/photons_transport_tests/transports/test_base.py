@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -19,14 +18,14 @@ def original_message():
     return mock.Mock(name="original_message")
 
 
-describe "Transport":
-    describe "__init__":
-        async it "takes in arguments", session:
+class TestTransport:
+    class TestInit:
+        async def test_it_takes_in_arguments(self, session):
             transport = Transport(session)
             assert transport.session is session
             assert transport.transport is None
 
-        async it "has a setup function", session:
+        async def test_it_has_a_setup_function(self, session):
 
             class T(Transport):
                 def setup(s, one, two, *, three):
@@ -44,7 +43,7 @@ describe "Transport":
             assert transport.two is two
             assert transport.three is three
 
-    describe "spawn":
+    class TestSpawn:
 
         @pytest.fixture()
         def V(self, session):
@@ -70,7 +69,7 @@ describe "Transport":
 
             return V()
 
-        async it "gets the transport from spawn_transport", original_message, V:
+        async def test_it_gets_the_transport_from_spawn_transport(self, original_message, V):
             assert V.called == []
             s = await V.transport.spawn(original_message, timeout=10)
             assert s is V.spawned
@@ -81,7 +80,7 @@ describe "Transport":
             assert s is V.spawned
             assert V.called == [("spawn_transport", 10)]
 
-        async it "re gets the transport was cancelled first time", original_message, V:
+        async def test_it_re_gets_the_transport_was_cancelled_first_time(self, original_message, V):
             assert V.called == []
             V.spawn_transport.side_effect = asyncio.CancelledError()
 
@@ -100,7 +99,7 @@ describe "Transport":
             assert s is V.spawned
             assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        async it "re gets the transport if has exception first time", original_message, V:
+        async def test_it_re_gets_the_transport_if_has_exception_first_time(self, original_message, V):
             assert V.called == []
             V.spawn_transport.side_effect = ValueError("YEAP")
 
@@ -119,7 +118,7 @@ describe "Transport":
             assert s is V.spawned
             assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        async it "re gets transport if it's no longer active", original_message, V:
+        async def test_it_re_gets_transport_if_its_no_longer_active(self, original_message, V):
             is_transport_active = pytest.helpers.AsyncMock(name="is_transport_active")
             is_transport_active.return_value = False
 
@@ -136,16 +135,16 @@ describe "Transport":
 
                 is_transport_active.assert_called_once_with(original_message, V.spawned)
 
-        describe "close":
+        class TestClose:
 
             @pytest.fixture()
             def transport(self, session):
                 return Transport(session)
 
-            async it "does nothing if transport is None", transport:
+            async def test_it_does_nothing_if_transport_is_None(self, transport):
                 await transport.close()
 
-            async it "doesn't swallow cancellations", transport, V:
+            async def test_it_doesnt_swallow_cancellations(self, transport, V):
 
                 async def getter():
                     await asyncio.sleep(2)
@@ -161,7 +160,7 @@ describe "Transport":
 
                 transport.transport.cancel()
 
-            async it "doesn't raise cancellations on transport", transport:
+            async def test_it_doesnt_raise_cancellations_on_transport(self, transport):
                 fut = hp.create_future()
                 fut.cancel()
 
@@ -170,7 +169,7 @@ describe "Transport":
                 await t
                 assert True, "No CancelledError raised"
 
-            async it "doesn't raise exceptions on transport", transport:
+            async def test_it_doesnt_raise_exceptions_on_transport(self, transport):
                 fut = hp.create_future()
                 fut.set_exception(ValueError("YEAP"))
 
@@ -179,7 +178,7 @@ describe "Transport":
                 await t
                 assert True, "No Exception raised"
 
-            async it "closes the transport if there is one", transport, V:
+            async def test_it_closes_the_transport_if_there_is_one(self, transport, V):
                 close_transport = pytest.helpers.AsyncMock(name="close_transport")
 
                 fut = hp.create_future()
@@ -191,25 +190,25 @@ describe "Transport":
 
                 close_transport.assert_called_once_with(V.spawned)
 
-        describe "hooks":
+        class TestHooks:
 
             @pytest.fixture()
             def transport(self, session):
                 return Transport(session)
 
-            async it "does nothing for close_transport", original_message, transport:
+            async def test_it_does_nothing_for_close_transport(self, original_message, transport):
                 t = mock.NonCallableMock(name="transport", spec=[])
                 await transport.close_transport(t)
 
-            async it "says True for is_transport_active", transport:
+            async def test_it_says_True_for_is_transport_active(self, transport):
                 t = mock.NonCallableMock(name="transport", spec=[])
                 assert await transport.is_transport_active(original_message, t)
 
-            async it "must have spawn_transport implemented", transport:
+            async def test_it_must_have_spawn_transport_implemented(self, transport):
                 with assertRaises(NotImplementedError):
                     await transport.spawn_transport(10)
 
-            async it "must have write implemented", transport:
+            async def test_it_must_have_write_implemented(self, transport):
                 bts = mock.Mock(name="bts")
                 t = mock.NonCallableMock(name="transport", spec=[])
                 original_message = mock.Mock(name="original_message")

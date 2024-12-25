@@ -1,4 +1,3 @@
-# coding: spec
 
 import sys
 
@@ -70,12 +69,12 @@ def assertEvents(events, *expected, ignore_annotations=True):
         print()
 
 
-describe "Operator":
-    describe "StaticSetter":
-        it "can be got from the Operator":
+class TestOperator:
+    class TestStaticSetter:
+        def test_it_can_be_got_from_the_Operator(self):
             assert Operator.Attr.Static is StaticSetter
 
-        async it "can be used to set values in attrs", device, final_future:
+        async def test_it_can_be_used_to_set_values_in_attrs(self, device, final_future):
 
             class Op(Operator):
                 attrs = [Operator.Attr.Static("three", 0), Operator.Attr.Static("two", "stuff")]
@@ -98,11 +97,11 @@ describe "Operator":
                 assert device.attrs.three == 0
                 assert device.attrs.two == "stuff"
 
-    describe "LambdaSetter":
-        it "can be got from the Operator":
+    class TestLambdaSetter:
+        def test_it_can_be_got_from_the_Operator(self):
             assert Operator.Attr.Lambda is LambdaSetter
 
-        async it "can be used to set values in attrs", device, final_future:
+        async def test_it_can_be_used_to_set_values_in_attrs(self, device, final_future):
 
             class Op(Operator):
                 class Options(dictobj.Spec):
@@ -136,7 +135,7 @@ describe "Operator":
                 assert device.attrs.three == 1
                 assert device.attrs.four == 2
 
-        async it "can default to use_zero if options don't determine value", device, final_future:
+        async def test_it_can_default_to_use_zero_if_options_dont_determine_value(self, device, final_future):
 
             class Op(Operator):
                 attrs = [
@@ -159,8 +158,8 @@ describe "Operator":
                 await device.reset(zerod=True)
                 assert device.attrs.thing == "stuff"
 
-    describe "Adding Operator to a device":
-        async it "adds itself to the operators list", device, final_future:
+    class TestAddingOperatorToADevice:
+        async def test_it_adds_itself_to_the_operators_list(self, device, final_future):
 
             class Op(Operator):
                 pass
@@ -176,7 +175,7 @@ describe "Operator":
                 assert device.operators == [operator1, operator2]
             assert not hasattr(device, "operators")
 
-        async it "can be a viewer instead", device, final_future:
+        async def test_it_can_be_a_viewer_instead(self, device, final_future):
 
             class View(Viewer):
                 pass
@@ -192,7 +191,7 @@ describe "Operator":
                 assert device.viewers == [viewer1, viewer2]
             assert not hasattr(device, "viewers")
 
-        async it "can override application", device, final_future:
+        async def test_it_can_override_application(self, device, final_future):
             would = []
 
             class Custom(Operator):
@@ -212,8 +211,8 @@ describe "Operator":
                 assert device.operators == []
                 assert would == [custom1, custom2]
 
-    describe "can have options":
-        it "complains if instantiated with bad options", device:
+    class TestCanHaveOptions:
+        def test_it_complains_if_instantiated_with_bad_options(self, device):
 
             class Op(Operator):
                 class Options(Operator.Options):
@@ -241,7 +240,7 @@ describe "Operator":
             else:
                 assert False, "Expected an error"
 
-        it "puts options and device attrs on operator before setup", device:
+        def test_it_puts_options_and_device_attrs_on_operator_before_setup(self, device):
             got = []
 
             class Op(Operator):
@@ -258,7 +257,7 @@ describe "Operator":
             assert operator.options.as_dict() == {"an_int": 42, "a_boolean": False}
             assert operator.device_attrs is device.attrs
 
-        it "defaults to providing empty dictionary to options", device:
+        def test_it_defaults_to_providing_empty_dictionary_to_options(self, device):
 
             class Op(Operator):
                 class Options(Operator.Options):
@@ -268,8 +267,8 @@ describe "Operator":
             operator = Op(device)
             assert operator.options.as_dict() == {"an_int": None, "a_boolean": True}
 
-    describe "handles reset events":
-        async it "does the right thing with LambdaSetters", device, final_future:
+    class TestHandlesResetEvents:
+        async def test_it_does_the_right_thing_with_LambdaSetters(self, device, final_future):
             got = []
 
             class Op(Operator):

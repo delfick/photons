@@ -1,4 +1,3 @@
-# coding: spec
 
 from textwrap import dedent
 from unittest import mock
@@ -16,7 +15,7 @@ from photons_app.tasks.specifier import task_specifier_spec
 from photons_transport.targets import LanTarget
 from photons_transport.targets.base import Target
 
-describe "task_specifier_spec":
+class TestTaskSpecifierSpec:
 
     @pytest.fixture()
     def spec(self):
@@ -54,49 +53,49 @@ describe "task_specifier_spec":
                 collector = app.setup_collector(args_dict, logging_handler, None)
                 return Meta({"collector": collector}, [])
 
-    it "can have default", spec:
+    def test_it_can_have_default(self, spec):
         for val in ("", None, sb.NotSpecified):
             result = spec.normalise(self.meta(), val)
             assert result == (sb.NotSpecified, "list_tasks")
 
-    it "can treat task as just a task", spec:
+    def test_it_can_treat_task_as_just_a_task(self, spec):
         result = spec.normalise(self.meta(), "things")
         assert result == (sb.NotSpecified, "things")
 
-    it "can split by last :", spec:
+    def test_it_can_split_by_last(self, spec):
         result = spec.normalise(self.meta(), "one:two:three")
         assert result == ("one:two", "three")
 
         result = spec.normalise(self.meta(), "one:three")
         assert result == ("one", "three")
 
-    describe "taking in an iterable":
+    class TestTakingInAnIterable:
 
-        it "can take a two item", spec:
+        def test_it_can_take_a_two_item(self, spec):
             result = spec.normalise(self.meta(), ("one", "three"))
             assert result == ("one", "three")
 
             result = spec.normalise(self.meta(), ["one", "three"])
             assert result == ("one", "three")
 
-        it "complains about non two item", spec:
+        def test_it_complains_about_non_two_item(self, spec):
             invalids = [(), ("adsf",), ("adsf", "afd", "df"), (1,), (1, 2, 3)]
             for invalid in invalids:
                 with assertRaises(BadSpecValue, "Expected tuple to be of a particular length"):
                     spec.normalise(self.meta(), invalid)
 
-        it "allows not specified for target", spec:
+        def test_it_allows_not_specified_for_target(self, spec):
             result = spec.normalise(self.meta(), (sb.NotSpecified, "amaze"))
             assert result == (sb.NotSpecified, "amaze")
 
-        it "complains about a two item tuple with bad types", spec:
+        def test_it_complains_about_a_two_item_tuple_with_bad_types(self, spec):
             invalids = [(None, None), ("asdf", sb.NotSpecified), (1, 2), ([], []), ({}, {})]
             for invalid in invalids:
                 with assertRaises(BadSpecValue, "Value failed some specifications"):
                     spec.normalise(self.meta(), invalid)
 
-    describe "overriding a target":
-        it "complains if the target being overridden doesn't exist", spec:
+    class TestOverridingATarget:
+        def test_it_complains_if_the_target_being_overridden_doesnt_exist(self, spec):
             with assertRaises(TargetNotFound, name="wat", available=[]):
                 spec.normalise(self.meta(), "wat():meh")
 
@@ -120,13 +119,13 @@ describe "task_specifier_spec":
             with assertRaises(TargetNotFound, name="wat"):
                 spec.normalise(self.meta(config), "wat():meh")
 
-        it "complains if we don't can't parse tokens", spec:
+        def test_it_complains_if_we_dont_cant_parse_tokens(self, spec):
             token_errors = ["wat(", "wat({)", "("]
             for specifier in token_errors:
                 with assertRaises(BadSpecValue, "Failed to parse specifier"):
                     spec.normalise(self.meta(), f"{specifier}:meh")
 
-        it "complains if we have invalid syntax", spec:
+        def test_it_complains_if_we_have_invalid_syntax(self, spec):
             config = """
             photons_app:
               addons:
@@ -139,7 +138,7 @@ describe "task_specifier_spec":
                 with assertRaises(BadSpecValue, "Target options must be valid dictionary syntax"):
                     spec.normalise(self.meta(config), f"{specifier}:meh")
 
-        it "complains about keyword arguments that aren't literals", spec:
+        def test_it_complains_about_keyword_arguments_that_arent_literals(self, spec):
             config = """
             photons_app:
               addons:
@@ -156,7 +155,7 @@ describe "task_specifier_spec":
                 with assertRaises(BadSpecValue, "target options can only be python literals.+"):
                     spec.normalise(self.meta(config), f"{specifier}:meh")
 
-        it "can override properties on a target", spec:
+        def test_it_can_override_properties_on_a_target(self, spec):
             config = """
             photons_app:
               addons:
@@ -185,7 +184,7 @@ describe "task_specifier_spec":
             assert isinstance(lan, LanTarget)
             assert lan.default_broadcast == "255.255.255.255"
 
-        it "can override properties with another target", spec:
+        def test_it_can_override_properties_with_another_target(self, spec):
 
             class Container(Target):
                 network = dictobj.Field(format_into=sb.any_spec, wrapper=sb.required)

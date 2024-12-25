@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -152,7 +151,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "Default Plans":
+class TestDefaultPlans:
 
     async def gather(self, sender, reference, *by_label, **kwargs):
         plan_args = []
@@ -165,9 +164,9 @@ describe "Default Plans":
         plans = sender.make_plans(*plan_args, **plan_kwargs)
         return dict(await sender.gatherer.gather_all(plans, reference, **kwargs))
 
-    describe "PacketPlan":
+    class TestPacketPlan:
 
-        async it "gets the packet", sender:
+        async def test_it_gets_the_packet(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StatePower)
             got = await self.gather(sender, two_lights, {"result": plan})
             assert got == {
@@ -182,21 +181,21 @@ describe "Default Plans":
                 got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535)
             )
 
-        async it "fails if we can't get the correct response", sender:
+        async def test_it_fails_if_we_cant_get_the_correct_response(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StateLabel)
             got = await self.gather(sender, two_lights, {"result": plan})
             assert got == {}
 
-    describe "PresencePlan":
+    class TestPresencePlan:
 
-        async it "returns True", sender:
+        async def test_it_returns_True(self, sender):
             got = await self.gather(sender, two_lights, "presence")
             assert got == {
                 light1.serial: (True, {"presence": True}),
                 light2.serial: (True, {"presence": True}),
             }
 
-        async it "allows us to get serials that otherwise wouldn't", sender:
+        async def test_it_allows_us_to_get_serials_that_otherwise_wouldnt(self, sender):
             errors = []
             lost = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
             with lost:
@@ -215,7 +214,7 @@ describe "Default Plans":
                     light2.serial: (False, {"presence": True}),
                 }
 
-        async it "fires for offline devices that have already been discovered", sender:
+        async def test_it_fires_for_offline_devices_that_have_already_been_discovered(self, sender):
 
             errors = []
             _, serials = await FoundSerials().find(sender, timeout=1)
@@ -237,7 +236,7 @@ describe "Default Plans":
                     light2.serial: (False, {"presence": True}),
                 }
 
-        async it "does not fire for devices that don't exist", sender:
+        async def test_it_does_not_fire_for_devices_that_dont_exist(self, sender):
             errors = []
 
             for serial in two_lights:
@@ -256,27 +255,27 @@ describe "Default Plans":
 
                 assert got == {light1.serial: (True, {"presence": True, "label": "bob"})}
 
-    describe "AddressPlan":
+    class TestAddressPlan:
 
-        async it "gets the address", sender:
+        async def test_it_gets_the_address(self, sender):
             got = await self.gather(sender, two_lights, "address")
             assert got == {
                 light1.serial: (True, {"address": (f"fake://{light1.serial}/memory", 56700)}),
                 light2.serial: (True, {"address": (f"fake://{light2.serial}/memory", 56700)}),
             }
 
-    describe "LabelPlan":
+    class TestLabelPlan:
 
-        async it "gets the label", sender:
+        async def test_it_gets_the_label(self, sender):
             got = await self.gather(sender, two_lights, "label")
             assert got == {
                 light1.serial: (True, {"label": "bob"}),
                 light2.serial: (True, {"label": "sam"}),
             }
 
-    describe "StatePlan":
+    class TestStatePlan:
 
-        async it "gets the power", sender:
+        async def test_it_gets_the_power(self, sender):
             state1 = {
                 "hue": light1.attrs.color.hue,
                 "saturation": light1.attrs.color.saturation,
@@ -301,18 +300,18 @@ describe "Default Plans":
                 light2.serial: (True, {"state": state2}),
             }
 
-    describe "PowerPlan":
+    class TestPowerPlan:
 
-        async it "gets the power", sender:
+        async def test_it_gets_the_power(self, sender):
             got = await self.gather(sender, two_lights, "power")
             assert got == {
                 light1.serial: (True, {"power": {"level": 0, "on": False}}),
                 light2.serial: (True, {"power": {"level": 65535, "on": True}}),
             }
 
-    describe "HevStatusPlan":
+    class TestHevStatusPlan:
 
-        async it "works when hev is not on", sender:
+        async def test_it_works_when_hev_is_not_on(self, sender):
             assert not clean.attrs.clean_details.enabled
             assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
 
@@ -330,7 +329,7 @@ describe "Default Plans":
                 ),
             }
 
-        async it "works when hev is on", sender, m:
+        async def test_it_works_when_hev_is_on(self, sender, m):
             assert clean.attrs.power == 0
             await sender(LightMessages.SetHevCycle(enable=True, duration_s=20), clean.serial)
             assert clean.attrs.clean_details.enabled
@@ -395,7 +394,7 @@ describe "Default Plans":
                 ),
             }
 
-        async it "works with different last result", sender, m:
+        async def test_it_works_with_different_last_result(self, sender, m):
             await sender(DeviceMessages.SetPower(level=65535), clean.serial)
             await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
             await m.add(22)
@@ -438,7 +437,7 @@ describe "Default Plans":
                 ),
             }
 
-        async it "works with different last result from power cycle", sender, m:
+        async def test_it_works_with_different_last_result_from_power_cycle(self, sender, m):
             await sender(DeviceMessages.SetPower(level=65535), clean.serial)
             await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
             await m.add(20)
@@ -482,9 +481,9 @@ describe "Default Plans":
                 ),
             }
 
-    describe "HEVConfigPlan":
+    class TestHEVConfigPlan:
 
-        async it "can get hev config", sender:
+        async def test_it_can_get_hev_config(self, sender):
             got = await self.gather(sender, [clean.serial, light1.serial], "hev_config")
             assert got == {
                 light1.serial: (True, {"hev_config": Skip}),
@@ -509,9 +508,9 @@ describe "Default Plans":
                 ),
             }
 
-    describe "CapabilityPlan":
+    class TestCapabilityPlan:
 
-        async it "gets the power", sender:
+        async def test_it_gets_the_power(self, sender):
 
             def make_version(vendor, product):
                 msg = DeviceMessages.StateVersion.create(
@@ -597,9 +596,9 @@ describe "Default Plans":
                 else:
                     assert not info["capability"]["cap"].has_extended_multizone
 
-    describe "FirmwarePlan":
+    class TestFirmwarePlan:
 
-        async it "gets the firmware", sender:
+        async def test_it_gets_the_firmware(self, sender):
             l1c = {
                 "build": 0,
                 "version_major": 3,
@@ -639,9 +638,9 @@ describe "Default Plans":
                 striplcm2extended.serial: (True, {"firmware": slcm2ec}),
             }
 
-    describe "VersionPlan":
+    class TestVersionPlan:
 
-        async it "gets the version", sender:
+        async def test_it_gets_the_version(self, sender):
             got = await self.gather(sender, devices.serials, "version")
             assert got == {
                 clean.serial: (True, {"version": Match({"product": 90, "vendor": 1})}),
@@ -656,9 +655,9 @@ describe "Default Plans":
                 striplcm2extended.serial: (True, {"version": Match({"product": 32, "vendor": 1})}),
             }
 
-    describe "ZonesPlan":
+    class TestZonesPlan:
 
-        async it "gets zones", sender:
+        async def test_it_gets_zones(self, sender):
             got = await self.gather(sender, devices.serials, "zones")
             expected = {
                 clean.serial: (True, {"zones": Skip}),
@@ -702,9 +701,9 @@ describe "Default Plans":
 
                 devices.store(device).assertIncoming(*expected[device])
 
-    describe "ColorsPlan":
+    class TestColorsPlan:
 
-        async it "gets colors for different devices", sender:
+        async def test_it_gets_colors_for_different_devices(self, sender):
             serials = [
                 light1.serial,
                 light2.serial,
@@ -777,8 +776,8 @@ describe "Default Plans":
 
                 devices.store(device).assertIncoming(*expected[device])
 
-    describe "PartsPlan":
-        async it "works for a bulb", sender:
+    class TestPartsPlan:
+        async def test_it_works_for_a_bulb(self, sender):
             got = await self.gather(sender, [light2.serial], "parts")
             info = got[light2.serial][1]["parts"]
 
@@ -811,7 +810,7 @@ describe "Default Plans":
             assert pc.original_colors == [color]
             assert pc.real_part.original_colors == [color]
 
-        async it "works for a not extended multizone", sender:
+        async def test_it_works_for_a_not_extended_multizone(self, sender):
             for device, colors in ((striplcm1, zones1), (striplcm2noextended, zones2)):
                 got = await self.gather(sender, [device.serial], "parts")
                 info = got[device.serial][1]["parts"]
@@ -850,7 +849,7 @@ describe "Default Plans":
                 assert pc.original_colors == colors
                 assert pc.real_part.original_colors == colors
 
-        async it "works for an extended multizone", sender:
+        async def test_it_works_for_an_extended_multizone(self, sender):
             device = striplcm2extended
             colors = zones3
 
@@ -890,7 +889,7 @@ describe "Default Plans":
             assert pc.original_colors == colors
             assert pc.real_part.original_colors == colors
 
-        async it "works for a tile set", sender:
+        async def test_it_works_for_a_tile_set(self, sender):
             device = light1
 
             colors1 = [Color(i, 1, 1, 3500) for i in range(64)]
@@ -971,9 +970,9 @@ describe "Default Plans":
                 assert pc.original_colors == colors
                 assert pc.real_part.original_colors == colors
 
-    describe "ChainPlan":
+    class TestChainPlan:
 
-        async it "gets chain for a bulb", sender:
+        async def test_it_gets_chain_for_a_bulb(self, sender):
             got = await self.gather(sender, [light2.serial], "chain")
             info = got[light2.serial][1]["chain"]
 
@@ -1007,7 +1006,7 @@ describe "Default Plans":
             assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
             assert info["reverse_orient"](0, colors) == reorient(colors, Orientation.RightSideUp)
 
-        async it "gets chain for a strip", sender:
+        async def test_it_gets_chain_for_a_strip(self, sender):
             serials = [striplcm1.serial, striplcm2noextended.serial, striplcm2extended.serial]
             got = await self.gather(sender, serials, "chain")
 
@@ -1092,7 +1091,7 @@ describe "Default Plans":
                 )
             assert info["coords_and_sizes"] == [((0.0, 0.0), (info["width"], 1))]
 
-        async it "gets chain for tiles", sender:
+        async def test_it_gets_chain_for_tiles(self, sender):
             await light1.change(
                 (("chain", 1, "accel_meas_x"), -10),
                 (("chain", 1, "accel_meas_y"), 1),
@@ -1259,9 +1258,9 @@ describe "Default Plans":
             assert ro(3, colors) == reorient(colors, Orientation.FaceUp)
             assert ro(4, colors) == reorient(colors, Orientation.RightSideUp)
 
-    describe "FirmwareEffectsPlan":
+    class TestFirmwareEffectsPlan:
 
-        async it "gets firmware effects", sender:
+        async def test_it_gets_firmware_effects(self, sender):
             io = light1.io["MEMORY"]
 
             @io.packet_filter.intercept_process_request

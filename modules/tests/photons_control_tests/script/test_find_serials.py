@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from delfick_project.norms import sb
@@ -37,13 +36,13 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "Finding serials":
+class TestFindingSerials:
 
-    async it "can find all serials", sender:
+    async def test_it_can_find_all_serials(self, sender):
         for ref in ("", "_", None, sb.NotSpecified, FoundSerials()):
             assert await find_serials(ref, sender, timeout=1) == (devices.serials, [])
 
-    async it "can find a specific serial", sender:
+    async def test_it_can_find_a_specific_serial(self, sender):
         assert await find_serials(light1.serial, sender, timeout=1) == ([light1.serial], [])
 
         async with sender.transport_target.session() as sender:
@@ -53,7 +52,7 @@ describe "Finding serials":
                     [light1.serial],
                 )
 
-    async it "can find a number of serials", sender:
+    async def test_it_can_find_a_number_of_serials(self, sender):
         for ref in (f"{light1.serial},{light2.serial}", [light1.serial, light2.serial]):
             assert light1.has_power
             assert light2.has_power

@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
@@ -26,13 +25,13 @@ def cap(product):
     return product.cap
 
 
-describe "CapabilityValue":
-    it "can have one value", cap:
+class TestCapabilityValue:
+    def test_it_can_have_one_value(self, cap):
         cv = CapabilityValue(1)
         assert cv.value(cap) == 1
         assert cv.value(cap(2, 80)) == 1
 
-    it "can have upgrades", cap:
+    def test_it_can_have_upgrades(self, cap):
         cv = (
             CapabilityValue(1)
             .until(1, 40, becomes=2)
@@ -50,7 +49,7 @@ describe "CapabilityValue":
         assert cv.value(cap(3, 90)) == 5
         assert cv.value(cap(4, 60)) == 5
 
-    it "can have upgrades with conditions":
+    def test_it_can_have_upgrades_with_conditions(self):
 
         cv = (
             CapabilityValue(1)
@@ -118,13 +117,13 @@ describe "CapabilityValue":
         assert cv.value(DESKTOP_INTEL.cap(3, 90)) == 10
         assert cv.value(DESKTOP_INTEL.cap(4, 60)) == 10
 
-    it "complains if you give upgrades out of order":
+    def test_it_complains_if_you_give_upgrades_out_of_order(self):
         with assertRaises(ProgrammerError, "Each .until must be for a greater version number"):
             CapabilityValue(1).until(1, 40, becomes=2).until(2, 60, becomes=4).until(
                 2, 50, becomes=3
             ).until(3, 70, becomes=5)
 
-    it "has equality":
+    def test_it_has_equality(self):
         cv1 = CapabilityValue(1)
         cv2 = CapabilityValue(1)
         cv3 = CapabilityValue(1).until(2, 70, becomes=20)
@@ -136,7 +135,7 @@ describe "CapabilityValue":
         assert cv3 == cv4
         assert cv3 != cv5
 
-    it "has equality with conditions":
+    def test_it_has_equality_with_conditions(self):
         cv1 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
         cv2 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
         cv3 = CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20)
@@ -162,8 +161,8 @@ describe "CapabilityValue":
         assert cv5 == cv6
         assert cv5 != cv7
 
-describe "CapabilityRange":
-    it "can create two CapabilityValue objects":
+class TestCapabilityRange:
+    def test_it_can_create_two_CapabilityValue_objects(self):
 
         class cap(Capability):
             one, two = CapabilityRange((1, 2))
@@ -183,8 +182,8 @@ describe "CapabilityRange":
             7, 60, becomes=6
         )
 
-describe "Capability":
-    it "puts capabilities on Meta", product:
+class TestCapability:
+    def test_it_puts_capabilities_on_Meta(self, product):
 
         class cap(Capability):
             pass

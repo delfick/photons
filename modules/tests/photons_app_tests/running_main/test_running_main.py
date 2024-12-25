@@ -1,4 +1,3 @@
-# coding: spec
 
 import os
 import subprocess
@@ -7,8 +6,8 @@ import sys
 this_dir = os.path.dirname(__file__)
 example_dir = os.path.join(this_dir, "example")
 
-describe "Running a mainline":
-    it "works":
+class TestRunningAMainline:
+    def test_it_works(self):
         process = subprocess.run(
             [
                 sys.executable,
@@ -29,7 +28,7 @@ describe "Running a mainline":
             == "8AC5B50C-7278-46F8-A164-9A75E310A466.39786789-9B56-475C-8F26-D04CE48EB206"
         )
 
-    it "works with old an_action":
+    def test_it_works_with_old_an_action(self):
         process = subprocess.run(
             [
                 sys.executable,

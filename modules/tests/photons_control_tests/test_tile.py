@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
@@ -54,7 +53,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "Tile helpers":
+class TestTileHelpers:
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
@@ -62,13 +61,13 @@ describe "Tile helpers":
             devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(light).clear()
 
-    describe "SetTileEffect":
+    class TestSetTileEffect:
 
-        async it "complains if we have more than 16 colors in the palette":
+        async def test_it_complains_if_we_have_more_than_16_colors_in_the_palette(self):
             with assertRaises(PhotonsAppError, "Palette can only be up to 16 colors", got=17):
                 SetTileEffect("flame", palette=["red"] * 17)
 
-        async it "can power on devices and set tile effect", sender:
+        async def test_it_can_power_on_devices_and_set_tile_effect(self, sender):
             msg = SetTileEffect("flame")
             got = await sender(msg, devices.serials)
             assert got == []
@@ -102,7 +101,7 @@ describe "Tile helpers":
                 }
             )
 
-        async it "has options", sender:
+        async def test_it_has_options(self, sender):
             msg = SetTileEffect(
                 "flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"]
             )
@@ -147,7 +146,7 @@ describe "Tile helpers":
                 }
             )
 
-        async it "can choose not to turn on devices", sender:
+        async def test_it_can_choose_not_to_turn_on_devices(self, sender):
             msg = SetTileEffect("morph", power_on=False)
             got = await sender(msg, devices.serials)
             assert got == []
@@ -179,7 +178,7 @@ describe "Tile helpers":
                 }
             )
 
-        async it "can target particular devices", sender:
+        async def test_it_can_target_particular_devices(self, sender):
             msg = SetTileEffect("morph", reference=tile1.serial)
             msg2 = SetTileEffect("flame", power_on=False, reference=tile2.serial)
             got = await sender([msg, msg2])

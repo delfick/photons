@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import sys
@@ -65,7 +64,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "FromGenerator":
+class TestFromGenerator:
 
     async def assertScript(self, sender, gen, *, generator_kwargs=None, expected, **kwargs):
         msg = FromGenerator(gen, **(generator_kwargs or {}))
@@ -82,7 +81,7 @@ describe "FromGenerator":
             devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(device).clear()
 
-    async it "is able to do a FromGenerator per serial", sender:
+    async def test_it_is_able_to_do_a_FromGenerator_per_serial(self, sender):
 
         async def gen(serial, sender, **kwargs):
             assert serial in (light1.serial, light2.serial)
@@ -122,7 +121,7 @@ describe "FromGenerator":
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-    async it "is able to do a FromGenerator per serial with per serial error_catchers", sender:
+    async def test_it_is_able_to_do_a_FromGenerator_per_serial_with_per_serial_error_catchers(self, sender):
 
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
 
@@ -202,7 +201,7 @@ describe "FromGenerator":
             light2.serial: [errors[2]],
         }
 
-    async it "Can get results", sender:
+    async def test_it_Can_get_results(self, sender):
 
         async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
@@ -234,7 +233,7 @@ describe "FromGenerator":
                 assert len(got[device.serial]) == 1
                 assert got[device.serial][0] | DeviceMessages.StatePower
 
-    async it "Sends all the messages that are yielded", sender:
+    async def test_it_Sends_all_the_messages_that_are_yielded(self, sender):
 
         async def gen(reference, sender, **kwargs):
             get_power = DeviceMessages.GetPower()
@@ -254,7 +253,7 @@ describe "FromGenerator":
 
         await self.assertScript(sender, gen, expected=expected)
 
-    async it "does not ignore exception in generator", sender:
+    async def test_it_does_not_ignore_exception_in_generator(self, sender):
         error = Exception("NOPE")
 
         async def gen(reference, sender, **kwargs):
@@ -265,7 +264,7 @@ describe "FromGenerator":
         with assertRaises(BadRun, _errors=[error]):
             await self.assertScript(sender, gen, expected=expected)
 
-    async it "adds exception from generator to error_catcher", sender:
+    async def test_it_adds_exception_from_generator_to_error_catcher(self, sender):
         got = []
 
         def err(e):
@@ -281,7 +280,7 @@ describe "FromGenerator":
         await self.assertScript(sender, gen, expected=expected, error_catcher=err)
         assert got == [error]
 
-    async it "it can know if the message was sent successfully", sender:
+    async def test_it_it_can_know_if_the_message_was_sent_successfully(self, sender):
 
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -297,7 +296,7 @@ describe "FromGenerator":
             sender, gen, generator_kwargs={"reference_override": True}, expected=expected
         )
 
-    async it "it can know if the message was not sent successfully", sender:
+    async def test_it_it_can_know_if_the_message_was_not_sent_successfully(self, sender):
 
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
@@ -333,7 +332,7 @@ describe "FromGenerator":
             [],
         )
 
-    async it "it can have a serial override", sender:
+    async def test_it_it_can_have_a_serial_override(self, sender):
 
         async def gen(reference, sender, **kwargs):
             async def inner_gen(level, reference, sender2, **kwargs2):
@@ -366,7 +365,7 @@ describe "FromGenerator":
 
         await self.assertScript(sender, gen, expected=expected)
 
-    async it "it sends messages in parallel", sender:
+    async def test_it_it_sends_messages_in_parallel(self, sender):
         got = []
 
         async def see_request(event):
@@ -397,7 +396,7 @@ describe "FromGenerator":
             for t in got:
                 assert t - start < 0.1
 
-    async it "can wait for other messages", sender:
+    async def test_it_can_wait_for_other_messages(self, sender):
         got = {}
 
         async def process_request(event, Cont):
@@ -448,7 +447,7 @@ describe "FromGenerator":
             [],
         )
 
-    async it "can provide errors", sender:
+    async def test_it_can_provide_errors(self, sender):
         for device in devices:
             devices.store(device).assertIncoming()
 
@@ -470,7 +469,7 @@ describe "FromGenerator":
         with assertRaises(BadRunWithResults, _errors=[FailedToFindDevice(serial=light1.serial)]):
             await self.assertScript(sender, gen, expected=expected)
 
-    async it "can be cancelled", sender, m:
+    async def test_it_can_be_cancelled(self, sender, m):
         called = []
 
         @contextmanager

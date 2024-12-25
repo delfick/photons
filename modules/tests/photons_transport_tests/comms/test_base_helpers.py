@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -8,9 +7,9 @@ from photons_app import helpers as hp
 from photons_app.errors import TimedOut
 from photons_transport.comms.base import timeout_task
 
-describe "timeout_task":
+class TestTimeoutTask:
 
-    async it "does nothing if the task has a result":
+    async def test_it_does_nothing_if_the_task_has_a_result(self):
 
         async def doit():
             return 1
@@ -23,7 +22,7 @@ describe "timeout_task":
 
         assert not errf.done()
 
-    async it "does nothing if the task has an exception":
+    async def test_it_does_nothing_if_the_task_has_an_exception(self):
 
         async def doit():
             raise Exception("NOPE")
@@ -38,7 +37,7 @@ describe "timeout_task":
 
         assert not errf.done()
 
-    async it "does nothing if the task was cancelled":
+    async def test_it_does_nothing_if_the_task_was_cancelled(self):
 
         async def doit():
             return 1
@@ -57,7 +56,7 @@ describe "timeout_task":
 
         assert not errf.done()
 
-    async it "cancels the task if it's not done":
+    async def test_it_cancels_the_task_if_its_not_done(self):
         called = []
 
         async def doit():
@@ -83,7 +82,7 @@ describe "timeout_task":
         with assertRaises(TimedOut, msg, serial=serial):
             await errf
 
-    async it "does not set exception on errf if it's already done":
+    async def test_it_does_not_set_exception_on_errf_if_its_already_done(self):
         called = []
 
         async def doit():
@@ -109,7 +108,7 @@ describe "timeout_task":
 
         assert await errf == 1
 
-    async it "does not set exception on errf already has an exception":
+    async def test_it_does_not_set_exception_on_errf_already_has_an_exception(self):
         called = []
 
         async def doit():
@@ -136,7 +135,7 @@ describe "timeout_task":
         with assertRaises(ValueError, "NOPE"):
             await errf
 
-    async it "does not set exception on errf already cancelled":
+    async def test_it_does_not_set_exception_on_errf_already_cancelled(self):
         called = []
 
         async def doit():

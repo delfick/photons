@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -13,12 +12,12 @@ from photons_control.colour import (
 )
 from photons_messages import LightMessages, Waveform
 
-describe "split_color_string":
-    it "returns empty list if not color_string":
+class TestSplitColorString:
+    def test_it_returns_empty_list_if_not_color_string(self):
         for thing in (None, ""):
             assert split_color_string(thing) == []
 
-    it "splits by whitespace":
+    def test_it_splits_by_whitespace(self):
         cases = [
             ("", []),
             ("one two", ["one", "two"]),
@@ -31,8 +30,8 @@ describe "split_color_string":
         for thing, expected in cases:
             assert split_color_string(thing) == expected
 
-describe "ColourParser":
-    it "has named_colors":
+class TestColourParser:
+    def test_it_has_named_colors(self):
         for color, info in ColourParser.named_colors.items():
             h, s, b, k = info
             assert h is None or type(h) is int
@@ -40,7 +39,7 @@ describe "ColourParser":
             assert b is None or type(b) is int
             assert k is None or type(k) is int
 
-    describe "getting hsbk":
+    class TestGettingHsbk:
 
         def assertCorrect(self, components, h, s, b, k):
             assert ColourParser.hsbk(components) == (h, s, b, k)
@@ -62,7 +61,7 @@ describe "ColourParser":
             overrides["kelvin"] = ko
             assert ColourParser.hsbk(components, overrides) == (ho, so, bo, ko)
 
-        it "supports random generation":
+        def test_it_supports_random_generation(self):
             for _ in range(100):
                 h, s, b, k = ColourParser.hsbk("random")
                 assert b is None
@@ -71,7 +70,7 @@ describe "ColourParser":
                 assert h > -1
                 assert h < 361
 
-        it "supports just kelvin":
+        def test_it_supports_just_kelvin(self):
             self.assertCorrect("kelvin:2500", None, 0, None, 2500)
             self.assertCorrect("kelvin:3500", None, 0, None, 3500)
 
@@ -88,7 +87,7 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("kelvin:9001")
 
-        it "supports just brightness":
+        def test_it_supports_just_brightness(self):
             self.assertCorrect("brightness:0", None, None, 0, None)
             self.assertCorrect("brightness:0.8", None, None, 0.8, None)
 
@@ -101,7 +100,7 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("brightness:2")
 
-        it "supports just saturation":
+        def test_it_supports_just_saturation(self):
             self.assertCorrect("saturation:0", None, 0, None, None)
             self.assertCorrect("saturation:0.8", None, 0.8, None, None)
 
@@ -114,7 +113,7 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("saturation:2")
 
-        it "supports just hue":
+        def test_it_supports_just_hue(self):
             self.assertCorrect("hue:0", 0, None, None, None)
             self.assertCorrect("hue:80", 80, None, None, None)
             self.assertCorrect("hue:20.5", 20.5, None, None, None)
@@ -128,13 +127,13 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hue:361")
 
-        it "supports hex":
+        def test_it_supports_hex(self):
             expected = (144.66257668711654, 0.9939024390243902, 0.6431372549019608, None)
             self.assertCorrect("hex:01A444", *expected)
             self.assertCorrect("#01A444", *expected)
             self.assertCorrect("hex:#01A444", *expected)
 
-        it "supports rgb":
+        def test_it_supports_rgb(self):
             self.assertCorrect("rgb:0,200,100", 150.0, 1.0, 0.7843137254901961, None)
             self.assertCorrect("rgb:10,1,255", 242.12598425196848, 0.996078431372549, 1.0, None)
 
@@ -156,7 +155,7 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("rgb:255,255,256")
 
-        it "supports hsb":
+        def test_it_supports_hsb(self):
             self.assertCorrect("hsb:240,0.1,0.8", 240, 0.1, 0.8, None)
             self.assertCorrect("hsb:240,1%,80%", 240, 0.01, 0.8, None)
 
@@ -202,17 +201,17 @@ describe "ColourParser":
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hsb:240,1,8")
 
-        it "supports colors by name":
+        def test_it_supports_colors_by_name(self):
             for name in ColourParser.named_colors:
                 self.assertCorrect(name, *ColourParser.named_colors[name])
 
-        it "supports stacking":
+        def test_it_supports_stacking(self):
             self.assertCorrect("hsb:240,0.1,0.8 kelvin:2500", 240, 0, 0.8, 2500)
             self.assertCorrect("#010101 hue:240 kelvin:2500", 240, 0, 0.00392156862745098, 2500)
             self.assertCorrect("blue kelvin:3500 saturation:0.4", 250, 0.4, None, 3500)
 
-    describe "color_to_msg":
-        it "creates a SetWaveformOptional":
+    class TestColorToMsg:
+        def test_it_creates_a_SetWaveformOptional(self):
             h, s, b, k = 240, 0.1, None, 2500
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")
@@ -243,7 +242,7 @@ describe "ColourParser":
 
             hsbk.assert_called_once_with(components, None)
 
-        it "allows overrides":
+        def test_it_allows_overrides(self):
             h, s, b, k = 240, 0.1, None, 2500
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")
@@ -275,7 +274,7 @@ describe "ColourParser":
 
             hsbk.assert_called_once_with(components, overrides)
 
-        it "allows effects":
+        def test_it_allows_effects(self):
             h, s, b, k = 240, 0.1, None, 2500
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")
@@ -307,7 +306,7 @@ describe "ColourParser":
 
             hsbk.assert_called_once_with(components, overrides)
 
-        it "allows overrides to effects":
+        def test_it_allows_overrides_to_effects(self):
             h, s, b, k = 240, 0.1, None, 2500
             hsbk = mock.Mock(name="hsbk", return_value=(h, s, b, k))
             components = mock.Mock(name="components")

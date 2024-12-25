@@ -1,4 +1,3 @@
-# coding: spec
 import asyncio
 import time
 import types
@@ -49,8 +48,8 @@ class Between:
             return repr(self.compare)
 
 
-describe "Store":
-    async it "makes it easy to add routes to particular methods of new instances of the command", final_future: asyncio.Future, fake_event_loop:
+class TestStore:
+    async def test_it_makes_it_easy_to_add_routes_to_particular_methods_of_new_instances_of_the_command(self, final_future: asyncio.Future, fake_event_loop):
         made: list[tuple[Command, int]] = []
 
         store = Store()
@@ -83,7 +82,7 @@ describe "Store":
         assert made == [(pytest.helpers.IsInstance(C), 20), (pytest.helpers.IsInstance(C), -1)]
         assert made[0][0] is not made[1][0]
 
-    async it "supports async routes", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_supports_async_routes(self, final_future: asyncio.Future, fake_event_loop):
         made: list[object] = []
         done_things = hp.create_future()
 
@@ -122,7 +121,7 @@ describe "Store":
         assert made == [pytest.helpers.IsInstance(asyncio.Task), 3]
         assert time.time() == 3 + time_at_wait
 
-    async it "can do dependency injection based on signature args", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_can_do_dependency_injection_based_on_signature_args(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         class Thing: ...
@@ -199,7 +198,7 @@ describe "Store":
             ),
         ]
 
-    async it "provides ability to get raw body and params", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_provides_ability_to_get_raw_body_and_params(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         called: list[tuple[object, ...]] = []
@@ -230,7 +229,7 @@ describe "Store":
         assert (await res1.text()) == "stuff"
         assert called == [({"five": 5}, {"one": "1", "two": ["2", "3"]})]
 
-    async it "provides the ability to turn a function on a Command class into a bound method", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_provides_the_ability_to_turn_a_function_on_a_Command_class_into_a_bound_method(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @attrs.define
@@ -268,7 +267,7 @@ describe "Store":
 
         assert (await res1.text()) == "blah"
 
-    async it "understands when the route itself raises a CancelledError", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_understands_when_the_route_itself_raises_a_CancelledError(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -294,7 +293,7 @@ describe "Store":
         ) == '{"error_code":"RequestCancelled","error":"Request was cancelled"}'
         assert res1.content_type == "application/json"
 
-    async it "server stopping is a 503 cancelled", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_server_stopping_is_a_503_cancelled(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -328,7 +327,7 @@ describe "Store":
             + "\n\n"
         )
 
-    async it "understands when the route was cancelled above the route", final_future: asyncio.Future, fake_event_loop:
+    async def test_it_understands_when_the_route_was_cancelled_above_the_route(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -371,7 +370,7 @@ describe "Store":
             + "\n\n"
         )
 
-    async it "logs random exceptions and returns InternalServerError", final_future: asyncio.Future, fake_event_loop, caplog:
+    async def test_it_logs_random_exceptions_and_returns_InternalServerError(self, final_future: asyncio.Future, fake_event_loop, caplog):
         identifier: str
         store = Store()
         error = ValueError("NUP")
@@ -410,7 +409,7 @@ describe "Store":
             pytest.helpers.IsInstance(types.TracebackType),
         )
 
-    async it "is easy to log things in route", final_future: asyncio.Future, fake_event_loop, caplog:
+    async def test_it_is_easy_to_log_things_in_route(self, final_future: asyncio.Future, fake_event_loop, caplog):
         identifier: str
         store = Store()
 
@@ -443,7 +442,7 @@ describe "Store":
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
 
-    async it "is possible to have progress messages on a http handler", final_future: asyncio.Future, fake_event_loop, caplog:
+    async def test_it_is_possible_to_have_progress_messages_on_a_http_handler(self, final_future: asyncio.Future, fake_event_loop, caplog):
         identifier: str
         store = Store()
 
@@ -485,7 +484,7 @@ describe "Store":
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
 
-    async it "supports websocket commands", final_future: asyncio.Future, fake_event_loop, caplog:
+    async def test_it_supports_websocket_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
         identifiers: set[str] = set()
 
@@ -846,7 +845,7 @@ describe "Store":
             },
         ]
 
-    async it "supports message from exc from commands", final_future: asyncio.Future, fake_event_loop, caplog:
+    async def test_it_supports_message_from_exc_from_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
         identifiers: set[str] = set()
 

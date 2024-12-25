@@ -1,12 +1,11 @@
-# coding: spec
 
 import pytest
 from photons_canvas import font
 from photons_canvas.points import helpers as php
 from photons_canvas.points.canvas import Canvas
 
-describe "Space":
-    it "is a character with a particular width":
+class TestSpace:
+    def test_it_is_a_character_with_a_particular_width(self):
         s = font.Space(5)
         layer = s.layer(0, 0, (20, 1, 1, 3500))
 
@@ -18,7 +17,7 @@ describe "Space":
         assert s.width == 5
         assert s.height == 1
 
-describe "Character":
+class TestCharacter:
 
     @pytest.fixture()
     def char(self):
@@ -32,7 +31,7 @@ describe "Character":
             colors={"c": (20, 1, 1, 3500), "r": (0, 1, 1, 3500), "g": (120, 1, 1, 3500)},
         )
 
-    it "gets information from map", char:
+    def test_it_gets_information_from_map(self, char):
         assert char.rows == [
             "###__",
             "cc###",
@@ -48,7 +47,7 @@ describe "Character":
         assert char.width == 5
         assert char.height == 4
 
-    it "can get point to color pairs", char:
+    def test_it_can_get_point_to_color_pairs(self, char):
         pairs = list(char.pairs(1, 3, (300, 1, 0, 3500)))
         assert pairs == [
             ((1, 3), (300, 1, 0, 3500)),
@@ -73,12 +72,12 @@ describe "Character":
             ((5, 0), (120, 1, 1, 3500)),
         ]
 
-    it "turns left_x and top_y into integers", char:
+    def test_it_turns_left_x_and_top_y_into_integers(self, char):
         pairs = list(char.pairs(1.6, 3.0, (300, 1, 0, 3500)))
         real = list(char.pairs(2, 3, (300, 1, 0, 3500)))
         assert pairs == real
 
-describe "Characters":
+class TestCharacters:
 
     @pytest.fixture()
     def char1(self):
@@ -115,7 +114,7 @@ describe "Characters":
             colors={"g": (120, 1, 0, 3500)},
         )
 
-    it "gets width of all characters", char1, char2, char3:
+    def test_it_gets_width_of_all_characters(self, char1, char2, char3):
         chars1 = font.Characters()
         assert chars1.characters == []
         assert chars1.width == 0
@@ -132,7 +131,7 @@ describe "Characters":
         assert chars1.characters == [char1, char3, char2]
         assert chars1.width == 8
 
-    it "can get pairs", char1, char2, char3:
+    def test_it_can_get_pairs(self, char1, char2, char3):
         chars = font.Characters(char1, char2, char3)
         fill_color = (4, 1, 0.5, 6700)
         assert list(chars.pairs(3, 1, fill_color)) == [
@@ -148,13 +147,13 @@ describe "Characters":
             *char1.pairs(8, 1, fill_color),
         ]
 
-    it "turns left_x and top_y into integers", char1, char2, char3:
+    def test_it_turns_left_x_and_top_y_into_integers(self, char1, char2, char3):
         chars = font.Characters(char2, char3, char1)
         pairs = list(chars.pairs(1.6, 3.0, (300, 1, 0, 3500)))
         real = list(chars.pairs(2, 3, (300, 1, 0, 3500)))
         assert pairs == real
 
-    it "can get a layer", char1, char2, char3:
+    def test_it_can_get_a_layer(self, char1, char2, char3):
         chars = font.Characters(char1, char2, char3)
         fill_color = (4, 1, 0.5, 6700)
 
@@ -199,7 +198,7 @@ describe "Characters":
 
         assert per_char_pixels == chars_pixels
 
-    it "can get a layer after converting corner to integers", char1, char2, char3:
+    def test_it_can_get_a_layer_after_converting_corner_to_integers(self, char1, char2, char3):
         chars = font.Characters(char1, char2, char3)
         fill_color = (4, 1, 0.5, 6700)
 

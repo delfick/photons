@@ -1,4 +1,3 @@
-# coding: spec
 
 import uuid
 from unittest import mock
@@ -7,8 +6,8 @@ from delfick_project.errors_pytest import assertRaises
 from photons_app.errors import PhotonsAppError
 from photons_control.planner.plans import Plan, a_plan, make_plans
 
-describe "a_plan":
-    it "puts items in plan_by_key":
+class TestAPlan:
+    def test_it_puts_items_in_plan_by_key(self):
         d = {}
         key = str(uuid.uuid1())
         key2 = str(uuid.uuid1())
@@ -27,27 +26,27 @@ describe "a_plan":
             assert a_plan(key2)(Plan2) is Plan2
         assert d == {key: Plan, key2: Plan2}
 
-describe "make_plans":
-    it "returns empty if given no arguments":
+class TestMakePlans:
+    def test_it_returns_empty_if_given_no_arguments(self):
         assert make_plans() == {}
 
-    it "complains if a key is specified by label multiple times":
+    def test_it_complains_if_a_key_is_specified_by_label_multiple_times(self):
         msg = "Cannot specify plan by label more than once"
         with assertRaises(PhotonsAppError, msg, specified_multiple_times="one"):
             make_plans("two", "one", "three", "one")
 
-    it "complains if a key is in by_key and plans":
+    def test_it_complains_if_a_key_is_in_by_key_and_plans(self):
         msg = "Cannot specify plan by label and by Plan class"
         with assertRaises(PhotonsAppError, msg, specified_twice="one"):
             make_plans("two", "one", one=Plan())
 
-    it "complains if a key is provided by name but not in plan_by_key":
+    def test_it_complains_if_a_key_is_provided_by_name_but_not_in_plan_by_key(self):
         with mock.patch("photons_control.planner.plans.plan_by_key", {"two": Plan, "three": Plan}):
             msg = "No default plan for key"
             with assertRaises(PhotonsAppError, msg, wanted="one", available=["two", "three"]):
                 make_plans("one")
 
-    it "adds plans by label to plans dictionary":
+    def test_it_adds_plans_by_label_to_plans_dictionary(self):
         two_plan = mock.NonCallableMock(name="two_plan", spec=[])
         three_plan = mock.NonCallableMock(name="three_plan", spec=[])
         TwoPlan = mock.Mock(name="TwoPlan", return_value=two_plan)
@@ -56,14 +55,14 @@ describe "make_plans":
             expected = {"two": two_plan, "three": three_plan}
             assert make_plans("two", three=three_plan) == expected
 
-    it "returns plans as is if no by label":
+    def test_it_returns_plans_as_is_if_no_by_label(self):
         two_plan = mock.NonCallableMock(name="two_plan", spec=[])
         three_plan = mock.NonCallableMock(name="three_plan", spec=[])
         expected = {"two": two_plan, "three": three_plan}
         assert make_plans(two=two_plan, three=three_plan) == expected
 
-describe "Plan":
-    it "has no messages or dependant_info by default":
+class TestPlan:
+    def test_it_has_no_messages_or_dependant_info_by_default(self):
         plan = Plan()
         instance = plan.Instance("d073d5001337", plan, {})
 
@@ -71,11 +70,11 @@ describe "Plan":
         assert instance.messages is None
         assert plan.dependant_info is None
 
-    it "has default refresh which can be overridden":
+    def test_it_has_default_refresh_which_can_be_overridden(self):
         assert Plan().refresh == 10
         assert Plan(refresh=5).refresh == 5
 
-    it "can have a setup method":
+    def test_it_can_have_a_setup_method(self):
         called = []
 
         class P(Plan):
@@ -94,7 +93,7 @@ describe "Plan":
         assert called.pop() == ((one, two), {"three": three, "refresh": 6})
         assert p.refresh == 6
 
-    it "has setup for Instance":
+    def test_it_has_setup_for_Instance(self):
         called = []
 
         class P(Plan):

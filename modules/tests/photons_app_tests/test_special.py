@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import binascii
@@ -16,13 +15,13 @@ from photons_app.special import (
     SpecialReference,
 )
 
-describe "SpecialReference":
-    async it "gives itself a finding and found future":
+class TestSpecialReference:
+    async def test_it_gives_itself_a_finding_and_found_future(self):
         ref = SpecialReference()
         assert isinstance(ref.finding, hp.ResettableFuture)
         assert isinstance(ref.found, hp.ResettableFuture)
 
-    async it "can reset the futures":
+    async def test_it_can_reset_the_futures(self):
         ref = SpecialReference()
         ref.finding.set_result(True)
         ref.found.set_result(True)
@@ -34,7 +33,7 @@ describe "SpecialReference":
         assert not ref.finding.done()
         assert not ref.found.done()
 
-    describe "find":
+    class TestFind:
 
         @pytest.fixture()
         def V(self):
@@ -45,7 +44,7 @@ describe "SpecialReference":
 
             return V()
 
-        async it "transfers cancellation from find_serials", V:
+        async def test_it_transfers_cancellation_from_find_serials(self, V):
 
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
@@ -57,7 +56,7 @@ describe "SpecialReference":
             with assertRaises(asyncio.CancelledError):
                 await ref.find(V.sender, timeout=V.find_timeout)
 
-        async it "transfers exceptions from find_serials", V:
+        async def test_it_transfers_exceptions_from_find_serials(self, V):
 
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
@@ -69,7 +68,7 @@ describe "SpecialReference":
             with assertRaises(PhotonsAppError, "FIND SERIALS BAD"):
                 await ref.find(V.sender, timeout=V.find_timeout)
 
-        async it "transfers result from find_serials", V:
+        async def test_it_transfers_result_from_find_serials(self, V):
             serial1 = "d073d5000001"
             serial2 = "d073d5000002"
 
@@ -88,7 +87,7 @@ describe "SpecialReference":
             assert found == {target1: services1, target2: services2}
             assert serials == [serial1, serial2]
 
-        async it "only calls find_serials once", V:
+        async def test_it_only_calls_find_serials_once(self, V):
             serial = "d073d5000001"
             target = binascii.unhexlify(serial)
             services = mock.Mock(name="services")
@@ -123,8 +122,8 @@ describe "SpecialReference":
             assert serials == [serial]
             assert called == [1, 1]
 
-describe "FoundSerials":
-    async it "calls sender.find_devices with broadcast":
+class TestFoundSerials:
+    async def test_it_calls_senderfind_devices_with_broadcast(self):
         found = mock.Mock(name="found")
 
         sender = mock.Mock(name="sender")
@@ -141,7 +140,7 @@ describe "FoundSerials":
             broadcast=broadcast, raise_on_none=True, timeout=find_timeout
         )
 
-describe "HardCodedSerials":
+class TestHardCodedSerials:
 
     @pytest.fixture()
     def V(self):
@@ -162,7 +161,7 @@ describe "HardCodedSerials":
 
         return V()
 
-    async it "takes in a list of serials":
+    async def test_it_takes_in_a_list_of_serials(self):
         serials = "d073d5000001,d073d500000200"
         wanted = [binascii.unhexlify(ref)[:6] for ref in serials.split(",")]
 
@@ -171,7 +170,7 @@ describe "HardCodedSerials":
             assert ref.targets == wanted
             assert ref.serials == ["d073d5000001", "d073d5000002"]
 
-    async it "can take in list of unhexlified serials":
+    async def test_it_can_take_in_list_of_unhexlified_serials(self):
         serials = [binascii.unhexlify("d073d500000100"), binascii.unhexlify("d073d5000002")]
         wanted = [binascii.unhexlify(ref)[:6] for ref in ["d073d5000001", "d073d5000002"]]
 
@@ -179,7 +178,7 @@ describe "HardCodedSerials":
         assert ref.targets == wanted
         assert ref.serials == ["d073d5000001", "d073d5000002"]
 
-    describe "find_serials":
+    class TestFindSerials:
 
         async def assertFindSerials(self, found, serials, expected, missing):
             broadcast = mock.Mock(name="broadcast")
@@ -201,21 +200,21 @@ describe "HardCodedSerials":
 
             assert ref.missing(f) == missing
 
-        async it "uses find_specific_serials", V:
+        async def test_it_uses_find_specific_serials(self, V):
             found = {V.target1: V.info1, V.target2: V.info2}
             serials = [V.serial1, V.serial2]
             expected = {V.target1: V.info1, V.target2: V.info2}
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "only returns from the serials it cares about", V:
+        async def test_it_only_returns_from_the_serials_it_cares_about(self, V):
             found = {V.target1: V.info1, V.target2: V.info2}
             serials = [V.serial1]
             expected = {V.target1: V.info1}
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "doesn't call to find_specific_serials if the serials are already on the sender", V:
+        async def test_it_doesnt_call_to_find_specific_serials_if_the_serials_are_already_on_the_sender(self, V):
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
@@ -231,22 +230,22 @@ describe "HardCodedSerials":
             assert f == {V.target1: V.info1}
             assert ref.missing(f) == []
 
-        async it "doesn't care if no found", V:
+        async def test_it_doesnt_care_if_no_found(self, V):
             found = {}
             serials = [V.serial1, V.serial2]
             expected = {}
             missing = [V.serial1, V.serial2]
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async it "can see partial missing", V:
+        async def test_it_can_see_partial_missing(self, V):
             found = {V.target2: V.info2}
             serials = [V.serial1, V.serial2]
             expected = {V.target2: V.info2}
             missing = [V.serial1]
             await self.assertFindSerials(found, serials, expected, missing)
 
-describe "ResolveReferencesFromFile":
-    async it "complains if filename can't be read or is empty":
+class TestResolveReferencesFromFile:
+    async def test_it_complains_if_filename_cant_be_read_or_is_empty(self):
         with hp.a_temp_file() as fle:
             fle.close()
             os.remove(fle.name)
@@ -259,7 +258,7 @@ describe "ResolveReferencesFromFile":
             with assertRaises(PhotonsAppError, "Found no serials in file"):
                 ResolveReferencesFromFile(fle.name)
 
-    async it "creates and uses a HardCodedSerials":
+    async def test_it_creates_and_uses_a_HardCodedSerials(self):
         serial1 = "d073d5000001"
         serial2 = "d073d5000002"
 

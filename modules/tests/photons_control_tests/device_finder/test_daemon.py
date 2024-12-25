@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import time
@@ -15,8 +14,8 @@ from photons_control.device_finder import (
 )
 from photons_products import Products
 
-describe "DeviceFinderDaemon":
-    it "takes in a sender":
+class TestDeviceFinderDaemon:
+    def test_it_takes_in_a_sender(self):
         stop_fut = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
 
@@ -34,7 +33,7 @@ describe "DeviceFinderDaemon":
         assert daemon.finder.final_future.original_fut is daemon.final_future
         assert daemon.finder.forget_after == 30
 
-    it "can take in options":
+    def test_it_can_take_in_options(self):
         stop_fut = hp.create_future()
         final_future = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
@@ -59,7 +58,7 @@ describe "DeviceFinderDaemon":
         assert daemon.finder.final_future.original_fut is daemon.final_future
         assert daemon.finder.forget_after == 1
 
-    it "can be given an explicit finder":
+    def test_it_can_be_given_an_explicit_finder(self):
         sender = mock.Mock(name="sender")
         finder = mock.Mock(name="finder")
         final_future = mock.Mock(name="final_future")
@@ -67,7 +66,7 @@ describe "DeviceFinderDaemon":
         daemon = DeviceFinderDaemon(sender, finder=finder, final_future=final_future)
         assert daemon.finder is finder
 
-    describe "usage":
+    class TestUsage:
 
         @pytest.fixture()
         def final_future(self):
@@ -98,13 +97,13 @@ describe "DeviceFinderDaemon":
 
             return V()
 
-        it "can make a reference", V:
+        def test_it_can_make_a_reference(self, V):
             ref = V.daemon.reference(V.fltr)
             assert isinstance(ref, DeviceFinder)
             assert ref.fltr is V.fltr
             assert ref.finder is V.daemon.finder
 
-        async it "can be used as an async context manager", V:
+        async def test_it_can_be_used_as_an_async_context_manager(self, V):
             start = pytest.helpers.AsyncMock(name="start", return_value=V.daemon)
             finish = pytest.helpers.AsyncMock(name="finish")
 
@@ -116,7 +115,7 @@ describe "DeviceFinderDaemon":
 
             finish.assert_called_once_with(None, None, None)
 
-        async it "can create and close the search loop", V:
+        async def test_it_can_create_and_close_the_search_loop(self, V):
             called = []
             started = hp.create_future()
 
@@ -137,7 +136,7 @@ describe "DeviceFinderDaemon":
                 assert V.daemon.final_future.done()
                 assert called == ["search_loop", "cancelled_search_loop"]
 
-        async it "will finish the finder if one is made", V:
+        async def test_it_will_finish_the_finder_if_one_is_made(self, V):
             assert V.daemon.own_finder
             finish = pytest.helpers.AsyncMock(name="finish")
 
@@ -146,7 +145,7 @@ describe "DeviceFinderDaemon":
 
             finish.assert_called_once_with(None, None, None)
 
-        async it "will not finish the finder if one is provided", V:
+        async def test_it_will_not_finish_the_finder_if_one_is_provided(self, V):
             finder = mock.Mock(name="finder")
             daemon = DeviceFinderDaemon(V.sender, final_future=V.final_future, finder=finder)
 
@@ -159,9 +158,9 @@ describe "DeviceFinderDaemon":
 
             finish.assert_not_called()
 
-        describe "search_loop":
+        class TestSearchLoop:
 
-            async it "keeps doing a search", V:
+            async def test_it_keeps_doing_a_search(self, V):
                 called = []
                 finish_fut = hp.create_future()
 
@@ -190,7 +189,7 @@ describe "DeviceFinderDaemon":
                     ("find", si * 3),
                 ]
 
-            async it "does refresh information loops", V:
+            async def test_it_does_refresh_information_loops(self, V):
                 called = []
                 m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
                 d1 = m("d073d5000001")
@@ -260,7 +259,7 @@ describe "DeviceFinderDaemon":
                         V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections
                     )
 
-            async it "keeps going if find fails", V:
+            async def test_it_keeps_going_if_find_fails(self, V):
                 called = []
                 async with pytest.helpers.FutureDominoes(expected=5) as futs:
 
@@ -332,8 +331,8 @@ describe "DeviceFinderDaemon":
                             V.daemon.finder.collections,
                         )
 
-        describe "serials":
-            async it "yields devices from finder.find", V:
+        class TestSerials:
+            async def test_it_yields_devices_from_finderfind(self, V):
                 fltr = Filter.from_kwargs(label="kitchen")
 
                 m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
@@ -354,8 +353,8 @@ describe "DeviceFinderDaemon":
 
                 assert found == [d1, d2]
 
-        describe "info":
-            async it "yields devices from finder.info", V:
+        class TestInfo:
+            async def test_it_yields_devices_from_finderinfo(self, V):
                 fltr = Filter.from_kwargs(label="kitchen")
 
                 m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
@@ -376,7 +375,7 @@ describe "DeviceFinderDaemon":
 
                 assert found == [d1, d2]
 
-describe "Getting devices from the daemon":
+class TestGettingDevicesFromTheDaemon:
 
     @pytest.fixture()
     async def V(self, final_future):
@@ -405,7 +404,7 @@ describe "Getting devices from the daemon":
             v.sender = sender
             yield v
 
-    async it "can get serials and info", V:
+    async def test_it_can_get_serials_and_info(self, V):
         async with DeviceFinderDaemon(V.sender) as daemon:
             found = []
             async for device in daemon.serials(Filter.empty()):

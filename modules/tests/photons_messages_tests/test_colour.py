@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from delfick_project.norms import sb
@@ -6,12 +5,12 @@ from photons_messages import LightMessages, Waveform, protocol_register
 from photons_protocol.messages import Messages
 from photons_protocol.types import Optional
 
-describe "LightMessages":
+class TestLightMessages:
 
     def create(self, msg):
         return LightMessages.create(msg, protocol_register=protocol_register)
 
-    it "has Setcolor":
+    def test_it_has_Setcolor(self):
         msg = self.create(
             "3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000"
         )
@@ -27,7 +26,7 @@ describe "LightMessages":
         assert msg.payload.actual("kelvin") == 2500
         assert msg.payload.actual("duration") == 1000
 
-    it "has SetWaveform":
+    def test_it_has_SetWaveform(self):
         msg = self.create(
             "39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01"
         )
@@ -57,7 +56,7 @@ describe "LightMessages":
         assert msg.payload.actual("skew_ratio") == 3276
         assert msg.payload.actual("waveform") == 1
 
-    it "has SetWaveformOptional":
+    def test_it_has_SetWaveformOptional(self):
         msg = self.create(
             "3d0000149c0bf333d073d52293220000000000000000030100000000000000007700000000001c470000ff7fc409d00700000000a040ff7f0101000101"
         )
@@ -95,7 +94,7 @@ describe "LightMessages":
         assert msg.payload.actual("set_brightness") == 1
         assert msg.payload.actual("set_kelvin") == 1
 
-    it "SetWaveformOptional does not require all hsbk values":
+    def test_it_SetWaveformOptional_does_not_require_all_hsbk_values(self):
         msg = LightMessages.SetWaveformOptional(hue=100, source=1, sequence=0, target=None)
         assert msg.actual("brightness") is sb.NotSpecified
 
@@ -133,7 +132,7 @@ describe "LightMessages":
         assert unpackd.set_kelvin == 0
         assert unpackd.kelvin == 0
 
-    it "has LightState":
+    def test_it_has_LightState(self):
         msg = self.create(
             "580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b00000000079919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000"
         )

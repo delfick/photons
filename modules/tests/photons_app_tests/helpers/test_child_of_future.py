@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -17,8 +16,8 @@ def final_future():
         fut.cancel()
 
 
-describe "ChildOfFuture":
-    async it "takes in an original future", final_future:
+class TestChildOfFuture:
+    async def test_it_takes_in_an_original_future(self, final_future):
         with hp.ChildOfFuture(final_future) as fut:
             assert fut.original_fut is final_future
             assert fut.name is None
@@ -35,12 +34,12 @@ describe "ChildOfFuture":
             assert fut.fut.name == "ChildOfFuture(FUTZ)::__init__[fut]"
             assert repr(fut) == "<ChildOfFuture#FUTZ((pending))<Future#final(pending)>>"
 
-    async it "ensure_future returns the ResettableFuture as is", final_future:
+    async def test_it_ensure_future_returns_the_ResettableFuture_as_is(self, final_future):
         with hp.ChildOfFuture(final_future) as fut:
             assert asyncio.ensure_future(fut) is fut
 
-    describe "context manager":
-        async it "is cancelled if not resolved after block", final_future:
+    class TestContextManager:
+        async def test_it_is_cancelled_if_not_resolved_after_block(self, final_future):
             assert len(final_future._callbacks) == 1
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -59,7 +58,7 @@ describe "ChildOfFuture":
             assert fut.cancelled()
             assert not final_future.done()
 
-        async it "is resolved if given result in block", final_future:
+        async def test_it_is_resolved_if_given_result_in_block(self, final_future):
             assert len(final_future._callbacks) == 1
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -80,7 +79,7 @@ describe "ChildOfFuture":
             assert fut.result() is True
             assert not final_future.done()
 
-        async it "is resolved if given exception in block", final_future:
+        async def test_it_is_resolved_if_given_exception_in_block(self, final_future):
             assert len(final_future._callbacks) == 1
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -103,7 +102,7 @@ describe "ChildOfFuture":
 
             assert not final_future.done()
 
-        async it "is resolved if cancelled in block", final_future:
+        async def test_it_is_resolved_if_cancelled_in_block(self, final_future):
             assert len(final_future._callbacks) == 1
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -124,8 +123,8 @@ describe "ChildOfFuture":
             assert fut.cancelled()
             assert not final_future.done()
 
-    describe "original resolving":
-        async it "cancels the fut if the final future cancels", final_future:
+    class TestOriginalResolving:
+        async def test_it_cancels_the_fut_if_the_final_future_cancels(self, final_future):
             with hp.ChildOfFuture(final_future) as fut:
                 assert len(fut._callbacks) == 2
                 assert len(final_future._callbacks) == 2
@@ -137,7 +136,7 @@ describe "ChildOfFuture":
             assert not fut._callbacks
             assert not final_future._callbacks
 
-        async it "passes on exception if the final future has exception", final_future:
+        async def test_it_passes_on_exception_if_the_final_future_has_exception(self, final_future):
             error = ValueError("HI")
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -151,7 +150,7 @@ describe "ChildOfFuture":
             assert not fut._callbacks
             assert not final_future._callbacks
 
-        async it "cancels the fut if the final_future gets a result", final_future:
+        async def test_it_cancels_the_fut_if_the_final_future_gets_a_result(self, final_future):
             with hp.ChildOfFuture(final_future) as fut:
                 assert len(fut._callbacks) == 2
                 assert len(final_future._callbacks) == 2
@@ -163,8 +162,8 @@ describe "ChildOfFuture":
             assert not fut._callbacks
             assert not final_future._callbacks
 
-    describe "done callbacks":
-        async it "fires done callbacks on cancel", final_future:
+    class TestDoneCallbacks:
+        async def test_it_fires_done_callbacks_on_cancel(self, final_future):
             called = []
 
             def one(res):
@@ -214,7 +213,7 @@ describe "ChildOfFuture":
                 assert called == ["ONE", "TWO"]
                 assert not fut._callbacks
 
-        async it "fires done callbacks on exception", final_future:
+        async def test_it_fires_done_callbacks_on_exception(self, final_future):
             called = []
             error = ValueError("NOPE")
 
@@ -265,7 +264,7 @@ describe "ChildOfFuture":
                 assert called == ["ONE", "TWO"]
                 assert not fut._callbacks
 
-        async it "fires done callbacks on result", final_future:
+        async def test_it_fires_done_callbacks_on_result(self, final_future):
             called = []
             result = mock.Mock(name="result")
 
@@ -324,8 +323,8 @@ describe "ChildOfFuture":
                 assert called == ["CANCELLED_ONE", "CANCELLED_TWO"]
                 assert not fut._callbacks
 
-    describe "resolving the future":
-        async it "can have a result", final_future:
+    class TestResolvingTheFuture:
+        async def test_it_can_have_a_result(self, final_future):
             with hp.ChildOfFuture(final_future) as fut:
                 fut.set_result(True)
                 assert fut.done()
@@ -341,7 +340,7 @@ describe "ChildOfFuture":
                 assert fut.done()
                 assert fut.cancelled()
 
-        async it "can have an exception", final_future:
+        async def test_it_can_have_an_exception(self, final_future):
             error = ValueError("NOPE")
 
             with hp.ChildOfFuture(final_future) as fut:
@@ -364,7 +363,7 @@ describe "ChildOfFuture":
                 assert fut.exception() is error
                 assert fut.done()
 
-        async it "can be cancelled", final_future:
+        async def test_it_can_be_cancelled(self, final_future):
             with hp.ChildOfFuture(final_future) as fut:
                 fut.cancel()
                 assert fut.done()

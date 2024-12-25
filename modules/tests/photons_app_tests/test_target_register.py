@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -8,32 +7,32 @@ from delfick_project.norms import sb
 from photons_app.errors import ProgrammerError, TargetNotFound, TargetTypeNotFound
 from photons_app.registers import Target, TargetRegister
 
-describe "Target":
-    it "takes in things":
+class TestTarget:
+    def test_it_takes_in_things(self):
         target = Target.FieldSpec().empty_normalise(type="thing", optional=True, options={"one": 2})
         assert target.type == "thing"
         assert target.optional is True
         assert target.options == {"one": 2}
 
-    it "has defaults":
+    def test_it_has_defaults(self):
         target = Target.FieldSpec().empty_normalise(type="thing")
         assert target.type == "thing"
         assert target.optional is False
         assert target.options == {}
 
-describe "TargetRegister":
+class TestTargetRegister:
 
     @pytest.fixture()
     def reg(self):
         return TargetRegister()
 
-    it "has some information on it", reg:
+    def test_it_has_some_information_on_it(self, reg):
         assert reg.types == {}
         assert reg.created == {}
         assert reg.registered == {}
 
-    describe "getting registered tasks":
-        it "complains if we ask for None", reg:
+    class TestGettingRegisteredTasks:
+        def test_it_complains_if_we_ask_for_None(self, reg):
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[None]
 
@@ -41,7 +40,7 @@ describe "TargetRegister":
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[None]
 
-        it "complains if we ask for sb.NotSpecified", reg:
+        def test_it_complains_if_we_ask_for_sbNotSpecified(self, reg):
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[sb.NotSpecified]
 
@@ -53,7 +52,7 @@ describe "TargetRegister":
             with assertRaises(ProgrammerError, "Targets are key'd by their name"):
                 reg[sb.NotSpecified]
 
-        it "complains if the name not in registered", reg:
+        def test_it_complains_if_the_name_not_in_registered(self, reg):
             with assertRaises(TargetNotFound, wanted="thing"):
                 reg["thing"]
 
@@ -61,13 +60,13 @@ describe "TargetRegister":
             reg._registered["thing"] = thing
             assert reg["thing"] is thing
 
-        it "retrieves from registered", reg:
+        def test_it_retrieves_from_registered(self, reg):
             thing = ("o", mock.Mock(name="target"), mock.Mock(name="creator"))
             reg._registered["thing"] = thing
             assert reg["thing"] is thing
 
-    describe "contains":
-        it "says no if empty", reg:
+    class TestContains:
+        def test_it_says_no_if_empty(self, reg):
             assert "" not in reg
             assert None not in reg
             assert sb.NotSpecified not in reg
@@ -84,7 +83,7 @@ describe "TargetRegister":
             assert None not in reg
             assert sb.NotSpecified not in reg
 
-        it "says no if the name or target doesn't exist", reg:
+        def test_it_says_no_if_the_name_or_target_doesnt_exist(self, reg):
             road = mock.Mock(
                 name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
             )
@@ -115,8 +114,8 @@ describe "TargetRegister":
             assert road in restricted.created.values()
             assert "road" not in restricted
 
-    describe "used_targets":
-        it "returns targets that were resolved", reg:
+    class TestUsedTargets:
+        def test_it_returns_targets_that_were_resolved(self, reg):
             made1 = mock.Mock(name="made1")
             made2 = mock.Mock(name="made2")
             made3 = mock.Mock(name="made3")
@@ -145,8 +144,8 @@ describe "TargetRegister":
             assert reg.resolve("three") is made3
             assert reg.used_targets == [made1, made3]
 
-    describe "type_for":
-        it "returns the type of the target", reg:
+    class TestTypeFor:
+        def test_it_returns_the_type_of_the_target(self, reg):
             reg.register_type("o", mock.Mock(name="oTarget"))
             reg.add_target(
                 "one", Target.FieldSpec().empty_normalise(type="o"), mock.Mock(name="creator")
@@ -163,8 +162,8 @@ describe "TargetRegister":
             assert reg.type_for("one") == "o"
             assert reg.type_for("two") == "s"
 
-    describe "desc_for":
-        it "returns description or doc or empty from a resolved target", reg:
+    class TestDescFor:
+        def test_it_returns_description_or_doc_or_empty_from_a_resolved_target(self, reg):
             made = mock.Mock(name="made", spec=[])
             made.__doc__ = None
             creator = mock.Mock(name="creator", return_value=made)
@@ -181,8 +180,8 @@ describe "TargetRegister":
             made.description = "better stuff"
             assert reg.desc_for("one") == "better stuff"
 
-    describe "register_type":
-        it "adds the type to the types dictionary", reg:
+    class TestRegisterType:
+        def test_it_adds_the_type_to_the_types_dictionary(self, reg):
             assert reg.types == {}
 
             OneTarget = mock.Mock(name="OneTarget")
@@ -197,8 +196,8 @@ describe "TargetRegister":
             reg.register_type("two", TwoTarget)
             assert reg.types == {"one": OneTarget2, "two": TwoTarget}
 
-    describe "resolve":
-        it "will only use already created target if exists and isn't restricted", reg:
+    class TestResolve:
+        def test_it_will_only_use_already_created_target_if_exists_and_isnt_restricted(self, reg):
             HeroTarget = mock.Mock(name="HeroTarget")
             made = mock.Mock(name="made")
             target = Target.FieldSpec().empty_normalise(type="hero")
@@ -218,7 +217,7 @@ describe "TargetRegister":
 
             reg.restricted(target_names=["superman"]).resolve(made)
 
-        it "will complain if the name doesn't exists", reg:
+        def test_it_will_complain_if_the_name_doesnt_exists(self, reg):
             with assertRaises(TargetNotFound, wanted="things"):
                 reg.resolve("things")
 
@@ -226,7 +225,7 @@ describe "TargetRegister":
             with assertRaises(TargetNotFound, wanted=made):
                 reg.resolve(made)
 
-        it "will use the type object and the creator to create a target", reg:
+        def test_it_will_use_the_type_object_and_the_creator_to_create_a_target(self, reg):
             HeroTarget = mock.Mock(name="HeroTarget")
 
             made = mock.Mock(name="made")
@@ -239,20 +238,20 @@ describe "TargetRegister":
             assert reg.resolve("superman") is made
             creator.assert_called_once_with("superman", HeroTarget, target)
 
-    describe "add_target":
-        it "complains if the type doesn't exist and the target isn't optional", reg:
+    class TestAddTarget:
+        def test_it_complains_if_the_type_doesnt_exist_and_the_target_isnt_optional(self, reg):
             target = Target.FieldSpec().empty_normalise(type="hero")
             assert not target.optional
 
             with assertRaises(TargetTypeNotFound, target="superman", wanted="hero"):
                 reg.add_target("superman", target, mock.Mock(name="creator"))
 
-        it "does nothing if the type doesn't exist but the target is optional", reg:
+        def test_it_does_nothing_if_the_type_doesnt_exist_but_the_target_is_optional(self, reg):
             target = Target.FieldSpec().empty_normalise(type="hero", optional=True)
             reg.add_target("superman", target, mock.Mock(name="creator"))
             assert reg.registered == {}
 
-        it "puts the information in registered otherwise", reg:
+        def test_it_puts_the_information_in_registered_otherwise(self, reg):
             HeroTarget = mock.Mock(name="HeroTarget")
             reg.register_type("hero", HeroTarget)
 
@@ -269,8 +268,8 @@ describe "TargetRegister":
                 "batman": ("hero", target2, creator2),
             }
 
-    describe "creating a restriction":
-        it "changes underlying data", reg:
+    class TestCreatingARestriction:
+        def test_it_changes_underlying_data(self, reg):
             HeroTarget = mock.Mock(name="HeroTarget")
             reg.register_type("hero", HeroTarget)
             restricted = reg.restricted(target_types=["hero"])

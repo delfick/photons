@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -7,7 +6,7 @@ from photons_control.planner.gatherer import PlanInfo
 from photons_control.planner.plans import NoMessages, Plan, Skip
 from photons_messages import DeviceMessages
 
-describe "PlanInfo":
+class TestPlanInfo:
 
     @pytest.fixture()
     def V(self):
@@ -19,7 +18,7 @@ describe "PlanInfo":
 
         return V()
 
-    it "takes in some things", V:
+    def test_it_takes_in_some_things(self, V):
         info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
         assert info.plan is V.plan
         assert info.plankey is V.plankey
@@ -31,15 +30,15 @@ describe "PlanInfo":
         assert info.completed is None
         assert not info.done
 
-    it "can be marked done", V:
+    def test_it_can_be_marked_done(self, V):
         info = PlanInfo(V.plan, V.plankey, V.instance, None)
         assert not info.done
 
         info.mark_done()
         assert info.done
 
-    describe "messages":
-        it "memoizes the messages and cares about instance messages before plan messages":
+    class TestMessages:
+        def test_it_memoizes_the_messages_and_cares_about_instance_messages_before_plan_messages(self):
             called = []
 
             get_power = DeviceMessages.GetPower()
@@ -97,8 +96,8 @@ describe "PlanInfo":
             assert called == [2]
             assert messages == [get_label]
 
-    describe "not_done_messages":
-        it "yields messages if not already done", V:
+    class TestNotDoneMessages:
+        def test_it_yields_messages_if_not_already_done(self, V):
             get_power = DeviceMessages.GetPower()
             get_label = DeviceMessages.GetLabel()
 
@@ -114,12 +113,12 @@ describe "PlanInfo":
             info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
             assert list(info.not_done_messages) == []
 
-        it "does not yield messages if the messages is Skip", V:
+        def test_it_does_not_yield_messages_if_the_messages_is_Skip(self, V):
             V.instance.messages = Skip
             info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
             assert list(info.not_done_messages) == []
 
-        it "does not yield messages if the messages is NoMessages", V:
+        def test_it_does_not_yield_messages_if_the_messages_is_NoMessages(self, V):
             V.instance.messages = NoMessages
             info = PlanInfo(V.plan, V.plankey, V.instance, V.completed)
             assert list(info.not_done_messages) == []

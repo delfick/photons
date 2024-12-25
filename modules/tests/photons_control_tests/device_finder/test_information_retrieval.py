@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -83,7 +82,7 @@ class VBase:
                 assert not f.done()
 
 
-describe "Device":
+class TestDevice:
 
     @pytest.fixture()
     async def sender(self, final_future):
@@ -98,7 +97,7 @@ describe "Device":
         async with Finder(sender) as finder:
             yield finder
 
-    async it "can match against a fltr", sender, finder, fake_time, final_future:
+    async def test_it_can_match_against_a_fltr(self, sender, finder, fake_time, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
         V.t.add(1)
@@ -138,7 +137,7 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
 
-    async it "can match against a fltr for a non light", sender, finder, fake_time, final_future:
+    async def test_it_can_match_against_a_fltr_for_a_non_light(self, sender, finder, fake_time, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("switch")
         V.t.add(1)
@@ -178,7 +177,7 @@ describe "Device":
         V.received()
         V.assertTimes({InfoPoints.LABEL: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
 
-    async it "can start an information loop", fake_time, sender, finder, final_future:
+    async def test_it_can_start_an_information_loop(self, fake_time, sender, finder, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
         fake_time.set(1)
@@ -321,7 +320,7 @@ describe "Device":
 
         await checker_task
 
-    async it "can start an information loop for a switch", fake_time, sender, finder, final_future:
+    async def test_it_can_start_an_information_loop_for_a_switch(self, fake_time, sender, finder, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("switch")
         fake_time.set(1)
@@ -463,7 +462,7 @@ describe "Device":
 
         await checker_task
 
-    async it "stops the information loop when the device disappears", fake_time, sender, finder, final_future:
+    async def test_it_stops_the_information_loop_when_the_device_disappears(self, fake_time, sender, finder, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
         fake_time.set(1)
@@ -604,7 +603,7 @@ describe "Device":
 
         await checker_task
 
-    async it "doesn't do multiple refresh loops at the same time", fake_time, sender, finder, final_future:
+    async def test_it_doesnt_do_multiple_refresh_loops_at_the_same_time(self, fake_time, sender, finder, final_future):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
 

@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -12,9 +11,9 @@ async def start_database(server):
         await conn.run_sync(server.server.database.Base.metadata.create_all)
 
 
-describe "Scene":
-    describe "v1":
-        async it "has scene commands", async_timeout, devices, server, responses:
+class TestScene:
+    class TestV1:
+        async def test_it_has_scene_commands(self, async_timeout, devices, server, responses):
             # sqlite is very slow on github actions for some reason
             async_timeout.set_timeout_seconds(20)
 

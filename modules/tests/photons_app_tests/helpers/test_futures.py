@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import time
@@ -16,8 +15,8 @@ def loop():
     return hp.get_event_loop()
 
 
-describe "creating a future":
-    it "can create a future from a provided loop":
+class TestCreatingAFuture:
+    def test_it_can_create_a_future_from_a_provided_loop(self):
         fut = mock.Mock(name="future")
         loop = mock.Mock(name="loop")
         loop.create_future.return_value = fut
@@ -25,18 +24,18 @@ describe "creating a future":
         assert fut.name is None
         loop.create_future.assert_called_once_with()
 
-    it "can create a future from current loop":
+    def test_it_can_create_a_future_from_current_loop(self):
         fut = hp.create_future()
         assert isinstance(fut, asyncio.Future)
         assert fut.name is None
 
-    it "can give a name to the future":
+    def test_it_can_give_a_name_to_the_future(self):
         fut = hp.create_future(name="hi")
         assert fut.name == "hi"
 
 
-describe "fut_has_callback":
-    async it "says no if fut has no callbacks":
+class TestFutHasCallback:
+    async def test_it_says_no_if_fut_has_no_callbacks(self):
 
         def func():
             pass
@@ -44,7 +43,7 @@ describe "fut_has_callback":
         fut = hp.create_future()
         assert not hp.fut_has_callback(fut, func)
 
-    async it "says no if it has other callbacks":
+    async def test_it_says_no_if_it_has_other_callbacks(self):
 
         def func1():
             pass
@@ -56,7 +55,7 @@ describe "fut_has_callback":
         fut.add_done_callback(func1)
         assert not hp.fut_has_callback(fut, func2)
 
-    async it "says yes if we have the callback":
+    async def test_it_says_yes_if_we_have_the_callback(self):
 
         def func1():
             pass
@@ -72,8 +71,8 @@ describe "fut_has_callback":
         fut.add_done_callback(func2)
         assert hp.fut_has_callback(fut, func2)
 
-describe "async_with_timeout":
-    async it "returns the result of waiting on the coroutine":
+class TestAsyncWithTimeout:
+    async def test_it_returns_the_result_of_waiting_on_the_coroutine(self):
         val = str(uuid.uuid1())
 
         async def func():
@@ -82,7 +81,7 @@ describe "async_with_timeout":
         res = await hp.async_with_timeout(func(), timeout=10)
         assert res == val
 
-    async it "cancels the coroutine if it doesn't respond":
+    async def test_it_cancels_the_coroutine_if_it_doesnt_respond(self):
 
         async def func():
             await asyncio.sleep(2)
@@ -92,7 +91,7 @@ describe "async_with_timeout":
             await hp.async_with_timeout(func(), timeout=0.1)
         assert time.time() - start < 0.5
 
-    async it "cancels the coroutine and raises timeout_error":
+    async def test_it_cancels_the_coroutine_and_raises_timeout_error(self):
         error = PhotonsAppError("Blah")
 
         async def func():
@@ -106,8 +105,8 @@ describe "async_with_timeout":
             await hp.async_with_timeout(func(), timeout=0.1, timeout_error=error)
         assert time.time() - start < 0.5
 
-describe "async_as_background":
-    async it "runs the coroutine in the background":
+class TestAsyncAsBackground:
+    async def test_it_runs_the_coroutine_in_the_background(self):
 
         async def func(one, two, three=None):
             return "{0}.{1}.{2}".format(one, two, three)
@@ -117,7 +116,7 @@ describe "async_as_background":
         assert isinstance(t, asyncio.Task)
         assert await t == "6.5.9"
 
-    async it "uses silent_reporter if silent is True":
+    async def test_it_uses_silent_reporter_if_silent_is_True(self):
 
         async def func(one, two, three=None):
             return "{0}.{1}.{2}".format(one, two, three)
@@ -127,40 +126,40 @@ describe "async_as_background":
         assert isinstance(t, asyncio.Task)
         assert await t == "6.5.9"
 
-describe "silent_reporter":
-    async it "does nothing if the future was cancelled":
+class TestSilentReporter:
+    async def test_it_does_nothing_if_the_future_was_cancelled(self):
         fut = hp.create_future()
         fut.cancel()
         assert hp.silent_reporter(fut) is None
 
-    async it "does nothing if the future has an exception":
+    async def test_it_does_nothing_if_the_future_has_an_exception(self):
         fut = hp.create_future()
         fut.set_exception(Exception("wat"))
         assert hp.silent_reporter(fut) is None
 
-    async it "returns true if we have a result":
+    async def test_it_returns_true_if_we_have_a_result(self):
         fut = hp.create_future()
         fut.set_result(mock.Mock(name="result"))
         assert hp.silent_reporter(fut) is True
 
-describe "reporter":
-    async it "does nothing if the future was cancelled":
+class TestReporter:
+    async def test_it_does_nothing_if_the_future_was_cancelled(self):
         fut = hp.create_future()
         fut.cancel()
         assert hp.reporter(fut) is None
 
-    async it "does nothing if the future has an exception":
+    async def test_it_does_nothing_if_the_future_has_an_exception(self):
         fut = hp.create_future()
         fut.set_exception(Exception("wat"))
         assert hp.reporter(fut) is None
 
-    async it "returns true if we have a result":
+    async def test_it_returns_true_if_we_have_a_result(self):
         fut = hp.create_future()
         fut.set_result(mock.Mock(name="result"))
         assert hp.reporter(fut) is True
 
-describe "transfer_result":
-    async it "works as a done_callback", loop:
+class TestTransferResult:
+    async def test_it_works_as_a_done_callback(self, loop):
         fut = hp.create_future()
 
         async def doit():
@@ -172,7 +171,7 @@ describe "transfer_result":
 
         assert fut.result() == [1, 2]
 
-    async it "can run a process function", loop:
+    async def test_it_can_run_a_process_function(self, loop):
         fut = hp.create_future()
         res = mock.Mock(name="res")
 
@@ -190,8 +189,8 @@ describe "transfer_result":
 
         assert fut.result() is res
 
-    describe "errors_only":
-        async it "cancels fut if res is cancelled":
+    class TestErrorsOnly:
+        async def test_it_cancels_fut_if_res_is_cancelled(self):
             fut = hp.create_future()
             res = hp.create_future()
             res.cancel()
@@ -199,7 +198,7 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=True)(res)
             assert res.cancelled()
 
-        async it "sets exception on fut if res has an exception":
+        async def test_it_sets_exception_on_fut_if_res_has_an_exception(self):
             fut = hp.create_future()
             res = hp.create_future()
 
@@ -209,7 +208,7 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=True)(res)
             assert fut.exception() == error
 
-        async it "does not transfer result":
+        async def test_it_does_not_transfer_result(self):
             fut = hp.create_future()
             res = hp.create_future()
             res.set_result([1, 2])
@@ -217,8 +216,8 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=True)(res)
             assert not fut.done()
 
-    describe "not errors_only":
-        async it "cancels fut if res is cancelled":
+    class TestNotErrorsOnly:
+        async def test_it_cancels_fut_if_res_is_cancelled(self):
             fut = hp.create_future()
             res = hp.create_future()
             res.cancel()
@@ -226,7 +225,7 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=False)(res)
             assert res.cancelled()
 
-        async it "sets exception on fut if res has an exception":
+        async def test_it_sets_exception_on_fut_if_res_has_an_exception(self):
             fut = hp.create_future()
             res = hp.create_future()
 
@@ -236,7 +235,7 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=False)(res)
             assert fut.exception() == error
 
-        async it "transfers result":
+        async def test_it_transfers_result(self):
             fut = hp.create_future()
             res = hp.create_future()
             res.set_result([1, 2])
@@ -244,8 +243,8 @@ describe "transfer_result":
             hp.transfer_result(fut, errors_only=False)(res)
             assert fut.result() == [1, 2]
 
-describe "noncancelled_results_from_futs":
-    async it "returns results from done futures that aren't cancelled":
+class TestNoncancelledResultsFromFuts:
+    async def test_it_returns_results_from_done_futures_that_arent_cancelled(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -263,7 +262,7 @@ describe "noncancelled_results_from_futs":
             [result1, result2],
         )
 
-    async it "returns found errors as well":
+    async def test_it_returns_found_errors_as_well(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -278,7 +277,7 @@ describe "noncancelled_results_from_futs":
 
         assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [result2])
 
-    async it "squashes the same error into one error":
+    async def test_it_squashes_the_same_error_into_one_error(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -293,7 +292,7 @@ describe "noncancelled_results_from_futs":
 
         assert hp.noncancelled_results_from_futs([fut1, fut2, fut3, fut4]) == (error1, [])
 
-    async it "can return error with multiple errors":
+    async def test_it_can_return_error_with_multiple_errors(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -314,7 +313,7 @@ describe "noncancelled_results_from_futs":
             [result2],
         )
 
-describe "find_and_apply_result":
+class TestFindAndApplyResult:
 
     @pytest.fixture()
     def V(self):
@@ -331,7 +330,7 @@ describe "find_and_apply_result":
 
         return V()
 
-    async it "cancels futures if final_future is cancelled", V:
+    async def test_it_cancels_futures_if_final_future_is_cancelled(self, V):
         V.final_fut.cancel()
         assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
 
@@ -342,7 +341,7 @@ describe "find_and_apply_result":
 
         assert V.final_fut.cancelled()
 
-    async it "sets exceptions on futures if final_future has an exception", V:
+    async def test_it_sets_exceptions_on_futures_if_final_future_has_an_exception(self, V):
         error = ValueError("NOPE")
         V.final_fut.set_exception(error)
         assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
@@ -350,7 +349,7 @@ describe "find_and_apply_result":
         for f in V.available_futs:
             assert f.exception() is error
 
-    async it "ignores futures already done when final_future has an exception", V:
+    async def test_it_ignores_futures_already_done_when_final_future_has_an_exception(self, V):
         err1 = Exception("LOLZ")
         V.available_futs[0].set_exception(err1)
         V.available_futs[1].cancel()
@@ -365,7 +364,7 @@ describe "find_and_apply_result":
         assert V.available_futs[2].result() == [1, 2]
         assert V.available_futs[3].exception() is err2
 
-    async it "spreads error if any is found", V:
+    async def test_it_spreads_error_if_any_is_found(self, V):
         error1 = Exception("wat")
         V.fut2.set_exception(error1)
 
@@ -378,7 +377,7 @@ describe "find_and_apply_result":
 
         assert V.final_fut.exception() is error1
 
-    async it "doesn't spread error to those already cancelled or with error", V:
+    async def test_it_doesnt_spread_error_to_those_already_cancelled_or_with_error(self, V):
         error1 = PhotonsAppError("wat")
         V.fut2.set_exception(error1)
 
@@ -396,7 +395,7 @@ describe "find_and_apply_result":
 
         assert V.final_fut.exception() == PhotonsAppError(_errors=[error2, error1])
 
-    async it "sets results if one has a result", V:
+    async def test_it_sets_results_if_one_has_a_result(self, V):
         result = mock.Mock(name="result")
         V.fut1.set_result(result)
 
@@ -409,7 +408,7 @@ describe "find_and_apply_result":
 
         assert V.final_fut.result() is result
 
-    async it "sets results if one has a result except for cancelled ones", V:
+    async def test_it_sets_results_if_one_has_a_result_except_for_cancelled_ones(self, V):
         result = mock.Mock(name="result")
         V.fut1.set_result(result)
         V.fut2.cancel()
@@ -423,7 +422,7 @@ describe "find_and_apply_result":
 
         assert V.final_fut.result() is result
 
-    async it "sets result on final_fut unless it's already cancelled", V:
+    async def test_it_sets_result_on_final_fut_unless_its_already_cancelled(self, V):
         result = mock.Mock(name="result")
         V.fut1.set_result(result)
         V.final_fut.cancel()
@@ -431,22 +430,22 @@ describe "find_and_apply_result":
         assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
         assert V.final_fut.cancelled()
 
-    async it "cancels final_fut if any of our futs are cancelled", V:
+    async def test_it_cancels_final_fut_if_any_of_our_futs_are_cancelled(self, V):
         V.fut1.cancel()
         assert hp.find_and_apply_result(V.final_fut, V.available_futs) is True
         assert V.final_fut.cancelled()
 
-    async it "does nothing if none of the futures are done", V:
+    async def test_it_does_nothing_if_none_of_the_futures_are_done(self, V):
         assert hp.find_and_apply_result(V.final_fut, V.available_futs) is False
         for f in V.available_futs:
             assert not f.done()
         assert not V.final_fut.done()
 
-describe "waiting for all futures":
-    async it "does nothing if there are no futures":
+class TestWaitingForAllFutures:
+    async def test_it_does_nothing_if_there_are_no_futures(self):
         await hp.wait_for_all_futures()
 
-    async it "waits for all the futures to be complete regardless of status":
+    async def test_it_waits_for_all_the_futures_to_be_complete_regardless_of_status(self):
         """Deliberately don't wait on futures to ensure we don't get warnings if they aren't awaited"""
         fut1 = hp.create_future()
         fut2 = hp.create_future()
@@ -477,11 +476,11 @@ describe "waiting for all futures":
 
         assert not any(f._callbacks for f in (fut1, fut2, fut3, fut4))
 
-describe "waiting for first future":
-    async it "does nothing if there are no futures":
+class TestWaitingForFirstFuture:
+    async def test_it_does_nothing_if_there_are_no_futures(self):
         await hp.wait_for_first_future()
 
-    async it "returns if any of the futures are already done":
+    async def test_it_returns_if_any_of_the_futures_are_already_done(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -491,7 +490,7 @@ describe "waiting for first future":
         assert not fut2._callbacks
         assert all(len(f._callbacks) == 1 for f in (fut1, fut3))
 
-    async it "returns on the first future to have a result":
+    async def test_it_returns_on_the_first_future_to_have_a_result(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -509,7 +508,7 @@ describe "waiting for first future":
         assert not fut2._callbacks
         assert all(len(f._callbacks) == 1 for f in (fut1, fut3))
 
-    async it "returns on the first future to have an exception":
+    async def test_it_returns_on_the_first_future_to_have_an_exception(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -528,7 +527,7 @@ describe "waiting for first future":
         assert not fut3._callbacks
         assert all(len(f._callbacks) == 1 for f in (fut1, fut2))
 
-    async it "returns on the first future to be cancelled":
+    async def test_it_returns_on_the_first_future_to_be_cancelled(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -547,11 +546,11 @@ describe "waiting for first future":
         assert not fut1._callbacks
         assert all(len(f._callbacks) == 1 for f in (fut2, fut3))
 
-describe "cancel futures and wait":
-    async it "does nothing if there are no futures":
+class TestCancelFuturesAndWait:
+    async def test_it_does_nothing_if_there_are_no_futures(self):
         await hp.cancel_futures_and_wait()
 
-    async it "does nothing if all the futures are already done":
+    async def test_it_does_nothing_if_all_the_futures_are_already_done(self):
         fut1 = hp.create_future()
         fut2 = hp.create_future()
         fut3 = hp.create_future()
@@ -562,7 +561,7 @@ describe "cancel futures and wait":
 
         await hp.cancel_futures_and_wait(fut1, fut2, fut3)
 
-    async it "cancels running tasks":
+    async def test_it_cancels_running_tasks(self):
         called = []
 
         async def run1():
@@ -589,8 +588,8 @@ describe "cancel futures and wait":
         await hp.cancel_futures_and_wait(fut1, fut2, fut3)
         assert sorted(called) == ["run1", "run2"]
 
-describe "ensuring aexit":
-    async it "ensures __aexit__ is called on exception":
+class TestEnsuringAexit:
+    async def test_it_ensures_aexit_is_called_on_exception(self):
         error = Exception("NOPE")
         called = []
 
@@ -637,7 +636,7 @@ describe "ensuring aexit":
 
         assert called == ["aenter", "aexit"]
 
-    async it "doesn't call exit twice on success":
+    async def test_it_doesnt_call_exit_twice_on_success(self):
         called = []
 
         class Thing:

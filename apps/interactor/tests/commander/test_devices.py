@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import binascii
@@ -47,9 +46,9 @@ def mimic_devices(devices: mimic.DeviceCollection) -> mimic.DeviceCollection:
     return devices
 
 
-describe "DeviceFinder":
-    describe "creation":
-        it "gets a default timeout", create_device_finder: DeviceFinderCreator, sender: Communication, finder: Finder:
+class TestDeviceFinder:
+    class TestCreation:
+        def test_it_gets_a_default_timeout(self, create_device_finder: DeviceFinderCreator, sender: Communication, finder: Finder):
             all_devices = special.FoundSerials()
             device_finder = create_device_finder({"selector": all_devices})
             assert isinstance(device_finder, devices.DeviceFinder)
@@ -58,7 +57,7 @@ describe "DeviceFinder":
             assert device_finder.timeout == 20
             assert device_finder.selector.selector is all_devices
 
-        it "can override timeout", create_device_finder: DeviceFinderCreator, sender: Communication, finder: Finder:
+        def test_it_can_override_timeout(self, create_device_finder: DeviceFinderCreator, sender: Communication, finder: Finder):
             all_devices = special.FoundSerials()
             device_finder = create_device_finder({"selector": all_devices, "timeout": 200})
             assert isinstance(device_finder, devices.DeviceFinder)
@@ -67,7 +66,7 @@ describe "DeviceFinder":
             assert device_finder.timeout == 200
             assert device_finder.selector.selector is all_devices
 
-        async it "can override finder and sender", create_device_finder: DeviceFinderCreator, sender: Communication, mimic_devices: mimic.DeviceCollection, final_future: asyncio.Future, finder: Finder:
+        async def test_it_can_override_finder_and_sender(self, create_device_finder: DeviceFinderCreator, sender: Communication, mimic_devices: mimic.DeviceCollection, final_future: asyncio.Future, finder: Finder):
             all_devices = special.FoundSerials()
             target = MemoryTarget.create(
                 {
@@ -88,8 +87,8 @@ describe "DeviceFinder":
                 assert device_finder.timeout == 200
                 assert device_finder.selector.selector is all_devices
 
-    describe "use":
-        async it "can make a device finder filter from FoundSerials", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+    class TestUse:
+        async def test_it_can_make_a_device_finder_filter_from_FoundSerials(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             made = create_device_finder({"selector": special.FoundSerials()})
             fltr = await made.filter
             assert await made.filter is fltr
@@ -102,7 +101,7 @@ describe "DeviceFinder":
             assert len(found) > 2
             assert found == set(device.serial for device in mimic_devices)
 
-        async it "can make a device finder filter from HardCodedSerials", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_can_make_a_device_finder_filter_from_HardCodedSerials(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             hard_coded = special.HardCodedSerials(["d073d500000a", "d073d5000002"])
             assert len(mimic_devices) > 2
             made = create_device_finder({"selector": hard_coded})
@@ -115,7 +114,7 @@ describe "DeviceFinder":
 
             assert set(await made.serials) == set(["d073d500000a", "d073d5000002"])
 
-        async it "can make device finder filter from device finder", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_can_make_device_finder_filter_from_device_finder(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             assert len(mimic_devices) > 1
             made = create_device_finder({"selector": DeviceFinder.from_kwargs(label="dungeon")})
             fltr = await made.filter
@@ -128,7 +127,7 @@ describe "DeviceFinder":
 
             assert set(await made.serials) == set(["d073d5000009"])
 
-        async it "makes serials filter from other selectors", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_makes_serials_filter_from_other_selectors(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
 
             class Reference(special.SpecialReference):
                 async def find_serials(
@@ -147,14 +146,14 @@ describe "DeviceFinder":
 
             assert set(await made.serials) == set(["d073d5000008", "d073d5000002"])
 
-        async it "can make a device_finder", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection, finder: Finder:
+        async def test_it_can_make_a_device_finder(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection, finder: Finder):
             made = create_device_finder({})
             device_finder = await made.device_finder
             assert isinstance(device_finder, DeviceFinder)
             assert device_finder.finder is finder
             assert device_finder.fltr is await made.filter
 
-        async it "can get Device objects", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_can_get_Device_objects(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             made = create_device_finder({})
             assert len(mimic_devices) > 2
 
@@ -180,7 +179,7 @@ describe "DeviceFinder":
             for device in got:
                 assert mimic_devices[device.serial].attrs.label == device.label
 
-        async it "can get serials", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_can_get_serials(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             made = create_device_finder({})
             assert len(mimic_devices) > 2
 
@@ -205,7 +204,7 @@ describe "DeviceFinder":
             assert await made.serials == got
             assert set(got) == set(device.serial for device in mimic_devices)
 
-        async it "can send messages", create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection:
+        async def test_it_can_send_messages(self, create_device_finder: DeviceFinderCreator, mimic_devices: mimic.DeviceCollection):
             made = create_device_finder({})
             assert len(mimic_devices) > 2
 

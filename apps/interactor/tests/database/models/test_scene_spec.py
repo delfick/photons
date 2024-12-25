@@ -1,4 +1,3 @@
-# coding: spec
 
 import json
 import random
@@ -23,13 +22,13 @@ def overrides():
     return mock.Mock(name="overrides")
 
 
-describe "range_spec":
-    it "complains if the value isn't a float", meta:
+class TestRangeSpec:
+    def test_it_complains_if_the_value_isnt_a_float(self, meta):
         for val in (True, False, {}, [], None, lambda: 1):
             with assertRaises(BadSpecValue):
                 scene_spec.range_spec(0, 1).normalise(meta, val)
 
-    it "can use the spec that is provided", meta:
+    def test_it_can_use_the_spec_that_is_provided(self, meta):
         got = scene_spec.range_spec(0, 1, sb.integer_spec()).normalise(meta, 0)
         assert got == 0
         assert type(got) == int
@@ -39,7 +38,7 @@ describe "range_spec":
         assert got == 0.0
         assert type(got) == float
 
-    it "complains if less than minimum", meta:
+    def test_it_complains_if_less_than_minimum(self, meta):
         for val in (-1.0, -2.0, -3.0):
             with assertRaises(
                 BadSpecValue,
@@ -51,7 +50,7 @@ describe "range_spec":
             ):
                 scene_spec.range_spec(0, 1).normalise(meta, val)
 
-    it "complains if greater than maximum", meta:
+    def test_it_complains_if_greater_than_maximum(self, meta):
         for val in (1.1, 2.0, 3.0):
             with assertRaises(
                 BadSpecValue,
@@ -63,18 +62,18 @@ describe "range_spec":
             ):
                 scene_spec.range_spec(0, 1).normalise(meta, val)
 
-    it "works if number is between min and max", meta:
+    def test_it_works_if_number_is_between_min_and_max(self, meta):
         for val in (0.1, 0.5, 0.9):
             assert scene_spec.range_spec(0, 1).normalise(meta, val) == val
 
-describe "sized_list_spec":
-    it "complains if not matching the spec", meta:
+class TestSizedListSpec:
+    def test_it_complains_if_not_matching_the_spec(self, meta):
         val = [1, 2, None]
         spec = scene_spec.sized_list_spec(sb.integer_spec(), 4)
         with assertRaises(BadSpecValue):
             spec.normalise(meta, val)
 
-    it "complains if list is not the correct length", meta:
+    def test_it_complains_if_list_is_not_the_correct_length(self, meta):
         spec = scene_spec.sized_list_spec(sb.integer_spec(), 2)
         with assertRaises(BadSpecValue, "Expected certain number of parts", want=2, got=1):
             spec.normalise(meta, 1)
@@ -85,7 +84,7 @@ describe "sized_list_spec":
         with assertRaises(BadSpecValue, "Expected certain number of parts", want=2, got=3):
             spec.normalise(meta, [1, 2, 3])
 
-    it "returns the list if correct length", meta:
+    def test_it_returns_the_list_if_correct_length(self, meta):
         spec = scene_spec.sized_list_spec(sb.string_spec(), 1)
 
         got = spec.normalise(meta, "one")
@@ -98,14 +97,14 @@ describe "sized_list_spec":
         got = spec.normalise(meta, ["one", "two"])
         assert got == ["one", "two"]
 
-describe "hsbk":
-    it "expects 4 items", meta:
+class TestHsbk:
+    def test_it_expects_4_items(self, meta):
         spec = scene_spec.hsbk()
 
         val = [200, 1, 1, 3500]
         assert spec.normalise(meta, val) == val
 
-    it "complains if hue is outside 0 and 360", meta:
+    def test_it_complains_if_hue_is_outside_0_and_360(self, meta):
         spec = scene_spec.hsbk()
 
         with assertRaises(
@@ -118,7 +117,7 @@ describe "hsbk":
         ):
             spec.normalise(meta, [361, 1, 1, 3500])
 
-    it "complains if saturation is outside 0 and 1", meta:
+    def test_it_complains_if_saturation_is_outside_0_and_1(self, meta):
         spec = scene_spec.hsbk()
 
         with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=1):
@@ -127,7 +126,7 @@ describe "hsbk":
         with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=1):
             spec.normalise(meta, [360, 1.1, 1, 3500])
 
-    it "complains if brightness is outside 0 and 1", meta:
+    def test_it_complains_if_brightness_is_outside_0_and_1(self, meta):
         spec = scene_spec.hsbk()
 
         with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=1):
@@ -136,7 +135,7 @@ describe "hsbk":
         with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=1):
             spec.normalise(meta, [360, 1, 1.1, 3500])
 
-    it "complains if kelvin is outside 1500 and 9000", meta:
+    def test_it_complains_if_kelvin_is_outside_1500_and_9000(self, meta):
         spec = scene_spec.hsbk()
 
         with assertRaises(
@@ -149,54 +148,54 @@ describe "hsbk":
         ):
             spec.normalise(meta, [360, 1, 1, 9001])
 
-describe "json_string_spec":
-    describe "storing":
-        it "loads if the val is a string and returns as dumps", meta:
+class TestJsonStringSpec:
+    class TestStoring:
+        def test_it_loads_if_the_val_is_a_string_and_returns_as_dumps(self, meta):
             spec = sb.set_options(one=sb.integer_spec())
             spec = scene_spec.json_string_spec(spec, True)
             got = spec.normalise(meta, '{"one": 2, "two": 3}')
             assert got == '{"one": 2}'
 
-        it "doesn't loads if not a string and returns as dumps", meta:
+        def test_it_doesnt_loads_if_not_a_string_and_returns_as_dumps(self, meta):
             spec = sb.set_options(one=sb.integer_spec())
             spec = scene_spec.json_string_spec(spec, True)
             got = spec.normalise(meta, {"one": 2, "two": 3})
             assert got == '{"one": 2}'
 
-        it "complains if string is not valid json", meta:
+        def test_it_complains_if_string_is_not_valid_json(self, meta):
             spec = sb.set_options(one=sb.integer_spec())
             spec = scene_spec.json_string_spec(spec, True)
             with assertRaises(BadSpecValue, "Value was not valid json"):
                 spec.normalise(meta, "{")
 
-        it "complains if we don't match our spec", meta:
+        def test_it_complains_if_we_dont_match_our_spec(self, meta):
             spec = sb.set_options(one=sb.required(sb.integer_spec()))
             spec = scene_spec.json_string_spec(spec, True)
             with assertRaises(BadSpecValue):
                 spec.normalise(meta, '{"two": 3}')
 
-    describe "not storing":
-        it "loads if the val is a string", meta:
+    class TestNotStoring:
+        def test_it_loads_if_the_val_is_a_string(self, meta):
             spec = sb.set_options(one=sb.integer_spec())
             spec = scene_spec.json_string_spec(spec, False)
             got = spec.normalise(meta, '{"one": 2, "two": 3}')
             assert got == {"one": 2}
 
-        it "doesn't loads if not a string", meta:
+        def test_it_doesnt_loads_if_not_a_string(self, meta):
             spec = sb.set_options(one=sb.integer_spec())
             spec = scene_spec.json_string_spec(spec, False)
             got = spec.normalise(meta, {"one": 2, "two": 3})
             assert got == {"one": 2}
 
-        it "complains if we don't match our spec", meta:
+        def test_it_complains_if_we_dont_match_our_spec(self, meta):
             spec = sb.set_options(one=sb.required(sb.integer_spec()))
             spec = scene_spec.json_string_spec(spec, False)
             with assertRaises(BadSpecValue):
                 spec.normalise(meta, {"two": 3})
 
-describe "make_spec":
-    describe "storing":
-        it "has nullable fields for everything but uuid and matcher", meta:
+class TestMakeSpec:
+    class TestStoring:
+        def test_it_has_nullable_fields_for_everything_but_uuid_and_matcher(self, meta):
             spec = scene_spec.make_spec(storing=True)
             obj = spec.normalise(meta, {"uuid": "one", "matcher": {"label": "kitchen"}})
             assert obj.as_dict() == {
@@ -215,7 +214,7 @@ describe "make_spec":
             with assertRaises(BadSpecValue):
                 obj = spec.normalise(meta, {"matcher": {"label": "kitchen"}})
 
-        it "makes a class with no extra methods and makes json into text", meta:
+        def test_it_makes_a_class_with_no_extra_methods_and_makes_json_into_text(self, meta):
             zones = []
             for i in range(10):
                 zones.append([float(i), 1.0, 0.0, 3500])
@@ -260,7 +259,7 @@ describe "make_spec":
                 "duration": 1,
             }
 
-    describe "not storing":
+    class TestNotStoring:
 
         @pytest.fixture()
         def V(self, meta):
@@ -332,7 +331,7 @@ describe "make_spec":
 
             return V()
 
-        it "has nullable fields for everything but uuid and matcher", meta:
+        def test_it_has_nullable_fields_for_everything_but_uuid_and_matcher(self, meta):
             spec = scene_spec.make_spec(storing=False)
             obj = spec.normalise(meta, {"uuid": "one", "matcher": {"label": "kitchen"}})
             assert obj.as_dict() == {
@@ -351,12 +350,12 @@ describe "make_spec":
             with assertRaises(BadSpecValue):
                 obj = spec.normalise(meta, {"matcher": {"label": "kitchen"}})
 
-        it "does not store as text", V:
+        def test_it_does_not_store_as_text(self, V):
             for key, val in V.kwargs.items():
                 assert getattr(V.obj, key) == val
 
-        describe "transform_options":
-            it "takes into account power, color and duration", V:
+        class TestTransformOptions:
+            def test_it_takes_into_account_power_color_and_duration(self, V):
                 assert V.obj.transform_options == {"power": "on", "color": "red", "duration": 1}
 
                 V.obj.power = False
@@ -371,8 +370,8 @@ describe "make_spec":
                 V.obj.power = None
                 assert V.obj.transform_options == {}
 
-        describe "colors_from_hsbks":
-            it "takes uses hsbks if no overrides", V:
+        class TestColorsFromHsbks:
+            def test_it_takes_uses_hsbks_if_no_overrides(self, V):
                 hsbks = []
                 result = []
                 for i in range(10):
@@ -393,7 +392,7 @@ describe "make_spec":
 
                     assert V.obj.colors_from_hsbks(hsbks, {}) == result
 
-            it "takes overrides from overrides", V:
+            def test_it_takes_overrides_from_overrides(self, V):
                 h = mock.Mock(name="hue")
                 s = mock.Mock(name="saturation")
                 b = mock.Mock(name="brightness")
@@ -427,13 +426,13 @@ describe "make_spec":
 
                     assert V.obj.colors_from_hsbks(hsbks, overrides) == result
 
-        describe "power_message":
-            it "does not provide SetLightPower if we have no power", V:
+        class TestPowerMessage:
+            def test_it_does_not_provide_SetLightPower_if_we_have_no_power(self, V):
                 V.obj.power = None
                 msg = V.obj.power_message({})
                 assert msg is None
 
-            it "provides power if in overrides", V:
+            def test_it_provides_power_if_in_overrides(self, V):
                 V.obj.power = None
                 V.obj.duration = None
 
@@ -453,7 +452,7 @@ describe "make_spec":
                 msg = V.obj.power_message({"power": "off"})
                 assert msg == LightMessages.SetLightPower(level=0, duration=2)
 
-            it "provides power if on the object", V:
+            def test_it_provides_power_if_on_the_object(self, V):
                 V.obj.power = True
                 V.obj.duration = 3
 
@@ -464,8 +463,8 @@ describe "make_spec":
                 msg = V.obj.power_message({})
                 assert msg == LightMessages.SetLightPower(level=0, duration=3)
 
-        describe "zone_msgs":
-            it "yields power message if we have one", V, overrides:
+        class TestZoneMsgs:
+            def test_it_yields_power_message_if_we_have_one(self, V, overrides):
                 msg = mock.Mock(name="msg")
                 power_message = mock.Mock(name="power_message", return_value=msg)
 
@@ -476,7 +475,7 @@ describe "make_spec":
 
                 power_message.assert_called_once_with(overrides)
 
-            it "does not yield power message if we don't have one", V, overrides:
+            def test_it_does_not_yield_power_message_if_we_dont_have_one(self, V, overrides):
                 power_message = mock.Mock(name="power_message", return_value=None)
                 colors = V.obj.colors_from_hsbks(V.obj.zones, {})
                 colors_from_hsbks = mock.Mock(name="colors_from_hsbks", return_value=colors)
@@ -496,7 +495,7 @@ describe "make_spec":
                 colors_from_hsbks.assert_called_once_with(V.obj.zones, overrides)
                 determine_duration.assert_called_once_with(overrides)
 
-            describe "Yielding SetMultiZoneColorZones messages":
+            class TestYieldingSetMultiZoneColorZonesMessages:
 
                 @pytest.fixture()
                 def setter(self):
@@ -512,7 +511,7 @@ describe "make_spec":
 
                     return setter
 
-            it "works", V, setter:
+            def test_it_works(self, V, setter):
                 zones = [
                     [0, 0, 0, 3500],
                     [0, 0, 0, 3500],
@@ -534,7 +533,7 @@ describe "make_spec":
                     setter(100, 0.5, 1, 9000, start_index=7, end_index=8, duration=1),
                 )
 
-            it "works2", V, setter:
+            def test_it_works2(self, V, setter):
                 zones = [
                     [0, 0, 0, 3500],
                     [100, 1, 0, 3500],
@@ -553,8 +552,8 @@ describe "make_spec":
                     setter(100, 0.5, 1, 9000, start_index=5, end_index=5, duration=1),
                 )
 
-        describe "chain_msgs":
-            it "yields power message if we have one", V, overrides:
+        class TestChainMsgs:
+            def test_it_yields_power_message_if_we_have_one(self, V, overrides):
                 msg = mock.Mock(name="msg")
                 power_message = mock.Mock(name="power_message", return_value=msg)
 
@@ -565,7 +564,7 @@ describe "make_spec":
 
                 power_message.assert_called_once_with(overrides)
 
-            it "does not yield power message if we don't have one", V, overrides:
+            def test_it_does_not_yield_power_message_if_we_dont_have_one(self, V, overrides):
                 power_message = mock.Mock(name="power_message", return_value=None)
                 colors = V.obj.colors_from_hsbks(V.obj.zones, {})
                 colors_from_hsbks = mock.Mock(name="colors_from_hsbks", return_value=colors)
@@ -585,7 +584,7 @@ describe "make_spec":
                 colors_from_hsbks.assert_called_once_with(V.obj.chain[0], overrides)
                 determine_duration.assert_called_once_with(overrides)
 
-            describe "yielding Set64 messages":
+            class TestYieldingSet64Messages:
 
                 @pytest.fixture()
                 def setter(self):
@@ -596,7 +595,7 @@ describe "make_spec":
 
                     return setter
 
-                it "works", V, setter, overrides:
+                def test_it_works(self, V, setter, overrides):
                     power_message = mock.Mock(name="power_message", return_value=None)
 
                     original = V.obj.colors_from_hsbks

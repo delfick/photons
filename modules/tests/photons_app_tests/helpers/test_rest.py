@@ -1,4 +1,3 @@
-# coding: spec
 
 import os
 from unittest import mock
@@ -7,8 +6,8 @@ from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_messages import fields
 
-describe "future to string":
-    it "just repr's a not future":
+class TestFutureToString:
+    def test_it_just_reprs_a_not_future(self):
 
         class Thing:
             def __repr__(s):
@@ -16,14 +15,14 @@ describe "future to string":
 
         assert hp.fut_to_string(Thing()) == "<REPR THING>"
 
-    it "says if the future is pending":
+    def test_it_says_if_the_future_is_pending(self):
         fut = hp.create_future(name="one")
         assert hp.fut_to_string(fut) == "<Future#one(pending)>"
 
         fut = hp.create_future()
         assert hp.fut_to_string(fut) == "<Future#None(pending)>"
 
-    it "says if the future is cancelled":
+    def test_it_says_if_the_future_is_cancelled(self):
         fut = hp.create_future(name="one")
         fut.cancel()
         assert hp.fut_to_string(fut) == "<Future#one(cancelled)>"
@@ -32,7 +31,7 @@ describe "future to string":
         fut.cancel()
         assert hp.fut_to_string(fut) == "<Future#None(cancelled)>"
 
-    it "says if the future has an exception":
+    def test_it_says_if_the_future_has_an_exception(self):
         fut = hp.create_future(name="one")
         fut.set_exception(ValueError("HI"))
         assert hp.fut_to_string(fut) == "<Future#one(exception:ValueError:HI)>"
@@ -41,7 +40,7 @@ describe "future to string":
         fut.set_exception(TypeError("NOPE"))
         assert hp.fut_to_string(fut) == "<Future#None(exception:TypeError:NOPE)>"
 
-    it "says if the future has a result":
+    def test_it_says_if_the_future_has_a_result(self):
         fut = hp.create_future(name="one")
         fut.set_result(True)
         assert hp.fut_to_string(fut) == "<Future#one(result)>"
@@ -50,27 +49,27 @@ describe "future to string":
         fut.set_result(False)
         assert hp.fut_to_string(fut) == "<Future#None(result)>"
 
-describe "add_error":
-    it "calls the error_catcher with the error if it's a callable":
+class TestAddError:
+    def test_it_calls_the_error_catcher_with_the_error_if_its_a_callable(self):
         error = mock.Mock(name="error")
         catcher = mock.Mock(name="catcher")
         hp.add_error(catcher, error)
         catcher.assert_called_once_with(error)
 
-    it "appends to the error catcher if it's a list":
+    def test_it_appends_to_the_error_catcher_if_its_a_list(self):
         error = mock.Mock(name="error")
         catcher = []
         hp.add_error(catcher, error)
         assert catcher == [error]
 
-    it "adds to the error catcher if it's a set":
+    def test_it_adds_to_the_error_catcher_if_its_a_set(self):
         error = mock.Mock(name="error")
         catcher = set()
         hp.add_error(catcher, error)
         assert catcher == set([error])
 
-describe "a_temp_file":
-    it "gives us the tmpfile":
+class TestATempFile:
+    def test_it_gives_us_the_tmpfile(self):
         with hp.a_temp_file() as fle:
             fle.write(b"wassup")
             fle.seek(0)
@@ -78,14 +77,14 @@ describe "a_temp_file":
             assert fle.read() == b"wassup"
         assert not os.path.exists(fle.name)
 
-    it "doesn't fail if we delete the file early":
+    def test_it_doesnt_fail_if_we_delete_the_file_early(self):
         with hp.a_temp_file() as fle:
             fle.close()
             os.remove(fle.name)
         assert not os.path.exists(fle.name)
 
-describe "just_log_exceptions":
-    it "logs exceptions":
+class TestJustLogExceptions:
+    def test_it_logs_exceptions(self):
         log = mock.Mock(name="log")
 
         error = ValueError("NOPE")
@@ -96,7 +95,7 @@ describe "just_log_exceptions":
             "Unexpected error", exc_info=(ValueError, error, mock.ANY)
         )
 
-    it "can be given a different message":
+    def test_it_can_be_given_a_different_message(self):
         log = mock.Mock(name="log")
 
         error = ValueError("NOPE")
@@ -107,7 +106,7 @@ describe "just_log_exceptions":
             "a different message", exc_info=(ValueError, error, mock.ANY)
         )
 
-    it "can reraise particular errors":
+    def test_it_can_reraise_particular_errors(self):
         log = mock.Mock(name="log")
 
         error = ValueError("NOPE")
@@ -125,8 +124,8 @@ describe "just_log_exceptions":
 
         log.assert_not_called()
 
-describe "nested_dict_retrieve":
-    it "returns us the dflt if we can't find the key":
+class TestNestedDictRetrieve:
+    def test_it_returns_us_the_dflt_if_we_cant_find_the_key(self):
         data = {"one": {"two": {"three": 3}}}
         dflt = mock.Mock(name="dflt")
         for keys in (
@@ -137,7 +136,7 @@ describe "nested_dict_retrieve":
         ):
             assert hp.nested_dict_retrieve(data, keys, dflt) is dflt
 
-    it "returns us what it finds":
+    def test_it_returns_us_what_it_finds(self):
         data = {"one": {"two": {"three": 3}}}
         dflt = mock.Mock(name="dflt")
 
@@ -146,8 +145,8 @@ describe "nested_dict_retrieve":
         assert hp.nested_dict_retrieve(data, ["one", "two"], dflt) == {"three": 3}
         assert hp.nested_dict_retrieve(data, ["one", "two", "three"], dflt) == 3
 
-describe "memoized_property":
-    it "caches on the instance":
+class TestMemoizedProperty:
+    def test_it_caches_on_the_instance(self):
         called = []
         blah = mock.Mock(name="blah")
 
@@ -166,7 +165,7 @@ describe "memoized_property":
         assert thing.blah is blah
         assert called == [1]
 
-    it "caches on the instance if the return is None":
+    def test_it_caches_on_the_instance_if_the_return_is_None(self):
         called = []
 
         class Thing:
@@ -184,7 +183,7 @@ describe "memoized_property":
         assert thing.blah is None
         assert called == [1]
 
-    it "caches on the instance if the return is False":
+    def test_it_caches_on_the_instance_if_the_return_is_False(self):
         called = []
 
         class Thing:
@@ -202,7 +201,7 @@ describe "memoized_property":
         assert thing.blah is False
         assert called == [1]
 
-    it "can set the value":
+    def test_it_can_set_the_value(self):
         called = []
         blah = mock.Mock(name="blah")
         meh = mock.Mock(name="meh")
@@ -225,7 +224,7 @@ describe "memoized_property":
         assert thing.blah is meh
         assert called == [1]
 
-    it "can delete the cache":
+    def test_it_can_delete_the_cache(self):
         called = []
         blah = mock.Mock(name="blah")
 
@@ -250,8 +249,8 @@ describe "memoized_property":
         assert thing.blah is blah
         assert called == [1, 1]
 
-describe "Color":
-    it "can be made and cloned":
+class TestColor:
+    def test_it_can_be_made_and_cloned(self):
         c1 = hp.Color(2, 0, 0.3, 3500)
         c2 = c1.clone()
 
@@ -276,7 +275,7 @@ describe "Color":
         assert c1 == hp.Color(2, 0, 0.3, 3500)
         assert c1.as_dict() == {"hue": 2, "saturation": 0, "brightness": 0.3, "kelvin": 3500}
 
-    it "can be compared with a tuple":
+    def test_it_can_be_compared_with_a_tuple(self):
         assert hp.Color(2, 0, 0, 3500) != (2,)
         assert hp.Color(2, 0, 0, 3500) != (2, 0)
         assert hp.Color(2, 0, 0, 3500) != (2, 0, 0)
@@ -287,7 +286,7 @@ describe "Color":
         assert hp.Color(2, 0, 0, 3500) != (2, 0, 1, 3500)
         assert hp.Color(2, 0, 0, 3500) != (2, 0, 0, 3700)
 
-    it "can be compared with a dictionary":
+    def test_it_can_be_compared_with_a_dictionary(self):
         assert hp.Color(2, 0, 0, 3500) != {"hue": 2}
         assert hp.Color(2, 0, 0, 3500) != {"hue": 2, "saturation": 0}
         assert hp.Color(2, 0, 0, 3500) != {"hue": 2, "saturation": 0, "brightness": 0}
@@ -323,7 +322,7 @@ describe "Color":
             "kelvin": 3700,
         }
 
-    it "can be compared with another hp.Color":
+    def test_it_can_be_compared_with_another_hpColor(self):
         assert hp.Color(2, 0, 0, 3500) == hp.Color(2, 0, 0, 3500)
 
         assert hp.Color(2, 0, 0, 3500) != hp.Color(20, 0, 0, 3500)
@@ -331,7 +330,7 @@ describe "Color":
         assert hp.Color(2, 0, 0, 3500) != hp.Color(2, 0, 1, 3500)
         assert hp.Color(2, 0, 0, 3500) != hp.Color(2, 0, 0, 3700)
 
-    it "can be compared with a real fields.Color":
+    def test_it_can_be_compared_with_a_real_fieldsColor(self):
         assert hp.Color(2, 0, 0, 3500) == fields.Color(
             hue=2, saturation=0, brightness=0, kelvin=3500
         )
@@ -349,7 +348,7 @@ describe "Color":
             hue=2, saturation=0, brightness=0, kelvin=3700
         )
 
-    it "compares to 4 decimal places":
+    def test_it_compares_to_4_decimal_places(self):
         assert hp.Color(250.245677, 0.134577, 0.765477, 4568) == (
             250.245699,
             0.134599,
@@ -363,7 +362,7 @@ describe "Color":
             4568,
         )
 
-    it "compares hue 359.99 to hue 0.0":
+    def test_it_compares_hue_35999_to_hue_00(self):
         assert hp.Color(359.99, 1.0, 1.0, 3500) == (
             0.0,
             1.0,

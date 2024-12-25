@@ -1,4 +1,3 @@
-# coding: spec
 
 import time
 from collections import defaultdict
@@ -59,9 +58,9 @@ def assertReceived(received, want):
         assert set(g) == set(w)
 
 
-describe "Repeater":
+class TestRepeater:
 
-    async it "repeats messages", sender:
+    async def test_it_repeats_messages(self, sender):
         for use_pipeline in (True, False):
             pipeline = [
                 DeviceMessages.SetPower(level=0),
@@ -108,7 +107,7 @@ describe "Repeater":
                         got_power = False
                         got_light = False
 
-    async it "can have a min loop time", sender, fake_time, m:
+    async def test_it_can_have_a_min_loop_time(self, sender, fake_time, m):
         t = fake_time
         msgs = [
             DeviceMessages.SetPower(level=0),
@@ -207,7 +206,7 @@ describe "Repeater":
             ],
         )
 
-    async it "can have a on_done_loop", sender:
+    async def test_it_can_have_a_on_done_loop(self, sender):
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -233,7 +232,7 @@ describe "Repeater":
         assert got == [0] * 6 + [30] * 6 + [60] * 6
         assert len(done) == 3
 
-    async it "runs on_done if we exit the full message early", sender:
+    async def test_it_runs_on_done_if_we_exit_the_full_message_early(self, sender):
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -260,7 +259,7 @@ describe "Repeater":
         assert got == ([0] * 6) + ([30] * 6) + ([60] * 6) + [90]
         assert len(done) == 4
 
-    async it "can be stopped by a on_done_loop", sender:
+    async def test_it_can_be_stopped_by_a_on_done_loop(self, sender):
         msgs = [
             DeviceMessages.SetPower(level=0),
             LightMessages.SetColor(hue=0, saturation=0, brightness=1, kelvin=4500),
@@ -288,7 +287,7 @@ describe "Repeater":
         ]
         assert len(done) == 3
 
-    async it "is not stopped by errors", sender:
+    async def test_it_is_not_stopped_by_errors(self, sender):
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetPower:

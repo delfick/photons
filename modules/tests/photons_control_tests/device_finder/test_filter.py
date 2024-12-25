@@ -1,4 +1,3 @@
-# coding: spec
 
 import json
 from unittest import mock
@@ -7,8 +6,8 @@ from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta, sb
 from photons_control.device_finder import Filter, InfoPoints, InvalidJson
 
-describe "Filter":
-    describe "construction":
+class TestFilter:
+    class TestConstruction:
 
         def assertFltrMatches(self, filtr, expect):
             for field in Filter.fields:
@@ -19,22 +18,22 @@ describe "Filter":
                 else:
                     assert filtr[field] is sb.NotSpecified
 
-        it "defaults everything to NotSpecified":
+        def test_it_defaults_everything_to_NotSpecified(self):
             filtr = Filter.empty()
             assert len(filtr.fields) == 16
             self.assertFltrMatches(filtr, {})
 
-        describe "from_json_str":
-            it "treats the string as a json object":
+        class TestFromJsonStr:
+            def test_it_treats_the_string_as_a_json_object(self):
                 want = {"label": "kitchen", "location_name": ["one", "two"], "hue": "20-50"}
                 expect = {"label": ["kitchen"], "location_name": ["one", "two"], "hue": [(20, 50)]}
                 self.assertFltrMatches(Filter.from_json_str(json.dumps(want)), expect)
 
-            it "complains if the string is not valid json":
+            def test_it_complains_if_the_string_is_not_valid_json(self):
                 with assertRaises(InvalidJson):
                     Filter.from_json_str("{")
 
-            it "complains if the string is not a dictionary":
+            def test_it_complains_if_the_string_is_not_a_dictionary(self):
                 for s in ('"wat"', "[]", "1"):
                     # Make sure it's valid json
                     json.dumps(s)
@@ -43,8 +42,8 @@ describe "Filter":
                     with assertRaises(InvalidJson, "Expected a dictionary"):
                         Filter.from_json_str(s)
 
-        describe "from_key_value_str":
-            it "treats the key,value as dictionary items":
+        class TestFromKeyValueStr:
+            def test_it_treats_the_keyvalue_as_dictionary_items(self):
                 want = "label=bathroom,hallway location_id=identifier1 saturation=0.7,0.8-1"
                 expect = {
                     "label": ["bathroom", "hallway"],
@@ -55,7 +54,7 @@ describe "Filter":
                 filtr = Filter.from_key_value_str(want)
                 self.assertFltrMatches(filtr, expect)
 
-            it "treats hsbk and refreshes appropriately":
+            def test_it_treats_hsbk_and_refreshes_appropriately(self):
                 s = "hue=5,60 saturation=0.7,0.5-0.8 brightness=0.8,0.4 kelvin=3500,2500 refresh_info=true refresh_discovery=true"
                 expect = {
                     "hue": [(5, 5), (60, 60)],
@@ -67,13 +66,13 @@ describe "Filter":
                 }
                 self.assertFltrMatches(Filter.from_key_value_str(s), expect)
 
-            it "ignores parts that aren't key=value":
+            def test_it_ignores_parts_that_arent_keyvalue(self):
                 want = "label=bathroom,hallway location_ididentifier1"
                 expect = {"label": ["bathroom", "hallway"]}
                 self.assertFltrMatches(Filter.from_key_value_str(want), expect)
 
-        describe "from_url_str":
-            it "treats url_str as a dictionary":
+        class TestFromUrlStr:
+            def test_it_treats_url_str_as_a_dictionary(self):
                 s = "label=kitchen&location_name=kitchen%20lights&location_name=two&hue=20-50&hue=0.6-0.9&refresh_discovery=true"
                 expect = {
                     "label": ["kitchen"],
@@ -83,8 +82,8 @@ describe "Filter":
                 }
                 self.assertFltrMatches(Filter.from_url_str(s), expect)
 
-        describe "from_kwargs":
-            it "just passes the kwargs to from_options":
+        class TestFromKwargs:
+            def test_it_just_passes_the_kwargs_to_from_options(self):
                 filtr = mock.Mock(name="filtr")
                 want = {"one": "two", "three": "four"}
                 from_options = mock.Mock(name="from_options", return_value=filtr)
@@ -94,8 +93,8 @@ describe "Filter":
 
                 from_options.assert_called_once_with(want)
 
-        describe "from_options":
-            it "normalises the options":
+        class TestFromOptions:
+            def test_it_normalises_the_options(self):
                 normalised = mock.Mock(name="normalised")
 
                 spec = mock.Mock(name="spec")
@@ -111,7 +110,7 @@ describe "Filter":
                 FieldSpec.assert_called_once_with()
                 spec.normalise.assert_called_once_with(Meta.empty(), options)
 
-            it "works":
+            def test_it_works(self):
                 want = {
                     "label": ["bathroom", "hallway"],
                     "location_id": ["identifier1"],
@@ -120,8 +119,8 @@ describe "Filter":
                 filtr = Filter.from_options(want)
                 self.assertFltrMatches(filtr, want)
 
-        describe "empty":
-            it "gives back a filter with just refresh options":
+        class TestEmpty:
+            def test_it_gives_back_a_filter_with_just_refresh_options(self):
                 self.assertFltrMatches(
                     Filter.empty(), {"refresh_info": False, "refresh_discovery": False}
                 )
@@ -138,24 +137,24 @@ describe "Filter":
                     {"refresh_info": True, "refresh_discovery": True},
                 )
 
-    describe "has":
-        it "says no if not a valid field":
+    class TestHas:
+        def test_it_says_no_if_not_a_valid_field(self):
             filtr = Filter.empty()
             assert not filtr.has("blah")
 
-        it "says no if the field has no value":
+        def test_it_says_no_if_the_field_has_no_value(self):
             filtr = Filter.empty()
             for field in filtr.fields:
                 if field not in ("refresh_info", "refresh_discovery"):
                     assert filtr[field] == sb.NotSpecified
                     assert not filtr.has(field)
 
-        it "says yes if the field has a value":
+        def test_it_says_yes_if_the_field_has_a_value(self):
             filtr = Filter.from_kwargs(label="kitchen")
             assert filtr.has("label")
 
-    describe "matches":
-        it "says no if the field is a refresh":
+    class TestMatches:
+        def test_it_says_no_if_the_field_is_a_refresh(self):
             for field in ("refresh_info", "refresh_discovery"):
                 filtr = Filter.empty(**{field: True})
                 assert not filtr.matches(field, True)
@@ -165,18 +164,18 @@ describe "Filter":
                 assert not filtr.matches(field, True)
                 assert not filtr.matches(field, False)
 
-        it "says no if the field isn't in the filter":
+        def test_it_says_no_if_the_field_isnt_in_the_filter(self):
             assert "blah" not in Filter.fields
             filtr = Filter.empty()
             assert not filtr.matches("blah", mock.ANY)
 
-        it "says no if the field isn't specified":
+        def test_it_says_no_if_the_field_isnt_specified(self):
             filtr = Filter.empty()
             for field in Filter.fields:
                 if field not in ("refresh_info", "refresh_discovery"):
                     assert not filtr.matches(field, mock.ANY)
 
-        it "matches ranges for hsbk":
+        def test_it_matches_ranges_for_hsbk(self):
             for field in ("hue", "saturation", "brightness", "kelvin"):
                 filtr = Filter.from_options({field: "40-60,70,80-81"})
                 assert filtr.matches(field, 40)
@@ -193,7 +192,7 @@ describe "Filter":
                 assert not filtr.matches(field, 79)
                 assert not filtr.matches(field, 82)
 
-        it "matches against anything in a list":
+        def test_it_matches_against_anything_in_a_list(self):
             for field in (
                 "label",
                 "power",
@@ -216,7 +215,7 @@ describe "Filter":
 
                 assert not filtr.matches(field, 3)
 
-        it "matches with a glob for name fields":
+        def test_it_matches_with_a_glob_for_name_fields(self):
             for field in Filter.empty().label_fields:
                 filtr = Filter.from_options({field: ["option*"]})
                 assert filtr.matches(field, "option1")
@@ -228,7 +227,7 @@ describe "Filter":
                 assert filtr.matches(field, "blah1")
                 assert not filtr.matches(field, "blah")
 
-        it "matches list against list for cap":
+        def test_it_matches_list_against_list_for_cap(self):
             filtr = Filter.from_options({"cap": ["multizone", "color"]})
             assert filtr.matches("cap", ["multizone"])
             assert filtr.matches("cap", ["color"])
@@ -236,8 +235,8 @@ describe "Filter":
             assert filtr.matches("cap", ["color", "ir"])
             assert not filtr.matches("cap", ["ir"])
 
-    describe "label_fields":
-        it "has a pre-filled list":
+    class TestLabelFields:
+        def test_it_has_a_pre_filled_list(self):
             filtr = Filter.empty()
             assert filtr.label_fields == (
                 "label",
@@ -245,21 +244,21 @@ describe "Filter":
                 "group_name",
             )
 
-    describe "matches_all":
-        it "says yes if all the fields aren't specified":
+    class TestMatchesAll:
+        def test_it_says_yes_if_all_the_fields_arent_specified(self):
             assert Filter.empty().matches_all
             assert Filter.empty(refresh_info=True).matches_all
             assert Filter.empty(refresh_discovery=True).matches_all
 
-        it "says no if any of the fields are specified":
+        def test_it_says_no_if_any_of_the_fields_are_specified(self):
             for field in Filter.fields:
                 if field not in ("refresh_info", "refresh_discovery"):
                     filtr = Filter.empty()
                     filtr[field] = mock.Mock(name="value")
                     assert not filtr.matches_all
 
-    describe "points":
-        it "returns the InfoPoint enums for the fields that have values":
+    class TestPoints:
+        def test_it_returns_the_InfoPoint_enums_for_the_fields_that_have_values(self):
             filtr = Filter.from_kwargs(label="kitchen", product_id=22)
             assert set(filtr.points) == set(
                 [InfoPoints.LIGHT_STATE, InfoPoints.LABEL, InfoPoints.VERSION]

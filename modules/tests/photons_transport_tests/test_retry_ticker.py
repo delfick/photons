@@ -1,4 +1,3 @@
-# coding: spec
 
 import time
 from unittest import mock
@@ -17,14 +16,14 @@ def final_future():
         fut.cancel()
 
 
-describe "RetryTicker":
-    it "Must be given timeouts":
+class TestRetryTicker:
+    def test_it_Must_be_given_timeouts(self):
         timeouts = mock.Mock(name="timeouts")
         options = RetryTicker(timeouts=timeouts)
         assert options.timeouts is timeouts
 
-    describe "tick":
-        async it "yields till the timeout", final_future, FakeTime, MockedCallLater:
+    class TestTick:
+        async def test_it_yields_till_the_timeout(self, final_future, FakeTime, MockedCallLater):
             options = RetryTicker(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []
@@ -50,7 +49,7 @@ describe "RetryTicker":
                 (9.2, (0.8, 1.2)),
             ]
 
-        async it "takes into account how long the block takes", final_future, FakeTime, MockedCallLater:
+        async def test_it_takes_into_account_how_long_the_block_takes(self, final_future, FakeTime, MockedCallLater):
             options = RetryTicker(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []

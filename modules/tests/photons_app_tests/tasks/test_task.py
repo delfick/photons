@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import time
@@ -13,7 +12,7 @@ from photons_app.collector import Collector
 from photons_app.photons_app import PhotonsApp
 from photons_app.tasks.tasks import Task
 
-describe "Task":
+class TestTask:
 
     @pytest.fixture()
     def collector(self):
@@ -22,7 +21,7 @@ describe "Task":
             collector.prepare(None, {})
             yield collector
 
-    it "has a create method", collector:
+    def test_it_has_a_create_method(self, collector):
         photons_app = collector.configuration["photons_app"]
         assert isinstance(photons_app, PhotonsApp)
 
@@ -46,7 +45,7 @@ describe "Task":
         assert t3.instantiated_name == "MyAmazingerTask"
         assert t3.thing == ["one"]
 
-    async it "has a run method", collector:
+    async def test_it_has_a_run_method(self, collector):
         a = mock.Mock(name="a")
         b = mock.Mock(name="b")
         d = mock.Mock(name="d")
@@ -72,7 +71,7 @@ describe "Task":
             execute_task.assert_called_once_with(a=a, c=b)
             post.assert_called_once_with((ValueError, error, mock.ANY), a=a, c=b)
 
-    it "has a shortcut to run in a loop", collector:
+    def test_it_has_a_shortcut_to_run_in_a_loop(self, collector):
         got = []
 
         class T(Task):
@@ -87,7 +86,7 @@ describe "Task":
 
         assert got == [{"wat": 1, "blah": 2}]
 
-    it "has order of cleanup and execution", FakeTime, MockedCallLater, collector:
+    def test_it_has_order_of_cleanup_and_execution(self, FakeTime, MockedCallLater, collector):
 
         got = []
         m = None

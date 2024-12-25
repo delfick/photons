@@ -1,11 +1,10 @@
-# coding: spec
 
 from unittest import mock
 
 from photons_protocol.messages import Messages
 
-describe "MessagesMeta":
-    it "calls any _lifx_packet_message attribute with the name and put onto resulting kls":
+class TestMessagesMeta:
+    def test_it_calls_any_lifx_packet_message_attribute_with_the_name_and_put_onto_resulting_kls(self):
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
 
@@ -29,7 +28,7 @@ describe "MessagesMeta":
         one_msg.assert_called_once_with("one")
         two_msg.assert_called_once_with("two")
 
-    it "creates a by_type record":
+    def test_it_creates_a_by_type_record(self):
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
 
@@ -51,7 +50,7 @@ describe "MessagesMeta":
             three_msg.Payload.message_type: three_msg,
         }
 
-    it "has the MessagesMixin":
+    def test_it_has_the_MessagesMixin(self):
 
         class M(Messages):
             pass

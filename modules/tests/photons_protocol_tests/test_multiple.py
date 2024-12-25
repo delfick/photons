@@ -1,4 +1,3 @@
-# coding: spec
 
 import enum
 import json
@@ -32,7 +31,7 @@ def list_of_dicts(lst):
     return [l.as_dict() for l in lst]
 
 
-describe "The multiple modifier":
+class TestTheMultipleModifier:
 
     def assertProperties(self, thing, checker):
         checker(thing)
@@ -44,7 +43,7 @@ describe "The multiple modifier":
         thing3 = type(thing).create(json.loads(repr(thing)))
         checker(thing3)
 
-    it "allows multiple of raw types and structs":
+    def test_it_allows_multiple_of_raw_types_and_structs(self):
 
         class Other(dictobj.PacketSpec):
             fields = [("four", T.Uint32)]
@@ -66,7 +65,7 @@ describe "The multiple modifier":
 
         self.assertProperties(thing, test_thing)
 
-    it "create items from nothing":
+    def test_it_create_items_from_nothing(self):
 
         class E(enum.Enum):
             ZERO = 0
@@ -113,7 +112,7 @@ describe "The multiple modifier":
             Other(one=False, five=[ba(b""), ba(b"")]),
         ]
 
-    it "allows replacing items in place":
+    def test_it_allows_replacing_items_in_place(self):
 
         class E(enum.Enum):
             ZERO = 0
@@ -181,7 +180,7 @@ describe "The multiple modifier":
 
         self.assertProperties(thing, test_replacement)
 
-    it "allows replacing items in place when from nothing":
+    def test_it_allows_replacing_items_in_place_when_from_nothing(self):
 
         class E(enum.Enum):
             ZERO = 0
@@ -229,7 +228,7 @@ describe "The multiple modifier":
 
         self.assertProperties(thing, test_replacement)
 
-    it "complains if setting a value incorrectly":
+    def test_it_complains_if_setting_a_value_incorrectly(self):
 
         class E(enum.Enum):
             ZERO = 0
@@ -273,7 +272,7 @@ describe "The multiple modifier":
 
         self.assertProperties(thing, partial(test_thing, UnknownEnum(6)))
 
-    it "can set as bytes":
+    def test_it_can_set_as_bytes(self):
 
         class E(enum.Enum):
             ZERO = 0
@@ -329,7 +328,7 @@ describe "The multiple modifier":
         thing.two[1] = Other(other=0, another="yeap").pack()
         self.assertProperties(thing, check2)
 
-    it "can edit structs inline":
+    def test_it_can_edit_structs_inline(self):
 
         class Other(dictobj.PacketSpec):
             fields = [("other", T.BoolInt), ("another", T.String(64).default(""))]
@@ -367,7 +366,7 @@ describe "The multiple modifier":
 
         self.assertProperties(thing, check2)
 
-    it "can determine class and number based off other fields":
+    def test_it_can_determine_class_and_number_based_off_other_fields(self):
 
         class One(dictobj.PacketSpec):
             fields = [("one", T.BoolInt.multiple(4).default(lambda pkt: False))]
@@ -412,7 +411,7 @@ describe "The multiple modifier":
 
         self.assertProperties(chooser, check)
 
-    it "can determine number based off other fields":
+    def test_it_can_determine_number_based_off_other_fields(self):
 
         class Vals(dictobj.PacketSpec):
             fields = [

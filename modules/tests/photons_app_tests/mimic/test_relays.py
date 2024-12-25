@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -72,7 +71,7 @@ def makeAssertState(device):
     return assertState
 
 
-describe "Relays":
+class TestRelays:
 
     @pytest.fixture()
     def device(self):
@@ -92,7 +91,7 @@ describe "Relays":
     def assertEvent(self, device, **attrs):
         return makeAssertEvent(device, **attrs)
 
-    async it "can change the power of all the relays", device, assertResponse, assertEvent:
+    async def test_it_can_change_the_power_of_all_the_relays(self, device, assertResponse, assertEvent):
         await assertResponse(
             DeviceMessages.GetPower(),
             [DeviceMessages.StatePower(level=0)],
@@ -168,7 +167,7 @@ describe "Relays":
             power=65535,
         )
 
-    async it "can change the power of the specified relay", device, assertResponse:
+    async def test_it_can_change_the_power_of_the_specified_relay(self, device, assertResponse):
         await assertResponse(
             DeviceMessages.GetPower(),
             [DeviceMessages.StatePower(level=0)],
@@ -249,7 +248,7 @@ describe "Relays":
             [DeviceMessages.StatePower(level=0)],
         )
 
-    async it "can change the power of the multiple relays", device, assertResponse, assertEvent:
+    async def test_it_can_change_the_power_of_the_multiple_relays(self, device, assertResponse, assertEvent):
         await assertResponse(
             DeviceMessages.GetPower(),
             [DeviceMessages.StatePower(level=0)],
@@ -298,7 +297,7 @@ describe "Relays":
             [DeviceMessages.StatePower(level=0)],
         )
 
-    async it "returns the power level of the specified relay", device, assertResponse, assertState:
+    async def test_it_returns_the_power_level_of_the_specified_relay(self, device, assertResponse, assertState):
         await assertResponse(
             RelayMessages.GetRPower(relay_index=1),
             [RelayMessages.StateRPower(relay_index=1, level=0)],

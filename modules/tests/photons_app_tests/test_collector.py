@@ -1,4 +1,3 @@
-# coding: spec
 import asyncio
 import os
 import sys
@@ -26,7 +25,7 @@ from photons_app.registers import (
     TargetRegister,
 )
 
-describe "Collector":
+class TestCollector:
 
     @pytest.fixture()
     def collector(self):
@@ -35,10 +34,10 @@ describe "Collector":
             collector.prepare(None, {})
             yield collector
 
-    it "has a shortcut to the photons_app", collector:
+    def test_it_has_a_shortcut_to_the_photons_app(self, collector):
         assert collector.photons_app is collector.configuration["photons_app"]
 
-    it "has a shortcut to resolve a target":
+    def test_it_has_a_shortcut_to_resolve_a_target(self):
 
         class Target(dictobj.Spec):
             pass
@@ -55,7 +54,7 @@ describe "Collector":
             lan = collector.configuration["target_register"].resolve("lan")
             assert collector.resolve_target("lan") is lan
 
-    it "has a shortcut to the run helper", collector:
+    def test_it_has_a_shortcut_to_the_run_helper(self, collector):
         coro = mock.Mock(name="coro")
         run = mock.Mock(name="run", spec=[])
         Run = mock.Mock(name="Run", return_value=mock.Mock("RunInstance", run=run))
@@ -70,7 +69,7 @@ describe "Collector":
         Run.assert_called_once_with(coro, photons_app, target_register)
         run.assert_called_once_with()
 
-    it "can be cloned":
+    def test_it_can_be_cloned(self):
         with alt_pytest_asyncio.Loop(new_loop=False):
             collector = Collector()
 
@@ -109,7 +108,7 @@ describe "Collector":
             assert clone2.configuration["photons_app"].artifact == "blah"
             assert clone2.configuration["photons_app"] is not collector.photons_app
 
-    describe "extra_prepare":
+    class TestExtraPrepare:
 
         @contextmanager
         def mocks(self, collector, configuration, args_dict, photons_app, register):
@@ -134,7 +133,7 @@ describe "Collector":
             determine_mainline_module.assert_called_once_with()
             setup_addon_register.assert_called_once_with(photons_app, __main__)
 
-        it "puts things into the configuration and sets up the addon register":
+        def test_it_puts_things_into_the_configuration_and_sets_up_the_addon_register(self):
             extra = str(uuid.uuid1())
             photons_app = {"extra": extra}
             configuration = MergedOptions()
@@ -156,15 +155,15 @@ describe "Collector":
                 "photons_app": photons_app,
             }
 
-    describe "find_photons_app_options":
-        it "returns us a dictionary with options from configuration and args_dict":
+    class TestFindPhotonsAppOptions:
+        def test_it_returns_us_a_dictionary_with_options_from_configuration_and_args_dict(self):
             configuration = MergedOptions.using({"photons_app": {"one": 1, "two": 2}})
             args_dict = {"photons_app": {"one": 3, "three": 4}}
 
             photons_app = Collector().find_photons_app_options(configuration, args_dict)
             assert photons_app == {"one": 3, "two": 2, "three": 4}
 
-        it "doesn't care if configuration has no photons_app":
+        def test_it_doesnt_care_if_configuration_has_no_photons_app(self):
             configuration = MergedOptions()
             args_dict = {"photons_app": {"one": 3, "three": 4}}
 
@@ -176,7 +175,7 @@ describe "Collector":
                 photons_app = Collector().find_photons_app_options(configuration, args_dict)
                 assert photons_app == {"one": 3, "three": 4}
 
-        it "doesn't care if args_dict has no photons_app":
+        def test_it_doesnt_care_if_args_dict_has_no_photons_app(self):
             configuration = MergedOptions.using({"photons_app": {"one": 1}})
             args_dict = {}
 
@@ -188,8 +187,8 @@ describe "Collector":
                 photons_app = Collector().find_photons_app_options(configuration, args_dict)
                 assert photons_app == {"one": 1}
 
-    describe "determine_mainline_module":
-        it "does nothing if there is no __main__":
+    class TestDetermineMainlineModule:
+        def test_it_does_nothing_if_there_is_no_main(self):
             fake__import__ = mock.Mock(name="__import__", side_effect=ImportError)
 
             assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
@@ -201,7 +200,7 @@ describe "Collector":
             fake__import__.assert_called_once_with("__main__")
             assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
 
-        it "adds an entrypoint if we have __main__":
+        def test_it_adds_an_entrypoint_if_we_have_main(self):
             __main__ = mock.Mock(name="__main__")
             fake__import__ = mock.Mock(name="__import__", return_value=__main__)
 
@@ -216,8 +215,8 @@ describe "Collector":
             assert not any(ep.name == "__main__" for ep in entry_points(group="lifx.photons"))
             fake__import__.assert_called_once_with("__main__")
 
-    describe "setup_addon_register":
-        it "works":
+    class TestSetupAddonRegister:
+        def test_it_works(self):
             original = Register
             info = {}
             called = []
@@ -259,7 +258,7 @@ describe "Collector":
             recursive_resolve_imported.assert_called_once_with()
             assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
-        it "adds pair for __main__ if that's a thing":
+        def test_it_adds_pair_for_main_if_thats_a_thing(self):
             original = Register
             info = {}
             called = []
@@ -305,7 +304,7 @@ describe "Collector":
             recursive_resolve_imported.assert_called_once_with()
             assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
-        it "adds nothing if photons_app has no addons option":
+        def test_it_adds_nothing_if_photons_app_has_no_addons_option(self):
             original = Register
             info = {}
             called = []
@@ -345,8 +344,8 @@ describe "Collector":
             recursive_resolve_imported.assert_called_once_with()
             assert called == ["recursive_import_known", "recursive_resolve_imported"]
 
-    describe "extra_prepare_after_activation":
-        it "calls post_register":
+    class TestExtraPrepareAfterActivation:
+        def test_it_calls_post_register(self):
             register = mock.Mock(name="register")
             collector = Collector()
             collector.register = register
@@ -375,7 +374,7 @@ describe "Collector":
 
             register.post_register.assert_called_once_with({"lifx.photons": {}})
 
-        it "creates and sets up a task finder":
+        def test_it_creates_and_sets_up_a_task_finder(self):
             final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
@@ -401,7 +400,7 @@ describe "Collector":
             collector.extra_prepare_after_activation(configuration, args_dict)
             collector.register.post_register.assert_called_once_with(mock.ANY)
 
-        it "sets up targets":
+        def test_it_sets_up_targets(self):
             final_future = hp.create_future()
             photons_app = mock.Mock(name="photons_app", final_future=final_future)
 
@@ -448,8 +447,8 @@ describe "Collector":
             collector.add_targets(target_register, configuration["targets"])
             assert isinstance(target_register.resolve("l"), Target)
 
-    describe "home_dir_configuration_location":
-        it "returns location to a .photons_apprc.yml":
+    class TestHomeDirConfigurationLocation:
+        def test_it_returns_location_to_a_photons_apprcyml(self):
             have_current_home = "HOME" in os.environ
             current_home = os.environ.get("HOME")
             try:
@@ -463,8 +462,8 @@ describe "Collector":
                 elif "HOME" in os.environ:
                     del os.environ["HOME"]
 
-    describe "start_configuration":
-        it "returns MergedOptions that doesn't prefix dictobj objects":
+    class TestStartConfiguration:
+        def test_it_returns_MergedOptions_that_doesnt_prefix_dictobj_objects(self):
 
             class D(dictobj):
                 fields = ["one"]
@@ -476,8 +475,8 @@ describe "Collector":
             configuration["thing"] = d
             assert configuration["thing"] is d
 
-    describe "read_file":
-        it "reads it as yaml":
+    class TestReadFile:
+        def test_it_reads_it_as_yaml(self):
             with hp.a_temp_file() as fle:
                 fle.write(
                     dedent(
@@ -496,7 +495,7 @@ describe "Collector":
                 read = Collector().read_file(fle.name)
                 assert read == {"one": 2, "two": {"three": 3}}
 
-        it "complains if it's not valid yaml":
+        def test_it_complains_if_its_not_valid_yaml(self):
             with hp.a_temp_file() as fle:
                 fle.write(
                     dedent(
@@ -510,8 +509,8 @@ describe "Collector":
                 with assertRaises(BadYaml, "Failed to read yaml", location=fle.name):
                     print(Collector().read_file(fle.name))
 
-    describe "add_configuration":
-        it "removes config_root from result if we already have that in the configuration":
+    class TestAddConfiguration:
+        def test_it_removes_config_root_from_result_if_we_already_have_that_in_the_configuration(self):
             config_root = str(uuid.uuid1())
             configuration = MergedOptions.using({"config_root": config_root})
             result = {"config_root": str(uuid.uuid1()), "one": 1}
@@ -525,7 +524,7 @@ describe "Collector":
 
             assert configuration["config_root"] == config_root
 
-        it "removes config_root if it's the home dir configuration":
+        def test_it_removes_config_root_if_its_the_home_dir_configuration(self):
             home_location = "/home/bob/{0}".format(str(uuid.uuid1()))
             configuration = MergedOptions.using({"config_root": "/home/bob"})
 
@@ -556,7 +555,7 @@ describe "Collector":
             )
             assert configuration["config_root"] == new_config_root
 
-        it "sets the source in terms of the config_root":
+        def test_it_sets_the_source_in_terms_of_the_config_root(self):
             src_item = str(uuid.uuid1())
             src = "/one/two/{0}".format(src_item)
             configuration = MergedOptions.using({"config_root": "/one/two"})
@@ -571,7 +570,7 @@ describe "Collector":
 
             assert configuration.storage.data[0] == (Path(""), {"one": 1}, expected_src)
 
-        it "collects other sources after adding the current result":
+        def test_it_collects_other_sources_after_adding_the_current_result(self):
             src = str(uuid.uuid1())
             one = str(uuid.uuid1())
             configuration = MergedOptions.using({"config_root": "/one/two"})
@@ -601,7 +600,7 @@ describe "Collector":
                 mock.call("/four"),
             ]
 
-        it "complains if an extra source doesn't exist":
+        def test_it_complains_if_an_extra_source_doesnt_exist(self):
             src = str(uuid.uuid1())
             one = str(uuid.uuid1())
             configuration = MergedOptions.using({"config_root": "/one/two"})
@@ -627,7 +626,7 @@ describe "Collector":
 
             exists.assert_called_once_with("/one/two/three")
 
-        it "can do extra files before and after current configuration", a_temp_dir:
+        def test_it_can_do_extra_files_before_and_after_current_configuration(self, a_temp_dir):
             with a_temp_dir() as (d, make_file):
 
                 make_file(
@@ -726,7 +725,7 @@ describe "Collector":
                     for key, val in expected.items():
                         assert dct[key] == val
 
-        it "complains if a filename is not a file", a_temp_dir:
+        def test_it_complains_if_a_filename_is_not_a_file(self, a_temp_dir):
             with a_temp_dir() as (d, make_file):
                 d1 = os.path.join(d, "one")
                 os.makedirs(d1)
@@ -773,8 +772,8 @@ describe "Collector":
 
                     assert sorted(paths) == sorted([d1, d2, d3])
 
-    describe "extra_configuration_collection":
-        it "registers converters for serveral things":
+    class TestExtraConfigurationCollection:
+        def test_it_registers_converters_for_serveral_things(self):
             configuration = MergedOptions.using(
                 {"targets": {"one": {"type": "special", "options": {1: 2}}}}
             )
@@ -804,8 +803,8 @@ describe "Collector":
             assert type(protocol_register) == ProtocolRegister
             assert type(reference_resolver_register) == ReferenceResolverRegister
 
-    describe "stop_photons_app":
-        async it "cleans up photons", collector:
+    class TestStopPhotonsApp:
+        async def test_it_cleans_up_photons(self, collector):
             cleaners = collector.photons_app.cleaners
             final_future = collector.photons_app.final_future
 
@@ -825,7 +824,7 @@ describe "Collector":
             assert called == ["clean1", "clean2"]
             assert final_future.cancelled()
 
-        async it "cleans up targets":
+        async def test_it_cleans_up_targets(self):
             with alt_pytest_asyncio.Loop(new_loop=False):
                 collector = Collector()
                 collector.prepare(

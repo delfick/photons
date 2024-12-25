@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import binascii
@@ -29,9 +28,9 @@ def item():
     return Item([DeviceMessages.GetPower(), DeviceMessages.GetLabel()])
 
 
-describe "NoLimit":
+class TestNoLimit:
 
-    async it "behaves like a normal semaphore context manager":
+    async def test_it_behaves_like_a_normal_semaphore_context_manager(self):
         called = []
 
         lock = NoLimit()
@@ -44,7 +43,7 @@ describe "NoLimit":
 
         assert called == ["no limit"]
 
-    async it "behaves like a normal semaphore not context manager":
+    async def test_it_behaves_like_a_normal_semaphore_not_context_manager(self):
         called = []
 
         lock = NoLimit()
@@ -58,8 +57,8 @@ describe "NoLimit":
 
         assert called == ["no limit"]
 
-describe "Item":
-    async it "takes in parts":
+class TestItem:
+    async def test_it_takes_in_parts(self):
         part = mock.Mock(name="part")
         part2 = mock.Mock(name="part2")
 
@@ -69,10 +68,10 @@ describe "Item":
         item = Item([part, part2])
         assert item.parts == [part, part2]
 
-    describe "Functionality":
+    class TestFunctionality:
 
-        describe "simplify_parts":
-            async it "returns originals with packets as they are if they are dynamic, else we simplify them":
+        class TestSimplifyParts:
+            async def test_it_returns_originals_with_packets_as_they_are_if_they_are_dynamic_else_we_simplify_them(self):
                 part1_dynamic = mock.Mock(
                     name="part1_dynamic", is_dynamic=True, spec=["is_dynamic"]
                 )
@@ -99,8 +98,8 @@ describe "Item":
                     (part4_dynamic, part4_dynamic),
                 ]
 
-        describe "making packets":
-            async it "duplicates parts for each serial and only clones those already with targets":
+        class TestMakingPackets:
+            async def test_it_duplicates_parts_for_each_serial_and_only_clones_those_already_with_targets(self):
                 original1 = mock.Mock(name="original1")
                 original2 = mock.Mock(name="original2")
                 original3 = mock.Mock(name="original3")
@@ -179,7 +178,7 @@ describe "Item":
                 c5.update.assert_called_once_with(dict(source=c5source, sequence=1))
                 c5.actual.assert_called_once_with("source")
 
-        describe "search":
+        class TestSearch:
 
             @pytest.fixture()
             def V(self, item):
@@ -250,7 +249,7 @@ describe "Item":
 
                 return V()
 
-            async it "returns without looking if we have all the targets", V:
+            async def test_it_returns_without_looking_if_we_have_all_the_targets(self, V):
                 found = Found()
                 found[V.target1] = V.found_info1
                 found[V.target2] = V.found_info2
@@ -260,7 +259,7 @@ describe "Item":
                 assert missing == []
                 assert len(V.find_specific_serials.mock_calls) == 0
 
-            async it "returns without looking if accept_found is True", V:
+            async def test_it_returns_without_looking_if_accept_found_is_True(self, V):
                 found = Found()
                 found[V.target1] = V.found_info1
                 found[V.target2] = V.found_info2
@@ -277,7 +276,7 @@ describe "Item":
                 assert f is found
                 assert missing == [V.serial2]
 
-            async it "uses find_specific_serials if found is None", V:
+            async def test_it_uses_find_specific_serials_if_found_is_None(self, V):
                 found = mock.Mock(name="found")
                 missing = mock.Mock(name="missing")
                 V.find_specific_serials.return_value = (found, missing)
@@ -301,7 +300,7 @@ describe "Item":
                     a=V.a,
                 )
 
-            async it "uses find_specific_serials if found is not None and don't have all serials", V:
+            async def test_it_uses_find_specific_serials_if_found_is_not_None_and_dont_have_all_serials(self, V):
                 found = mock.Mock(name="found")
                 missing = mock.Mock(name="missing")
                 V.find_specific_serials.return_value = (found, missing)
@@ -328,7 +327,7 @@ describe "Item":
                     a=V.a,
                 )
 
-        describe "write_messages":
+        class TestWriteMessages:
 
             @pytest.fixture()
             def V(self, final_future):
@@ -377,7 +376,7 @@ describe "Item":
 
                 return V()
 
-            async it "sends the packets and gets the replies", item, V:
+            async def test_it_sends_the_packets_and_gets_the_replies(self, item, V):
 
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
@@ -418,7 +417,7 @@ describe "Item":
                     ),
                 ]
 
-            async it "gets arguments for send from kwargs", item, V:
+            async def test_it_gets_arguments_for_send_from_kwargs(self, item, V):
 
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
@@ -490,7 +489,7 @@ describe "Item":
                     ),
                 ]
 
-            async it "records errors", item, V:
+            async def test_it_records_errors(self, item, V):
 
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
@@ -522,7 +521,7 @@ describe "Item":
 
                 assert res == [V.results[i] for i in (0, 6)]
 
-        describe "private find":
+        class TestPrivateFind:
 
             @pytest.fixture()
             def V(self):
@@ -537,7 +536,7 @@ describe "Item":
 
                 return V()
 
-            async it "returns serials as a list", item, V:
+            async def test_it_returns_serials_as_a_list(self, item, V):
                 f, s, m = await item._find(None, "d073d5000000", V.sender, V.broadcast, V.timeout)
                 assert f is V.found
                 assert s == ["d073d5000000"]
@@ -555,7 +554,7 @@ describe "Item":
                 assert s == ["d073d5000000", "d073d5000001"]
                 assert m is None
 
-            async it "returns the provided found if one was given", item, V:
+            async def test_it_returns_the_provided_found_if_one_was_given(self, item, V):
                 found = mock.Mock(name="found")
                 f, s, m = await item._find(
                     found, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout
@@ -564,7 +563,7 @@ describe "Item":
                 assert s == ["d073d5000000", "d073d5000001"]
                 assert m is None
 
-            async it "resolves the reference if it's a SpecialReference", item, V:
+            async def test_it_resolves_the_reference_if_its_a_SpecialReference(self, item, V):
                 ss = ["d073d5000000", "d073d5000001"]
                 found = mock.Mock(name="found")
                 called = []
@@ -588,7 +587,7 @@ describe "Item":
                     ("missing", found),
                 ]
 
-            async it "gives missing to serials", item, V:
+            async def test_it_gives_missing_to_serials(self, item, V):
                 ss = ["d073d5000000"]
                 found = mock.Mock(name="found")
                 called = []
@@ -612,7 +611,7 @@ describe "Item":
                     ("missing", found),
                 ]
 
-        describe "run":
+        class TestRun:
 
             @pytest.fixture()
             def V(self, final_future):
@@ -634,7 +633,7 @@ describe "Item":
 
                 return V()
 
-            async it "finds, prepares, searches, writes", item, V:
+            async def test_it_finds_prepares_searches_writes(self, item, V):
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
@@ -686,7 +685,7 @@ describe "Item":
                     V.sender, packets, {"a": a, "error_catcher": mock.ANY}
                 )
 
-            async it "shortcuts if no packets to send", item, V:
+            async def test_it_shortcuts_if_no_packets_to_send(self, item, V):
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
@@ -721,7 +720,7 @@ describe "Item":
                 assert len(search.mock_calls) == 0
                 assert len(write_messages.mock_calls) == 0
 
-            async it "doesn't search if broadcasting", item, V:
+            async def test_it_doesnt_search_if_broadcasting(self, item, V):
                 search = pytest.helpers.AsyncMock(name="search")
                 write_messages = pytest.helpers.MagicAsyncMock(name="write_messages")
 
@@ -745,7 +744,7 @@ describe "Item":
                     V.sender, packets, {"broadcast": True, "error_catcher": mock.ANY}
                 )
 
-            async it "complains if we haven't found all our serials", item, V:
+            async def test_it_complains_if_we_havent_found_all_our_serials(self, item, V):
 
                 class Ref(SpecialReference):
                     async def find(s, *args, **kwargs):
@@ -774,7 +773,7 @@ describe "Item":
                     pass
                 es.assert_called_once_with(DevicesNotFound(missing=["d073d5000001"]))
 
-            async it "raises errors from write_messages", item, V:
+            async def test_it_raises_errors_from_write_messages(self, item, V):
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")
                 error = PhotonsAppError("wat")
@@ -814,7 +813,7 @@ describe "Item":
                 es.assert_called_once_with(error)
                 assert res == [res1, res2]
 
-            async it "raises multiple errors from write_messages", item, V:
+            async def test_it_raises_multiple_errors_from_write_messages(self, item, V):
                 res1 = mock.Mock(name="res1")
                 res2 = mock.Mock(name="res2")
                 error1 = PhotonsAppError("wat")

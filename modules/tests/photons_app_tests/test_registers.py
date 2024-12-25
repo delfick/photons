@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 import pickle
@@ -21,12 +20,12 @@ def collector():
     return mock.Mock(name="collector")
 
 
-describe "MessageRegister":
-    it "has message_classes list":
+class TestMessageRegister:
+    def test_it_has_message_classes_list(self):
         register = MessagesRegister()
         assert register.message_classes == []
 
-    it "can add classes":
+    def test_it_can_add_classes(self):
         kls = mock.Mock(name="kls")
         kls2 = mock.Mock(name="kls2")
 
@@ -37,7 +36,7 @@ describe "MessageRegister":
         register.add(kls2)
         assert register.message_classes == [kls, kls2]
 
-    it "can iter classes":
+    def test_it_can_iter_classes(self):
         kls = mock.Mock(name="kls")
         kls2 = mock.Mock(name="kls2")
 
@@ -50,15 +49,15 @@ describe "MessageRegister":
         register.add(kls2)
         assert list(register) == [kls, kls2]
 
-describe "ProtocolRegister":
-    it "can be formatted":
+class TestProtocolRegister:
+    def test_it_can_be_formatted(self):
         assert ProtocolRegister._merged_options_formattable is True
 
-    it "has a dictionary of protocol_classes":
+    def test_it_has_a_dictionary_of_protocol_classes(self):
         register = ProtocolRegister()
         assert register.protocol_classes == {}
 
-    it "can add protocol klses":
+    def test_it_can_add_protocol_klses(self):
         protocol = mock.Mock(name="protocol")
         kls = mock.Mock(name="kls")
         register = ProtocolRegister()
@@ -67,7 +66,7 @@ describe "ProtocolRegister":
         assert register.protocol_classes == {protocol: (kls, mock.ANY)}
         assert isinstance(register.protocol_classes[protocol][1], MessagesRegister)
 
-    it "can iter protocols":
+    def test_it_can_iter_protocols(self):
         protocol = mock.Mock(name="protocol")
         protocol2 = mock.Mock(name="protocol2")
 
@@ -80,7 +79,7 @@ describe "ProtocolRegister":
         register.add(protocol2, kls)
         assert list(register) == [protocol, protocol2]
 
-    it "has getitem and get synatx into protocol_classes":
+    def test_it_has_getitem_and_get_synatx_into_protocol_classes(self):
         register = ProtocolRegister()
         protocol = mock.Mock(name="protocol")
         protocol2 = mock.Mock(name="protocol2")
@@ -98,7 +97,7 @@ describe "ProtocolRegister":
         dflt = mock.Mock(name="dflt")
         assert register.get(protocol2, dflt) is dflt
 
-    it "can get message_register for a protocol":
+    def test_it_can_get_message_register_for_a_protocol(self):
         protocol = mock.Mock(name="protocol")
         kls = mock.Mock(name="kls")
         register = ProtocolRegister()
@@ -106,20 +105,20 @@ describe "ProtocolRegister":
         register.add(protocol, kls)
         assert register.message_register(protocol) is register.protocol_classes[protocol][1]
 
-    it "can be pickled (for the docs)":
+    def test_it_can_be_pickled_for_the_docs(self):
         register = ProtocolRegister()
         pickled = pickle.dumps(register)
         unpickled = pickle.loads(pickled)
         assert isinstance(unpickled, ProtocolRegister)
 
-describe "ReferenceResolverRegister":
+class TestReferenceResolverRegister:
 
     @pytest.fixture()
     def register(self):
         return ReferenceResolverRegister()
 
-    describe "initialization":
-        it "has file resolver by default", register:
+    class TestInitialization:
+        def test_it_has_file_resolver_by_default(self, register):
             filename = mock.Mock(name="filename")
             resolver = mock.Mock(name="resolver")
             FakeResolveReferencesFromFile = mock.Mock(
@@ -134,8 +133,8 @@ describe "ReferenceResolverRegister":
             assert r is resolver
             FakeResolveReferencesFromFile.assert_called_once_with(filename)
 
-    describe "adding a resolver":
-        it "adds and overrides", register:
+    class TestAddingAResolver:
+        def test_it_adds_and_overrides(self, register):
             typ = mock.Mock(name="typ")
             resolver = mock.Mock(name="resolver")
             register.add(typ, resolver)
@@ -145,13 +144,13 @@ describe "ReferenceResolverRegister":
             register.add(typ, resolver2)
             assert register.resolvers[typ] is resolver2
 
-    describe "resolving":
-        it "complains if the typ isn't registered", register:
+    class TestResolving:
+        def test_it_complains_if_the_typ_isnt_registered(self, register):
             typ = mock.Mock(name="typ")
             with assertRaises(ResolverNotFound, wanted=typ):
                 register.resolve(typ, "blah")
 
-        it "uses registered resolver", register:
+        def test_it_uses_registered_resolver(self, register):
             ret = mock.Mock(name="ret")
             typ = mock.Mock(name="typ")
             resolver = mock.Mock(name="resolver", return_value=ret)
@@ -159,9 +158,9 @@ describe "ReferenceResolverRegister":
             assert register.resolve(typ, "blah") is ret
             resolver.assert_called_once_with("blah")
 
-    describe "getting a reference object":
+    class TestGettingAReferenceObject:
 
-        it "returns SpecialReference objects as is", register:
+        def test_it_returns_SpecialReference_objects_as_is(self, register):
 
             class Reference(SpecialReference):
                 pass
@@ -169,18 +168,18 @@ describe "ReferenceResolverRegister":
             ref = Reference()
             assert register.reference_object(ref) is ref
 
-        it "returns a FoundSerials instruction if no reference is specified", register:
+        def test_it_returns_a_FoundSerials_instruction_if_no_reference_is_specified(self, register):
             for r in ("", None, sb.NotSpecified):
                 references = register.reference_object(r)
                 assert isinstance(references, FoundSerials), references
 
             assert isinstance(register.reference_object("_"), FoundSerials)
 
-        it "returns a FoundSerials for an underscore", register:
+        def test_it_returns_a_FoundSerials_for_an_underscore(self, register):
             references = register.reference_object("_")
             assert isinstance(references, FoundSerials), references
 
-        it "returns the resolved reference if of type typ:options", register:
+        def test_it_returns_the_resolved_reference_if_of_type_typoptions(self, register):
             ret = HardCodedSerials(["d073d5000001", "d073d5000002"])
             resolver = mock.Mock(name="resolver", return_value=ret)
             register.add("my_resolver", resolver)
@@ -189,7 +188,7 @@ describe "ReferenceResolverRegister":
             resolved = register.reference_object(reference)
             assert resolved is ret
 
-        it "returns a SpecialReference if our resolver returns not a special reference", register:
+        def test_it_returns_a_SpecialReference_if_our_resolver_returns_not_a_special_reference(self, register):
             ret = "d073d5000001,d073d5000002"
             wanted = [binascii.unhexlify(ref) for ref in ret.split(",")]
 
@@ -203,7 +202,7 @@ describe "ReferenceResolverRegister":
                 assert type(resolved) == HardCodedSerials, resolved
                 assert resolved.targets == wanted
 
-        it "returns hard coded serials otherwise", register:
+        def test_it_returns_hard_coded_serials_otherwise(self, register):
             serials = ["d073d5000001", "d073d5000002"]
             targets = [binascii.unhexlify(s) for s in serials]
             for ref in (serials, ",".join(serials)):

@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import itertools
@@ -20,8 +19,8 @@ class C:
         return f"<C: {getattr(self, 'other', None)}"
 
 
-describe "ResultStreamer":
-    it "takes in final_future and other options":
+class TestResultStreamer:
+    def test_it_takes_in_final_future_and_other_options(self):
         final_future = hp.create_future()
         error_catcher = mock.Mock(name="error_catcher")
         exceptions_only_to_error_catcher = mock.Mock(name="exceptions_only_to_error_catcher")
@@ -40,7 +39,7 @@ describe "ResultStreamer":
         assert isinstance(streamer.queue, hp.Queue)
         assert not streamer.stop_on_completion
 
-    async it "has a final future as a child of that passed in":
+    async def test_it_has_a_final_future_as_a_child_of_that_passed_in(self):
         final_future = hp.create_future()
         streamer = hp.ResultStreamer(final_future)
         streamer.final_future.cancel()
@@ -62,7 +61,7 @@ describe "ResultStreamer":
         final_future.cancel()
         assert streamer.final_future.cancelled()
 
-    describe "add generator":
+    class TestAddGenerator:
 
         @pytest.fixture()
         async def V(self):
@@ -91,7 +90,7 @@ describe "ResultStreamer":
                 v.final_future.cancel()
                 await v.streamer.finish(*exc_info)
 
-        async it "adds it as a coroutine", V:
+        async def test_it_adds_it_as_a_coroutine(self, V):
 
             async def gen():
                 yield 1
@@ -105,7 +104,7 @@ describe "ResultStreamer":
             assert [r.value for r in results] == [1, 2, 3]
             assert all([r.successful for r in results])
 
-        async it "adds exceptions to the queue after results", V:
+        async def test_it_adds_exceptions_to_the_queue_after_results(self, V):
             error = ValueError("FAIL")
 
             async def gen():
@@ -120,7 +119,7 @@ describe "ResultStreamer":
             assert [r.value for r in results] == [4, 5, error]
             assert [r.successful for r in results] == [True, True, False]
 
-        async it "can give exceptions to on_done and error_catcher", V:
+        async def test_it_can_give_exceptions_to_on_done_and_error_catcher(self, V):
             error = TypeError("WAT")
             on_done = mock.Mock(name="on_done")
             ctx = mock.NonCallableMock(name="context", spec=[])
@@ -138,7 +137,7 @@ describe "ResultStreamer":
             V.error_catcher.assert_called_once_with(hp.ResultStreamer.Result(error, ctx, False))
             on_done.assert_called_once_with(hp.ResultStreamer.Result(error, ctx, False))
 
-        async it "can give a success to on_one", V:
+        async def test_it_can_give_a_success_to_on_one(self, V):
             on_done = mock.Mock(name="on_done")
             ctx = mock.NonCallableMock(name="context", spec=[])
 
@@ -156,7 +155,7 @@ describe "ResultStreamer":
                 hp.ResultStreamer.Result(hp.ResultStreamer.GeneratorComplete, ctx, True)
             )
 
-        async it "can call on_each for each result", V:
+        async def test_it_can_call_on_each_for_each_result(self, V):
             ctx = mock.NonCallableMock(name="context", spec=[])
 
             called = []
@@ -193,7 +192,7 @@ describe "ResultStreamer":
                 ("on_done", R(hp.ResultStreamer.GeneratorComplete, ctx, True)),
             ]
 
-    describe "add_coroutine":
+    class TestAddCoroutine:
 
         @pytest.fixture()
         async def V(self):
@@ -211,7 +210,7 @@ describe "ResultStreamer":
                 v.final_future.cancel()
                 await v.streamer.finish()
 
-        async it "uses add_task", V:
+        async def test_it_uses_add_task(self, V):
             ctx = mock.Mock(name="ctx")
             on_done = mock.Mock(name="on_done")
 
@@ -233,7 +232,7 @@ describe "ResultStreamer":
                 assert task.get_coro() is coro
             assert await task == 20
 
-        async it "has defaults for context and on_done", V:
+        async def test_it_has_defaults_for_context_and_on_done(self, V):
             task = mock.Mock(name="task")
             add_task = pytest.helpers.AsyncMock(name="add_task", return_value=task)
 
@@ -246,7 +245,7 @@ describe "ResultStreamer":
 
             add_task.assert_called_once_with(mock.ANY, context=None, on_done=None, force=False)
 
-    describe "add_value":
+    class TestAddValue:
 
         @pytest.fixture()
         async def V(self):
@@ -264,7 +263,7 @@ describe "ResultStreamer":
                 v.final_future.cancel()
                 await v.streamer.finish()
 
-        async it "uses add_coroutine", V:
+        async def test_it_uses_add_coroutine(self, V):
             ctx = mock.Mock(name="ctx")
             on_done = mock.Mock(name="on_done")
 
@@ -279,7 +278,7 @@ describe "ResultStreamer":
             coro = add_coroutine.mock_calls[0][1][0]
             assert await coro == 20
 
-        async it "has defaults for context and on_done", V:
+        async def test_it_has_defaults_for_context_and_on_done(self, V):
             task = mock.Mock(name="task")
             add_coroutine = pytest.helpers.AsyncMock(name="add_coroutine", return_value=task)
 
@@ -289,7 +288,7 @@ describe "ResultStreamer":
             add_coroutine.assert_called_once_with(mock.ANY, context=None, on_done=None)
             assert await add_coroutine.mock_calls[0][1][0] == 40
 
-        async it "works", V:
+        async def test_it_works(self, V):
             found = []
 
             async def adder(streamer):
@@ -306,7 +305,7 @@ describe "ResultStreamer":
 
             assert found == [(True, "ADDER", None), (True, 1, "adder"), (True, 2, "adder")]
 
-    describe "add_task":
+    class TestAddTask:
 
         @pytest.fixture()
         async def make_streamer(self):
@@ -339,7 +338,7 @@ describe "ResultStreamer":
 
             return started, hp.async_as_background(retrieve())
 
-        async it "calls error_catcher with CancelledError if the task gets cancelled", make_streamer:
+        async def test_it_calls_error_catcher_with_CancelledError_if_the_task_gets_cancelled(self, make_streamer):
 
             async def func():
                 await asyncio.sleep(20)
@@ -357,7 +356,7 @@ describe "ResultStreamer":
 
                 error_catcher.assert_called_once_with(result)
 
-        async it "calls on_done with exception if cancelled", make_streamer:
+        async def test_it_calls_on_done_with_exception_if_cancelled(self, make_streamer):
             on_done = mock.Mock(name="on_done")
 
             async def func():
@@ -381,7 +380,7 @@ describe "ResultStreamer":
                 on_done.assert_called_once_with(result)
                 assert errors == [result]
 
-        async it "calls on_done and error_catcher with exception", make_streamer:
+        async def test_it_calls_on_done_and_error_catcher_with_exception(self, make_streamer):
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
 
@@ -402,7 +401,7 @@ describe "ResultStreamer":
                 on_done.assert_called_once_with(result)
                 error_catcher.assert_called_once_with(result)
 
-        async it "Result Streamer only gives cancelled errors to catcher if we only give exceptions", make_streamer:
+        async def test_it_Result_Streamer_only_gives_cancelled_errors_to_catcher_if_we_only_give_exceptions(self, make_streamer):
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
 
@@ -452,7 +451,7 @@ describe "ResultStreamer":
                     mock.call(sleeper_result),
                 ]
 
-        async it "can be told to only give exceptions to error_catcher", make_streamer:
+        async def test_it_can_be_told_to_only_give_exceptions_to_error_catcher(self, make_streamer):
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
 
@@ -481,7 +480,7 @@ describe "ResultStreamer":
                 assert on_done.mock_calls == [mock.call(other_result), mock.call(sleeper_result)]
                 assert error_catcher.mock_calls == [mock.call(error)]
 
-        async it "can put successful results onto the queue", make_streamer:
+        async def test_it_can_put_successful_results_onto_the_queue(self, make_streamer):
             make_return = hp.create_future()
 
             async def func():
@@ -500,7 +499,7 @@ describe "ResultStreamer":
                 assert (await runner) == [result]
                 error_catcher.assert_not_called()
 
-        async it "can tell on_done about finishing successfully", make_streamer:
+        async def test_it_can_tell_on_done_about_finishing_successfully(self, make_streamer):
             on_done = mock.Mock(name="on_done")
             make_return = hp.create_future()
 
@@ -521,7 +520,7 @@ describe "ResultStreamer":
                 error_catcher.assert_not_called()
                 on_done.assert_called_once_with(result)
 
-        async it "doesn't call error_catcher if success and exceptions only", make_streamer:
+        async def test_it_doesnt_call_error_catcher_if_success_and_exceptions_only(self, make_streamer):
             make_return = hp.create_future()
 
             async def func():
@@ -540,8 +539,8 @@ describe "ResultStreamer":
                 make_return.set_result(True)
                 error_catcher.assert_not_called()
 
-    describe "async context manager":
-        async it "calls finish on successful exit":
+    class TestAsyncContextManager:
+        async def test_it_calls_finish_on_successful_exit(self):
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
@@ -554,7 +553,7 @@ describe "ResultStreamer":
 
             finish.assert_called_once_with(None, None, None)
 
-        async it "calls finish on unsuccessful exit":
+        async def test_it_calls_finish_on_unsuccessful_exit(self):
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
@@ -571,7 +570,7 @@ describe "ResultStreamer":
 
             finish.assert_called_once_with(ValueError, err, mock.ANY)
 
-        async it "calls finish on cancellation":
+        async def test_it_calls_finish_on_cancellation(self):
             final_future = hp.create_future()
             streamer = hp.ResultStreamer(final_future)
 
@@ -596,9 +595,9 @@ describe "ResultStreamer":
 
             finish.assert_called_once_with(asyncio.CancelledError, mock.ANY, mock.ANY)
 
-    describe "finishing by final_future":
+    class TestFinishingByFinalFuture:
 
-        async it "stops retrieving if there is results left to yield":
+        async def test_it_stops_retrieving_if_there_is_results_left_to_yield(self):
             called = []
 
             gen_fut = hp.create_future()
@@ -703,7 +702,7 @@ describe "ResultStreamer":
             for name, cancelled in expected_cancelled.items():
                 assert tasks[name].cancelled() == cancelled, name
 
-describe "Using ResultStreamer":
+class TestUsingResultStreamer:
 
     @pytest.fixture()
     def final_future(self):
@@ -1005,7 +1004,7 @@ describe "Using ResultStreamer":
 
         return expected
 
-    async it "streams results from coroutines and async generators", final_future, CTX:
+    async def test_it_streams_results_from_coroutines_and_async_generators(self, final_future, CTX):
         info = {"num": 0, "done": []}
 
         def make_on_done(index):
@@ -1063,7 +1062,7 @@ describe "Using ResultStreamer":
 
             assert info["done"] == expected_done
 
-    async it "doesn't hang if there is no work", final_future:
+    async def test_it_doesnt_hang_if_there_is_no_work(self, final_future):
         async with hp.ResultStreamer(final_future) as streamer:
             streamer.no_more_work()
 

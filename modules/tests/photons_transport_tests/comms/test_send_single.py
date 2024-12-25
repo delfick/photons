@@ -1,4 +1,3 @@
-# coding: spec
 
 import time
 
@@ -53,7 +52,7 @@ def assertSent(sender, *expected):
         assert g == e
 
 
-describe "Sending a single messages":
+class TestSendingASingleMessages:
 
     @pytest.fixture()
     def send_single(self, sender):
@@ -68,9 +67,9 @@ describe "Sending a single messages":
     def device(self):
         return devices["strip"]
 
-    describe "happy path":
+    class TestHappyPath:
 
-        async it "can send and receive a single message", send_single, device:
+        async def test_it_can_send_and_receive_a_single_message(self, send_single, device):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             result = await send_single(original, timeout=1)
 
@@ -90,7 +89,7 @@ describe "Sending a single messages":
                 ),
             ]
 
-        async it "can get multiple replies", send_single, device:
+        async def test_it_can_get_multiple_replies(self, send_single, device):
             await device.event(
                 devices.Events.SET_ZONES, zones=[(i, hp.Color(i, 1, 1, 3500)) for i in range(22)]
             )
@@ -144,7 +143,7 @@ describe "Sending a single messages":
                 ],
             ]
 
-        async it "can get unlimited replies", send_single, device, FakeTime, MockedCallLater:
+        async def test_it_can_get_unlimited_replies(self, send_single, device, FakeTime, MockedCallLater):
             original = DiscoveryMessages.GetService(ack_required=False)
             with FakeTime() as t:
                 async with MockedCallLater(t):
@@ -164,9 +163,9 @@ describe "Sending a single messages":
                 ),
             ]
 
-    describe "timeouts":
+    class TestTimeouts:
 
-        async it "can retry until it gets a timeout", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_can_retry_until_it_gets_a_timeout(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             with FakeTime() as t:
@@ -192,7 +191,7 @@ describe "Sending a single messages":
                 ],
             )
 
-        async it "can retry until it gets a result", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_can_retry_until_it_gets_a_result(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             io = device.io["MEMORY"]
 
@@ -235,7 +234,7 @@ describe "Sending a single messages":
                 ],
             )
 
-        async it "can give up on getting multiple messages that have a set length", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_can_give_up_on_getting_multiple_messages_that_have_a_set_length(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
             io = device.io["MEMORY"]
 
@@ -290,7 +289,7 @@ describe "Sending a single messages":
                 ],
             )
 
-        async it "can retry getting multiple replies till it has all replies", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_can_retry_getting_multiple_replies_till_it_has_all_replies(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = MultiZoneMessages.GetColorZones(
                 start_index=0, end_index=255, ack_required=False
             )
@@ -398,9 +397,9 @@ describe "Sending a single messages":
                 ],
             )
 
-    describe "without retries":
+    class TestWithoutRetries:
 
-        async it "works if we get a response first time", send_single, device:
+        async def test_it_works_if_we_get_a_response_first_time(self, send_single, device):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             expected = (DeviceMessages.EchoResponse, {"echoing": b"hi"})
             result = await send_single(original, timeout=1, no_retry=True)
@@ -418,7 +417,7 @@ describe "Sending a single messages":
                 ),
             ]
 
-        async it "times out if we don't get a response", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_times_out_if_we_dont_get_a_response(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             with FakeTime() as t:
@@ -438,7 +437,7 @@ describe "Sending a single messages":
 
             assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
 
-        async it "doesn't wait beyond timeout for known count multi reply messages", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_doesnt_wait_beyond_timeout_for_known_count_multi_reply_messages(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
             io = device.io["MEMORY"]
 
@@ -500,7 +499,7 @@ describe "Sending a single messages":
 
             assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
 
-        async it "doesn't wait beyond timeout for unlimited reply messages that get no reply", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_doesnt_wait_beyond_timeout_for_unlimited_reply_messages_that_get_no_reply(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DiscoveryMessages.GetService(ack_required=False)
             io = device.io["MEMORY"]
 
@@ -560,7 +559,7 @@ describe "Sending a single messages":
                         devices.Events.OUTGOING(device, io, pkt=reply2, replying_to=original),
                     ]
 
-        async it "does wait beyond timeout for unlimited reply messages that have any replies after timeout", send_single, sender, device, FakeTime, MockedCallLater:
+        async def test_it_does_wait_beyond_timeout_for_unlimited_reply_messages_that_have_any_replies_after_timeout(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DiscoveryMessages.GetService(ack_required=False)
             sender.transport_target.gaps.gap_between_results = 0.55
             io = device.io["MEMORY"]

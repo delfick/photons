@@ -1,11 +1,10 @@
-# coding: spec
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue, Meta
 from photons_control.device_finder import boolean, str_ranges
 
-describe "boolean":
-    it "transforms int into a boolean":
+class TestBoolean:
+    def test_it_transforms_int_into_a_boolean(self):
         spec = boolean()
         meta = Meta.empty()
 
@@ -15,7 +14,7 @@ describe "boolean":
             assert spec.normalise(meta, i) is True
             assert spec.normalise(meta, [i]) is True
 
-    it "transforms a str into boolean":
+    def test_it_transforms_a_str_into_boolean(self):
         spec = boolean()
         meta = Meta.empty()
 
@@ -27,7 +26,7 @@ describe "boolean":
             assert spec.normalise(meta, s) is True
             assert spec.normalise(meta, [s]) is True
 
-    it "passes through booleans":
+    def test_it_passes_through_booleans(self):
         spec = boolean()
         meta = Meta.empty()
 
@@ -36,7 +35,7 @@ describe "boolean":
         assert spec.normalise(meta, True) is True
         assert spec.normalise(meta, [True]) is True
 
-    it "complains about anything else":
+    def test_it_complains_about_anything_else(self):
 
         class Wat:
             pass
@@ -45,24 +44,24 @@ describe "boolean":
             with assertRaises(BadSpecValue):
                 boolean().normalise(Meta.empty(), thing)
 
-describe "str_ranges":
-    it "converts comma separated pairs into list of tuples":
+class TestStrRanges:
+    def test_it_converts_comma_separated_pairs_into_list_of_tuples(self):
         wanted = "1-2,3-5.5,5,6.7-9,10.1-45.6"
         got = str_ranges().normalise(Meta.empty(), wanted)
         assert got == [(1.0, 2.0), (3.0, 5.5), (5.0, 5.0), (6.7, 9.0), (10.1, 45.6)]
 
-    it "can take in list of tuples":
+    def test_it_can_take_in_list_of_tuples(self):
         wanted = [(1.0, 2.0), (3.0, 5.5), (5.0, 5.0), (6.7, 9.0), (10.1, 45.6)]
         got = str_ranges().normalise(Meta.empty(), wanted)
         assert wanted == got
 
-    it "can take in list of strings":
+    def test_it_can_take_in_list_of_strings(self):
         provided = ["1.0-2.0", "3.0-5.5", "5.0", "6.7-9.0", "10.1-45.6"]
         wanted = [(1.0, 2.0), (3.0, 5.5), (5.0, 5.0), (6.7, 9.0), (10.1, 45.6)]
         got = str_ranges().normalise(Meta.empty(), provided)
         assert wanted == got
 
-    it "complains if we can't make numbers":
+    def test_it_complains_if_we_cant_make_numbers(self):
         wanted = "1-2-3"
         try:
             str_ranges().normalise(Meta.empty(), wanted)

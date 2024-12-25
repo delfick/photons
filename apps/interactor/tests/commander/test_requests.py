@@ -1,10 +1,9 @@
-# coding: spec
 
 from unittest.mock import ANY
 
-describe "commands":
-    describe "v1":
-        async it "has http commands", server, responses:
+class TestCommands:
+    class TestV1:
+        async def test_it_has_http_commands(self, server, responses):
             # invalid path
             await server.assertCommand(
                 "/blah",
@@ -36,7 +35,7 @@ describe "commands":
                 json_output=responses.light_state_responses,
             )
 
-        async it "has websocket commands", server, responses:
+        async def test_it_has_websocket_commands(self, server, responses):
             async with server.ws_stream() as stream:
                 # Invalid path
                 await stream.create("/blah", {"stuff": True})

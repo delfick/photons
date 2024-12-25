@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -13,9 +12,9 @@ def default_async_timeout() -> float:
     return 15
 
 
-describe "Animation Commands":
-    describe "V1":
-        async it "can get info and help", server:
+class TestAnimationCommands:
+    class TestV1:
+        async def test_it_can_get_info_and_help(self, server):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "animation/info"},
@@ -38,7 +37,7 @@ describe "Animation Commands":
             assert "This animation has the following options:" in got
             assert "colour range options" in got
 
-        async it "can control an animation", server:
+        async def test_it_can_control_an_animation(self, server):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "animation/info"},
@@ -153,7 +152,7 @@ describe "Animation Commands":
             assert info["animations"] == {identity2: mock.ANY}
             assert info["paused"] == []
 
-        async it "pausing an animation actually pauses the animation", devices, server:
+        async def test_it_pausing_an_animation_actually_pauses_the_animation(self, devices, server):
             tile = devices["tile"]
             io = tile.io["MEMORY"]
             store = devices.store(tile)
@@ -217,7 +216,7 @@ describe "Animation Commands":
                 json_output={"animations": {}, "paused": []},
             )
 
-        async it "can get information", server:
+        async def test_it_can_get_information(self, server):
             # start
             got = await server.assertCommand(
                 "/v1/lifx/command",

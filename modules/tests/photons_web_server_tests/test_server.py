@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import json
@@ -105,9 +104,9 @@ class Between:
             return repr(self.compare)
 
 
-describe "Task":
+class TestTask:
 
-    it "Runs the server", collector: Collector:
+    def test_it_Runs_the_server(self, collector: Collector):
 
         called = []
 
@@ -137,9 +136,9 @@ describe "Task":
         task.run_loop(collector=collector)
         assert called == ["ran"]
 
-describe "Server":
-    describe "The sanic app":
-        async it "has config that we've provided":
+class TestServer:
+    class TestTheSanicApp:
+        async def test_it_has_config_that_weve_provided(self):
 
             class MyConfig(Config):
                 pass
@@ -151,7 +150,7 @@ describe "Server":
                 assert isinstance(server.app.config, MyConfig)
                 assert server.app.name == "photons_web_server"
 
-        async it "has server name we've provided":
+        async def test_it_has_server_name_weve_provided(self):
 
             class MyServer(Server):
                 sanic_server_name = "my_server_is_better_than_yours"
@@ -160,8 +159,8 @@ describe "Server":
                 assert isinstance(server.app.config, Config)
                 assert server.app.name == "my_server_is_better_than_yours"
 
-    describe "lifecycle":
-        it "has own lifecycle methods that use sanic life cycle methods", collector: Collector:
+    class TestLifecycle:
+        def test_it_has_own_lifecycle_methods_that_use_sanic_life_cycle_methods(self, collector: Collector):
             called: list[object] = []
             calledlong = hp.create_future()
             p = pytest.helpers.free_port()
@@ -259,7 +258,7 @@ describe "Server":
                 "after_stop",
             ]
 
-        it "fails if the server wants a port already in use", used_port: int, collector: Collector:
+        def test_it_fails_if_the_server_wants_a_port_already_in_use(self, used_port: int, collector: Collector):
 
             def route(request: Request, /) -> HTTPResponse | None:
                 return sanic.text("route")
@@ -279,7 +278,7 @@ describe "Server":
             with pytest.raises(OSError):
                 task.run_loop(collector=collector)
 
-        it "fails if the server can't be created", collector: Collector:
+        def test_it_fails_if_the_server_cant_be_created(self, collector: Collector):
             p = pytest.helpers.free_port()
 
             class S(Server):
@@ -297,9 +296,9 @@ describe "Server":
             with pytest.raises(ValueError):
                 task.run_loop(collector=collector)
 
-    describe "stopping server":
+    class TestStoppingServer:
 
-        async it "waits for requests based on a default 15 second timeout from sanic", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
+        async def test_it_waits_for_requests_based_on_a_default_15_second_timeout_from_sanic(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time):
             started = hp.create_future()
             startedws = hp.create_future()
 
@@ -343,7 +342,7 @@ describe "Server":
                 await req
             assert wsres == [{"got": "HI"}, None]
 
-        async it "waits for requests based on sanic config GRACEFUL_SHUTDOWN_TIMEOUT", final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time:
+        async def test_it_waits_for_requests_based_on_sanic_config_GRACEFUL_SHUTDOWN_TIMEOUT(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time):
             started = hp.create_future()
 
             async def route(request: Request, /) -> HTTPResponse | None:
@@ -373,9 +372,9 @@ describe "Server":
             with pytest.raises(aiohttp.client_exceptions.ServerDisconnectedError):
                 await req
 
-    describe "logging":
+    class TestLogging:
 
-        async it "records commands and responses", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_records_commands_and_responses(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             Ident1 = pws_thp.IdentifierMatch(identifiers)
@@ -460,7 +459,7 @@ describe "Server":
                 r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:]
             )
 
-        async it "lets the handler hook into the logging", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_lets_the_handler_hook_into_the_logging(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             called: list[object] = []
             expected_called: list[object] = []
 
@@ -685,9 +684,9 @@ describe "Server":
 
             assert called == expected_called
 
-    describe "websocket streams":
+    class TestWebsocketStreams:
 
-        async it "can send progress messages", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_can_send_progress_messages(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -711,7 +710,7 @@ describe "Server":
                     }
                     await stream.recv() is None
 
-        async it "can provide a progress callback", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_can_provide_a_progress_callback(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
             progress = pytest.helpers.AsyncMock(
                 name="progress", return_value={"ret": "from progress"}
@@ -741,7 +740,7 @@ describe "Server":
 
             progress.assert_called_once_with("there", do_log=True, one=1, two=2)
 
-        async it "complains if the message isn't valid json", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_complains_if_the_message_isnt_valid_json(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -815,7 +814,7 @@ describe "Server":
                 },
             ]
 
-        async it "can use message id that is provided", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_can_use_message_id_that_is_provided(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -865,7 +864,7 @@ describe "Server":
                 },
             ]
 
-        async it "can not override the request identifier", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_can_not_override_the_request_identifier(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -918,7 +917,7 @@ describe "Server":
                 },
             ]
 
-        async it "only stops connection upon returning False", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_only_stops_connection_upon_returning_False(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             async with pytest.helpers.FutureDominoes(expected=11) as futs:
                 start = hp.create_future()
                 identifiers: set[str] = set()
@@ -1054,7 +1053,7 @@ describe "Server":
                     },
                 ]
 
-        async it "doesn't close connection on an exception", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_doesnt_close_connection_on_an_exception(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             async with pytest.helpers.FutureDominoes(expected=7) as futs:
                 identifiers: set[str] = set()
 
@@ -1161,7 +1160,7 @@ describe "Server":
                     },
                 ]
 
-        async it "doesn't cause havoc if couldn't handle because connection closed", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_doesnt_cause_havoc_if_couldnt_handle_because_connection_closed(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             called: list[str] = []
             identifiers: set[str] = set()
 
@@ -1221,7 +1220,7 @@ describe "Server":
             ]
             assert called == ["cancelled", "closed"]
 
-        async it "logs response if abruptly closed", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_logs_response_if_abruptly_closed(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -1271,7 +1270,7 @@ describe "Server":
                 },
             ]
 
-        async it "has access to a future representing the stream", final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog:
+        async def test_it_has_access_to_a_future_representing_the_stream(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             called: list[object] = []
             identifiers: set[str] = set()
 

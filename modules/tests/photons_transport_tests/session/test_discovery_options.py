@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 from unittest import mock
@@ -15,21 +14,21 @@ def meta():
     return Meta.empty()
 
 
-describe "service_type_spec":
+class TestServiceTypeSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.service_type_spec()
 
-    it "returns as is if the value is already a Services", meta, spec:
+    def test_it_returns_as_is_if_the_value_is_already_a_Services(self, meta, spec):
         val = Services.UDP
         assert spec.normalise(meta, val) is val
 
-    it "returns the enum value if it matches", meta, spec:
+    def test_it_returns_the_enum_value_if_it_matches(self, meta, spec):
         val = "UDP"
         assert spec.normalise(meta, val) is Services.UDP
 
-    it "complains if we don't have a match", meta, spec:
+    def test_it_complains_if_we_dont_have_a_match(self, meta, spec):
         msg = "Unknown service type"
 
         services = sorted([s.name for s in Services if not s.name.startswith("RESERVED")])
@@ -39,7 +38,7 @@ describe "service_type_spec":
         with assertRaises(BadSpecValue, msg, **kwargs):
             spec.normalise(meta, "WAT")
 
-describe "hardcoded_discovery_spec":
+class TestHardcodedDiscoverySpec:
 
     @pytest.fixture()
     def spec(self):
@@ -55,7 +54,7 @@ describe "hardcoded_discovery_spec":
         fake_spec.normalise.return_value = ret
         return fake_spec
 
-    it "uses HARDCODED_DISCOVERY environment variable if it exists", meta, spec, ret, fake_spec:
+    def test_it_uses_HARDCODED_DISCOVERY_environment_variable_if_it_exists(self, meta, spec, ret, fake_spec):
         spec.spec = fake_spec
 
         with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
@@ -69,18 +68,18 @@ describe "hardcoded_discovery_spec":
                 assert spec.normalise(meta, v) is None
                 assert len(fake_spec.normalise.mock_calls) == 0
 
-    it "does nothing with sb.NotSpecified", meta, spec, fake_spec:
+    def test_it_does_nothing_with_sbNotSpecified(self, meta, spec, fake_spec):
         spec.spec = fake_spec
         assert spec.normalise(meta, sb.NotSpecified) is sb.NotSpecified
         assert len(fake_spec.normalise.mock_calls) == 0
 
-    it "otherwise uses spec", meta, spec, ret, fake_spec:
+    def test_it_otherwise_uses_spec(self, meta, spec, ret, fake_spec):
         spec.spec = fake_spec
         val = mock.Mock(name="val")
         assert spec.normalise(meta, val) is ret
         fake_spec.normalise.assert_called_once_with(meta, val)
 
-    it "works", meta, spec:
+    def test_it_works(self, meta, spec):
         val = {
             "d073d5001337": "192.168.0.14",
             "d073d5001338": ["192.168.0.15"],
@@ -103,7 +102,7 @@ describe "hardcoded_discovery_spec":
             "d073d5001343": {Services.UDP: {"host": "192.168.0.20", "port": 90}},
         }
 
-    it "complains if the keys are not serials", meta, spec:
+    def test_it_complains_if_the_keys_are_not_serials(self, meta, spec):
         val = {
             "d073d500133": "192.168.0.14",
             "e073d5001338": "192.168.0.15",
@@ -138,25 +137,25 @@ describe "hardcoded_discovery_spec":
         with assertRaises(BadSpecValue, _errors=errors):
             spec.normalise(meta, val)
 
-describe "service_info_spec":
+class TestServiceInfoSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.service_info_spec()
 
-    it "can expand a string", meta, spec:
+    def test_it_can_expand_a_string(self, meta, spec):
         res = spec.normalise(meta, "192.168.0.1")
         assert res == {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
 
-    it "can expand a singe item list", meta, spec:
+    def test_it_can_expand_a_singe_item_list(self, meta, spec):
         res = spec.normalise(meta, ["192.168.0.1"])
         assert res == {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
 
-    it "can expand a two item list", meta, spec:
+    def test_it_can_expand_a_two_item_list(self, meta, spec):
         res = spec.normalise(meta, ["192.168.0.1", 67])
         assert res == {Services.UDP: {"host": "192.168.0.1", "port": 67}}
 
-    it "complains about other length lists", meta, spec:
+    def test_it_complains_about_other_length_lists(self, meta, spec):
         msg = r"A list must be \[host\] or \[host, port\]"
         with assertRaises(BadSpecValue, msg, got=[]):
             spec.normalise(meta, [])
@@ -164,19 +163,19 @@ describe "service_info_spec":
         with assertRaises(BadSpecValue, msg, got=[1, 2, 3]):
             spec.normalise(meta, [1, 2, 3])
 
-    it "complains about lists with wrong types", meta, spec:
+    def test_it_complains_about_lists_with_wrong_types(self, meta, spec):
         e1 = BadSpecValue("Expected a string", got=int, meta=meta.at("UDP").at("host"))
         e2 = BadSpecValue("Expected an integer", got=str, meta=meta.at("UDP").at("port"))
         e = BadSpecValue(meta=meta.at("UDP"), _errors=[e1, e2])
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, [56, "192.168.0.1"])
 
-    it "can take in a dictionary", meta, spec:
+    def test_it_can_take_in_a_dictionary(self, meta, spec):
         val = {"UDP": {"host": "192.168.5.6", "port": 89}}
         res = spec.normalise(meta, val)
         assert res == {Services.UDP: {"host": "192.168.5.6", "port": 89}}
 
-    it "complains about incomplete dictionaries", meta, spec:
+    def test_it_complains_about_incomplete_dictionaries(self, meta, spec):
         val = {"UDP": {}}
         e1 = BadSpecValue("Expected a value but got none", meta=meta.at("UDP").at("host"))
         e2 = BadSpecValue("Expected a value but got none", meta=meta.at("UDP").at("port"))
@@ -184,42 +183,42 @@ describe "service_info_spec":
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, val)
 
-describe "serial_spec":
+class TestSerialSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.serial_spec()
 
-    it "complains if the serial doesn't start with d073d5", meta, spec:
+    def test_it_complains_if_the_serial_doesnt_start_with_d073d5(self, meta, spec):
         msg = "serials must start with d073d5"
         with assertRaises(BadSpecValue, msg, got="e073d5001338"):
             spec.normalise(meta, "e073d5001338")
 
-    it "complains if the serial isn't 12 characters long", meta, spec:
+    def test_it_complains_if_the_serial_isnt_12_characters_long(self, meta, spec):
         msg = "serials must be 12 characters long, like d073d5001337"
         with assertRaises(BadSpecValue, msg, got="d073d500133"):
             spec.normalise(meta, "d073d500133")
 
-    it "complains if the serial isn't valid hex", meta, spec:
+    def test_it_complains_if_the_serial_isnt_valid_hex(self, meta, spec):
         msg = "serials must be valid hex"
         with assertRaises(BadSpecValue, msg, got="d073d5zz1339"):
             spec.normalise(meta, "d073d5zz1339")
 
-    it "complains if the serial isn't a string", meta, spec:
+    def test_it_complains_if_the_serial_isnt_a_string(self, meta, spec):
         msg = "Expected a string"
         with assertRaises(BadSpecValue, msg, got=bool):
             spec.normalise(meta, True)
 
-    it "otherwise returns the serial", meta, spec:
+    def test_it_otherwise_returns_the_serial(self, meta, spec):
         assert spec.normalise(meta, "d073d5001337") == "d073d5001337"
 
-describe "serial_filter_spec":
+class TestSerialFilterSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.serial_filter_spec()
 
-    it "uses SERIAL_FILTER environment variable if available", meta, spec:
+    def test_it_uses_SERIAL_FILTER_environment_variable_if_available(self, meta, spec):
         with pytest.helpers.modified_env(SERIAL_FILTER="d073d5001337"):
             for v in (sb.NotSpecified, None, ["d073d5001339"], "d073d5001340"):
                 res = spec.normalise(meta, v)
@@ -235,22 +234,22 @@ describe "serial_filter_spec":
                 res = spec.normalise(meta, v)
                 assert res is None
 
-    it "returns sb.NotSpecified as sb.NotSpecified", meta, spec:
+    def test_it_returns_sbNotSpecified_as_sbNotSpecified(self, meta, spec):
         assert spec.normalise(meta, sb.NotSpecified) is sb.NotSpecified
 
-    it "returns None as None", meta, spec:
+    def test_it_returns_None_as_None(self, meta, spec):
         assert spec.normalise(meta, None) is None
 
-    it "converts a string into a list", meta, spec:
+    def test_it_converts_a_string_into_a_list(self, meta, spec):
         assert spec.normalise(meta, "d073d5001337") == ["d073d5001337"]
 
-    it "understands list of strings", meta, spec:
+    def test_it_understands_list_of_strings(self, meta, spec):
         assert spec.normalise(meta, ["d073d5001337", "d073d5000001"]) == [
             "d073d5001337",
             "d073d5000001",
         ]
 
-    it "complains about invalid serials in SERIAL_FILTER", meta, spec:
+    def test_it_complains_about_invalid_serials_in_SERIAL_FILTER(self, meta, spec):
         e = BadSpecValue(
             "serials must start with d073d5",
             got="e073d5001337",
@@ -262,15 +261,15 @@ describe "serial_filter_spec":
                 with assertRaises(BadSpecValue, **kwargs):
                     spec.normalise(meta, v)
 
-    it "complains about invalid serials in value", meta, spec:
+    def test_it_complains_about_invalid_serials_in_value(self, meta, spec):
         e = BadSpecValue(
             "serials must start with d073d5", got="e073d5001339", meta=meta.indexed_at(0)
         )
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, "e073d5001339")
 
-describe "DiscoveryOptions":
-    async it "has serial_filter and hardcoded_discovery":
+class TestDiscoveryOptions:
+    async def test_it_has_serial_filter_and_hardcoded_discovery(self):
         with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
@@ -292,7 +291,7 @@ describe "DiscoveryOptions":
             "d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}
         }
 
-    async it "says we don't have hardcoded_discovery if that's the case":
+    async def test_it_says_we_dont_have_hardcoded_discovery_if_thats_the_case(self):
         options = do.DiscoveryOptions.FieldSpec().empty_normalise()
         assert not options.has_hardcoded_discovery
 
@@ -302,12 +301,12 @@ describe "DiscoveryOptions":
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery={})
         assert not options.has_hardcoded_discovery
 
-    async it "says we have hardcoded_discovery if we do":
+    async def test_it_says_we_have_hardcoded_discovery_if_we_do(self):
         v = {"d073d5001337": "192.168.0.1"}
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=v)
         assert options.has_hardcoded_discovery
 
-    async it "says all serials are wanted if we don't have a serial_filter":
+    async def test_it_says_all_serials_are_wanted_if_we_dont_have_a_serial_filter(self):
         do1 = do.DiscoveryOptions.FieldSpec().empty_normalise()
         do2 = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=None)
         do3 = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=[])
@@ -317,7 +316,7 @@ describe "DiscoveryOptions":
             assert options.want("d073d5000002")
             assert options.want(mock.Mock(name="serial"))
 
-    async it "says we only want filtered serials":
+    async def test_it_says_we_only_want_filtered_serials(self):
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
             serial_filter=["d073d5001337", "d073d5001338"]
         )
@@ -328,7 +327,7 @@ describe "DiscoveryOptions":
         assert options.want("d073d5001337")
         assert options.want("d073d5001338")
 
-    async it "can do discovery":
+    async def test_it_can_do_discovery(self):
         add_service = pytest.helpers.AsyncMock(name="add_service")
         v = {"d073d5000001": "192.168.9.3", "d073d5000002": ["192.168.7.8", 56]}
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=v)
@@ -343,7 +342,7 @@ describe "DiscoveryOptions":
             mock.call("d073d5000002", Services.UDP, host="192.168.7.8", port=56),
         ]
 
-    async it "pays attention to serial_filter in discover":
+    async def test_it_pays_attention_to_serial_filter_in_discover(self):
         add_service = pytest.helpers.AsyncMock(name="add_service")
         v = {
             "d073d5000001": "192.168.9.3",
@@ -364,8 +363,8 @@ describe "DiscoveryOptions":
             mock.call("d073d5000002", Services.UDP, host="192.168.7.8", port=56),
         ]
 
-describe "NoDiscoveryOptions":
-    it "overrides serial_filter and hardcoded_discovery with None":
+class TestNoDiscoveryOptions:
+    def test_it_overrides_serial_filter_and_hardcoded_discovery_with_None(self):
         with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
@@ -383,17 +382,17 @@ describe "NoDiscoveryOptions":
         assert options.serial_filter is None
         assert options.hardcoded_discovery is None
 
-    it "says no hardcoded_discovery":
+    def test_it_says_no_hardcoded_discovery(self):
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
         assert not options.hardcoded_discovery
 
-    it "wants all serials":
+    def test_it_wants_all_serials(self):
         options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
         assert options.want("d073d5000001")
         assert options.want("d073d5000002")
 
-describe "NoEnvDiscoveryOptions":
-    it "does not care about environment variables":
+class TestNoEnvDiscoveryOptions:
+    def test_it_does_not_care_about_environment_variables(self):
         with pytest.helpers.modified_env(
             HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
         ):
@@ -411,17 +410,17 @@ describe "NoEnvDiscoveryOptions":
 
             assert isinstance(options, do.DiscoveryOptions)
 
-describe "discovery_options_spec":
+class TestDiscoveryOptionsSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.discovery_options_spec()
 
-    it "creates a DiscoveryOptions when no discovery_options in meta.everything", meta, spec:
+    def test_it_creates_a_DiscoveryOptions_when_no_discovery_options_in_metaeverything(self, meta, spec):
         res = spec.normalise(meta, sb.NotSpecified)
         assert isinstance(res, do.DiscoveryOptions)
 
-    it "inherits from global discovery_options", meta, spec:
+    def test_it_inherits_from_global_discovery_options(self, meta, spec):
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
             serial_filter=["d073d5000001"], hardcoded_discovery={"d073d5000001": "192.168.0.6"}
         )
@@ -441,7 +440,7 @@ describe "discovery_options_spec":
             "d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}
         }
 
-    it "can override global serial_filter", meta, spec:
+    def test_it_can_override_global_serial_filter(self, meta, spec):
         for gl in ("d073d5000001", ["d073d5000002"], None, sb.NotSpecified):
             options = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=gl)
             meta.everything["discovery_options"] = options
@@ -456,7 +455,7 @@ describe "discovery_options_spec":
             else:
                 assert options.serial_filter == gl
 
-    it "can override global hardcoded_discovery", meta, spec:
+    def test_it_can_override_global_hardcoded_discovery(self, meta, spec):
         for gl in (None, sb.NotSpecified):
             options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=gl)
             meta.everything["discovery_options"] = options
@@ -486,7 +485,7 @@ describe "discovery_options_spec":
             # And global is not touched
             assert options.hardcoded_discovery == gl
 
-    it "can add to global hardcoded_discovery", meta, spec:
+    def test_it_can_add_to_global_hardcoded_discovery(self, meta, spec):
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(
             hardcoded_discovery={"d073d5000001": "192.168.0.1"}
         )

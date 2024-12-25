@@ -1,4 +1,3 @@
-# coding: spec
 
 import uuid
 from unittest import mock
@@ -11,8 +10,8 @@ from photons_app.errors import ProgrammerError
 from photons_protocol.packets import Initial, PacketSpecMetaKls, dictobj
 from photons_protocol.types import Type as T
 
-describe "PacketSpecMetaKls":
-    it "complains if we have fields that are already attributes":
+class TestPacketSpecMetaKls:
+    def test_it_complains_if_we_have_fields_that_are_already_attributes(self):
         with assertRaises(
             ProgrammerError,
             r"Can't override attributes with fields\talready_attributes=\['items', 'values'\]",
@@ -31,7 +30,7 @@ describe "PacketSpecMetaKls":
                 def one(self):
                     pass
 
-    it "complains if we have duplicate names":
+    def test_it_complains_if_we_have_duplicate_names(self):
 
         class Group1(metaclass=PacketSpecMetaKls):
             fields = [("one", T.Bool), ("two", T.Bool)]
@@ -49,14 +48,14 @@ describe "PacketSpecMetaKls":
             class Together2(metaclass=PacketSpecMetaKls):
                 fields = [("g1", Group1), ("one", T.Bool)]
 
-    it "complains if we have fields as a dictionary":
+    def test_it_complains_if_we_have_fields_as_a_dictionary(self):
         msg = "PacketSpecMixin expect fields to be a list of tuples, not a dictionary"
         with assertRaises(ProgrammerError, f"{msg}\tcreating=Child"):
 
             class Child(metaclass=PacketSpecMetaKls):
                 fields = {}
 
-    it "complains if it can't find field":
+    def test_it_complains_if_it_cant_find_field(self):
 
         class Parent:
             fields = {}
@@ -72,7 +71,7 @@ describe "PacketSpecMetaKls":
             class Child2(metaclass=PacketSpecMetaKls):
                 pass
 
-    it "sets the defaults for groups to Initial and sb.NotSpecified for normal fields":
+    def test_it_sets_the_defaults_for_groups_to_Initial_and_sbNotSpecified_for_normal_fields(self):
 
         class Group1(metaclass=PacketSpecMetaKls):
             fields = [("one", T.Bool), ("two", T.Bool)]
@@ -100,7 +99,7 @@ describe "PacketSpecMetaKls":
             for name, dflt in g.fields:
                 assert dflt() is sb.NotSpecified
 
-    it "allows mixins":
+    def test_it_allows_mixins(self):
         yeap = str(uuid.uuid1())
 
         class Mixin:
@@ -118,7 +117,7 @@ describe "PacketSpecMetaKls":
 
         assert Wat2().yeap == yeap
 
-    describe "Meta":
+    class TestMeta:
 
         @pytest.fixture()
         def V(self):
@@ -144,21 +143,21 @@ describe "PacketSpecMetaKls":
 
             return V()
 
-        it "has a nice repr":
+        def test_it_has_a_nice_repr(self):
 
             class Thing(metaclass=PacketSpecMetaKls):
                 fields = []
 
             assert repr(Thing.Meta) == "<type Thing.Meta>"
 
-        it "has multi":
+        def test_it_has_multi(self):
 
             class Thing(metaclass=PacketSpecMetaKls):
                 fields = []
 
             assert Thing.Meta.multi is None
 
-        it "has groups", V:
+        def test_it_has_groups(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -167,7 +166,7 @@ describe "PacketSpecMetaKls":
 
             assert V.Group1.Meta.groups == {}
 
-        it "has name_to_group", V:
+        def test_it_has_name_to_group(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -181,7 +180,7 @@ describe "PacketSpecMetaKls":
 
             assert V.Group1.Meta.name_to_group == {}
 
-        it "has all_names", V:
+        def test_it_has_all_names(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -189,7 +188,7 @@ describe "PacketSpecMetaKls":
             assert Together.Meta.all_names == ["one", "two", "three", "four", "another"]
             assert V.Group1.Meta.all_names == ["one", "two"]
 
-        it "has all_field_types", V:
+        def test_it_has_all_field_types(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -209,7 +208,7 @@ describe "PacketSpecMetaKls":
             ]
             assert V.Group1.Meta.all_field_types_dict == dict(V.Group1.Meta.all_field_types)
 
-        it "has field_types", V:
+        def test_it_has_field_types(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -224,7 +223,7 @@ describe "PacketSpecMetaKls":
             assert V.Group1.Meta.field_types == [("one", V.one_typ), ("two", V.two_typ)]
             assert V.Group1.Meta.field_types_dict == dict(V.Group1.Meta.field_types)
 
-        it "has format_types", V:
+        def test_it_has_format_types(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -235,7 +234,7 @@ describe "PacketSpecMetaKls":
 
             assert V.Group2.Meta.format_types == [V.three_typ, V.four_typ]
 
-        it "has original_fields", V:
+        def test_it_has_original_fields(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", T.Bool)]
@@ -254,7 +253,7 @@ describe "PacketSpecMetaKls":
                 ("another", T.Bool),
             ]
 
-        it "can get type from a string", V:
+        def test_it_can_get_type_from_a_string(self, V):
 
             class Together(metaclass=PacketSpecMetaKls):
                 fields = [("g1", V.Group1), ("g2", V.Group2), ("another", "Another")]

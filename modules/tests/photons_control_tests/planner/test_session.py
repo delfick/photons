@@ -1,4 +1,3 @@
-# coding: spec
 
 import uuid
 from unittest import mock
@@ -21,8 +20,8 @@ def Information(key):
     return Information
 
 
-describe "Session":
-    it "has received and filled", session:
+class TestSession:
+    def test_it_has_received_and_filled(self, session):
         assert hasattr(session, "received")
         assert hasattr(session, "filled")
 
@@ -38,7 +37,7 @@ describe "Session":
         d = session.filled[key3]
         assert isinstance(d, dict)
 
-    it "can make a planner", session:
+    def test_it_can_make_a_planner(self, session):
         plans = mock.Mock(name="plans")
         serial = mock.Mock(name="serial")
         depinfo = mock.Mock(name="depinfo")
@@ -52,7 +51,7 @@ describe "Session":
         assert planner.serial is serial
         assert planner.error_catcher is error_catcher
 
-    it "can add received packets", session:
+    def test_it_can_add_received_packets(self, session):
         t1 = mock.Mock(name="t1")
         t2 = mock.Mock(name="t2")
         t3 = mock.Mock(name="t3")
@@ -100,7 +99,7 @@ describe "Session":
             serial2: {key: [(t3, pkt3)]},
         }
 
-    it "can fill results", session:
+    def test_it_can_fill_results(self, session):
         t1 = mock.Mock(name="t1")
         t2 = mock.Mock(name="t2")
         t3 = mock.Mock(name="t3")
@@ -142,8 +141,8 @@ describe "Session":
                 plankey2: {serial3: (t4, result3)},
             }
 
-    describe "completed":
-        it "returns result if we have one", session:
+    class TestCompleted:
+        def test_it_returns_result_if_we_have_one(self, session):
             plankey = str(uuid.uuid4())
             serial = "d073d5000001"
             serial2 = "d073d5000002"
@@ -157,8 +156,8 @@ describe "Session":
 
             assert session.completed(plankey, serial2) is None
 
-    describe "has_received":
-        it "says whether we have results for that serial and key", session:
+    class TestHasReceived:
+        def test_it_says_whether_we_have_results_for_that_serial_and_key(self, session):
             key = str(uuid.uuid4())
             key2 = str(uuid.uuid4())
             serial = "d073d5000001"
@@ -175,8 +174,8 @@ describe "Session":
             assert not session.has_received(key, serial2)
             assert not session.has_received(key2, serial2)
 
-    describe "known_packets":
-        it "yields known packets for this serial", session:
+    class TestKnownPackets:
+        def test_it_yields_known_packets_for_this_serial(self, session):
             key = str(uuid.uuid4())
             key2 = str(uuid.uuid4())
 
@@ -204,7 +203,7 @@ describe "Session":
             ls = list(session.known_packets(serial2))
             assert ls == [pkt3, pkt5]
 
-    describe "refresh_received":
+    class TestRefreshReceived:
 
         @pytest.fixture()
         def V(self, fake_time, session):
@@ -262,19 +261,19 @@ describe "Session":
 
             return V()
 
-        it "does nothing if refresh is False", session, V:
+        def test_it_does_nothing_if_refresh_is_False(self, session, V):
             session.refresh_received(V.key1, V.serial1, False)
             assert session.received == V.starting_received
 
-        it "does nothing if serial not in received", session, V:
+        def test_it_does_nothing_if_serial_not_in_received(self, session, V):
             session.refresh_received(V.key1, "not here", 1)
             assert session.received == V.starting_received
 
-        it "does nothing if key not in received", session, V:
+        def test_it_does_nothing_if_key_not_in_received(self, session, V):
             session.refresh_received("not here", V.serial1, 1)
             assert session.received == V.starting_received
 
-        it "removes everything if refresh is 0", session, V:
+        def test_it_removes_everything_if_refresh_is_0(self, session, V):
             session.refresh_received(V.key1, V.serial1, 0)
             assert session.received == {
                 V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
@@ -290,7 +289,7 @@ describe "Session":
                 V.serial2: {V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)]},
             }
 
-        it "removes everything if refresh is True", session, V:
+        def test_it_removes_everything_if_refresh_is_True(self, session, V):
             session.refresh_received(V.key1, V.serial1, True)
             assert session.received == {
                 V.serial1: {V.key2: [(1, V.pkt1a2), (5, V.pkt1b2), (20, V.pkt1c2)]},
@@ -306,7 +305,7 @@ describe "Session":
                 V.serial2: {V.key1: [(10, V.pkt2a1), (12, V.pkt2b1), (13, V.pkt2c1)]},
             }
 
-        it "removes anything older than refresh seconds", session, fake_time, V:
+        def test_it_removes_anything_older_than_refresh_seconds(self, session, fake_time, V):
             fake_time.set(16)
             session.refresh_received(V.key1, V.serial1, 6)
             assert session.received == {
@@ -349,7 +348,7 @@ describe "Session":
                 V.serial2: {V.key1: V.starting_received[V.serial2][V.key1]},
             }
 
-    describe "refresh_filled":
+    class TestRefreshFilled:
 
         @pytest.fixture()
         def V(self, session, fake_time):
@@ -389,19 +388,19 @@ describe "Session":
 
             return V()
 
-        it "does nothing if refresh is False", session, V:
+        def test_it_does_nothing_if_refresh_is_False(self, session, V):
             session.refresh_filled(V.plankeya, V.serial1, False)
             assert session.filled == V.starting_filled
 
-        it "does nothing if plankey not there", session, V:
+        def test_it_does_nothing_if_plankey_not_there(self, session, V):
             session.refresh_filled("not there", V.serial1, 1)
             assert session.filled == V.starting_filled
 
-        it "does nothing if serial not there", session, V:
+        def test_it_does_nothing_if_serial_not_there(self, session, V):
             session.refresh_filled(V.plankeya, "not there", 1)
             assert session.filled == V.starting_filled
 
-        it "removes result if refresh is True or 0", session, V:
+        def test_it_removes_result_if_refresh_is_True_or_0(self, session, V):
             session.refresh_filled(V.plankeya, V.serial1, True)
             assert session.filled == {
                 V.plankeya: {V.serial2: session.filled[V.plankeya][V.serial2]},
@@ -411,7 +410,7 @@ describe "Session":
             session.refresh_filled(V.plankeya, V.serial2, 0)
             assert session.filled == {V.plankeyb: session.filled[V.plankeyb]}
 
-        it "removes result if been refresh seconds", session, fake_time, V:
+        def test_it_removes_result_if_been_refresh_seconds(self, session, fake_time, V):
             fake_time.set(6)
             session.refresh_filled(V.plankeyb, V.serial1, 2)
             assert session.filled == V.starting_filled

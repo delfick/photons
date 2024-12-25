@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 
@@ -48,7 +47,7 @@ def make_device():
     return make_device
 
 
-describe "can send over memory":
+class TestCanSendOverMemory:
 
     @pytest.fixture()
     async def device(self, final_future, make_device):
@@ -62,7 +61,7 @@ describe "can send over memory":
         async with MemoryTarget.create(configuration, {"devices": [device]}).session() as sender:
             yield sender
 
-    async it "can send and receive messages using memory target", sender, device:
+    async def test_it_can_send_and_receive_messages_using_memory_target(self, sender, device):
         pkts = await sender(DeviceMessages.SetPower(level=65535), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]
@@ -84,7 +83,7 @@ describe "can send over memory":
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async it "times out if the device is offline", sender, device, FakeTime, MockedCallLater:
+    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]
@@ -131,7 +130,7 @@ describe "can send over memory":
                     )
 
 
-describe "can send over udp":
+class TestCanSendOverUdp:
 
     @pytest.fixture()
     async def device(self, final_future, make_device):
@@ -145,7 +144,7 @@ describe "can send over udp":
         async with LanTarget.create(configuration).session() as sender:
             yield sender
 
-    async it "can send and receive messages using lan target target", sender, device:
+    async def test_it_can_send_and_receive_messages_using_lan_target_target(self, sender, device):
         reference = HardCodedSerials([device.serial])
         found, serials = await reference.find(sender, timeout=1)
         assert serials == [device.serial]
@@ -175,7 +174,7 @@ describe "can send over udp":
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async it "times out if the device is offline", sender, device, FakeTime, MockedCallLater:
+    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]

@@ -1,4 +1,3 @@
-# coding: spec
 
 import os
 from textwrap import dedent
@@ -19,8 +18,8 @@ def override_loop():
         yield
 
 
-describe "App":
-    describe "setup_collector":
+class TestApp:
+    class TestSetupCollector:
 
         def from_config(self, config):
             with hp.a_temp_file() as fle:
@@ -35,7 +34,7 @@ describe "App":
                     collector = app.setup_collector(args_dict, logging_handler, None)
                 return fle.name, args_dict, logging_handler, collector
 
-        it "prepares the collector with the photons_app.config":
+        def test_it_prepares_the_collector_with_the_photons_appconfig(self):
             collector = Collector()
             FakeCollector = mock.Mock(name="Collector", return_value=collector)
 
@@ -52,7 +51,7 @@ describe "App":
 
             prepare.assert_called_once_with(location, args_dict, extra_files=None)
 
-        it "gets us the task_specifier":
+        def test_it_gets_us_the_task_specifier(self):
             location, args_dict, logging_handler, collector = self.from_config(
                 """
                 ---
@@ -65,7 +64,7 @@ describe "App":
             result = collector.photons_app.task_specifier()
             assert result == ("blah", "yeap")
 
-        it "doesn't set target if task_specifier doesn't specify target":
+        def test_it_doesnt_set_target_if_task_specifier_doesnt_specify_target(self):
             location, args_dict, logging_handler, collector = self.from_config(
                 """
                 ---
@@ -78,7 +77,7 @@ describe "App":
             result = collector.photons_app.task_specifier()
             assert result == (sb.NotSpecified, "blah")
 
-        it "sets up logging theme if term_colors is specified":
+        def test_it_sets_up_logging_theme_if_term_colors_is_specified(self):
             setup_logging_theme = mock.Mock(name="setup_logging_theme")
 
             with mock.patch.object(App, "setup_logging_theme", setup_logging_theme):
@@ -92,7 +91,7 @@ describe "App":
 
             setup_logging_theme.assert_called_once_with(logging_handler, colors="light")
 
-    describe "mainline":
+    class TestMainline:
 
         def using_argv(self, argv):
             original_mainline = mock.Mock(name="original_mainline")
@@ -104,14 +103,14 @@ describe "App":
             call_list = original_mainline.mock_calls[0].call_list()[0][1]
             return call_list[0]
 
-        it "adds PHOTONS_SILENT_BY_DEFAULT if there are no options":
+        def test_it_adds_PHOTONS_SILENT_BY_DEFAULT_if_there_are_no_options(self):
             with pytest.helpers.modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
                 assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ
                 used_args = self.using_argv([])
                 assert used_args == []
                 assert os.environ["PHOTONS_SILENT_BY_DEFAULT"] == "1"
 
-        it "adds PHOTONS_SILENT_BY_DEFAULT if the task is list_tasks or help":
+        def test_it_adds_PHOTONS_SILENT_BY_DEFAULT_if_the_task_is_list_tasks_or_help(self):
             for attempt in ("list_tasks", "help", "target:list_tasks", "target:help"):
                 with pytest.helpers.modified_env(PHOTONS_SILENT_BY_DEFAULT=None):
                     assert "PHOTONS_SILENT_BY_DEFAULT" not in os.environ

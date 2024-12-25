@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -19,8 +18,8 @@ def register():
     return TaskRegister()
 
 
-describe "TaskRegister":
-    it "can register tasks", register:
+class TestTaskRegister:
+    def test_it_can_register_tasks(self, register):
         assert register.registered == []
 
         t1 = type("Tasky", (), {})
@@ -37,7 +36,7 @@ describe "TaskRegister":
             RegisteredTask("bob", t1, "one"),
         ]
 
-    it "can get names from registered tasks", register:
+    def test_it_can_get_names_from_registered_tasks(self, register):
         t1 = type("Tasky", (), {})
         t2 = type("BetterTask", (), {})
         t3 = type("BestTask", (), {})
@@ -49,7 +48,7 @@ describe "TaskRegister":
 
         assert register.names == ["BestTask", "BetterTask", "Task", "Tasky"]
 
-    it "returns if we contain a task with a particular name", register:
+    def test_it_returns_if_we_contain_a_task_with_a_particular_name(self, register):
         name = "Tasky"
 
         t = type(name, (), {})
@@ -66,7 +65,7 @@ describe "TaskRegister":
         # Note that it has same name but it's not the same task
         assert t2 not in register
 
-    it "can give specs to a class", register:
+    def test_it_can_give_specs_to_a_class(self, register):
 
         class T(register.Task):
             req_targ1 = register.requires_target()
@@ -107,7 +106,7 @@ describe "TaskRegister":
         assert isinstance(T.art.spec, sb.optional_spec)
         assert isinstance(T.art.spec.spec, sb.any_spec)
 
-    describe "task from a function":
+    class TestTaskFromAFunction:
 
         @pytest.fixture()
         def collector(self):
@@ -116,7 +115,7 @@ describe "TaskRegister":
                 collector.prepare(None, {})
                 yield collector
 
-        async it "works", register, collector:
+        async def test_it_works(self, register, collector):
             ran = {}
 
             target_register = collector.configuration["target_register"]
@@ -392,7 +391,7 @@ describe "TaskRegister":
             }
             ran.clear()
 
-    describe "task from a class":
+    class TestTaskFromAClass:
 
         @pytest.fixture()
         def collector(self):
@@ -401,7 +400,7 @@ describe "TaskRegister":
                 collector.prepare(None, {})
                 yield collector
 
-        async it "works", register, collector:
+        async def test_it_works(self, register, collector):
             ran = {}
 
             target_register = collector.configuration["target_register"]
@@ -670,7 +669,7 @@ describe "TaskRegister":
             }
             ran.clear()
 
-    describe "find":
+    class TestFind:
 
         @pytest.fixture()
         def collector(self):
@@ -804,7 +803,7 @@ describe "TaskRegister":
 
             return register, tasks
 
-        it "can find the correct task", batman, superman, vegemite, road, register, collector:
+        def test_it_can_find_the_correct_task(self, batman, superman, vegemite, road, register, collector):
             register, tasks = register
 
             available = sorted(["One", "Two", "three", "Four", "Five", "six", "six2", "six3"])

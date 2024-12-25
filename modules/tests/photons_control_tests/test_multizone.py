@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
@@ -113,7 +112,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "SetZonesPlan":
+class TestSetZonesPlan:
 
     @pytest.fixture()
     def specifier(self):
@@ -134,7 +133,7 @@ describe "SetZonesPlan":
             [{"hue": 0, "saturation": 0, "brightness": 0, "kelvin": 0}, 1],
         ]
 
-    async it "works out old style and extended style messages", specifier:
+    async def test_it_works_out_old_style_and_extended_style_messages(self, specifier):
         plan = SetZonesPlan(specifier)
 
         assert all(msg | MultiZoneMessages.SetColorZones for msg in plan.set_color_old)
@@ -266,7 +265,7 @@ describe "SetZonesPlan":
                 assert c[k] == pytest.approx(n[k], rel=1e-6)
         assert nw.zone_index == 0
 
-    async it "can overrides hue", specifier:
+    async def test_it_can_overrides_hue(self, specifier):
         plan = SetZonesPlan(specifier, overrides={"hue": 1})
 
         expected = hp.Color(1, 0, 0, 3500).hue
@@ -278,7 +277,7 @@ describe "SetZonesPlan":
         for i in range(28):
             assert plan.set_color_new.colors[i].hue == expected
 
-    async it "can overrides saturation", specifier:
+    async def test_it_can_overrides_saturation(self, specifier):
         plan = SetZonesPlan(specifier, overrides={"saturation": 0.3})
 
         expected = hp.Color(0, 0.3, 0, 3500).saturation
@@ -290,7 +289,7 @@ describe "SetZonesPlan":
         for i in range(28):
             assert plan.set_color_new.colors[i].saturation == expected
 
-    async it "can overrides brightness", specifier:
+    async def test_it_can_overrides_brightness(self, specifier):
         plan = SetZonesPlan(specifier, overrides={"brightness": 0.6})
 
         expected = hp.Color(0, 0, 0.6, 3500).brightness
@@ -302,7 +301,7 @@ describe "SetZonesPlan":
         for i in range(28):
             assert plan.set_color_new.colors[i].brightness == expected
 
-    async it "can overrides kelvin", specifier:
+    async def test_it_can_overrides_kelvin(self, specifier):
         plan = SetZonesPlan(specifier, overrides={"kelvin": 8000})
 
         for o in plan.set_color_old:
@@ -312,7 +311,7 @@ describe "SetZonesPlan":
         for i in range(28):
             assert plan.set_color_new.colors[i].kelvin == 8000
 
-    async it "can override duration", specifier:
+    async def test_it_can_override_duration(self, specifier):
         plan = SetZonesPlan(specifier)
 
         for o in plan.set_color_old:
@@ -327,7 +326,7 @@ describe "SetZonesPlan":
 
         assert plan.set_color_new.duration == 20
 
-    async it "can start at a different zone_index", specifier:
+    async def test_it_can_start_at_a_different_zone_index(self, specifier):
         plan = SetZonesPlan(specifier, zone_index=10)
 
         expected_old = [
@@ -352,15 +351,15 @@ describe "SetZonesPlan":
 
         assert plan.set_color_new.zone_index == 10
 
-    async it "complains if we have more than 82 colors":
+    async def test_it_complains_if_we_have_more_than_82_colors(self):
         with assertRaises(PhotonsAppError, "colors can only go up to 82 colors", got=87):
             SetZonesPlan([["red", 80], ["blue", 7]])
 
-    async it "complains if we have no colors":
+    async def test_it_complains_if_we_have_no_colors(self):
         with assertRaises(PhotonsAppError, "No colors were specified"):
             SetZonesPlan([])
 
-    async it "can create messages to send back", specifier:
+    async def test_it_can_create_messages_to_send_back(self, specifier):
         plan = SetZonesPlan(specifier)
 
         def make(device, options):
@@ -435,7 +434,7 @@ describe "SetZonesPlan":
 
         assert msgsLcm2Extended.serial == striplcm2extended.serial
 
-describe "Multizone helpers":
+class TestMultizoneHelpers:
 
     def compare_received(self, by_light):
         for light, msgs in by_light.items():
@@ -443,9 +442,9 @@ describe "Multizone helpers":
             devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(light).clear()
 
-    describe "find_multizone":
+    class TestFindMultizone:
 
-        async it "yields serials and capability", sender:
+        async def test_it_yields_serials_and_capability(self, sender):
             got = {}
             async for serial, cap in find_multizone(devices.serials, sender):
                 assert serial not in got
@@ -457,7 +456,7 @@ describe "Multizone helpers":
                 striplcm2extended.serial: True,
             }
 
-        async it "resends messages each time if we reset the gatherer", sender:
+        async def test_it_resends_messages_each_time_if_we_reset_the_gatherer(self, sender):
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
@@ -477,7 +476,7 @@ describe "Multizone helpers":
             }
             self.compare_received(want)
 
-        async it "uses cached gatherer on the sender", sender:
+        async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
@@ -493,9 +492,9 @@ describe "Multizone helpers":
             want = {device: [] for device in devices}
             self.compare_received(want)
 
-    describe "zones_from_reference":
+    class TestZonesFromReference:
 
-        async it "yield zones", sender:
+        async def test_it_yield_zones(self, sender):
             got = {}
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 assert serial not in got
@@ -507,7 +506,7 @@ describe "Multizone helpers":
                 striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
             }
 
-        async it "resends messages if no gatherer is reset between runs", sender:
+        async def test_it_resends_messages_if_no_gatherer_is_reset_between_runs(self, sender):
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
@@ -528,7 +527,7 @@ describe "Multizone helpers":
 
             self.compare_received(want)
 
-        async it "uses cached gatherer on the sender", sender:
+        async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
@@ -548,9 +547,9 @@ describe "Multizone helpers":
 
             self.compare_received({device: [] for device in devices})
 
-    describe "SetZones":
+    class TestSetZones:
 
-        async it "can power on devices and set zones", sender:
+        async def test_it_can_power_on_devices_and_set_zones(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
 
@@ -591,7 +590,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can skip turning on lights", sender:
+        async def test_it_can_skip_turning_on_lights(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
 
@@ -623,7 +622,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can target particular lights", sender:
+        async def test_it_can_target_particular_lights(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
 
@@ -666,7 +665,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can give duration to messages", sender:
+        async def test_it_can_give_duration_to_messages(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
 
@@ -682,7 +681,7 @@ describe "Multizone helpers":
                 for event in received:
                     assert event.pkt.duration == 5
 
-        async it "uses cached gatherer on the sender", sender:
+        async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
 
@@ -740,9 +739,9 @@ describe "Multizone helpers":
                 }
             )
 
-    describe "SetZonesEffect":
+    class TestSetZonesEffect:
 
-        async it "can power on devices and set zones effect", sender:
+        async def test_it_can_power_on_devices_and_set_zones_effect(self, sender):
             msg = SetZonesEffect("move")
             got = await sender(msg, devices.serials)
             assert got == []
@@ -775,7 +774,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "has options", sender:
+        async def test_it_has_options(self, sender):
             msg = SetZonesEffect(
                 "move", speed=5, duration=10, direction="LEFT", power_on_duration=20
             )
@@ -825,7 +824,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can choose not to turn on devices", sender:
+        async def test_it_can_choose_not_to_turn_on_devices(self, sender):
             msg = SetZonesEffect("move", power_on=False)
             got = await sender(msg, devices.serials)
             assert got == []
@@ -855,7 +854,7 @@ describe "Multizone helpers":
                 }
             )
 
-        async it "can target particular devices", sender:
+        async def test_it_can_target_particular_devices(self, sender):
             lcm2strips = [striplcm2extended.serial, striplcm2noextended.serial]
 
             msg = SetZonesEffect("move", power_on=False, reference=striplcm1.serial)

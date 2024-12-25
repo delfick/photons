@@ -1,4 +1,3 @@
-# coding: spec
 
 import types
 
@@ -12,27 +11,27 @@ class ATraceback:
         return isinstance(other, types.TracebackType)
 
 
-describe "ResultBuilder":
-    it "initializes itself":
+class TestResultBuilder:
+    def test_it_initializes_itself(self):
         builder = ihp.ResultBuilder(["one", "two"])
         assert builder.serials == ["one", "two"]
         assert builder.result == {"results": {}}
 
-    it "can add serials":
+    def test_it_can_add_serials(self):
         builder = ihp.ResultBuilder(["one", "two"])
         assert builder.serials == ["one", "two"]
 
         builder.add_serials(["three", "two", "four"])
         assert builder.serials == ["one", "two", "three", "four"]
 
-    describe "as_dict":
-        it "returns results but with ok for devices":
+    class TestAsDict:
+        def test_it_returns_results_but_with_ok_for_devices(self):
             builder = ihp.ResultBuilder(["one", "two"])
             dct = builder.as_dict()
             assert builder.result == {"results": {}}
             assert dct == {"results": {"one": "ok", "two": "ok"}}
 
-        it "doesn't give ok for devices that already have results":
+        def test_it_doesnt_give_ok_for_devices_that_already_have_results(self):
             builder = ihp.ResultBuilder(["one", "two", "three"])
             builder.result["results"]["one"] = {"pkt_type": 1}
             builder.result["results"]["three"] = {"error": "blah"}
@@ -45,7 +44,7 @@ describe "ResultBuilder":
                 "results": {"one": {"pkt_type": 1}, "two": "ok", "three": {"error": "blah"}}
             }
 
-        it "includes errors on result":
+        def test_it_includes_errors_on_result(self):
             builder = ihp.ResultBuilder(["one", "two"])
             builder.result["errors"] = ["error1", "error2"]
             dct = builder.as_dict()
@@ -53,8 +52,8 @@ describe "ResultBuilder":
             assert builder.result == {"results": {}, "errors": ["error1", "error2"]}
             assert dct == {"results": {"one": "ok", "two": "ok"}, "errors": ["error1", "error2"]}
 
-    describe "add_packet":
-        it "sets info for that serial in results":
+    class TestAddPacket:
+        def test_it_sets_info_for_that_serial_in_results(self):
             packet = DeviceMessages.StatePower(level=0, target="d073d5000001")
             info = {"pkt_type": 22, "pkt_name": "StatePower", "payload": {"level": 0}}
             builder = ihp.ResultBuilder(["d073d5000001"])
@@ -62,7 +61,7 @@ describe "ResultBuilder":
 
             assert builder.as_dict() == {"results": {"d073d5000001": info}}
 
-        it "makes a list if already have packet for that bulb":
+        def test_it_makes_a_list_if_already_have_packet_for_that_bulb(self):
             packet1 = DeviceMessages.StatePower(level=0, target="d073d5000001")
             packet2 = DeviceMessages.StatePower(level=65535, target="d073d5000001")
             packet3 = DeviceMessages.StateHostFirmware(
@@ -87,8 +86,8 @@ describe "ResultBuilder":
             builder.add_packet(packet3)
             assert builder.as_dict() == {"results": {"d073d5000001": [info1, info2, info3]}}
 
-    describe "error":
-        it "adds the error for that serial if we can get serial from the error":
+    class TestError:
+        def test_it_adds_the_error_for_that_serial_if_we_can_get_serial_from_the_error(self):
             builder = ihp.ResultBuilder(["d073d5000001"])
 
             class BadError(PhotonsAppError):
@@ -125,7 +124,7 @@ describe "ResultBuilder":
                 }
             }
 
-        it "adds error to errors in result if no serial on the error":
+        def test_it_adds_error_to_errors_in_result_if_no_serial_on_the_error(self):
             builder = ihp.ResultBuilder(["d073d5000001"])
 
             error = PhotonsAppError("blah")

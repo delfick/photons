@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -6,7 +5,7 @@ import pytest
 from photons_app import helpers as hp
 from photons_transport.comms.writer import Writer
 
-describe "Writer":
+class TestWriter:
 
     @pytest.fixture()
     def V(self):
@@ -35,7 +34,7 @@ describe "Writer":
 
         return V()
 
-    async it "takes in a bunch of things", V:
+    async def test_it_takes_in_a_bunch_of_things(self, V):
         assert V.writer.sent == 0
         assert V.writer.clone == V.packet.clone()
         assert V.writer.session == V.session
@@ -46,7 +45,7 @@ describe "Writer":
         assert V.writer.did_broadcast == V.did_broadcast
         assert V.writer.connect_timeout == V.connect_timeout
 
-    async it "sends when we call it", V:
+    async def test_it_sends_when_we_call_it(self, V):
         result = mock.Mock(name="result")
 
         called = []
@@ -73,8 +72,8 @@ describe "Writer":
         register.assert_called_once_with()
         write.assert_called_once_with()
 
-    describe "modify_sequence":
-        async it "modifies sequence after first modify_sequence", V:
+    class TestModifySequence:
+        async def test_it_modifies_sequence_after_first_modify_sequence(self, V):
             sequence = mock.Mock(name="sequence")
             seq = mock.Mock(name="seq", return_value=sequence)
             V.session.seq = seq
@@ -97,8 +96,8 @@ describe "Writer":
             assert V.writer.clone.sequence is other_sequence
             seq.assert_called_once_with(V.original.serial)
 
-    describe "register":
-        async it "does not register if the Result is already done", V:
+    class TestRegister:
+        async def test_it_does_not_register_if_the_Result_is_already_done(self, V):
             result = mock.Mock(name="result", spec=["done"])
             result.done.return_value = True
             FakeResult = mock.Mock(name="FakeResult", return_value=result)
@@ -110,7 +109,7 @@ describe "Writer":
             FakeResult.assert_called_once_with(V.original, V.did_broadcast, V.retry_gaps)
             assert len(V.receiver.register.mock_calls) == 0
 
-        async it "registers if the Result is not already done", V:
+        async def test_it_registers_if_the_Result_is_not_already_done(self, V):
             result = mock.Mock(name="result", spec=["done", "add_done_callback"])
             result.done.return_value = False
             FakeResult = mock.Mock(name="FakeResult", return_value=result)
@@ -123,8 +122,8 @@ describe "Writer":
             V.receiver.register.assert_called_once_with(V.writer.clone, result, V.original)
             result.add_done_callback.assert_called_once_with(hp.silent_reporter)
 
-    describe "write":
-        async it "spawns a transport and writes to it", V:
+    class TestWrite:
+        async def test_it_spawns_a_transport_and_writes_to_it(self, V):
             bts = mock.Mock(name="bts")
             V.writer.clone.tobytes.return_value = bts
 

@@ -1,14 +1,13 @@
-# coding: spec
 
 from photons_products.enums import Vendor, VendorRegistry
 
-describe "Vendor":
-    it "takes in vid and has default name":
+class TestVendor:
+    def test_it_takes_in_vid_and_has_default_name(self):
         v = Vendor(99)
         assert v.vid == 99
         assert v.name == "UNKNOWN"
 
-    it "equals other integers and other Vendor":
+    def test_it_equals_other_integers_and_other_Vendor(self):
         v = Vendor(1)
         v2 = Vendor(1)
 
@@ -16,7 +15,7 @@ describe "Vendor":
         assert v == v2
         assert v == v
 
-    it "can be given a name":
+    def test_it_can_be_given_a_name(self):
 
         class T:
             BLAH = Vendor(1)
@@ -29,28 +28,28 @@ describe "Vendor":
 
         assert OO.OTHER.name == "BLAH"
 
-    it "has a repr":
+    def test_it_has_a_repr(self):
         v = Vendor(2)
         v.__set_name__(None, "thing")
         assert repr(v) == "<Vendor 2:thing>"
 
-    it "can be used as a key in a dictionary":
+    def test_it_can_be_used_as_a_key_in_a_dictionary(self):
         v = Vendor(1)
         d = {v: "thing"}
         assert d[1] == "thing"
         assert d[Vendor(1)] == "thing"
         assert d[v] == "thing"
 
-describe "VendorRegistry":
-    describe "choose":
-        it "returns objects in the registry":
+class TestVendorRegistry:
+    class TestChoose:
+        def test_it_returns_objects_in_the_registry(self):
             v = VendorRegistry.choose(1)
             assert v is VendorRegistry.LIFX
 
             v = VendorRegistry.choose(2)
             assert v is VendorRegistry.QUALCOMM
 
-        it "returns unknown vendor":
+        def test_it_returns_unknown_vendor(self):
             v = VendorRegistry.choose(99)
             assert v.vid == 99
             assert v.name == "UNKNOWN"
