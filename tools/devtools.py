@@ -76,7 +76,6 @@ class App:
             args = ["-q", *args]
 
         env = os.environ
-        env["NOSE_OF_YETI_BLACK_COMPAT"] = "false"
         for unwanted in ("HARDCODED_DISCOVERY", "SERIAL_FILTER"):
             if unwanted in env:
                 del env[unwanted]

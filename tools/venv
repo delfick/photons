@@ -14,7 +14,6 @@ manager = runpy.run_path(str(Path(__file__).parent / "bootstrap_venvstarter.py")
 
 
 def run(venv_location: Path, args: tp.List[str]) -> tp.Union[None, str, tp.List[str]]:
-    os.environ["NOSE_OF_YETI_BLACK_COMPAT"] = "true"
     devtools_location = Path(__file__).parent / "devtools.py"
     if args and args[0] in ["docs", "format", "lint", "tests", "tox", "types"]:
         return ["python", str(devtools_location)]
@@ -24,8 +23,6 @@ def run(venv_location: Path, args: tp.List[str]) -> tp.Union[None, str, tp.List[
 
 manager = manager(run).named(".python")
 manager.set_packaging_version("24.2")
-manager.add_no_binary("black")
-manager.add_env(NOSE_OF_YETI_BLACK_COMPAT="true")
 manager.add_local_dep(
     "{here}",
     "..",

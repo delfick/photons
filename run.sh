@@ -15,9 +15,6 @@ while [ -h "$SCRIPT_PATH" ]; do
 done
 cd "$(dirname -- "$SCRIPT_PATH")" >'/dev/null'
 
-# We use noseOfYeti here, so let's make black compatible with it
-export NOSE_OF_YETI_BLACK_COMPAT=true
-export NOSE_OF_YETI_IT_RETURN_TYPE=false
 export MYPYPATH=$(pwd)/modules/tests/stubs:$MYPYPATH
 
 HANDLED=0

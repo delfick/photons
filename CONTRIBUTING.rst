@@ -34,9 +34,6 @@ Alternatively tox may be used::
     > cd modules
     > tox
 
-The tests are written using http://noseofyeti.readthedocs.io which is a project
-that uses python codecs to create a basic RSpec style DSL for writing tests.
-
 Tests are grouped by their module inside the ``tests`` folder. Note that we name
 each folder as "<module>_tests" so that import statements for that module don't
 get clobbered by these test files.
@@ -46,9 +43,6 @@ Code style
 
 We use the black project (https://black.readthedocs.io/en/stable/) to format the
 python code in this repository.
-
-Note that because of the noseOfYeti tests, the environment needs a particular
-version of black and also NOSE_OF_YETI_BLACK_COMPAT=true
 
 All the developer needs to know is that either their editor is run in the same
 session as a ``source run.sh activate`` or that they run::

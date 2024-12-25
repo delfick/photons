@@ -176,12 +176,6 @@ class RunAsExternalGraceful(RunAsExternal):
 
 
 class TestRunnerSignals:
-    """
-    I want to inspect.getsource on the `T` classes in these tests
-
-    But I can't do that if I'm using noseOfYeti, sigh
-    """
-
     async def test_it_works(self):
         class A(Task):
             """Run inside an external script during test via subprocess"""
