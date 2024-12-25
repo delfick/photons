@@ -615,7 +615,7 @@ class TestType:
             unpacking = mock.Mock(name="unpacking")
             struct_format = mock.Mock(name="struct_format")
 
-            assert type(static_conversion_from_spec) == dict
+            assert type(static_conversion_from_spec) is dict
             assert len(static_conversion_from_spec) == 5
 
             for conv in static_conversion_from_spec:

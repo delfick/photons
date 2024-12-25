@@ -30,12 +30,12 @@ class TestRangeSpec:
     def test_it_can_use_the_spec_that_is_provided(self, meta):
         got = scene_spec.range_spec(0, 1, sb.integer_spec()).normalise(meta, 0)
         assert got == 0
-        assert type(got) == int
+        assert type(got) is int
 
         # Prove it's not an integer without specifying integer_spec
         got = scene_spec.range_spec(0, 1).normalise(meta, 0)
         assert got == 0.0
-        assert type(got) == float
+        assert type(got) is float
 
     def test_it_complains_if_less_than_minimum(self, meta):
         for val in (-1.0, -2.0, -3.0):

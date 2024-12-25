@@ -202,7 +202,7 @@ class TestReferenceResolverRegister:
 
                 reference = "my_resolver:blah:and,stuff"
                 resolved = register.reference_object(reference)
-                assert type(resolved) == HardCodedSerials, resolved
+                assert type(resolved) is HardCodedSerials, resolved
                 assert resolved.targets == wanted
 
         def test_it_returns_hard_coded_serials_otherwise(self, register):
