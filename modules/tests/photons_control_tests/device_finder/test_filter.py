@@ -1,10 +1,10 @@
-
 import json
 from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import Meta, sb
 from photons_control.device_finder import Filter, InfoPoints, InvalidJson
+
 
 class TestFilter:
     class TestConstruction:

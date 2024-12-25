@@ -1,5 +1,5 @@
-
 from photons_products.enums import Vendor, VendorRegistry
+
 
 class TestVendor:
     def test_it_takes_in_vid_and_has_default_name(self):
@@ -39,6 +39,7 @@ class TestVendor:
         assert d[1] == "thing"
         assert d[Vendor(1)] == "thing"
         assert d[v] == "thing"
+
 
 class TestVendorRegistry:
     class TestChoose:

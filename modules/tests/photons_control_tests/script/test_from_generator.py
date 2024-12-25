@@ -1,4 +1,3 @@
-
 import asyncio
 import sys
 import time
@@ -121,7 +120,9 @@ class TestFromGenerator:
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-    async def test_it_is_able_to_do_a_FromGenerator_per_serial_with_per_serial_error_catchers(self, sender):
+    async def test_it_is_able_to_do_a_FromGenerator_per_serial_with_per_serial_error_catchers(
+        self, sender
+    ):
 
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
 

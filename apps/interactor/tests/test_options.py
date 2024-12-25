@@ -1,6 +1,6 @@
-
 import os
 from unittest import mock
+
 
 class TestOptions:
     def test_it_has_defaults(self, options_maker):

@@ -1,4 +1,3 @@
-
 import time
 from unittest import mock
 
@@ -49,7 +48,9 @@ class TestRetryTicker:
                 (9.2, (0.8, 1.2)),
             ]
 
-        async def test_it_takes_into_account_how_long_the_block_takes(self, final_future, FakeTime, MockedCallLater):
+        async def test_it_takes_into_account_how_long_the_block_takes(
+            self, final_future, FakeTime, MockedCallLater
+        ):
             options = RetryTicker(timeouts=[[0.6, 1.8], [0.8, 5], [1.2, 15]])
 
             found = []

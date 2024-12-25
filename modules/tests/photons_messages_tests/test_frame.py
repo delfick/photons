@@ -1,4 +1,3 @@
-
 import binascii
 from textwrap import dedent
 from unittest import mock
@@ -308,7 +307,9 @@ class TestLIFXPacket:
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Meta.parent == frame.LIFXPacket
 
-        def test_it_has_a_way_of_creating_another_packet_with_the_same_fields_but_different_message_type(self):
+        def test_it_has_a_way_of_creating_another_packet_with_the_same_fields_but_different_message_type(
+            self,
+        ):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)
             using = msg.using(62)
@@ -352,6 +353,7 @@ class TestLIFXPacket:
             del pkt1.Key
             assert pkt1.Key == (1024, 52, '{"one": true, "two": "tree"}')
 
+
 class TestMultiOptions:
     def test_it_complains_if_we_dont_give_it_two_functions(self):
         for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
@@ -374,6 +376,7 @@ class TestMultiOptions:
 
         assert num([0, 1, 2, 3, 4]) == 5
         assert num([0, 1, 2, 3, 4, 5]) == 6
+
 
 class TestMessages:
     def test_it_works(self):

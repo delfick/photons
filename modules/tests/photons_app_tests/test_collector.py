@@ -25,6 +25,7 @@ from photons_app.registers import (
     TargetRegister,
 )
 
+
 class TestCollector:
 
     @pytest.fixture()
@@ -510,7 +511,9 @@ class TestCollector:
                     print(Collector().read_file(fle.name))
 
     class TestAddConfiguration:
-        def test_it_removes_config_root_from_result_if_we_already_have_that_in_the_configuration(self):
+        def test_it_removes_config_root_from_result_if_we_already_have_that_in_the_configuration(
+            self,
+        ):
             config_root = str(uuid.uuid1())
             configuration = MergedOptions.using({"config_root": config_root})
             result = {"config_root": str(uuid.uuid1()), "one": 1}

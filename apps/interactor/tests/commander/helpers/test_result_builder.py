@@ -1,4 +1,3 @@
-
 import types
 
 from interactor.commander import helpers as ihp

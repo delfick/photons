@@ -1,5 +1,5 @@
-
 from photons_transport.retry_options import Gaps
+
 
 class TestGaps:
     def test_it_can_be_given_defaults(self):

@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 from photons_canvas.orientation import Orientation
@@ -7,6 +6,7 @@ from photons_canvas.points.simple_messages import Set64
 from photons_messages import LightMessages, TileMessages
 from photons_messages.fields import Color
 from photons_products import Products
+
 
 class TestPart:
     def test_it_takes_in_some_properties(self, V):
@@ -373,7 +373,9 @@ class TestPart:
             assert isinstance(msgs[0], Set64)
 
         class TestCaching:
-            def test_it_it_sends_same_messages_or_NO_MESSAGES_depending_on_time_and_difference(self, FakeTime, V):
+            def test_it_it_sends_same_messages_or_NO_MESSAGES_depending_on_time_and_difference(
+                self, FakeTime, V
+            ):
                 colors = [(i, 1, 1, 3500) for i in range(64)]
                 device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
 

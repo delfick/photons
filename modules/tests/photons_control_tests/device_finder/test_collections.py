@@ -1,9 +1,9 @@
-
 import uuid
 from unittest import mock
 
 import pytest
 from photons_control.device_finder import Collection, Collections
+
 
 class TestCollection:
     def test_it_has_properties(self):
@@ -110,6 +110,7 @@ class TestCollection:
                 uuid="stuff", typ="group", name="two"
             )
             assert collection1 == collection2
+
 
 class TestCollections:
     def test_it_starts_with_collections(self):

@@ -1,4 +1,3 @@
-
 import asyncio
 import os
 from unittest import mock
@@ -11,6 +10,7 @@ from photons_app import helpers as hp
 from photons_app.errors import BadOption
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.photons_app import PhotonsApp
+
 
 class TestPhotonsApp:
 

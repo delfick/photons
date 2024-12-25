@@ -1,10 +1,10 @@
-
 import os
 import subprocess
 import sys
 
 this_dir = os.path.dirname(__file__)
 example_dir = os.path.join(this_dir, "example")
+
 
 class TestRunningAMainline:
     def test_it_works(self):

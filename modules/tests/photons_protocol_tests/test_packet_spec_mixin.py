@@ -1,4 +1,3 @@
-
 import binascii
 import enum
 import uuid

@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 from photons_canvas.orientation import Orientation
@@ -7,6 +6,7 @@ from photons_canvas.points import helpers as php
 from photons_canvas.points.canvas import Canvas
 from photons_messages import TileMessages
 from photons_messages.fields import Color
+
 
 class TestCanvas:
     def test_it_has_start_properties(self):

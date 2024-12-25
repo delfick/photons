@@ -1,4 +1,3 @@
-
 import pytest
 from interactor.commander.animations import Animations
 from interactor.database import DB

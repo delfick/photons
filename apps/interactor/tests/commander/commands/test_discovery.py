@@ -1,7 +1,7 @@
-
 import uuid
 
 from photons_app import mimic
+
 
 class TestDiscovery:
     class TestV1:
@@ -67,14 +67,18 @@ class TestDiscovery:
             }
 
     class TestV2:
-        async def test_it_GET_v2_discover_serials(self, devices: mimic.DeviceCollection, server, responses):
+        async def test_it_GET_v2_discover_serials(
+            self, devices: mimic.DeviceCollection, server, responses
+        ):
             serials = await server.assertMethod("GET", "/v2/discover/serials")
             assert sorted(serials) == sorted(device.serial for device in devices)
 
             serials = await server.assertMethod("GET", "/v2/discover/serials/match:label=kitchen")
             assert serials == ["d073d5000001"]
 
-        async def test_it_GET_v2_discover_info(self, devices: mimic.DeviceCollection, server, responses):
+        async def test_it_GET_v2_discover_info(
+            self, devices: mimic.DeviceCollection, server, responses
+        ):
             await server.assertMethod(
                 "GET", "/v2/discover/info", json_output=responses.discovery_response
             )

@@ -1,6 +1,6 @@
-
 from photons_products import conditions as cond
 from photons_products.base import Capability, Product
+
 
 class TestFamily:
     def test_it_compares_family(self):
@@ -39,6 +39,7 @@ class TestFamily:
 
         assert not c1(P2.cap)
         assert c3(P2.cap)
+
 
 class TestCapability:
     def test_it_checks_capabilities(self):
@@ -133,6 +134,7 @@ class TestNameHas:
         assert not c1(FRUIT_BANANA.cap)
         assert c3(FRUIT_BANANA.cap)
 
+
 class TestNameExcludes:
     def test_it_compares_if_name_of_product_does_not_contain_a_certain_fragment(self):
         c1 = cond.NameExcludes("APPLE")
@@ -168,6 +170,7 @@ class TestNameExcludes:
         assert c3(FRUIT_APPLE.cap)
         assert c1(FRUIT_BANANA.cap)
         assert not c3(FRUIT_BANANA.cap)
+
 
 class TestPidFrom:
     def test_it_compares_if_product_id_is_after_a_certain_amount(self):

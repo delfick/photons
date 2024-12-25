@@ -1,4 +1,3 @@
-
 import asyncio
 import itertools
 import sys
@@ -338,7 +337,9 @@ class TestResultStreamer:
 
             return started, hp.async_as_background(retrieve())
 
-        async def test_it_calls_error_catcher_with_CancelledError_if_the_task_gets_cancelled(self, make_streamer):
+        async def test_it_calls_error_catcher_with_CancelledError_if_the_task_gets_cancelled(
+            self, make_streamer
+        ):
 
             async def func():
                 await asyncio.sleep(20)
@@ -401,7 +402,9 @@ class TestResultStreamer:
                 on_done.assert_called_once_with(result)
                 error_catcher.assert_called_once_with(result)
 
-        async def test_it_Result_Streamer_only_gives_cancelled_errors_to_catcher_if_we_only_give_exceptions(self, make_streamer):
+        async def test_it_Result_Streamer_only_gives_cancelled_errors_to_catcher_if_we_only_give_exceptions(
+            self, make_streamer
+        ):
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
 
@@ -520,7 +523,9 @@ class TestResultStreamer:
                 error_catcher.assert_not_called()
                 on_done.assert_called_once_with(result)
 
-        async def test_it_doesnt_call_error_catcher_if_success_and_exceptions_only(self, make_streamer):
+        async def test_it_doesnt_call_error_catcher_if_success_and_exceptions_only(
+            self, make_streamer
+        ):
             make_return = hp.create_future()
 
             async def func():
@@ -701,6 +706,7 @@ class TestResultStreamer:
             assert len(expected_cancelled) == len(tasks)
             for name, cancelled in expected_cancelled.items():
                 assert tasks[name].cancelled() == cancelled, name
+
 
 class TestUsingResultStreamer:
 

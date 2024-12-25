@@ -1,10 +1,10 @@
-
 from unittest import mock
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_products import Family, VendorRegistry, base
 from photons_products.errors import IncompleteProduct
+
 
 class TestCapability:
     def test_it_takes_in_product_and_firmware_info(self):
@@ -64,6 +64,7 @@ class TestCapability:
         product = mock.Mock(name="product")
         cap = base.Capability(product)
         assert list(cap.items()) == []
+
 
 class TestProduct:
     def test_it_complains_about_not_having_a_cap(self):
@@ -236,6 +237,7 @@ class TestProduct:
             "vendor": VendorRegistry.LIFX,
         }
 
+
 class TestMakeUnknownProduct:
     def test_it_works(self):
 
@@ -249,6 +251,7 @@ class TestMakeUnknownProduct:
         assert P.family is Family.UNKNOWN
         assert P.cap.has_lattice
         assert repr(P) == "<Product 1(LIFX):9001(Unknown)>"
+
 
 class TestProductsHolder:
 
@@ -289,7 +292,9 @@ class TestProductsHolder:
     def holder(self, ProductRegistry, default_capability_kls):
         return base.ProductsHolder(ProductRegistry, default_capability_kls)
 
-    def test_it_holds_onto_the_products_and_creates_by_pair(self, ProductRegistry, holder, default_capability_kls):
+    def test_it_holds_onto_the_products_and_creates_by_pair(
+        self, ProductRegistry, holder, default_capability_kls
+    ):
         assert holder.products is ProductRegistry
         assert holder.default_capability_kls is default_capability_kls
         assert holder.by_pair == {

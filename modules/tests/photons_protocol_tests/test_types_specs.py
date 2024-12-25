@@ -1,4 +1,3 @@
-
 import binascii
 import uuid
 from enum import Enum
@@ -45,6 +44,7 @@ class TestCallableSpec:
 
         assert s.normalise(meta, val) is normalised
         spec.normalise.assert_called_once_with(meta, val)
+
 
 class TestTransformSpec:
     def test_it_normalises_spec_with_transformed_value(self, meta):
@@ -95,6 +95,7 @@ class TestTransformSpec:
 
         assert len(do_transform.mock_calls) == 0
         spec.normalise.assert_called_once_with(meta, types.Optional)
+
 
 class TestExpandSpec:
 
@@ -160,7 +161,9 @@ class TestExpandSpec:
             assert b2[:9] == b
             assert b2[9:20] == bitarray("0" * 11)
 
-        def test_it_complains_if_something_other_than_dictionary_bytes_or_bitarray_is_given(self, meta, subject):
+        def test_it_complains_if_something_other_than_dictionary_bytes_or_bitarray_is_given(
+            self, meta, subject
+        ):
             for thing in (0, 1, False, True, [], [1], "adsf", None, lambda: True):
                 with assertRaises(
                     BadSpecValue, "Sorry, dynamic fields only supports a dictionary of values"
@@ -208,6 +211,7 @@ class TestExpandSpec:
                 ):
                     subject.normalise(meta, thing)
 
+
 class TestOptional:
     def test_it_says_NotSpecified_is_Optional(self):
         spec = types.optional(mock.Mock(name="spec"))
@@ -229,6 +233,7 @@ class TestOptional:
         assert spec.normalise(meta, thing) is res
 
         ultimate_spec.normalise.assert_called_once_with(meta, thing)
+
 
 class TestVersionNumberSpec:
     def test_it_takes_in_many_things(self):
@@ -266,6 +271,7 @@ class TestVersionNumberSpec:
             with assertRaises(BadSpecValue, "Expected string to match", got="1"):
                 types.version_number_spec(unpacking=True).normalise(meta, "1")
 
+
 class TestIntegerSpec:
     def test_it_takes_in_many_things(self):
         pkt = mock.Mock(name="pkt")
@@ -302,11 +308,15 @@ class TestIntegerSpec:
         assert spec.allow_float is False
 
     class TestNormalise:
-        def test_it_returns_as_is_if_not_enum_and_not_bitmask_and_allow_float_and_is_a_float(self, meta, pkt):
+        def test_it_returns_as_is_if_not_enum_and_not_bitmask_and_allow_float_and_is_a_float(
+            self, meta, pkt
+        ):
             spec = types.integer_spec(pkt, None, None, allow_float=True)
             assert spec.normalise(meta, 1.2) == 1.2
 
-        def test_it_asserts_number_is_integer_if_no_enum_or_bitmask_and_not_allow_float(self, meta, pkt):
+        def test_it_asserts_number_is_integer_if_no_enum_or_bitmask_and_not_allow_float(
+            self, meta, pkt
+        ):
             spec = types.integer_spec(pkt, None, None, allow_float=False)
             with assertRaises(BadSpecValue, "Expected an integer"):
                 spec.normalise(meta, 1.2)
@@ -353,6 +363,7 @@ class TestIntegerSpec:
 
             bitmask_spec.assert_called_once_with(pkt, bitmask, unpacking=unpacking)
             es.normalise.assert_called_once_with(meta, val)
+
 
 class TestBitmaskSpec:
     def test_it_takes_in_some_things(self):
@@ -495,7 +506,9 @@ class TestBitmaskSpec:
                     [bitmask.ONE, bitmask.TWO]
                 )
 
-            def test_it_complains_if_it_finds_a_value_from_a_different_enum(self, meta, bitmask, subject):
+            def test_it_complains_if_it_finds_a_value_from_a_different_enum(
+                self, meta, bitmask, subject
+            ):
 
                 class Mask2(Enum):
                     ONE = 1 << 1
@@ -514,8 +527,11 @@ class TestBitmaskSpec:
                 with assertRaises(BadConversion, "Can't convert value into value from mask"):
                     subject.normalise(meta, "SEVEN")
 
-            def test_it_does_not_complain_if_it_cant_find_an_integer_value_in_the_mask(self, meta, subject):
+            def test_it_does_not_complain_if_it_cant_find_an_integer_value_in_the_mask(
+                self, meta, subject
+            ):
                 assert subject.normalise(meta, (1 << 24)) == set()
+
 
 class TestEnumSpec:
     def test_it_takes_in_some_things(self):
@@ -575,11 +591,15 @@ class TestEnumSpec:
                 assert subject.normalise(meta, "ONE") == 1
                 assert subject_with_unknown.normalise(meta, "ONE") == 1
 
-            def test_it_can_convert_from_repr_of_the_member(self, meta, subject, subject_with_unknown):
+            def test_it_can_convert_from_repr_of_the_member(
+                self, meta, subject, subject_with_unknown
+            ):
                 assert subject.normalise(meta, "<Vals.ONE: 1>") == 1
                 assert subject_with_unknown.normalise(meta, "<Vals.ONE: 1>") == 1
 
-            def test_it_can_convert_from_member_itself(self, meta, subject, enum, subject_with_unknown):
+            def test_it_can_convert_from_member_itself(
+                self, meta, subject, enum, subject_with_unknown
+            ):
                 assert subject.normalise(meta, enum.TWO) == 2
                 assert subject_with_unknown.normalise(meta, enum.TWO) == 2
 
@@ -592,14 +612,18 @@ class TestEnumSpec:
                     with assertRaises(BadConversion, "Value wasn't a valid enum value"):
                         subject_with_unknown.normalise(meta, val)
 
-            def test_it_does_not_complain_if_allow_unknown_and_value_not_in_the_enum_and_valid_value(self, meta, subject, subject_with_unknown):
+            def test_it_does_not_complain_if_allow_unknown_and_value_not_in_the_enum_and_valid_value(
+                self, meta, subject, subject_with_unknown
+            ):
                 ue = types.UnknownEnum(20)
                 assert subject_with_unknown.normalise(meta, ue) == 20
                 assert subject_with_unknown.normalise(meta, repr(ue)) == 20
 
                 assert subject_with_unknown.normalise(meta, 40) == 40
 
-            def test_it_complains_if_were_using_the_wrong_enum(self, meta, subject, subject_with_unknown):
+            def test_it_complains_if_were_using_the_wrong_enum(
+                self, meta, subject, subject_with_unknown
+            ):
 
                 class Vals2(Enum):
                     ONE = 1
@@ -623,7 +647,9 @@ class TestEnumSpec:
             def subject_with_unknown(self, pkt, enum):
                 return types.enum_spec(pkt, enum, unpacking=True, allow_unknown=True)
 
-            def test_it_returns_as_is_if_already_a_member(self, meta, subject, enum, subject_with_unknown):
+            def test_it_returns_as_is_if_already_a_member(
+                self, meta, subject, enum, subject_with_unknown
+            ):
                 assert subject.normalise(meta, enum.TWO) is enum.TWO
                 assert subject_with_unknown.normalise(meta, enum.TWO) is enum.TWO
 
@@ -645,11 +671,15 @@ class TestEnumSpec:
                 assert subject.normalise(meta, "THREE") == enum.THREE
                 assert subject_with_unknown.normalise(meta, "THREE") == enum.THREE
 
-            def test_it_converts_from_repr_of_member(self, meta, subject, enum, subject_with_unknown):
+            def test_it_converts_from_repr_of_member(
+                self, meta, subject, enum, subject_with_unknown
+            ):
                 assert subject.normalise(meta, "<Vals.THREE: 3>") == enum.THREE
                 assert subject_with_unknown.normalise(meta, "<Vals.THREE: 3>") == enum.THREE
 
-            def test_it_converts_from_value_of_member(self, meta, subject, enum, subject_with_unknown):
+            def test_it_converts_from_value_of_member(
+                self, meta, subject, enum, subject_with_unknown
+            ):
                 assert subject.normalise(meta, 4) == enum.FOUR
                 assert subject_with_unknown.normalise(meta, 4) == enum.FOUR
 
@@ -663,11 +693,14 @@ class TestEnumSpec:
                     with assertRaises(BadConversion, "Value is not a valid value of the enum"):
                         subject_with_unknown.normalise(meta, val)
 
-            def test_it_does_not_complain_if_allow_unknown_and_valid_unknown_value(self, meta, subject, subject_with_unknown):
+            def test_it_does_not_complain_if_allow_unknown_and_valid_unknown_value(
+                self, meta, subject, subject_with_unknown
+            ):
                 ue = types.UnknownEnum(20)
                 assert subject_with_unknown.normalise(meta, ue) is ue
                 assert subject_with_unknown.normalise(meta, repr(ue)) == ue
                 assert subject_with_unknown.normalise(meta, 20) == ue
+
 
 class TestOverridden:
     def test_it_takes_in_pkt_and_default_func(self):
@@ -707,6 +740,7 @@ class TestOverridden:
         assert spec.normalise(meta, val) is ret
 
         default_func.assert_called_once_with(pkt)
+
 
 class TestDefaulted:
     def test_it_takes_in_spec_pkt_and_default_func(self):
@@ -755,6 +789,7 @@ class TestDefaulted:
         default_func.assert_called_once_with(pkt)
         spec.normalise.assert_called_once_with(meta, defaultvalue)
 
+
 class TestBoolean:
     def test_it_complains_if_no_value_to_normalise(self):
         with assertRaises(BadSpecValue, "Must specify boolean values"):
@@ -773,6 +808,7 @@ class TestBoolean:
             with assertRaises(BadSpecValue, "Could not convert value into a boolean", val=val):
                 types.boolean().normalise(Meta.empty(), val)
 
+
 class TestBooleanAsIntSpec:
     def test_it_complains_if_no_value_to_normalise(self):
         with assertRaises(BadSpecValue, "Must specify boolean values"):
@@ -790,6 +826,7 @@ class TestBooleanAsIntSpec:
         for val in (None, [], [1], {}, {1: 2}, "asdf", b"asdf", lambda: 1):
             with assertRaises(BadSpecValue, "BoolInts must be True, False, 0 or 1", got=val):
                 types.boolean_as_int_spec().normalise(Meta.empty(), val)
+
 
 class TestCsvSpec:
     def test_it_takes_in_pkt_size_bits_and_unpacking(self):
@@ -814,7 +851,9 @@ class TestCsvSpec:
             v2 = str(uuid.uuid1())
             return [v1, v2]
 
-        def test_it_converts_a_list_into_a_comma_separated_string_into_bitarray(self, meta, val, subject):
+        def test_it_converts_a_list_into_a_comma_separated_string_into_bitarray(
+            self, meta, val, subject
+        ):
             expected_bytes = ",".join(val).encode() + b"\x00"
             assert len(expected_bytes) == 74
             result = subject.normalise(meta, val).tobytes()
@@ -884,6 +923,7 @@ class TestCsvSpec:
             s = ",".join(val)
             assert subject.normalise(meta, s) == val
 
+
 class TestBytesSpec:
     def test_it_takes_in_pkt_and_size_bits(self):
         pkt = mock.Mock(name="pkt")
@@ -952,6 +992,7 @@ class TestBytesSpec:
 
             size_bits.assert_called_with(pkt)
 
+
 class TestBytesAsStringSpec:
     def test_it_takes_in_pkt_size_bits_and_unpacking(self):
         pkt = mock.Mock(name="pkt")
@@ -1019,6 +1060,7 @@ class TestBytesAsStringSpec:
             assert types.bytes_as_string_spec(pkt, size_bits).normalise(meta, s) == b
 
             size_bits.assert_called_with(pkt)
+
 
 class TestFloatSpec:
 

@@ -1,4 +1,3 @@
-
 import enum
 import json
 from contextlib import contextmanager
@@ -15,6 +14,7 @@ from photons_protocol.types import Optional
 from photons_protocol.types import Type
 from photons_protocol.types import Type as T
 from photons_protocol.types import UnknownEnum, json_spec, static_conversion_from_spec
+
 
 class TestTheJsonSpec:
     def test_it_can_match_just_static_types(self):
@@ -37,7 +37,9 @@ class TestTheJsonSpec:
         val = {"asdf": {"adf": {"asdf": 2, "adf": False, "eieu": None}}}
         assert json_spec.normalise(Meta.empty(), val) == val
 
-    def test_it_complains_about_things_that_arent_json_like_objects_callables_and_non_string_keys(self):
+    def test_it_complains_about_things_that_arent_json_like_objects_callables_and_non_string_keys(
+        self,
+    ):
         for val in (type("adf", (object,), {}), any, json, lambda: 1):
             with assertRaises(BadSpecValue):
                 json_spec.normalise(Meta.empty(), val)
@@ -47,6 +49,7 @@ class TestTheJsonSpec:
             assert False, "Expected an error"
         except BadSpecValue as error:
             assert error.errors[0].errors[0].message == "Expected a string"
+
 
 class TestType:
     def test_it_takes_in_struct_format_and_conversion(self):
@@ -310,7 +313,9 @@ class TestType:
                     assert V.t.override(val) is res
                 assert setd == {"_override": val}
 
-            def test_it_sets_override_to_a_callable_taking_in_packet_return_value_if_not_callable(self, V):
+            def test_it_sets_override_to_a_callable_taking_in_packet_return_value_if_not_callable(
+                self, V
+            ):
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="val")
                 with V.clone() as (res, setd):

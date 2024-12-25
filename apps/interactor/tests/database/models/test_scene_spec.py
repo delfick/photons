@@ -1,4 +1,3 @@
-
 import json
 import random
 import uuid
@@ -66,6 +65,7 @@ class TestRangeSpec:
         for val in (0.1, 0.5, 0.9):
             assert scene_spec.range_spec(0, 1).normalise(meta, val) == val
 
+
 class TestSizedListSpec:
     def test_it_complains_if_not_matching_the_spec(self, meta):
         val = [1, 2, None]
@@ -96,6 +96,7 @@ class TestSizedListSpec:
         spec = scene_spec.sized_list_spec(sb.string_spec(), 2)
         got = spec.normalise(meta, ["one", "two"])
         assert got == ["one", "two"]
+
 
 class TestHsbk:
     def test_it_expects_4_items(self, meta):
@@ -148,6 +149,7 @@ class TestHsbk:
         ):
             spec.normalise(meta, [360, 1, 1, 9001])
 
+
 class TestJsonStringSpec:
     class TestStoring:
         def test_it_loads_if_the_val_is_a_string_and_returns_as_dumps(self, meta):
@@ -192,6 +194,7 @@ class TestJsonStringSpec:
             spec = scene_spec.json_string_spec(spec, False)
             with assertRaises(BadSpecValue):
                 spec.normalise(meta, {"two": 3})
+
 
 class TestMakeSpec:
     class TestStoring:

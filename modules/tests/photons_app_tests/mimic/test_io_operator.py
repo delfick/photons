@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 import pytest
@@ -54,7 +53,9 @@ class TestIO:
         assert io.last_final_future is None
 
     class TestSession:
-        async def test_it_manages_a_queue_and_consumer_task_for_incoming_messages(self, device, wrap_io, final_future, parent_ts):
+        async def test_it_manages_a_queue_and_consumer_task_for_incoming_messages(
+            self, device, wrap_io, final_future, parent_ts
+        ):
             process = []
             got = hp.ResettableFuture()
 
@@ -145,7 +146,9 @@ class TestIO:
                     await queue.finish()
 
     class TestProcessInstruction:
-        async def test_it_puts_result_from_instruction_through_filter_and_sends_replies(self, wrap_io, device, final_future):
+        async def test_it_puts_result_from_instruction_through_filter_and_sends_replies(
+            self, wrap_io, device, final_future
+        ):
             got = []
 
             class MyIO(IO):
@@ -314,7 +317,9 @@ class TestIO:
                     record.pop()
                 yield device
 
-        async def test_it_does_nothing_if_the_device_is_offline(self, device, sent, record, got_event):
+        async def test_it_does_nothing_if_the_device_is_offline(
+            self, device, sent, record, got_event
+        ):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -437,7 +442,9 @@ class TestIO:
                 ]
                 record.clear()
 
-        async def test_it_can_have_unhandled_messages(self, switch, device, sent, record, got_event):
+        async def test_it_can_have_unhandled_messages(
+            self, switch, device, sent, record, got_event
+        ):
             io = device.io["TESTIO"]
             ioswitch = switch.io["TESTIO"]
             addr = ("memory", device.serial)
@@ -487,7 +494,9 @@ class TestIO:
             ]
             record.clear()
 
-        async def test_it_can_not_send_replies_from_res_required_false_unless_is_a_get(self, device, sent, record, got_event):
+        async def test_it_can_not_send_replies_from_res_required_false_unless_is_a_get(
+            self, device, sent, record, got_event
+        ):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 

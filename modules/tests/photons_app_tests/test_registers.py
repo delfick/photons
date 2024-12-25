@@ -1,4 +1,3 @@
-
 import binascii
 import pickle
 from unittest import mock
@@ -48,6 +47,7 @@ class TestMessageRegister:
 
         register.add(kls2)
         assert list(register) == [kls, kls2]
+
 
 class TestProtocolRegister:
     def test_it_can_be_formatted(self):
@@ -110,6 +110,7 @@ class TestProtocolRegister:
         pickled = pickle.dumps(register)
         unpickled = pickle.loads(pickled)
         assert isinstance(unpickled, ProtocolRegister)
+
 
 class TestReferenceResolverRegister:
 
@@ -188,7 +189,9 @@ class TestReferenceResolverRegister:
             resolved = register.reference_object(reference)
             assert resolved is ret
 
-        def test_it_returns_a_SpecialReference_if_our_resolver_returns_not_a_special_reference(self, register):
+        def test_it_returns_a_SpecialReference_if_our_resolver_returns_not_a_special_reference(
+            self, register
+        ):
             ret = "d073d5000001,d073d5000002"
             wanted = [binascii.unhexlify(ref) for ref in ret.split(",")]
 

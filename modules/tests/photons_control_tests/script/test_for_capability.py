@@ -1,4 +1,3 @@
-
 import pytest
 from photons_app import helpers as hp
 from photons_control.script import ForCapability

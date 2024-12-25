@@ -1,4 +1,3 @@
-
 import binascii
 from contextlib import contextmanager
 from unittest import mock
@@ -16,6 +15,7 @@ from photons_transport.session.discovery_options import (
 )
 from photons_transport.session.network import NetworkSession
 from photons_transport.transports.udp import UDP
+
 
 class TestNetworkSession:
 
@@ -329,7 +329,9 @@ class TestNetworkSession:
                 )
             }
 
-        async def test_it_stops_after_first_search_if_serials_is_None_and_we_found_serials(self, V, mocks):
+        async def test_it_stops_after_first_search_if_serials_is_None_and_we_found_serials(
+            self, V, mocks
+        ):
 
             async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -415,7 +417,9 @@ class TestNetworkSession:
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
 
-        async def test_it_keeps_trying_till_we_have_all_serials_if_serials_is_not_None(self, V, mocks):
+        async def test_it_keeps_trying_till_we_have_all_serials_if_serials_is_not_None(
+            self, V, mocks
+        ):
             called = []
 
             async def run(*args, **kwargs):

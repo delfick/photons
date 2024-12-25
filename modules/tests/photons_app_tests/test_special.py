@@ -1,4 +1,3 @@
-
 import asyncio
 import binascii
 import os
@@ -14,6 +13,7 @@ from photons_app.special import (
     ResolveReferencesFromFile,
     SpecialReference,
 )
+
 
 class TestSpecialReference:
     async def test_it_gives_itself_a_finding_and_found_future(self):
@@ -122,6 +122,7 @@ class TestSpecialReference:
             assert serials == [serial]
             assert called == [1, 1]
 
+
 class TestFoundSerials:
     async def test_it_calls_senderfind_devices_with_broadcast(self):
         found = mock.Mock(name="found")
@@ -139,6 +140,7 @@ class TestFoundSerials:
         sender.find_devices.assert_called_once_with(
             broadcast=broadcast, raise_on_none=True, timeout=find_timeout
         )
+
 
 class TestHardCodedSerials:
 
@@ -214,7 +216,9 @@ class TestHardCodedSerials:
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async def test_it_doesnt_call_to_find_specific_serials_if_the_serials_are_already_on_the_sender(self, V):
+        async def test_it_doesnt_call_to_find_specific_serials_if_the_serials_are_already_on_the_sender(
+            self, V
+        ):
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
@@ -243,6 +247,7 @@ class TestHardCodedSerials:
             expected = {V.target2: V.info2}
             missing = [V.serial1]
             await self.assertFindSerials(found, serials, expected, missing)
+
 
 class TestResolveReferencesFromFile:
     async def test_it_complains_if_filename_cant_be_read_or_is_empty(self):

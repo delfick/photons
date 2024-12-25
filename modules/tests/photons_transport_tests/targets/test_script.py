@@ -1,4 +1,3 @@
-
 import asyncio
 from unittest import mock
 
@@ -114,6 +113,7 @@ class TestSenderWrapper:
             ("middle", {"b": a, "limit": Sem(30)}),
             ("close_sender", (V.sender,), {}),
         ]
+
 
 class TestScriptRunner:
 

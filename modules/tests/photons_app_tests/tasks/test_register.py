@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 import alt_pytest_asyncio
@@ -803,7 +802,9 @@ class TestTaskRegister:
 
             return register, tasks
 
-        def test_it_can_find_the_correct_task(self, batman, superman, vegemite, road, register, collector):
+        def test_it_can_find_the_correct_task(
+            self, batman, superman, vegemite, road, register, collector
+        ):
             register, tasks = register
 
             available = sorted(["One", "Two", "three", "Four", "Five", "six", "six2", "six3"])

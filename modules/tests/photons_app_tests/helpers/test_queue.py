@@ -1,4 +1,3 @@
-
 import asyncio
 from collections import deque
 from queue import Queue as NormalQueue
@@ -102,7 +101,9 @@ class TestQueue:
             assert found == [1, 2, 3, 4, 5]
             assert list(queue.remaining()) == [6, 7]
 
-        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
+        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(
+            self, final_future
+        ):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future)
@@ -195,7 +196,9 @@ class TestQueue:
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
+        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(
+            self, final_future
+        ):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future, empty_on_finished=True)
@@ -250,6 +253,7 @@ class TestQueue:
                     final_future.cancel()
 
             assert found == list(range(10))
+
 
 class TestSyncQueue:
     def test_it_takes_in_a_final_future(self, final_future):
@@ -334,7 +338,9 @@ class TestSyncQueue:
             assert found == [1, 2, 3, 4, 5]
             assert list(queue.remaining()) == [6, 7]
 
-        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
+        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(
+            self, final_future
+        ):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future)
@@ -432,7 +438,9 @@ class TestSyncQueue:
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
+        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(
+            self, final_future
+        ):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future, empty_on_finished=True)

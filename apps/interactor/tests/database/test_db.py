@@ -1,4 +1,3 @@
-
 import pytest
 import sqlalchemy.exc
 from delfick_project.errors_pytest import assertRaises

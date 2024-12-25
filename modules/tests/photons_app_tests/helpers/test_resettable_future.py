@@ -1,9 +1,9 @@
-
 import asyncio
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
+
 
 class TestResettableFuture:
     async def test_it_ensure_future_returns_the_ResettableFuture_as_is(self):

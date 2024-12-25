@@ -1,4 +1,3 @@
-
 import asyncio
 from unittest import mock
 
@@ -99,7 +98,9 @@ class TestTransport:
             assert s is V.spawned
             assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        async def test_it_re_gets_the_transport_if_has_exception_first_time(self, original_message, V):
+        async def test_it_re_gets_the_transport_if_has_exception_first_time(
+            self, original_message, V
+        ):
             assert V.called == []
             V.spawn_transport.side_effect = ValueError("YEAP")
 

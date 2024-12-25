@@ -1,6 +1,6 @@
-
 from photons_canvas import orientation
 from photons_canvas.orientation import Orientation as O
+
 
 class TestRotatedIndex:
     def test_it_works(self):
@@ -25,6 +25,7 @@ class TestRotatedIndex:
                 got == expected
             ), f"Rotated {i} to {got} instead of {expected} with orientation {o.name}"
 
+
 class TestReverseOrientation:
     def test_it_works(self):
         testcases = [
@@ -41,6 +42,7 @@ class TestReverseOrientation:
             assert (
                 got is expected
             ), f"Expected reverse of {o.name} to be {expected.name}, got {got.name}"
+
 
 class TestNearestOrientation:
     def test_it_works(self):
@@ -61,6 +63,7 @@ class TestNearestOrientation:
             assert (
                 got is expected
             ), f"Expected accel meas ({x}, {y}, {x}) to be orientated {expected.name}, got {got.name}"
+
 
 class TestReorient:
     def test_it_does_nothing_if_it_doesnt_need_to(self):

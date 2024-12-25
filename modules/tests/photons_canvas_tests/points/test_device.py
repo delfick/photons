@@ -1,6 +1,6 @@
-
 from photons_canvas.points import containers as cont
 from photons_products import Products
+
 
 class TestDevice:
     def test_it_has_serial_cap_and_width(self):

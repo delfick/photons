@@ -1,10 +1,10 @@
-
 import os
 from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_messages import fields
+
 
 class TestFutureToString:
     def test_it_just_reprs_a_not_future(self):
@@ -49,6 +49,7 @@ class TestFutureToString:
         fut.set_result(False)
         assert hp.fut_to_string(fut) == "<Future#None(result)>"
 
+
 class TestAddError:
     def test_it_calls_the_error_catcher_with_the_error_if_its_a_callable(self):
         error = mock.Mock(name="error")
@@ -68,6 +69,7 @@ class TestAddError:
         hp.add_error(catcher, error)
         assert catcher == set([error])
 
+
 class TestATempFile:
     def test_it_gives_us_the_tmpfile(self):
         with hp.a_temp_file() as fle:
@@ -82,6 +84,7 @@ class TestATempFile:
             fle.close()
             os.remove(fle.name)
         assert not os.path.exists(fle.name)
+
 
 class TestJustLogExceptions:
     def test_it_logs_exceptions(self):
@@ -124,6 +127,7 @@ class TestJustLogExceptions:
 
         log.assert_not_called()
 
+
 class TestNestedDictRetrieve:
     def test_it_returns_us_the_dflt_if_we_cant_find_the_key(self):
         data = {"one": {"two": {"three": 3}}}
@@ -144,6 +148,7 @@ class TestNestedDictRetrieve:
         assert hp.nested_dict_retrieve(data, ["one"], dflt) == {"two": {"three": 3}}
         assert hp.nested_dict_retrieve(data, ["one", "two"], dflt) == {"three": 3}
         assert hp.nested_dict_retrieve(data, ["one", "two", "three"], dflt) == 3
+
 
 class TestMemoizedProperty:
     def test_it_caches_on_the_instance(self):
@@ -248,6 +253,7 @@ class TestMemoizedProperty:
 
         assert thing.blah is blah
         assert called == [1, 1]
+
 
 class TestColor:
     def test_it_can_be_made_and_cloned(self):

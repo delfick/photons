@@ -25,6 +25,7 @@ from sanic.exceptions import SanicException
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 
+
 class TestReprer:
     def test_it_turns_bitarray_into_hex(self):
         b = bitarray(endian="little")
@@ -45,6 +46,7 @@ class TestReprer:
         assert reprer(Thing()) == "This thing is the best"
         assert reprer("wat") == "'wat'"
         assert reprer(None) == "None"
+
 
 class TestCatchErrorMessage:
     def test_it_returns_a_sanic_json_response(self):
@@ -72,6 +74,7 @@ class TestCatchErrorMessage:
         assert res.status == 418
         assert res.content_type == "application/json"
         assert json.loads(res.body.decode()) == {"error_code": "Bad", "error": repr(blah)}
+
 
 class TestMessageFromExc:
     def test_it_re_raises_SanicExceptions(self):
@@ -194,6 +197,7 @@ class TestGetLoggerName:
         name = get_logger_name(method=my_other_method)
         assert name == "photons_web_server_tests.commander.test_messages:<locals>:my_other_method"
 
+
 class TestGetLogger:
     def test_it_gets_a_logger_instance_using_get_logger_name_for_the_name(self):
         get_logger_name = mock.Mock(name="get_logger_name")
@@ -219,6 +223,7 @@ class TestGetLogger:
             assert log.name == "freshair"
             get_logger_name.assert_called_once_with(1, method)
 
+
 class TestProgressMessageMaker:
 
     @pytest.fixture
@@ -242,7 +247,9 @@ class TestProgressMessageMaker:
 
         do_log.assert_called_once_with(message, info, three=one, four=two)
 
-    async def test_it_does_not_call_do_log_if_that_is_not_asked_for(self, maker: ProgressMessageMaker):
+    async def test_it_does_not_call_do_log_if_that_is_not_asked_for(
+        self, maker: ProgressMessageMaker
+    ):
         message = mock.Mock(name="message")
         one = mock.Mock(name="one")
         two = mock.Mock(name="two")
@@ -296,7 +303,9 @@ class TestProgressMessageMaker:
             assert await maker(None) == {"done": True}
             assert await maker(None, six=6) == {"done": True, "six": 6}
 
-        async def test_it_Uses_information_if_the_message_is_a_dictionary(self, maker: ProgressMessageMaker):
+        async def test_it_Uses_information_if_the_message_is_a_dictionary(
+            self, maker: ProgressMessageMaker
+        ):
             message = {"one": 1, "two": 2}
             info = await maker(message)
             assert info == {"one": 1, "two": 2}
@@ -307,7 +316,9 @@ class TestProgressMessageMaker:
             assert await maker(message, four=4) == {"one": 1, "two": 2, "four": 4}
             assert message == {"one": 1, "two": 2}
 
-        async def test_it_uses_message_as_an_info_value_otherwise(self, maker: ProgressMessageMaker):
+        async def test_it_uses_message_as_an_info_value_otherwise(
+            self, maker: ProgressMessageMaker
+        ):
             message = mock.Mock(name="message")
             assert await maker(message) == {"info": message}
             assert await maker(message, five=5) == {"info": message, "five": 5}
@@ -324,14 +335,18 @@ class TestProgressMessageMaker:
             assert rec.msg == expected_msg
             assert rec.levelname == expected_level
 
-        async def test_it_Logs_info_if_no_error_key(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
+        async def test_it_Logs_info_if_no_error_key(
+            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
+        ):
             await maker.do_log(message, {"done": True})
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "done": True})
 
             await maker.do_log(message, {"one": True})
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "one": True})
 
-        async def test_it_Logs_info_as_key_if_not_a_dict(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
+        async def test_it_Logs_info_as_key_if_not_a_dict(
+            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
+        ):
 
             class Thing:
                 pass
@@ -340,7 +355,9 @@ class TestProgressMessageMaker:
             await maker.do_log(message, thing)
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "info": thing})
 
-        async def test_it_logs_an_error_if_error_key_is_in_info(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
+        async def test_it_logs_an_error_if_error_key_is_in_info(
+            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
+        ):
             await maker.do_log(message, {"error": "bad", "things": "happen"})
             self.assertLastRecord(
                 caplog, "ERROR", {"msg": "progress", "error": "bad", "things": "happen"}

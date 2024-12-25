@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from collections import defaultdict
@@ -88,7 +87,9 @@ class TestPipeline:
         assert sorted(called) == sorted(devices.serials)
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async def test_it_waits_on_replies_before_sending_next_if_we_have_a_pipeline(self, sender, reference):
+    async def test_it_waits_on_replies_before_sending_next_if_we_have_a_pipeline(
+        self, sender, reference
+    ):
         called = []
         wait = hp.create_future()
 
@@ -233,7 +234,9 @@ class TestPipeline:
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async def test_it_devices_are_slowed_down_by_other_slow_devices_if_synchronized_is_True(self, sender):
+    async def test_it_devices_are_slowed_down_by_other_slow_devices_if_synchronized_is_True(
+        self, sender
+    ):
         wait = hp.create_future()
         called = []
         got_times = defaultdict(list)

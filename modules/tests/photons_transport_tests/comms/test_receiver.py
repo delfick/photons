@@ -1,4 +1,3 @@
-
 import asyncio
 import binascii
 import random
@@ -8,6 +7,7 @@ import pytest
 from photons_app import helpers as hp
 from photons_messages import LIFXPacket
 from photons_transport.comms.receiver import Receiver
+
 
 class TestReceiver:
     async def test_it_inits_some_variables(self):
@@ -98,7 +98,9 @@ class TestReceiver:
                 assert V.packet.Information.remote_addr is None
                 assert V.packet.Information.sender_message is None
 
-            async def test_it_does_not_use_message_catcher_if_can_find_the_key_and_thats_defined(self, V):
+            async def test_it_does_not_use_message_catcher_if_can_find_the_key_and_thats_defined(
+                self, V
+            ):
                 V.register(V.source, V.sequence, V.target)
 
                 message_catcher = pytest.helpers.AsyncMock(name="message_catcher")

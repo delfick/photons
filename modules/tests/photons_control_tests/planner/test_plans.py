@@ -1,10 +1,10 @@
-
 import uuid
 from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
 from photons_app.errors import PhotonsAppError
 from photons_control.planner.plans import Plan, a_plan, make_plans
+
 
 class TestAPlan:
     def test_it_puts_items_in_plan_by_key(self):
@@ -25,6 +25,7 @@ class TestAPlan:
         with mock.patch("photons_control.planner.plans.plan_by_key", d):
             assert a_plan(key2)(Plan2) is Plan2
         assert d == {key: Plan, key2: Plan2}
+
 
 class TestMakePlans:
     def test_it_returns_empty_if_given_no_arguments(self):
@@ -60,6 +61,7 @@ class TestMakePlans:
         three_plan = mock.NonCallableMock(name="three_plan", spec=[])
         expected = {"two": two_plan, "three": three_plan}
         assert make_plans(two=two_plan, three=three_plan) == expected
+
 
 class TestPlan:
     def test_it_has_no_messages_or_dependant_info_by_default(self):

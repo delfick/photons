@@ -1,9 +1,9 @@
-
 from unittest import mock
 
 from photons_app.mimic.event import Events
 from photons_control.colour import ColourParser
 from photons_messages import DeviceMessages, LightMessages
+
 
 class TestControl:
     class TestV1:

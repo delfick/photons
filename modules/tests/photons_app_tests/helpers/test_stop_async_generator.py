@@ -1,10 +1,10 @@
-
 import asyncio
 import sys
 from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
+
 
 class TestStopAsyncGenerator:
     async def test_it_can_cancel_a_generator(self):

@@ -1,4 +1,3 @@
-
 import itertools
 import random
 from unittest import mock
@@ -166,6 +165,7 @@ class TestPowerToggle:
         }
         await self.run_and_compare(sender, PowerToggle(duration=2), expected=expected)
 
+
 class TestPowerToggleGroup:
 
     async def run_and_compare(self, sender, msg, *, expected):
@@ -218,6 +218,7 @@ class TestPowerToggleGroup:
             light3: [DeviceMessages.GetPower(), LightMessages.SetLightPower(level=0, duration=3)],
         }
         await self.run_and_compare(sender, PowerToggleGroup(duration=3), expected=expected)
+
 
 class TestTransformer:
 

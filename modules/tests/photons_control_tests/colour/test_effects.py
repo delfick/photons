@@ -1,9 +1,9 @@
-
 import random
 
 from delfick_project.errors_pytest import assertRaises
 from photons_control.colour import Effects, NoSuchEffect, Waveform
 from photons_messages import LightMessages
+
 
 class TestEffects:
     def test_it_supports_a_None_effect(self):

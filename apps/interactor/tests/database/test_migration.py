@@ -1,8 +1,8 @@
-
 from interactor.database.database import Database, migrate
 from photons_app import helpers as hp
 from photons_app.formatter import MergedOptionStringFormatter
 from sqlalchemy import create_engine, inspect
+
 
 class TestDatabaseMigration:
     async def test_it_can_create_a_database(self):

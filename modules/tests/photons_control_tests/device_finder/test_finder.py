@@ -1,9 +1,9 @@
-
 from unittest import mock
 
 import pytest
 from photons_app import helpers as hp
 from photons_control.device_finder import Collections, Device, Filter, Finder
+
 
 class TestFinder:
     def test_it_takes_in_a_sender_and_uses_its_stop_fut_if_final_future_not_specified(self):
@@ -193,7 +193,9 @@ class TestFinder:
                 "fltr,matches_runs",
                 [(Filter.empty(), False), (Filter.from_kwargs(label="kitchen"), True)],
             )
-            async def test_it_streams_devices_that_match_the_filter(self, V, fltr, matches_runs, fake_time):
+            async def test_it_streams_devices_that_match_the_filter(
+                self, V, fltr, matches_runs, fake_time
+            ):
                 t = fake_time
 
                 class Patches:
@@ -399,7 +401,9 @@ class TestFinder:
                     Filter.from_options({"label": "attic", "refresh_info": True}),
                 ],
             )
-            async def test_it_streams_devices_after_getting_all_info_for_that_device(self, V, fltr, fake_time):
+            async def test_it_streams_devices_after_getting_all_info_for_that_device(
+                self, V, fltr, fake_time
+            ):
                 t = fake_time
 
                 class Patches:

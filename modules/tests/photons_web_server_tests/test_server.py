@@ -1,4 +1,3 @@
-
 import asyncio
 import json
 import socket
@@ -136,6 +135,7 @@ class TestTask:
         task.run_loop(collector=collector)
         assert called == ["ran"]
 
+
 class TestServer:
     class TestTheSanicApp:
         async def test_it_has_config_that_weve_provided(self):
@@ -160,7 +160,9 @@ class TestServer:
                 assert server.app.name == "my_server_is_better_than_yours"
 
     class TestLifecycle:
-        def test_it_has_own_lifecycle_methods_that_use_sanic_life_cycle_methods(self, collector: Collector):
+        def test_it_has_own_lifecycle_methods_that_use_sanic_life_cycle_methods(
+            self, collector: Collector
+        ):
             called: list[object] = []
             calledlong = hp.create_future()
             p = pytest.helpers.free_port()
@@ -258,7 +260,9 @@ class TestServer:
                 "after_stop",
             ]
 
-        def test_it_fails_if_the_server_wants_a_port_already_in_use(self, used_port: int, collector: Collector):
+        def test_it_fails_if_the_server_wants_a_port_already_in_use(
+            self, used_port: int, collector: Collector
+        ):
 
             def route(request: Request, /) -> HTTPResponse | None:
                 return sanic.text("route")
@@ -298,7 +302,9 @@ class TestServer:
 
     class TestStoppingServer:
 
-        async def test_it_waits_for_requests_based_on_a_default_15_second_timeout_from_sanic(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time):
+        async def test_it_waits_for_requests_based_on_a_default_15_second_timeout_from_sanic(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time
+        ):
             started = hp.create_future()
             startedws = hp.create_future()
 
@@ -342,7 +348,9 @@ class TestServer:
                 await req
             assert wsres == [{"got": "HI"}, None]
 
-        async def test_it_waits_for_requests_based_on_sanic_config_GRACEFUL_SHUTDOWN_TIMEOUT(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time):
+        async def test_it_waits_for_requests_based_on_sanic_config_GRACEFUL_SHUTDOWN_TIMEOUT(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time
+        ):
             started = hp.create_future()
 
             async def route(request: Request, /) -> HTTPResponse | None:
@@ -374,7 +382,9 @@ class TestServer:
 
     class TestLogging:
 
-        async def test_it_records_commands_and_responses(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_records_commands_and_responses(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             Ident1 = pws_thp.IdentifierMatch(identifiers)
@@ -459,7 +469,9 @@ class TestServer:
                 r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:]
             )
 
-        async def test_it_lets_the_handler_hook_into_the_logging(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_lets_the_handler_hook_into_the_logging(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             called: list[object] = []
             expected_called: list[object] = []
 
@@ -686,7 +698,9 @@ class TestServer:
 
     class TestWebsocketStreams:
 
-        async def test_it_can_send_progress_messages(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_can_send_progress_messages(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -710,7 +724,9 @@ class TestServer:
                     }
                     await stream.recv() is None
 
-        async def test_it_can_provide_a_progress_callback(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_can_provide_a_progress_callback(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
             progress = pytest.helpers.AsyncMock(
                 name="progress", return_value={"ret": "from progress"}
@@ -740,7 +756,9 @@ class TestServer:
 
             progress.assert_called_once_with("there", do_log=True, one=1, two=2)
 
-        async def test_it_complains_if_the_message_isnt_valid_json(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_complains_if_the_message_isnt_valid_json(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -814,7 +832,9 @@ class TestServer:
                 },
             ]
 
-        async def test_it_can_use_message_id_that_is_provided(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_can_use_message_id_that_is_provided(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -864,7 +884,9 @@ class TestServer:
                 },
             ]
 
-        async def test_it_can_not_override_the_request_identifier(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_can_not_override_the_request_identifier(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -917,7 +939,9 @@ class TestServer:
                 },
             ]
 
-        async def test_it_only_stops_connection_upon_returning_False(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_only_stops_connection_upon_returning_False(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             async with pytest.helpers.FutureDominoes(expected=11) as futs:
                 start = hp.create_future()
                 identifiers: set[str] = set()
@@ -1053,7 +1077,9 @@ class TestServer:
                     },
                 ]
 
-        async def test_it_doesnt_close_connection_on_an_exception(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_doesnt_close_connection_on_an_exception(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             async with pytest.helpers.FutureDominoes(expected=7) as futs:
                 identifiers: set[str] = set()
 
@@ -1160,7 +1186,9 @@ class TestServer:
                     },
                 ]
 
-        async def test_it_doesnt_cause_havoc_if_couldnt_handle_because_connection_closed(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_doesnt_cause_havoc_if_couldnt_handle_because_connection_closed(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             called: list[str] = []
             identifiers: set[str] = set()
 
@@ -1220,7 +1248,9 @@ class TestServer:
             ]
             assert called == ["cancelled", "closed"]
 
-        async def test_it_logs_response_if_abruptly_closed(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_logs_response_if_abruptly_closed(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -1270,7 +1300,9 @@ class TestServer:
                 },
             ]
 
-        async def test_it_has_access_to_a_future_representing_the_stream(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
+        async def test_it_has_access_to_a_future_representing_the_stream(
+            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
+        ):
             called: list[object] = []
             identifiers: set[str] = set()
 

@@ -1,6 +1,6 @@
-
 from photons_products import Family, VendorRegistry, Zones, lifx
 from photons_products.base import CapabilityValue
+
 
 class TestLifxProduct:
     def test_it_has_default_vendor(self):

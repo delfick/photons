@@ -1,7 +1,7 @@
-
 from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import BadSpecValue, Meta
 from photons_control.device_finder import boolean, str_ranges
+
 
 class TestBoolean:
     def test_it_transforms_int_into_a_boolean(self):
@@ -43,6 +43,7 @@ class TestBoolean:
         for thing in ([], [1, 2], [True, False], {}, {1: 2}, lambda: 1, Wat, Wat()):
             with assertRaises(BadSpecValue):
                 boolean().normalise(Meta.empty(), thing)
+
 
 class TestStrRanges:
     def test_it_converts_comma_separated_pairs_into_list_of_tuples(self):

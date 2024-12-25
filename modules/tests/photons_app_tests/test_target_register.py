@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 import pytest
@@ -6,6 +5,7 @@ from delfick_project.errors_pytest import assertRaises
 from delfick_project.norms import sb
 from photons_app.errors import ProgrammerError, TargetNotFound, TargetTypeNotFound
 from photons_app.registers import Target, TargetRegister
+
 
 class TestTarget:
     def test_it_takes_in_things(self):
@@ -19,6 +19,7 @@ class TestTarget:
         assert target.type == "thing"
         assert target.optional is False
         assert target.options == {}
+
 
 class TestTargetRegister:
 

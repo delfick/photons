@@ -1,9 +1,9 @@
-
 from unittest import mock
 
 import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_core import CommandSplitter, run
+
 
 class TestCommandSplitter:
     def test_it_can_format_argv(self):

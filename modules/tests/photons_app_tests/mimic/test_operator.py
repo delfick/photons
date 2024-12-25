@@ -1,4 +1,3 @@
-
 import sys
 
 import pytest
@@ -135,7 +134,9 @@ class TestOperator:
                 assert device.attrs.three == 1
                 assert device.attrs.four == 2
 
-        async def test_it_can_default_to_use_zero_if_options_dont_determine_value(self, device, final_future):
+        async def test_it_can_default_to_use_zero_if_options_dont_determine_value(
+            self, device, final_future
+        ):
 
             class Op(Operator):
                 attrs = [

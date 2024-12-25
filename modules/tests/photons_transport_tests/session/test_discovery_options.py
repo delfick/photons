@@ -1,4 +1,3 @@
-
 import binascii
 from unittest import mock
 
@@ -38,6 +37,7 @@ class TestServiceTypeSpec:
         with assertRaises(BadSpecValue, msg, **kwargs):
             spec.normalise(meta, "WAT")
 
+
 class TestHardcodedDiscoverySpec:
 
     @pytest.fixture()
@@ -54,7 +54,9 @@ class TestHardcodedDiscoverySpec:
         fake_spec.normalise.return_value = ret
         return fake_spec
 
-    def test_it_uses_HARDCODED_DISCOVERY_environment_variable_if_it_exists(self, meta, spec, ret, fake_spec):
+    def test_it_uses_HARDCODED_DISCOVERY_environment_variable_if_it_exists(
+        self, meta, spec, ret, fake_spec
+    ):
         spec.spec = fake_spec
 
         with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
@@ -137,6 +139,7 @@ class TestHardcodedDiscoverySpec:
         with assertRaises(BadSpecValue, _errors=errors):
             spec.normalise(meta, val)
 
+
 class TestServiceInfoSpec:
 
     @pytest.fixture()
@@ -183,6 +186,7 @@ class TestServiceInfoSpec:
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, val)
 
+
 class TestSerialSpec:
 
     @pytest.fixture()
@@ -211,6 +215,7 @@ class TestSerialSpec:
 
     def test_it_otherwise_returns_the_serial(self, meta, spec):
         assert spec.normalise(meta, "d073d5001337") == "d073d5001337"
+
 
 class TestSerialFilterSpec:
 
@@ -267,6 +272,7 @@ class TestSerialFilterSpec:
         )
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, "e073d5001339")
+
 
 class TestDiscoveryOptions:
     async def test_it_has_serial_filter_and_hardcoded_discovery(self):
@@ -363,6 +369,7 @@ class TestDiscoveryOptions:
             mock.call("d073d5000002", Services.UDP, host="192.168.7.8", port=56),
         ]
 
+
 class TestNoDiscoveryOptions:
     def test_it_overrides_serial_filter_and_hardcoded_discovery_with_None(self):
         with pytest.helpers.modified_env(
@@ -391,6 +398,7 @@ class TestNoDiscoveryOptions:
         assert options.want("d073d5000001")
         assert options.want("d073d5000002")
 
+
 class TestNoEnvDiscoveryOptions:
     def test_it_does_not_care_about_environment_variables(self):
         with pytest.helpers.modified_env(
@@ -410,13 +418,16 @@ class TestNoEnvDiscoveryOptions:
 
             assert isinstance(options, do.DiscoveryOptions)
 
+
 class TestDiscoveryOptionsSpec:
 
     @pytest.fixture()
     def spec(self):
         return do.discovery_options_spec()
 
-    def test_it_creates_a_DiscoveryOptions_when_no_discovery_options_in_metaeverything(self, meta, spec):
+    def test_it_creates_a_DiscoveryOptions_when_no_discovery_options_in_metaeverything(
+        self, meta, spec
+    ):
         res = spec.normalise(meta, sb.NotSpecified)
         assert isinstance(res, do.DiscoveryOptions)
 
