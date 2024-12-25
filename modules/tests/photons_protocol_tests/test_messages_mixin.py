@@ -1,4 +1,3 @@
-
 import binascii
 from textwrap import dedent
 from unittest import mock
@@ -154,6 +153,7 @@ class TestPacketTypeExtractor:
             assert protocol == 1024
             assert pkt_type == 78
 
+
 class TestSourcesFor:
     def test_it_can_get_the_source_for_packets(self, TestMessages):
         result = list(sources_for(TestMessages))
@@ -182,6 +182,7 @@ class TestSourcesFor:
         """
 
         assert result[2][1] == dedent(three).lstrip()
+
 
 class TestMessagesMixin:
 
@@ -213,7 +214,9 @@ class TestMessagesMixin:
 
             packet_type.assert_called_once_with(data)
 
-        def test_it_can_get_us_information_about_unknown_pkt_types_known_protocol(self, protocol_register):
+        def test_it_can_get_us_information_about_unknown_pkt_types_known_protocol(
+            self, protocol_register
+        ):
             data = mock.Mock(name="data")
             packet_type = mock.Mock(name="packet_type", return_value=(1024, 88))
 
@@ -355,7 +358,9 @@ class TestMessagesMixin:
             bts = LIFXPacket.create(**data).pack()
             assert Messages.pack(data, protocol_register, unknown_ok=True) == bts
 
-        def test_it_works_out_packet_type_and_packs_when_you_have_a_PacketKls(self, protocol_register):
+        def test_it_works_out_packet_type_and_packs_when_you_have_a_PacketKls(
+            self, protocol_register
+        ):
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")
@@ -374,7 +379,9 @@ class TestMessagesMixin:
             pkt.pack.assert_called_once_with()
             get_packet_type.assert_called_once_with(data, protocol_register)
 
-        def test_it_works_out_packet_type_and_packs_when_you_have_dont_have_PacketKls_but_unknown_is_ok(self, protocol_register):
+        def test_it_works_out_packet_type_and_packs_when_you_have_dont_have_PacketKls_but_unknown_is_ok(
+            self, protocol_register
+        ):
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")

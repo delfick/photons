@@ -1,4 +1,3 @@
-
 import binascii
 
 import pytest
@@ -83,7 +82,9 @@ class TestCanSendOverMemory:
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
+    async def test_it_times_out_if_the_device_is_offline(
+        self, sender, device, FakeTime, MockedCallLater
+    ):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]
@@ -174,7 +175,9 @@ class TestCanSendOverUdp:
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
+    async def test_it_times_out_if_the_device_is_offline(
+        self, sender, device, FakeTime, MockedCallLater
+    ):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]

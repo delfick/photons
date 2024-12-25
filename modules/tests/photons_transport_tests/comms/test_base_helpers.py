@@ -1,4 +1,3 @@
-
 import asyncio
 from unittest import mock
 
@@ -6,6 +5,7 @@ from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_app.errors import TimedOut
 from photons_transport.comms.base import timeout_task
+
 
 class TestTimeoutTask:
 

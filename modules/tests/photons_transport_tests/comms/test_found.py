@@ -1,4 +1,3 @@
-
 import binascii
 from unittest import mock
 
@@ -205,6 +204,7 @@ class TestFound:
         t1.clone_for.assert_called_once_with(sender)
         t2.clone_for.assert_called_once_with(sender)
         t3.clone_for.assert_called_once_with(sender)
+
 
 class TestFoundremoveLost:
 

@@ -1,4 +1,3 @@
-
 import uuid
 from unittest import mock
 

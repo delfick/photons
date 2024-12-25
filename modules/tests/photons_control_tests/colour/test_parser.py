@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 import pytest
@@ -11,6 +10,7 @@ from photons_control.colour import (
     split_color_string,
 )
 from photons_messages import LightMessages, Waveform
+
 
 class TestSplitColorString:
     def test_it_returns_empty_list_if_not_color_string(self):
@@ -29,6 +29,7 @@ class TestSplitColorString:
 
         for thing, expected in cases:
             assert split_color_string(thing) == expected
+
 
 class TestColourParser:
     def test_it_has_named_colors(self):

@@ -1,4 +1,3 @@
-
 import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp

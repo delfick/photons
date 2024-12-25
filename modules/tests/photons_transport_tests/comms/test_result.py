@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from unittest import mock
@@ -44,6 +43,7 @@ def V(VBase):
 gaps = Gaps(
     gap_between_ack_and_res=0.2, gap_between_results=0.2, timeouts=[(0.1, 0.1)]
 ).empty_normalise()
+
 
 class TestResult:
     async def test_it_is_a_future(self, V):
@@ -193,7 +193,9 @@ class TestResult:
             await check_result()
             assert len(schedule_finisher.mock_calls) == 0
 
-        async def test_it_uses_schedule_finisher_if_not_res_required_and_we_did_broadcast(self, add_ack):
+        async def test_it_uses_schedule_finisher_if_not_res_required_and_we_did_broadcast(
+            self, add_ack
+        ):
             now = time.time()
             result, check_result, schedule_finisher = add_ack(
                 res_required=False, did_broadcast=True, now=now, already_done=False
@@ -344,7 +346,9 @@ class TestResult:
 
     class TestScheduleFinisher:
 
-        async def test_it_calls_maybe_finish_after_finish_multi_gap_with_the_current_value_for_attr(self, V, FakeTime, MockedCallLater):
+        async def test_it_calls_maybe_finish_after_finish_multi_gap_with_the_current_value_for_attr(
+            self, V, FakeTime, MockedCallLater
+        ):
 
             result = Result(V.request, False, V.gaps)
             last_ack_received = mock.Mock(name="last_ack_received")
@@ -520,7 +524,9 @@ class TestResult:
                     assert result.num_results is val
                 _determine_num_results.assert_called_once_with()
 
-        async def test_it_calls_function_with_results_if_determine_num_results_returns_is_a_function(self, V):
+        async def test_it_calls_function_with_results_if_determine_num_results_returns_is_a_function(
+            self, V
+        ):
             count = mock.Mock(name="count")
             res = mock.Mock(name="res", return_value=count)
             _determine_num_results = mock.Mock(name="_determine_num_results", return_value=res)
@@ -607,16 +613,22 @@ class TestResult:
                         False, True, {}, time.time(), None, None, [], num_results
                     )
 
-            async def test_it_says_yes_if_num_results_is_1_and_we_have_a_result(self, wait_on_result):
+            async def test_it_says_yes_if_num_results_is_1_and_we_have_a_result(
+                self, wait_on_result
+            ):
                 assert wait_on_result(False, True, {}, time.time(), None, 1, [], -1)
 
-            async def test_it_says_yes_if_time_since_last_res_is_less_than_gap_between_results_and_num_results_greater_than_1(self, wait_on_result):
+            async def test_it_says_yes_if_time_since_last_res_is_less_than_gap_between_results_and_num_results_greater_than_1(
+                self, wait_on_result
+            ):
                 now = time.time()
                 last = now - 0.1
                 retry_gaps = {"gap_between_results": 0.2}
                 assert wait_on_result(False, True, retry_gaps, now, None, last, [], 1)
 
-            async def test_it_says_no_if_time_since_last_res_is_greater_than_gap_between_results_and_num_results_greater_than_1(self, wait_on_result):
+            async def test_it_says_no_if_time_since_last_res_is_greater_than_gap_between_results_and_num_results_greater_than_1(
+                self, wait_on_result
+            ):
                 now = time.time()
                 last = now - 0.3
                 retry_gaps = {"gap_between_results": 0.2}
@@ -638,14 +650,18 @@ class TestResult:
                 for num_results in (-1, 0, 1):
                     assert wait_on_result(True, True, {}, time.time(), 1, 1, results, num_results)
 
-            async def test_it_says_yes_if_its_been_less_than_gap_between_ack_and_res_since_ack_and_no_results(self, wait_on_result):
+            async def test_it_says_yes_if_its_been_less_than_gap_between_ack_and_res_since_ack_and_no_results(
+                self, wait_on_result
+            ):
                 now = time.time()
                 last = time.time() - 0.1
                 retry_gaps = {"gap_between_ack_and_res": 0.2}
                 for num_results in (-1, 0, 1):
                     assert wait_on_result(True, True, retry_gaps, now, last, None, [], num_results)
 
-            async def test_it_says_yes_if_its_been_greater_than_gap_between_ack_and_res_since_ack_and_no_results(self, wait_on_result):
+            async def test_it_says_yes_if_its_been_greater_than_gap_between_ack_and_res_since_ack_and_no_results(
+                self, wait_on_result
+            ):
                 now = time.time()
                 last = time.time() - 0.3
                 retry_gaps = {"gap_between_ack_and_res": 0.2}

@@ -1,4 +1,3 @@
-
 import itertools
 from contextlib import contextmanager
 from unittest import mock
@@ -331,7 +330,9 @@ class TestGatherer:
                 ],
             )
 
-        async def test_it_still_finishes_if_no_messages_processed_but_finished_after_no_more_messages(self, sender):
+        async def test_it_still_finishes_if_no_messages_processed_but_finished_after_no_more_messages(
+            self, sender
+        ):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -943,7 +944,9 @@ class TestGatherer:
 
                 called.clear()
 
-        async def test_it_cannot_steal_messages_from_completed_plans_if_we_refresh_messages_those_other_plans_use(self, sender):
+        async def test_it_cannot_steal_messages_from_completed_plans_if_we_refresh_messages_those_other_plans_use(
+            self, sender
+        ):
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -1223,7 +1226,9 @@ class TestGatherer:
                 }
             )
 
-        async def test_it_it_can_get_dependencies_of_dependencies_and_messages_can_be_shared(self, sender):
+        async def test_it_it_can_get_dependencies_of_dependencies_and_messages_can_be_shared(
+            self, sender
+        ):
             called = []
 
             class Plan1(Plan):

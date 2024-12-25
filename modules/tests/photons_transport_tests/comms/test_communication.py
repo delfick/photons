@@ -1,4 +1,3 @@
-
 import binascii
 from contextlib import contextmanager
 from unittest import mock
@@ -66,6 +65,7 @@ class TestFakeAck:
         assert ack | CoreMessages.Acknowledgement
 
         assert repr(ack) == "<ACK source: 2, sequence: 20, serial: d073d5000001>"
+
 
 class TestCommunication:
     async def test_it_is_formattable(self, V):
@@ -604,7 +604,9 @@ class TestCommunication:
             assert not found
             s3.close.assert_called_once_with()
 
-        async def test_it_does_not_complain_if_none_are_found_and_raise_on_none_but_non_None_serials(self, V):
+        async def test_it_does_not_complain_if_none_are_found_and_raise_on_none_but_non_None_serials(
+            self, V
+        ):
             s3 = mock.Mock(name="s3", spec=[])
             found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}

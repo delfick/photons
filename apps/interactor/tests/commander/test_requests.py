@@ -1,5 +1,5 @@
-
 from unittest.mock import ANY
+
 
 class TestCommands:
     class TestV1:

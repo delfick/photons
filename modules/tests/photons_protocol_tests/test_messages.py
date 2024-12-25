@@ -1,10 +1,12 @@
-
 from unittest import mock
 
 from photons_protocol.messages import Messages
 
+
 class TestMessagesMeta:
-    def test_it_calls_any_lifx_packet_message_attribute_with_the_name_and_put_onto_resulting_kls(self):
+    def test_it_calls_any_lifx_packet_message_attribute_with_the_name_and_put_onto_resulting_kls(
+        self,
+    ):
         omsg = mock.Mock(name="omsg")
         tmsg = mock.Mock(name="tmsg")
 

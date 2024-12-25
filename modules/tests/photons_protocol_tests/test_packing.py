@@ -1,4 +1,3 @@
-
 import binascii
 import struct
 import uuid
@@ -56,6 +55,7 @@ class TestValToBitarray:
             with assertRaises(BadConversion, "Couldn't get bitarray from a value", doing=doing):
                 val_to_bitarray(val, doing)
 
+
 class TestBitarraySlice:
 
     @pytest.fixture()
@@ -108,7 +108,9 @@ class TestBitarraySlice:
             slce.val = bitarray("1")
             assert slce.unpackd is True
 
-        def test_it_pads_left_if_original_size_is_greater_than_actual_val_and_we_have_left_cut(self, slce):
+        def test_it_pads_left_if_original_size_is_greater_than_actual_val_and_we_have_left_cut(
+            self, slce
+        ):
             slce.typ = T.Int8.S(6, left=True)
             slce.val = bitarray("000010", endian="little")
 
@@ -120,7 +122,9 @@ class TestBitarraySlice:
 
             assert slce.unpackd == 64
 
-        def test_it_pads_right_if_original_size_is_greater_than_actual_val_and_we_dont_have_left_cut(self, slce):
+        def test_it_pads_right_if_original_size_is_greater_than_actual_val_and_we_dont_have_left_cut(
+            self, slce
+        ):
             slce.typ = T.Int8.S(6)
             slce.val = bitarray("000010", endian="little")
 
@@ -144,6 +148,7 @@ class TestBitarraySlice:
                 typ=T.Int8,
             ):
                 slce.unpackd
+
 
 class TestFieldInfo:
 
@@ -178,13 +183,17 @@ class TestFieldInfo:
         def test_it_returns_value_as_is(self, info, val):
             assert info.value is val
 
-        def test_it_returns_value_as_0_bits_if_our_typ_is_Reserved_and_val_is_NotSpecified(self, info):
+        def test_it_returns_value_as_0_bits_if_our_typ_is_Reserved_and_val_is_NotSpecified(
+            self, info
+        ):
             info.typ = T.Reserved(8)
             info.size_bits = 8
             info.val = sb.NotSpecified
             assert info.value == bitarray("0" * 8)
 
-        def test_it_returns_value_as_is_if_typ_is_Reserved_but_value_is_not_NotSpecified(self, info, val):
+        def test_it_returns_value_as_is_if_typ_is_Reserved_but_value_is_not_NotSpecified(
+            self, info, val
+        ):
             info.typ = T.Reserved(8)
             assert info.value == val
 
@@ -346,6 +355,7 @@ class TestFieldInfo:
             b.frombytes(struct.pack("<H", 0))
             assert info.struct_format("<H", Optional) == b
 
+
 class TestPacketPacking:
 
     @pytest.fixture()
@@ -453,7 +463,9 @@ class TestPacketPacking:
 
             assert i == len(packd)
 
-        def test_it_returns_where_we_are_in_the_bitarray_which_is_helpful_when_we_have_an_empty_payload(self):
+        def test_it_returns_where_we_are_in_the_bitarray_which_is_helpful_when_we_have_an_empty_payload(
+            self,
+        ):
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
@@ -475,7 +487,9 @@ class TestPacketPacking:
             assert packd[i:].tobytes() == v
 
     class TestPack:
-        def test_it_gets_fields_from_fields_in_and_joins_the_bitarrays_to_form_a_final_bitarray(self):
+        def test_it_gets_fields_from_fields_in_and_joins_the_bitarrays_to_form_a_final_bitarray(
+            self,
+        ):
             b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")

@@ -1,6 +1,6 @@
-
 import pytest
 from photons_canvas.points import helpers as php
+
 
 class TestColor:
     def test_it_has_ZERO(self):
@@ -103,6 +103,7 @@ class TestColor:
             )
             assert got == (120, 0.3, 0.8, 6000)
 
+
 class TestAverageColor:
 
     def assertColorAlmostEqual(self, got, want):
@@ -163,6 +164,7 @@ class TestAverageColor:
         colors = [(100, 1, 1, 3500), None, (300, 1, 1, 3500)]
         color = php.average_color(colors)
         self.assertColorAlmostEqual(color, (20, 1, 1, 3500))
+
 
 class TestPoints:
     def test_it_can_get_cols(self):

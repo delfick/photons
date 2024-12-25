@@ -1,10 +1,10 @@
-
 from unittest import mock
 
 from delfick_project.errors_pytest import assertRaises
 from interactor.commander import helpers as ihp
 from interactor.commander.errors import NoSuchPacket
 from photons_messages import DeviceMessages, LightMessages
+
 
 class TestFindPacket:
 
@@ -22,6 +22,7 @@ class TestFindPacket:
 
         with assertRaises(NoSuchPacket, wanted=9001):
             ihp.find_packet(9001)
+
 
 class TestMakeMessage:
     def test_it_instantiates_the_kls_without_args_if_no_pkt_args(self):

@@ -1,4 +1,3 @@
-
 import asyncio
 import functools
 from typing import Protocol
@@ -96,7 +95,9 @@ class TestSelector:
         made = create_selector(want)
         assert made is want
 
-    def test_it_can_create_SpecialReference_from_selector(self, reference_resolver_register: ReferenceResolverRegister):
+    def test_it_can_create_SpecialReference_from_selector(
+        self, reference_resolver_register: ReferenceResolverRegister
+    ):
         hard_coded = special.HardCodedSerials(["d073d5"])
         made = reg.create(
             selector.SpecialReference,

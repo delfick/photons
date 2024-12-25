@@ -1,4 +1,3 @@
-
 import pytest
 from photons_app import helpers as hp
 from photons_app.mimic.device import Device
@@ -54,11 +53,14 @@ class TestSendAck:
         assert reply.sequence == 34
         assert reply.serial == device.serial
 
+
 class TestSendReplies:
     def test_it_takes_in_an_event(self, incoming_event):
         assert SendReplies(incoming_event).event is incoming_event
 
-    async def test_it_fills_out_each_reply_on_the_event_with_source_sequence_target_if_missing(self, incoming_event, device):
+    async def test_it_fills_out_each_reply_on_the_event_with_source_sequence_target_if_missing(
+        self, incoming_event, device
+    ):
         sr = SendReplies(incoming_event)
 
         replies = []
@@ -99,11 +101,14 @@ class TestSendReplies:
             assert m.sequence == seq
             assert m.serial == ser
 
+
 class TestSendUnhandled:
     def test_it_takes_in_an_event(self, incoming_event):
         assert SendUnhandled(incoming_event).event is incoming_event
 
-    async def test_it_does_not_send_a_StateUnhandled_if_firmware_doesnt_support_it(self, device, incoming_event):
+    async def test_it_does_not_send_a_StateUnhandled_if_firmware_doesnt_support_it(
+        self, device, incoming_event
+    ):
         assert not device.cap.has_unhandled
 
         su = SendUnhandled(incoming_event)
@@ -136,6 +141,7 @@ class TestSendUnhandled:
         assert reply.sequence == 34
         assert reply.serial == device.serial
 
+
 class TestFilter:
 
     @pytest.fixture()
@@ -152,7 +158,9 @@ class TestFilter:
             return make_incoming
 
         class TestDefaults:
-            async def test_it_says_yes_to_an_incoming_event_only_if_the_target_is_this_device_or_broadcast(self, make_incoming, fltr, device):
+            async def test_it_says_yes_to_an_incoming_event_only_if_the_target_is_this_device_or_broadcast(
+                self, make_incoming, fltr, device
+            ):
                 assert await fltr.process_request(make_incoming("d073d5000000")) is False
                 assert await fltr.process_request(make_incoming("d073d5000001")) is False
 
@@ -160,7 +168,9 @@ class TestFilter:
                 assert await fltr.process_request(make_incoming("0" * 12)) is True
 
         class TestSeeRequest:
-            async def test_it_looks_at_request_but_does_not_affect_outcome(self, make_incoming, fltr, device):
+            async def test_it_looks_at_request_but_does_not_affect_outcome(
+                self, make_incoming, fltr, device
+            ):
                 got = []
 
                 async def intercept1(event):
@@ -185,7 +195,9 @@ class TestFilter:
                 assert got == [1, 2, 1, 1]
 
         class TestInterceptRequest:
-            async def test_it_looks_at_request_after_see_request_and_affects_outcome(self, make_incoming, fltr, device):
+            async def test_it_looks_at_request_after_see_request_and_affects_outcome(
+                self, make_incoming, fltr, device
+            ):
                 got = []
 
                 async def see1(event):
@@ -222,7 +234,9 @@ class TestFilter:
 
                 assert got == ["s1", "i1", "s1", "i2", "s2", "i1", "i1"]
 
-            async def test_it_can_continue_as_normal_if_Cont_is_raised(self, make_incoming, fltr, device):
+            async def test_it_can_continue_as_normal_if_Cont_is_raised(
+                self, make_incoming, fltr, device
+            ):
                 got = []
 
                 async def intercept(event, Cont):
@@ -308,14 +322,18 @@ class TestFilter:
                 reply = DeviceMessages.StatePower()
                 assert await outgoing(reply, request_event) == []
 
-            async def test_it_doesnt_give_replies_if_no_res_required_unless_is_a_Get(self, make_incoming, outgoing):
+            async def test_it_doesnt_give_replies_if_no_res_required_unless_is_a_Get(
+                self, make_incoming, outgoing
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 request_event.pkt.res_required = False
                 reply = DeviceMessages.StatePower()
                 assert await outgoing(reply, request_event) == [reply]
 
         class TestLostAcks:
-            async def test_it_can_ignore_acks_if_request_is_from_a_certain_class(self, make_incoming, outgoing, fltr):
+            async def test_it_can_ignore_acks_if_request_is_from_a_certain_class(
+                self, make_incoming, outgoing, fltr
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 ack = CoreMessages.Acknowledgement()
 
@@ -335,7 +353,9 @@ class TestFilter:
 
         class TestLostReplies:
 
-            async def test_it_can_ignore_replies_if_request_is_from_a_certain_class(self, make_incoming, outgoing, fltr):
+            async def test_it_can_ignore_replies_if_request_is_from_a_certain_class(
+                self, make_incoming, outgoing, fltr
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 ack = CoreMessages.Acknowledgement()
                 reply = DeviceMessages.StatePower()
@@ -363,7 +383,9 @@ class TestFilter:
                 assert await outgoing(ack, request_event) == [ack]
                 assert await outgoing(reply, request_event) == [reply]
 
-            async def test_it_can_ignore_replies_that_themselves_are_a_particular_class(self, make_incoming, outgoing, fltr):
+            async def test_it_can_ignore_replies_that_themselves_are_a_particular_class(
+                self, make_incoming, outgoing, fltr
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 ack = CoreMessages.Acknowledgement()
                 reply1 = DeviceMessages.StatePower()
@@ -402,7 +424,9 @@ class TestFilter:
                 assert await outgoing(reply2, request_event) == [reply2]
 
         class TestSeeOutgoing:
-            async def test_it_looks_at_event_but_does_not_affect_outcome(self, outgoing, make_incoming, fltr, device):
+            async def test_it_looks_at_event_but_does_not_affect_outcome(
+                self, outgoing, make_incoming, fltr, device
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 ack = CoreMessages.Acknowledgement()
                 reply = DeviceMessages.StatePower()
@@ -433,7 +457,9 @@ class TestFilter:
                 assert got == [1, 2, 1, 1]
 
         class TestInterceptOutgoing:
-            async def test_it_looks_at_outgoing_after_see_outgoing_and_affects_outcome(self, outgoing, make_incoming, fltr, device):
+            async def test_it_looks_at_outgoing_after_see_outgoing_and_affects_outcome(
+                self, outgoing, make_incoming, fltr, device
+            ):
                 request_event = make_incoming(DeviceMessages.GetPower)
                 reply1 = DeviceMessages.StatePower()
                 reply2 = DeviceMessages.StateLabel()
@@ -482,7 +508,9 @@ class TestFilter:
                 assert got == ["s1", "i1", "s1", "i2", "s2", "i1", "i1"]
                 assert await outgoing(reply4, request_event) == [reply4]
 
-            async def test_it_can_continue_as_normal_if_Cont_is_raised(self, make_incoming, outgoing, fltr, device):
+            async def test_it_can_continue_as_normal_if_Cont_is_raised(
+                self, make_incoming, outgoing, fltr, device
+            ):
                 got = []
 
                 request_event = make_incoming(DeviceMessages.GetPower)

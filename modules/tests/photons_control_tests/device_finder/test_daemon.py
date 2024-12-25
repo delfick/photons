@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from unittest import mock
@@ -13,6 +12,7 @@ from photons_control.device_finder import (
     Finder,
 )
 from photons_products import Products
+
 
 class TestDeviceFinderDaemon:
     def test_it_takes_in_a_sender(self):
@@ -374,6 +374,7 @@ class TestDeviceFinderDaemon:
                         found.append(device)
 
                 assert found == [d1, d2]
+
 
 class TestGettingDevicesFromTheDaemon:
 

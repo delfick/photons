@@ -1,4 +1,3 @@
-
 import asyncio
 
 import alt_pytest_asyncio
@@ -128,7 +127,9 @@ class TestRunner:
 
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
-    def test_it_exceptions_stop_the_task_holder_unless_ApplicationStopped_for_a_graceful_task(self, collector):
+    def test_it_exceptions_stop_the_task_holder_unless_ApplicationStopped_for_a_graceful_task(
+        self, collector
+    ):
 
         called = []
 

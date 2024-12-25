@@ -1,4 +1,3 @@
-
 import asyncio
 import binascii
 from unittest import mock
@@ -57,6 +56,7 @@ class TestNoLimit:
 
         assert called == ["no limit"]
 
+
 class TestItem:
     async def test_it_takes_in_parts(self):
         part = mock.Mock(name="part")
@@ -71,7 +71,9 @@ class TestItem:
     class TestFunctionality:
 
         class TestSimplifyParts:
-            async def test_it_returns_originals_with_packets_as_they_are_if_they_are_dynamic_else_we_simplify_them(self):
+            async def test_it_returns_originals_with_packets_as_they_are_if_they_are_dynamic_else_we_simplify_them(
+                self,
+            ):
                 part1_dynamic = mock.Mock(
                     name="part1_dynamic", is_dynamic=True, spec=["is_dynamic"]
                 )
@@ -99,7 +101,9 @@ class TestItem:
                 ]
 
         class TestMakingPackets:
-            async def test_it_duplicates_parts_for_each_serial_and_only_clones_those_already_with_targets(self):
+            async def test_it_duplicates_parts_for_each_serial_and_only_clones_those_already_with_targets(
+                self,
+            ):
                 original1 = mock.Mock(name="original1")
                 original2 = mock.Mock(name="original2")
                 original3 = mock.Mock(name="original3")
@@ -300,7 +304,9 @@ class TestItem:
                     a=V.a,
                 )
 
-            async def test_it_uses_find_specific_serials_if_found_is_not_None_and_dont_have_all_serials(self, V):
+            async def test_it_uses_find_specific_serials_if_found_is_not_None_and_dont_have_all_serials(
+                self, V
+            ):
                 found = mock.Mock(name="found")
                 missing = mock.Mock(name="missing")
                 V.find_specific_serials.return_value = (found, missing)

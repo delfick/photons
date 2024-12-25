@@ -1,4 +1,3 @@
-
 from contextlib import contextmanager
 from unittest import mock
 
@@ -99,7 +98,9 @@ class TestTarget:
 
                 return mocked_simplify
 
-            async def test_it_says_items_is_None_if_we_simplify_to_an_empty_list(self, mocked_simplify, script, script_runner_kls, target):
+            async def test_it_says_items_is_None_if_we_simplify_to_an_empty_list(
+                self, mocked_simplify, script, script_runner_kls, target
+            ):
                 raw = mock.Mock(name="raw")
 
                 with mocked_simplify() as simplify:
@@ -108,7 +109,9 @@ class TestTarget:
                 simplify.assert_called_once_with(raw)
                 script_runner_kls.assert_called_once_with(None, target=target)
 
-            async def test_it_gives_items_as_just_that_item_if_list_is_one_item(self, mocked_simplify, script, script_runner_kls, target):
+            async def test_it_gives_items_as_just_that_item_if_list_is_one_item(
+                self, mocked_simplify, script, script_runner_kls, target
+            ):
                 raw = mock.Mock(name="raw")
                 item = mock.Mock(name="item")
 
@@ -118,7 +121,9 @@ class TestTarget:
                 simplify.assert_called_once_with(raw)
                 script_runner_kls.assert_called_once_with(item, target=target)
 
-            async def test_it_uses_a_FromGenerator_if_we_have_multiple_items(self, mocked_simplify, script, script_runner_kls, target):
+            async def test_it_uses_a_FromGenerator_if_we_have_multiple_items(
+                self, mocked_simplify, script, script_runner_kls, target
+            ):
                 raw = mock.Mock(name="raw")
                 item1 = mock.Mock(name="item1")
                 item2 = mock.Mock(name="item2")
@@ -193,7 +198,9 @@ class TestTarget:
                 part = mock.Mock(name="part", spec=["run"])
                 assert list(target.simplify(part)) == [part]
 
-            async def test_it_simplifies_items_that_have_a_simplified_method(self, item_kls, target):
+            async def test_it_simplifies_items_that_have_a_simplified_method(
+                self, item_kls, target
+            ):
                 simplified = mock.Mock(name="simplified", spec=[])
                 part = mock.Mock(name="part", spec=["simplified"])
                 part.simplified.return_value = simplified
@@ -206,7 +213,9 @@ class TestTarget:
                 part.simplified.assert_called_once_with(target.simplify)
                 item_kls.assert_called_once_with([simplified])
 
-            async def test_it_splits_out_items_into_groups_with_pack_and_without_and_only_item_kls_for_groups_with_pack(self, item_kls, target):
+            async def test_it_splits_out_items_into_groups_with_pack_and_without_and_only_item_kls_for_groups_with_pack(
+                self, item_kls, target
+            ):
                 part11 = mock.Mock(name="part11", spec=[])
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])
@@ -241,7 +250,9 @@ class TestTarget:
                     mock.call([part31, part32]),
                 ]
 
-            async def test_it_doesnt_separate_simplified_items_if_they_dont_have_a_run_method(self, item_kls, target):
+            async def test_it_doesnt_separate_simplified_items_if_they_dont_have_a_run_method(
+                self, item_kls, target
+            ):
                 part11 = mock.Mock(name="part11", spec=[])
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])

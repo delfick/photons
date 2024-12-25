@@ -1,4 +1,3 @@
-
 from unittest import mock
 
 from photons_canvas.orientation import Orientation
@@ -7,6 +6,7 @@ from photons_canvas.points import helpers as php
 from photons_canvas.points import rearrange as rea
 from photons_canvas.points.canvas import Canvas
 from photons_products import Products
+
 
 class TestRearrange:
     def test_it_creates_a_new_canvas_from_the_parts_given_by_the_rearranger(self):
@@ -95,6 +95,7 @@ class TestRearrange:
 
         assert all(n[p] is None for p in php.Points.all_points(n.bounds))
         assert set(p.real_part for p in n.parts) == set([rp1, rp2])
+
 
 class TestRearrangers:
 

@@ -1,4 +1,3 @@
-
 import asyncio
 from unittest import mock
 
@@ -137,7 +136,9 @@ class TestDevice:
         V.received()
         V.assertTimes({InfoPoints.LIGHT_STATE: 8, InfoPoints.GROUP: 11, InfoPoints.VERSION: 1})
 
-    async def test_it_can_match_against_a_fltr_for_a_non_light(self, sender, finder, fake_time, final_future):
+    async def test_it_can_match_against_a_fltr_for_a_non_light(
+        self, sender, finder, fake_time, final_future
+    ):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("switch")
         V.t.add(1)
@@ -320,7 +321,9 @@ class TestDevice:
 
         await checker_task
 
-    async def test_it_can_start_an_information_loop_for_a_switch(self, fake_time, sender, finder, final_future):
+    async def test_it_can_start_an_information_loop_for_a_switch(
+        self, fake_time, sender, finder, final_future
+    ):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("switch")
         fake_time.set(1)
@@ -462,7 +465,9 @@ class TestDevice:
 
         await checker_task
 
-    async def test_it_stops_the_information_loop_when_the_device_disappears(self, fake_time, sender, finder, final_future):
+    async def test_it_stops_the_information_loop_when_the_device_disappears(
+        self, fake_time, sender, finder, final_future
+    ):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
         fake_time.set(1)
@@ -603,7 +608,9 @@ class TestDevice:
 
         await checker_task
 
-    async def test_it_doesnt_do_multiple_refresh_loops_at_the_same_time(self, fake_time, sender, finder, final_future):
+    async def test_it_doesnt_do_multiple_refresh_loops_at_the_same_time(
+        self, fake_time, sender, finder, final_future
+    ):
         V = VBase(fake_time, sender, finder, final_future)
         await V.choose_device("light")
 

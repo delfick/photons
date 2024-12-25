@@ -1,4 +1,3 @@
-
 import os
 from textwrap import dedent
 from unittest import mock

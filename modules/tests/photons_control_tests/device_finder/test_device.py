@@ -1,4 +1,3 @@
-
 import asyncio
 import enum
 import uuid
@@ -17,6 +16,7 @@ from photons_control.device_finder import (
     Point,
 )
 from photons_messages import DeviceMessages, LightMessages
+
 
 class TestDevice:
 
@@ -369,7 +369,9 @@ class TestDevice:
         def test_it_returns_all_the_InfoPoints_for_an_empty_fltr(self, device):
             assert list(device.points_from_fltr(Filter.empty())) == list(InfoPoints)
 
-        def test_it_only_yields_points_if_one_of_its_keys_are_on_the_fltr(self, device, Points, Fltr):
+        def test_it_only_yields_points_if_one_of_its_keys_are_on_the_fltr(
+            self, device, Points, Fltr
+        ):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -381,7 +383,9 @@ class TestDevice:
             assert list(device.points_from_fltr(fltr)) == [Points.TWO]
             assert all(f.done() for f in device.point_futures.values())
 
-        def test_it_resets_futures_if_we_have_a_refresh_info_and_a_refresh_amount(self, device, Points, Fltr, RF):
+        def test_it_resets_futures_if_we_have_a_refresh_info_and_a_refresh_amount(
+            self, device, Points, Fltr, RF
+        ):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -395,7 +399,9 @@ class TestDevice:
                 Points.THREE: RF(False),
             }
 
-        def test_it_does_not_reset_futures_if_we_have_a_refresh_info_but_fltr_doesnt_match(self, device, Points, Fltr, RF):
+        def test_it_does_not_reset_futures_if_we_have_a_refresh_info_but_fltr_doesnt_match(
+            self, device, Points, Fltr, RF
+        ):
             for f in device.point_futures.values():
                 f.set_result(True)
 

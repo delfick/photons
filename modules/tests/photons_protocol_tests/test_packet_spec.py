@@ -1,4 +1,3 @@
-
 import uuid
 from unittest import mock
 
@@ -9,6 +8,7 @@ from photons_app import helpers as hp
 from photons_app.errors import ProgrammerError
 from photons_protocol.packets import Initial, PacketSpecMetaKls, dictobj
 from photons_protocol.types import Type as T
+
 
 class TestPacketSpecMetaKls:
     def test_it_complains_if_we_have_fields_that_are_already_attributes(self):

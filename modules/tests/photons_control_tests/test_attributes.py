@@ -1,6 +1,6 @@
-
 import pytest
 from photons_control.colour import ColourParser, make_hsbks
+
 
 class TestMakeHsbks:
 

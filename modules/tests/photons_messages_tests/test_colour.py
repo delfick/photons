@@ -1,9 +1,9 @@
-
 import pytest
 from delfick_project.norms import sb
 from photons_messages import LightMessages, Waveform, protocol_register
 from photons_protocol.messages import Messages
 from photons_protocol.types import Optional
+
 
 class TestLightMessages:
 

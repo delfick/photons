@@ -1,4 +1,3 @@
-
 import pathlib
 import uuid
 from unittest import mock
@@ -12,6 +11,7 @@ from photons_app.errors import BadOptionFormat
 from photons_app.formatter import MergedOptionStringFormatter
 
 photons_app_dir = pathlib.Path(__file__).parent.parent.parent / "photons_app"
+
 
 class TestMergedOptionStringFormatter:
 

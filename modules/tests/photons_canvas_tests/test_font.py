@@ -1,8 +1,8 @@
-
 import pytest
 from photons_canvas import font
 from photons_canvas.points import helpers as php
 from photons_canvas.points.canvas import Canvas
+
 
 class TestSpace:
     def test_it_is_a_character_with_a_particular_width(self):
@@ -16,6 +16,7 @@ class TestSpace:
 
         assert s.width == 5
         assert s.height == 1
+
 
 class TestCharacter:
 
@@ -76,6 +77,7 @@ class TestCharacter:
         pairs = list(char.pairs(1.6, 3.0, (300, 1, 0, 3500)))
         real = list(char.pairs(2, 3, (300, 1, 0, 3500)))
         assert pairs == real
+
 
 class TestCharacters:
 

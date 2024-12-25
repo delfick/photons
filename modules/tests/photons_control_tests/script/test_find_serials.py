@@ -1,4 +1,3 @@
-
 import pytest
 from delfick_project.norms import sb
 from photons_app import helpers as hp

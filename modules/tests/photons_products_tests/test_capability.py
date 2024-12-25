@@ -1,4 +1,3 @@
-
 import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_app.errors import ProgrammerError
@@ -161,6 +160,7 @@ class TestCapabilityValue:
         assert cv5 == cv6
         assert cv5 != cv7
 
+
 class TestCapabilityRange:
     def test_it_can_create_two_CapabilityValue_objects(self):
 
@@ -181,6 +181,7 @@ class TestCapabilityRange:
         assert cap.Meta.capabilities["two"] == CapabilityValue(2).until(2, 70, becomes=4).until(
             7, 60, becomes=6
         )
+
 
 class TestCapability:
     def test_it_puts_capabilities_on_Meta(self, product):

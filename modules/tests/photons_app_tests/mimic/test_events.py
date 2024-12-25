@@ -1,4 +1,3 @@
-
 import logging
 from itertools import zip_longest
 from unittest import mock
@@ -181,6 +180,7 @@ class TestConsoleFormat:
                 "  {'brightness': 0.2, 'hue': 30.0, 'kelvin': 3500, 'saturation': 1.0}",
             )
 
+
 class TestEvent:
     def test_it_has_a_repr_on_the_class(self):
         assert repr(event.IncomingEvent) == "<Events.INCOMING>"
@@ -333,6 +333,7 @@ class TestEvent:
                 "  :: more = True",
             )
 
+
 class TestEvents:
     def test_it_is_a_EventsHolder(self):
         assert isinstance(Events, EventsHolder)
@@ -363,6 +364,7 @@ class TestEvents:
             pass
 
         assert events.name(Other) == "Other"
+
 
 class TestIncomingEvent:
 
@@ -500,6 +502,7 @@ class TestIncomingEvent:
             "  :: addr = None",
         )
 
+
 class TestOutgoingEvent:
 
     @pytest.fixture()
@@ -570,6 +573,7 @@ class TestOutgoingEvent:
             "  :: replying_to = 'SetPower'",
         )
 
+
 class TestUnhandledEvent:
 
     @pytest.fixture()
@@ -623,6 +627,7 @@ class TestUnhandledEvent:
             "  :: addr = None",
         )
 
+
 class TestIgnoredEvent:
 
     @pytest.fixture()
@@ -675,6 +680,7 @@ class TestIgnoredEvent:
             "  :: io = 'TEST_IO'",
             "  :: addr = None",
         )
+
 
 class TestLostEvent:
 
@@ -772,6 +778,7 @@ class TestAttributeChangeEvent:
             "  ~ <Changed two to 2>",
         )
 
+
 class TestAnnotationEvent:
 
     @pytest.fixture()
@@ -812,6 +819,7 @@ class TestAnnotationEvent:
             "  >> bad = True",
             "  :: future = 'now'",
         )
+
 
 class TestDiscoverableEvent:
 

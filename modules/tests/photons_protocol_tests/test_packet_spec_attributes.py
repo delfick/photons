@@ -1,4 +1,3 @@
-
 import binascii
 import uuid
 from unittest import mock
@@ -16,6 +15,7 @@ from photons_protocol.packets import (
     dictobj,
 )
 from photons_protocol.types import Type as T
+
 
 class TestPacketAttributes:
     class TestGetitem:
@@ -277,7 +277,9 @@ class TestPacketAttributes:
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), cald)
             V.untransform.assert_called_with(p, V.normalised)
 
-        def test_it_does_not_call_the_value_if_its_not_allowed_to_be_callable_and_is_callable(self, V):
+        def test_it_does_not_call_the_value_if_its_not_allowed_to_be_callable_and_is_callable(
+            self, V
+        ):
             actual = mock.Mock(name="actual")
 
             class P(PacketSpecMixin):

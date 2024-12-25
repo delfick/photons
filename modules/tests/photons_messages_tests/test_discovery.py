@@ -1,8 +1,8 @@
-
 import binascii
 
 import pytest
 from photons_messages import DiscoveryMessages, Services, protocol_register
+
 
 class TestDiscoveryMessages:
     def test_it_can_unpack(self):

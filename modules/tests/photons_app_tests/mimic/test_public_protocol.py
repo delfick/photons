@@ -1,4 +1,3 @@
-
 import pytest
 from photons_app import helpers as hp
 from photons_app.mimic.event import Events
@@ -158,7 +157,9 @@ class TestSwitchDevice:
             DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
         )
 
-    async def test_it_replies_to_light_messages_with_a_StateUnhandled_packet(self, device, assertUnhandled):
+    async def test_it_replies_to_light_messages_with_a_StateUnhandled_packet(
+        self, device, assertUnhandled
+    ):
         await assertUnhandled(LightMessages.GetColor())
         await assertUnhandled(LightMessages.GetLightPower())
 
@@ -259,6 +260,7 @@ class TestLightState:
         )
         await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 333, 0, 1, 6789)])
 
+
 class TestInfrared:
 
     @pytest.fixture()
@@ -298,7 +300,9 @@ class TestInfrared:
         await assertUnhandled(LightMessages.GetInfrared())
         await assertUnhandled(LightMessages.SetInfrared(brightness=100))
 
-    async def test_it_does_respond_to_infrared_if_the_product_doesnt_have_infrared_but_is_LCM3(self):
+    async def test_it_does_respond_to_infrared_if_the_product_doesnt_have_infrared_but_is_LCM3(
+        self,
+    ):
         device = devices["lcm3a19"]
         assert device.cap.product.family is Family.LCM3
         assert not device.cap.has_ir
@@ -319,6 +323,7 @@ class TestInfrared:
             [LightMessages.StateInfrared(brightness=100)],
             infrared=100,
         )
+
 
 class TestMatrix:
 
@@ -408,6 +413,7 @@ class TestMatrix:
                 type=TileEffectType.FLAME, parameters={}, palette=[hp.Color(0, 0, 0, 3500)]
             )
         )
+
 
 class TestZones:
 
@@ -661,6 +667,7 @@ class TestZones:
             ],
         )
 
+
 class TestProduct:
 
     def make_device(self, name, product, firmware):
@@ -714,6 +721,7 @@ class TestProduct:
             [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
         )
 
+
 class TestGrouping:
 
     @pytest.fixture()
@@ -755,6 +763,7 @@ class TestGrouping:
         )
         await assertResponse(getter, [state])
 
+
 class TestClean:
 
     @pytest.fixture()
@@ -775,7 +784,9 @@ class TestClean:
     def m(self, fake_the_time):
         return fake_the_time[1]
 
-    async def test_it_responds_to_starting_a_cycle_when_light_is_off(self, device, assertResponse, m):
+    async def test_it_responds_to_starting_a_cycle_when_light_is_off(
+        self, device, assertResponse, m
+    ):
         await device.change_one("power", 0, event=None)
 
         assert device.attrs.clean_details.enabled is False
@@ -854,7 +865,9 @@ class TestClean:
         await assertResponse(getter, [state])
         assert device.attrs.power == 0
 
-    async def test_it_responds_to_starting_a_cycle_when_light_is_on(self, device, assertResponse, m):
+    async def test_it_responds_to_starting_a_cycle_when_light_is_on(
+        self, device, assertResponse, m
+    ):
         await device.change_one("power", 0xFFFF, event=None)
 
         assert device.attrs.clean_details.enabled is False

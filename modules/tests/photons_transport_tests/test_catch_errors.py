@@ -1,8 +1,8 @@
-
 from delfick_project.errors_pytest import assertRaises
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError, RunErrors
 from photons_transport import catch_errors
+
 
 class TestThrowError:
     def test_it_passes_on_errors_if_error_catcher_is_a_callable(self):

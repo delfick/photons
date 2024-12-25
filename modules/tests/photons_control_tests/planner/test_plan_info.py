@@ -1,10 +1,10 @@
-
 from unittest import mock
 
 import pytest
 from photons_control.planner.gatherer import PlanInfo
 from photons_control.planner.plans import NoMessages, Plan, Skip
 from photons_messages import DeviceMessages
+
 
 class TestPlanInfo:
 
@@ -38,7 +38,9 @@ class TestPlanInfo:
         assert info.done
 
     class TestMessages:
-        def test_it_memoizes_the_messages_and_cares_about_instance_messages_before_plan_messages(self):
+        def test_it_memoizes_the_messages_and_cares_about_instance_messages_before_plan_messages(
+            self,
+        ):
             called = []
 
             get_power = DeviceMessages.GetPower()

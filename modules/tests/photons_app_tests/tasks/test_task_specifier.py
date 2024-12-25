@@ -1,4 +1,3 @@
-
 from textwrap import dedent
 from unittest import mock
 
@@ -14,6 +13,7 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks.specifier import task_specifier_spec
 from photons_transport.targets import LanTarget
 from photons_transport.targets.base import Target
+
 
 class TestTaskSpecifierSpec:
 

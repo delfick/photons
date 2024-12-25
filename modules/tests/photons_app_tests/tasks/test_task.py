@@ -1,4 +1,3 @@
-
 import asyncio
 import time
 from unittest import mock
@@ -11,6 +10,7 @@ from photons_app import helpers as hp
 from photons_app.collector import Collector
 from photons_app.photons_app import PhotonsApp
 from photons_app.tasks.tasks import Task
+
 
 class TestTask:
 

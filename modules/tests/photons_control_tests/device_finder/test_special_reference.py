@@ -1,4 +1,3 @@
-
 import binascii
 from unittest import mock
 
@@ -254,6 +253,7 @@ class TestDeviceFinder:
                 )
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
+
 
 class TestFindingDevices:
 

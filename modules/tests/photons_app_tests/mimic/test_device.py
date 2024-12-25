@@ -1,4 +1,3 @@
-
 import itertools
 import logging
 from contextlib import contextmanager
@@ -28,7 +27,9 @@ class TestDeviceSession:
         assert session.final_future is final_future
         assert session.device is device
 
-    async def test_it_follows_a_prepare_reset_delete_protocol_with_io_operators_started(self, final_future, device):
+    async def test_it_follows_a_prepare_reset_delete_protocol_with_io_operators_started(
+        self, final_future, device
+    ):
         called = []
         async with pytest.helpers.FutureDominoes(expected=9) as futs:
 
@@ -99,7 +100,9 @@ class TestDeviceSession:
                     "delete",
                 ]
 
-    async def test_it_follows_a_prepare_reset_delete_protocol_even_if_io_operators_fail(self, final_future, device):
+    async def test_it_follows_a_prepare_reset_delete_protocol_even_if_io_operators_fail(
+        self, final_future, device
+    ):
         called = []
         async with pytest.helpers.FutureDominoes(expected=8) as futs:
 
@@ -175,6 +178,7 @@ class TestDeviceSession:
                     "io1 finish",
                     "delete",
                 ]
+
 
 class TestDevice:
     def test_it_takes_in_default_informations(self):
@@ -868,7 +872,9 @@ class TestDevice:
                         ("operator", event),
                     ]
 
-                async def test_it_passes_on_invisible_reset_event_into_reset_functions_too(self, device, record):
+                async def test_it_passes_on_invisible_reset_event_into_reset_functions_too(
+                    self, device, record
+                ):
                     attr_change_event = Events.ATTRIBUTE_CHANGE(
                         device,
                         [
@@ -902,7 +908,9 @@ class TestDevice:
                         ("operator", event),
                     ]
 
-                async def test_it_can_stop_going_through_operators_based_on_is_finished(self, record, final_future):
+                async def test_it_can_stop_going_through_operators_based_on_is_finished(
+                    self, record, final_future
+                ):
 
                     class OO(Operator):
                         def setup(s, i):

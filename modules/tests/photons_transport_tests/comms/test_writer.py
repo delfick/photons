@@ -1,9 +1,9 @@
-
 from unittest import mock
 
 import pytest
 from photons_app import helpers as hp
 from photons_transport.comms.writer import Writer
+
 
 class TestWriter:
 

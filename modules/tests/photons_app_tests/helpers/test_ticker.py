@@ -1,12 +1,14 @@
-
 import asyncio
 import time
 
 from photons_app import helpers as hp
 
+
 class TestTick:
 
-    async def test_it_keeps_yielding_such_that_yields_are_every_apart(self, FakeTime, MockedCallLater):
+    async def test_it_keeps_yielding_such_that_yields_are_every_apart(
+        self, FakeTime, MockedCallLater
+    ):
         called = []
 
         with FakeTime() as t:
@@ -79,7 +81,9 @@ class TestTick:
 
         assert called == [(1, 0), (2, 3), (3, 6), (4, 9), (5, 12), (6, 15), (7, 18)]
 
-    async def test_it_keeps_yielding_until_max_time_or_max_iterations(self, FakeTime, MockedCallLater):
+    async def test_it_keeps_yielding_until_max_time_or_max_iterations(
+        self, FakeTime, MockedCallLater
+    ):
 
         with FakeTime() as t:
             async with MockedCallLater(t):
@@ -109,7 +113,9 @@ class TestTick:
                     (7, 18),
                 ]
 
-    async def test_it_keeps_yielding_such_that_yields_are_best_effort_every_apart_when_tasks_go_over(self, FakeTime, MockedCallLater):
+    async def test_it_keeps_yielding_such_that_yields_are_best_effort_every_apart_when_tasks_go_over(
+        self, FakeTime, MockedCallLater
+    ):
         called = []
 
         with FakeTime() as t:
@@ -148,6 +154,7 @@ class TestTick:
 
         assert called == [0, 3, 6, 9, 12]
         assert m.called_times == [3, 6, 9, 12]
+
 
 class TestATicker:
 
@@ -279,7 +286,9 @@ class TestATicker:
             ]
             assert m.called_times == [5.0, 10.0, 33.0, 33.0, 35.0, 40.0, 45.0]
 
-        async def test_it_cancelled_final_future_not_stopped_by_pauser(self, FakeTime, MockedCallLater):
+        async def test_it_cancelled_final_future_not_stopped_by_pauser(
+            self, FakeTime, MockedCallLater
+        ):
             called = []
 
             pauser = asyncio.Semaphore()

@@ -1,4 +1,3 @@
-
 import pytest
 from photons_app import helpers as hp
 from photons_app.mimic.event import Events
@@ -91,7 +90,9 @@ class TestRelays:
     def assertEvent(self, device, **attrs):
         return makeAssertEvent(device, **attrs)
 
-    async def test_it_can_change_the_power_of_all_the_relays(self, device, assertResponse, assertEvent):
+    async def test_it_can_change_the_power_of_all_the_relays(
+        self, device, assertResponse, assertEvent
+    ):
         await assertResponse(
             DeviceMessages.GetPower(),
             [DeviceMessages.StatePower(level=0)],
@@ -248,7 +249,9 @@ class TestRelays:
             [DeviceMessages.StatePower(level=0)],
         )
 
-    async def test_it_can_change_the_power_of_the_multiple_relays(self, device, assertResponse, assertEvent):
+    async def test_it_can_change_the_power_of_the_multiple_relays(
+        self, device, assertResponse, assertEvent
+    ):
         await assertResponse(
             DeviceMessages.GetPower(),
             [DeviceMessages.StatePower(level=0)],
@@ -297,7 +300,9 @@ class TestRelays:
             [DeviceMessages.StatePower(level=0)],
         )
 
-    async def test_it_returns_the_power_level_of_the_specified_relay(self, device, assertResponse, assertState):
+    async def test_it_returns_the_power_level_of_the_specified_relay(
+        self, device, assertResponse, assertState
+    ):
         await assertResponse(
             RelayMessages.GetRPower(relay_index=1),
             [RelayMessages.StateRPower(relay_index=1, level=0)],
