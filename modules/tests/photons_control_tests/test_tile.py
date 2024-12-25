@@ -52,13 +52,14 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-class TestTileHelpers:
+def compare_received(by_light):
+    for light, msgs in by_light.items():
+        assert light in devices
+        devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+        devices.store(light).clear()
 
-    def compare_received(self, by_light):
-        for light, msgs in by_light.items():
-            assert light in devices
-            devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
-            devices.store(light).clear()
+
+class TestTileHelpers:
 
     class TestSetTileEffect:
 
@@ -74,7 +75,7 @@ class TestTileHelpers:
             for tile in tiles:
                 assert tile.attrs.matrix_effect is TileEffectType.FLAME
 
-            self.compare_received(
+            compare_received(
                 {
                     nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     tile1: [
@@ -115,7 +116,7 @@ class TestTileHelpers:
                 {"hue": 120, "saturation": 1, "brightness": 1, "kelvin": 3500},
             ]
 
-            self.compare_received(
+            compare_received(
                 {
                     nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     tile1: [
@@ -153,7 +154,7 @@ class TestTileHelpers:
             for tile in tiles:
                 assert tile.attrs.matrix_effect is TileEffectType.MORPH
 
-            self.compare_received(
+            compare_received(
                 {
                     nottile: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     tile1: [
@@ -186,7 +187,7 @@ class TestTileHelpers:
             assert tile1.attrs.matrix_effect is TileEffectType.MORPH
             assert tile2.attrs.matrix_effect is TileEffectType.FLAME
 
-            self.compare_received(
+            compare_received(
                 {
                     tile1: [
                         DeviceMessages.GetHostFirmware(),

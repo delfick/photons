@@ -6,28 +6,29 @@ from delfick_project.norms import Meta, sb
 from photons_control.device_finder import Filter, InfoPoints, InvalidJson
 
 
+def assertFltrMatches(filtr, expect):
+    for field in Filter.fields:
+        if field in ("refresh_info", "refresh_discovery") and field not in expect:
+            assert filtr[field] is False
+        elif field in expect:
+            assert filtr[field] == expect[field]
+        else:
+            assert filtr[field] is sb.NotSpecified
+
+
 class TestFilter:
     class TestConstruction:
-
-        def assertFltrMatches(self, filtr, expect):
-            for field in Filter.fields:
-                if field in ("refresh_info", "refresh_discovery") and field not in expect:
-                    assert filtr[field] is False
-                elif field in expect:
-                    assert filtr[field] == expect[field]
-                else:
-                    assert filtr[field] is sb.NotSpecified
 
         def test_it_defaults_everything_to_NotSpecified(self):
             filtr = Filter.empty()
             assert len(filtr.fields) == 16
-            self.assertFltrMatches(filtr, {})
+            assertFltrMatches(filtr, {})
 
         class TestFromJsonStr:
             def test_it_treats_the_string_as_a_json_object(self):
                 want = {"label": "kitchen", "location_name": ["one", "two"], "hue": "20-50"}
                 expect = {"label": ["kitchen"], "location_name": ["one", "two"], "hue": [(20, 50)]}
-                self.assertFltrMatches(Filter.from_json_str(json.dumps(want)), expect)
+                assertFltrMatches(Filter.from_json_str(json.dumps(want)), expect)
 
             def test_it_complains_if_the_string_is_not_valid_json(self):
                 with assertRaises(InvalidJson):
@@ -52,7 +53,7 @@ class TestFilter:
                 }
 
                 filtr = Filter.from_key_value_str(want)
-                self.assertFltrMatches(filtr, expect)
+                assertFltrMatches(filtr, expect)
 
             def test_it_treats_hsbk_and_refreshes_appropriately(self):
                 s = "hue=5,60 saturation=0.7,0.5-0.8 brightness=0.8,0.4 kelvin=3500,2500 refresh_info=true refresh_discovery=true"
@@ -64,12 +65,12 @@ class TestFilter:
                     "refresh_info": True,
                     "refresh_discovery": True,
                 }
-                self.assertFltrMatches(Filter.from_key_value_str(s), expect)
+                assertFltrMatches(Filter.from_key_value_str(s), expect)
 
             def test_it_ignores_parts_that_arent_keyvalue(self):
                 want = "label=bathroom,hallway location_ididentifier1"
                 expect = {"label": ["bathroom", "hallway"]}
-                self.assertFltrMatches(Filter.from_key_value_str(want), expect)
+                assertFltrMatches(Filter.from_key_value_str(want), expect)
 
         class TestFromUrlStr:
             def test_it_treats_url_str_as_a_dictionary(self):
@@ -80,7 +81,7 @@ class TestFilter:
                     "hue": [(20, 50), (0.6, 0.9)],
                     "refresh_discovery": True,
                 }
-                self.assertFltrMatches(Filter.from_url_str(s), expect)
+                assertFltrMatches(Filter.from_url_str(s), expect)
 
         class TestFromKwargs:
             def test_it_just_passes_the_kwargs_to_from_options(self):
@@ -117,22 +118,22 @@ class TestFilter:
                     "saturation": [(0.7, 0.7), (0.8, 1.0)],
                 }
                 filtr = Filter.from_options(want)
-                self.assertFltrMatches(filtr, want)
+                assertFltrMatches(filtr, want)
 
         class TestEmpty:
             def test_it_gives_back_a_filter_with_just_refresh_options(self):
-                self.assertFltrMatches(
+                assertFltrMatches(
                     Filter.empty(), {"refresh_info": False, "refresh_discovery": False}
                 )
-                self.assertFltrMatches(
+                assertFltrMatches(
                     Filter.empty(refresh_info=True),
                     {"refresh_info": True, "refresh_discovery": False},
                 )
-                self.assertFltrMatches(
+                assertFltrMatches(
                     Filter.empty(refresh_discovery=True),
                     {"refresh_info": False, "refresh_discovery": True},
                 )
-                self.assertFltrMatches(
+                assertFltrMatches(
                     Filter.empty(refresh_info=True, refresh_discovery=True),
                     {"refresh_info": True, "refresh_discovery": True},
                 )

@@ -247,7 +247,6 @@ class TestSetZonesPlan:
         colorHSBK = hsbk("hue:78 brightness:0.5", overrides={"saturation": 0, "kelvin": 3500})
         colorHEX = hsbk("#234455", overrides={"kelvin": 3500})
 
-        self.maxDiff = None
         expected_new = [colorRed] * 10 + [colorBlue] * 3 + [colorHSBK] * 5 + [colorHEX] * 2
         for _ in range(2):
             expected_new.append(hp.Color(100, 0, 1, 3500))
@@ -434,13 +433,14 @@ class TestSetZonesPlan:
         assert msgsLcm2Extended.serial == striplcm2extended.serial
 
 
-class TestMultizoneHelpers:
+def compare_received(by_light):
+    for light, msgs in by_light.items():
+        assert light in devices
+        devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+        devices.store(light).clear()
 
-    def compare_received(self, by_light):
-        for light, msgs in by_light.items():
-            assert light in devices
-            devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
-            devices.store(light).clear()
+
+class TestMultizoneHelpers:
 
     class TestFindMultizone:
 
@@ -464,7 +464,7 @@ class TestMultizoneHelpers:
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
                 for device in devices
             }
-            self.compare_received(want)
+            compare_received(want)
 
             del sender.gatherer
             async for serial, cap in find_multizone(devices.serials, sender):
@@ -474,7 +474,7 @@ class TestMultizoneHelpers:
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
                 for device in devices
             }
-            self.compare_received(want)
+            compare_received(want)
 
         async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             async for serial, cap in find_multizone(devices.serials, sender):
@@ -484,13 +484,13 @@ class TestMultizoneHelpers:
                 device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
                 for device in devices
             }
-            self.compare_received(want)
+            compare_received(want)
 
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
             want = {device: [] for device in devices}
-            self.compare_received(want)
+            compare_received(want)
 
     class TestZonesFromReference:
 
@@ -519,13 +519,13 @@ class TestMultizoneHelpers:
                 MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
             )
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
-            self.compare_received(want)
+            compare_received(want)
 
             del sender.gatherer
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
-            self.compare_received(want)
+            compare_received(want)
 
         async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             async for serial, zones in zones_from_reference(devices.serials, sender):
@@ -540,12 +540,12 @@ class TestMultizoneHelpers:
                 MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
             )
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
-            self.compare_received(want)
+            compare_received(want)
 
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
-            self.compare_received({device: [] for device in devices})
+            compare_received({device: [] for device in devices})
 
     class TestSetZones:
 
@@ -563,7 +563,7 @@ class TestMultizoneHelpers:
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [red] * 7 + [blue] * 5 + [zeroColor] * 4
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -598,7 +598,7 @@ class TestMultizoneHelpers:
             got = await sender(msg, devices.serials)
             assert got == []
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -642,7 +642,7 @@ class TestMultizoneHelpers:
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
             assert striplcm2extended.attrs.zones == [green] * 7 + [yellow] * 5 + [zeroColor] * 4
 
-            self.compare_received(
+            compare_received(
                 {
                     striplcm1: [
                         DeviceMessages.GetHostFirmware,
@@ -689,7 +689,7 @@ class TestMultizoneHelpers:
             got = await sender(msg, devices.serials)
             assert got == []
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
                     light2: [DeviceMessages.GetHostFirmware, DeviceMessages.GetVersion],
@@ -720,7 +720,7 @@ class TestMultizoneHelpers:
             got = await sender(msg, [s.serial for s in strips])
             assert got == []
 
-            self.compare_received(
+            compare_received(
                 {
                     striplcm1: [
                         LightMessages.SetLightPower,
@@ -749,7 +749,7 @@ class TestMultizoneHelpers:
             for strip in strips:
                 assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
@@ -784,7 +784,7 @@ class TestMultizoneHelpers:
             for strip in strips:
                 assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
@@ -832,7 +832,7 @@ class TestMultizoneHelpers:
             for strip in strips:
                 assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
                     light2: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
@@ -865,7 +865,7 @@ class TestMultizoneHelpers:
             for strip in strips:
                 assert strip.attrs.zones_effect is MultiZoneEffectType.MOVE
 
-            self.compare_received(
+            compare_received(
                 {
                     striplcm1: [
                         DeviceMessages.GetHostFirmware(),

@@ -26,6 +26,26 @@ from photons_app.registers import (
 )
 
 
+@contextmanager
+def mocks(collector, configuration, args_dict, photons_app, register):
+    __main__ = mock.Mock(name="__main__")
+    find_photons_app_options = mock.Mock(name="find_photons_app_options", return_value=photons_app)
+    determine_mainline_module = mock.Mock(name="determine_mainline_module", return_value=__main__)
+    setup_addon_register = mock.Mock(name="setup_addon_register", return_value=register)
+
+    with mock.patch.multiple(
+        collector,
+        find_photons_app_options=find_photons_app_options,
+        determine_mainline_module=determine_mainline_module,
+        setup_addon_register=setup_addon_register,
+    ):
+        yield __main__
+
+    find_photons_app_options.assert_called_once_with(configuration, args_dict)
+    determine_mainline_module.assert_called_once_with()
+    setup_addon_register.assert_called_once_with(photons_app, __main__)
+
+
 class TestCollector:
 
     @pytest.fixture()
@@ -111,29 +131,6 @@ class TestCollector:
 
     class TestExtraPrepare:
 
-        @contextmanager
-        def mocks(self, collector, configuration, args_dict, photons_app, register):
-            __main__ = mock.Mock(name="__main__")
-            find_photons_app_options = mock.Mock(
-                name="find_photons_app_options", return_value=photons_app
-            )
-            determine_mainline_module = mock.Mock(
-                name="determine_mainline_module", return_value=__main__
-            )
-            setup_addon_register = mock.Mock(name="setup_addon_register", return_value=register)
-
-            with mock.patch.multiple(
-                collector,
-                find_photons_app_options=find_photons_app_options,
-                determine_mainline_module=determine_mainline_module,
-                setup_addon_register=setup_addon_register,
-            ):
-                yield __main__
-
-            find_photons_app_options.assert_called_once_with(configuration, args_dict)
-            determine_mainline_module.assert_called_once_with()
-            setup_addon_register.assert_called_once_with(photons_app, __main__)
-
         def test_it_puts_things_into_the_configuration_and_sets_up_the_addon_register(self):
             extra = str(uuid.uuid1())
             photons_app = {"extra": extra}
@@ -142,7 +139,7 @@ class TestCollector:
             register = mock.Mock(name="register")
             args_dict = mock.Mock(name="args_dict")
 
-            with self.mocks(collector, configuration, args_dict, photons_app, register):
+            with mocks(collector, configuration, args_dict, photons_app, register):
                 collector.extra_prepare(configuration, args_dict)
 
             class AFuture:
@@ -794,7 +791,7 @@ class TestCollector:
 
             assert type(photons_app) is PhotonsApp
 
-            assert list(targets.keys()) is ["one"]
+            assert list(targets.keys()) == ["one"]
             assert type(targets["one"]) is Target
             assert targets["one"].as_dict() == {
                 "type": "special",

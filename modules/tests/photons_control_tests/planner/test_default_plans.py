@@ -150,24 +150,25 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-class TestDefaultPlans:
+async def gather(sender, reference, *by_label, **kwargs):
+    plan_args = []
+    plan_kwargs = {}
+    for thing in by_label:
+        if isinstance(thing, str):
+            plan_args.append(thing)
+        else:
+            plan_kwargs.update(thing)
+    plans = sender.make_plans(*plan_args, **plan_kwargs)
+    return dict(await sender.gatherer.gather_all(plans, reference, **kwargs))
 
-    async def gather(self, sender, reference, *by_label, **kwargs):
-        plan_args = []
-        plan_kwargs = {}
-        for thing in by_label:
-            if isinstance(thing, str):
-                plan_args.append(thing)
-            else:
-                plan_kwargs.update(thing)
-        plans = sender.make_plans(*plan_args, **plan_kwargs)
-        return dict(await sender.gatherer.gather_all(plans, reference, **kwargs))
+
+class TestDefaultPlans:
 
     class TestPacketPlan:
 
         async def test_it_gets_the_packet(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StatePower)
-            got = await self.gather(sender, two_lights, {"result": plan})
+            got = await gather(sender, two_lights, {"result": plan})
             assert got == {
                 light1.serial: (True, {"result": mock.ANY}),
                 light2.serial: (True, {"result": mock.ANY}),
@@ -182,13 +183,13 @@ class TestDefaultPlans:
 
         async def test_it_fails_if_we_cant_get_the_correct_response(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StateLabel)
-            got = await self.gather(sender, two_lights, {"result": plan})
+            got = await gather(sender, two_lights, {"result": plan})
             assert got == {}
 
     class TestPresencePlan:
 
         async def test_it_returns_True(self, sender):
-            got = await self.gather(sender, two_lights, "presence")
+            got = await gather(sender, two_lights, "presence")
             assert got == {
                 light1.serial: (True, {"presence": True}),
                 light2.serial: (True, {"presence": True}),
@@ -198,7 +199,7 @@ class TestDefaultPlans:
             errors = []
             lost = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
             with lost:
-                got = await self.gather(
+                got = await gather(
                     sender,
                     two_lights,
                     "presence",
@@ -220,7 +221,7 @@ class TestDefaultPlans:
             assert all(serial in serials for serial in two_lights)
 
             async with light2.offline():
-                got = await self.gather(
+                got = await gather(
                     sender,
                     two_lights,
                     "presence",
@@ -242,7 +243,7 @@ class TestDefaultPlans:
                 await sender.forget(serial)
 
             async with light2.offline():
-                got = await self.gather(
+                got = await gather(
                     sender,
                     two_lights,
                     "presence",
@@ -257,7 +258,7 @@ class TestDefaultPlans:
     class TestAddressPlan:
 
         async def test_it_gets_the_address(self, sender):
-            got = await self.gather(sender, two_lights, "address")
+            got = await gather(sender, two_lights, "address")
             assert got == {
                 light1.serial: (True, {"address": (f"fake://{light1.serial}/memory", 56700)}),
                 light2.serial: (True, {"address": (f"fake://{light2.serial}/memory", 56700)}),
@@ -266,7 +267,7 @@ class TestDefaultPlans:
     class TestLabelPlan:
 
         async def test_it_gets_the_label(self, sender):
-            got = await self.gather(sender, two_lights, "label")
+            got = await gather(sender, two_lights, "label")
             assert got == {
                 light1.serial: (True, {"label": "bob"}),
                 light2.serial: (True, {"label": "sam"}),
@@ -293,7 +294,7 @@ class TestDefaultPlans:
                 "power": 65535,
             }
 
-            got = await self.gather(sender, two_lights, "state")
+            got = await gather(sender, two_lights, "state")
             assert got == {
                 light1.serial: (True, {"state": state1}),
                 light2.serial: (True, {"state": state2}),
@@ -302,7 +303,7 @@ class TestDefaultPlans:
     class TestPowerPlan:
 
         async def test_it_gets_the_power(self, sender):
-            got = await self.gather(sender, two_lights, "power")
+            got = await gather(sender, two_lights, "power")
             assert got == {
                 light1.serial: (True, {"power": {"level": 0, "on": False}}),
                 light2.serial: (True, {"power": {"level": 65535, "on": True}}),
@@ -314,7 +315,7 @@ class TestDefaultPlans:
             assert not clean.attrs.clean_details.enabled
             assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -335,7 +336,7 @@ class TestDefaultPlans:
             assert clean.attrs.clean_details.duration_s == 20
             assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.BUSY
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -356,7 +357,7 @@ class TestDefaultPlans:
 
             await m.add(5)
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -377,7 +378,7 @@ class TestDefaultPlans:
 
             await m.add(17)
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -398,7 +399,7 @@ class TestDefaultPlans:
             await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
             await m.add(22)
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -420,7 +421,7 @@ class TestDefaultPlans:
             await sender(LightMessages.SetHevCycle(enable=False, duration_s=20), clean.serial)
             await m.add(2)
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -441,7 +442,7 @@ class TestDefaultPlans:
             await sender(LightMessages.SetHevCycle(enable=True, duration_s=2000), clean.serial)
             await m.add(20)
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -464,7 +465,7 @@ class TestDefaultPlans:
                 pass
 
             await m.add(2)
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_status")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_status")
             assert got == {
                 light1.serial: (True, {"hev_status": Skip}),
                 clean.serial: (
@@ -483,7 +484,7 @@ class TestDefaultPlans:
     class TestHEVConfigPlan:
 
         async def test_it_can_get_hev_config(self, sender):
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_config")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_config")
             assert got == {
                 light1.serial: (True, {"hev_config": Skip}),
                 clean.serial: (
@@ -498,7 +499,7 @@ class TestDefaultPlans:
                 clean.serial,
             )
 
-            got = await self.gather(sender, [clean.serial, light1.serial], "hev_config")
+            got = await gather(sender, [clean.serial, light1.serial], "hev_config")
             assert got == {
                 light1.serial: (True, {"hev_config": Skip}),
                 clean.serial: (
@@ -578,7 +579,7 @@ class TestDefaultPlans:
                 "state_version": make_version(1, 89),
             }
 
-            got = await self.gather(sender, devices.serials, "capability")
+            got = await gather(sender, devices.serials, "capability")
             assert got == {
                 clean.serial: (True, {"capability": cc}),
                 switch.serial: (True, {"capability": sc}),
@@ -626,7 +627,7 @@ class TestDefaultPlans:
             cc = {"build": 0, "version_major": 3, "version_minor": 70}
             sc = {"build": 0, "version_major": 3, "version_minor": 90}
 
-            got = await self.gather(sender, devices.serials, "firmware")
+            got = await gather(sender, devices.serials, "firmware")
             assert got == {
                 clean.serial: (True, {"firmware": cc}),
                 switch.serial: (True, {"firmware": sc}),
@@ -640,7 +641,7 @@ class TestDefaultPlans:
     class TestVersionPlan:
 
         async def test_it_gets_the_version(self, sender):
-            got = await self.gather(sender, devices.serials, "version")
+            got = await gather(sender, devices.serials, "version")
             assert got == {
                 clean.serial: (True, {"version": Match({"product": 90, "vendor": 1})}),
                 switch.serial: (True, {"version": Match({"product": 89, "vendor": 1})}),
@@ -657,7 +658,7 @@ class TestDefaultPlans:
     class TestZonesPlan:
 
         async def test_it_gets_zones(self, sender):
-            got = await self.gather(sender, devices.serials, "zones")
+            got = await gather(sender, devices.serials, "zones")
             expected = {
                 clean.serial: (True, {"zones": Skip}),
                 switch.serial: (True, {"zones": Skip}),
@@ -734,7 +735,7 @@ class TestDefaultPlans:
 
             await light2.change_one("color", hp.Color(100, 0.5, 0.8, 2500), event=None)
 
-            got = await self.gather(sender, serials, "colors")
+            got = await gather(sender, serials, "colors")
 
             assert got[switch.serial][1]["colors"] is Skip
             assert got[light1.serial][1]["colors"] == tile_expected
@@ -777,7 +778,7 @@ class TestDefaultPlans:
 
     class TestPartsPlan:
         async def test_it_works_for_a_bulb(self, sender):
-            got = await self.gather(sender, [light2.serial], "parts")
+            got = await gather(sender, [light2.serial], "parts")
             info = got[light2.serial][1]["parts"]
 
             assert len(info) == 1
@@ -796,7 +797,7 @@ class TestDefaultPlans:
 
                 assert p.original_colors is None
 
-            with_colors = await self.gather(sender, [light2.serial], "parts_and_colors")
+            with_colors = await gather(sender, [light2.serial], "parts_and_colors")
             info = with_colors[light2.serial][1]["parts_and_colors"]
 
             assert len(info) == 1
@@ -811,7 +812,7 @@ class TestDefaultPlans:
 
         async def test_it_works_for_a_not_extended_multizone(self, sender):
             for device, colors in ((striplcm1, zones1), (striplcm2noextended, zones2)):
-                got = await self.gather(sender, [device.serial], "parts")
+                got = await gather(sender, [device.serial], "parts")
                 info = got[device.serial][1]["parts"]
 
                 assert len(info) == 1
@@ -836,7 +837,7 @@ class TestDefaultPlans:
 
                     assert p.original_colors is None
 
-                with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
+                with_colors = await gather(sender, [device.serial], "parts_and_colors")
                 info = with_colors[device.serial][1]["parts_and_colors"]
 
                 assert len(info) == 1
@@ -852,7 +853,7 @@ class TestDefaultPlans:
             device = striplcm2extended
             colors = zones3
 
-            got = await self.gather(sender, [device.serial], "parts")
+            got = await gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
 
             assert len(info) == 1
@@ -877,7 +878,7 @@ class TestDefaultPlans:
 
                 assert p.original_colors is None
 
-            with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
+            with_colors = await gather(sender, [device.serial], "parts_and_colors")
             info = with_colors[device.serial][1]["parts_and_colors"]
 
             assert len(info) == 1
@@ -917,7 +918,7 @@ class TestDefaultPlans:
                 device.attrs.attrs_path("chain").reduce_length_to(3), event=None
             )
 
-            got = await self.gather(sender, [device.serial], "parts")
+            got = await gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
 
             assert len(info) == 3
@@ -949,7 +950,7 @@ class TestDefaultPlans:
 
                     assert p.original_colors is None
 
-            with_colors = await self.gather(sender, [device.serial], "parts_and_colors")
+            with_colors = await gather(sender, [device.serial], "parts_and_colors")
             infoc = with_colors[device.serial][1]["parts_and_colors"]
 
             for i, (pc, colors) in enumerate(zip(infoc, (colors1, colors2, colors3))):
@@ -972,7 +973,7 @@ class TestDefaultPlans:
     class TestChainPlan:
 
         async def test_it_gets_chain_for_a_bulb(self, sender):
-            got = await self.gather(sender, [light2.serial], "chain")
+            got = await gather(sender, [light2.serial], "chain")
             info = got[light2.serial][1]["chain"]
 
             assert info["chain"] == [
@@ -1007,7 +1008,7 @@ class TestDefaultPlans:
 
         async def test_it_gets_chain_for_a_strip(self, sender):
             serials = [striplcm1.serial, striplcm2noextended.serial, striplcm2extended.serial]
-            got = await self.gather(sender, serials, "chain")
+            got = await gather(sender, serials, "chain")
 
             lcm1_info = got[striplcm1.serial][1]["chain"]
             assert lcm1_info["chain"] == [
@@ -1106,7 +1107,7 @@ class TestDefaultPlans:
                 event=None,
             )
 
-            got = await self.gather(sender, light1.serial, "chain")
+            got = await gather(sender, light1.serial, "chain")
 
             chain = [
                 Partial(
@@ -1335,7 +1336,7 @@ class TestDefaultPlans:
             with (
                 process_outgoing_light1
             ), process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
-                got = await self.gather(sender, serials, "firmware_effects")
+                got = await gather(sender, serials, "firmware_effects")
             expected = {
                 light1.serial: (True, {"firmware_effects": l1}),
                 light2.serial: (True, {"firmware_effects": Skip}),
