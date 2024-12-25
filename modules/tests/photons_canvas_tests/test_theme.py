@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -72,9 +71,9 @@ def default_async_timeout() -> float:
     return 3
 
 
-describe "ApplyTheme":
+class TestApplyTheme:
 
-    async it "can apply a theme", async_timeout, sender:
+    async def test_it_can_apply_a_theme(self, async_timeout, sender):
         async_timeout.set_timeout_seconds(15)
         msg = ApplyTheme.msg({})
         await sender(msg, FoundSerials())
@@ -103,7 +102,7 @@ describe "ApplyTheme":
 
         assert len(non_zero_hues) > 200
 
-    async it "can have options", async_timeout, sender:
+    async def test_it_can_have_options(self, async_timeout, sender):
         async_timeout.set_timeout_seconds(15)
         msg = ApplyTheme.msg({"power_on": False, "overrides": {"saturation": 0.2}})
         await sender(msg, FoundSerials())

@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 from textwrap import dedent
@@ -29,8 +28,8 @@ def emptybt():
     return bt
 
 
-describe "LIFXPacket":
-    it "defaults size to size_bits on the pkt divided by 8":
+class TestLIFXPacket:
+    def test_it_defaults_size_to_size_bits_on_the_pkt_divided_by_8(self):
         msg = frame.LIFXPacket.message
 
         class M(Messages):
@@ -44,41 +43,41 @@ describe "LIFXPacket":
         p = M.P2()
         assert p.size == 68
 
-    it "defaults protocol to 1024", packet:
+    def test_it_defaults_protocol_to_1024(self, packet):
         assert packet.protocol == 1024
 
-    it "defaults res_required to True", packet:
+    def test_it_defaults_res_required_to_True(self, packet):
         assert packet.res_required is True
 
-    it "defaults ack_required to True", packet:
+    def test_it_defaults_ack_required_to_True(self, packet):
         assert packet.ack_required is True
 
-    it "defaults addressable to True", packet:
+    def test_it_defaults_addressable_to_True(self, packet):
         assert packet.addressable is True
 
-    it "ensures addressable is True if target is set to empty", emptybt, packet:
+    def test_it_ensures_addressable_is_True_if_target_is_set_to_empty(self, emptybt, packet):
         for target in (None, b"\x00" * 8, emptybt):
             packet.addressable = False
             packet.target = target
             assert packet.addressable is True
 
-    it "defaults tagged to False", packet:
+    def test_it_defaults_tagged_to_False(self, packet):
         assert packet.tagged is False
 
-    it "ensures tagged is True if target is set to empty", emptybt, packet:
+    def test_it_ensures_tagged_is_True_if_target_is_set_to_empty(self, emptybt, packet):
         for target in (None, "0000000000000000", b"\x00" * 8, emptybt):
             packet.tagged = False
             packet.target = target
             assert packet.tagged is True
 
-    it "ensures tagged is False if target is set to not empty", packet:
+    def test_it_ensures_tagged_is_False_if_target_is_set_to_not_empty(self, packet):
         packet.target = None
         assert packet.tagged is True
 
         packet.target = "d073d5000001"
         assert packet.tagged is False
 
-    it "defaults pkt_type to Payload.message_type":
+    def test_it_defaults_pkt_type_to_Payloadmessage_type(self):
         msg = frame.LIFXPacket.message
 
         class M(Messages):
@@ -88,7 +87,7 @@ describe "LIFXPacket":
         assert M.P().pkt_type == 10
         assert M.P2().pkt_type == 200
 
-    it "packs without target":
+    def test_it_packs_without_target(self):
         p = frame.LIFXPacket(source=1, sequence=1, target=None, payload=b"")
         assert p.size == 36
         expected = bitarray(
@@ -106,7 +105,7 @@ describe "LIFXPacket":
 
         assert p.pack() == expected
 
-    it "is an ack if the Payload is an ack":
+    def test_it_is_an_ack_if_the_Payload_is_an_ack(self):
 
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
@@ -116,7 +115,7 @@ describe "LIFXPacket":
         p = P()
         assert p.represents_ack
 
-    it "is not an ack if the Payload is not an ack":
+    def test_it_is_not_an_ack_if_the_Payload_is_not_an_ack(self):
 
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
@@ -126,7 +125,7 @@ describe "LIFXPacket":
         p = P()
         assert p.represents_ack
 
-    it "has the right size_bits for all the fields":
+    def test_it_has_the_right_size_bits_for_all_the_fields(self):
 
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
@@ -164,18 +163,18 @@ describe "LIFXPacket":
 
         assert found == expected
 
-    it "is a parent_packet":
+    def test_it_is_a_parent_packet(self):
         assert frame.LIFXPacket.parent_packet is True
 
-    it "has protocol of 1024":
+    def test_it_has_protocol_of_1024(self):
         assert frame.LIFXPacket.Meta.protocol == 1024
         assert frame.LIFXPacket.Payload.Meta.protocol == 1024
 
-    it "has payload with message_type of 0":
+    def test_it_has_payload_with_message_type_of_0(self):
         assert frame.LIFXPacket.Payload.message_type == 0
 
-    describe "__or__":
-        it "says yes if the protocol and pkt_type are the same as on kls.Payload":
+    class TestOr:
+        def test_it_says_yes_if_the_protocol_and_pkt_type_are_the_same_as_on_klsPayload(self):
 
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
@@ -206,7 +205,7 @@ describe "LIFXPacket":
             assert payloadtwo | Two is True
             assert payloadtwo | One is False
 
-        it "can get the values from the packet data if already defined":
+        def test_it_can_get_the_values_from_the_packet_data_if_already_defined(self):
 
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
@@ -237,25 +236,25 @@ describe "LIFXPacket":
                 assert payloadtwo | Two is True
                 assert payloadtwo | One is False
 
-    describe "serial":
-        it "returns None if target isn't specified":
+    class TestSerial:
+        def test_it_returns_None_if_target_isnt_specified(self):
             pkt = frame.LIFXPacket()
             assert pkt.target is sb.NotSpecified
             assert pkt.serial is None
 
-        it "returns 0s if target is None":
+        def test_it_returns_0s_if_target_is_None(self):
             pkt = frame.LIFXPacket(target=None)
             assert pkt.target == b"\x00\x00\x00\x00\x00\x00\x00\x00"
             assert pkt.serial == "000000000000"
 
-        it "hexlifies otherwise":
+        def test_it_hexlifies_otherwise(self):
             serial = "d073d5000001"
             target = binascii.unhexlify(serial)
             pkt = frame.LIFXPacket(target=target)
             assert pkt.target == target + b"\x00\x00"
             assert pkt.serial == serial
 
-        it "only deals with first six bytes":
+        def test_it_only_deals_with_first_six_bytes(self):
             serial = "d073d5000001"
             serialexpanded = "d073d50000010101"
             target = binascii.unhexlify(serialexpanded)
@@ -263,25 +262,25 @@ describe "LIFXPacket":
             assert pkt.target == target
             assert pkt.serial == serial
 
-    describe "creating a message":
-        it "has the provided name":
+    class TestCreatingAMessage:
+        def test_it_has_the_provided_name(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.__name__ == "Name"
             assert msg.Payload.__name__ == "NamePayload"
 
-        it "has the provided fields on the Payload":
+        def test_it_has_the_provided_fields_on_the_Payload(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Payload.Meta.original_fields == fields
             assert msg.Meta.original_fields == frame.LIFXPacket.Meta.original_fields
 
-        it "has the provided message_type":
+        def test_it_has_the_provided_message_type(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Payload.message_type == 52
 
-        it "represents_ack if message_type is 45":
+        def test_it_represents_ack_if_message_type_is_45(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(45, *fields)("Name")
             assert msg.Payload.represents_ack is True
@@ -289,27 +288,27 @@ describe "LIFXPacket":
             msg = frame.LIFXPacket.message(46, *fields)("Name")
             assert msg.Payload.represents_ack is False
 
-        it "has a _lifx_packet_message property":
+        def test_it_has_a_lifx_packet_message_property(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)
             assert msg._lifx_packet_message is True
 
-        it "sets Payload.Meta.protocol to 1024":
+        def test_it_sets_PayloadMetaprotocol_to_1024(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Payload.Meta.protocol == 1024
 
-        it "has parent_packet set to False":
+        def test_it_has_parent_packet_set_to_False(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.parent_packet is False
 
-        it "has Meta.parent set to LIFXPacket":
+        def test_it_has_Metaparent_set_to_LIFXPacket(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("Name")
             assert msg.Meta.parent == frame.LIFXPacket
 
-        it "has a way of creating another packet with the same fields but different message_type":
+        def test_it_has_a_way_of_creating_another_packet_with_the_same_fields_but_different_message_type(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)
             using = msg.using(62)
@@ -325,7 +324,7 @@ describe "LIFXPacket":
             assert msg2.Meta.parent == frame.LIFXPacket
             assert using._lifx_packet_message is True
 
-        it "sets multi on Meta":
+        def test_it_sets_multi_on_Meta(self):
             msg = frame.LIFXPacket.message(52)("One")
             assert msg.Meta.multi is None
             assert msg.Payload.Meta.multi is None
@@ -335,8 +334,8 @@ describe "LIFXPacket":
             assert msg.Meta.multi is multi
             assert msg.Payload.Meta.multi is multi
 
-    describe "Key":
-        it "is able to get a memoized Key from the packet":
+    class TestKey:
+        def test_it_is_able_to_get_a_memoized_Key_from_the_packet(self):
             fields = [("one", T.Bool), ("two", T.String)]
             msg = frame.LIFXPacket.message(52, *fields)("SetAmze")
 
@@ -353,13 +352,13 @@ describe "LIFXPacket":
             del pkt1.Key
             assert pkt1.Key == (1024, 52, '{"one": true, "two": "tree"}')
 
-describe "MultiOptions":
-    it "complains if we don't give it two functions":
+class TestMultiOptions:
+    def test_it_complains_if_we_dont_give_it_two_functions(self):
         for a, b in [(None, None), (lambda: 1, None), (None, lambda: 1), (1, 2)]:
             with assertRaises(ProgrammerError, "Multi Options expects two callables"):
                 MultiOptions(a, b)
 
-    it "sets the two callables":
+    def test_it_sets_the_two_callables(self):
         determine_res_packet = mock.Mock(name="determine_res_packet")
         adjust_expected_number = mock.Mock(name="adjust_expected_number")
         options = MultiOptions(determine_res_packet, adjust_expected_number)
@@ -367,7 +366,7 @@ describe "MultiOptions":
         assert options.determine_res_packet is determine_res_packet
         assert options.adjust_expected_number is adjust_expected_number
 
-    it "has a Max helper":
+    def test_it_has_a_Max_helper(self):
         num = MultiOptions.Max(5)
 
         assert num([1]) == -1
@@ -376,8 +375,8 @@ describe "MultiOptions":
         assert num([0, 1, 2, 3, 4]) == 5
         assert num([0, 1, 2, 3, 4, 5]) == 6
 
-describe "Messages":
-    it "works":
+class TestMessages:
+    def test_it_works(self):
         msg = frame.LIFXPacket.message
 
         class M(Messages):

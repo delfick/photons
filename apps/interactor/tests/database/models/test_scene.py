@@ -1,4 +1,3 @@
-# coding: spec
 
 import uuid
 
@@ -13,9 +12,9 @@ async def runner(db_runner):
         yield runner
 
 
-describe "Scene":
-    describe "DelayedSpec":
-        it "returns a function that can be provided the uuid":
+class TestScene:
+    class TestDelayedSpec:
+        def test_it_returns_a_function_that_can_be_provided_the_uuid(self):
             identifier = str(uuid.uuid1())
 
             kwargs = dict(
@@ -50,8 +49,8 @@ describe "Scene":
 
             assert normalised.as_dict() == expect
 
-    describe "Interaction with database":
-        async it "can store and retrieve from a spec", runner:
+    class TestInteractionWithDatabase:
+        async def test_it_can_store_and_retrieve_from_a_spec(self, runner):
             identifier = str(uuid.uuid1())
 
             chain = []

@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 from contextlib import contextmanager
@@ -18,7 +17,7 @@ from photons_transport.session.discovery_options import (
 from photons_transport.session.network import NetworkSession
 from photons_transport.transports.udp import UDP
 
-describe "NetworkSession":
+class TestNetworkSession:
 
     @pytest.fixture()
     def V(self):
@@ -66,12 +65,12 @@ describe "NetworkSession":
             await V.session.finish()
             V.final_future.cancel()
 
-    async it "has properties", V:
+    async def test_it_has_properties(self, V):
         assert V.session.UDPTransport is UDP
         assert V.session.broadcast_transports == {}
 
-    describe "finish":
-        async it "closes all the broadcast_transports", V:
+    class TestFinish:
+        async def test_it_closes_all_the_broadcast_transports(self, V):
             b1 = mock.Mock(name="b1")
             b1.close = pytest.helpers.AsyncMock(name="close")
 
@@ -90,8 +89,8 @@ describe "NetworkSession":
             b2.close.assert_called_once_with()
             b3.close.assert_called_once_with()
 
-    describe "retry_gaps":
-        async it "returns the retry gaps", V:
+    class TestRetryGaps:
+        async def test_it_returns_the_retry_gaps(self, V):
             kwargs = {"host": "192.168.0.3", "port": 56700}
             transport = await V.session.make_transport("d073d5", Services.UDP, kwargs)
             assert isinstance(transport, UDP)
@@ -101,8 +100,8 @@ describe "NetworkSession":
             uro1 = V.session.retry_gaps(packet, transport)
             assert uro1 is V.transport_target.gaps
 
-    describe "determine_needed_transport":
-        async it "says udp", V:
+    class TestDetermineNeededTransport:
+        async def test_it_says_udp(self, V):
             services = mock.NonCallableMock(name="services", spec=[])
             packets = [DeviceMessages.GetPower(), DeviceMessages.StateLabel()]
 
@@ -110,8 +109,8 @@ describe "NetworkSession":
                 got = await V.session.determine_needed_transport(packet, services)
                 assert got == [Services.UDP]
 
-    describe "choose_transport":
-        async it "complains if we can't determined need transport", V:
+    class TestChooseTransport:
+        async def test_it_complains_if_we_cant_determined_need_transport(self, V):
             determine_needed_transport = pytest.helpers.AsyncMock(name="determine_needed_transport")
             determine_needed_transport.return_value = []
 
@@ -128,7 +127,7 @@ describe "NetworkSession":
 
             determine_needed_transport.assert_awaited_once_with(packet, services)
 
-        async it "returns the desired service or complains if can't be found", V:
+        async def test_it_returns_the_desired_service_or_complains_if_cant_be_found(self, V):
             need = [Services.UDP]
             determine_needed_transport = pytest.helpers.AsyncMock(name="determine_needed_transport")
             determine_needed_transport.return_value = need
@@ -149,7 +148,7 @@ describe "NetworkSession":
                 with assertRaises(NoDesiredService, msg, **kwargs):
                     await V.session.choose_transport(packet, services)
 
-    describe "private do_search":
+    class TestPrivateDoSearch:
 
         @pytest.fixture()
         def mocks(self, V):
@@ -177,7 +176,7 @@ describe "NetworkSession":
 
             return mocks
 
-        async it "can use hard coded discovery", V:
+        async def test_it_can_use_hard_coded_discovery(self, V):
             V.transport_target.discovery_options = (
                 NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
                     hardcoded_discovery={
@@ -208,7 +207,7 @@ describe "NetworkSession":
 
             assert len(V.transport_target.script.mock_calls) == 0
 
-        async it "finds", V, mocks:
+        async def test_it_finds(self, V, mocks):
 
             async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -271,7 +270,7 @@ describe "NetworkSession":
                 )
             }
 
-        async it "can filter serials", V, mocks:
+        async def test_it_can_filter_serials(self, V, mocks):
 
             async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -330,7 +329,7 @@ describe "NetworkSession":
                 )
             }
 
-        async it "stops after first search if serials is None and we found serials", V, mocks:
+        async def test_it_stops_after_first_search_if_serials_is_None_and_we_found_serials(self, V, mocks):
 
             async def run(*args, **kwargs):
                 s1 = DiscoveryMessages.StateService(
@@ -359,7 +358,7 @@ describe "NetworkSession":
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
 
-        async it "keeps trying till we find devices if serials is None", V, mocks:
+        async def test_it_keeps_trying_till_we_find_devices_if_serials_is_None(self, V, mocks):
             called = []
 
             async def run(*args, **kwargs):
@@ -416,7 +415,7 @@ describe "NetworkSession":
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
 
-        async it "keeps trying till we have all serials if serials is not None", V, mocks:
+        async def test_it_keeps_trying_till_we_have_all_serials_if_serials_is_not_None(self, V, mocks):
             called = []
 
             async def run(*args, **kwargs):
@@ -495,7 +494,7 @@ describe "NetworkSession":
             assert sorted(fn) == sorted([binascii.unhexlify(s) for s in serials])
             assert V.session.found.serials == serials
 
-        async it "keeps trying till it's out of retries", V, mocks:
+        async def test_it_keeps_trying_till_its_out_of_retries(self, V, mocks):
             called = []
 
             async def run(*args, **kwargs):
@@ -522,8 +521,8 @@ describe "NetworkSession":
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
 
-    describe "make_transport":
-        async it "complains if the service isn't a valid Service", V:
+    class TestMakeTransport:
+        async def test_it_complains_if_the_service_isnt_a_valid_Service(self, V):
             serial = "d073d5000001"
             kwargs = {}
             service = mock.Mock(name="service", spec=[])
@@ -531,14 +530,14 @@ describe "NetworkSession":
             with assertRaises(UnknownService, service=service):
                 await V.session.make_transport(serial, service, kwargs)
 
-        async it "returns None for reserved services", V:
+        async def test_it_returns_None_for_reserved_services(self, V):
             serial = "d073d5000001"
             kwargs = {}
             service = Services.RESERVED4
 
             assert await V.session.make_transport(serial, service, kwargs) is None
 
-        async it "creates a UDP transport for everything", V:
+        async def test_it_creates_a_UDP_transport_for_everything(self, V):
             transport = mock.Mock(name="transport")
             FakeUDPTransport = mock.Mock(name="UDPTransport", return_value=transport)
 
@@ -552,26 +551,26 @@ describe "NetworkSession":
                 assert await V.session.make_transport(serial, service, kwargs) is transport
             FakeUDPTransport.assert_called_once_with(V.session, host, port, serial=serial)
 
-    describe "make_broadcast_transport":
-        async it "uses default_broadcast if broadcast is True", V:
+    class TestMakeBroadcastTransport:
+        async def test_it_uses_default_broadcast_if_broadcast_is_True(self, V):
             transport = await V.session.make_broadcast_transport(True)
             want = UDP(V.session, host=V.default_broadcast, port=56700)
             assert V.session.broadcast_transports == {(V.default_broadcast, 56700): want}
             assert transport == want
 
-        async it "uses provided broadcast if it's a string", V:
+        async def test_it_uses_provided_broadcast_if_its_a_string(self, V):
             transport = await V.session.make_broadcast_transport("192.168.0.255")
             want = UDP(V.session, host="192.168.0.255", port=56700)
             assert V.session.broadcast_transports == {("192.168.0.255", 56700): want}
             assert transport == want
 
-        async it "uses provided broacast if it's a tuple of host and port", V:
+        async def test_it_uses_provided_broacast_if_its_a_tuple_of_host_and_port(self, V):
             transport = await V.session.make_broadcast_transport(("192.168.0.255", 57))
             want = UDP(V.session, host="192.168.0.255", port=57)
             assert V.session.broadcast_transports == {("192.168.0.255", 57): want}
             assert transport == want
 
-        async it "complains if broadcast isn't a good type", V:
+        async def test_it_complains_if_broadcast_isnt_a_good_type(self, V):
             for bad in (None, 0, False, 1, {}, [], (), (1,), (1, 1, 1), [1], {1: 1}, lambda: 1):
                 msg = r"Expect a string or \(host, port\) tuple"
                 with assertRaises(InvalidBroadcast, msg, got=bad):

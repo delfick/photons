@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from unittest import mock
@@ -30,7 +29,7 @@ class FakeIO:
         self.remote.close()
 
 
-describe "UDP":
+class TestUDP:
 
     @pytest.fixture()
     def V(self):
@@ -49,7 +48,7 @@ describe "UDP":
 
         return V()
 
-    async it "has equality checks", V:
+    async def test_it_has_equality_checks(self, V):
         transport1 = UDP(V.session, "one", 1)
         transport2 = UDP(V.session, "one", 1)
         transport3 = UDP(lambda: 1, "one", 1)
@@ -63,7 +62,7 @@ describe "UDP":
         assert transport1 != transport4
         assert transport1 != transport5
 
-    async it "takes in address", V:
+    async def test_it_takes_in_address(self, V):
         assert V.transport.host == V.host
         assert V.transport.port == V.port
         assert V.transport.address == (V.host, V.port)
@@ -73,7 +72,7 @@ describe "UDP":
         transport = UDP(V.session, V.host, V.port)
         assert transport.serial is None
 
-    async it "can be cloned", V:
+    async def test_it_can_be_cloned(self, V):
         transport = UDP(V.session, V.host, V.port, serial=V.serial)
         transport.transport = mock.Mock(name="transport")
 
@@ -85,7 +84,7 @@ describe "UDP":
         assert clone.serial == V.serial
         assert clone.transport is None
 
-    async it "can send and receive bytes", V:
+    async def test_it_can_send_and_receive_bytes(self, V):
         reply1 = b"reply1"
         reply2 = b"reply2"
         reply3 = b"reply3"
@@ -134,7 +133,7 @@ describe "UDP":
         finally:
             await device.finish()
 
-    async it "can close the transport", V:
+    async def test_it_can_close_the_transport(self, V):
         device = FakeIO(V.port, lambda b, a: [])
         await device.start()
 

@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import random
@@ -108,14 +107,14 @@ class Commands(Command):
     }
 
 
-describe "Commands":
+class TestCommands:
 
     def command(self, command):
         serial = "d073d5{:06d}".format(random.randrange(1, 9999))
         cmd = {"command": command, "args": {"serial": serial}}
         return cmd, serial
 
-    async it "has progress cb functionality for http", server:
+    async def test_it_has_progress_cb_functionality_for_http(self, server):
         command, serial = self.command("test_no_error")
         await server.assertCommand(
             "/v1/lifx/command", command, status=200, json_output={"serial": serial}
@@ -131,7 +130,7 @@ describe "Commands":
             "/v1/lifx/command", command, status=200, json_output={"serial": serial}
         )
 
-    async it "has progress cb functionality for websockets", server:
+    async def test_it_has_progress_cb_functionality_for_websockets(self, server):
         async with server.ws_stream() as stream:
 
             # Done progress

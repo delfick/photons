@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from collections import deque
@@ -17,8 +16,8 @@ def final_future():
         fut.cancel()
 
 
-describe "Queue":
-    it "takes in a final_future", final_future:
+class TestQueue:
+    def test_it_takes_in_a_final_future(self, final_future):
         queue = hp.Queue(final_future)
 
         compare = pytest.helpers.child_future_of(final_future)
@@ -31,7 +30,7 @@ describe "Queue":
         assert isinstance(queue.waiter, hp.ResettableFuture)
         assert not queue.waiter.done()
 
-    async it "can stop the waiter on done", final_future:
+    async def test_it_can_stop_the_waiter_on_done(self, final_future):
         queue = hp.Queue(final_future)
 
         assert isinstance(queue.waiter, hp.ResettableFuture)
@@ -53,7 +52,7 @@ describe "Queue":
 
         assert queue.waiter.done()
 
-    async it "can get remaining items", final_future:
+    async def test_it_can_get_remaining_items(self, final_future):
         queue = hp.Queue(final_future)
         assert not queue.waiter.done()
 
@@ -66,8 +65,8 @@ describe "Queue":
 
         assert not queue.collection
 
-    describe "getting all results":
-        async it "can get results until final_future is done", final_future:
+    class TestGettingAllResults:
+        async def test_it_can_get_results_until_final_future_is_done(self, final_future):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future)
@@ -103,7 +102,7 @@ describe "Queue":
             assert found == [1, 2, 3, 4, 5]
             assert list(queue.remaining()) == [6, 7]
 
-        async it "ignores results added after final_future is done if still waiting for results", final_future:
+        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future)
@@ -137,7 +136,7 @@ describe "Queue":
             assert found == [1, 2, 3, 4]
             assert list(queue.remaining()) == [5, 6, 7]
 
-        async it "is re-entrant if we break", final_future:
+        async def test_it_is_re_entrant_if_we_break(self, final_future):
             found = []
             queue = hp.Queue(final_future)
 
@@ -159,8 +158,8 @@ describe "Queue":
 
             assert found == list(range(10))
 
-    describe "getting all results and empty_on_finished":
-        async it "can get results until final_future is done", final_future:
+    class TestGettingAllResultsAndEmptyOnFinished:
+        async def test_it_can_get_results_until_final_future_is_done(self, final_future):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future, empty_on_finished=True)
@@ -196,7 +195,7 @@ describe "Queue":
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async it "gets results added after final_future is done if still waiting for results", final_future:
+        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
             wait = hp.create_future()
 
             queue = hp.Queue(final_future, empty_on_finished=True)
@@ -230,7 +229,7 @@ describe "Queue":
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async it "is re-entrant if we break", final_future:
+        async def test_it_is_re_entrant_if_we_break(self, final_future):
             found = []
             queue = hp.Queue(final_future, empty_on_finished=True)
 
@@ -252,8 +251,8 @@ describe "Queue":
 
             assert found == list(range(10))
 
-describe "SyncQueue":
-    it "takes in a final_future", final_future:
+class TestSyncQueue:
+    def test_it_takes_in_a_final_future(self, final_future):
         queue = hp.SyncQueue(final_future)
 
         compare = pytest.helpers.child_future_of(final_future)
@@ -265,7 +264,7 @@ describe "SyncQueue":
         queue = hp.SyncQueue(final_future, timeout=1)
         assert queue.timeout == 1
 
-    it "can append items", final_future:
+    def test_it_can_append_items(self, final_future):
         queue = hp.SyncQueue(final_future)
 
         queue.append(1)
@@ -286,7 +285,7 @@ describe "SyncQueue":
             final_future.cancel()
         assert found == [3]
 
-    async it "can get remaining items", final_future:
+    async def test_it_can_get_remaining_items(self, final_future):
         queue = hp.SyncQueue(final_future)
 
         queue.append(1)
@@ -295,9 +294,9 @@ describe "SyncQueue":
         assert list(queue.remaining()) == [1, 2]
         assert queue.collection.empty()
 
-    describe "getting all results":
+    class TestGettingAllResults:
 
-        async it "can get results until final_future is done", final_future:
+        async def test_it_can_get_results_until_final_future_is_done(self, final_future):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future)
@@ -335,7 +334,7 @@ describe "SyncQueue":
             assert found == [1, 2, 3, 4, 5]
             assert list(queue.remaining()) == [6, 7]
 
-        async it "ignores results added after final_future is done if still waiting for results", final_future:
+        async def test_it_ignores_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future)
@@ -371,7 +370,7 @@ describe "SyncQueue":
             assert found == [1, 2, 3, 4]
             assert list(queue.remaining()) == [5, 6, 7]
 
-        async it "is re-entrant if we break", final_future:
+        async def test_it_is_re_entrant_if_we_break(self, final_future):
             found = []
             queue = hp.SyncQueue(final_future)
 
@@ -393,9 +392,9 @@ describe "SyncQueue":
 
             assert found == list(range(10))
 
-    describe "getting all results when empty_on_finished":
+    class TestGettingAllResultsWhenEmptyOnFinished:
 
-        async it "can get results until final_future is done", final_future:
+        async def test_it_can_get_results_until_final_future_is_done(self, final_future):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future, empty_on_finished=True)
@@ -433,7 +432,7 @@ describe "SyncQueue":
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async it "gets results added after final_future is done if still waiting for results", final_future:
+        async def test_it_gets_results_added_after_final_future_is_done_if_still_waiting_for_results(self, final_future):
             wait = hp.create_future()
 
             queue = hp.SyncQueue(final_future, empty_on_finished=True)
@@ -469,7 +468,7 @@ describe "SyncQueue":
             assert found == [1, 2, 3, 4, 5, 6, 7]
             assert list(queue.remaining()) == []
 
-        async it "is re-entrant if we break", final_future:
+        async def test_it_is_re_entrant_if_we_break(self, final_future):
             found = []
             queue = hp.SyncQueue(final_future, empty_on_finished=True)
 

@@ -1,9 +1,8 @@
-# coding: spec
 
 from photons_transport.retry_options import Gaps
 
-describe "Gaps":
-    it "can be given defaults":
+class TestGaps:
+    def test_it_can_be_given_defaults(self):
         gaps = Gaps(gap_between_ack_and_res=0.5, gap_between_results=0.9, timeouts=[(0.1, 0.5)])
         obj = gaps.empty_normalise()
 
@@ -19,7 +18,7 @@ describe "Gaps":
         assert obj.gap_between_results == 0.1
         assert obj.timeouts == [(0.1, 0.6), (0.5, 3)]
 
-    it "can make a retry ticker":
+    def test_it_can_make_a_retry_ticker(self):
         gaps = Gaps(gap_between_ack_and_res=0.5, gap_between_results=0.9, timeouts=[(0.1, 0.5)])
         obj = gaps.empty_normalise()
 

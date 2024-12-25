@@ -1,10 +1,9 @@
-# coding: spec
 
 from photons_products import Family, VendorRegistry, Zones, lifx
 from photons_products.base import CapabilityValue
 
-describe "lifx.Product":
-    it "has default vendor":
+class TestLifxProduct:
+    def test_it_has_default_vendor(self):
 
         class P(lifx.Product):
             pid = 3
@@ -17,8 +16,8 @@ describe "lifx.Product":
         assert P.vendor is VendorRegistry.LIFX
 
 
-describe "Capability":
-    it "has has_matrix":
+class TestCapability:
+    def test_it_has_has_matrix(self):
 
         class P(lifx.Product):
             pid = 1
@@ -44,7 +43,7 @@ describe "Capability":
 
         assert not cap(P).has_matrix
 
-    it "has has_multizone":
+    def test_it_has_has_multizone(self):
 
         class P(lifx.Product):
             pid = 1
@@ -70,7 +69,7 @@ describe "Capability":
 
         assert not cap(P).has_multizone
 
-    it "has has_extended_multizone":
+    def test_it_has_has_extended_multizone(self):
 
         class P(lifx.Product):
             pid = 1
@@ -100,7 +99,7 @@ describe "Capability":
         assert not c(firmware_major=2, firmware_minor=60).has_extended_multizone
         assert c(firmware_major=3, firmware_minor=60).has_extended_multizone
 
-    it "has items":
+    def test_it_has_items(self):
 
         class P(lifx.Product):
             pid = 1
@@ -160,7 +159,7 @@ describe "Capability":
                 del dct[k]
         assert dct == expected
 
-    it "has items for non light products":
+    def test_it_has_items_for_non_light_products(self):
 
         class P_SWITCH(lifx.Product):
             pid = 1

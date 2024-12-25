@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -43,8 +42,8 @@ async def parent_ts(final_future):
         yield ts
 
 
-describe "IO":
-    it "has a packet filter", device:
+class TestIO:
+    def test_it_has_a_packet_filter(self, device):
 
         class IIO(IO):
             io_source = "iio"
@@ -54,8 +53,8 @@ describe "IO":
         assert io.final_future is None
         assert io.last_final_future is None
 
-    describe "session":
-        async it "manages a queue and consumer task for incoming messages", device, wrap_io, final_future, parent_ts:
+    class TestSession:
+        async def test_it_manages_a_queue_and_consumer_task_for_incoming_messages(self, device, wrap_io, final_future, parent_ts):
             process = []
             got = hp.ResettableFuture()
 
@@ -94,7 +93,7 @@ describe "IO":
             assert io.ts.final_future.done()
             assert io.incoming.final_future.done()
 
-        async it "can restart a session", device, wrap_io, final_future, parent_ts:
+        async def test_it_can_restart_a_session(self, device, wrap_io, final_future, parent_ts):
 
             class IIO(IO):
                 io_source = "iio"
@@ -123,8 +122,8 @@ describe "IO":
                 assert io.final_future is not ff
                 assert io.last_final_future is final_future
 
-    describe "received":
-        async it "adds to the incoming queue", wrap_io, device, final_future:
+    class TestReceived:
+        async def test_it_adds_to_the_incoming_queue(self, wrap_io, device, final_future):
             bts = mock.Mock(name="bts")
             give_reply = mock.Mock(name="give_reply")
             addr = mock.Mock(name="addr")
@@ -145,8 +144,8 @@ describe "IO":
                 finally:
                     await queue.finish()
 
-    describe "process_instruction":
-        async it "puts result from instruction through filter and sends replies", wrap_io, device, final_future:
+    class TestProcessInstruction:
+        async def test_it_puts_result_from_instruction_through_filter_and_sends_replies(self, wrap_io, device, final_future):
             got = []
 
             class MyIO(IO):
@@ -201,7 +200,7 @@ describe "IO":
                 ("sent", filtered3, give_reply, addr, pkt),
             ]
 
-    describe "process_incoming":
+    class TestProcessIncoming:
 
         @pytest.fixture()
         def record(self):
@@ -315,7 +314,7 @@ describe "IO":
                     record.pop()
                 yield device
 
-        async it "does nothing if the device is offline", device, sent, record, got_event:
+        async def test_it_does_nothing_if_the_device_is_offline(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -344,7 +343,7 @@ describe "IO":
             ]
             record.clear()
 
-        async it "can get and send back messages", device, sent, record, got_event:
+        async def test_it_can_get_and_send_back_messages(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -388,7 +387,7 @@ describe "IO":
                 ),
             ]
 
-        async it "can ignore messages", device, sent, record, got_event:
+        async def test_it_can_ignore_messages(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -438,7 +437,7 @@ describe "IO":
                 ]
                 record.clear()
 
-        async it "can have unhandled messages", switch, device, sent, record, got_event:
+        async def test_it_can_have_unhandled_messages(self, switch, device, sent, record, got_event):
             io = device.io["TESTIO"]
             ioswitch = switch.io["TESTIO"]
             addr = ("memory", device.serial)
@@ -488,7 +487,7 @@ describe "IO":
             ]
             record.clear()
 
-        async it "can not send replies from res_required false unless is a get", device, sent, record, got_event:
+        async def test_it_can_not_send_replies_from_res_required_false_unless_is_a_get(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -537,7 +536,7 @@ describe "IO":
                 ),
             ]
 
-        async it "can lose messages", device, sent, record, got_event:
+        async def test_it_can_lose_messages(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 

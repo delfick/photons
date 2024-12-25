@@ -1,4 +1,3 @@
-# coding: spec
 
 import enum
 import json
@@ -17,28 +16,28 @@ from photons_protocol.types import Type
 from photons_protocol.types import Type as T
 from photons_protocol.types import UnknownEnum, json_spec, static_conversion_from_spec
 
-describe "the json spec":
-    it "can match just static types":
+class TestTheJsonSpec:
+    def test_it_can_match_just_static_types(self):
         for val in ("adsf", True, False, None, 0, 1, 1.2):
             assert json_spec.normalise(Meta.empty(), val) == val
 
-    it "can match lists":
+    def test_it_can_match_lists(self):
         for val in ([], ["asdf"], ["asdf", True, 1]):
             assert json_spec.normalise(Meta.empty(), val) == val
 
-    it "can match nested lists":
+    def test_it_can_match_nested_lists(self):
         for val in ([[]], ["asdf", [1]], [["asdf", True], [1]]):
             assert json_spec.normalise(Meta.empty(), val) == val
 
-    it "can match dictionaries":
+    def test_it_can_match_dictionaries(self):
         for val in ({}, {"1": "2", "2": 2, "3": False}):
             assert json_spec.normalise(Meta.empty(), val) == val
 
-    it "can match nested dictionaries":
+    def test_it_can_match_nested_dictionaries(self):
         val = {"asdf": {"adf": {"asdf": 2, "adf": False, "eieu": None}}}
         assert json_spec.normalise(Meta.empty(), val) == val
 
-    it "complains about things that aren't json like objects, callables and non string keys":
+    def test_it_complains_about_things_that_arent_json_like_objects_callables_and_non_string_keys(self):
         for val in (type("adf", (object,), {}), any, json, lambda: 1):
             with assertRaises(BadSpecValue):
                 json_spec.normalise(Meta.empty(), val)
@@ -49,15 +48,15 @@ describe "the json spec":
         except BadSpecValue as error:
             assert error.errors[0].errors[0].message == "Expected a string"
 
-describe "Type":
-    it "takes in struct_format and conversion":
+class TestType:
+    def test_it_takes_in_struct_format_and_conversion(self):
         struct_format = mock.Mock(name="struct_format")
         conversion = mock.Mock(name="conversion")
         t = Type(struct_format, conversion)
         assert t.struct_format is struct_format
         assert t.conversion is conversion
 
-    describe "Adding size_bits":
+    class TestAddingSizeBits:
 
         @pytest.fixture()
         def V(self):
@@ -71,8 +70,8 @@ describe "Type":
 
             return V()
 
-        describe "calling an instance":
-            it "defers to the S function", V:
+        class TestCallingAnInstance:
+            def test_it_defers_to_the_S_function(self, V):
                 S = mock.Mock(name="S")
                 size_bits = mock.Mock(name="size_bits")
                 left = mock.Mock(name="left")
@@ -87,8 +86,8 @@ describe "Type":
                 # Doesn't touch the original type
                 assert V.t.size_bits is NotImplemented
 
-        describe "calling the S function":
-            it "creates a new object and passes on 'private' attributes", V:
+        class TestCallingTheSFunction:
+            def test_it_creates_a_new_object_and_passes_on_private_attributes(self, V):
                 field_names = (
                     "_enum",
                     "_bitmask",
@@ -140,8 +139,8 @@ describe "Type":
                 for field in field_names:
                     assert getattr(res2, field) is fields[field]
 
-    describe "Type.t":
-        it "generates a new class from Type and instantiates it":
+    class TestTypet:
+        def test_it_generates_a_new_class_from_Type_and_instantiates_it(self):
             struct_format = mock.Mock(name="struct_format")
             conversion = mock.Mock(name="conversion")
             t = Type.t("bob", struct_format, conversion)
@@ -152,7 +151,7 @@ describe "Type":
             assert issubclass(t.__class__, Type)
             assert t.__class__ is not Type
 
-    describe "modifiers":
+    class TestModifiers:
 
         @pytest.fixture()
         def V(self):
@@ -188,26 +187,26 @@ describe "Type":
 
             return V()
 
-        describe "allow_float":
-            it "sets _allow_float to True", V:
+        class TestAllowFloat:
+            def test_it_sets_allow_float_to_True(self, V):
                 with V.clone() as (res, setd):
                     assert V.t.allow_float() is res
                 assert setd == {"_allow_float": True}
 
-        describe "version_number":
-            it "sets _version_number to True", V:
+        class TestVersionNumber:
+            def test_it_sets_version_number_to_True(self, V):
                 with V.clone() as (res, setd):
                     assert V.t.version_number() is res
                 assert setd == {"_version_number": True}
 
-        describe "enum":
-            it "sets _enum to the value passed in", V:
+        class TestEnum:
+            def test_it_sets_enum_to_the_value_passed_in(self, V):
                 em = mock.Mock(name="enum")
                 with V.clone() as (res, setd):
                     assert V.t.enum(em) is res
                 assert setd == {"_enum": em, "_unknown_enum_values": True}
 
-            it "allows unknown enums by default", V:
+            def test_it_allows_unknown_enums_by_default(self, V):
 
                 class E(enum.Enum):
                     ONE = 1
@@ -225,36 +224,36 @@ describe "Type":
                 value = spec.normalise(Meta.empty(), E.ONE)
                 assert value == E.ONE
 
-            it "sets _unknown_enum_values to the allow_unknown value passed in", V:
+            def test_it_sets_unknown_enum_values_to_the_allow_unknown_value_passed_in(self, V):
                 em = mock.Mock(name="enum")
                 allow_unknown = mock.Mock(name="allow_unknown")
                 with V.clone() as (res, setd):
                     assert V.t.enum(em, allow_unknown=allow_unknown) is res
                 assert setd == {"_enum": em, "_unknown_enum_values": allow_unknown}
 
-        describe "dynamic":
-            it "sets _dynamic to the value passed in", V:
+        class TestDynamic:
+            def test_it_sets_dynamic_to_the_value_passed_in(self, V):
                 dn = mock.Mock(name="dynamiser")
                 with V.clone() as (res, setd):
                     assert V.t.dynamic(dn) is res
                 assert setd == {"_dynamic": dn}
 
-        describe "bitmask":
-            it "sets _bitmask to the value passed in", V:
+        class TestBitmask:
+            def test_it_sets_bitmask_to_the_value_passed_in(self, V):
                 bm = mock.Mock(name="bitmask")
                 with V.clone() as (res, setd):
                     assert V.t.bitmask(bm) is res
                 assert setd == {"_bitmask": bm}
 
-        describe "transform":
-            it "sets _transform and _unpack_transform in that order", V:
+        class TestTransform:
+            def test_it_sets_transform_and_unpack_transform_in_that_order(self, V):
                 pack_func = mock.Mock(name="pack_Func")
                 unpack_func = mock.Mock(name="unpack_func")
                 with V.clone() as (res, setd):
                     assert V.t.transform(pack_func, unpack_func) is res
                 assert setd == {"_transform": pack_func, "_unpack_transform": unpack_func}
 
-            it "complains if either function isn't callable", V:
+            def test_it_complains_if_either_function_isnt_callable(self, V):
                 pack_func = mock.Mock(name="pack_Func")
                 unpack_func = mock.Mock(name="unpack_func")
 
@@ -277,14 +276,14 @@ describe "Type":
                     ):
                         V.t.transform(uncallable_pack_func, uncallable_unpack_func)
 
-        describe "allow_callable":
-            it "sets _allow_callable to the value passed in", V:
+        class TestAllowCallable:
+            def test_it_sets_allow_callable_to_the_value_passed_in(self, V):
                 with V.clone() as (res, setd):
                     assert V.t.allow_callable() is res
                 assert setd == {"_allow_callable": True}
 
-        describe "default":
-            it "creates a function that takes in the pkt if not callable", V:
+        class TestDefault:
+            def test_it_creates_a_function_that_takes_in_the_pkt_if_not_callable(self, V):
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="value")
                 with V.clone() as (res, setd):
@@ -292,26 +291,26 @@ describe "Type":
                 assert list(setd) == ["_default"]
                 assert setd["_default"](pkt) is val
 
-            it "just sets the callable if already callable", V:
+            def test_it_just_sets_the_callable_if_already_callable(self, V):
                 val = mock.Mock(name="value")
                 with V.clone() as (res, setd):
                     assert V.t.default(val) is res
                 assert setd == {"_default": val}
 
-        describe "optional":
-            it "sets _optional to True", V:
+        class TestOptional:
+            def test_it_sets_optional_to_True(self, V):
                 with V.clone() as (res, setd):
                     assert V.t.optional() is res
                 assert setd == {"_optional": True}
 
-        describe "override":
-            it "sets _override to the value if callable", V:
+        class TestOverride:
+            def test_it_sets_override_to_the_value_if_callable(self, V):
                 val = mock.Mock(name="val")
                 with V.clone() as (res, setd):
                     assert V.t.override(val) is res
                 assert setd == {"_override": val}
 
-            it "sets _override to a callable taking in packet return value if not callable", V:
+            def test_it_sets_override_to_a_callable_taking_in_packet_return_value_if_not_callable(self, V):
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="val")
                 with V.clone() as (res, setd):
@@ -319,8 +318,8 @@ describe "Type":
                 assert list(setd) == ["_override"]
                 assert setd["_override"](pkt) is val
 
-    describe "installing types":
-        it "expects a list of (name, size, fmt, conversion) to create types from":
+    class TestInstallingTypes:
+        def test_it_expects_a_list_of_name_size_fmt_conversion_to_create_types_from(self):
             install = [("D2", 64, "<d", float), ("B2", None, None, bytes)]
 
             expected = {
@@ -350,7 +349,7 @@ describe "Type":
                 if hasattr(Type, "B2"):
                     del Type.B2
 
-    describe "spec":
+    class TestSpec:
 
         @pytest.fixture()
         def V(self):
@@ -383,7 +382,7 @@ describe "Type":
 
             return V()
 
-        it "returns override if that is specified", V:
+        def test_it_returns_override_if_that_is_specified(self, V):
             res = mock.Mock(name="res")
             overrider = mock.Mock(name="overrider")
             overridden = mock.Mock(name="overridden", return_value=res)
@@ -409,7 +408,7 @@ describe "Type":
                 is val
             )
 
-        it "returns default if that is specified", V:
+        def test_it_returns_default_if_that_is_specified(self, V):
             res = mock.Mock(name="res")
             defaulter = mock.Mock(name="defaulter")
             defaulted = mock.Mock(name="defaulted", return_value=res)
@@ -431,7 +430,7 @@ describe "Type":
             assert V.t.default(defaulter).spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is val
             assert V.t.default(val).spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is val
 
-        it "returns optional if that is specified", V:
+        def test_it_returns_optional_if_that_is_specified(self, V):
             res = mock.Mock(name="res")
             optional = mock.Mock(name="optional", return_value=res)
             with V.mocked_spec() as spec:
@@ -446,11 +445,11 @@ describe "Type":
             assert V.t.optional().spec(pkt).normalise(Meta.empty(), whatever) is whatever
             assert V.t.optional().spec(pkt).normalise(Meta.empty(), sb.NotSpecified) is Optional
 
-        it "returns just the spec otherwise", V:
+        def test_it_returns_just_the_spec_otherwise(self, V):
             with V.mocked_spec() as spec:
                 assert V.t.spec(V.pkt, V.unpacking, transform=V.transform) is spec
 
-        it "wraps with callable_spec if we allow callable", V:
+        def test_it_wraps_with_callable_spec_if_we_allow_callable(self, V):
             t = T.String.allow_callable()
             spec = t.spec(V.pkt, V.unpacking)
 
@@ -460,7 +459,7 @@ describe "Type":
             assert spec.normalise(Meta.empty(), cb) is cb
             assert spec.normalise(Meta.empty(), "hello") == "hello"
 
-    describe "dynamic_wrapper":
+    class TestDynamicWrapper:
 
         @pytest.fixture()
         def V(self):
@@ -478,7 +477,7 @@ describe "Type":
 
             return V()
 
-        it "returns us an expand_spec with a made up PacketSpec class", V:
+        def test_it_returns_us_an_expand_spec_with_a_made_up_PacketSpec_class(self, V):
             res = mock.Mock(name="res")
             expand_spec = mock.Mock(name="expand_spec", return_value=res)
 
@@ -497,7 +496,7 @@ describe "Type":
             instance = kls(one=True, two=1, three=4)
             assert instance.pack() == bitarray("11000000000100000")
 
-    describe "hidden _spec":
+    class TestHiddenSpec:
 
         @pytest.fixture()
         def V(self):
@@ -514,7 +513,7 @@ describe "Type":
 
             return V()
 
-        it "returns spec as is if found one and no _dynamic", V:
+        def test_it_returns_spec_as_is_if_found_one_and_no_dynamic(self, V):
             assert V.t._dynamic is sb.NotSpecified
 
             spec = mock.Mock(name="spec")
@@ -525,7 +524,7 @@ describe "Type":
 
             spec_from_conversion.assert_called_once_with(V.pkt, V.unpacking)
 
-        it "returns dynamic_wraper if found one and _dynamic", V:
+        def test_it_returns_dynamic_wraper_if_found_one_and_dynamic(self, V):
             dynamiser = mock.Mock(name="dynamiser")
             t = V.t.dynamic(dynamiser)
 
@@ -542,7 +541,7 @@ describe "Type":
             spec_from_conversion.assert_called_once_with(V.pkt, V.unpacking)
             dynamic_wrapper.assert_called_once_with(spec, V.pkt, unpacking=V.unpacking)
 
-        it "complains if it can't find a spec for the conversion", V:
+        def test_it_complains_if_it_cant_find_a_spec_for_the_conversion(self, V):
             spec_from_conversion = mock.Mock(name="spec_from_conversion", return_value=None)
 
             with assertRaises(
@@ -553,7 +552,7 @@ describe "Type":
                 with mock.patch.object(V.t, "spec_from_conversion", spec_from_conversion):
                     V.t._spec(V.pkt, unpacking=V.unpacking)
 
-    describe "_maybe_transform_spec":
+    class TestMaybeTransformSpec:
 
         @pytest.fixture()
         def V(self):
@@ -570,19 +569,19 @@ describe "Type":
 
             return V()
 
-        it "returns as is if unpacking or don't have _transform", V:
+        def test_it_returns_as_is_if_unpacking_or_dont_have_transform(self, V):
             V.t._transform = mock.Mock(name="transform")
             assert V.t._maybe_transform_spec(V.pkt, V.spec, True) is V.spec
 
             V.t._transform = sb.NotSpecified
             assert V.t._maybe_transform_spec(V.pkt, V.spec, False) is V.spec
 
-        it "returns as is if no _transform", V:
+        def test_it_returns_as_is_if_no_transform(self, V):
             V.t._transform = sb.NotSpecified
             assert V.t._maybe_transform_spec(V.pkt, V.spec, False) is V.spec
             assert V.t._maybe_transform_spec(V.pkt, V.spec, True) is V.spec
 
-        it "wraps in transform_spec if we have _transform and aren't unpacking", V:
+        def test_it_wraps_in_transform_spec_if_we_have_transform_and_arent_unpacking(self, V):
             V.t._transform = mock.Mock(name="_transform")
 
             wrapped = mock.Mock(name="wrapped")
@@ -593,7 +592,7 @@ describe "Type":
 
             transform_spec.assert_called_once_with(V.pkt, V.spec, V.t.do_transform)
 
-    describe "spec_from_conversion":
+    class TestSpecFromConversion:
 
         @contextmanager
         def mocked_spec(self, name, conversion):
@@ -606,7 +605,7 @@ describe "Type":
             with mock.patch("photons_protocol.types.{0}".format(name), spec_maker):
                 yield t, spec_maker, spec, size_bits
 
-        it "returns from the static types if in there":
+        def test_it_returns_from_the_static_types_if_in_there(self):
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
             struct_format = mock.Mock(name="struct_format")
@@ -618,7 +617,7 @@ describe "Type":
                 t = Type(struct_format, conv)
                 assert t.spec_from_conversion(pkt, unpacking) is static_conversion_from_spec[conv]
 
-        it "gets us a bytes_spec if conversion is bytes":
+        def test_it_gets_us_a_bytes_spec_if_conversion_is_bytes(self):
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
@@ -627,7 +626,7 @@ describe "Type":
 
             spec_maker.assert_called_once_with(pkt, size_bits)
 
-        it "gets us an integer_spec if conversion is int":
+        def test_it_gets_us_an_integer_spec_if_conversion_is_int(self):
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
@@ -642,7 +641,7 @@ describe "Type":
 
             make_integer_spec.assert_called_once_with(pkt, unpacking)
 
-        it "gets us a bytes_as_string_spec if conversion is str":
+        def test_it_gets_us_a_bytes_as_string_spec_if_conversion_is_str(self):
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
@@ -651,7 +650,7 @@ describe "Type":
 
             spec_maker.assert_called_once_with(pkt, size_bits, unpacking=unpacking)
 
-        it "gets us a csv_spec if conversion is tuple of list, str and comma":
+        def test_it_gets_us_a_csv_spec_if_conversion_is_tuple_of_list_str_and_comma(self):
             pkt = mock.Mock(name="pkt")
             unpacking = mock.Mock(name="unpacking")
 
@@ -665,7 +664,7 @@ describe "Type":
 
             spec_maker.assert_called_once_with(pkt, size_bits, unpacking=unpacking)
 
-    describe "make_integer_spec":
+    class TestMakeIntegerSpec:
 
         @pytest.fixture()
         def V(self):
@@ -701,13 +700,13 @@ describe "Type":
 
             return V()
 
-        it "creates version_number_spec if we have _version_number set", V:
+        def test_it_creates_version_number_spec_if_we_have_version_number_set(self, V):
             with V.mocked_version_number_spec() as (version_number_spec, spec):
                 assert V.t.version_number().make_integer_spec(V.pkt, V.unpacking) is spec
 
             version_number_spec.assert_called_once_with(unpacking=V.unpacking)
 
-        it "creates integer_spec with enum if we have one", V:
+        def test_it_creates_integer_spec_with_enum_if_we_have_one(self, V):
             em = mock.Mock(name="em")
 
             with V.mocked_integer_spec() as (integer_spec, spec):
@@ -723,7 +722,7 @@ describe "Type":
                 unknown_enum_values=V.unknown_enum_values,
             )
 
-        it "creates integer_spec with bitmask if we have one", V:
+        def test_it_creates_integer_spec_with_bitmask_if_we_have_one(self, V):
             bitmask = mock.Mock(name="bitmask")
 
             with V.mocked_integer_spec() as (integer_spec, spec):
@@ -738,7 +737,7 @@ describe "Type":
                 unknown_enum_values=V.unknown_enum_values,
             )
 
-        it "creates integer_spec with neither enum or bitmask if we have neither", V:
+        def test_it_creates_integer_spec_with_neither_enum_or_bitmask_if_we_have_neither(self, V):
             with V.mocked_integer_spec() as (integer_spec, spec):
                 assert V.t.make_integer_spec(V.pkt, V.unpacking) is spec
 
@@ -751,7 +750,7 @@ describe "Type":
                 unknown_enum_values=V.unknown_enum_values,
             )
 
-    describe "transforming":
+    class TestTransforming:
 
         @pytest.fixture()
         def V(self):
@@ -777,20 +776,20 @@ describe "Type":
 
             return V()
 
-        describe "do_transform":
-            it "return value if no transformer", V:
+        class TestDoTransform:
+            def test_it_return_value_if_no_transformer(self, V):
                 assert V.t.do_transform(V.pkt, V.value) is V.value
 
-            it "uses the transformer if we have one", V:
+            def test_it_uses_the_transformer_if_we_have_one(self, V):
                 assert (
                     V.t.transform(V.transformer, V.untransformer).do_transform(V.pkt, V.value)
                 ) is V.transformed
 
-        describe "untransform":
-            it "does nothing if no untransformer", V:
+        class TestUntransform:
+            def test_it_does_nothing_if_no_untransformer(self, V):
                 assert V.t.untransform(V.pkt, V.value) is V.value
 
-            it "transforms if we have an untransformer", V:
+            def test_it_transforms_if_we_have_an_untransformer(self, V):
                 assert (
                     V.t.transform(V.transformer, V.untransformer).untransform(V.pkt, V.value)
                 ) is V.untransformed

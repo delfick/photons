@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 
@@ -19,8 +18,8 @@ def collector():
         yield collector
 
 
-describe "Runner":
-    it "runs cleanup functions when done", collector:
+class TestRunner:
+    def test_it_runs_cleanup_functions_when_done(self, collector):
         called = []
 
         class T(Task):
@@ -47,7 +46,7 @@ describe "Runner":
         T.create(collector).run_loop(collector=collector)
         assert called == [1, 2, "c1a", "c1b", "c2a", "c2b"]
 
-    it "runs cleanup functions even if we had an exception", collector:
+    def test_it_runs_cleanup_functions_even_if_we_had_an_exception(self, collector):
         called = []
 
         class T(Task):
@@ -86,7 +85,7 @@ describe "Runner":
 
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
-    it "cleans up after we finish task if it's cancelled outside", collector:
+    def test_it_cleans_up_after_we_finish_task_if_its_cancelled_outside(self, collector):
 
         called = []
 
@@ -129,7 +128,7 @@ describe "Runner":
 
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
-    it "exceptions stop the task_holder unless ApplicationStopped for a graceful task", collector:
+    def test_it_exceptions_stop_the_task_holder_unless_ApplicationStopped_for_a_graceful_task(self, collector):
 
         called = []
 

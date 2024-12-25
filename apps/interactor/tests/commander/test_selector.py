@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import functools
@@ -55,34 +54,34 @@ def create_selector(
     )
 
 
-describe "Selector":
-    it "can create from NotSpecified", create_selector: SelectorCreator:
+class TestSelector:
+    def test_it_can_create_from_NotSpecified(self, create_selector: SelectorCreator):
         made = create_selector()
         assert isinstance(made, selector.Selector)
         assert made.raw == "_"
         assert isinstance(made.selector, special.FoundSerials)
 
-    it "can create from special reference", create_selector: SelectorCreator:
+    def test_it_can_create_from_special_reference(self, create_selector: SelectorCreator):
         want = special.FoundSerials()
         made = create_selector(want)
         assert isinstance(made, selector.Selector)
         assert made.raw == repr(want)
         assert made.selector is want
 
-    it "can create from underscore", create_selector: SelectorCreator:
+    def test_it_can_create_from_underscore(self, create_selector: SelectorCreator):
         made = create_selector("_")
         assert isinstance(made, selector.Selector)
         assert made.raw == "_"
         assert isinstance(made.selector, special.FoundSerials)
 
-    it "can create from str match", create_selector: SelectorCreator:
+    def test_it_can_create_from_str_match(self, create_selector: SelectorCreator):
         made = create_selector("blah:stuff_and_things")
         assert isinstance(made, selector.Selector)
         assert made.raw == "blah:stuff_and_things"
         assert isinstance(made.selector, BlahSpecialReference)
         assert made.selector.options == "stuff_and_things"
 
-    it "can create from dictionary", finder: Finder, create_selector: SelectorCreator:
+    def test_it_can_create_from_dictionary(self, finder: Finder, create_selector: SelectorCreator):
         raw: dict[str, object] = {"serial": "d073d500000a"}
         made = create_selector(raw)
         assert isinstance(made, selector.Selector)
@@ -91,13 +90,13 @@ describe "Selector":
         assert made.selector.finder is finder
         assert made.selector.fltr["serial"] == ["d073d500000a"]
 
-    it "can create from selector instance", create_selector: SelectorCreator:
+    def test_it_can_create_from_selector_instance(self, create_selector: SelectorCreator):
         hard_coded = special.HardCodedSerials(["d073d5"])
         want = selector.Selector(raw="one", selector=hard_coded)
         made = create_selector(want)
         assert made is want
 
-    it "can create SpecialReference from selector", reference_resolver_register: ReferenceResolverRegister:
+    def test_it_can_create_SpecialReference_from_selector(self, reference_resolver_register: ReferenceResolverRegister):
         hard_coded = special.HardCodedSerials(["d073d5"])
         made = reg.create(
             selector.SpecialReference,
@@ -107,49 +106,49 @@ describe "Selector":
         assert made is hard_coded
 
 
-describe "Matcher":
-    it "can be made from nothing":
+class TestMatcher:
+    def test_it_can_be_made_from_nothing(self):
         made = reg.create(selector.Matcher)
         assert isinstance(made, selector.Matcher)
         assert made.raw == "_"
 
-    it "can be made from str":
+    def test_it_can_be_made_from_str(self):
         made = reg.create(selector.Matcher, "label=kitchen")
         assert isinstance(made, selector.Matcher)
         assert made.raw == "match:label=kitchen"
 
-    it "can be made from dict":
+    def test_it_can_be_made_from_dict(self):
         made = reg.create(selector.Matcher, {"label": "kitchen"})
         assert isinstance(made, selector.Matcher)
         assert made.raw == {"label": "kitchen"}
 
 
-describe "Timeout":
-    it "can be made from nothing":
+class TestTimeout:
+    def test_it_can_be_made_from_nothing(self):
         made = reg.create(selector.Timeout)
         assert isinstance(made, selector.Timeout)
         assert made.value == 20
 
-    it "can be made from str int":
+    def test_it_can_be_made_from_str_int(self):
         made = reg.create(selector.Timeout, "40")
         assert isinstance(made, selector.Timeout)
         assert made.value == 40
 
-    it "can be made from str float":
+    def test_it_can_be_made_from_str_float(self):
         made = reg.create(selector.Timeout, "50.566")
         assert isinstance(made, selector.Timeout)
         assert made.value == 50.566
 
-    it "can be made from int":
+    def test_it_can_be_made_from_int(self):
         made = reg.create(selector.Timeout, 70)
         assert isinstance(made, selector.Timeout)
         assert made.value == 70
 
-    it "can be made from float":
+    def test_it_can_be_made_from_float(self):
         made = reg.create(selector.Timeout, 70.665)
         assert isinstance(made, selector.Timeout)
         assert made.value == 70.665
 
-    it "won't convert bad string":
+    def test_it_wont_convert_bad_string(self):
         with pytest.raises(strcs.errors.UnableToConvert):
             reg.create(selector.Timeout, "70.665.777")

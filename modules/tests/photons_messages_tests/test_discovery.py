@@ -1,12 +1,11 @@
-# coding: spec
 
 import binascii
 
 import pytest
 from photons_messages import DiscoveryMessages, Services, protocol_register
 
-describe "DiscoveryMessages":
-    it "can unpack":
+class TestDiscoveryMessages:
+    def test_it_can_unpack(self):
         hexd = "29000014f7f15496d073d51261e200004c49465856320101000000000000000003000000017cdd0000"
 
         unpackd = DiscoveryMessages.create(hexd, protocol_register=protocol_register)

@@ -1,10 +1,9 @@
-# coding: spec
 
 from photons_canvas.points import containers as cont
 from photons_products import Products
 
-describe "Device":
-    it "has serial, cap and width":
+class TestDevice:
+    def test_it_has_serial_cap_and_width(self):
         serial = "d073d5001337"
         cap = Products.LCM3_TILE.cap
 
@@ -14,7 +13,7 @@ describe "Device":
 
         assert repr(device) == "<Device (d073d5001337,LCM3_TILE)>"
 
-    it "can be used as a key in a dictionary":
+    def test_it_can_be_used_as_a_key_in_a_dictionary(self):
         device1 = cont.Device("d073d5001337", None)
         device2 = cont.Device("d073d5001337", None)
         device3 = cont.Device("d073d5001338", None)
@@ -25,7 +24,7 @@ describe "Device":
         assert d[device3] == 5
         assert d[cont.Device("d073d5001339", None)] == 20
 
-    it "can be compared":
+    def test_it_can_be_compared(self):
         device1 = cont.Device("d073d5001337", None)
         device2 = cont.Device("d073d5001337", None)
         device3 = cont.Device("d073d5001338", None)

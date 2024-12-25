@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 from textwrap import dedent
@@ -100,9 +99,9 @@ async def server2(server_wrapper, final_future: asyncio.Future, sender: Communic
         yield server
 
 
-describe "commands":
-    describe "v1":
-        async it "has a help command", server2:
+class TestCommands:
+    class TestV1:
+        async def test_it_has_a_help_command(self, server2):
             want = dedent(
                 """
             Command test
@@ -129,7 +128,7 @@ describe "commands":
                 text_output=want,
             )
 
-        async it "works for all commands as 200", server:
+        async def test_it_works_for_all_commands_as_200(self, server):
             available: set[str] = set()
             for cmd in server.server.store.commands:
                 if isinstance(cmd, _WithV1Http):

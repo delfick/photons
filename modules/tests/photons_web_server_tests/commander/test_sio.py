@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import typing as tp
@@ -44,8 +43,8 @@ class Between:
             return repr(self.compare)
 
 
-describe "Store with sio":
-    async it "supports sio commands", final_future: asyncio.Future, fake_event_loop, caplog:
+class TestStoreWithSio:
+    async def test_it_supports_sio_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
 
         sio = socketio.AsyncServer(async_mode="sanic")

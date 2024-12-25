@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -6,8 +5,8 @@ import pytest
 from photons_app import helpers as hp
 from photons_control.device_finder import Collections, Device, Filter, Finder
 
-describe "Finder":
-    it "takes in a sender and uses it's stop_fut if final_future not specified":
+class TestFinder:
+    def test_it_takes_in_a_sender_and_uses_its_stop_fut_if_final_future_not_specified(self):
         stop_fut = hp.create_future()
         sender = mock.Mock(name="sender", stop_fut=stop_fut)
 
@@ -27,7 +26,7 @@ describe "Finder":
 
         assert finder.final_future == F()
 
-    it "uses given final_future if one is specified":
+    def test_it_uses_given_final_future_if_one_is_specified(self):
         sender = mock.Mock(name="sender", spec=[])
         final_future = hp.create_future()
 
@@ -39,7 +38,7 @@ describe "Finder":
 
         assert finder.final_future == F()
 
-    it "allows you to specify forget_after":
+    def test_it_allows_you_to_specify_forget_after(self):
         sender = mock.Mock(name="sender", spec=[])
         final_future = hp.create_future()
 
@@ -49,7 +48,7 @@ describe "Finder":
         finder = Finder(sender, final_future, forget_after=42)
         assert finder.forget_after == 42
 
-    describe "Usage":
+    class TestUsage:
 
         @pytest.fixture()
         def final_future(self):
@@ -73,7 +72,7 @@ describe "Finder":
 
             return V()
 
-        async it "can be used as an async generator", V:
+        async def test_it_can_be_used_as_an_async_generator(self, V):
             finish = pytest.helpers.AsyncMock(name="finish")
 
             with mock.patch.object(V.finder, "finish", finish):
@@ -83,7 +82,7 @@ describe "Finder":
 
             finish.assert_called_once_with(None, None, None)
 
-        async it "cleans up it's devices on finish", V:
+        async def test_it_cleans_up_its_devices_on_finish(self, V):
             serials = {
                 s: pytest.helpers.AsyncMock(name=f"{s}_finish") for s in ("s1", "s2", "s3", "s4")
             }
@@ -130,8 +129,8 @@ describe "Finder":
                 for p in patches:
                     p.stop()
 
-        describe "ensure_devices":
-            async it "can add and remove devices", V, fake_time:
+        class TestEnsureDevices:
+            async def test_it_can_add_and_remove_devices(self, V, fake_time):
                 t = fake_time
 
                 async def assertDevices(serials, added, removed):
@@ -188,13 +187,13 @@ describe "Finder":
                 t.add(10)
                 await assertDevices(["s1", "s5"], [], [])
 
-        describe "find":
+        class TestFind:
 
             @pytest.mark.parametrize(
                 "fltr,matches_runs",
                 [(Filter.empty(), False), (Filter.from_kwargs(label="kitchen"), True)],
             )
-            async it "streams devices that match the filter", V, fltr, matches_runs, fake_time:
+            async def test_it_streams_devices_that_match_the_filter(self, V, fltr, matches_runs, fake_time):
                 t = fake_time
 
                 class Patches:
@@ -391,7 +390,7 @@ describe "Finder":
 
                 assert called == expected_called
 
-        describe "info":
+        class TestInfo:
 
             @pytest.mark.parametrize(
                 "fltr",
@@ -400,7 +399,7 @@ describe "Finder":
                     Filter.from_options({"label": "attic", "refresh_info": True}),
                 ],
             )
-            async it "streams devices after getting all info for that device", V, fltr, fake_time:
+            async def test_it_streams_devices_after_getting_all_info_for_that_device(self, V, fltr, fake_time):
                 t = fake_time
 
                 class Patches:

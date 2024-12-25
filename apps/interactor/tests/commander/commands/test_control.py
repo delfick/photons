@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -6,9 +5,9 @@ from photons_app.mimic.event import Events
 from photons_control.colour import ColourParser
 from photons_messages import DeviceMessages, LightMessages
 
-describe "Control":
-    describe "v1":
-        async it "has query commands", devices, server, responses:
+class TestControl:
+    class TestV1:
+        async def test_it_has_query_commands(self, devices, server, responses):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "query", "args": {"pkt_type": 101}},
@@ -65,7 +64,7 @@ describe "Control":
                 json_output=responses.multizone_state_responses,
             )
 
-        async it "has set commands", devices, server:
+        async def test_it_has_set_commands(self, devices, server):
             expected = {"results": {device.serial: "ok" for device in devices}}
 
             await server.assertCommand(
@@ -155,7 +154,7 @@ describe "Control":
                 if device is not kitchen_light:
                     devices.store(device).assertNoSetMessages()
 
-        async it "has power_toggle command", devices, server:
+        async def test_it_has_power_toggle_command(self, devices, server):
             expected = {"results": {device.serial: "ok" for device in devices}}
 
             for device in devices:
@@ -229,7 +228,7 @@ describe "Control":
                     )
                 devices.store(device).clear()
 
-        async it "has power_toggle group command", devices, server:
+        async def test_it_has_power_toggle_group_command(self, devices, server):
             expected = {"results": {device.serial: "ok" for device in devices}}
 
             await server.assertCommand(
@@ -286,7 +285,7 @@ describe "Control":
                 )
                 devices.store(device).clear()
 
-        async it "has transform command", async_timeout, devices, server:
+        async def test_it_has_transform_command(self, async_timeout, devices, server):
             async_timeout.set_timeout_seconds(5)
             # Just power
             expected = {"results": {device.serial: "ok" for device in devices}}

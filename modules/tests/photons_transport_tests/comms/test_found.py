@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 from unittest import mock
@@ -13,8 +12,8 @@ def found():
     return Found()
 
 
-describe "Found":
-    it "starts empty", found:
+class TestFound:
+    def test_it_starts_empty(self, found):
         assert found.found == {}
         assert not found
         assert len(found) == 0
@@ -22,7 +21,7 @@ describe "Found":
         assert found == Found()
         assert list(found) == []
 
-    it "can be cloned":
+    def test_it_can_be_cloned(self):
         found = Found()
         found["d073d5000001"] = {"one": 1, "two": 2}
         found["d073d5000002"] = {"three": 3, "four": 4}
@@ -49,7 +48,7 @@ describe "Found":
 
         assert found2.found == {h("d073d5000001"): {"two": 2}}
 
-    it "can cleanse a serial", found:
+    def test_it_can_cleanse_a_serial(self, found):
 
         def assertCleansed(i, o):
             assert found.cleanse_serial(i) == o
@@ -59,7 +58,7 @@ describe "Found":
         assertCleansed(binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000001")[:6])
         assertCleansed(binascii.unhexlify("d073d500000111"), binascii.unhexlify("d073d5000001")[:6])
 
-    it "can have serials", found:
+    def test_it_can_have_serials(self, found):
         found["d073d5000001"] = 1
         found["d073d500000222"] = 2
         found[binascii.unhexlify("d073d5000003")] = 3
@@ -97,7 +96,7 @@ describe "Found":
         found["d073d5000005"] = 6
         assert len(found) == 5
 
-    it "has getitem", found:
+    def test_it_has_getitem(self, found):
         with assertRaises(KeyError):
             found["d073d5000001"]
 
@@ -109,7 +108,7 @@ describe "Found":
         assert found[binascii.unhexlify("d073d5000001")] is services
         assert found[binascii.unhexlify("d073d500000122")] is services
 
-    it "has setitem", found:
+    def test_it_has_setitem(self, found):
         found["d073d5000001"] = 1
         assert found["d073d5000001"] == 1
 
@@ -122,7 +121,7 @@ describe "Found":
         found[binascii.unhexlify("d073d5000001")] = 4
         assert found["d073d5000001"] == 4
 
-    it "has delitem", found:
+    def test_it_has_delitem(self, found):
         ts = [
             "d073d5000001",
             "d073d500000111",
@@ -142,7 +141,7 @@ describe "Found":
             with assertRaises(KeyError):
                 found["d073d5000001"]
 
-    it "has contains", found:
+    def test_it_has_contains(self, found):
         ts = [
             "d073d5000001",
             "d073d500000111",
@@ -164,7 +163,7 @@ describe "Found":
         for t in ts:
             assert t not in found
 
-    it "has repr", found:
+    def test_it_has_repr(self, found):
         found["d073d5000001"] = {"UDP": 1, "THI": 2}
         found["d073d5000002"] = {"MEMORY": 1}
 
@@ -173,7 +172,7 @@ describe "Found":
             == """<FOUND: {"d073d5000001": "'UDP','THI'", "d073d5000002": "'MEMORY'"}>"""
         )
 
-    it "can borrow found", found:
+    def test_it_can_borrow_found(self, found):
         t1clone = mock.Mock(name="t1clone")
         t1 = mock.Mock(name="t1")
         t1.clone_for.return_value = t1clone
@@ -207,9 +206,9 @@ describe "Found":
         t2.clone_for.assert_called_once_with(sender)
         t3.clone_for.assert_called_once_with(sender)
 
-describe "Found.remove_lost":
+class TestFoundremoveLost:
 
-    async it "closes and removes transports that are not in found_now":
+    async def test_it_closes_and_removes_transports_that_are_not_in_found_now(self):
         ts = [
             "d073d5000002",
             "d073d500000211",

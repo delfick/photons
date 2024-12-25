@@ -1,4 +1,3 @@
-# coding: spec
 
 import itertools
 import logging
@@ -22,14 +21,14 @@ def device():
     return Device("d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 1610929753000000000))
 
 
-describe "DeviceSession":
-    it "is returned from the sesion on the device", device, final_future:
+class TestDeviceSession:
+    def test_it_is_returned_from_the_sesion_on_the_device(self, device, final_future):
         session = device.session(final_future)
         assert isinstance(session, DeviceSession)
         assert session.final_future is final_future
         assert session.device is device
 
-    async it "follows a prepare, reset, delete protocol with io operators started", final_future, device:
+    async def test_it_follows_a_prepare_reset_delete_protocol_with_io_operators_started(self, final_future, device):
         called = []
         async with pytest.helpers.FutureDominoes(expected=9) as futs:
 
@@ -100,7 +99,7 @@ describe "DeviceSession":
                     "delete",
                 ]
 
-    async it "follows a prepare, reset, delete protocol even if io operators fail", final_future, device:
+    async def test_it_follows_a_prepare_reset_delete_protocol_even_if_io_operators_fail(self, final_future, device):
         called = []
         async with pytest.helpers.FutureDominoes(expected=8) as futs:
 
@@ -177,8 +176,8 @@ describe "DeviceSession":
                     "delete",
                 ]
 
-describe "Device":
-    it "takes in default informations":
+class TestDevice:
+    def test_it_takes_in_default_informations(self):
         serial = "d073d5676767"
         device = Device(serial, Products.LCM2_A19, Device.Firmware(2, 80, 0))
         assert device.serial == serial
@@ -195,7 +194,7 @@ describe "Device":
         assert device.attrs._device is device
         assert device.options == []
 
-    it "takes in other informations":
+    def test_it_takes_in_other_informations(self):
         value_store = mock.Mock(name="value_store")
         option1 = mock.Mock(name="option1")
         option2 = mock.Mock(name="option2")
@@ -224,11 +223,11 @@ describe "Device":
         assert device.attrs._device is device
         assert device.options == [option1, option2]
 
-    it "can get the operator register", device:
+    def test_it_can_get_the_operator_register(self, device):
         reg = __import__("photons_app.mimic.operator").mimic.operator.register
         assert device.operators_register is reg
 
-    it "can make a session", final_future:
+    def test_it_can_make_a_session(self, final_future):
         device = Device("d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 0))
 
         session = device.session(final_future)
@@ -236,7 +235,7 @@ describe "Device":
         assert session.final_future is final_future
         assert session.device is device
 
-    it "disallows changing the product of a device or it's capability":
+    def test_it_disallows_changing_the_product_of_a_device_or_its_capability(self):
         device = Device("d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 0))
 
         with assertRaises(AttributeError):
@@ -252,7 +251,7 @@ describe "Device":
         assert device.product is Products.LCM2_A19
         assert device.cap.product is Products.LCM2_A19
 
-    async it "can get state from operators", final_future:
+    async def test_it_can_get_state_from_operators(self, final_future):
         called = []
 
         state_power = DeviceMessages.StatePower(level=0)
@@ -404,9 +403,9 @@ describe "Device":
             assert list(set([item[-1] for item in called])) == [called[0][-1]]
             called.clear()
 
-    describe "prepare":
+    class TestPrepare:
 
-        async it "instantiates operator collections and applies options":
+        async def test_it_instantiates_operator_collections_and_applies_options(self):
             info = {"device": None}
 
             @contextmanager
@@ -499,7 +498,7 @@ describe "Device":
             assert device.operators == []
             assert device.applied_options
 
-    describe "events":
+    class TestEvents:
 
         @pytest.fixture()
         def record(self):
@@ -681,8 +680,8 @@ describe "Device":
                 record.clear()
                 yield device
 
-        describe "firing":
-            async it "has a shortcut to event_with_options":
+        class TestFiring:
+            async def test_it_has_a_shortcut_to_event_with_options(self):
                 arg1 = mock.Mock(name="arg1")
                 arg2 = mock.Mock(name="arg2")
                 kwarg3 = mock.Mock(name="kwarg3")
@@ -703,7 +702,7 @@ describe "Device":
                     Events.RESET, args=(arg1, arg2), kwargs={"a": kwarg3, "b": kwarg4}
                 )
 
-            describe "helper for creating and executing events":
+            class TestHelperForCreatingAndExecutingEvents:
 
                 @pytest.fixture()
                 def mocked(self):
@@ -726,7 +725,7 @@ describe "Device":
                     with mock.patch.object(mocked.device, "execute_event", mocked.execute_event):
                         yield mocked
 
-                async it "has helper for creating and executing events", mocked:
+                async def test_it_has_helper_for_creating_and_executing_events(self, mocked):
                     res = await mocked.device.event_with_options(
                         Events.RESET, args=(), kwargs={"old_attrs": {}}
                     )
@@ -734,7 +733,7 @@ describe "Device":
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is False
 
-                async it "passes in args and kwargs when making the event", mocked:
+                async def test_it_passes_in_args_and_kwargs_when_making_the_event(self, mocked):
                     called = []
 
                     class E:
@@ -752,7 +751,7 @@ describe "Device":
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is False
 
-                async it "can make the event invisible to viewers", mocked:
+                async def test_it_can_make_the_event_invisible_to_viewers(self, mocked):
                     res = await mocked.device.event_with_options(
                         Events.RESET, visible=False, args=(), kwargs={"old_attrs": {}}
                     )
@@ -760,15 +759,15 @@ describe "Device":
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is True
 
-                async it "can not execute", mocked:
+                async def test_it_can_not_execute(self, mocked):
                     res = await mocked.device.event_with_options(
                         Events.RESET, execute=False, args=(), kwargs={"old_attrs": {}}
                     )
                     assert res == Events.RESET(mocked.device, old_attrs={})
                     mocked.execute_event.assert_not_called()
 
-            describe "executing events":
-                async it "does nothing if the device hasn't applied options":
+            class TestExecutingEvents:
+                async def test_it_does_nothing_if_the_device_hasnt_applied_options(self):
                     called = []
 
                     class Op(Operator):
@@ -787,7 +786,7 @@ describe "Device":
                     assert await device.execute_event(event, None) is event
                     assert called == []
 
-                async it "passes on event to everything", device, record:
+                async def test_it_passes_on_event_to_everything(self, device, record):
                     event = await device.event_with_options(
                         Events.ANNOTATION,
                         execute=False,
@@ -803,7 +802,7 @@ describe "Device":
                         ("operator", event),
                     ]
 
-                async it "doesn't pass on to viewers if invisible", device, record:
+                async def test_it_doesnt_pass_on_to_viewers_if_invisible(self, device, record):
                     event = await device.event_with_options(
                         Events.ANNOTATION,
                         execute=False,
@@ -819,7 +818,7 @@ describe "Device":
                         ("operator", event),
                     ]
 
-                async it "can pass only to viewers", device, record:
+                async def test_it_can_pass_only_to_viewers(self, device, record):
                     event = await device.event_with_options(
                         Events.ANNOTATION,
                         execute=False,
@@ -835,7 +834,7 @@ describe "Device":
                         ("viewer", event),
                     ]
 
-                async it "passes reset event into reset functions too", device, record:
+                async def test_it_passes_reset_event_into_reset_functions_too(self, device, record):
                     attr_change_event = Events.ATTRIBUTE_CHANGE(
                         device,
                         [
@@ -869,7 +868,7 @@ describe "Device":
                         ("operator", event),
                     ]
 
-                async it "passes on invisible reset event into reset functions too", device, record:
+                async def test_it_passes_on_invisible_reset_event_into_reset_functions_too(self, device, record):
                     attr_change_event = Events.ATTRIBUTE_CHANGE(
                         device,
                         [
@@ -903,7 +902,7 @@ describe "Device":
                         ("operator", event),
                     ]
 
-                async it "can stop going through operators based on is_finished", record, final_future:
+                async def test_it_can_stop_going_through_operators_based_on_is_finished(self, record, final_future):
 
                     class OO(Operator):
                         def setup(s, i):
@@ -999,8 +998,8 @@ describe "Device":
                         ]
                         assert skips == []
 
-        describe "shortcuts":
-            async it "can power on", device, record:
+        class TestShortcuts:
+            async def test_it_can_power_on(self, device, record):
                 device.has_power = False
                 assert not record
 
@@ -1016,7 +1015,7 @@ describe "Device":
                     ("operator", Events.POWER_ON(device)),
                 ]
 
-            async it "can power off", device, record:
+            async def test_it_can_power_off(self, device, record):
                 assert device.has_power
                 assert not record
 
@@ -1048,7 +1047,7 @@ describe "Device":
                     ("operator", Events.POWER_OFF(device), False),
                 ]
 
-            async it "can temporarily be off", device, record:
+            async def test_it_can_temporarily_be_off(self, device, record):
 
                 def intercept(operator, *v):
                     if operator is not None:
@@ -1092,7 +1091,7 @@ describe "Device":
                     ("operator", Events.POWER_ON(device), True),
                 ]
 
-            async it "can reset", device, record:
+            async def test_it_can_reset(self, device, record):
                 attr_change_event = Events.ATTRIBUTE_CHANGE(
                     device,
                     [
@@ -1254,7 +1253,7 @@ describe "Device":
                 assert device.has_power
                 assert device.attrs.as_dict() == {"three": 1, "four": 2, "five": 3}
 
-            async it "can delete", device, record:
+            async def test_it_can_delete(self, device, record):
                 await device.delete()
                 delete_event = Events.DELETE(device)
                 assert record == [
@@ -1282,7 +1281,7 @@ describe "Device":
                 assert not hasattr(device, "operators")
                 assert not device.applied_options
 
-            async it "can annotate", device, record:
+            async def test_it_can_annotate(self, device, record):
                 await device.annotate("INFO", "hello there", one=1, two=2)
                 annotate_event = Events.ANNOTATION(
                     device, logging.INFO, "hello there", one=1, two=2
@@ -1310,7 +1309,7 @@ describe "Device":
                 with assertRaises(AttributeError, "NUP"):
                     Events.ANNOTATION(device, logging.NUP, "hello there", one=1)
 
-            async it "can determine if the device is discoverable", device, record:
+            async def test_it_can_determine_if_the_device_is_discoverable(self, device, record):
                 async with device.offline():
                     record.clear()
                     assert not await device.discoverable(Services.UDP, "255.255.255.255")

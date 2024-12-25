@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -48,9 +47,9 @@ async def sender(final_future):
         yield sender
 
 
-describe "SetZones":
+class TestSetZones:
 
-    async it "set zones", sender:
+    async def test_it_set_zones(self, sender):
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in devices:
@@ -65,7 +64,7 @@ describe "SetZones":
         for strip in devices:
             assert strip.attrs.zones == colors
 
-    async it "set zones from a different start zone", sender:
+    async def test_it_set_zones_from_a_different_start_zone(self, sender):
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
         for strip in devices:

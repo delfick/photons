@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -54,7 +53,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "FromCapability":
+class TestFromCapability:
 
     async def assertScript(self, sender, msg, *, expected, **kwargs):
         await sender(msg, devices.serials, **kwargs)
@@ -70,7 +69,7 @@ describe "FromCapability":
             devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(device).clear()
 
-    async it "sends the messages to devices with only correct capability", sender:
+    async def test_it_sends_the_messages_to_devices_with_only_correct_capability(self, sender):
 
         msg = ForCapability(hev=LightMessages.GetHevCycle())
 
@@ -86,7 +85,7 @@ describe "FromCapability":
 
         await self.assertScript(sender, msg, expected=expected)
 
-    async it "can send message to groups", sender:
+    async def test_it_can_send_message_to_groups(self, sender):
 
         msg = ForCapability(**{"ir,hev": DeviceMessages.SetPower(level=65535)})
 
@@ -106,7 +105,7 @@ describe "FromCapability":
 
         await self.assertScript(sender, msg, expected=expected)
 
-    async it "can send to negative capability", sender:
+    async def test_it_can_send_to_negative_capability(self, sender):
 
         msg = ForCapability(hev=LightMessages.GetHevCycle(), not_hev=LightMessages.GetLightPower())
 

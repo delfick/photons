@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -391,9 +390,9 @@ def results(effects_running_status, effects_stopped_status, success_result):
     return Results()
 
 
-describe "Effects":
-    describe "v1":
-        async it "can start effects", server, results:
+class TestEffects:
+    class TestV1:
+        async def test_it_can_start_effects(self, server, results):
             results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "MORPH"
             palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"][
                 "palette"
@@ -435,7 +434,7 @@ describe "Effects":
                 json_output=results.effects_stopped,
             )
 
-        async it "can apply a theme first", server, results:
+        async def test_it_can_apply_a_theme_first(self, server, results):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {
@@ -449,7 +448,7 @@ describe "Effects":
                 json_output=results.success,
             )
 
-        async it "can start just matrix effects", server, results:
+        async def test_it_can_start_just_matrix_effects(self, server, results):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status"},
@@ -500,7 +499,7 @@ describe "Effects":
                 json_output=results.effects_stopped,
             )
 
-        async it "can start just linear effects", server, results:
+        async def test_it_can_start_just_linear_effects(self, server, results):
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "effects/status"},
@@ -536,7 +535,7 @@ describe "Effects":
                 json_output=results.effects_stopped,
             )
 
-        async it "can start linear effects and power on", devices, server, results:
+        async def test_it_can_start_linear_effects_and_power_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 
@@ -553,7 +552,7 @@ describe "Effects":
                 if device.serial in ("d073d5000005", "d073d5000006"):
                     assert device.attrs.power == 65535
 
-        async it "can start matrix effects and power on", devices, server, results:
+        async def test_it_can_start_matrix_effects_and_power_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 
@@ -570,7 +569,7 @@ describe "Effects":
                 if device.serial in ("d073d5000007", "d073d5000008"):
                     assert device.attrs.power == 65535
 
-        async it "can start matrix and linear effects without powering on", devices, server, results:
+        async def test_it_can_start_matrix_and_linear_effects_without_powering_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 
@@ -591,7 +590,7 @@ describe "Effects":
             for device in devices:
                 assert device.attrs.power == 0
 
-        async it "can stop matrix and linear effects without powering on", devices, server, results:
+        async def test_it_can_stop_matrix_and_linear_effects_without_powering_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 
@@ -612,7 +611,7 @@ describe "Effects":
             for device in devices:
                 assert device.attrs.power == 0
 
-        async it "works if devices are offline", devices, server, results, sender:
+        async def test_it_works_if_devices_are_offline(self, devices, server, results, sender):
             offline1 = devices["d073d5000001"].offline()
             offline5 = devices["d073d5000005"].offline()
             offline7 = devices["d073d5000007"].offline()

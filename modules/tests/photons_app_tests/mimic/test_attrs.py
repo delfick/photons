@@ -1,4 +1,3 @@
-# coding: spec
 
 import io
 from textwrap import dedent
@@ -24,7 +23,7 @@ def device():
     )
 
 
-describe "Path":
+class TestPath:
 
     @pytest.fixture()
     def attrs(self, device):
@@ -48,13 +47,13 @@ describe "Path":
         attrs.attrs_start()
         return attrs
 
-    it "takes attrs and parts", attrs:
+    def test_it_takes_attrs_and_parts(self, attrs):
         parts = ["one", "two", "three"]
         path = Path(attrs, parts)
         assert path.attrs is attrs
         assert path.parts == parts
 
-    it "can match against a glob and only if the value exists in attrs", attrs:
+    def test_it_can_match_against_a_glob_and_only_if_the_value_exists_in_attrs(self, attrs):
         path = Path(attrs, ["not", "there", 1])
         assert not path.matches("not*")
         assert not path.matches("not.there[1]")
@@ -72,25 +71,25 @@ describe "Path":
         assert not path.matches("not.there[2]")
         assert not path.matches("there[1]")
 
-    it "can create an object to represent a change", attrs:
+    def test_it_can_create_an_object_to_represent_a_change(self, attrs):
         path = Path(attrs, ["one", "two"])
         ch = path.changer_to("three")
         assert isinstance(ch, ChangeAttr)
         assert ch.value == "three"
         assert ch.path is path
 
-    it "can create an object to represent a length reduction", attrs:
+    def test_it_can_create_an_object_to_represent_a_length_reduction(self, attrs):
         path = Path(attrs, ["one", "two"])
         ch = path.reduce_length_to(3)
         assert isinstance(ch, ReduceLength)
         assert ch.value == 3
         assert ch.path is path
 
-    describe "follow":
-        it "no parts is for nothing", attrs:
+    class TestFollow:
+        def test_it_no_parts_is_for_nothing(self, attrs):
             assert Path(attrs, []).follow() == ("<>", attrs, sb.NotSpecified)
 
-        it "can find an item", attrs:
+        def test_it_can_find_an_item(self, attrs):
             assert Path(attrs, ["many"]).follow() == ("many", attrs, "many")
             assert Path(attrs, ["many", 0]).follow() == ("many[0]", attrs["many"], 0)
             assert Path(attrs, ["one", "list1", 1, "blah"]).follow() == (
@@ -99,7 +98,7 @@ describe "Path":
                 "blah",
             )
 
-        it "can know when it can't find an item", attrs:
+        def test_it_can_know_when_it_cant_find_an_item(self, attrs):
             assert Path(attrs, ["many", 5]).follow() == ("many<5>", attrs["many"], sb.NotSpecified)
             assert Path(attrs, ["one", "list1", 3, "meh"]).follow() == (
                 "one.list1<3><meh>",
@@ -107,8 +106,8 @@ describe "Path":
                 sb.NotSpecified,
             )
 
-    describe "ChangeAttr":
-        it "has repr before we attempt to apply", attrs:
+    class TestChangeAttr:
+        def test_it_has_repr_before_we_attempt_to_apply(self, attrs):
             path = Path(attrs, ["one", "list2", 2])
             changer = ChangeAttr(path, 23)
             assert repr(changer) == "<Will change <Path one.list2[2]> to 23>"
@@ -119,7 +118,7 @@ describe "Path":
             assert repr(changer) == "<Will change <Path one<list24><2>> to 23>"
             assert changer == ChangeAttr.test("one<list24><2>", 23, attempted=False)
 
-        async it "has a repr if we applied to a path that doesn't exist", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path_that_doesnt_exist(self, attrs):
             path = Path(attrs, ["one", "list24", 2])
             changer = ChangeAttr(path, 23)
             assert repr(changer) == "<Will change <Path one<list24><2>> to 23>"
@@ -129,7 +128,7 @@ describe "Path":
             assert repr(changer) == "<Couldn't Change one<list24><2>>"
             assert changer == ChangeAttr.test("one<list24><2>", 23, attempted=True, success=False)
 
-        async it "can call attr_change on parent if it has one", attrs:
+        async def test_it_can_call_attr_change_on_parent_if_it_has_one(self, attrs):
             called = []
 
             class Holder:
@@ -155,7 +154,7 @@ describe "Path":
             called.clear()
             assert attrs.holder.my_property == 5
 
-        async it "has a repr if we applied to a path but the value didn't change", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(self, attrs):
 
             class Sticky(dictobj.Spec):
                 @property
@@ -178,7 +177,7 @@ describe "Path":
             assert repr(changer) == "<Changed sticky.one to 23 but became 2>"
             assert changer == ChangeAttr.test("sticky.one", 23, value_after=2)
 
-        async it "has a repr if we applied to a path", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path(self, attrs):
             changer = attrs.attrs_path("one", "list1", 0, "blah").changer_to(False)
             assert repr(changer) == "<Will change <Path one.list1[0].blah> to False>"
             await changer()
@@ -216,20 +215,20 @@ describe "Path":
                 "many": ["yes", "yah", "nope"],
             }
 
-        async it "can add attributes that don't already exist to the base of attrs", attrs:
+        async def test_it_can_add_attributes_that_dont_already_exist_to_the_base_of_attrs(self, attrs):
             changer = attrs.attrs_path("new").changer_to("newer")
             assert repr(changer) == "<Will change <Path new> to newer>"
             await changer()
             assert repr(changer) == "<Changed new to newer>"
 
-        async it "can not add attributes that don't already exist to after base of attrs", attrs:
+        async def test_it_can_not_add_attributes_that_dont_already_exist_to_after_base_of_attrs(self, attrs):
             changer = attrs.attrs_path("one", "list1", 0, "nope").changer_to("never")
             assert repr(changer) == "<Will change <Path one.list1[0]<nope>> to never>"
             await changer()
             assert repr(changer) == "<Couldn't Change one.list1[0]<nope>>"
 
-    describe "ReduceLength":
-        it "has repr before we attempt to apply", attrs:
+    class TestReduceLength:
+        def test_it_has_repr_before_we_attempt_to_apply(self, attrs):
             path = Path(attrs, ["one", "list2"])
             changer = ReduceLength(path, 3)
             assert repr(changer) == "<Will change <Path one.list2> length to 3>"
@@ -240,7 +239,7 @@ describe "Path":
             assert repr(changer) == "<Will change <Path one<list24>> length to 4>"
             assert changer == ReduceLength.test("one<list24>", 4, attempted=False)
 
-        async it "has a repr if we applied to a path that doesn't exist", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path_that_doesnt_exist(self, attrs):
             path = Path(attrs, ["one", "list24"])
             changer = ReduceLength(path, 23)
             assert repr(changer) == "<Will change <Path one<list24>> length to 23>"
@@ -250,7 +249,7 @@ describe "Path":
             assert repr(changer) == "<Couldn't Change length for one<list24>>"
             assert changer == ReduceLength.test("one<list24>", 23, attempted=True, success=False)
 
-        async it "can call attr_change if property tuple is on has one", attrs:
+        async def test_it_can_call_attr_change_if_property_tuple_is_on_has_one(self, attrs):
             called = []
 
             class Holder:
@@ -287,7 +286,7 @@ describe "Path":
             assert attrs.holder.a_list == (1, 2)
             assert called == [("attr_change", "a_list", (1, 2), None)]
 
-        async it "has a repr if we applied to a path but the value didn't change", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(self, attrs):
 
             class Unpoppable(list):
                 def __init__(self):
@@ -311,7 +310,7 @@ describe "Path":
             assert repr(changer) == "<Changed sticky.one length to 2 but became 4>"
             assert changer == ReduceLength.test("sticky.one", 2, length_after=4)
 
-        async it "has a repr if we applied to a path", attrs:
+        async def test_it_has_a_repr_if_we_applied_to_a_path(self, attrs):
             changer = attrs.attrs_path("thing4").changer_to((1, 2, 3, 4))
             await changer()
             assert repr(changer) == "<Changed thing4 to (1, 2, 3, 4)>"
@@ -346,7 +345,7 @@ describe "Path":
             }
 
 
-describe "Attrs":
+class TestAttrs:
 
     @pytest.fixture()
     def final_future(self):
@@ -366,7 +365,7 @@ describe "Attrs":
         assert device.attrs._device is device
         return device.attrs
 
-    it "takes a device and can be told when it's started", device:
+    def test_it_takes_a_device_and_can_be_told_when_its_started(self, device):
         attrs = Attrs(device)
         assert attrs._device is device
         assert attrs._attrs == {}
@@ -382,20 +381,20 @@ describe "Attrs":
         assert not attrs._started
         assert attrs._attrs == {}
 
-    it "can get a path object", attrs:
+    def test_it_can_get_a_path_object(self, attrs):
         path = attrs.attrs_path("one", "two", 3, "four")
         assert isinstance(path, Path)
         assert path.attrs is attrs
         assert path.parts == ["one", "two", 3, "four"]
 
-    async it "says if something is inside _attrs", attrs:
+    async def test_it_says_if_something_is_inside_attrs(self, attrs):
         assert "one" not in attrs
         await attrs.attrs_apply(attrs.attrs_path("one").changer_to(3), event=None)
         assert "one" in attrs
         assert attrs.one == 3
         assert attrs["one"] == 3
 
-    it "complains if you try to set things on the attrs with item or attr syntax", attrs:
+    def test_it_complains_if_you_try_to_set_things_on_the_attrs_with_item_or_attr_syntax(self, attrs):
         assert "nup" not in attrs
         with assertRaises(TypeError, "'Attrs' object does not support item assignment"):
             attrs["nup"] = 3
@@ -405,7 +404,7 @@ describe "Attrs":
             attrs.nup = 3
         assert "nup" not in attrs
 
-    async it "can get attributes with item and attr syntax", attrs:
+    async def test_it_can_get_attributes_with_item_and_attr_syntax(self, attrs):
         with assertRaises(AttributeError, "No such attribute thing"):
             attrs.thing
         with assertRaises(KeyError, "thing"):
@@ -420,7 +419,7 @@ describe "Attrs":
         assert attrs.thing == 3
         assert attrs["stuff"]["one"] == 1
 
-    async it "puts items in _attrs into dir output", attrs:
+    async def test_it_puts_items_in_attrs_into_dir_output(self, attrs):
         without = dir(attrs)
 
         assert "thing" not in without
@@ -434,7 +433,7 @@ describe "Attrs":
 
         assert set(dir(attrs)) == set(without + ["thing", "stuff"])
 
-    async it "makes a copy of attrs for as_dict", attrs:
+    async def test_it_makes_a_copy_of_attrs_for_as_dict(self, attrs):
         dct = attrs.as_dict()
         assert dct == {}
         assert dct == attrs._attrs
@@ -453,7 +452,7 @@ describe "Attrs":
         assert dct == {"one": 2, "four": 4}
         assert attrs._attrs == {"two": 3, "one": 2}
 
-    async it "records what is changed", device, attrs, record, final_future:
+    async def test_it_records_what_is_changed(self, device, attrs, record, final_future):
         device.value_store["has_io"] = False
         device.value_store["test_console_record"] = record
 
@@ -498,7 +497,7 @@ describe "Attrs":
             "three": "blah",
         }
 
-    async it "hides changes if the attrs haven't started yet", device, attrs, record, final_future:
+    async def test_it_hides_changes_if_the_attrs_havent_started_yet(self, device, attrs, record, final_future):
         device.value_store["has_io"] = False
         device.value_store["test_console_record"] = record
 

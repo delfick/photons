@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import enum
@@ -19,13 +18,13 @@ from photons_control.device_finder import (
 )
 from photons_messages import DeviceMessages, LightMessages
 
-describe "Device":
+class TestDevice:
 
     @pytest.fixture()
     def device(self):
         return Device.FieldSpec().empty_normalise(serial="d073d5000001")
 
-    it "has property_fields", device:
+    def test_it_has_property_fields(self, device):
         assert device.property_fields == [
             "group_id",
             "group_name",
@@ -55,7 +54,7 @@ describe "Device":
         assert device.location_id == "uuidl"
         assert device.location_name == "meh"
 
-    it "has as_dict and info with modified values", device:
+    def test_it_has_as_dict_and_info_with_modified_values(self, device):
         values = {
             "serial": "d073d5000001",
             "label": "kitchen",
@@ -123,29 +122,29 @@ describe "Device":
         assert device.info == values
         assert device.as_dict() == values
 
-    describe "matches_fltr":
-        it "says yes if the filter matches all", device:
+    class TestMatchesFltr:
+        def test_it_says_yes_if_the_filter_matches_all(self, device):
             device.label = "kitchen"
             device.power = "on"
             filtr = Filter.empty()
             assert filtr.matches_all
             assert device.matches_fltr(filtr)
 
-        it "says yes if the filter matches all and device has no fields", device:
+        def test_it_says_yes_if_the_filter_matches_all_and_device_has_no_fields(self, device):
             filtr = Filter.empty()
             assert filtr.matches_all
             assert device.matches_fltr(filtr)
 
-        it "says no if the filtr does not match", device:
+        def test_it_says_no_if_the_filtr_does_not_match(self, device):
             filtr = Filter.from_kwargs(label="bathroom")
             device.label = "kitchen"
             assert not device.matches_fltr(filtr)
 
-        it "says no if the device has nothing on it", device:
+        def test_it_says_no_if_the_device_has_nothing_on_it(self, device):
             filtr = Filter.from_kwargs(label="bathroom")
             assert not device.matches_fltr(filtr)
 
-        it "says yes if the filtr matches", device:
+        def test_it_says_yes_if_the_filtr_matches(self, device):
             filtr = mock.Mock(name="filtr", matches_all=False)
             filtr.matches.return_value = True
 
@@ -198,13 +197,13 @@ describe "Device":
                 )
             )
 
-    describe "set_from_pkt":
+    class TestSetFromPkt:
 
         @pytest.fixture()
         def collections(self):
             return Collections()
 
-        it "can take in a LightState", device, collections:
+        def test_it_can_take_in_a_LightState(self, device, collections):
             pkt = LightMessages.LightState.create(
                 label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
             )
@@ -225,7 +224,7 @@ describe "Device":
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
             assert device.power == "on"
 
-        it "can take in StateGroup", device, collections:
+        def test_it_can_take_in_StateGroup(self, device, collections):
             group_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateGroup.create(group=group_uuid, updated_at=1, label="group1")
 
@@ -258,7 +257,7 @@ describe "Device":
             assert group_uuid in collections.collections["group"]
             assert group_uuid2 in collections.collections["group"]
 
-        it "can take in StateLocation", device, collections:
+        def test_it_can_take_in_StateLocation(self, device, collections):
             location_uuid = str(uuid.uuid1()).replace("-", "")
             pkt = DeviceMessages.StateLocation.create(
                 location=location_uuid, updated_at=1, label="location1"
@@ -295,12 +294,12 @@ describe "Device":
             assert location_uuid in collections.collections["location"]
             assert location_uuid2 in collections.collections["location"]
 
-        it "takes in StateHostFirmware", device, collections:
+        def test_it_takes_in_StateHostFirmware(self, device, collections):
             pkt = DeviceMessages.StateHostFirmware.create(version_major=1, version_minor=20)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.FIRMWARE
             assert str(device.firmware) == "1.20"
 
-        it "takes in StateVersion", device, collections:
+        def test_it_takes_in_StateVersion(self, device, collections):
             pkt = DeviceMessages.StateVersion.create(vendor=1, product=22)
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.VERSION
@@ -320,7 +319,7 @@ describe "Device":
                 "variable_color_temp",
             ]
 
-    describe "points_from_fltr":
+    class TestPointsFromFltr:
 
         @pytest.fixture()
         def RF(self):
@@ -367,10 +366,10 @@ describe "Device":
 
             return Fltr
 
-        it "returns all the InfoPoints for an empty fltr", device:
+        def test_it_returns_all_the_InfoPoints_for_an_empty_fltr(self, device):
             assert list(device.points_from_fltr(Filter.empty())) == list(InfoPoints)
 
-        it "only yields points if one of it's keys are on the fltr", device, Points, Fltr:
+        def test_it_only_yields_points_if_one_of_its_keys_are_on_the_fltr(self, device, Points, Fltr):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -382,7 +381,7 @@ describe "Device":
             assert list(device.points_from_fltr(fltr)) == [Points.TWO]
             assert all(f.done() for f in device.point_futures.values())
 
-        it "resets futures if we have a refresh_info and a refresh amount", device, Points, Fltr, RF:
+        def test_it_resets_futures_if_we_have_a_refresh_info_and_a_refresh_amount(self, device, Points, Fltr, RF):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -396,7 +395,7 @@ describe "Device":
                 Points.THREE: RF(False),
             }
 
-        it "does not reset futures if we have a refresh_info but fltr doesn't match", device, Points, Fltr, RF:
+        def test_it_does_not_reset_futures_if_we_have_a_refresh_info_but_fltr_doesnt_match(self, device, Points, Fltr, RF):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -410,7 +409,7 @@ describe "Device":
                 Points.THREE: RF(True),
             }
 
-        it "doesn't fail resetting future if already reset", device, Points, Fltr, RF:
+        def test_it_doesnt_fail_resetting_future_if_already_reset(self, device, Points, Fltr, RF):
             assert all(not f.done() for f in device.point_futures.values())
 
             fltr = Fltr("attr1", "attr6", "attr4", refresh_info=True)
@@ -423,8 +422,8 @@ describe "Device":
                 Points.THREE: RF(False),
             }
 
-    describe "final_future":
-        it "has a memoized final_future", device:
+    class TestFinalFuture:
+        def test_it_has_a_memoized_final_future(self, device):
             ff = device.final_future
             assert isinstance(ff, asyncio.Future)
             assert not ff.done()

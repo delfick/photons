@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -9,8 +8,8 @@ from photons_messages import LightMessages, TileMessages
 from photons_messages.fields import Color
 from photons_products import Products
 
-describe "Part":
-    it "takes in some properties", V:
+class TestPart:
+    def test_it_takes_in_some_properties(self, V):
         user_x = 2
         user_y = 3
         width = 5
@@ -70,13 +69,13 @@ describe "Part":
         )
         assert part._set_64.pack()[36 * 8 :] == real_set_64.payload.pack()
 
-    it "can be used as a key in dictionary", V:
+    def test_it_can_be_used_as_a_key_in_dictionary(self, V):
         dct = {V.part: 1}
         assert dct[V.part] == 1
         assert dct[(V.device, V.part.part_number)] == 1
         assert dct[(V.device.serial, V.part.part_number)] == 1
 
-    it "can be compared for equality", V:
+    def test_it_can_be_compared_for_equality(self, V):
         same = V.make_part(V.device, 5)
         different_part = V.make_part(V.device, 1)
         different_device = V.make_part(V.other_device, 1)
@@ -101,7 +100,7 @@ describe "Part":
         assert V.part != (V.other_device, 5)
         assert V.part != (V.other_device.serial, 5)
 
-    it "can be ordered", V:
+    def test_it_can_be_ordered(self, V):
 
         parts = [
             V.make_part(V.device, 2),
@@ -115,14 +114,14 @@ describe "Part":
 
         assert sorted_parts == [parts[1], parts[0], parts[3], parts[5], parts[2], parts[4]]
 
-    it "has a repr", V:
+    def test_it_has_a_repr(self, V):
         assert repr(V.part) == "<Part (d073d5001337,5)>"
         assert repr(V.make_part(V.other_device, 5)) == "<Part (d073d5006677,5)>"
 
-    it "can get original_colors", V:
+    def test_it_can_get_original_colors(self, V):
         assert V.part.original_colors == V.original_colors
 
-    it "can set original_colors", V:
+    def test_it_can_set_original_colors(self, V):
         other_colors = [(0, 1, 1, 1) for _ in range(64)]
         assert V.part.original_colors != other_colors
         V.part.original_colors = other_colors
@@ -135,7 +134,7 @@ describe "Part":
         assert V.part.colors == more_colors
         assert V.part.original_colors == more_colors
 
-    it "can clone the real part", V:
+    def test_it_can_clone_the_real_part(self, V):
         part_colors = [(1, 1, 1, 1) for _ in range(64)]
         real_part_original_colors = [(0, 1, 1, 1) for _ in range(64)]
 
@@ -171,7 +170,7 @@ describe "Part":
         assert clone.real_part is real_part.real_part
         assert clone.original_colors == real_part_original_colors
 
-    it "can clone", V:
+    def test_it_can_clone(self, V):
         colors = [(0, 1, 1, 1) for _ in range(64)]
 
         part = V.make_part(
@@ -213,14 +212,14 @@ describe "Part":
         assert_clone(user_x=21, user_y=30, width=40)
         assert_clone(user_x=21, user_y=30, width=40, height=50)
 
-    it "can update position", V:
+    def test_it_can_update_position(self, V):
         part = V.make_part(V.device, 1, user_x=2, user_y=3, width=4, height=5)
         assert part.bounds == ((16, 20), (24, 19), (4, 5))
 
         part.update(5, 6, 7, 8)
         assert part.bounds == ((40, 47), (48, 40), (7, 8))
 
-    it "returns bounds information", V:
+    def test_it_returns_bounds_information(self, V):
         part = V.make_part(V.device, 1, user_x=2, user_y=3, width=6, height=7)
         assert part.left == 16
         assert part.right == 22
@@ -230,7 +229,7 @@ describe "Part":
         assert part.height == 7
         assert part.bounds == ((16, 22), (24, 17), (6, 7))
 
-    it "can get all points", V:
+    def test_it_can_get_all_points(self, V):
         part = V.make_part(V.device, 1, user_x=2, user_y=3, width=6, height=7)
         assert part.bounds == ((16, 22), (24, 17), (6, 7))
         assert part.points == [
@@ -243,7 +242,7 @@ describe "Part":
             *[(16, 18), (17, 18), (18, 18), (19, 18), (20, 18), (21, 18)],
         ]
 
-    it "can reverse orient", V:
+    def test_it_can_reverse_orient(self, V):
         ret_colors = mock.Mock(name="ret_colors", spec=[])
         reorient = mock.Mock(name="reorient", return_value=ret_colors)
 
@@ -255,7 +254,7 @@ describe "Part":
 
         reorient.assert_called_once_with(colors, Orientation.RotatedRight)
 
-    it "can orient", V:
+    def test_it_can_orient(self, V):
         ret_colors = mock.Mock(name="ret_colors", spec=[])
         reorient = mock.Mock(name="reorient", return_value=ret_colors)
 
@@ -267,7 +266,7 @@ describe "Part":
 
         reorient.assert_called_once_with(colors, Orientation.RotatedLeft)
 
-    it "can orient with random orientation", V:
+    def test_it_can_orient_with_random_orientation(self, V):
         ret_colors = mock.Mock(name="ret_colors", spec=[])
         reorient = mock.Mock(name="reorient", return_value=ret_colors)
 
@@ -288,8 +287,8 @@ describe "Part":
 
         reorient.assert_called_once_with(colors, part.random_orientation)
 
-    describe "msgs":
-        it "returns a SetColor for bulbs", V:
+    class TestMsgs:
+        def test_it_returns_a_SetColor_for_bulbs(self, V):
             device = cont.Device("d073d5001337", Products.LCM2_A19.cap)
             part = V.make_part(device, 0, user_x=2, user_y=2, width=1, height=1)
 
@@ -304,7 +303,7 @@ describe "Part":
                 ).payload
             )
 
-        it "returns multizone messages for strips", V:
+        def test_it_returns_multizone_messages_for_strips(self, V):
             colors = mock.Mock(name="colors", spec=[])
             duration = mock.Mock(name="duration", spec=[])
 
@@ -332,7 +331,7 @@ describe "Part":
                     )
                     FakeMultizoneMessagesMaker.reset_mock()
 
-        it "returns special Set64 message for a tile", V:
+        def test_it_returns_special_Set64_message_for_a_tile(self, V):
             colors = [(i, 1, 1, 3500) for i in range(64)]
 
             device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
@@ -373,8 +372,8 @@ describe "Part":
 
             assert isinstance(msgs[0], Set64)
 
-        describe "Caching":
-            it "it sends same messages or NO_MESSAGES depending on time and difference", FakeTime, V:
+        class TestCaching:
+            def test_it_it_sends_same_messages_or_NO_MESSAGES_depending_on_time_and_difference(self, FakeTime, V):
                 colors = [(i, 1, 1, 3500) for i in range(64)]
                 device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
 
@@ -410,7 +409,7 @@ describe "Part":
                     assert part.next_force_send == 3.5
                     assert part.colors == colors
 
-            it "it sends different messages if colors are different", FakeTime, V:
+            def test_it_it_sends_different_messages_if_colors_are_different(self, FakeTime, V):
                 colors = [(i, 1, 1, 3500) for i in range(64)]
                 colors2 = [(1, 1, 1, 3500) for i in range(64)]
                 device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)

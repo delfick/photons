@@ -1,4 +1,3 @@
-# coding: spec
 
 import uuid
 
@@ -14,8 +13,8 @@ async def runner(db_runner):
         yield runner
 
 
-describe "SceneInfo":
-    it "can return itself as a dict":
+class TestSceneInfo:
+    def test_it_can_return_itself_as_a_dict(self):
         info = SceneInfo(uuid="one", label=None, description=None)
         assert info.as_dict() == {"uuid": "one"}
 
@@ -25,8 +24,8 @@ describe "SceneInfo":
         info = SceneInfo(uuid="three", label="bathroom", description="blah")
         assert info.as_dict() == {"uuid": "three", "label": "bathroom", "description": "blah"}
 
-    describe "Interaction with database":
-        async it "Must have unique uuid", runner:
+    class TestInteractionWithDatabase:
+        async def test_it_Must_have_unique_uuid(self, runner):
             identifier = str(uuid.uuid1())
 
             kwargs = dict(uuid=identifier, label="blah", description="described")

@@ -1,10 +1,9 @@
-# coding: spec
 
 from photons_canvas import orientation
 from photons_canvas.orientation import Orientation as O
 
-describe "rotated_index":
-    it "works":
+class TestRotatedIndex:
+    def test_it_works(self):
         testcases = [
             (0, O.RightSideUp, 0),
             (0, O.FaceUp, 0),
@@ -26,8 +25,8 @@ describe "rotated_index":
                 got == expected
             ), f"Rotated {i} to {got} instead of {expected} with orientation {o.name}"
 
-describe "reverse_orientation":
-    it "works":
+class TestReverseOrientation:
+    def test_it_works(self):
         testcases = [
             (O.RightSideUp, O.RightSideUp),
             (O.FaceUp, O.FaceUp),
@@ -43,8 +42,8 @@ describe "reverse_orientation":
                 got is expected
             ), f"Expected reverse of {o.name} to be {expected.name}, got {got.name}"
 
-describe "nearest_orientation":
-    it "works":
+class TestNearestOrientation:
+    def test_it_works(self):
         testcases = [
             # empty
             (0, 0, 0, O.RightSideUp),
@@ -63,13 +62,13 @@ describe "nearest_orientation":
                 got is expected
             ), f"Expected accel meas ({x}, {y}, {x}) to be orientated {expected.name}, got {got.name}"
 
-describe "reorient":
-    it "does nothing if it doesn't need to":
+class TestReorient:
+    def test_it_does_nothing_if_it_doesnt_need_to(self):
         colors = list(range(64))
         for o in (O.RightSideUp, O.FaceUp, O.FaceDown):
             assert orientation.reorient(colors, o) == colors
 
-    it "can fix a rotated left tile":
+    def test_it_can_fix_a_rotated_left_tile(self):
         _ = "_"
         h = "#"
 
@@ -100,7 +99,7 @@ describe "reorient":
 
         assert orientation.reorient(colors, O.RotatedLeft) == expected
 
-    it "can fix a rotated right tile":
+    def test_it_can_fix_a_rotated_right_tile(self):
         _ = "_"
         h = "#"
 
@@ -132,7 +131,7 @@ describe "reorient":
 
         assert orientation.reorient(colors, O.RotatedRight) == expected
 
-    it "can fix an upside down tile":
+    def test_it_can_fix_an_upside_down_tile(self):
         _ = "_"
         h = "#"
 

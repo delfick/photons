@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 
@@ -16,13 +15,13 @@ def final_future():
         fut.cancel()
 
 
-describe "TaskHolder":
-    it "takes in a final future", final_future:
+class TestTaskHolder:
+    def test_it_takes_in_a_final_future(self, final_future):
         holder = hp.TaskHolder(final_future)
         assert holder.ts == []
         assert holder.final_future == pytest.helpers.child_future_of(final_future)
 
-    async it "can take in tasks", final_future:
+    async def test_it_can_take_in_tasks(self, final_future):
         called = []
 
         async def wait(amount):
@@ -37,7 +36,7 @@ describe "TaskHolder":
 
         assert called == [0.01, 0.05]
 
-    async it "exits if we finish all tasks before the manager is left", final_future:
+    async def test_it_exits_if_we_finish_all_tasks_before_the_manager_is_left(self, final_future):
         called = []
 
         async def wait(amount):
@@ -53,7 +52,7 @@ describe "TaskHolder":
 
         assert called == [0.05, 0.01]
 
-    async it "can wait for more tasks if they are added when the manager has left", final_future:
+    async def test_it_can_wait_for_more_tasks_if_they_are_added_when_the_manager_has_left(self, final_future):
         called = []
 
         async def wait(ts, amount):
@@ -70,7 +69,7 @@ describe "TaskHolder":
 
         assert called == [0.01, 0.05, 0.06]
 
-    async it "does not fail if a task raises an exception", final_future:
+    async def test_it_does_not_fail_if_a_task_raises_an_exception(self, final_future):
         called = []
 
         async def wait(ts, amount):
@@ -89,7 +88,7 @@ describe "TaskHolder":
 
         assert called == [0.06, 0.01, 0.05]
 
-    async it "stops waiting tasks if final_future is stopped", final_future:
+    async def test_it_stops_waiting_tasks_if_final_future_is_stopped(self, final_future):
         called = []
 
         async def wait(ts, amount):
@@ -108,7 +107,7 @@ describe "TaskHolder":
 
         assert called == [("FINISHED", 0.05), ("CANCELLED", 5), ("FINISHED", 5)]
 
-    async it "can say how many pending tasks it has", final_future:
+    async def test_it_can_say_how_many_pending_tasks_it_has(self, final_future):
         called = []
 
         async def doit():
@@ -127,7 +126,7 @@ describe "TaskHolder":
 
         assert called == [0]
 
-    async it "cancels tasks if it gets cancelled", final_future:
+    async def test_it_cancels_tasks_if_it_gets_cancelled(self, final_future):
         called = []
         waiter = hp.create_future()
 
@@ -162,7 +161,7 @@ describe "TaskHolder":
             await t
         assert called == ["one_start", "two_start", "one_cancelled", "two_cancelled"]
 
-    async it "can iterate tasks", final_future:
+    async def test_it_can_iterate_tasks(self, final_future):
         async with hp.TaskHolder(final_future) as ts:
 
             async def hi():
@@ -175,7 +174,7 @@ describe "TaskHolder":
             t3 = ts.add(hi())
             assert list(ts) == [t1, t2, t3]
 
-    async it "can say if the holder has a task", final_future:
+    async def test_it_can_say_if_the_holder_has_a_task(self, final_future):
         async with hp.TaskHolder(final_future) as ts:
 
             async def hi():
@@ -193,7 +192,7 @@ describe "TaskHolder":
             assert t1 in ts
             assert t2 in ts
 
-    async it "can clean up tasks", final_future:
+    async def test_it_can_clean_up_tasks(self, final_future):
         called = []
         wait = hp.create_future()
 
@@ -231,7 +230,7 @@ describe "TaskHolder":
             await asyncio.sleep(0)
             assert called == ["ONE", "TWO", "CANC_ONE", "FIN_ONE", "DONE_TWO", "FIN_TWO"]
 
-    async it "doesn't lose tasks from race condition", FakeTime, MockedCallLater, final_future:
+    async def test_it_doesnt_lose_tasks_from_race_condition(self, FakeTime, MockedCallLater, final_future):
         with FakeTime() as t:
             async with MockedCallLater(t):
                 called = []

@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from interactor.commander.animations import Animations
@@ -24,8 +23,8 @@ async def sender(devices, final_future):
         yield sender
 
 
-describe "Server":
-    async it "starts things correctly", server:
+class TestServer:
+    async def test_it_starts_things_correctly(self, server):
         tasks = server.ts
         server = server.server
         assert server.tasks is tasks

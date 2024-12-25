@@ -1,4 +1,3 @@
-# coding: spec
 
 from contextlib import contextmanager
 from unittest import mock
@@ -28,9 +27,9 @@ def target(final_future):
     return Target.create({"protocol_register": protocol_register, "final_future": final_future})
 
 
-describe "Target":
-    describe "create":
-        async it "works":
+class TestTarget:
+    class TestCreate:
+        async def test_it_works(self):
             protocol_register = mock.Mock(name="protocol_register")
             final_future = mock.Mock(name="final_future")
             config = {"protocol_register": protocol_register, "final_future": final_future}
@@ -47,8 +46,8 @@ describe "Target":
             assert t.item_kls is Item
             assert t.script_runner_kls is ScriptRunner
 
-    describe "normalise":
-        async it "gets protocol_register and final_future from the meta":
+    class TestNormalise:
+        async def test_it_gets_protocol_register_and_final_future_from_the_meta(self):
             protocol_register = mock.Mock(name="protocol_register")
             final_future = mock.Mock(name="final_future")
             config = {"protocol_register": protocol_register, "final_future": final_future}
@@ -60,9 +59,9 @@ describe "Target":
             assert t.protocol_register is protocol_register
             assert t.final_future is final_future
 
-    describe "Usage":
+    class TestUsage:
 
-        describe "script":
+        class TestScript:
 
             @pytest.fixture()
             def script(self):
@@ -100,7 +99,7 @@ describe "Target":
 
                 return mocked_simplify
 
-            async it "says items is None if we simplify to an empty list", mocked_simplify, script, script_runner_kls, target:
+            async def test_it_says_items_is_None_if_we_simplify_to_an_empty_list(self, mocked_simplify, script, script_runner_kls, target):
                 raw = mock.Mock(name="raw")
 
                 with mocked_simplify() as simplify:
@@ -109,7 +108,7 @@ describe "Target":
                 simplify.assert_called_once_with(raw)
                 script_runner_kls.assert_called_once_with(None, target=target)
 
-            async it "gives items as just that item if list is one item", mocked_simplify, script, script_runner_kls, target:
+            async def test_it_gives_items_as_just_that_item_if_list_is_one_item(self, mocked_simplify, script, script_runner_kls, target):
                 raw = mock.Mock(name="raw")
                 item = mock.Mock(name="item")
 
@@ -119,7 +118,7 @@ describe "Target":
                 simplify.assert_called_once_with(raw)
                 script_runner_kls.assert_called_once_with(item, target=target)
 
-            async it "uses a FromGenerator if we have multiple items", mocked_simplify, script, script_runner_kls, target:
+            async def test_it_uses_a_FromGenerator_if_we_have_multiple_items(self, mocked_simplify, script, script_runner_kls, target):
                 raw = mock.Mock(name="raw")
                 item1 = mock.Mock(name="item1")
                 item2 = mock.Mock(name="item2")
@@ -144,8 +143,8 @@ describe "Target":
                     items.append(thing)
                 assert items == [item1, item2]
 
-        describe "make_sender":
-            async it "creates the session", target:
+        class TestMakeSender:
+            async def test_it_creates_the_session(self, target):
                 session = mock.Mock(name="session")
                 target.session_kls = mock.Mock(name="session_kls", return_value=session)
 
@@ -154,15 +153,15 @@ describe "Target":
 
                 target.session_kls.assert_called_once_with(target)
 
-        describe "close_sender":
-            async it "just calls finish on the sender", target:
+        class TestCloseSender:
+            async def test_it_just_calls_finish_on_the_sender(self, target):
                 sender = mock.Mock(name="sender")
                 sender.finish = pytest.helpers.AsyncMock(name="finish")
                 await target.close_sender(sender)
                 sender.finish.assert_called_once_with()
 
-        describe "session":
-            async it "creates and closes a sender", target:
+        class TestSession:
+            async def test_it_creates_and_closes_a_sender(self, target):
                 sender = mock.Mock(name="sender")
                 make_sender = pytest.helpers.AsyncMock(name="sender", return_value=sender)
                 close_sender = pytest.helpers.AsyncMock(name="close_sender")
@@ -179,7 +178,7 @@ describe "Target":
                     make_sender.assert_called_once_with()
                     close_sender.assert_called_once_with(sender)
 
-        describe "simplify":
+        class TestSimplify:
 
             @pytest.fixture()
             def item_kls(self):
@@ -190,11 +189,11 @@ describe "Target":
                 with mock.patch.object(target, "item_kls", item_kls):
                     yield
 
-            async it "uses part as is if it already has a run on it", target:
+            async def test_it_uses_part_as_is_if_it_already_has_a_run_on_it(self, target):
                 part = mock.Mock(name="part", spec=["run"])
                 assert list(target.simplify(part)) == [part]
 
-            async it "simplifies items that have a simplified method", item_kls, target:
+            async def test_it_simplifies_items_that_have_a_simplified_method(self, item_kls, target):
                 simplified = mock.Mock(name="simplified", spec=[])
                 part = mock.Mock(name="part", spec=["simplified"])
                 part.simplified.return_value = simplified
@@ -207,7 +206,7 @@ describe "Target":
                 part.simplified.assert_called_once_with(target.simplify)
                 item_kls.assert_called_once_with([simplified])
 
-            async it "splits out items into groups with pack and without and only item_kls for groups with pack", item_kls, target:
+            async def test_it_splits_out_items_into_groups_with_pack_and_without_and_only_item_kls_for_groups_with_pack(self, item_kls, target):
                 part11 = mock.Mock(name="part11", spec=[])
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])
@@ -242,7 +241,7 @@ describe "Target":
                     mock.call([part31, part32]),
                 ]
 
-            async it "doesn't separate simplified items if they don't have a run method", item_kls, target:
+            async def test_it_doesnt_separate_simplified_items_if_they_dont_have_a_run_method(self, item_kls, target):
                 part11 = mock.Mock(name="part11", spec=[])
                 part12 = mock.Mock(name="part12", spec=[])
                 part13 = mock.Mock(name="part13", spec=[])

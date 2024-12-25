@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -6,8 +5,8 @@ import pytest
 from delfick_project.errors_pytest import assertRaises
 from photons_core import CommandSplitter, run
 
-describe "CommandSplitter":
-    it "can format argv":
+class TestCommandSplitter:
+    def test_it_can_format_argv(self):
         command = "{@:2}:{@:1} {@:3:}"
         result = CommandSplitter(
             {"argv": ["my_script", "one", "two", "three", "four"]}, command
@@ -20,12 +19,12 @@ describe "CommandSplitter":
         ).split()
         assert result == ["two", "three:one", "four", "five"]
 
-    it "can complain about an env specifier without a name":
+    def test_it_can_complain_about_an_env_specifier_without_a_name(self):
         with assertRaises(Exception, "env specifier used without saying what variable is needed"):
             command = "{:env}"
             CommandSplitter({"argv": ["my_script"]}, command).split()
 
-    it "can complain if an environment variable is needed but doesn't exist":
+    def test_it_can_complain_if_an_environment_variable_is_needed_but_doesnt_exist(self):
         with pytest.helpers.modified_env(THING=None):
             with assertRaises(
                 SystemExit, "This script requires you have a 'THING' variable in your environment"
@@ -33,7 +32,7 @@ describe "CommandSplitter":
                 command = "{THING:env}"
                 CommandSplitter({"argv": ["my_script"]}, command).split()
 
-    it "doesn't complain if the environment variable exists but is empty":
+    def test_it_doesnt_complain_if_the_environment_variable_exists_but_is_empty(self):
         with pytest.helpers.modified_env(THING=""):
             command = "thing={THING:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing="]
@@ -41,7 +40,7 @@ describe "CommandSplitter":
             command = "{THING:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == []
 
-    it "can have default values for environment variables":
+    def test_it_can_have_default_values_for_environment_variables(self):
         with pytest.helpers.modified_env(THING=None):
             command = "thing={THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing=stuff"]
@@ -49,7 +48,7 @@ describe "CommandSplitter":
             command = "{THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["stuff"]
 
-    it "doesn't use default if env variable exists but is empty":
+    def test_it_doesnt_use_default_if_env_variable_exists_but_is_empty(self):
         with pytest.helpers.modified_env(THING=""):
             command = "thing={THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["thing="]
@@ -57,17 +56,17 @@ describe "CommandSplitter":
             command = "{THING|stuff:env}"
             assert CommandSplitter({"argv": ["my_script"]}, command).split() == []
 
-    it "complains if there is not enough argv entries":
+    def test_it_complains_if_there_is_not_enough_argv_entries(self):
         with assertRaises(SystemExit, "Needed greater than 2 arguments to the script"):
             with pytest.helpers.modified_env(THING=""):
                 command = "{@:2}"
                 CommandSplitter({"argv": ["my_script"]}, command).split()
 
-    it "doesn't complain about ranges that don't have values":
+    def test_it_doesnt_complain_about_ranges_that_dont_have_values(self):
         command = "one {@:2:}"
         assert CommandSplitter({"argv": ["my_script"]}, command).split() == ["one"]
 
-    it "doesn't format anything after a --":
+    def test_it_doesnt_format_anything_after_a(self):
         command = """{@:1:} -- '{"power": "off"}"""
         assert CommandSplitter({"argv": ["my_script", "one"]}, command).split() == [
             "one",
@@ -75,7 +74,7 @@ describe "CommandSplitter":
             '{"power": "off"}',
         ]
 
-    it "doesn't need the json after the -- to be wrapped in single quotes":
+    def test_it_doesnt_need_the_json_after_the_to_be_wrapped_in_single_quotes(self):
         command = '{@:1:} -- {"power": "off"}'
         assert CommandSplitter({"argv": ["my_script", "one"]}, command).split() == [
             "one",
@@ -83,7 +82,7 @@ describe "CommandSplitter":
             '{"power": "off"}',
         ]
 
-    it "retains --options":
+    def test_it_retains_options(self):
         command = '{@:1:} --silent -- {"power": "off"}'
         assert CommandSplitter({"argv": ["my_script", "one"]}, command).split() == [
             "one",
@@ -93,7 +92,7 @@ describe "CommandSplitter":
         ]
 
 
-describe "main lines":
+class TestMainLines:
 
     @pytest.fixture()
     def sys_argv(self):
@@ -130,12 +129,12 @@ describe "main lines":
 
         return V()
 
-    it "run defaults to using sys.argv", V:
+    def test_it_run_defaults_to_using_sysargv(self, V):
         run("command")
         V.CommandSplitter.assert_called_once_with({"argv": V.argv}, "command")
         V.main.assert_called_once_with(V.split, default_activate=["core"])
 
-    it "can be given a different default_activate", V:
+    def test_it_can_be_given_a_different_default_activate(self, V):
         run("command", default_activate=[])
         V.main.assert_called_once_with(V.split, default_activate=[])
 
@@ -143,19 +142,19 @@ describe "main lines":
         run("command", default_activate=["__all__"])
         V.main.assert_called_once_with(V.split, default_activate=["__all__"])
 
-    it "run can skip going through the splitter", V:
+    def test_it_run_can_skip_going_through_the_splitter(self, V):
         run(["one", "two"])
         V.CommandSplitter.assert_not_called()
         V.main.assert_called_once_with(["one", "two"], default_activate=["core"])
 
-    it "run can be given argv", V:
+    def test_it_run_can_be_given_argv(self, V):
         run("lan:stuff", argv=["one", "two"])
         V.CommandSplitter.assert_called_once_with(
             {"argv": ["my_script", "one", "two"]}, "lan:stuff"
         )
         V.main.assert_called_once_with(V.split, default_activate=["core"])
 
-    it "run formats correctly", fake_main:
+    def test_it_run_formats_correctly(self, fake_main):
         with pytest.helpers.modified_env(LAN_TARGET="well"):
             run(
                 "{LAN_TARGET:env}:attr {@:1} {@:2:}",
@@ -167,7 +166,7 @@ describe "main lines":
             default_activate=["core"],
         )
 
-    it "can have defaults for environment", fake_main:
+    def test_it_can_have_defaults_for_environment(self, fake_main):
         with pytest.helpers.modified_env(LAN_TARGET=None):
             run(
                 "{LAN_TARGET|lan:env}:attr {@:1} {@:2:}",
@@ -179,7 +178,7 @@ describe "main lines":
             default_activate=["core"],
         )
 
-    it "will not format json dictionary", fake_main:
+    def test_it_will_not_format_json_dictionary(self, fake_main):
         with pytest.helpers.modified_env(LAN_TARGET=None):
             run("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 

@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 import sqlalchemy.exc
@@ -41,8 +40,8 @@ async def runner(db_runner):
         yield runner
 
 
-describe "DB":
-    async it "can execute queries", runner:
+class TestDB:
+    async def test_it_can_execute_queries(self, runner):
 
         async def do_set(session, query):
             one = await query.create_thing(one="one", two=True)
@@ -56,7 +55,7 @@ describe "DB":
         got = await runner.database.request(do_get)
         assert got == {"one": "one", "two": True}
 
-    async it "retries on OperationalError", runner:
+    async def test_it_retries_on_OperationalError(self, runner):
         tries = [True, True]
 
         async def do_error(session, query):
@@ -68,7 +67,7 @@ describe "DB":
 
         assert tries == []
 
-    async it "can work after the first OperationalError", runner:
+    async def test_it_can_work_after_the_first_OperationalError(self, runner):
         tries = [True, True]
 
         async def do_error(session, query):
@@ -89,7 +88,7 @@ describe "DB":
 
         assert tries == []
 
-    async it "does not retry other errors", runner:
+    async def test_it_does_not_retry_other_errors(self, runner):
         errors = [sqlalchemy.exc.InvalidRequestError(), PhotonsAppError("blah"), ValueError("nope")]
 
         for error in errors:

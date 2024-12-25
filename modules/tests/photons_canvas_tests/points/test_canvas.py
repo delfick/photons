@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -9,8 +8,8 @@ from photons_canvas.points.canvas import Canvas
 from photons_messages import TileMessages
 from photons_messages.fields import Color
 
-describe "Canvas":
-    it "has start properties":
+class TestCanvas:
+    def test_it_has_start_properties(self):
         canvas = Canvas()
 
         for attr in ("top", "left", "right", "bottom", "width", "height"):
@@ -19,7 +18,7 @@ describe "Canvas":
         assert canvas.point_to_parts == {}
         assert canvas.point_to_devices == {}
 
-    it "is truthy if it has points or parts", V:
+    def test_it_is_truthy_if_it_has_points_or_parts(self, V):
         canvas = Canvas()
         assert not canvas
 
@@ -33,21 +32,21 @@ describe "Canvas":
         canvas[1, 2] = (1, 1, 1, 1)
         assert canvas
 
-    it "knows if a point is in the canvas":
+    def test_it_knows_if_a_point_is_in_the_canvas(self):
         c = Canvas()
         assert (1, 2) not in c
 
         c[1, 2] = (200, 1, 0.2, 9000)
         assert (1, 2) in c
 
-    it "calling canvas gets the value at that point":
+    def test_it_calling_canvas_gets_the_value_at_that_point(self):
         c = Canvas()
         c[1, 2] = (100, 1, 0, 3500)
 
         assert c((1, 2), c) == (100, 1, 0, 3500)
         assert c((2, 1), c) is None
 
-    it "can get parts", V:
+    def test_it_can_get_parts(self, V):
         c = Canvas()
         assert c.parts == []
 
@@ -58,7 +57,7 @@ describe "Canvas":
         c.add_parts(part1, part2, part3)
         assert c.parts == [part1, part2, part3]
 
-    it "can get devices", V:
+    def test_it_can_get_devices(self, V):
         c = Canvas()
         assert c.devices == []
 
@@ -69,7 +68,7 @@ describe "Canvas":
         c.add_parts(part1, part2, part3)
         assert c.devices == [V.device, V.other_device]
 
-    it "can get bounds", V:
+    def test_it_can_get_bounds(self, V):
         c = Canvas()
         assert c.bounds == ((None, None), (None, None), (None, None))
 
@@ -91,7 +90,7 @@ describe "Canvas":
         c.add_parts(part2, part3)
         assert c.bounds == ((1, 48), (24, -83), (47, 107))
 
-    it "can clone and copy over points and parts":
+    def test_it_can_clone_and_copy_over_points_and_parts(self):
         c = Canvas()
 
         clone = c.clone()
@@ -113,7 +112,7 @@ describe "Canvas":
         assert clone.parts == c.parts
         assert clone.devices == c.devices
 
-    it "can find the parts for each point", V:
+    def test_it_can_find_the_parts_for_each_point(self, V):
         # 6   a c c a _
         # 5   a c c a _
         # 4   a a a a _
@@ -187,12 +186,12 @@ describe "Canvas":
 
         assert len(testcases) == 5 * 6
 
-    describe "getting, setting and deleting a point":
-        it "can get None if it's not in the canvas":
+    class TestGettingSettingAndDeletingAPoint:
+        def test_it_can_get_None_if_its_not_in_the_canvas(self):
             c = Canvas()
             assert c[1, 2] is None
 
-        it "can get the color from the canvas":
+        def test_it_can_get_the_color_from_the_canvas(self):
             c = Canvas()
 
             color = (1, 1, 1, 3500)
@@ -200,7 +199,7 @@ describe "Canvas":
             assert c[1, 2] is color
             assert c[2, 1] is None
 
-        it "it updates bounds on setting":
+        def test_it_it_updates_bounds_on_setting(self):
             c = Canvas()
 
             assert c.bounds == ((None, None), (None, None), (None, None))
@@ -218,7 +217,7 @@ describe "Canvas":
             assert (3, 5) in c
             assert c.bounds == ((1, 3), (5, 2), (2, 3))
 
-        it "it updates bounds on deleting":
+        def test_it_it_updates_bounds_on_deleting(self):
             c = Canvas()
 
             assert c.bounds == ((None, None), (None, None), (None, None))
@@ -245,15 +244,15 @@ describe "Canvas":
             assert (3, 5) not in c
             assert c.bounds == ((1, 1), (2, 2), (0, 0))
 
-    describe "updating bounds":
-        it "does nothing if no parts are provided":
+    class TestUpdatingBounds:
+        def test_it_does_nothing_if_no_parts_are_provided(self):
             c = Canvas()
             assert c.bounds == ((None, None), (None, None), (None, None))
 
             c._update_bounds([])
             assert c.bounds == ((None, None), (None, None), (None, None))
 
-        it "updates bounds from tuples":
+        def test_it_updates_bounds_from_tuples(self):
             c = Canvas()
             assert c.bounds == ((None, None), (None, None), (None, None))
 
@@ -278,7 +277,7 @@ describe "Canvas":
             c._update_bounds([(0, 13), (13, 5), (-3, -7)])
             assert c.bounds == ((-3, 13), (13, -7), (16, 20))
 
-        it "updates bounds from objects with bounds on them", V:
+        def test_it_updates_bounds_from_objects_with_bounds_on_them(self, V):
             c = Canvas()
             assert c.bounds == ((None, None), (None, None), (None, None))
 
@@ -307,8 +306,8 @@ describe "Canvas":
             c._update_bounds([(0, 13), (13, 5), (-3, -7)])
             assert c.bounds == ((-3, 13), (13, -7), (16, 20))
 
-    describe "Adding parts":
-        it "can add part without colors", V:
+    class TestAddingParts:
+        def test_it_can_add_part_without_colors(self, V):
             c = Canvas()
 
             part1 = V.make_part(V.device, 1, user_x=0, user_y=2, width=8, height=9)
@@ -318,7 +317,7 @@ describe "Canvas":
             assert c.parts == [part1]
             assert c.devices == [V.device]
 
-        it "can add a part with colors", V:
+        def test_it_can_add_a_part_with_colors(self, V):
             c = Canvas()
 
             part1 = V.make_part(V.device, 1, user_x=0, user_y=2, width=8, height=9)
@@ -332,7 +331,7 @@ describe "Canvas":
             assert all(c[p] == color for p, color in zip(part1.points, colors1))
             assert all(c.point_to_parts[p] == set([part1]) for p in part1.points)
 
-        it "can add multiple parts", V:
+        def test_it_can_add_multiple_parts(self, V):
             c = Canvas()
 
             part1 = V.make_part(V.device, 2, user_x=-1, user_y=3, width=7, height=10)
@@ -351,7 +350,7 @@ describe "Canvas":
             assert all(p not in c for p in part1.points)
             assert all(c[p] == color for p, color in zip(part2.points, colors2))
 
-        it "can add with colors from parts", V:
+        def test_it_can_add_with_colors_from_parts(self, V):
             c = Canvas()
 
             part1 = V.make_part(V.device, 2, user_x=-1, user_y=3, width=7, height=10)
@@ -373,7 +372,7 @@ describe "Canvas":
             assert all(p not in c for p in part1.points)
             assert all(c[p] == color for p, color in zip(part2.points, colors2))
 
-        it "can add with a zero color", V:
+        def test_it_can_add_with_a_zero_color(self, V):
             c = Canvas()
             zero_color = (1, 1, 0.4, 9000)
 
@@ -396,8 +395,8 @@ describe "Canvas":
             assert all(c[p] == zero_color for p in part1.points)
             assert all(c[p] == color for p, color in zip(part2.points, colors2))
 
-    describe "point helpers":
-        it "can determine if all points in the parts match certain criteria", V:
+    class TestPointHelpers:
+        def test_it_can_determine_if_all_points_in_the_parts_match_certain_criteria(self, V):
             canvas = Canvas()
             assert canvas.is_parts()
             assert canvas.is_parts(hue=1, brightness=1, saturation=1, kelvin=9000)
@@ -450,7 +449,7 @@ describe "Canvas":
             assert not canvas.is_parts(kelvin=9000)
             assert not canvas.is_parts(hue=0)
 
-        it "can get a color with overrided values":
+        def test_it_can_get_a_color_with_overrided_values(self):
             canvas = Canvas()
             assert canvas.override((1, 2)) == (0, 0, 0, 0)
             assert (1, 2) not in canvas
@@ -466,7 +465,7 @@ describe "Canvas":
             assert canvas.override((3, 4), hue=200, brightness=1) == (200, 0.3, 1, 5000)
             assert canvas[(3, 4)] == (20, 0.3, 0.4, 5000)
 
-        it "can get a dimmed colour":
+        def test_it_can_get_a_dimmed_colour(self):
             canvas = Canvas()
             assert canvas.dim((1, 2), -1) is None
 
@@ -478,7 +477,7 @@ describe "Canvas":
             assert canvas.dim((3, 4), -0.7) == (200, 0.4, 1, 9000)
             assert canvas.dim((3, 4), 0.7) is None
 
-        it "return None from adjusting a point if the point is empty and ignore_empty":
+        def test_it_return_None_from_adjusting_a_point_if_the_point_is_empty_and_ignore_empty(self):
             canvas = Canvas()
             assert canvas.adjust((1, 2)) is None
             assert canvas.adjust((1, 2), ignore_empty=False) == php.Color.ZERO
@@ -487,7 +486,7 @@ describe "Canvas":
             assert canvas.adjust((1, 2)) is None
             assert canvas.adjust((1, 2), ignore_empty=False) == php.Color.ZERO
 
-        it "returns an adjusted colour":
+        def test_it_returns_an_adjusted_colour(self):
             color = mock.Mock(name="color", spec=[])
             adjusted = mock.Mock(name="adjusted", spec=[])
 
@@ -530,8 +529,8 @@ describe "Canvas":
                 )
                 adjust.reset_mock()
 
-    describe "restore_msgs":
-        it "yields msgs from real_parts", V:
+    class TestRestoreMsgs:
+        def test_it_yields_msgs_from_real_parts(self, V):
             oc1 = [(i, 1, 1, 1) for i in range(64)]
             oc2 = [(i, 0, 0.3, 9000) for i in range(64)]
 
@@ -560,8 +559,8 @@ describe "Canvas":
             assert msgs[0].tile_index == 2
             assert msgs[1].tile_index == 5
 
-    describe "msgs":
-        it "gets colours from the layer", V:
+    class TestMsgs:
+        def test_it_gets_colours_from_the_layer(self, V):
             info = {"canvas": None}
 
             def layer(point, canvas):

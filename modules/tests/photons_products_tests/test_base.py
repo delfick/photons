@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -7,8 +6,8 @@ from delfick_project.errors_pytest import assertRaises
 from photons_products import Family, VendorRegistry, base
 from photons_products.errors import IncompleteProduct
 
-describe "Capability":
-    it "takes in product and firmware info":
+class TestCapability:
+    def test_it_takes_in_product_and_firmware_info(self):
         product = mock.Mock(name="product")
         firmware_major = mock.Mock(name="firmware_major")
         firmware_minor = mock.Mock(name="firmware_minor")
@@ -18,7 +17,7 @@ describe "Capability":
         assert cap.firmware_major is firmware_major
         assert cap.firmware_minor is firmware_minor
 
-    it "defaults firmware info":
+    def test_it_defaults_firmware_info(self):
         product = mock.Mock(name="product")
         cap = base.Capability(product)
 
@@ -26,7 +25,7 @@ describe "Capability":
         assert cap.firmware_major == 0
         assert cap.firmware_minor == 0
 
-    it "can create a clone with new firmware info":
+    def test_it_can_create_a_clone_with_new_firmware_info(self):
         product = mock.Mock(name="product")
         cap = base.Capability(product)
 
@@ -41,13 +40,13 @@ describe "Capability":
         assert cap.firmware_major == 0
         assert cap.firmware_minor == 0
 
-    it "has a repr":
+    def test_it_has_a_repr(self):
         product = mock.Mock(name="product")
         product.name = "LIFX_Amaze"
         cap = base.Capability(product)
         assert repr(cap) == "<Capability LIFX_Amaze>"
 
-    it "equals if product and firmware are the same":
+    def test_it_equals_if_product_and_firmware_are_the_same(self):
         product = mock.Mock(name="product")
         cap = base.Capability(product)
         cap2 = base.Capability(product)
@@ -61,13 +60,13 @@ describe "Capability":
         cap4 = base.Capability(product2)
         assert cap != cap4
 
-    it "returns no items by default":
+    def test_it_returns_no_items_by_default(self):
         product = mock.Mock(name="product")
         cap = base.Capability(product)
         assert list(cap.items()) == []
 
-describe "Product":
-    it "complains about not having a cap":
+class TestProduct:
+    def test_it_complains_about_not_having_a_cap(self):
         with assertRaises(
             IncompleteProduct, "Product doesn't have a capability specified", name="P"
         ):
@@ -75,7 +74,7 @@ describe "Product":
             class P(base.Product):
                 pass
 
-    it "complains about attributes not implemented":
+    def test_it_complains_about_attributes_not_implemented(self):
         with assertRaises(
             IncompleteProduct, "Attribute wasn't overridden", attr="family", name="P"
         ):
@@ -84,7 +83,7 @@ describe "Product":
                 class cap(base.Capability):
                     pass
 
-    it "sets the cap as an instance of the cap class":
+    def test_it_sets_the_cap_as_an_instance_of_the_cap_class(self):
 
         class P(base.Product):
             pid = 1
@@ -98,7 +97,7 @@ describe "Product":
         assert isinstance(P.cap, P.cap_kls)
         assert P.cap.product == P
 
-    it "does not set a default for friendly":
+    def test_it_does_not_set_a_default_for_friendly(self):
 
         msg = "Attribute wasn't overridden"
         with assertRaises(IncompleteProduct, msg, attr="friendly"):
@@ -111,7 +110,7 @@ describe "Product":
                 class cap(base.Capability):
                     pass
 
-    it "has company":
+    def test_it_has_company(self):
 
         class CUBE(base.Product):
             pid = 1
@@ -124,7 +123,7 @@ describe "Product":
 
         assert CUBE.company == "LIFX"
 
-    it "is equal if pid and vendor match":
+    def test_it_is_equal_if_pid_and_vendor_match(self):
 
         class capability(base.Capability):
             pass
@@ -168,7 +167,7 @@ describe "Product":
         assert P4 == (5, 1)
         assert P3 == (1, 2)
 
-    it "can be used as a key in a dictionary":
+    def test_it_can_be_used_as_a_key_in_a_dictionary(self):
 
         class P1(base.Product):
             pid = 29
@@ -184,7 +183,7 @@ describe "Product":
         assert d[(1, 29)] == "thing"
         assert d[(VendorRegistry.LIFX, 29)] == "thing"
 
-    it "has a repr":
+    def test_it_has_a_repr(self):
 
         class capability(base.Capability):
             pass
@@ -214,7 +213,7 @@ describe "Product":
         assert repr(LCM2_DESK) == "<Product 1(LIFX):1(LCM2_DESK)>"
         assert repr(LCM2_MONITOR_STAND) == "<Product 5(UNKNOWN):29(LCM2_MONITOR_STAND)>"
 
-    it "has an as_dict":
+    def test_it_has_an_as_dict(self):
 
         class LCM2_MONITOR_STAND(base.Product):
             pid = 29
@@ -237,8 +236,8 @@ describe "Product":
             "vendor": VendorRegistry.LIFX,
         }
 
-describe "make_unknown_product":
-    it "works":
+class TestMakeUnknownProduct:
+    def test_it_works(self):
 
         class cap(base.Capability):
             has_lattice = True
@@ -251,7 +250,7 @@ describe "make_unknown_product":
         assert P.cap.has_lattice
         assert repr(P) == "<Product 1(LIFX):9001(Unknown)>"
 
-describe "ProductsHolder":
+class TestProductsHolder:
 
     @pytest.fixture()
     def default_capability_kls(self):
@@ -290,7 +289,7 @@ describe "ProductsHolder":
     def holder(self, ProductRegistry, default_capability_kls):
         return base.ProductsHolder(ProductRegistry, default_capability_kls)
 
-    it "holds onto the products and creates by_pair", ProductRegistry, holder, default_capability_kls:
+    def test_it_holds_onto_the_products_and_creates_by_pair(self, ProductRegistry, holder, default_capability_kls):
         assert holder.products is ProductRegistry
         assert holder.default_capability_kls is default_capability_kls
         assert holder.by_pair == {
@@ -299,23 +298,23 @@ describe "ProductsHolder":
             (VendorRegistry.choose(5), 29): ProductRegistry.LCM2_MONITOR_STAND,
         }
 
-    it "can yield product names", holder, ProductRegistry:
+    def test_it_can_yield_product_names(self, holder, ProductRegistry):
         assert sorted(holder.names) == sorted(
             ["LCM1_BOUNCY_BALL", "LCM2_DESK", "LCM2_MONITOR_STAND"]
         )
 
-    it "can access products by name", holder, ProductRegistry:
+    def test_it_can_access_products_by_name(self, holder, ProductRegistry):
         assert holder.LCM1_BOUNCY_BALL is ProductRegistry.LCM1_BOUNCY_BALL
         assert holder.LCM2_DESK is ProductRegistry.LCM2_DESK
 
-    it "complains if the product doesn't exist", holder:
+    def test_it_complains_if_the_product_doesnt_exist(self, holder):
         with assertRaises(AttributeError, "'ProductsHolder' object has no attribute 'LCM9_SPHERE'"):
             holder.LCM9_SPHERE
 
-    it "can still get hidden things from the holder", holder:
+    def test_it_can_still_get_hidden_things_from_the_holder(self, holder):
         assert holder.__name__ == "ProductRegistry"
 
-    it "can access products by dictionary access", holder, ProductRegistry:
+    def test_it_can_access_products_by_dictionary_access(self, holder, ProductRegistry):
         assert holder["LCM1_BOUNCY_BALL"] is ProductRegistry.LCM1_BOUNCY_BALL
         assert holder[VendorRegistry.LIFX, 3] is ProductRegistry.LCM2_DESK
         assert holder[1, 3] is ProductRegistry.LCM2_DESK

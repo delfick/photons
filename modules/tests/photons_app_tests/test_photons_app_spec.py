@@ -1,4 +1,3 @@
-# coding: spec
 
 from unittest import mock
 
@@ -26,22 +25,22 @@ def V():
     return V()
 
 
-describe "PhotonsAppSpec":
+class TestPhotonsAppSpec:
 
-    describe "target_name_spec":
+    class TestTargetNameSpec:
 
         @pytest.fixture()
         def tns(self, V):
             return V.spec.target_name_spec
 
-        it "complains if we have whitespace", tns, V:
+        def test_it_complains_if_we_have_whitespace(self, tns, V):
             try:
                 tns.normalise(V.meta, "adf ")
                 assert False, "expected an exception"
             except BadSpecValue as error:
                 assert "Expected no whitespace" in str(error)
 
-        it "complains if we don't match our regex", tns, V:
+        def test_it_complains_if_we_dont_match_our_regex(self, tns, V):
             for val in ("9asdf", "asdf^", "*asdf"):
                 try:
                     tns.normalise(V.meta, val)
@@ -49,12 +48,12 @@ describe "PhotonsAppSpec":
                 except BadSpecValue as error:
                     assert "Expected value to match regex" in str(error)
 
-        it "returns as is otherwise", tns, V:
+        def test_it_returns_as_is_otherwise(self, tns, V):
             for val in ("asdf", "asdfdfDf", "asdf-asdfa-asdf", "asdf_asdfD_DDF.asdf", "a", "A"):
                 assert tns.normalise(V.meta, val) == val
 
-    describe "photons_app_spec":
-        it "gets us back a PhotonsApp", V:
+    class TestPhotonsAppSpec:
+        def test_it_gets_us_back_a_PhotonsApp(self, V):
             res = V.spec.photons_app_spec.normalise(
                 V.meta, {"task_specifier": "blah:things", "debug": True}
             )
@@ -62,13 +61,13 @@ describe "PhotonsAppSpec":
             assert res.task_specifier() == ("blah", "things")
             assert res.debug is True
 
-    describe "target_register_spec":
-        it "gets us a TargetRegister", V:
+    class TestTargetRegisterSpec:
+        def test_it_gets_us_a_TargetRegister(self, V):
             register = V.spec.target_register_spec.normalise(V.meta.at("target_register"), {})
             assert isinstance(register, TargetRegister)
 
-    describe "targets spec":
-        it "gets us a dictionary of targets", V:
+    class TestTargetsSpec:
+        def test_it_gets_us_a_dictionary_of_targets(self, V):
             targets = {"one": {"type": "blah", "options": {"one": 2}}, "two": {"type": "meh"}}
             expected = {
                 "one": Target(type="blah", options={"one": 2}, optional=False),
@@ -78,7 +77,7 @@ describe "PhotonsAppSpec":
             res = V.spec.targets_spec.normalise(V.meta, targets)
             assert res == expected
 
-        it "complains if a target has an invalid name", V:
+        def test_it_complains_if_a_target_has_an_invalid_name(self, V):
             targets = {"9one": {"type": "blah", "options": {"one": 2}}, "t^wo": {"type": "meh"}}
             with assertRaises(BadSpecValue):
                 V.spec.targets_spec.normalise(V.meta, targets)

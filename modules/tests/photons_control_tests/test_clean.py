@@ -1,4 +1,3 @@
-# coding: spec
 
 import pytest
 from photons_app import helpers as hp
@@ -63,7 +62,7 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "SetCleanConfig":
+class TestSetCleanConfig:
 
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
@@ -79,7 +78,7 @@ describe "SetCleanConfig":
             devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(device).clear()
 
-    async it "sets the default config", sender:
+    async def test_it_sets_the_default_config(self, sender):
         expected = {
             light1: [
                 DeviceMessages.GetHostFirmware(),
@@ -98,7 +97,7 @@ describe "SetCleanConfig":
         )
 
 
-describe "ChangeCleanCycle":
+class TestChangeCleanCycle:
 
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
@@ -114,7 +113,7 @@ describe "ChangeCleanCycle":
             devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
             devices.store(device).clear()
 
-    async it "starts a clean cycle", sender:
+    async def test_it_starts_a_clean_cycle(self, sender):
         expected = {
             light1: [
                 DeviceMessages.GetHostFirmware(),
@@ -132,7 +131,7 @@ describe "ChangeCleanCycle":
             sender, ChangeCleanCycle(enable=True, duration_s=7200), expected=expected
         )
 
-    async it "stops a clean cycle", sender:
+    async def test_it_stops_a_clean_cycle(self, sender):
         expected = {
             light1: [
                 DeviceMessages.GetHostFirmware(),

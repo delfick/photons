@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import time
@@ -43,10 +42,10 @@ async def reset_devices(sender):
     sender.gatherer.clear_cache()
 
 
-describe "Pipeline":
+class TestPipeline:
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async it "does all messages at once if pipeline isn't used", sender, reference:
+    async def test_it_does_all_messages_at_once_if_pipeline_isnt_used(self, sender, reference):
         called = []
         wait = hp.create_future()
 
@@ -89,7 +88,7 @@ describe "Pipeline":
         assert sorted(called) == sorted(devices.serials)
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async it "waits on replies before sending next if we have a pipeline", sender, reference:
+    async def test_it_waits_on_replies_before_sending_next_if_we_have_a_pipeline(self, sender, reference):
         called = []
         wait = hp.create_future()
 
@@ -135,7 +134,7 @@ describe "Pipeline":
 
         assert sorted(called) == sorted(devices.serials)
 
-    async it "can wait between messages", sender:
+    async def test_it_can_wait_between_messages(self, sender):
         got_times = defaultdict(list)
 
         async def see_request(event):
@@ -170,7 +169,7 @@ describe "Pipeline":
 
         assert all(got_times[serial] == [0, 3, 6] for serial in devices.serials)
 
-    async it "devices aren't slowed down by other slow devices", sender:
+    async def test_it_devices_arent_slowed_down_by_other_slow_devices(self, sender):
         light1_power_wait = hp.create_future()
 
         got = defaultdict(list)
@@ -234,7 +233,7 @@ describe "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async it "devices are slowed down by other slow devices if synchronized is True", sender:
+    async def test_it_devices_are_slowed_down_by_other_slow_devices_if_synchronized_is_True(self, sender):
         wait = hp.create_future()
         called = []
         got_times = defaultdict(list)
@@ -291,7 +290,7 @@ describe "Pipeline":
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async it "doesn't stop on errors", sender:
+    async def test_it_doesnt_stop_on_errors(self, sender):
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -345,7 +344,7 @@ describe "Pipeline":
         # The reply from third message is after the second one times out
         assert [t for _, t in got[serial]] == [0, 1]
 
-    async it "can short cut on errors", sender:
+    async def test_it_can_short_cut_on_errors(self, sender):
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -398,7 +397,7 @@ describe "Pipeline":
         assert got[serial][0][0] | DeviceMessages.StatePower
         assert got[serial][0][1] == 0
 
-    async it "can short cut on errors with synchronized", sender:
+    async def test_it_can_short_cut_on_errors_with_synchronized(self, sender):
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
@@ -450,7 +449,7 @@ describe "Pipeline":
         assert got[serial][0][0] | DeviceMessages.StatePower
         assert got[serial][0][1] == 0
 
-    async it "can raise all errors", sender:
+    async def test_it_can_raise_all_errors(self, sender):
 
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:

@@ -1,9 +1,8 @@
-# coding: spec
 
 import pytest
 from photons_control.colour import ColourParser, make_hsbks
 
-describe "make_hsbks":
+class TestMakeHsbks:
 
     @pytest.fixture()
     def colors(self):
@@ -26,7 +25,7 @@ describe "make_hsbks":
             [(120, 1, 1, 9000), 1],
         ]
 
-    it "can make colors", colors:
+    def test_it_can_make_colors(self, colors):
 
         def hsbk(*args, **kwargs):
             h, s, b, k = ColourParser.hsbk(*args, **kwargs)
@@ -56,23 +55,23 @@ describe "make_hsbks":
 
         assert got == expected
 
-    it "can overrides hue", colors:
+    def test_it_can_overrides_hue(self, colors):
         colors = list(make_hsbks(colors, overrides={"hue": 1}))
         for c in colors:
             assert c["hue"] == 1
 
-    it "can overrides saturation", colors:
+    def test_it_can_overrides_saturation(self, colors):
         colors = list(make_hsbks(colors, overrides={"saturation": 0.3}))
         for c in colors:
             assert c["saturation"] == 0.3
 
-    it "can overrides brightness", colors:
+    def test_it_can_overrides_brightness(self, colors):
         colors = list(make_hsbks(colors, overrides={"brightness": 0.6}))
 
         for c in colors:
             assert c["brightness"] == 0.6
 
-    it "can overrides kelvin", colors:
+    def test_it_can_overrides_kelvin(self, colors):
         colors = list(make_hsbks(colors, overrides={"kelvin": 8000}))
 
         for c in colors:

@@ -1,4 +1,3 @@
-# coding: spec
 
 import logging
 from itertools import zip_longest
@@ -72,16 +71,16 @@ def assertConsoleOutput(event, *lines):
         assertLines(event.for_console, sb.NotSpecified, *lines)
 
 
-describe "ConsoleFormat":
-    describe "lines_from_error":
+class TestConsoleFormat:
+    class TestLinesFromError:
 
         def assertLines(self, err, *lines):
             assertLines(ConsoleFormat.lines_from_error, err, *lines)
 
-        it "can format a string":
+        def test_it_can_format_a_string(self):
             self.assertLines("stuff", "stuff")
 
-        it "can format a dictionary":
+        def test_it_can_format_a_dictionary(self):
             self.assertLines(
                 {"message": "yeap", "one": "two", "three": ["four"]},
                 "yeap",
@@ -89,7 +88,7 @@ describe "ConsoleFormat":
                 "three = ['four']",
             )
 
-        it "can format a DelfickError":
+        def test_it_can_format_a_DelfickError(self):
 
             class MyError(PhotonsAppError):
                 desc = "oh noes"
@@ -101,7 +100,7 @@ describe "ConsoleFormat":
                 "help_us = please",
             )
 
-        it "can see an expand function":
+        def test_it_can_see_an_expand_function(self):
 
             class MyError(PhotonsAppError):
                 desc = "oh noes"
@@ -118,23 +117,23 @@ describe "ConsoleFormat":
                 "help_us = please",
             )
 
-    describe "lines_from_a_packet":
+    class TestLinesFromAPacket:
 
         def assertLines(self, pkt, *lines):
             assertLines(ConsoleFormat.lines_from_packet, pkt, *lines)
 
-        it "can format acknowledgements":
+        def test_it_can_format_acknowledgements(self):
             ack = CoreMessages.Acknowledgement(source=20, sequence=2, target="d073d5001111")
             self.assertLines(ack, f"Ack(source={ack.source},sequence=2,target=d073d5001111)(empty)")
 
-        it "can format simple messages":
+        def test_it_can_format_simple_messages(self):
             pkt = DeviceMessages.GetPower(source=21, sequence=3, target="d073d5002222")
             self.assertLines(
                 pkt,
                 f"GetPower(ack=True,res=True,source={pkt.source},sequence=3,target=d073d5002222)(empty)",
             )
 
-        it "can format messages with fields":
+        def test_it_can_format_messages_with_fields(self):
             pkt = LightMessages.SetColor(
                 res_required=False,
                 source=22,
@@ -156,7 +155,7 @@ describe "ConsoleFormat":
                 "  duration: 0.0",
             )
 
-        it "can format messages with lists":
+        def test_it_can_format_messages_with_lists(self):
             pkt = MultiZoneMessages.SetExtendedColorZones(
                 ack_required=False,
                 res_required=False,
@@ -182,8 +181,8 @@ describe "ConsoleFormat":
                 "  {'brightness': 0.2, 'hue': 30.0, 'kelvin': 3500, 'saturation': 1.0}",
             )
 
-describe "Event":
-    it "has a repr on the class":
+class TestEvent:
+    def test_it_has_a_repr_on_the_class(self):
         assert repr(event.IncomingEvent) == "<Events.INCOMING>"
 
         class MyEvent:
@@ -196,11 +195,11 @@ describe "Event":
 
         assert repr(MyEvent) == expected
 
-    it "has or comparison":
+    def test_it_has_or_comparison(self):
         assert event.IncomingEvent | event.IncomingEvent
         assert not event.IncomingEvent | event.ResetEvent
 
-    it "has a name", device:
+    def test_it_has_a_name(self, device):
 
         class MyEvent(Event):
             pass
@@ -208,7 +207,7 @@ describe "Event":
         e = MyEvent(device)
         assert e.name == "d073d5001337(LCM2_A19:2,80) MyEvent"
 
-    it "has a repr", device:
+    def test_it_has_a_repr(self, device):
 
         class MyEvent(Event):
             pass
@@ -216,7 +215,7 @@ describe "Event":
         e = MyEvent(device)
         assert repr(e) == "<Event:d073d5001337:MyEvent>"
 
-    it "has equality", device, device2:
+    def test_it_has_equality(self, device, device2):
 
         class MyEvent(Event):
             pass
@@ -236,7 +235,7 @@ describe "Event":
         MyEvent(device) == (MyEvent2, device)
         MyEvent(device) == (MyEvent2, device2)
 
-    it "has equality by default only on log_args and log_kwargs", device:
+    def test_it_has_equality_by_default_only_on_log_args_and_log_kwargs(self, device):
 
         class MyEvent3(Event):
             def setup(self, *, one, two, three):
@@ -260,7 +259,7 @@ describe "Event":
         MyEvent4(device, one=2, two=4, three=3) != MyEvent4(device, one=1, two=4, three=3)
         MyEvent4(device, one=1, two=4, three=5) != MyEvent4(device, one=1, two=4, three=3)
 
-    it "has setup", device, FakeTime:
+    def test_it_has_setup(self, device, FakeTime):
 
         got = []
 
@@ -282,7 +281,7 @@ describe "Event":
             assert e.log_kwargs == gkw
             assert got == [(ga, gkw)]
 
-    it "can do comparisons with events", device:
+    def test_it_can_do_comparisons_with_events(self, device):
         e = Events.POWER_OFF(device)
         assert e | Events.POWER_OFF
         assert not e | Events.OUTGOING
@@ -291,15 +290,15 @@ describe "Event":
         assert e | Events.RESET
         assert not e | Events.POWER_OFF
 
-    describe "formatting for the console":
+    class TestFormattingForTheConsole:
 
-        it "can format a simple event", device:
+        def test_it_can_format_a_simple_event(self, device):
             assertConsoleOutput(
                 Events.POWER_OFF(device),
                 "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) POWER_OFF",
             )
 
-        it "can format an event with arguments", device:
+        def test_it_can_format_an_event_with_arguments(self, device):
 
             class Simple(Event):
                 def setup(self):
@@ -334,11 +333,11 @@ describe "Event":
                 "  :: more = True",
             )
 
-describe "Events":
-    it "is a EventsHolder":
+class TestEvents:
+    def test_it_is_a_EventsHolder(self):
         assert isinstance(Events, EventsHolder)
 
-    it "can register events":
+    def test_it_can_register_events(self):
         events = EventsHolder()
         assert events.events == {}
 
@@ -351,7 +350,7 @@ describe "Events":
 
         assert events.AMAZE_EVENT is Amaze
 
-    it "can get a name for an event":
+    def test_it_can_get_a_name_for_an_event(self):
         events = EventsHolder()
 
         @events.register("AMAZE_EVENT")
@@ -365,21 +364,21 @@ describe "Events":
 
         assert events.name(Other) == "Other"
 
-describe "IncomingEvent":
+class TestIncomingEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.INCOMING
 
-    it "is under INCOMING", EKLS, device, io:
+    def test_it_is_under_INCOMING(self, EKLS, device, io):
         assert Events.INCOMING is event.IncomingEvent
         assert EKLS is event.IncomingEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(device, io, pkt=DeviceMessages.GetPower())
         assert repr(e) == "<Event:d073d5001337:INCOMING:io=TEST_IO:pkt=GetPower>"
 
-    it "can do comparisons with packets and events", EKLS, io, device:
+    def test_it_can_do_comparisons_with_packets_and_events(self, EKLS, io, device):
         e = EKLS(device, io, pkt=DeviceMessages.GetPower())
         assert e | DeviceMessages.GetPower
         assert not e | DeviceMessages.SetPower
@@ -398,7 +397,7 @@ describe "IncomingEvent":
         assert not e | Events.INCOMING
         assert e | Events.OUTGOING
 
-    it "can do comparisons on the io", EKLS, device:
+    def test_it_can_do_comparisons_on_the_io(self, EKLS, device):
 
         class MyIO(Operator):
             io_source = "HIGHWAY_TO_INFO"
@@ -412,12 +411,12 @@ describe "IncomingEvent":
         assert e | MyIO.io_source
         assert not e | "other"
 
-    it "can create bytes", EKLS, device, io:
+    def test_it_can_create_bytes(self, EKLS, device, io):
         pkt = DeviceMessages.GetPower(source=2, sequence=1, target=None)
         e = EKLS(device, io, pkt=pkt)
         assert e.bts == pkt.pack()
 
-    it "ignores errors when creating bytes", EKLS, device, io:
+    def test_it_ignores_errors_when_creating_bytes(self, EKLS, device, io):
         pkt = DeviceMessages.GetPower()
         with assertRaises(Exception):
             pkt.pack()
@@ -429,7 +428,7 @@ describe "IncomingEvent":
         pkt.target = None
         assert e.bts == pkt.pack()
 
-    it "can set replies", EKLS, device, io:
+    def test_it_can_set_replies(self, EKLS, device, io):
         e = EKLS(device, io, pkt=DeviceMessages.GetPower())
         assert not e.handled
         assert e.replies is None
@@ -445,7 +444,7 @@ describe "IncomingEvent":
         assert e.handled
         assert e.replies == other
 
-    it "can add replies", EKLS, device, io:
+    def test_it_can_add_replies(self, EKLS, device, io):
         reply1 = DeviceMessages.StatePower()
         reply2 = DeviceMessages.StateLabel()
         reply3 = DeviceMessages.StateGroup()
@@ -468,7 +467,7 @@ describe "IncomingEvent":
         assert not e.handled
         assert e.replies == [reply1, reply2, reply3, reply4, reply5]
 
-    it "modifies args and kwargs for console output", EKLS, device, io:
+    def test_it_modifies_args_and_kwargs_for_console_output(self, EKLS, device, io):
         e = EKLS(
             device,
             io,
@@ -501,27 +500,27 @@ describe "IncomingEvent":
             "  :: addr = None",
         )
 
-describe "OutgoingEvent":
+class TestOutgoingEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.OUTGOING
 
-    it "is under OUTGOING", EKLS, device, io:
+    def test_it_is_under_OUTGOING(self, EKLS, device, io):
         assert Events.OUTGOING is event.OutgoingEvent
         assert EKLS is event.OutgoingEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         pkt = DeviceMessages.StatePower(source=2, sequence=1, target=None, level=0)
         e = EKLS(device, io, pkt=pkt, replying_to=DeviceMessages.GetPower(), addr=None)
         assert repr(e) == "<Event:d073d5001337:OUTGOING:io=TEST_IO,pkt=StatePower>"
 
-    it "can create bytes", EKLS, device, io:
+    def test_it_can_create_bytes(self, EKLS, device, io):
         pkt = DeviceMessages.StatePower(source=2, sequence=1, target=None, level=0)
         e = EKLS(device, io, pkt=pkt, replying_to=DeviceMessages.GetPower(), addr=None)
         assert e.bts == pkt.pack()
 
-    it "ignores errors when creating bytes", EKLS, device, io:
+    def test_it_ignores_errors_when_creating_bytes(self, EKLS, device, io):
         pkt = DeviceMessages.GetPower()
         with assertRaises(Exception):
             pkt.pack()
@@ -533,7 +532,7 @@ describe "OutgoingEvent":
         pkt.target = None
         assert e.bts == pkt.pack()
 
-    it "modifies args and kwargs for console output", EKLS, device, io:
+    def test_it_modifies_args_and_kwargs_for_console_output(self, EKLS, device, io):
         e = EKLS(
             device,
             io,
@@ -571,17 +570,17 @@ describe "OutgoingEvent":
             "  :: replying_to = 'SetPower'",
         )
 
-describe "UnhandledEvent":
+class TestUnhandledEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.UNHANDLED
 
-    it "is under UNHANDLED", EKLS, device, io:
+    def test_it_is_under_UNHANDLED(self, EKLS, device, io):
         assert Events.UNHANDLED is event.UnhandledEvent
         assert EKLS is event.UnhandledEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(
             device,
             io,
@@ -591,7 +590,7 @@ describe "UnhandledEvent":
         )
         assert repr(e) == "<Event:d073d5001337:UNHANDLED:pkt=StatePower>"
 
-    it "modifies args and kwargs for console output", EKLS, device, io:
+    def test_it_modifies_args_and_kwargs_for_console_output(self, EKLS, device, io):
         e = EKLS(
             device,
             io,
@@ -624,17 +623,17 @@ describe "UnhandledEvent":
             "  :: addr = None",
         )
 
-describe "IgnoredEvent":
+class TestIgnoredEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.IGNORED
 
-    it "is under IGNORED", EKLS, device, io:
+    def test_it_is_under_IGNORED(self, EKLS, device, io):
         assert Events.IGNORED is event.IgnoredEvent
         assert EKLS is event.IgnoredEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(
             device,
             io,
@@ -644,7 +643,7 @@ describe "IgnoredEvent":
         )
         assert repr(e) == "<Event:d073d5001337:IGNORED:pkt=StatePower>"
 
-    it "modifies args and kwargs for console output", EKLS, device, io:
+    def test_it_modifies_args_and_kwargs_for_console_output(self, EKLS, device, io):
         e = EKLS(
             device,
             io,
@@ -677,17 +676,17 @@ describe "IgnoredEvent":
             "  :: addr = None",
         )
 
-describe "LostEvent":
+class TestLostEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.LOST
 
-    it "is under LOST", EKLS, device, io:
+    def test_it_is_under_LOST(self, EKLS, device, io):
         assert Events.LOST is event.LostEvent
         assert EKLS is event.LostEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(
             device,
             io,
@@ -697,7 +696,7 @@ describe "LostEvent":
         )
         assert repr(e) == "<Event:d073d5001337:LOST:pkt=StatePower>"
 
-    it "modifies args and kwargs for console output", EKLS, device, io:
+    def test_it_modifies_args_and_kwargs_for_console_output(self, EKLS, device, io):
         e = EKLS(
             device,
             io,
@@ -731,17 +730,17 @@ describe "LostEvent":
         )
 
 
-describe "AttributeChangeEvent":
+class TestAttributeChangeEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.ATTRIBUTE_CHANGE
 
-    it "is under ATTRIBUTE_CHANGE", EKLS, device, io:
+    def test_it_is_under_ATTRIBUTE_CHANGE(self, EKLS, device, io):
         assert Events.ATTRIBUTE_CHANGE is event.AttributeChangeEvent
         assert EKLS is event.AttributeChangeEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(
             device,
             [ChangeAttr.test("one", 1), ChangeAttr.test("two", 2)],
@@ -753,12 +752,12 @@ describe "AttributeChangeEvent":
             == "<Event:d073d5001337:ATTRIBUTE_CHANGE:changes=[<Changed one to 1>, <Changed two to 2>]:attrs_started=False:because=<Event:d073d5001337:RESET:zerod=False>>"
         )
 
-    it "has changes", EKLS, device:
+    def test_it_has_changes(self, EKLS, device):
         e = EKLS(device, {"one": 1, "two": 2}, False, Events.RESET(device, old_attrs={}))
         assert e.changes == {"one": 1, "two": 2}
         assert not e.attrs_started
 
-    it "has nicer console output", EKLS, device:
+    def test_it_has_nicer_console_output(self, EKLS, device):
         assertConsoleOutput(
             EKLS(
                 device,
@@ -773,21 +772,21 @@ describe "AttributeChangeEvent":
             "  ~ <Changed two to 2>",
         )
 
-describe "AnnotationEvent":
+class TestAnnotationEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.ANNOTATION
 
-    it "is under ANNOTATION", EKLS, device, io:
+    def test_it_is_under_ANNOTATION(self, EKLS, device, io):
         assert Events.ANNOTATION is event.AnnotationEvent
         assert EKLS is event.AnnotationEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(device, logging.INFO, "hello there", stuff=20, things="blah")
         assert repr(e) == "<Event:d073d5001337:ANNOTATION>"
 
-    it "has nicer console output", EKLS, device:
+    def test_it_has_nicer_console_output(self, EKLS, device):
         assertConsoleOutput(
             EKLS(device, logging.INFO, "hello there", stuff=20, things="blah"),
             "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) ANNOTATION(INFO)",
@@ -814,21 +813,21 @@ describe "AnnotationEvent":
             "  :: future = 'now'",
         )
 
-describe "DiscoverableEvent":
+class TestDiscoverableEvent:
 
     @pytest.fixture()
     def EKLS(self):
         return Events.DISCOVERABLE
 
-    it "is under DISCOVERABLE", EKLS, device, io:
+    def test_it_is_under_DISCOVERABLE(self, EKLS, device, io):
         assert Events.DISCOVERABLE is event.DiscoverableEvent
         assert EKLS is event.DiscoverableEvent
 
-    it "has a repr", EKLS, io, device:
+    def test_it_has_a_repr(self, EKLS, io, device):
         e = EKLS(device, service="MEMORY", address="computer")
         assert repr(e) == "<Event:d073d5001337:DISCOVERABLE:address=computer,service=MEMORY>"
 
-    it "has service and address", EKLS, device:
+    def test_it_has_service_and_address(self, EKLS, device):
         e = EKLS(device, service="MEMORY", address="computer")
         assert e.service == "MEMORY"
         assert e.address == "computer"

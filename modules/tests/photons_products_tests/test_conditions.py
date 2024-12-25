@@ -1,10 +1,9 @@
-# coding: spec
 
 from photons_products import conditions as cond
 from photons_products.base import Capability, Product
 
-describe "Family":
-    it "compares family":
+class TestFamily:
+    def test_it_compares_family(self):
         c1 = cond.Family("ghost")
         c2 = cond.Family("ghost")
         c3 = cond.Family("vampire")
@@ -41,8 +40,8 @@ describe "Family":
         assert not c1(P2.cap)
         assert c3(P2.cap)
 
-describe "Capability":
-    it "checks capabilities":
+class TestCapability:
+    def test_it_checks_capabilities(self):
         c1 = cond.Capability(one=1, two=2)
         c2 = cond.Capability(one=1, two=2)
         c3 = cond.Capability(one=1, three=4)
@@ -98,8 +97,8 @@ describe "Capability":
         assert c3(P3.cap)
 
 
-describe "NameHas":
-    it "compares if name of product contains a certain fragment":
+class TestNameHas:
+    def test_it_compares_if_name_of_product_contains_a_certain_fragment(self):
         c1 = cond.NameHas("APPLE")
         c2 = cond.NameHas("APPLE")
         c3 = cond.NameHas("BANANA")
@@ -134,8 +133,8 @@ describe "NameHas":
         assert not c1(FRUIT_BANANA.cap)
         assert c3(FRUIT_BANANA.cap)
 
-describe "NameExcludes":
-    it "compares if name of product does not contain a certain fragment":
+class TestNameExcludes:
+    def test_it_compares_if_name_of_product_does_not_contain_a_certain_fragment(self):
         c1 = cond.NameExcludes("APPLE")
         c2 = cond.NameExcludes("APPLE")
         c3 = cond.NameExcludes("BANANA")
@@ -170,8 +169,8 @@ describe "NameExcludes":
         assert c1(FRUIT_BANANA.cap)
         assert not c3(FRUIT_BANANA.cap)
 
-describe "PidFrom":
-    it "compares if product id is after a certain amount":
+class TestPidFrom:
+    def test_it_compares_if_product_id_is_after_a_certain_amount(self):
         c1 = cond.PidFrom(3)
         c2 = cond.PidFrom(3)
         c3 = cond.PidFrom(5)

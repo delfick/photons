@@ -1,10 +1,9 @@
-# coding: spec
 
 import os
 from unittest import mock
 
-describe "Options":
-    it "has defaults", options_maker:
+class TestOptions:
+    def test_it_has_defaults(self, options_maker):
         options = options_maker(memory=False)
         assert options.host == "127.0.0.1"
         assert options.port == 6100
@@ -13,7 +12,7 @@ describe "Options":
             "db_migrations": mock.ANY,
         }
 
-    it "can set values of it's own", options_maker:
+    def test_it_can_set_values_of_its_own(self, options_maker):
         options = options_maker("blah", 9001, database={"uri": "somewhere"})
 
         assert options.host == "blah"

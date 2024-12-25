@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 
@@ -58,11 +57,11 @@ def assertSame(real, simple):
     assert real.pack() == simple.pack()
 
 
-describe "set64":
-    it "is based off a seed", seed:
+class TestSet64:
+    def test_it_is_based_off_a_seed(self, seed):
         assertSame(seed, Set64(source=0))
 
-    it "behaves like a real message", seed:
+    def test_it_behaves_like_a_real_message(self, seed):
         msg = Set64()
         assert seed.tobytes(serial=None) == msg.tobytes(serial=None)
 
@@ -74,7 +73,7 @@ describe "set64":
         assert msg.simplify() is msg
         assert not msg.is_dynamic
 
-    it "allows you to create directly with attributes":
+    def test_it_allows_you_to_create_directly_with_attributes(self):
         colors = [(i, 1, 1, 3500) for i in range(64)]
 
         kwargs = {
@@ -106,7 +105,7 @@ describe "set64":
 
         assertSame(real, simple)
 
-    it "lets you modify attributes":
+    def test_it_lets_you_modify_attributes(self):
 
         changes = [
             ("source", 10),
@@ -168,7 +167,7 @@ describe "set64":
         assertSame(real, simple)
         assertSame(real, simple.clone())
 
-    it "can be cloned":
+    def test_it_can_be_cloned(self):
         msg = Set64(width=6, tile_index=20)
         clone = msg.clone()
         assert clone.pack() == msg.pack()
@@ -177,7 +176,7 @@ describe "set64":
         assert clone.width == 8
         assert msg.width == 6
 
-    it "can be given colors in multiple ways", seed:
+    def test_it_can_be_given_colors_in_multiple_ways(self, seed):
 
         c1 = Color(100, 1, 1, 3500)
         c2 = Color(200, 0, 0, 3500)
@@ -201,7 +200,7 @@ describe "set64":
         simple = Set64(colors=setting)
         assert simple.colors == [*([c1, c2] * 3), *([Color(0, 0, 0, 0)] * 58)]
 
-    it "can be given None as a valid color":
+    def test_it_can_be_given_None_as_a_valid_color(self):
         simple = Set64(colors=[(100, 1, 0, 3500), None, (200, 0, 1, 9000)])
         assert (
             simple.colors
@@ -209,7 +208,7 @@ describe "set64":
             + [Color(0, 0, 0, 0)] * 61
         )
 
-    it "can have a source set":
+    def test_it_can_have_a_source_set(self):
         simple = Set64()
         assert simple.source is sb.NotSpecified
 

@@ -1,4 +1,3 @@
-# coding: spec
 
 import binascii
 import struct
@@ -30,34 +29,34 @@ def ba(thing):
     return b
 
 
-describe "val_to_bitarray":
-    it "returns value as is if already bitarray":
+class TestValToBitarray:
+    def test_it_returns_value_as_is_if_already_bitarray(self):
         b = bitarray(endian="little")
         b.frombytes(b"asdf")
         assert val_to_bitarray(b, "test") is b
 
-    it "unhexlifies if a str":
+    def test_it_unhexlifies_if_a_str(self):
         expected = bitarray(endian="little")
         expected.frombytes(binascii.unhexlify("d073d5"))
         assert val_to_bitarray("d073d5", "test") == expected
 
-    it "creates bitarray from bytes":
+    def test_it_creates_bitarray_from_bytes(self):
         expected = bitarray(endian="little")
         bts = binascii.unhexlify("d073d5")
         expected.frombytes(bts)
         assert val_to_bitarray(bts, "test") == expected
 
-    it "creates bitarray from sb.NotSpecified":
+    def test_it_creates_bitarray_from_sbNotSpecified(self):
         expected = bitarray(endian="little")
         assert val_to_bitarray(sb.NotSpecified, "test") == expected
 
-    it "complains otherwise":
+    def test_it_complains_otherwise(self):
         doing = mock.Mock(name="doing")
         for val in (0, 1, None, True, False, [], [1], {1: 2}, lambda: 1):
             with assertRaises(BadConversion, "Couldn't get bitarray from a value", doing=doing):
                 val_to_bitarray(val, doing)
 
-describe "BitarraySlice":
+class TestBitarraySlice:
 
     @pytest.fixture()
     def slce(self):
@@ -68,7 +67,7 @@ describe "BitarraySlice":
         group = mock.Mock(name="group")
         return BitarraySlice(name, typ, val, size_bits, group)
 
-    it "takes in things":
+    def test_it_takes_in_things(self):
         name = mock.Mock(name="name")
         typ = mock.Mock(name="typ")
         val = mock.Mock(name="val")
@@ -83,13 +82,13 @@ describe "BitarraySlice":
         assert slce.size_bits is size_bits
         assert slce.group is group
 
-    it "gets fmt from typ.struct_format", slce:
+    def test_it_gets_fmt_from_typstruct_format(self, slce):
         fmt = str(uuid.uuid1())
         slce.typ.struct_format = fmt
         assert slce.fmt is fmt
 
-    describe "unpackd":
-        it "returns as is if fmt is None", slce:
+    class TestUnpackd:
+        def test_it_returns_as_is_if_fmt_is_None(self, slce):
             bts = b"wat"
             val = bitarray(endian="little")
             val.frombytes(bts)
@@ -99,7 +98,7 @@ describe "BitarraySlice":
 
             assert slce.unpackd == val
 
-        it "returns as boolean value if fmt is bool and size_bits is 1", slce:
+        def test_it_returns_as_boolean_value_if_fmt_is_bool_and_size_bits_is_1(self, slce):
             slce.typ.struct_format = bool
             slce.size_bits = 1
 
@@ -109,7 +108,7 @@ describe "BitarraySlice":
             slce.val = bitarray("1")
             assert slce.unpackd is True
 
-        it "pads left if original_size is greater than actual val and we have left_cut", slce:
+        def test_it_pads_left_if_original_size_is_greater_than_actual_val_and_we_have_left_cut(self, slce):
             slce.typ = T.Int8.S(6, left=True)
             slce.val = bitarray("000010", endian="little")
 
@@ -121,7 +120,7 @@ describe "BitarraySlice":
 
             assert slce.unpackd == 64
 
-        it "pads right if original_size is greater than actual val and we don't have left_cut", slce:
+        def test_it_pads_right_if_original_size_is_greater_than_actual_val_and_we_dont_have_left_cut(self, slce):
             slce.typ = T.Int8.S(6)
             slce.val = bitarray("000010", endian="little")
 
@@ -133,7 +132,7 @@ describe "BitarraySlice":
 
             assert slce.unpackd == 16
 
-        it "raises BadConversion if it can't unpack the field", slce:
+        def test_it_raises_BadConversion_if_it_cant_unpack_the_field(self, slce):
             slce.typ = T.Int8
             slce.val = bitarray("000010111", endian="little")
 
@@ -146,7 +145,7 @@ describe "BitarraySlice":
             ):
                 slce.unpackd
 
-describe "FieldInfo":
+class TestFieldInfo:
 
     @pytest.fixture()
     def val(self):
@@ -160,7 +159,7 @@ describe "FieldInfo":
         group = mock.Mock(name="group")
         return FieldInfo(name, typ, val, size_bits, group)
 
-    it "takes in things":
+    def test_it_takes_in_things(self):
         name = mock.Mock(name="name")
         typ = mock.Mock(name="typ")
         val = mock.Mock(name="val")
@@ -175,22 +174,22 @@ describe "FieldInfo":
         assert info.size_bits is size_bits
         assert info.group is group
 
-    describe "value":
-        it "returns value as is", info, val:
+    class TestValue:
+        def test_it_returns_value_as_is(self, info, val):
             assert info.value is val
 
-        it "returns value as 0 bits if our typ is Reserved and val is NotSpecified", info:
+        def test_it_returns_value_as_0_bits_if_our_typ_is_Reserved_and_val_is_NotSpecified(self, info):
             info.typ = T.Reserved(8)
             info.size_bits = 8
             info.val = sb.NotSpecified
             assert info.value == bitarray("0" * 8)
 
-        it "returns value as is if typ is Reserved but value is not NotSpecified", info, val:
+        def test_it_returns_value_as_is_if_typ_is_Reserved_but_value_is_not_NotSpecified(self, info, val):
             info.typ = T.Reserved(8)
             assert info.value == val
 
-    describe "to_sized_bitarray":
-        it "removes from the right if no left_cut", info:
+    class TestToSizedBitarray:
+        def test_it_removes_from_the_right_if_no_left_cut(self, info):
             info.typ.left_cut = False
             info.size_bits = 3
 
@@ -202,7 +201,7 @@ describe "FieldInfo":
 
             to_bitarray.assert_called_once_with()
 
-        it "removes from the left if left_cut", info:
+        def test_it_removes_from_the_left_if_left_cut(self, info):
             info.typ.left_cut = True
             info.size_bits = 3
 
@@ -214,7 +213,7 @@ describe "FieldInfo":
 
             to_bitarray.assert_called_once_with()
 
-        it "does nothing if too small", info:
+        def test_it_does_nothing_if_too_small(self, info):
             info.typ.left_cut = True
             info.size_bits = 3
 
@@ -226,7 +225,7 @@ describe "FieldInfo":
 
             to_bitarray.assert_called_once_with()
 
-        it "does nothing if correct size", info:
+        def test_it_does_nothing_if_correct_size(self, info):
             info.typ.left_cut = True
             info.size_bits = 3
 
@@ -238,14 +237,14 @@ describe "FieldInfo":
 
             to_bitarray.assert_called_once_with()
 
-    describe "to_bitarray":
+    class TestToBitarray:
 
         @contextmanager
         def a_val(self, val):
             with mock.patch.object(FieldInfo, "value", val):
                 yield
 
-        it "complains if the value is NotSpecified", info:
+        def test_it_complains_if_the_value_is_NotSpecified(self, info):
             with assertRaises(
                 BadConversion,
                 "Cannot pack an unspecified value",
@@ -257,12 +256,12 @@ describe "FieldInfo":
                 with self.a_val(sb.NotSpecified):
                     info.to_bitarray()
 
-        it "returns as is if it's a bitarray", info:
+        def test_it_returns_as_is_if_its_a_bitarray(self, info):
             val = bitarray("01")
             with self.a_val(val):
                 assert info.to_bitarray() is val
 
-        it "uses struct_format if the fmt is a string", info:
+        def test_it_uses_struct_format_if_the_fmt_is_a_string(self, info):
             val = bitarray("01").tobytes()
             res = mock.Mock(name="res")
 
@@ -275,19 +274,19 @@ describe "FieldInfo":
 
             struct_format.assert_called_once_with("<b", val)
 
-        it "turns Optional into a False", info:
+        def test_it_turns_Optional_into_a_False(self, info):
             info.typ.struct_format = bool
             info.val = Optional
             assert info.to_bitarray() == bitarray("0")
 
-        it "complains if fmt is bool but value is not", info:
+        def test_it_complains_if_fmt_is_bool_but_value_is_not(self, info):
             for val in (0, 1, None, "", "adsf", b"asf", [], [1], {1: 2}, lambda: 1):
                 with assertRaises(BadConversion, "Trying to convert a non boolean into 1 bit"):
                     info.typ.struct_format = bool
                     info.val = val
                     info.to_bitarray()
 
-        it "converts True/False into a single bit if fmt is bool", info:
+        def test_it_converts_True_False_into_a_single_bit_if_fmt_is_bool(self, info):
             info.typ.struct_format = bool
             info.val = True
             assert info.to_bitarray() == bitarray("1")
@@ -295,7 +294,7 @@ describe "FieldInfo":
             info.val = False
             assert info.to_bitarray() == bitarray("0")
 
-        it "creates bitarray from the bytes otherwise", info:
+        def test_it_creates_bitarray_from_the_bytes_otherwise(self, info):
             info.typ.struct_format = None
             info.val = b"wat"
 
@@ -304,8 +303,8 @@ describe "FieldInfo":
 
             assert info.to_bitarray() == expected
 
-    describe "struct_format":
-        it "creates bitarray from unpacking", info:
+    class TestStructFormat:
+        def test_it_creates_bitarray_from_unpacking(self, info):
             fmt = mock.Mock(name="fmt")
             val = mock.Mock(name="val")
             bts = str(uuid.uuid1()).encode()
@@ -321,7 +320,7 @@ describe "FieldInfo":
 
             struct.pack.assert_called_once_with(fmt, val)
 
-        it "works", info:
+        def test_it_works(self, info):
             info.typ = T.Int16
 
             expected = bitarray(endian="little")
@@ -329,7 +328,7 @@ describe "FieldInfo":
 
             assert info.struct_format(info.typ.struct_format, 200) == expected
 
-        it "complains if can't pack", info:
+        def test_it_complains_if_cant_pack(self, info):
             info.typ = T.Int8
 
             with assertRaises(
@@ -342,12 +341,12 @@ describe "FieldInfo":
             ):
                 info.struct_format(info.typ.struct_format, 9000)
 
-        it "understands the Optional value", info:
+        def test_it_understands_the_Optional_value(self, info):
             b = bitarray(endian="little")
             b.frombytes(struct.pack("<H", 0))
             assert info.struct_format("<H", Optional) == b
 
-describe "PacketPacking":
+class TestPacketPacking:
 
     @pytest.fixture()
     def V(self):
@@ -374,8 +373,8 @@ describe "PacketPacking":
 
         return V()
 
-    describe "fields_in":
-        it "yields FieldInfo objects", V:
+    class TestFieldsIn:
+        def test_it_yields_FieldInfo_objects(self, V):
 
             def cb(pkt, serial):
                 return "{0}.cb".format(serial)
@@ -394,8 +393,8 @@ describe "PacketPacking":
                 FieldInfo("thing", V.thing_typ, sb.NotSpecified, 8, "g1"),
             ]
 
-    describe "pkt_from_bitarray":
-        it "creates a pkt field by field", V:
+    class TestPktFromBitarray:
+        def test_it_creates_a_pkt_field_by_field(self, V):
 
             def cb(pkt, serial):
                 return "{0}.cb2".format(serial)
@@ -454,7 +453,7 @@ describe "PacketPacking":
 
             assert i == len(packd)
 
-        it "returns where we are in the bitarray which is helpful when we have an empty payload":
+        def test_it_returns_where_we_are_in_the_bitarray_which_is_helpful_when_we_have_an_empty_payload(self):
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
@@ -475,8 +474,8 @@ describe "PacketPacking":
 
             assert packd[i:].tobytes() == v
 
-    describe "pack":
-        it "gets fields from fields_in and joins the bitarrays to form a final bitarray":
+    class TestPack:
+        def test_it_gets_fields_from_fields_in_and_joins_the_bitarrays_to_form_a_final_bitarray(self):
             b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
@@ -501,7 +500,7 @@ describe "PacketPacking":
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
-        it "attaches provided payload to the end":
+        def test_it_attaches_provided_payload_to_the_end(self):
             b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
@@ -536,7 +535,7 @@ describe "PacketPacking":
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
-        it "uses payload from the pkt if none is provided":
+        def test_it_uses_payload_from_the_pkt_if_none_is_provided(self):
             b1 = bitarray("01", endian="little")
             b2 = bitarray("111", endian="little")
             b3 = bitarray("010", endian="little")
@@ -571,7 +570,7 @@ describe "PacketPacking":
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
-        it "does not set payload if we aren't a parent packet":
+        def test_it_does_not_set_payload_if_we_arent_a_parent_packet(self):
 
             class P(dictobj.PacketSpec):
                 parent_packet = True
@@ -594,7 +593,7 @@ describe "PacketPacking":
             payload = bitarray("010101", endian="little")
             assert PacketPacking.pack(pkt, payload=payload) == bitarray("00010000", endian="little")
 
-        it "complains if we have a field with no value":
+        def test_it_complains_if_we_have_a_field_with_no_value(self):
             b1 = bitarray("01", endian="little")
             b2 = None
 
@@ -617,8 +616,8 @@ describe "PacketPacking":
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
-    describe "unpack":
-        it "uses pkt_from_bitarray":
+    class TestUnpack:
+        def test_it_uses_pkt_from_bitarray(self):
             final = mock.Mock(name="final")
             pkt_kls = mock.Mock(name="pkt_kls", spec=[])
 
@@ -644,7 +643,7 @@ describe "PacketPacking":
                 mock.call(pkt_kls, expected),
             ]
 
-        it "assigns the remainder if we have a payload with message_type 0":
+        def test_it_assigns_the_remainder_if_we_have_a_payload_with_message_type_0(self):
 
             class P(dictobj.PacketSpec):
                 parent_packet = True

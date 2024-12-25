@@ -1,4 +1,3 @@
-# coding: spec
 
 import asyncio
 import sys
@@ -27,7 +26,7 @@ async def sender(final_future):
         yield sender
 
 
-describe "Sending messages":
+class TestSendingMessages:
 
     @pytest.fixture
     def V(self, sender):
@@ -39,9 +38,9 @@ describe "Sending messages":
 
         return V()
 
-    describe "send api":
+    class TestSendApi:
 
-        async it "works with the sender as sender api", V, sender:
+        async def test_it_works_with_the_sender_as_sender_api(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             got = defaultdict(list)
@@ -52,7 +51,7 @@ describe "Sending messages":
 
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with target.send api", V:
+        async def test_it_works_with_targetsend_api(self, V):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             V.target.default_broadcast = ("127.0.0.1", V.device_port)
 
@@ -63,7 +62,7 @@ describe "Sending messages":
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "sender also works as a synchronous api", V, sender:
+        async def test_it_sender_also_works_as_a_synchronous_api(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             got = defaultdict(list)
@@ -74,7 +73,7 @@ describe "Sending messages":
 
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "target.send also works as a synchronous api", V:
+        async def test_it_targetsend_also_works_as_a_synchronous_api(self, V):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             V.target.default_broadcast = ("127.0.0.1", V.device_port)
 
@@ -85,9 +84,9 @@ describe "Sending messages":
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        describe "breaking a stream":
+        class TestBreakingAStream:
 
-            async it "is possible to cleanly stop when sending just a packet", V, sender:
+            async def test_it_is_possible_to_cleanly_stop_when_sending_just_a_packet(self, V, sender):
                 got = []
                 msg = DeviceMessages.SetPower(level=0)
                 async with sender(msg, [V.device.serial, V.device2.serial]) as pkts:
@@ -122,7 +121,7 @@ describe "Sending messages":
                     Events.OUTGOING(device2, io2, pkt=reply, replying_to=msg),
                 ]
 
-            async it "is possible to cleanly stop", V, sender, FakeTime, MockedCallLater:
+            async def test_it_is_possible_to_cleanly_stop(self, V, sender, FakeTime, MockedCallLater):
                 original = DeviceMessages.EchoRequest(echoing=b"hi", ack_required=False)
 
                 async def gen(sd, reference, **kwargs):
@@ -161,7 +160,7 @@ describe "Sending messages":
                     Events.OUTGOING(device, io, pkt=reply, replying_to=original),
                 ]
 
-            async it "is possible to perform finally blocks in deep layers", V, sender:
+            async def test_it_is_possible_to_perform_finally_blocks_in_deep_layers(self, V, sender):
                 original = DeviceMessages.EchoRequest(echoing=b"hi", ack_required=False)
                 called = []
 
@@ -220,7 +219,7 @@ describe "Sending messages":
                     ("finally", 5),
                 ]
 
-            async it "is possible to perform finally blocks in deeper layers", V, sender:
+            async def test_it_is_possible_to_perform_finally_blocks_in_deeper_layers(self, V, sender):
                 original2 = DeviceMessages.EchoRequest(echoing=b"bye", ack_required=False)
                 called = []
 
@@ -325,7 +324,7 @@ describe "Sending messages":
                     ("m1_finally", 1),
                 ]
 
-            async it "stop doesn't add to error_catcher", V, sender:
+            async def test_it_stop_doesnt_add_to_error_catcher(self, V, sender):
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
 
                 async def gen(sd, reference, **kwargs):
@@ -346,7 +345,7 @@ describe "Sending messages":
                 assert not errors
                 assert len(got) == 5
 
-            async it "allows errors to go to an error catcher", V, FakeTime, MockedCallLater, sender:
+            async def test_it_allows_errors_to_go_to_an_error_catcher(self, V, FakeTime, MockedCallLater, sender):
                 ack = CoreMessages.Acknowledgement()
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 reply = DeviceMessages.EchoResponse(echoing=b"hi")
@@ -413,7 +412,7 @@ describe "Sending messages":
                     Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
                 ] * (len(records.record) // 2)
 
-            async it "doesn't stop errors", V, FakeTime, MockedCallLater, sender:
+            async def test_it_doesnt_stop_errors(self, V, FakeTime, MockedCallLater, sender):
                 ack = CoreMessages.Acknowledgement()
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 reply = DeviceMessages.EchoResponse(echoing=b"hi")
@@ -485,9 +484,9 @@ describe "Sending messages":
                             Events.OUTGOING(device2, io2, pkt=ack, replying_to=original),
                         ] * (len(records.record) // 2)
 
-    describe "run_with api":
+    class TestRunWithApi:
 
-        async it "works with the run_with api with sender", V, sender:
+        async def test_it_works_with_the_run_with_api_with_sender(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
 
@@ -511,7 +510,7 @@ describe "Sending messages":
 
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with run_with api without sender", V, sender:
+        async def test_it_works_with_run_with_api_without_sender(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
             V.target.default_broadcast = ("127.0.0.1", V.device_port)
@@ -533,7 +532,7 @@ describe "Sending messages":
                 got[pkt.serial].append(pkt.payload.as_dict())
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with the run_with_all api with sender", V, sender:
+        async def test_it_works_with_the_run_with_all_api_with_sender(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
 
@@ -559,7 +558,7 @@ describe "Sending messages":
 
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
-        async it "works with run_with_all api without sender", V:
+        async def test_it_works_with_run_with_all_api_without_sender(self, V):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
             V.target.default_broadcast = ("127.0.0.1", V.device_port)
