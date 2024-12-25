@@ -121,7 +121,7 @@ class TestCollections:
         typ = str(uuid.uuid1())
         cuuid = str(uuid.uuid1())
         collection = Collections().collection_spec.empty_normalise(typ=typ, uuid=cuuid)
-        assert type(collection) == Collection
+        assert type(collection) is Collection
         assert collection.typ == typ
         assert collection.uuid == cuuid
 

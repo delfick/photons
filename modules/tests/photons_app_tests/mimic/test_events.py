@@ -567,7 +567,10 @@ class TestOutgoingEvent:
             "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) OUTGOING",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
-            "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
+            (
+                "  :: bts = 440000340200000000000000000000000000000000000301"
+                "0000000000000000190000007965617000000000000000000000000000000000000000000000000000000000"
+            ),
             "  :: io = 'TEST_IO'",
             "  :: addr = 'venus'",
             "  :: replying_to = 'SetPower'",
@@ -622,7 +625,10 @@ class TestUnhandledEvent:
             "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) UNHANDLED",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
-            "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
+            (
+                "  :: bts = 440000340200000000000000000000000000000000000301"
+                "0000000000000000190000007965617000000000000000000000000000000000000000000000000000000000"
+            ),
             "  :: io = 'TEST_IO'",
             "  :: addr = None",
         )
@@ -676,7 +682,10 @@ class TestIgnoredEvent:
             "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) IGNORED",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
-            "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
+            (
+                "  :: bts = 440000340200000000000000000000000000000000000301"
+                "0000000000000000190000007965617000000000000000000000000000000000000000000000000000000000"
+            ),
             "  :: io = 'TEST_IO'",
             "  :: addr = None",
         )
@@ -730,7 +739,10 @@ class TestLostEvent:
             "2021-05-16 11:00:01.650000+1000 -> d073d5001337(LCM2_A19:2,80) LOST",
             f"  || packet = StateLabel(ack=True,res=True,source={e.pkt.source},sequence=1,target=000000000000)",
             "  ^^   label: yeap",
-            "  :: bts = 4400003402000000000000000000000000000000000003010000000000000000190000007965617000000000000000000000000000000000000000000000000000000000",
+            (
+                "  :: bts = 440000340200000000000000000000000000000000000301"
+                "0000000000000000190000007965617000000000000000000000000000000000000000000000000000000000"
+            ),
             "  :: io = 'TEST_IO'",
             "  :: addr = None",
         )
@@ -753,9 +765,9 @@ class TestAttributeChangeEvent:
             False,
             Events.RESET(device, old_attrs={}),
         )
-        assert (
-            repr(e)
-            == "<Event:d073d5001337:ATTRIBUTE_CHANGE:changes=[<Changed one to 1>, <Changed two to 2>]:attrs_started=False:because=<Event:d073d5001337:RESET:zerod=False>>"
+        assert repr(e) == (
+            "<Event:d073d5001337:ATTRIBUTE_CHANGE:changes=[<Changed one to 1>,"
+            " <Changed two to 2>]:attrs_started=False:because=<Event:d073d5001337:RESET:zerod=False>>"
         )
 
     def test_it_has_changes(self, EKLS, device):

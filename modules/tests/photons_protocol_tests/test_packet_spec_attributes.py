@@ -151,7 +151,7 @@ class TestPacketAttributes:
 
             g = P(two=3).g
             assert sorted(g.actual_items()) == sorted([("one", True), ("two", 3), ("three", 4)])
-            assert type(g) == G
+            assert type(g) is G
 
         def test_it_does_not_use_getitem_spec_if_do_spec_is_False(self):
 

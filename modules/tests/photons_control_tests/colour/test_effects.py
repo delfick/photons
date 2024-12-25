@@ -26,7 +26,7 @@ class TestEffects:
             assert hasattr(Effects, effect)
             assert getattr(Effects, effect)._is_effect
             options = Effects.make(effect)
-            assert type(options["waveform"]) == Waveform
+            assert type(options["waveform"]) is Waveform
             for k in options:
                 assert k in LightMessages.SetWaveformOptional.Meta.all_names
 

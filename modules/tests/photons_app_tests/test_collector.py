@@ -471,7 +471,7 @@ class TestCollector:
 
             d = D(one=D(1))
             configuration = Collector().start_configuration()
-            assert type(configuration) == MergedOptions
+            assert type(configuration) is MergedOptions
 
             configuration["thing"] = d
             assert configuration["thing"] is d
@@ -792,19 +792,19 @@ class TestCollector:
             protocol_register = configuration["protocol_register"]
             reference_resolver_register = configuration["reference_resolver_register"]
 
-            assert type(photons_app) == PhotonsApp
+            assert type(photons_app) is PhotonsApp
 
-            assert list(targets.keys()) == ["one"]
-            assert type(targets["one"]) == Target
+            assert list(targets.keys()) is ["one"]
+            assert type(targets["one"]) is Target
             assert targets["one"].as_dict() == {
                 "type": "special",
                 "optional": False,
                 "options": {1: 2},
             }
 
-            assert type(target_register) == TargetRegister
-            assert type(protocol_register) == ProtocolRegister
-            assert type(reference_resolver_register) == ReferenceResolverRegister
+            assert type(target_register) is TargetRegister
+            assert type(protocol_register) is ProtocolRegister
+            assert type(reference_resolver_register) is ReferenceResolverRegister
 
     class TestStopPhotonsApp:
         async def test_it_cleans_up_photons(self, collector):

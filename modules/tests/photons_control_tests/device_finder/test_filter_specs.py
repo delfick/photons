@@ -71,5 +71,5 @@ class TestStrRanges:
             assert len(error.errors) == 1
             assert len(error.errors[0].errors) == 1
             error = error.errors[0].errors[0]
-            assert type(error) == BadSpecValue
+            assert type(error) is BadSpecValue
             assert str(error.kwargs["error"]) == "could not convert string to float: '2-3'"
