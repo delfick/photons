@@ -220,26 +220,25 @@ class TestPowerToggleGroup:
         await self.run_and_compare(sender, PowerToggleGroup(duration=3), expected=expected)
 
 
+async def transform(sender, state, *, expected, keep_brightness=False, transition_color=False):
+    msg = Transformer.using(
+        state, keep_brightness=keep_brightness, transition_color=transition_color
+    )
+    await sender(msg, devices.serials)
+
+    assert len(devices) > 0
+
+    for device in devices:
+        if device not in expected:
+            assert False, f"No expectation for {device.serial}"
+
+    for device, msgs in expected.items():
+        assert device in devices
+        devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+        devices.store(device).clear()
+
+
 class TestTransformer:
-
-    async def transform(
-        self, sender, state, *, expected, keep_brightness=False, transition_color=False
-    ):
-        msg = Transformer.using(
-            state, keep_brightness=keep_brightness, transition_color=transition_color
-        )
-        await sender(msg, devices.serials)
-
-        assert len(devices) > 0
-
-        for device in devices:
-            if device not in expected:
-                assert False, f"No expectation for {device.serial}"
-
-        for device, msgs in expected.items():
-            assert device in devices
-            devices.store(device).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
-            devices.store(device).clear()
 
     async def test_it_returns_an_empty_list_if_no_power_or_color_options(self):
         assert Transformer.using({}) == []
@@ -247,25 +246,25 @@ class TestTransformer:
     async def test_it_Uses_SetPower_if_no_duration(self, sender):
         msg = DeviceMessages.SetPower(level=0, res_required=False)
         expected = {device: [msg] for device in devices}
-        await self.transform(sender, {"power": "off"}, expected=expected)
+        await transform(sender, {"power": "off"}, expected=expected)
 
         for device in devices:
             await device.reset()
 
         msg = DeviceMessages.SetPower(level=65535, res_required=False)
         expected = {device: [msg] for device in devices}
-        await self.transform(sender, {"power": "on"}, expected=expected)
+        await transform(sender, {"power": "on"}, expected=expected)
 
     async def test_it_uses_SetLightPower_if_we_have_duration(self, sender):
         msg = LightMessages.SetLightPower(level=0, duration=100, res_required=False)
         expected = {device: [msg] for device in devices}
-        await self.transform(sender, {"power": "off", "duration": 100}, expected=expected)
+        await transform(sender, {"power": "off", "duration": 100}, expected=expected)
 
         for device in devices:
             await device.reset()
         msg = LightMessages.SetLightPower(level=65535, duration=20, res_required=False)
         expected = {device: [msg] for device in devices}
-        await self.transform(sender, {"power": "on", "duration": 20}, expected=expected)
+        await transform(sender, {"power": "on", "duration": 20}, expected=expected)
 
     async def test_it_just_uses_ColourParsermsg(self, sender):
         for color in (random.choice(["red", "blue", "green", "yellow"]), None):
@@ -276,14 +275,14 @@ class TestTransformer:
                 for device in devices:
                     await device.reset()
                 expected = {device: [want] for device in devices}
-                await self.transform(sender, state, expected=expected)
+                await transform(sender, state, expected=expected)
 
     async def test_it_can_ignore_brightness(self, sender):
         want = ColourParser.msg("hue:200 saturation:1")
         want.res_required = False
 
         expected = {device: [want] for device in devices}
-        await self.transform(
+        await transform(
             sender,
             {"color": "hue:200 saturation:1 brightness:0.3"},
             expected=expected,
@@ -294,14 +293,14 @@ class TestTransformer:
         state = {"color": "blue", "duration": 10}
         want = ColourParser.msg("blue", overrides={"duration": 10})
         expected = {device: [want] for device in devices}
-        await self.transform(sender, state, expected=expected, keep_brightness=True)
+        await transform(sender, state, expected=expected, keep_brightness=True)
 
     async def test_it_sets_power_off_even_if_light_already_off(self, sender):
         state = {"color": "blue", "power": "off", "duration": 10}
         power = LightMessages.SetLightPower(level=0, duration=10)
         set_color = ColourParser.msg("blue", overrides={"duration": 10})
         expected = {device: [power, set_color] for device in devices}
-        await self.transform(sender, state, expected=expected)
+        await transform(sender, state, expected=expected)
 
     async def test_it_pipelines_turn_off_and_color_when_both_color_and_poweroff(self, sender):
         for state in generate_options("red"):
@@ -316,7 +315,7 @@ class TestTransformer:
             for device in devices:
                 await device.reset()
             expected = {device: [power_message, color_message] for device in devices}
-            await self.transform(sender, state, expected=expected)
+            await transform(sender, state, expected=expected)
 
     class TestWhenPowerOnAndNeedColor:
 
@@ -334,7 +333,7 @@ class TestTransformer:
                 light2: [LightMessages.GetColor(), ColourParser.msg("blue")],
                 light3: [LightMessages.GetColor(), ColourParser.msg("blue")],
             }
-            await self.transform(sender, state, expected=expected)
+            await transform(sender, state, expected=expected)
 
         async def test_it_sets_power_on_if_it_needs_to_with_duration(self, sender):
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
@@ -354,7 +353,7 @@ class TestTransformer:
                     ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
             }
-            await self.transform(sender, state, expected=expected)
+            await transform(sender, state, expected=expected)
 
         async def test_it_can_see_brightness_in_state(self, sender):
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
@@ -374,7 +373,7 @@ class TestTransformer:
                     ColourParser.msg("blue brightness:0.3", overrides={"duration": 10}),
                 ],
             }
-            await self.transform(sender, state, expected=expected)
+            await transform(sender, state, expected=expected)
 
         async def test_it_can_ignore_brightness_in_color(self, sender):
             state = {"color": "blue brightness:0.3", "power": "on", "duration": 10}
@@ -397,7 +396,7 @@ class TestTransformer:
                     ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
             }
-            await self.transform(sender, state, expected=expected, keep_brightness=True)
+            await transform(sender, state, expected=expected, keep_brightness=True)
 
         async def test_it_can_ignore_brightness_in_state(self, sender):
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
@@ -420,7 +419,7 @@ class TestTransformer:
                     ColourParser.msg("blue", overrides={"duration": 10}),
                 ],
             }
-            await self.transform(sender, state, expected=expected, keep_brightness=True)
+            await transform(sender, state, expected=expected, keep_brightness=True)
 
         async def test_it_can_retain_previous_color_when_powering_on(self, sender):
             state = {"color": "blue", "brightness": 0.3, "power": "on", "duration": 10}
@@ -444,4 +443,4 @@ class TestTransformer:
                     ColourParser.msg("blue", overrides={"brightness": 0.3, "duration": 10}),
                 ],
             }
-            await self.transform(sender, state, expected=expected, transition_color=True)
+            await transform(sender, state, expected=expected, transition_color=True)

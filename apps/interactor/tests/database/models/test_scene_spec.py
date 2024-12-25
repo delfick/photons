@@ -514,46 +514,46 @@ class TestMakeSpec:
 
                     return setter
 
-            def test_it_works(self, V, setter):
-                zones = [
-                    [0, 0, 0, 3500],
-                    [0, 0, 0, 3500],
-                    [0, 0, 0, 3500],
-                    [100, 1, 0, 3500],
-                    [100, 0.5, 0, 3500],
-                    [100, 0.5, 0, 3500],
-                    [100, 0.5, 1, 3500],
-                    [100, 0.5, 1, 9000],
-                    [100, 0.5, 1, 9000],
-                ]
+                def test_it_works(self, V, setter):
+                    zones = [
+                        [0, 0, 0, 3500],
+                        [0, 0, 0, 3500],
+                        [0, 0, 0, 3500],
+                        [100, 1, 0, 3500],
+                        [100, 0.5, 0, 3500],
+                        [100, 0.5, 0, 3500],
+                        [100, 0.5, 1, 3500],
+                        [100, 0.5, 1, 9000],
+                        [100, 0.5, 1, 9000],
+                    ]
 
-                V.assertCorrect(
-                    zones,
-                    setter(0, 0, 0, 3500, start_index=0, end_index=2, duration=1),
-                    setter(100, 1, 0, 3500, start_index=3, end_index=3, duration=1),
-                    setter(100, 0.5, 0, 3500, start_index=4, end_index=5, duration=1),
-                    setter(100, 0.5, 1, 3500, start_index=6, end_index=6, duration=1),
-                    setter(100, 0.5, 1, 9000, start_index=7, end_index=8, duration=1),
-                )
+                    V.assertCorrect(
+                        zones,
+                        setter(0, 0, 0, 3500, start_index=0, end_index=2, duration=1),
+                        setter(100, 1, 0, 3500, start_index=3, end_index=3, duration=1),
+                        setter(100, 0.5, 0, 3500, start_index=4, end_index=5, duration=1),
+                        setter(100, 0.5, 1, 3500, start_index=6, end_index=6, duration=1),
+                        setter(100, 0.5, 1, 9000, start_index=7, end_index=8, duration=1),
+                    )
 
-            def test_it_works2(self, V, setter):
-                zones = [
-                    [0, 0, 0, 3500],
-                    [100, 1, 0, 3500],
-                    [100, 0.5, 0, 3500],
-                    [100, 0.5, 0, 3500],
-                    [100, 0.5, 1, 3500],
-                    [100, 0.5, 1, 9000],
-                ]
+                def test_it_works2(self, V, setter):
+                    zones = [
+                        [0, 0, 0, 3500],
+                        [100, 1, 0, 3500],
+                        [100, 0.5, 0, 3500],
+                        [100, 0.5, 0, 3500],
+                        [100, 0.5, 1, 3500],
+                        [100, 0.5, 1, 9000],
+                    ]
 
-                V.assertCorrect(
-                    zones,
-                    setter(0, 0, 0, 3500, start_index=0, end_index=0, duration=1),
-                    setter(100, 1, 0, 3500, start_index=1, end_index=1, duration=1),
-                    setter(100, 0.5, 0, 3500, start_index=2, end_index=3, duration=1),
-                    setter(100, 0.5, 1, 3500, start_index=4, end_index=4, duration=1),
-                    setter(100, 0.5, 1, 9000, start_index=5, end_index=5, duration=1),
-                )
+                    V.assertCorrect(
+                        zones,
+                        setter(0, 0, 0, 3500, start_index=0, end_index=0, duration=1),
+                        setter(100, 1, 0, 3500, start_index=1, end_index=1, duration=1),
+                        setter(100, 0.5, 0, 3500, start_index=2, end_index=3, duration=1),
+                        setter(100, 0.5, 1, 3500, start_index=4, end_index=4, duration=1),
+                        setter(100, 0.5, 1, 9000, start_index=5, end_index=5, duration=1),
+                    )
 
         class TestChainMsgs:
             def test_it_yields_power_message_if_we_have_one(self, V, overrides):

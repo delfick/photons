@@ -85,29 +85,31 @@ def compare_called(got, want):
     assert want == got
 
 
+def compare_received(by_light):
+    for light, msgs in by_light.items():
+        assert light in devices
+        devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
+        devices.store(light).clear()
+
+
+@contextmanager
+def modified_time():
+    class T:
+        def __init__(s):
+            s.time = 0
+
+        def __call__(s):
+            return s.time
+
+        def forward(s, amount):
+            s.time += amount
+
+    t = T()
+    with mock.patch("time.time", t):
+        yield t
+
+
 class TestGatherer:
-
-    def compare_received(self, by_light):
-        for light, msgs in by_light.items():
-            assert light in devices
-            devices.store(light).assertIncoming(*msgs, ignore=[DiscoveryMessages.GetService])
-            devices.store(light).clear()
-
-    @contextmanager
-    def modified_time(self):
-        class T:
-            def __init__(s):
-                s.time = 0
-
-            def __call__(s):
-                return s.time
-
-            def forward(s, amount):
-                s.time += amount
-
-        t = T()
-        with mock.patch("time.time", t):
-            yield t
 
     class TestAPlanSayingNoMessages:
 
@@ -203,7 +205,7 @@ class TestGatherer:
                 [("info", light1.serial), ("process", light2.serial), ("info", light2.serial)],
             )
 
-            self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
+            compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     class TestAPlanSayingSkip:
 
@@ -284,7 +286,7 @@ class TestGatherer:
 
             compare_called(called, [("process", light2.serial), ("info", light2.serial)])
 
-            self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
+            compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     class TestAPlanWithNoMessages:
 
@@ -419,7 +421,7 @@ class TestGatherer:
 
             assert found == [(light1.serial, "simple", "bob"), (light2.serial, "simple", "sam")]
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
                     light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
@@ -448,13 +450,13 @@ class TestGatherer:
                 class Instance(Plan.Instance):
                     def process(s, pkt):
                         if pkt | DeviceMessages.StateLabel:
-                            self.label = pkt.label
+                            s.label = pkt.label
                             return True
 
                     async def info(s):
                         if s.serial == light1.serial:
                             raise error
-                        return self.label
+                        return s.label
 
             gatherer = Gatherer(sender)
             plans = make_plans(label=ErrorPlan())
@@ -540,7 +542,7 @@ class TestGatherer:
                 (light1.serial, "looker", True),
             ]
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [
                         DeviceMessages.GetLabel(),
@@ -586,7 +588,7 @@ class TestGatherer:
                     ):
                         found.append((serial, completed, info))
 
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             compare_called(called, [("label", light1.serial, power_type)])
 
@@ -612,7 +614,7 @@ class TestGatherer:
                 )
                 found = e.kwargs["results"]
 
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             compare_called(called, [("label", light1.serial, power_type)])
 
@@ -703,7 +705,7 @@ class TestGatherer:
                 (light1.serial, "looker", True),
             ]
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [
                         DeviceMessages.GetLabel(),
@@ -749,7 +751,7 @@ class TestGatherer:
                     found.append((serial, completed, info))
 
             assertError(error_catcher)
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             compare_called(called, [("label", light1.serial, power_type)])
 
@@ -764,7 +766,7 @@ class TestGatherer:
                 found = dict(await gatherer.gather_all(plans, two_lights, **kwargs))
 
             assertError(error_catcher)
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             compare_called(called, [("label", light1.serial, power_type)])
 
@@ -805,7 +807,7 @@ class TestGatherer:
                 called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
             )
 
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             called.clear()
 
@@ -817,7 +819,7 @@ class TestGatherer:
                 called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
             )
 
-            self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+            compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
             called.clear()
 
@@ -827,10 +829,10 @@ class TestGatherer:
             assert got == {light1.serial: (True, {"label": "bob"})}
 
             compare_called(called, [])
-            self.compare_received({light1: [], light2: [], light3: []})
+            compare_received({light1: [], light2: [], light3: []})
 
         async def test_it_it_can_refresh_on_time(self, sender):
-            with self.modified_time() as t:
+            with modified_time() as t:
                 called = []
 
                 class LabelPlan(Plan):
@@ -860,7 +862,7 @@ class TestGatherer:
                     called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
                 )
 
-                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+                compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
                 called.clear()
 
@@ -871,7 +873,7 @@ class TestGatherer:
                 assert got == {light1.serial: (True, {"label": "bob"})}
 
                 compare_called(called, [])
-                self.compare_received({light1: [], light2: [], light3: []})
+                compare_received({light1: [], light2: [], light3: []})
 
                 # After a second, we get refreshed
                 t.forward(0.5)
@@ -882,7 +884,7 @@ class TestGatherer:
                     called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
                 )
 
-                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+                compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
                 called.clear()
 
                 # Get it again, our refresh means it will be cached
@@ -897,7 +899,7 @@ class TestGatherer:
                 compare_called(
                     called, [("label", light2.serial, label_type), ("info.label", light2.serial)]
                 )
-                self.compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
+                compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
                 called.clear()
 
                 # After a second, we get light1 refreshed
@@ -912,7 +914,7 @@ class TestGatherer:
                     called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
                 )
 
-                self.compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
+                compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
                 called.clear()
 
@@ -934,7 +936,7 @@ class TestGatherer:
                     ],
                 )
 
-                self.compare_received(
+                compare_received(
                     {
                         light1: [DeviceMessages.GetLabel()],
                         light2: [DeviceMessages.GetLabel()],
@@ -1005,7 +1007,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel()],
@@ -1033,7 +1035,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel()],
@@ -1103,7 +1105,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel()],
@@ -1131,7 +1133,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received({light1: [], light2: [], light3: []})
+            compare_received({light1: [], light2: [], light3: []})
 
     class TestDependencies:
 
@@ -1218,7 +1220,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetPower(), LightMessages.GetInfrared()],
                     light2: [DeviceMessages.GetPower(), DeviceMessages.GetLabel()],
@@ -1307,7 +1309,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
                     light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
@@ -1378,7 +1380,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
@@ -1449,7 +1451,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
@@ -1532,7 +1534,7 @@ class TestGatherer:
                 ],
             )
 
-            self.compare_received(
+            compare_received(
                 {
                     light1: [DeviceMessages.GetLabel()],
                     light2: [DeviceMessages.GetLabel(), DeviceMessages.GetPower()],
