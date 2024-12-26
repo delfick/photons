@@ -24,7 +24,7 @@ name = "Stephen Moore"
 email = "github@delfick.com"
 
 [project.urls]
-Homepage = "http://github.com/delfick/photons/apps/interactor"
+Homepage = "https://photons.delfick.com/apps/interactor/"
 
 [project.entry-points."lifx.photons"]
 interactor = "interactor.addon"

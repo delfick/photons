@@ -20,7 +20,7 @@ email = "github@delfick.com"
 arranger = "arranger.addon"
 
 [project.urls]
-Homepage = "http://github.com/delfick/photons/apps/arranger"
+Homepage = "https://photons.delfick.com/apps/arranger/"
 
 [tool.hatch.version]
 path = "arranger/__init__.py"
