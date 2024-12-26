@@ -5,7 +5,7 @@ ChangeLog
 
 .. _release-core-0-46-4:
 
-0.46.4 - TBD
+0.46.4 - 26 December 2024
     * The project is now formatted and linted with ruff
 
 .. _release-core-0-46-3:

@@ -10,7 +10,7 @@ readme = "README.rst"
 license = "MIT"
 requires-python = ">= 3.12"
 keywords = [ "arranger", "lifx", "photons" ]
-dependencies = [ "lifx-photons-core[web-server]>=0.46.3" ]
+dependencies = [ "lifx-photons-core[web-server]>=0.46.4" ]
 
 [[project.authors]]
 name = "Stephen Moore"

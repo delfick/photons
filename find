@@ -8,6 +8,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 exec ack "$@" \
     --ignore-directory .tox \
+    --ignore-directory .venv \
     --ignore-directory .mypy_cache \
     --ignore-directory .dmypy.json \
     --ignore-directory dist \
@@ -21,4 +22,5 @@ exec ack "$@" \
     --ignore-directory apps/interactor/docker/.harpoon \
     --ignore-directory modules/.mypy_cache \
     --ignore-directory apps/arranger/.mypy_cache \
-    --ignore-directory apps/interactor/.mypy_cache
+    --ignore-directory apps/interactor/.mypy_cache \
+    --ignore-file is:uv.lock \

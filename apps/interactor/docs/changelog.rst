@@ -5,7 +5,7 @@ Changelog
 
 .. _release-interactor-0-16-9:
 
-0.16.9 - TBD
+0.16.9 - 26 December 2024
     * The project is now formatted and linted with ruff
 
 .. _release-interactor-0-16-8:

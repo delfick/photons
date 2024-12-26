@@ -51,7 +51,7 @@ Changelog
 
 .. _release-arranger-0-9-3:
 
-0.9.3 - TBD
+0.9.3 - 26 December 2024
     * The project is now formatted and linted with ruff
 
 .. _release-arranger-0-9-2:
