@@ -4,6 +4,7 @@ import random
 
 from delfick_project.norms import BadSpecValue, Meta, dictobj, sb
 from photons_app.formatter import MergedOptionStringFormatter
+
 from photons_canvas.animations.infrastructure.register import resolve
 
 
@@ -37,9 +38,9 @@ class noisy_network_spec(sb.Spec):
                 env = 0
             return sb.integer_spec().normalise(meta, env)
 
-        animation_options = sb.set_options(
-            noisy_network_limit=sb.defaulted(sb.integer_spec(), 0)
-        ).normalise(meta, meta.everything.get("animation_options") or {})
+        animation_options = sb.set_options(noisy_network_limit=sb.defaulted(sb.integer_spec(), 0)).normalise(
+            meta, meta.everything.get("animation_options") or {}
+        )
 
         if animation_options["noisy_network_limit"]:
             return animation_options["noisy_network_limit"]
@@ -58,13 +59,13 @@ class animation_spec(sb.Spec):
         if isinstance(val, str):
             val = [val]
 
-        if isinstance(val, (list, tuple)) and hasattr(val[0], "resolve"):
+        if isinstance(val, list | tuple) and hasattr(val[0], "resolve"):
             val = val[0]
 
         if hasattr(val, "resolve"):
             return val
 
-        if isinstance(val, (list, tuple)):
+        if isinstance(val, list | tuple):
             if len(val) == 1:
                 val = [val[0], sb.NotSpecified, sb.NotSpecified]
 
@@ -80,9 +81,7 @@ class animation_spec(sb.Spec):
 
 
 class TransitionOptions(dictobj.Spec):
-    run_first = dictobj.Field(
-        sb.boolean, default=True, help="Whether to run a transition before feature animations"
-    )
+    run_first = dictobj.Field(sb.boolean, default=True, help="Whether to run a transition before feature animations")
 
     run_last = dictobj.Field(
         sb.boolean,
@@ -90,9 +89,7 @@ class TransitionOptions(dictobj.Spec):
         help="Whether to run a transition after limit of feature animations",
     )
 
-    run_between = dictobj.Field(
-        sb.boolean, default=True, help="Whether to run a transitions between animations"
-    )
+    run_between = dictobj.Field(sb.boolean, default=True, help="Whether to run a transitions between animations")
 
     animations = dictobj.Field(
         sb.listof(animation_spec()),
@@ -114,9 +111,7 @@ class RunOptions(dictobj.Spec):
         help="A semaphore that when set will pause the animation",
     )
 
-    combined = dictobj.Field(
-        sb.boolean, default=True, help="Whether to join all found tiles into one animation"
-    )
+    combined = dictobj.Field(sb.boolean, default=True, help="Whether to join all found tiles into one animation")
 
     reinstate_on_end = dictobj.Field(
         sb.boolean,
@@ -124,9 +119,7 @@ class RunOptions(dictobj.Spec):
         help="Whether to return the tiles to how they were before the animation",
     )
 
-    reinstate_duration = dictobj.Field(
-        sb.float_spec, default=1, help="The duration used when reinstating state"
-    )
+    reinstate_duration = dictobj.Field(sb.float_spec, default=1, help="The duration used when reinstating state")
 
     noisy_network = dictobj.Field(
         noisy_network_spec(),

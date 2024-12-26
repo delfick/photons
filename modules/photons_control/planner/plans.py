@@ -70,19 +70,13 @@ def make_plans(*by_key, **plans):
     for key in by_key:
         count[key] += 1
         if key in plans:
-            raise PhotonsAppError(
-                "Cannot specify plan by label and by Plan class", specified_twice=key
-            )
+            raise PhotonsAppError("Cannot specify plan by label and by Plan class", specified_twice=key)
         if count[key] > 1:
-            raise PhotonsAppError(
-                "Cannot specify plan by label more than once", specified_multiple_times=key
-            )
+            raise PhotonsAppError("Cannot specify plan by label more than once", specified_multiple_times=key)
 
     for key in by_key:
         if key not in plan_by_key:
-            raise PhotonsAppError(
-                "No default plan for key", wanted=key, available=list(plan_by_key)
-            )
+            raise PhotonsAppError("No default plan for key", wanted=key, available=list(plan_by_key))
         plans[key] = plan_by_key[key]()
 
     return plans
@@ -474,11 +468,7 @@ class ColorsPlan(Plan):
                 return [LightMessages.GetColor()]
 
             elif self.zones is Zones.MATRIX:
-                return [
-                    TileMessages.Get64(
-                        x=0, y=0, tile_index=0, length=255, width=self.deps["chain"]["width"]
-                    )
-                ]
+                return [TileMessages.Get64(x=0, y=0, tile_index=0, length=255, width=self.deps["chain"]["width"])]
 
             else:
                 return []
@@ -547,10 +537,7 @@ class PartsPlan(Plan):
                 for tile in pkt.tile_devices[:amount]:
                     self.chain.append(tile)
 
-                self.orientations = [
-                    nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
-                    for tile in self.chain
-                ]
+                self.orientations = [nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z) for tile in self.chain]
 
                 return True
 
@@ -579,11 +566,7 @@ class PartsPlan(Plan):
             parts = []
 
             for i, t in enumerate(self.chain):
-                parts.append(
-                    cont.Part(
-                        t.user_x, t.user_y, t.width, t.height, i, self.orientations[i], device
-                    )
-                )
+                parts.append(cont.Part(t.user_x, t.user_y, t.width, t.height, i, self.orientations[i], device))
 
             return parts
 
@@ -608,10 +591,7 @@ class PartsAndColorsPlan(Plan):
             return True
 
         async def info(self):
-            colors = [
-                [(color.hue, color.saturation, color.brightness, color.kelvin) for color in cs]
-                for cs in self.deps["colors"]
-            ]
+            colors = [[(color.hue, color.saturation, color.brightness, color.kelvin) for color in cs] for cs in self.deps["colors"]]
 
             for i, p in enumerate(self.deps["parts"]):
                 p.original_colors = colors[i]
@@ -741,9 +721,7 @@ class ChainPlan(Plan):
         async def info(self):
             coords_and_sizes = [((t.user_x, t.user_y), (t.width, t.height)) for t in self.chain]
 
-            random_orientations = {
-                i: random.choice(list(self.Orien.__members__.values())) for i in self.orientations
-            }
+            random_orientations = {i: random.choice(list(self.Orien.__members__.values())) for i in self.orientations}
 
             reorient = partial(self.reorient, self.orientations, random_orientations)
             reverse_orient = partial(self.reverse_orient, self.orientations)
@@ -796,9 +774,7 @@ class CapabilityPlan(Plan):
                 "cap": cap,
                 "product": product,
                 "firmware": self.firmware,
-                "state_version": DeviceMessages.StateVersion.Payload.create(
-                    self.version.payload.pack()
-                ),
+                "state_version": DeviceMessages.StateVersion.Payload.create(self.version.payload.pack()),
             }
 
 

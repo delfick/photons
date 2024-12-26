@@ -47,7 +47,6 @@ def meta(config="", extra_prepare=None):
 
 
 class TestTaskSpecifierSpec:
-
     @pytest.fixture()
     def spec(self):
         return task_specifier_spec()
@@ -69,7 +68,6 @@ class TestTaskSpecifierSpec:
         assert result == ("one", "three")
 
     class TestTakingInAnIterable:
-
         def test_it_can_take_a_two_item(self, spec):
             result = spec.normalise(meta(), ("one", "three"))
             assert result == ("one", "three")
@@ -184,14 +182,11 @@ class TestTaskSpecifierSpec:
             assert lan.default_broadcast == "255.255.255.255"
 
         def test_it_can_override_properties_with_another_target(self, spec):
-
             class Container(Target):
                 network = dictobj.Field(format_into=sb.any_spec, wrapper=sb.required)
 
             def extra_prepare(collector, configuration, args_dict):
-                collector.configuration["target_register"].register_type(
-                    "container", Container.FieldSpec(formatter=MergedOptionStringFormatter)
-                )
+                collector.configuration["target_register"].register_type("container", Container.FieldSpec(formatter=MergedOptionStringFormatter))
 
             config = """
             photons_app:

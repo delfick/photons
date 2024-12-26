@@ -11,7 +11,7 @@ class Wat(dictobj.Spec):
 
     @property
     def thing(self):
-        return "{0}.{1}".format(self.one, self.two)
+        return f"{self.one}.{self.two}"
 
 
 @addon_hook()

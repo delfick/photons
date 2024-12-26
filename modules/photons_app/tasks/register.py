@@ -1,10 +1,13 @@
 from collections import namedtuple
 
 from delfick_project.norms import dictobj, sb
+
 from photons_app.errors import BadOption, BadTarget, BadTask
 from photons_app.tasks.tasks import GracefulTask, Task
 
-artifact_spec = lambda: sb.optional_spec(sb.any_spec())
+
+def artifact_spec():
+    return sb.optional_spec(sb.any_spec())
 
 
 class target_spec(sb.Spec):
@@ -282,9 +285,7 @@ class TaskRegister:
         raise BadTask(
             "Task was used with wrong type of target",
             wanted_task=task,
-            wanted_target=getattr(
-                target, "instantiated_name", getattr(target, "__name__", repr(target))
-            ),
+            wanted_target=getattr(target, "instantiated_name", getattr(target, "__name__", repr(target))),
             available_targets=sorted(set(possible_targets)),
             **kw,
         )

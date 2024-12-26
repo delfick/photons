@@ -36,7 +36,6 @@ async def reset_devices(sender):
 
 
 class TestFindingSerials:
-
     async def test_it_can_find_all_serials(self, sender):
         for ref in ("", "_", None, sb.NotSpecified, FoundSerials()):
             assert await find_serials(ref, sender, timeout=1) == (devices.serials, [])

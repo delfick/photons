@@ -38,7 +38,6 @@ class TestReprer:
         assert reprer(b.tobytes()) == "616130303232"
 
     def test_it_reprs_everything_else(self):
-
         class Thing:
             def __repr__(self):
                 return "This thing is the best"
@@ -59,7 +58,6 @@ class TestCatchErrorMessage:
         assert res.body == b'{"error_code":"Bad","error":"very bad"}'
 
     def test_it_defaults_to_repr(self):
-
         class Blah: ...
 
         blah = Blah()
@@ -79,22 +77,18 @@ class TestCatchErrorMessage:
 class TestMessageFromExc:
     def test_it_re_raises_SanicExceptions(self):
         with pytest.raises(SanicException):
-            MessageFromExc(lc=hp.lc.using(), logger_name="logs")(
-                SanicException, SanicException("wat"), None
-            )
+            MessageFromExc(lc=hp.lc.using(), logger_name="logs")(SanicException, SanicException("wat"), None)
 
     def test_it_can_see_SanicExceptions(self):
         try:
             raise Exception()
-        except:
+        except Exception:
             tb = sys.exc_info()[2]
 
         see_exception = mock.Mock(name="see_exception")
         exc = SanicException("NOPE")
         with pytest.raises(SanicException):
-            MessageFromExc(lc=hp.lc.using(), logger_name="logs", see_exception=see_exception)(
-                type(exc), exc, tb
-            )
+            MessageFromExc(lc=hp.lc.using(), logger_name="logs", see_exception=see_exception)(type(exc), exc, tb)
         see_exception.assert_called_once_with(type(exc), exc, tb)
 
     def test_it_does_not_log_DelfickError_or_cancelledError(self, caplog):
@@ -109,42 +103,34 @@ class TestMessageFromExc:
 
     def test_it_does_not_log_other_exceptions_if_told_not_to(self, caplog):
         exc = ValueError("asdf")
-        MessageFromExc(lc=hp.lc.using(), logger_name="logs", log_exceptions=False)(
-            type(exc), exc, None
-        )
+        MessageFromExc(lc=hp.lc.using(), logger_name="logs", log_exceptions=False)(type(exc), exc, None)
         assert caplog.text == ""
 
-        MessageFromExc(lc=hp.lc.using(), logger_name="logs", log_exceptions=True)(
-            type(exc), exc, None
-        )
+        MessageFromExc(lc=hp.lc.using(), logger_name="logs", log_exceptions=True)(type(exc), exc, None)
         assert "asdf" in caplog.text
 
     def test_it_turns_DelfickError_into_a_400_error_message(self):
-
         class MyError(DelfickError):
             desc = "hi"
 
         exc = MyError("wat", one=5)
-        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(
-            type(exc), exc, None
-        ) == ErrorMessage(status=400, error={"one": 5, "message": "hi. wat"}, error_code="MyError")
+        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(type(exc), exc, None) == ErrorMessage(
+            status=400, error={"one": 5, "message": "hi. wat"}, error_code="MyError"
+        )
 
     def test_it_turns_cancelled_error_into_request_cancelled(self):
         exc = asyncio.CancelledError()
-        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(
-            type(exc), exc, None
-        ) == ErrorMessage(status=500, error="Request was cancelled", error_code="RequestCancelled")
+        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(type(exc), exc, None) == ErrorMessage(
+            status=500, error="Request was cancelled", error_code="RequestCancelled"
+        )
 
     def test_it_turns_everything_else_into_internal_server_errors(self):
         exc = ValueError("asdf")
-        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(
-            type(exc), exc, None
-        ) == ErrorMessage(
+        assert MessageFromExc(lc=hp.lc.using(), logger_name="logs")(type(exc), exc, None) == ErrorMessage(
             status=500, error="Internal Server Error", error_code="InternalServerError"
         )
 
     def test_it_has_the_ability_to_modify_the_error_information(self):
-
         class MFE(MessageFromExc):
             def modify_error_dict(
                 self,
@@ -183,7 +169,6 @@ class TestGetLoggerName:
         assert name == "photons_web_server.command.messages"
 
     def test_it_can_return_based_on_a_method(self):
-
         class Thing:
             def my_method(self):
                 pass
@@ -225,12 +210,9 @@ class TestGetLogger:
 
 
 class TestProgressMessageMaker:
-
     @pytest.fixture
     def maker(self) -> ProgressMessageMaker:
-        return ProgressMessageMaker(
-            lc=hp.lc.using(), logger_name="photons_web_server_tests.commander.test_messages"
-        )
+        return ProgressMessageMaker(lc=hp.lc.using(), logger_name="photons_web_server_tests.commander.test_messages")
 
     async def test_it_calls_do_log_if_that_is_asked_for(self, maker: ProgressMessageMaker):
         message = mock.Mock(name="message")
@@ -247,9 +229,7 @@ class TestProgressMessageMaker:
 
         do_log.assert_called_once_with(message, info, three=one, four=two)
 
-    async def test_it_does_not_call_do_log_if_that_is_not_asked_for(
-        self, maker: ProgressMessageMaker
-    ):
+    async def test_it_does_not_call_do_log_if_that_is_not_asked_for(self, maker: ProgressMessageMaker):
         message = mock.Mock(name="message")
         one = mock.Mock(name="one")
         two = mock.Mock(name="two")
@@ -265,9 +245,7 @@ class TestProgressMessageMaker:
         do_log.assert_not_called()
 
     class TestMakeInfo:
-
         async def test_it_gathers_information_from_errors(self, maker: ProgressMessageMaker):
-
             class MyDelfickError(DelfickError):
                 desc = "I am the worst"
 
@@ -303,9 +281,7 @@ class TestProgressMessageMaker:
             assert await maker(None) == {"done": True}
             assert await maker(None, six=6) == {"done": True, "six": 6}
 
-        async def test_it_Uses_information_if_the_message_is_a_dictionary(
-            self, maker: ProgressMessageMaker
-        ):
+        async def test_it_Uses_information_if_the_message_is_a_dictionary(self, maker: ProgressMessageMaker):
             message = {"one": 1, "two": 2}
             info = await maker(message)
             assert info == {"one": 1, "two": 2}
@@ -316,15 +292,12 @@ class TestProgressMessageMaker:
             assert await maker(message, four=4) == {"one": 1, "two": 2, "four": 4}
             assert message == {"one": 1, "two": 2}
 
-        async def test_it_uses_message_as_an_info_value_otherwise(
-            self, maker: ProgressMessageMaker
-        ):
+        async def test_it_uses_message_as_an_info_value_otherwise(self, maker: ProgressMessageMaker):
             message = mock.Mock(name="message")
             assert await maker(message) == {"info": message}
             assert await maker(message, five=5) == {"info": message, "five": 5}
 
     class TestDoLog:
-
         @pytest.fixture
         def message(self) -> mock.Mock:
             return mock.Mock(name="message")
@@ -335,19 +308,14 @@ class TestProgressMessageMaker:
             assert rec.msg == expected_msg
             assert rec.levelname == expected_level
 
-        async def test_it_Logs_info_if_no_error_key(
-            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
-        ):
+        async def test_it_Logs_info_if_no_error_key(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
             await maker.do_log(message, {"done": True})
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "done": True})
 
             await maker.do_log(message, {"one": True})
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "one": True})
 
-        async def test_it_Logs_info_as_key_if_not_a_dict(
-            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
-        ):
-
+        async def test_it_Logs_info_as_key_if_not_a_dict(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
             class Thing:
                 pass
 
@@ -355,10 +323,6 @@ class TestProgressMessageMaker:
             await maker.do_log(message, thing)
             self.assertLastRecord(caplog, "INFO", {"msg": "progress", "info": thing})
 
-        async def test_it_logs_an_error_if_error_key_is_in_info(
-            self, caplog, message: mock.Mock, maker: ProgressMessageMaker
-        ):
+        async def test_it_logs_an_error_if_error_key_is_in_info(self, caplog, message: mock.Mock, maker: ProgressMessageMaker):
             await maker.do_log(message, {"error": "bad", "things": "happen"})
-            self.assertLastRecord(
-                caplog, "ERROR", {"msg": "progress", "error": "bad", "things": "happen"}
-            )
+            self.assertLastRecord(caplog, "ERROR", {"msg": "progress", "error": "bad", "things": "happen"})

@@ -89,7 +89,7 @@ def make_hsbk(specifier):
         if b is None:
             b = 1
 
-    elif isinstance(specifier, (list, tuple)):
+    elif isinstance(specifier, list | tuple):
         h, s, b, k = 0, 0, 1, 3500
         if len(specifier) > 0:
             h = specifier[0]
@@ -299,7 +299,7 @@ class ColourParser:
                 if regex.endswith("_component"):
                     m = regexes[regex].match(color_string)
                     if m:
-                        func_name = "parse_{0}_component".format(regex.split("_")[1])
+                        func_name = f"parse_{regex.split('_')[1]}_component"
                         return getattr(self, func_name)((color_string,) + m.groups())
         except PhotonsAppError as error:
             raise InvalidColor("Unable to parse color!", got=color_string, error=error.as_dict())
@@ -376,9 +376,7 @@ class ColourParser:
             None,
             0,
             None,
-            self.parse_decimal_string(
-                groups[1], label="kelvin", minimum=1500, maximum=9000, is_integer=True
-            ),
+            self.parse_decimal_string(groups[1], label="kelvin", minimum=1500, maximum=9000, is_integer=True),
         ]
 
     def parse_random_component(self, groups):
@@ -528,9 +526,7 @@ class Effects:
             raise NoSuchEffect(effect=effect)
         func = getattr(kls, effect)
         if not getattr(func, "_is_effect", None):
-            log.warning(
-                "Trying to get an effect that's on Effect, but isn't an effect\teffect=%s", effect
-            )
+            log.warning("Trying to get an effect that's on Effect, but isn't an effect\teffect=%s", effect)
             raise NoSuchEffect(effect=effect)
         return getattr(kls(), effect)(**kwargs)
 
@@ -556,9 +552,7 @@ class Effects:
         )
 
     @effect
-    def sine(
-        self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
-    ):
+    def sine(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         """Options to make the light(s) transition to `color` and back in a smooth sine wave"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
@@ -576,9 +570,7 @@ class Effects:
         return dict(waveform=Waveform.HALF_SINE, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def triangle(
-        self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
-    ):
+    def triangle(self, cycles=1, period=1.0, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         """Options to make the light(s) transition to `color` linearly and back"""
         if skew_ratio is sb.NotSpecified:
             skew_ratio = peak
@@ -596,9 +588,7 @@ class Effects:
         return dict(waveform=Waveform.SAW, cycles=cycles, transient=transient, period=period)
 
     @effect
-    def breathe(
-        self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs
-    ):
+    def breathe(self, cycles=1, period=1, peak=0.5, transient=1, skew_ratio=sb.NotSpecified, **kwargs):
         """
         Options to make the light(s) transition to `color` and back in a smooth sine wave
 

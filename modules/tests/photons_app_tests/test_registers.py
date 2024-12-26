@@ -113,7 +113,6 @@ class TestProtocolRegister:
 
 
 class TestReferenceResolverRegister:
-
     @pytest.fixture()
     def register(self):
         return ReferenceResolverRegister()
@@ -122,13 +121,9 @@ class TestReferenceResolverRegister:
         def test_it_has_file_resolver_by_default(self, register):
             filename = mock.Mock(name="filename")
             resolver = mock.Mock(name="resolver")
-            FakeResolveReferencesFromFile = mock.Mock(
-                name="ResolveReferencesFromFile", return_value=resolver
-            )
+            FakeResolveReferencesFromFile = mock.Mock(name="ResolveReferencesFromFile", return_value=resolver)
 
-            with mock.patch(
-                "photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile
-            ):
+            with mock.patch("photons_app.registers.ResolveReferencesFromFile", FakeResolveReferencesFromFile):
                 r = register.resolve("file", filename)
 
             assert r is resolver
@@ -160,9 +155,7 @@ class TestReferenceResolverRegister:
             resolver.assert_called_once_with("blah")
 
     class TestGettingAReferenceObject:
-
         def test_it_returns_SpecialReference_objects_as_is(self, register):
-
             class Reference(SpecialReference):
                 pass
 
@@ -189,9 +182,7 @@ class TestReferenceResolverRegister:
             resolved = register.reference_object(reference)
             assert resolved is ret
 
-        def test_it_returns_a_SpecialReference_if_our_resolver_returns_not_a_special_reference(
-            self, register
-        ):
+        def test_it_returns_a_SpecialReference_if_our_resolver_returns_not_a_special_reference(self, register):
             ret = "d073d5000001,d073d5000002"
             wanted = [binascii.unhexlify(ref) for ref in ret.split(",")]
 

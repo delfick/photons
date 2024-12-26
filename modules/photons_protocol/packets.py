@@ -31,6 +31,7 @@ from functools import partial
 from bitarray import bitarray
 from delfick_project.norms import Meta, dictobj, sb
 from photons_app.errors import PhotonsAppError, ProgrammerError
+
 from photons_protocol.packing import PacketPacking, val_to_bitarray
 from photons_protocol.types import Optional
 from photons_protocol.types import Type as T
@@ -170,8 +171,7 @@ class PacketSpecMixin:
         return any(k == key for k in self.Meta.all_names) or any(k == key for k in self.Meta.groups)
 
     def keys(self):
-        for k in dictobj.__iter__(self):
-            yield k
+        yield from dictobj.__iter__(self)
 
     def actual_items(self):
         for key in self.keys():
@@ -248,9 +248,7 @@ class PacketSpecMixin:
 
         if do_spec and key in M.all_names:
             typ = M.all_field_types_dict[key]
-            res = object.__getattribute__(self, "getitem_spec")(
-                typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
-            )
+            res = object.__getattribute__(self, "getitem_spec")(typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking)
 
             # Make it so if there isn't a list specified, but you access it, we store the list we return
             # So that if you modify that list, it modifies on the packet
@@ -261,9 +259,7 @@ class PacketSpecMixin:
 
         return actual
 
-    def getitem_spec(
-        self, typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking
-    ):
+    def getitem_spec(self, typ, key, actual, parent, serial, do_transform, allow_bitarray, unpacking):
         """
         Used by __getitem__ to use the spec on the type to transform the ``actual`` value
         """
@@ -350,7 +346,7 @@ class PacketSpecMixin:
             # __getitem__ has the opposite logic to grab this group as is
             if type(val) not in (bytes, bitarray, str):
                 msg = "Setting non bytes payload on a packet that doesn't know what fields it's payload has"
-                raise ValueError("{0}\tkey={1}\tgot={2}".format(msg, key, repr(val)))
+                raise ValueError(f"{msg}\tkey={key}\tgot={repr(val)}")
 
             dictobj.__setitem__(self, key, val)
             return
@@ -373,7 +369,7 @@ class PacketSpecMixin:
         # We're setting a group, we need to get things from the group via items
         if not hasattr(val, "items"):
             msg = "Setting a group on a packet must be done with a value that has an items() method"
-            raise ValueError("{0}\tkey={1}\tgot={2}".format(msg, key, repr(val)))
+            raise ValueError(f"{msg}\tkey={key}\tgot={repr(val)}")
 
         # Set from our value
         for field, v in val.items():
@@ -493,7 +489,7 @@ class PacketSpecMixin:
         if args:
             val = args[0]
 
-        if isinstance(val, (bitarray, bytes)):
+        if isinstance(val, bitarray | bytes):
             return PacketPacking.unpack(kls, val)
 
         return kls.spec().normalise(Meta.empty(), val)
@@ -546,11 +542,11 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
 
         if fields is None:
             msg = "PacketSpecMixin expects a fields attribute on the class or a PacketSpec parent"
-            raise ProgrammerError("{0}\tcreating={1}".format(msg, classname))
+            raise ProgrammerError(f"{msg}\tcreating={classname}")
 
         if type(fields) is dict:
             msg = "PacketSpecMixin expect fields to be a list of tuples, not a dictionary"
-            raise ProgrammerError("{0}\tcreating={1}".format(msg, classname))
+            raise ProgrammerError(f"{msg}\tcreating={classname}")
 
         for name, typ in fields:
             if isinstance(typ, str):
@@ -570,15 +566,11 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
             field_types.append((name, typ))
 
         if len(set(all_names)) != len(all_names):
-            raise ProgrammerError(
-                "Duplicated names!\t{0}".format(
-                    [name for name in all_names if all_names.count(name) > 1]
-                )
-            )
+            raise ProgrammerError(f"Duplicated names!\t{[name for name in all_names if all_names.count(name) > 1]}")
 
         class MetaRepr(type):
             def __repr__(self):
-                return "<type {0}.Meta>".format(classname)
+                return f"<type {classname}.Meta>"
 
         Meta = type.__new__(
             MetaRepr,
@@ -603,10 +595,7 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
         def dflt(in_group):
             return Initial if in_group else sb.NotSpecified
 
-        attrs["fields"] = [
-            (name, partial(dflt, name in groups))
-            for name in (list(all_names) + list(groups.keys()))
-        ]
+        attrs["fields"] = [(name, partial(dflt, name in groups)) for name in (list(all_names) + list(groups.keys()))]
 
         kls = type.__new__(metaname, classname, baseclasses, attrs)
 
@@ -615,11 +604,7 @@ class PacketSpecMetaKls(dictobj.Field.metaclass):
             if hasattr(kls, field):
                 already_attributes.append(field)
         if already_attributes:
-            raise ProgrammerError(
-                "Can't override attributes with fields\talready_attributes={0}".format(
-                    sorted(already_attributes)
-                )
-            )
+            raise ProgrammerError(f"Can't override attributes with fields\talready_attributes={sorted(already_attributes)}")
 
         return kls
 

@@ -1,9 +1,10 @@
 from delfick_project.norms import dictobj, sb
+from photons_messages import TileEffectType, TileMessages
+from photons_protocol.types import enum_spec
+
 from photons_app import helpers as hp
 from photons_app.mimic.operator import Operator, operator
 from photons_app.mimic.operators.light import color_spec
-from photons_messages import TileEffectType, TileMessages
-from photons_protocol.types import enum_spec
 
 
 class TileChild(dictobj.Spec):
@@ -94,9 +95,7 @@ class Matrix(Operator):
         palette = dictobj.Field(sb.listof(color_spec()))
         palette_count = dictobj.NullableField(sb.integer_spec)
 
-        matrix_effect = dictobj.Field(
-            enum_spec(None, TileEffectType, unpacking=True), default=TileEffectType.OFF
-        )
+        matrix_effect = dictobj.Field(enum_spec(None, TileEffectType, unpacking=True), default=TileEffectType.OFF)
 
     @classmethod
     def select(kls, device):
@@ -127,29 +126,17 @@ class Matrix(Operator):
             changes = []
             for i, palette in enumerate(self.device.attrs.palette):
                 if i >= palette_count:
-                    changes.append(
-                        self.device.attrs.attrs_path("palette", i).changer_to(hp.Color(0, 0, 0, 0))
-                    )
+                    changes.append(self.device.attrs.attrs_path("palette", i).changer_to(hp.Color(0, 0, 0, 0)))
                 else:
                     if self.device.attrs.palette[i] != event.pkt.palette[i]:
-                        changes.append(
-                            self.device.attrs.attrs_path("palette", i).changer_to(
-                                event.pkt.palette[i]
-                            )
-                        )
+                        changes.append(self.device.attrs.attrs_path("palette", i).changer_to(event.pkt.palette[i]))
 
             for i in range(palette_count):
                 if i >= len(self.device.attrs.palette):
-                    changes.append(
-                        self.device.attrs.attrs_path("palette", i).changer_to(event.pkt.palette[i])
-                    )
+                    changes.append(self.device.attrs.attrs_path("palette", i).changer_to(event.pkt.palette[i]))
 
             if event.pkt.palette_count > len(self.device.attrs.palette):
-                changes.append(
-                    self.device.attrs.attrs_path("palette").reduce_length_to(
-                        event.pkt.palette_count
-                    )
-                )
+                changes.append(self.device.attrs.attrs_path("palette").reduce_length_to(event.pkt.palette_count))
 
             changes.append(self.device.attrs.attrs_path("matrix_effect").changer_to(event.pkt.type))
             await self.device.attrs.attrs_apply(*changes, event=event)
@@ -159,9 +146,7 @@ class Matrix(Operator):
 
         elif event | TileMessages.Get64:
             state = []
-            res = {
-                ch.tile_index: ch for ch in self.state_for(TileMessages.State64, expect_one=False)
-            }
+            res = {ch.tile_index: ch for ch in self.state_for(TileMessages.State64, expect_one=False)}
             for i in range(event.pkt.tile_index, event.pkt.tile_index + event.pkt.length):
                 if i in res:
                     state.append(res[i])
@@ -177,11 +162,8 @@ class Matrix(Operator):
             event.set_replies()
 
         elif event | TileMessages.Set64:
-
             state = []
-            res = {
-                ch.tile_index: ch for ch in self.state_for(TileMessages.State64, expect_one=False)
-            }
+            res = {ch.tile_index: ch for ch in self.state_for(TileMessages.State64, expect_one=False)}
             for i in range(event.pkt.tile_index, event.pkt.tile_index + event.pkt.length):
                 if i in res:
                     state.append(res[i])
@@ -192,12 +174,7 @@ class Matrix(Operator):
                     # For efficiency, not gonna make events for this
                     chain = self.device.attrs.chain[i]
                     chain.colors.clear()
-                    chain.colors.extend(
-                        [
-                            hp.Color(c.hue, c.saturation, c.brightness, c.kelvin)
-                            for c in event.pkt.colors
-                        ]
-                    )
+                    chain.colors.extend([hp.Color(c.hue, c.saturation, c.brightness, c.kelvin) for c in event.pkt.colors])
 
     def make_state_for(self, kls, result):
         if kls | TileMessages.StateTileEffect:

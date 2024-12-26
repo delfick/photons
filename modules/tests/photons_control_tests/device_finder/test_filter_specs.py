@@ -36,7 +36,6 @@ class TestBoolean:
         assert spec.normalise(meta, [True]) is True
 
     def test_it_complains_about_anything_else(self):
-
         class Wat:
             pass
 

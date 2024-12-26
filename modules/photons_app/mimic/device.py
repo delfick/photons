@@ -24,20 +24,14 @@ class DeviceSession(hp.AsyncCMMixin):
 
     async def start(self):
         await self.device.prepare()
-        self.parent_ts = hp.TaskHolder(
-            self.final_future, name=f"DeviceSession({self.device.serial})::start[parent]"
-        )
+        self.parent_ts = hp.TaskHolder(self.final_future, name=f"DeviceSession({self.device.serial})::start[parent]")
         await self.parent_ts.start()
 
         made = []
-        async with hp.TaskHolder(
-            self.final_future, name=f"DeviceSession({self.device.serial})::start[ts]"
-        ) as ts:
+        async with hp.TaskHolder(self.final_future, name=f"DeviceSession({self.device.serial})::start[ts]") as ts:
             for _, io in self.device.io.items():
                 self.managed.append(io)
-                made.append(
-                    ts.add(io.start_session(self.final_future, self.parent_ts), silent=True)
-                )
+                made.append(ts.add(io.start_session(self.final_future, self.parent_ts), silent=True))
 
         # Raise any exceptions
         for t in made:
@@ -52,18 +46,14 @@ class DeviceSession(hp.AsyncCMMixin):
         made = []
 
         async def call_finishers():
-            async with hp.TaskHolder(
-                self.final_future, name=f"DeviceSession({self.device.serial})::finish[ts]"
-            ) as ts:
+            async with hp.TaskHolder(self.final_future, name=f"DeviceSession({self.device.serial})::finish[ts]") as ts:
                 made.append(ts.add(self.device.delete()))
                 for io in self.managed:
                     made.append(ts.add(io.finish_session(), silent=True))
 
                 self.managed = []
 
-                await hp.wait_for_all_futures(
-                    *made, name=f"DeviceSession({self.device.serial})::finish[all]"
-                )
+                await hp.wait_for_all_futures(*made, name=f"DeviceSession({self.device.serial})::finish[all]")
 
         await hp.wait_for_all_futures(
             self.parent_ts.add(call_finishers()),
@@ -131,20 +121,16 @@ class Device:
             raise
         except Exception as error:
             try:
-                await self.annotate(
-                    "ERROR", "Failed executing an event", error=error, executing=executing
-                )
+                await self.annotate("ERROR", "Failed executing an event", error=error, executing=executing)
             except asyncio.CancelledError:
                 raise
-            except:
+            except Exception:
                 pass
 
     async def event(self, eventkls, *args, **kwargs):
         return await self.event_with_options(eventkls, args=args, kwargs=kwargs)
 
-    async def event_with_options(
-        self, eventkls, *, is_finished=None, visible=True, execute=True, args, kwargs
-    ):
+    async def event_with_options(self, eventkls, *, is_finished=None, visible=True, execute=True, args, kwargs):
         event = eventkls(self, *args, **kwargs)
         event._exclude_viewers = not visible
 
@@ -208,10 +194,7 @@ class Device:
 
     async def change(self, *changes, event):
         await self.attrs.attrs_apply(
-            *[
-                self.attrs.attrs_path(*((key,) if isinstance(key, str) else key)).changer_to(value)
-                for key, value in changes
-            ],
+            *[self.attrs.attrs_path(*((key,) if isinstance(key, str) else key)).changer_to(value) for key, value in changes],
             event=event,
         )
 

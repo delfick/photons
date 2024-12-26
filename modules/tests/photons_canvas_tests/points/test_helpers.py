@@ -36,9 +36,7 @@ class TestColor:
 
             assert php.Color.override(color, kelvin=20) == (0, 1, 2, 20)
 
-            assert php.Color.override(
-                color, hue=30, saturation=0.9, brightness=0.1, kelvin=9000
-            ) == (30, 0.9, 0.1, 9000)
+            assert php.Color.override(color, hue=30, saturation=0.9, brightness=0.1, kelvin=9000) == (30, 0.9, 0.1, 9000)
 
         def test_it_doesnt_allow_out_of_limits(self):
             color = (40, 1, 2, 3)
@@ -49,16 +47,12 @@ class TestColor:
             assert php.Color.override(color, kelvin=-1) == (40, 1, 2, 0)
 
             want = (0, 0, 0, 0)
-            assert (
-                php.Color.override(color, hue=-1, saturation=-1, brightness=-1, kelvin=-1) == want
-            )
+            assert php.Color.override(color, hue=-1, saturation=-1, brightness=-1, kelvin=-1) == want
             assert php.Color.override(color, hue=361) == (360, 1, 2, 3)
             assert php.Color.override(color, saturation=1.1) == (40, 1, 2, 3)
             assert php.Color.override(color, brightness=1.1) == (40, 1, 1, 3)
             assert php.Color.override(color, kelvin=666661) == (40, 1, 2, 65535)
-            assert php.Color.override(
-                color, hue=361, saturation=1.1, brightness=1.1, kelvin=66666
-            ) == (360, 1, 1, 65535)
+            assert php.Color.override(color, hue=361, saturation=1.1, brightness=1.1, kelvin=66666) == (360, 1, 1, 65535)
 
     class TestAdjust:
         def test_it_can_adjust_hue(self):
@@ -105,7 +99,6 @@ class TestColor:
 
 
 class TestAverageColor:
-
     def assertColorAlmostEqual(self, got, want):
         assert want[0] == pytest.approx(got[0], rel=1e-3)
         assert want[1] == pytest.approx(got[1], rel=1e-3)

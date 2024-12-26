@@ -17,7 +17,6 @@ class Sem:
 
 
 class TestSenderWrapper:
-
     @pytest.fixture()
     def V(self):
         class V:
@@ -116,7 +115,6 @@ class TestSenderWrapper:
 
 
 class TestScriptRunner:
-
     @pytest.fixture()
     def V(self):
         class V:

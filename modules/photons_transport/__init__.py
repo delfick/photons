@@ -12,6 +12,7 @@ from contextlib import contextmanager
 
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError, RunErrors, UserQuit
+
 from photons_transport.errors import StopPacketStream
 from photons_transport.retry_options import Gaps, RetryTicker
 
@@ -30,7 +31,7 @@ def catch_errors(error_catcher=None):
     except StopPacketStream:
         pass
     except Exception as error:
-        if not isinstance(error, (PhotonsAppError, UserQuit)):
+        if not isinstance(error, PhotonsAppError | UserQuit):
             log.exception(error)
         hp.add_error(error_catcher, error)
 

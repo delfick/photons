@@ -26,7 +26,6 @@ def pkt():
 
 class TestCallableSpec:
     def test_it_returns_val_if_callable(self, meta):
-
         def cb(*args):
             pass
 
@@ -98,7 +97,6 @@ class TestTransformSpec:
 
 
 class TestExpandSpec:
-
     @pytest.fixture()
     def spec(self):
         return T.Bytes(20)
@@ -122,7 +120,6 @@ class TestExpandSpec:
         assert s.unpacking is unpacking
 
     class TestPackingIntoBytes:
-
         @pytest.fixture()
         def subject(self, spec, pkt, kls):
             spec = spec.spec(pkt, False)
@@ -161,24 +158,18 @@ class TestExpandSpec:
             assert b2[:9] == b
             assert b2[9:20] == bitarray("0" * 11)
 
-        def test_it_complains_if_something_other_than_dictionary_bytes_or_bitarray_is_given(
-            self, meta, subject
-        ):
+        def test_it_complains_if_something_other_than_dictionary_bytes_or_bitarray_is_given(self, meta, subject):
             for thing in (0, 1, False, True, [], [1], "adsf", None, lambda: True):
-                with assertRaises(
-                    BadSpecValue, "Sorry, dynamic fields only supports a dictionary of values"
-                ):
+                with assertRaises(BadSpecValue, "Sorry, dynamic fields only supports a dictionary of values"):
                     subject.normalise(meta, thing)
 
     class TestUnpackingFromBytes:
-
         @pytest.fixture()
         def subject(self, spec, pkt, kls):
             spec = spec.spec(pkt, True)
             return types.expand_spec(kls, spec, True)
 
         def test_it_returns_instance_of_kls_if_NotSpecified(self, meta, spec, pkt):
-
             class Kls(dictobj.PacketSpec):
                 fields = [("one", T.Bool.default(False)), ("two", T.Int8.default(10))]
 
@@ -206,9 +197,7 @@ class TestExpandSpec:
 
         def test_it_complains_if_not_bitarray_bytes_or_instance_of_kls(self, meta, subject, kls):
             for thing in (0, 1, False, True, [], [1], None, "adsf", lambda: True):
-                with assertRaises(
-                    BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls
-                ):
+                with assertRaises(BadSpecValue, "Expected to unpack bytes", found=thing, transforming_into=kls):
                     subject.normalise(meta, thing)
 
 
@@ -295,12 +284,8 @@ class TestIntegerSpec:
             assert spec.unknown_enum_values is unknown_enum_values
 
     def test_it_complains_if_enum_and_bitmask_are_both_specified(self):
-        with assertRaises(
-            ProgrammerError, "Sorry, can't specify enum and bitmask for the same type"
-        ):
-            types.integer_spec(
-                mock.Mock(name="pkt"), mock.Mock(name="enum"), mock.Mock(name="bitmask")
-            )
+        with assertRaises(ProgrammerError, "Sorry, can't specify enum and bitmask for the same type"):
+            types.integer_spec(mock.Mock(name="pkt"), mock.Mock(name="enum"), mock.Mock(name="bitmask"))
 
     def test_it_defaults_unpacking_and_allow_float(self):
         spec = types.integer_spec(mock.Mock(name="pkt"), None, None)
@@ -308,15 +293,11 @@ class TestIntegerSpec:
         assert spec.allow_float is False
 
     class TestNormalise:
-        def test_it_returns_as_is_if_not_enum_and_not_bitmask_and_allow_float_and_is_a_float(
-            self, meta, pkt
-        ):
+        def test_it_returns_as_is_if_not_enum_and_not_bitmask_and_allow_float_and_is_a_float(self, meta, pkt):
             spec = types.integer_spec(pkt, None, None, allow_float=True)
             assert spec.normalise(meta, 1.2) == 1.2
 
-        def test_it_asserts_number_is_integer_if_no_enum_or_bitmask_and_not_allow_float(
-            self, meta, pkt
-        ):
+        def test_it_asserts_number_is_integer_if_no_enum_or_bitmask_and_not_allow_float(self, meta, pkt):
             spec = types.integer_spec(pkt, None, None, allow_float=False)
             with assertRaises(BadSpecValue, "Expected an integer"):
                 spec.normalise(meta, 1.2)
@@ -338,9 +319,7 @@ class TestIntegerSpec:
             enum_spec = mock.Mock(name="enum_spec", return_value=es)
             es.normalise.return_value = ret
             with mock.patch("photons_protocol.types.enum_spec", enum_spec):
-                spec = types.integer_spec(
-                    pkt, enum, None, unpacking=unpacking, unknown_enum_values=uev
-                )
+                spec = types.integer_spec(pkt, enum, None, unpacking=unpacking, unknown_enum_values=uev)
                 assert spec.normalise(meta, val) is ret
 
             enum_spec.assert_called_once_with(pkt, enum, unpacking=unpacking, allow_unknown=uev)
@@ -378,7 +357,6 @@ class TestBitmaskSpec:
         assert spec.unpacking is unpacking
 
     class TestNormalisation:
-
         @pytest.fixture()
         def bitmask(self):
             class Mask(Enum):
@@ -391,7 +369,6 @@ class TestBitmaskSpec:
             return Mask
 
         def test_it_complains_if_bitmask_is_not_an_Enum(self, meta, pkt):
-
             class Kls:
                 def __init__(s, pkt):
                     pass
@@ -404,7 +381,6 @@ class TestBitmaskSpec:
                     types.bitmask_spec(pkt, thing).normalise(meta, mock.Mock(name="val"))
 
         def test_it_complains_if_bitmask_has_a_zero_value(self, meta, pkt):
-
             class BM(Enum):
                 ZERO = 0
                 ONE = 1
@@ -423,7 +399,6 @@ class TestBitmaskSpec:
                 types.bitmask_spec(pkt, lambda pkt: BM).normalise(meta, mock.Mock(name="val"))
 
         class TestPackingIntoANumber:
-
             @pytest.fixture()
             def subject(self, bitmask, pkt):
                 return types.bitmask_spec(pkt, bitmask, unpacking=False)
@@ -449,18 +424,14 @@ class TestBitmaskSpec:
                 assert subject.normalise(meta, "set()") == 0
 
             def test_it_works_with_a_set_as_a_string(self, meta, subject):
-                assert subject.normalise(meta, "{<Mask.ONE: 2>, <Mask.TWO: 4>}") == (1 << 1) + (
-                    1 << 2
-                )
+                assert subject.normalise(meta, "{<Mask.ONE: 2>, <Mask.TWO: 4>}") == (1 << 1) + (1 << 2)
 
             def test_it_returns_as_is_if_the_value_is_a_number(self, meta, subject):
                 assert subject.normalise(meta, 200) == 200
 
             def test_it_complains_if_it_cant_convert_the_value(self, meta, bitmask, subject):
                 for val in ("<Mask.SIX: 64>", "asdf", True, {}, {1: 2}, None, lambda: 1):
-                    with assertRaises(
-                        BadConversion, "Can't convert value into mask", mask=bitmask, got=val
-                    ):
+                    with assertRaises(BadConversion, "Can't convert value into mask", mask=bitmask, got=val):
                         subject.normalise(meta, val)
 
             def test_it_converts_empty_array_into_0(self, meta, subject):
@@ -479,7 +450,6 @@ class TestBitmaskSpec:
                 assert subject.normalise(meta, v) == (1 << 3)
 
         class TestUnpackingIntoAList:
-
             @pytest.fixture()
             def subject(self, bitmask, pkt):
                 return types.bitmask_spec(pkt, bitmask, unpacking=True)
@@ -494,22 +464,15 @@ class TestBitmaskSpec:
 
             def test_it_ignores_left_over(self, meta, bitmask, subject):
                 v = (1 << 1) + (1 << 3) + (1 << 4)
-                assert subject.normalise(meta, v + 1) == set(
-                    [bitmask.ONE, bitmask.THREE, bitmask.FOUR]
-                )
+                assert subject.normalise(meta, v + 1) == set([bitmask.ONE, bitmask.THREE, bitmask.FOUR])
 
             def test_it_works_with_the_string_set(self, meta, subject):
                 assert subject.normalise(meta, "set()") == set()
 
             def test_it_works_with_a_set_as_a_string(self, meta, bitmask, subject):
-                assert subject.normalise(meta, "{<Mask.ONE: 2>, <Mask.TWO: 4>}") == set(
-                    [bitmask.ONE, bitmask.TWO]
-                )
+                assert subject.normalise(meta, "{<Mask.ONE: 2>, <Mask.TWO: 4>}") == set([bitmask.ONE, bitmask.TWO])
 
-            def test_it_complains_if_it_finds_a_value_from_a_different_enum(
-                self, meta, bitmask, subject
-            ):
-
+            def test_it_complains_if_it_finds_a_value_from_a_different_enum(self, meta, bitmask, subject):
                 class Mask2(Enum):
                     ONE = 1 << 1
                     TWO = 1 << 2
@@ -527,9 +490,7 @@ class TestBitmaskSpec:
                 with assertRaises(BadConversion, "Can't convert value into value from mask"):
                     subject.normalise(meta, "SEVEN")
 
-            def test_it_does_not_complain_if_it_cant_find_an_integer_value_in_the_mask(
-                self, meta, subject
-            ):
+            def test_it_does_not_complain_if_it_cant_find_an_integer_value_in_the_mask(self, meta, subject):
                 assert subject.normalise(meta, (1 << 24)) == set()
 
 
@@ -548,7 +509,6 @@ class TestEnumSpec:
         assert spec.allow_unknown is allow_unknown
 
     class TestNormalisation:
-
         @pytest.fixture()
         def enum(self):
             class Vals(Enum):
@@ -561,7 +521,6 @@ class TestEnumSpec:
             return Vals
 
         def test_it_complains_if_enum_is_not_an_Enum(self, meta, pkt):
-
             class Kls:
                 def __init__(s, pkt):
                     pass
@@ -573,12 +532,9 @@ class TestEnumSpec:
                 with assertRaises(ProgrammerError, "Enum is not an enum!"):
                     types.enum_spec(pkt, thing).normalise(meta, mock.Mock(name="val"))
                 with assertRaises(ProgrammerError, "Enum is not an enum!"):
-                    types.enum_spec(pkt, thing, allow_unknown=True).normalise(
-                        meta, mock.Mock(name="val")
-                    )
+                    types.enum_spec(pkt, thing, allow_unknown=True).normalise(meta, mock.Mock(name="val"))
 
         class TestPackingIntoAValue:
-
             @pytest.fixture()
             def subject(self, pkt, enum):
                 return types.enum_spec(pkt, enum, unpacking=False)
@@ -591,15 +547,11 @@ class TestEnumSpec:
                 assert subject.normalise(meta, "ONE") == 1
                 assert subject_with_unknown.normalise(meta, "ONE") == 1
 
-            def test_it_can_convert_from_repr_of_the_member(
-                self, meta, subject, subject_with_unknown
-            ):
+            def test_it_can_convert_from_repr_of_the_member(self, meta, subject, subject_with_unknown):
                 assert subject.normalise(meta, "<Vals.ONE: 1>") == 1
                 assert subject_with_unknown.normalise(meta, "<Vals.ONE: 1>") == 1
 
-            def test_it_can_convert_from_member_itself(
-                self, meta, subject, enum, subject_with_unknown
-            ):
+            def test_it_can_convert_from_member_itself(self, meta, subject, enum, subject_with_unknown):
                 assert subject.normalise(meta, enum.TWO) == 2
                 assert subject_with_unknown.normalise(meta, enum.TWO) == 2
 
@@ -612,19 +564,14 @@ class TestEnumSpec:
                     with assertRaises(BadConversion, "Value wasn't a valid enum value"):
                         subject_with_unknown.normalise(meta, val)
 
-            def test_it_does_not_complain_if_allow_unknown_and_value_not_in_the_enum_and_valid_value(
-                self, meta, subject, subject_with_unknown
-            ):
+            def test_it_does_not_complain_if_allow_unknown_and_value_not_in_the_enum_and_valid_value(self, meta, subject, subject_with_unknown):
                 ue = types.UnknownEnum(20)
                 assert subject_with_unknown.normalise(meta, ue) == 20
                 assert subject_with_unknown.normalise(meta, repr(ue)) == 20
 
                 assert subject_with_unknown.normalise(meta, 40) == 40
 
-            def test_it_complains_if_were_using_the_wrong_enum(
-                self, meta, subject, subject_with_unknown
-            ):
-
+            def test_it_complains_if_were_using_the_wrong_enum(self, meta, subject, subject_with_unknown):
                 class Vals2(Enum):
                     ONE = 1
                     TWO = 2
@@ -638,7 +585,6 @@ class TestEnumSpec:
                     subject_with_unknown.normalise(meta, Vals2.THREE)
 
         class TestUnpackingIntoEnumMember:
-
             @pytest.fixture()
             def subject(self, pkt, enum):
                 return types.enum_spec(pkt, enum, unpacking=True)
@@ -647,14 +593,11 @@ class TestEnumSpec:
             def subject_with_unknown(self, pkt, enum):
                 return types.enum_spec(pkt, enum, unpacking=True, allow_unknown=True)
 
-            def test_it_returns_as_is_if_already_a_member(
-                self, meta, subject, enum, subject_with_unknown
-            ):
+            def test_it_returns_as_is_if_already_a_member(self, meta, subject, enum, subject_with_unknown):
                 assert subject.normalise(meta, enum.TWO) is enum.TWO
                 assert subject_with_unknown.normalise(meta, enum.TWO) is enum.TWO
 
             def test_it_complains_if_from_the_wrong_enum(self, meta, subject, subject_with_unknown):
-
                 class Vals2(Enum):
                     ONE = 1
                     TWO = 2
@@ -671,15 +614,11 @@ class TestEnumSpec:
                 assert subject.normalise(meta, "THREE") == enum.THREE
                 assert subject_with_unknown.normalise(meta, "THREE") == enum.THREE
 
-            def test_it_converts_from_repr_of_member(
-                self, meta, subject, enum, subject_with_unknown
-            ):
+            def test_it_converts_from_repr_of_member(self, meta, subject, enum, subject_with_unknown):
                 assert subject.normalise(meta, "<Vals.THREE: 3>") == enum.THREE
                 assert subject_with_unknown.normalise(meta, "<Vals.THREE: 3>") == enum.THREE
 
-            def test_it_converts_from_value_of_member(
-                self, meta, subject, enum, subject_with_unknown
-            ):
+            def test_it_converts_from_value_of_member(self, meta, subject, enum, subject_with_unknown):
                 assert subject.normalise(meta, 4) == enum.FOUR
                 assert subject_with_unknown.normalise(meta, 4) == enum.FOUR
 
@@ -693,9 +632,7 @@ class TestEnumSpec:
                     with assertRaises(BadConversion, "Value is not a valid value of the enum"):
                         subject_with_unknown.normalise(meta, val)
 
-            def test_it_does_not_complain_if_allow_unknown_and_valid_unknown_value(
-                self, meta, subject, subject_with_unknown
-            ):
+            def test_it_does_not_complain_if_allow_unknown_and_valid_unknown_value(self, meta, subject, subject_with_unknown):
                 ue = types.UnknownEnum(20)
                 assert subject_with_unknown.normalise(meta, ue) is ue
                 assert subject_with_unknown.normalise(meta, repr(ue)) == ue
@@ -840,7 +777,6 @@ class TestCsvSpec:
         assert spec.unpacking is unpacking
 
     class TestPackingIntoBitarray:
-
         @pytest.fixture()
         def subject(self, pkt):
             return types.csv_spec(pkt, 200 * 8, unpacking=False)
@@ -851,9 +787,7 @@ class TestCsvSpec:
             v2 = str(uuid.uuid1())
             return [v1, v2]
 
-        def test_it_converts_a_list_into_a_comma_separated_string_into_bitarray(
-            self, meta, val, subject
-        ):
+        def test_it_converts_a_list_into_a_comma_separated_string_into_bitarray(self, meta, val, subject):
             expected_bytes = ",".join(val).encode() + b"\x00"
             assert len(expected_bytes) == 74
             result = subject.normalise(meta, val).tobytes()
@@ -894,7 +828,6 @@ class TestCsvSpec:
             assert result[74:] == bitarray("0" * (200 - 74) * 8).tobytes()
 
     class TestUnpackingIntoList:
-
         @pytest.fixture()
         def subject(self, pkt):
             return types.csv_spec(pkt, 200 * 8, unpacking=True)
@@ -938,9 +871,7 @@ class TestBytesSpec:
             assert types.bytes_spec(pkt, 8).normalise(meta, repr(sb.NotSpecified)) == expected
 
             expected = bitarray("0" * 8)
-            assert (
-                types.bytes_spec(pkt, 8).normalise(meta, repr(sb.NotSpecified).replace("'", ""))
-            ) == expected
+            assert (types.bytes_spec(pkt, 8).normalise(meta, repr(sb.NotSpecified).replace("'", ""))) == expected
 
         def test_it_returns_None_as_the_size_bits_of_bitarray(self, meta, pkt):
             expected = bitarray("0" * 8)
@@ -961,26 +892,20 @@ class TestBytesSpec:
             expected = bitarray("1" * 8 + "0" * 12)
             assert types.bytes_spec(pkt, 20).normalise(meta, val) == expected
             assert types.bytes_spec(pkt, 20).normalise(meta, val.tobytes()) == expected
-            assert (
-                types.bytes_spec(pkt, 20).normalise(meta, binascii.hexlify(val.tobytes()).decode())
-            ) == expected
+            assert (types.bytes_spec(pkt, 20).normalise(meta, binascii.hexlify(val.tobytes()).decode())) == expected
 
         def test_it_cuts_off_if_too_long(self, meta, pkt):
             val = bitarray("1" * 24)
             expected = bitarray("1" * 9)
             assert types.bytes_spec(pkt, 9).normalise(meta, val) == expected
             assert types.bytes_spec(pkt, 9).normalise(meta, val.tobytes()) == expected
-            assert (
-                types.bytes_spec(pkt, 9).normalise(meta, binascii.hexlify(val.tobytes()).decode())
-            ) == expected
+            assert (types.bytes_spec(pkt, 9).normalise(meta, binascii.hexlify(val.tobytes()).decode())) == expected
 
         def test_it_returns_if_just_right(self, meta, pkt):
             val = bitarray("1" * 8)
             assert types.bytes_spec(pkt, 8).normalise(meta, val) == val
             assert types.bytes_spec(pkt, 8).normalise(meta, val.tobytes()) == val
-            assert (
-                types.bytes_spec(pkt, 8).normalise(meta, binascii.hexlify(val.tobytes()).decode())
-            ) == val
+            assert (types.bytes_spec(pkt, 8).normalise(meta, binascii.hexlify(val.tobytes()).decode())) == val
 
         def test_it_gets_size_bits_by_calling_it_with_the_pkt_if_its_a_callable(self, meta, pkt):
             size_bits = mock.Mock(name="size_bits", return_value=11)
@@ -1006,7 +931,6 @@ class TestBytesAsStringSpec:
         assert spec.unpacking is unpacking
 
     class TestUnpackingIntoAString:
-
         @pytest.fixture()
         def subject(self, pkt):
             return types.bytes_as_string_spec(pkt, 20 * 8, True)
@@ -1025,7 +949,6 @@ class TestBytesAsStringSpec:
             assert subject.normalise(meta, val) == val.decode()
 
     class TestPackingIntoBytes:
-
         @pytest.fixture()
         def subject(self, pkt):
             return types.bytes_as_string_spec(pkt, 20 * 8, False)
@@ -1063,7 +986,6 @@ class TestBytesAsStringSpec:
 
 
 class TestFloatSpec:
-
     @pytest.fixture()
     def subject(self):
         return types.float_spec()

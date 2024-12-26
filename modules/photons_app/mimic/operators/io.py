@@ -3,11 +3,12 @@ import logging
 import socket
 
 from delfick_project.norms import dictobj, sb
+from photons_messages import DiscoveryMessages, Services
+
 from photons_app import helpers as hp
 from photons_app.mimic.event import Events
 from photons_app.mimic.operator import IO, operator
 from photons_app.mimic.transport import MemoryService
-from photons_messages import DiscoveryMessages, Services
 
 
 def make_port():
@@ -52,11 +53,7 @@ class MemoryIO(IO):
         if event | DiscoveryMessages.GetService and event.io is self:
             port = self.options.get("state_service_port", self.options.port)
             state_service_port = 0 if port is None else port
-            event.add_replies(
-                DiscoveryMessages.StateService(
-                    service=self.options.state_service, port=state_service_port
-                )
-            )
+            event.add_replies(DiscoveryMessages.StateService(service=self.options.state_service, port=state_service_port))
 
 
 @operator
@@ -101,9 +98,7 @@ class UDPIO(MemoryIO):
                     port = make_port()
 
                 try:
-                    remote, _ = await hp.get_event_loop().create_datagram_endpoint(
-                        ServerProtocol, local_addr=("0.0.0.0", port)
-                    )
+                    remote, _ = await hp.get_event_loop().create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", port))
                     self.remote = remote
                 except OSError as e:
                     error = e
@@ -119,11 +114,7 @@ class UDPIO(MemoryIO):
                     break
 
         if remote is None:
-            raise Exception(
-                "%" * 80
-                + f"%%% Failed to bind to a udp socket: {port} ({error})\n"
-                + "You should stop whatever is using that port!"
-            )
+            raise Exception("%" * 80 + f"%%% Failed to bind to a udp socket: {port} ({error})\n" + "You should stop whatever is using that port!")
 
     async def shutting_down(self, event):
         if hasattr(self, "remote"):

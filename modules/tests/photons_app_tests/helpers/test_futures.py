@@ -35,7 +35,6 @@ class TestCreatingAFuture:
 
 class TestFutHasCallback:
     async def test_it_says_no_if_fut_has_no_callbacks(self):
-
         def func():
             pass
 
@@ -43,7 +42,6 @@ class TestFutHasCallback:
         assert not hp.fut_has_callback(fut, func)
 
     async def test_it_says_no_if_it_has_other_callbacks(self):
-
         def func1():
             pass
 
@@ -55,7 +53,6 @@ class TestFutHasCallback:
         assert not hp.fut_has_callback(fut, func2)
 
     async def test_it_says_yes_if_we_have_the_callback(self):
-
         def func1():
             pass
 
@@ -82,7 +79,6 @@ class TestAsyncWithTimeout:
         assert res == val
 
     async def test_it_cancels_the_coroutine_if_it_doesnt_respond(self):
-
         async def func():
             await asyncio.sleep(2)
 
@@ -108,9 +104,8 @@ class TestAsyncWithTimeout:
 
 class TestAsyncAsBackground:
     async def test_it_runs_the_coroutine_in_the_background(self):
-
         async def func(one, two, three=None):
-            return "{0}.{1}.{2}".format(one, two, three)
+            return f"{one}.{two}.{three}"
 
         t = hp.async_as_background(func(6, 5, three=9))
         pytest.helpers.assertFutCallbacks(t, hp.reporter)
@@ -118,9 +113,8 @@ class TestAsyncAsBackground:
         assert await t == "6.5.9"
 
     async def test_it_uses_silent_reporter_if_silent_is_True(self):
-
         async def func(one, two, three=None):
-            return "{0}.{1}.{2}".format(one, two, three)
+            return f"{one}.{two}.{three}"
 
         t = hp.async_as_background(func(6, 5, three=9), silent=True)
         pytest.helpers.assertFutCallbacks(t, hp.silent_reporter)
@@ -320,7 +314,6 @@ class TestNoncancelledResultsFromFuts:
 
 
 class TestFindAndApplyResult:
-
     @pytest.fixture()
     def V(self):
         class V:

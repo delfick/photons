@@ -39,12 +39,7 @@ def assertEvents(events, *expected, ignore_annotations=True):
 
         same = nxt == ex
 
-        if (
-            isinstance(ex, tuple)
-            and len(ex) == 2
-            and isinstance(ex[1], tuple)
-            and isinstance(ex[1][1], Device)
-        ):
+        if isinstance(ex, tuple) and len(ex) == 2 and isinstance(ex[1], tuple) and isinstance(ex[1][1], Device):
             if nxtEvt.device is ex[1][1]:
                 ex = (ex[0], (ex[1][0], "<<Correct Device>>"))
             else:
@@ -58,9 +53,7 @@ def assertEvents(events, *expected, ignore_annotations=True):
 
     try:
         if count != len(expected):
-            assert (
-                False
-            ), f"Expected different number of events (expected {count} == {len(expected)})"
+            assert False, f"Expected different number of events (expected {count} == {len(expected)})"
         elif failed:
             assert False, "Expected correct events"
     finally:
@@ -74,7 +67,6 @@ class TestOperator:
             assert Operator.Attr.Static is StaticSetter
 
         async def test_it_can_be_used_to_set_values_in_attrs(self, device, final_future):
-
             class Op(Operator):
                 attrs = [Operator.Attr.Static("three", 0), Operator.Attr.Static("two", "stuff")]
 
@@ -101,7 +93,6 @@ class TestOperator:
             assert Operator.Attr.Lambda is LambdaSetter
 
         async def test_it_can_be_used_to_set_values_in_attrs(self, device, final_future):
-
             class Op(Operator):
                 class Options(dictobj.Spec):
                     one = dictobj.Field(sb.string_spec())
@@ -134,10 +125,7 @@ class TestOperator:
                 assert device.attrs.three == 1
                 assert device.attrs.four == 2
 
-        async def test_it_can_default_to_use_zero_if_options_dont_determine_value(
-            self, device, final_future
-        ):
-
+        async def test_it_can_default_to_use_zero_if_options_dont_determine_value(self, device, final_future):
             class Op(Operator):
                 attrs = [
                     Operator.Attr.Lambda(
@@ -151,9 +139,7 @@ class TestOperator:
             async with device.session(final_future):
                 assert device.attrs.thing == "stuff"
 
-                await device.attrs.attrs_apply(
-                    device.attrs.attrs_path("thing").changer_to("yeap"), event=None
-                )
+                await device.attrs.attrs_apply(device.attrs.attrs_path("thing").changer_to("yeap"), event=None)
                 assert device.attrs.thing == "yeap"
 
                 await device.reset(zerod=True)
@@ -161,7 +147,6 @@ class TestOperator:
 
     class TestAddingOperatorToADevice:
         async def test_it_adds_itself_to_the_operators_list(self, device, final_future):
-
             class Op(Operator):
                 pass
 
@@ -177,7 +162,6 @@ class TestOperator:
             assert not hasattr(device, "operators")
 
         async def test_it_can_be_a_viewer_instead(self, device, final_future):
-
             class View(Viewer):
                 pass
 
@@ -214,7 +198,6 @@ class TestOperator:
 
     class TestCanHaveOptions:
         def test_it_complains_if_instantiated_with_bad_options(self, device):
-
             class Op(Operator):
                 class Options(Operator.Options):
                     will_be_wrong = dictobj.Field(sb.integer_spec())
@@ -259,7 +242,6 @@ class TestOperator:
             assert operator.device_attrs is device.attrs
 
         def test_it_defaults_to_providing_empty_dictionary_to_options(self, device):
-
             class Op(Operator):
                 class Options(Operator.Options):
                     an_int = dictobj.NullableField(sb.integer_spec())

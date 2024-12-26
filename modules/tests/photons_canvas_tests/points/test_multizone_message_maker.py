@@ -47,7 +47,6 @@ async def sender(final_future):
 
 
 class TestSetZones:
-
     async def test_it_set_zones(self, sender):
         colors = [hp.Color(i, 1, 1, 3500) for i in range(16)]
 
@@ -77,6 +76,4 @@ class TestSetZones:
             await sender(list(maker.msgs))
 
         for strip in devices:
-            assert (
-                strip.attrs.zones == [hp.Color(0, 0, 0, 0), hp.Color(0, 0, 0, 0)] + colors[:-2]
-            ), strip
+            assert strip.attrs.zones == [hp.Color(0, 0, 0, 0), hp.Color(0, 0, 0, 0)] + colors[:-2], strip

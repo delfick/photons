@@ -8,15 +8,11 @@ from photons_core import CommandSplitter, run
 class TestCommandSplitter:
     def test_it_can_format_argv(self):
         command = "{@:2}:{@:1} {@:3:}"
-        result = CommandSplitter(
-            {"argv": ["my_script", "one", "two", "three", "four"]}, command
-        ).split()
+        result = CommandSplitter({"argv": ["my_script", "one", "two", "three", "four"]}, command).split()
         assert result == ["two:one", "three", "four"]
 
         command = "{@:2:4}:{@:1} {@:4:}"
-        result = CommandSplitter(
-            {"argv": ["my_script", "one", "two", "three", "four", "five"]}, command
-        ).split()
+        result = CommandSplitter({"argv": ["my_script", "one", "two", "three", "four", "five"]}, command).split()
         assert result == ["two", "three:one", "four", "five"]
 
     def test_it_can_complain_about_an_env_specifier_without_a_name(self):
@@ -26,9 +22,7 @@ class TestCommandSplitter:
 
     def test_it_can_complain_if_an_environment_variable_is_needed_but_doesnt_exist(self):
         with pytest.helpers.modified_env(THING=None):
-            with assertRaises(
-                SystemExit, "This script requires you have a 'THING' variable in your environment"
-            ):
+            with assertRaises(SystemExit, "This script requires you have a 'THING' variable in your environment"):
                 command = "{THING:env}"
                 CommandSplitter({"argv": ["my_script"]}, command).split()
 
@@ -93,7 +87,6 @@ class TestCommandSplitter:
 
 
 class TestMainLines:
-
     @pytest.fixture()
     def sys_argv(self):
         argv = ["my_script", "from", "the", "commandline"]
@@ -106,9 +99,7 @@ class TestMainLines:
         command_splitter = mock.Mock(name="command_splitter", spec=["split"])
         command_splitter.split.return_value = split
 
-        FakeCommandSplitter = mock.Mock(
-            name="CommandSplitter", spec=[], return_value=command_splitter
-        )
+        FakeCommandSplitter = mock.Mock(name="CommandSplitter", spec=[], return_value=command_splitter)
 
         with mock.patch("photons_core.CommandSplitter", FakeCommandSplitter):
             yield FakeCommandSplitter, split
@@ -149,9 +140,7 @@ class TestMainLines:
 
     def test_it_run_can_be_given_argv(self, V):
         run("lan:stuff", argv=["one", "two"])
-        V.CommandSplitter.assert_called_once_with(
-            {"argv": ["my_script", "one", "two"]}, "lan:stuff"
-        )
+        V.CommandSplitter.assert_called_once_with({"argv": ["my_script", "one", "two"]}, "lan:stuff")
         V.main.assert_called_once_with(V.split, default_activate=["core"])
 
     def test_it_run_formats_correctly(self, fake_main):
@@ -182,6 +171,4 @@ class TestMainLines:
         with pytest.helpers.modified_env(LAN_TARGET=None):
             run("""lan:transform -- '{"power": "on"}'""", argv=["my_script"])
 
-        fake_main.assert_called_once_with(
-            ["lan:transform", "--", '{"power": "on"}'], default_activate=["core"]
-        )
+        fake_main.assert_called_once_with(["lan:transform", "--", '{"power": "on"}'], default_activate=["core"])

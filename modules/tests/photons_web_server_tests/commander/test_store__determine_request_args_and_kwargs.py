@@ -54,7 +54,6 @@ def app() -> sanic.Sanic:
 
 
 class TestDeterminingRequestArgsAndKwargs:
-
     @pytest.fixture
     def store(self) -> Store:
         return Store(strcs_register=register)
@@ -63,9 +62,7 @@ class TestDeterminingRequestArgsAndKwargs:
     def progress(self) -> Progress:
         return ProgressMessageMaker(lc=lc(), logger_name="test")
 
-    async def test_it_can_pass_in_progress_and_request(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_can_pass_in_progress_and_request(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []
@@ -74,14 +71,10 @@ class TestDeterminingRequestArgsAndKwargs:
             called.append((progress, request))
             return None
 
-        use = store.determine_http_args_and_kwargs(
-            strcs.Meta(), route, progress, request, [1, 2], {1: 2}
-        )
+        use = store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [1, 2], {1: 2})
         assert use == [progress, request]
 
-    async def test_it_can_regcreate_missing_positionals_with_NotSpecified(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_can_regcreate_missing_positionals_with_NotSpecified(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []
@@ -93,9 +86,7 @@ class TestDeterminingRequestArgsAndKwargs:
         use = store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [], {})
         assert use == [progress, request, Thing(val="-1")]
 
-    async def test_it_can_pass_in_progress_and_request_when_no_annotations(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_can_pass_in_progress_and_request_when_no_annotations(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []
@@ -104,35 +95,25 @@ class TestDeterminingRequestArgsAndKwargs:
             called.append((progress, request))
             return None
 
-        use = store.determine_http_args_and_kwargs(
-            strcs.Meta(), route, progress, request, [1, 2], {1: 2}
-        )
+        use = store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [1, 2], {1: 2})
         assert use == [progress, request]
 
-    async def test_it_complains_if_first_argument_isnt_annotated_as_Progress(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_complains_if_first_argument_isnt_annotated_as_Progress(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         def route(request: Request, progress: Progress, /) -> None:
             return None
 
         with pytest.raises(IncorrectPositionalArgument):
-            store.determine_http_args_and_kwargs(
-                strcs.Meta(), route, progress, request, [1, 2], {1: 2}
-            )
+            store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [1, 2], {1: 2})
 
         def route2(progress: Progress, other: int, /) -> None:
             return None
 
         with pytest.raises(IncorrectPositionalArgument):
-            store.determine_http_args_and_kwargs(
-                strcs.Meta(), route2, progress, request, [1, 2], {1: 2}
-            )
+            store.determine_http_args_and_kwargs(strcs.Meta(), route2, progress, request, [1, 2], {1: 2})
 
-    async def test_it_can_pass_in_positional_args(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_can_pass_in_positional_args(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []
@@ -141,27 +122,19 @@ class TestDeterminingRequestArgsAndKwargs:
             called.append((progress, request))
             return None
 
-        use = store.determine_http_args_and_kwargs(
-            strcs.Meta(), route, progress, request, [1, 2], {"four": "six", "three": "five"}
-        )
+        use = store.determine_http_args_and_kwargs(strcs.Meta(), route, progress, request, [1, 2], {"four": "six", "three": "five"})
         assert use == [progress, request, 1, 2, "five"]
 
-    async def test_it_will_not_try_to_get_positional_only_from_meta(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_will_not_try_to_get_positional_only_from_meta(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         def route(progress: Progress, request: Request, one: int, /, two: int, three: str) -> None:
             return None
 
         with pytest.raises(NotEnoughArgs):
-            store.determine_http_args_and_kwargs(
-                strcs.Meta({"one": 1}), route, progress, request, [], {}
-            )
+            store.determine_http_args_and_kwargs(strcs.Meta({"one": 1}), route, progress, request, [], {})
 
-    async def test_it_will_use_default_if_positional_only_has_no_arg(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_will_use_default_if_positional_only_has_no_arg(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []
@@ -170,14 +143,10 @@ class TestDeterminingRequestArgsAndKwargs:
             called.append((progress, request))
             return None
 
-        use = store.determine_http_args_and_kwargs(
-            strcs.Meta({"one": 1}), route, progress, request, [], {}
-        )
+        use = store.determine_http_args_and_kwargs(strcs.Meta({"one": 1}), route, progress, request, [], {})
         assert use == [progress, request, 10]
 
-    async def test_it_can_get_the_meta_object(
-        self, store: Store, progress: Progress, app: sanic.Sanic
-    ):
+    async def test_it_can_get_the_meta_object(self, store: Store, progress: Progress, app: sanic.Sanic):
         request, _ = await app.asgi_client.get("/")
 
         called: list[tuple[Progress, Request]] = []

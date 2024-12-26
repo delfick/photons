@@ -190,8 +190,8 @@ class Points:
     @classmethod
     @_points_bound_cache
     def cols(kls, bounds):
-        (l, r), _, _ = bounds
-        for col in range(l, r):
+        (left, r), _, _ = bounds
+        for col in range(left, r):
             yield kls.col(col, bounds)
 
     @classmethod
@@ -215,8 +215,8 @@ class Points:
     @classmethod
     @_points_bound_cache
     def row(kls, row, bounds):
-        (l, r), _, _ = bounds
-        return [(col, row) for col in range(l, r)]
+        (left, r), _, _ = bounds
+        return [(col, row) for col in range(left, r)]
 
     @classmethod
     @_points_bound_cache
@@ -226,13 +226,13 @@ class Points:
 
     @classmethod
     def expand(kls, bounds, amount):
-        (l, r), (t, b), (w, h) = bounds
-        return (l - amount, r + amount), (t + amount, b - amount), (w + amount * 2, h + amount * 2)
+        (left, r), (t, b), (w, h) = bounds
+        return (left - amount, r + amount), (t + amount, b - amount), (w + amount * 2, h + amount * 2)
 
     @classmethod
     def relative(kls, point, bounds):
-        (l, _), (t, _), _ = bounds
-        return point[0] - l, t - point[1]
+        (left, _), (t, _), _ = bounds
+        return point[0] - left, t - point[1]
 
     @classmethod
     def bottom_row(kls, bounds):

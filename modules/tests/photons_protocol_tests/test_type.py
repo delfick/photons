@@ -10,10 +10,8 @@ from delfick_project.norms import BadSpecValue, Meta, sb
 from photons_app import helpers as hp
 from photons_app.errors import ProgrammerError
 from photons_protocol.errors import BadConversion
-from photons_protocol.types import Optional
-from photons_protocol.types import Type
+from photons_protocol.types import Optional, Type, UnknownEnum, json_spec, static_conversion_from_spec
 from photons_protocol.types import Type as T
-from photons_protocol.types import UnknownEnum, json_spec, static_conversion_from_spec
 
 
 class TestTheJsonSpec:
@@ -60,7 +58,6 @@ class TestType:
         assert t.conversion is conversion
 
     class TestAddingSizeBits:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -155,7 +152,6 @@ class TestType:
             assert t.__class__ is not Type
 
     class TestModifiers:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -210,7 +206,6 @@ class TestType:
                 assert setd == {"_enum": em, "_unknown_enum_values": True}
 
             def test_it_allows_unknown_enums_by_default(self, V):
-
                 class E(enum.Enum):
                     ONE = 1
                     TWO = 2
@@ -264,19 +259,13 @@ class TestType:
                 uncallable_unpack_func = mock.NonCallableMock(name="uncallable_unpack_func")
 
                 with V.clone(cloned=False) as (res, setd):
-                    with assertRaises(
-                        ProgrammerError, "Sorry, transform can only be given two callables"
-                    ):
+                    with assertRaises(ProgrammerError, "Sorry, transform can only be given two callables"):
                         V.t.transform(uncallable_pack_func, unpack_func)
 
-                    with assertRaises(
-                        ProgrammerError, "Sorry, transform can only be given two callables"
-                    ):
+                    with assertRaises(ProgrammerError, "Sorry, transform can only be given two callables"):
                         V.t.transform(pack_func, uncallable_unpack_func)
 
-                    with assertRaises(
-                        ProgrammerError, "Sorry, transform can only be given two callables"
-                    ):
+                    with assertRaises(ProgrammerError, "Sorry, transform can only be given two callables"):
                         V.t.transform(uncallable_pack_func, uncallable_unpack_func)
 
         class TestAllowCallable:
@@ -313,9 +302,7 @@ class TestType:
                     assert V.t.override(val) is res
                 assert setd == {"_override": val}
 
-            def test_it_sets_override_to_a_callable_taking_in_packet_return_value_if_not_callable(
-                self, V
-            ):
+            def test_it_sets_override_to_a_callable_taking_in_packet_return_value_if_not_callable(self, V):
                 pkt = mock.Mock(name="pkt")
                 val = mock.NonCallableMock(name="val")
                 with V.clone() as (res, setd):
@@ -329,9 +316,8 @@ class TestType:
 
             expected = {
                 # D2 has a non None size, so we expect it to be called with the size
-                ("D2", "<d", float): lambda s: ("D2", "<d", float, s)
+                ("D2", "<d", float): lambda s: ("D2", "<d", float, s),
                 # B2 has a None size, so we don't expect it to be called
-                ,
                 ("B2", None, bytes): ("B2", None, bytes, None),
             }
 
@@ -355,7 +341,6 @@ class TestType:
                     del Type.B2
 
     class TestSpec:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -393,25 +378,19 @@ class TestType:
             overridden = mock.Mock(name="overridden", return_value=res)
             with V.mocked_spec():
                 with mock.patch("photons_protocol.types.overridden", overridden):
-                    assert (
-                        V.t.override(overrider).spec(V.pkt, V.unpacking, transform=V.transform)
-                    ) is res
+                    assert (V.t.override(overrider).spec(V.pkt, V.unpacking, transform=V.transform)) is res
 
                 overridden.assert_called_once_with(overrider, V.pkt)
 
             # and without mocks
             val = mock.NonCallableMock(name="val")
             pkt = mock.Mock(name="pkt", val=val)
-            overrider = lambda pkt: pkt.val
-            assert (
-                V.t.override(overrider)
-                .spec(pkt)
-                .normalise(Meta.empty(), mock.Mock(name="whatever"))
-            ) is val
-            assert (
-                V.t.override(val).spec(pkt).normalise(Meta.empty(), mock.Mock(name="whatever"))
-                is val
-            )
+
+            def overrider(pkt):
+                return pkt.val
+
+            assert (V.t.override(overrider).spec(pkt).normalise(Meta.empty(), mock.Mock(name="whatever"))) is val
+            assert V.t.override(val).spec(pkt).normalise(Meta.empty(), mock.Mock(name="whatever")) is val
 
         def test_it_returns_default_if_that_is_specified(self, V):
             res = mock.Mock(name="res")
@@ -419,16 +398,16 @@ class TestType:
             defaulted = mock.Mock(name="defaulted", return_value=res)
             with V.mocked_spec() as spec:
                 with mock.patch("photons_protocol.types.defaulted", defaulted):
-                    assert (
-                        V.t.default(defaulter).spec(V.pkt, V.unpacking, transform=V.transform)
-                    ) is res
+                    assert (V.t.default(defaulter).spec(V.pkt, V.unpacking, transform=V.transform)) is res
 
                 defaulted.assert_called_once_with(spec, defaulter, V.pkt)
 
             # and without mocks
             val = mock.NonCallableMock(name="val")
             pkt = mock.Mock(name="pkt", val=val)
-            defaulter = lambda pkt: pkt.val
+
+            def defaulter(pkt):
+                return pkt.val
 
             whatever = mock.Mock(name="whatever")
             assert V.t.default(defaulter).spec(pkt).normalise(Meta.empty(), whatever) is whatever
@@ -465,7 +444,6 @@ class TestType:
             assert spec.normalise(Meta.empty(), "hello") == "hello"
 
     class TestDynamicWrapper:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -491,9 +469,7 @@ class TestType:
                 return [("one", T.Bool), ("two", T.Int8), ("three", T.Int8)]
 
             with mock.patch("photons_protocol.types.expand_spec", expand_spec):
-                assert (
-                    V.t.dynamic(dynamic).dynamic_wrapper(V.spec, V.pkt, unpacking=V.unpacking)
-                ) is res
+                assert (V.t.dynamic(dynamic).dynamic_wrapper(V.spec, V.pkt, unpacking=V.unpacking)) is res
 
             expand_spec.assert_called_once_with(mock.ANY, V.spec, V.unpacking)
             kls = expand_spec.mock_calls[0][1][0]
@@ -502,7 +478,6 @@ class TestType:
             assert instance.pack() == bitarray("11000000000100000")
 
     class TestHiddenSpec:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -558,7 +533,6 @@ class TestType:
                     V.t._spec(V.pkt, unpacking=V.unpacking)
 
     class TestMaybeTransformSpec:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -598,7 +572,6 @@ class TestType:
             transform_spec.assert_called_once_with(V.pkt, V.spec, V.t.do_transform)
 
     class TestSpecFromConversion:
-
         @contextmanager
         def mocked_spec(self, name, conversion):
             struct_format = mock.Mock(name="struct_format")
@@ -607,7 +580,7 @@ class TestType:
 
             spec = mock.Mock(name="spec")
             spec_maker = mock.Mock(name=name, return_value=spec)
-            with mock.patch("photons_protocol.types.{0}".format(name), spec_maker):
+            with mock.patch(f"photons_protocol.types.{name}", spec_maker):
                 yield t, spec_maker, spec, size_bits
 
         def test_it_returns_from_the_static_types_if_in_there(self):
@@ -670,7 +643,6 @@ class TestType:
             spec_maker.assert_called_once_with(pkt, size_bits, unpacking=unpacking)
 
     class TestMakeIntegerSpec:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -698,9 +670,7 @@ class TestType:
                 def mocked_version_number_spec(s):
                     spec = mock.Mock(name="spec")
                     version_number_spec = mock.Mock(name="version_number_spec", return_value=spec)
-                    with mock.patch(
-                        "photons_protocol.types.version_number_spec", version_number_spec
-                    ):
+                    with mock.patch("photons_protocol.types.version_number_spec", version_number_spec):
                         yield version_number_spec, spec
 
             return V()
@@ -756,7 +726,6 @@ class TestType:
             )
 
     class TestTransforming:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -786,16 +755,12 @@ class TestType:
                 assert V.t.do_transform(V.pkt, V.value) is V.value
 
             def test_it_uses_the_transformer_if_we_have_one(self, V):
-                assert (
-                    V.t.transform(V.transformer, V.untransformer).do_transform(V.pkt, V.value)
-                ) is V.transformed
+                assert (V.t.transform(V.transformer, V.untransformer).do_transform(V.pkt, V.value)) is V.transformed
 
         class TestUntransform:
             def test_it_does_nothing_if_no_untransformer(self, V):
                 assert V.t.untransform(V.pkt, V.value) is V.value
 
             def test_it_transforms_if_we_have_an_untransformer(self, V):
-                assert (
-                    V.t.transform(V.transformer, V.untransformer).untransform(V.pkt, V.value)
-                ) is V.untransformed
+                assert (V.t.transform(V.transformer, V.untransformer).untransform(V.pkt, V.value)) is V.untransformed
                 V.untransformer.assert_called_once_with(V.pkt, V.value)

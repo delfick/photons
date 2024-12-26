@@ -3,6 +3,7 @@ import random
 import uuid
 
 from delfick_project.norms import dictobj, sb
+
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, an_animation, options
 
@@ -111,9 +112,7 @@ class Ball:
     def move(self):
         extra_col = random.randrange(0, 5) / 10
         extra_row = random.randrange(0, 5) / 10
-        self.point, self.hor_direction, self.ver_direction, points = self.boundary.move(
-            self, extra_col, extra_row
-        )
+        self.point, self.hor_direction, self.ver_direction, points = self.boundary.move(self, extra_col, extra_row)
         return points
 
 

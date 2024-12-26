@@ -63,8 +63,7 @@ class Characters:
         left_x = round(left_x)
 
         for character in self.characters:
-            for point, pixel in character.pairs(left_x, top_y, fill_color):
-                yield point, pixel
+            yield from character.pairs(left_x, top_y, fill_color)
 
             left_x += character.width
 

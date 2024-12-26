@@ -105,7 +105,6 @@ class TestLIFXPacket:
         assert p.pack() == expected
 
     def test_it_is_an_ack_if_the_Payload_is_an_ack(self):
-
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 represents_ack = True
@@ -115,7 +114,6 @@ class TestLIFXPacket:
         assert p.represents_ack
 
     def test_it_is_not_an_ack_if_the_Payload_is_not_an_ack(self):
-
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 represents_ack = True
@@ -125,7 +123,6 @@ class TestLIFXPacket:
         assert p.represents_ack
 
     def test_it_has_the_right_size_bits_for_all_the_fields(self):
-
         class P(frame.LIFXPacket):
             class Payload(dictobj.PacketSpec):
                 message_type = 52
@@ -174,7 +171,6 @@ class TestLIFXPacket:
 
     class TestOr:
         def test_it_says_yes_if_the_protocol_and_pkt_type_are_the_same_as_on_klsPayload(self):
-
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
@@ -205,7 +201,6 @@ class TestLIFXPacket:
             assert payloadtwo | One is False
 
         def test_it_can_get_the_values_from_the_packet_data_if_already_defined(self):
-
             class One(frame.LIFXPacket):
                 class Payload(dictobj.PacketSpec):
                     fields = []
@@ -226,9 +221,7 @@ class TestLIFXPacket:
             payloadone = One(pkt_type=32, protocol=1024)
             payloadtwo = Two(pkt_type=33, protocol=1024)
 
-            with mock.patch.object(
-                frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")
-            ):
+            with mock.patch.object(frame.LIFXPacket, "__getitem__", mock.NonCallableMock(name="__getitem__")):
                 assert payloadone | Two is False
                 assert payloadone | One is True
 

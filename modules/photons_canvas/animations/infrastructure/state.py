@@ -6,6 +6,7 @@ from contextlib import contextmanager
 
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
+
 from photons_canvas import Canvas
 from photons_canvas.animations.infrastructure.events import AnimationEvent
 from photons_canvas.animations.infrastructure.finish import Finish
@@ -25,7 +26,7 @@ def catch_finish(reraise_exceptions=True):
         raise
     except Finish:
         pass
-    except:
+    except Exception:
         if reraise_exceptions:
             raise
         log.exception("Unexpected error")
@@ -51,7 +52,7 @@ class State:
             yield
         except (Finish, asyncio.CancelledError):
             raise
-        except:
+        except Exception:
             exc_typ, exc, tb = sys.exc_info()
 
             handled = False
@@ -60,7 +61,7 @@ class State:
                 handled = await self.process_event(AnimationEvent.Types.ERROR, exc)
             except asyncio.CancelledError:
                 raise
-            except:
+            except Exception:
                 log.exception("Failed to process event")
                 raise Finish("Failed to process error")
 
@@ -85,9 +86,7 @@ class State:
             self.background = background
 
             self.canvas = Canvas()
-            await self.add_collected(
-                [[p.clone_real_part() for p in ps] for ps in self.by_device.values()]
-            )
+            await self.add_collected([[p.clone_real_part() for p in ps] for ps in self.by_device.values()])
 
     def add_parts(self, parts):
         for part in parts:
@@ -122,9 +121,7 @@ class State:
                         if result.context is AnimationEvent.Types.TICK:
                             if not self:
                                 continue
-                            async for messages in self.send_canvas(
-                                await self.process_event(AnimationEvent.Types.TICK)
-                            ):
+                            async for messages in self.send_canvas(await self.process_event(AnimationEvent.Types.TICK)):
                                 yield messages
 
                         else:
@@ -133,9 +130,7 @@ class State:
             if started and not sys.exc_info()[0]:
                 with catch_finish(reraise_exceptions=False):
                     await asyncio.sleep(self.animation.every)
-                    async for messages in self.send_canvas(
-                        await self.process_event(AnimationEvent.Types.ENDED, force=True)
-                    ):
+                    async for messages in self.send_canvas(await self.process_event(AnimationEvent.Types.ENDED, force=True)):
                         yield messages
 
     async def send_canvas(self, layer):
@@ -173,9 +168,7 @@ class State:
         except Finish:
             raise
         except NotImplementedError:
-            log.error(
-                hp.lc("Animation does not implement process_event", animation=type(self.animation))
-            )
+            log.error(hp.lc("Animation does not implement process_event", animation=type(self.animation)))
             raise Finish("Animation does not implement process_event")
         except Exception as error:
             log.exception(error)

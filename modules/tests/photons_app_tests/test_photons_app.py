@@ -18,7 +18,6 @@ def make_photons_app(**kwargs):
 
 
 class TestPhotonsApp:
-
     @pytest.fixture(autouse=True)
     def override_loop(self):
         with alt_pytest_asyncio.Loop(new_loop=False):
@@ -55,9 +54,7 @@ class TestPhotonsApp:
             with hp.a_temp_file() as fle:
                 fle.write(b'{"power": "off"}')
                 fle.flush()
-                assert make_photons_app(extra=f"file://{fle.name}").extra_as_json == {
-                    "power": "off"
-                }
+                assert make_photons_app(extra=f"file://{fle.name}").extra_as_json == {"power": "off"}
 
                 path = os.path.relpath(fle.name, os.getcwd())
                 assert not path.startswith("/")
@@ -71,9 +68,7 @@ class TestPhotonsApp:
                 ):
                     fle.write(b'"power": "off"}')
                     fle.flush()
-                    assert make_photons_app(extra=f"file://{fle.name}").extra_as_json == {
-                        "power": "off"
-                    }
+                    assert make_photons_app(extra=f"file://{fle.name}").extra_as_json == {"power": "off"}
 
             path = os.path.join(os.getcwd(), "no_exist_yo.json")
             with assertRaises(BadOption, f"The path {path} does not exist"):

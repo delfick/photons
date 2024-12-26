@@ -61,7 +61,6 @@ class TestResultStreamer:
         assert streamer.final_future.cancelled()
 
     class TestAddGenerator:
-
         @pytest.fixture()
         async def V(self):
             class V:
@@ -90,7 +89,6 @@ class TestResultStreamer:
                 await v.streamer.finish(*exc_info)
 
         async def test_it_adds_it_as_a_coroutine(self, V):
-
             async def gen():
                 yield 1
                 yield 2
@@ -150,9 +148,7 @@ class TestResultStreamer:
             assert [r.value for r in results] == [1]
 
             V.error_catcher.assert_not_called()
-            on_done.assert_called_once_with(
-                hp.ResultStreamer.Result(hp.ResultStreamer.GeneratorComplete, ctx, True)
-            )
+            on_done.assert_called_once_with(hp.ResultStreamer.Result(hp.ResultStreamer.GeneratorComplete, ctx, True))
 
         async def test_it_can_call_on_each_for_each_result(self, V):
             ctx = mock.NonCallableMock(name="context", spec=[])
@@ -171,9 +167,7 @@ class TestResultStreamer:
                 yield 3
                 called.append("gen_finished")
 
-            task = await V.streamer.add_generator(
-                gen(), on_done=on_done, on_each=on_each, context=ctx
-            )
+            task = await V.streamer.add_generator(gen(), on_done=on_done, on_each=on_each, context=ctx)
             assert task in V.streamer.ts
 
             results = await V.retrieve()
@@ -192,7 +186,6 @@ class TestResultStreamer:
             ]
 
     class TestAddCoroutine:
-
         @pytest.fixture()
         async def V(self):
             class V:
@@ -245,7 +238,6 @@ class TestResultStreamer:
             add_task.assert_called_once_with(mock.ANY, context=None, on_done=None, force=False)
 
     class TestAddValue:
-
         @pytest.fixture()
         async def V(self):
             class V:
@@ -305,7 +297,6 @@ class TestResultStreamer:
             assert found == [(True, "ADDER", None), (True, 1, "adder"), (True, 2, "adder")]
 
     class TestAddTask:
-
         @pytest.fixture()
         async def make_streamer(self):
             @hp.asynccontextmanager
@@ -337,10 +328,7 @@ class TestResultStreamer:
 
             return started, hp.async_as_background(retrieve())
 
-        async def test_it_calls_error_catcher_with_CancelledError_if_the_task_gets_cancelled(
-            self, make_streamer
-        ):
-
+        async def test_it_calls_error_catcher_with_CancelledError_if_the_task_gets_cancelled(self, make_streamer):
             async def func():
                 await asyncio.sleep(20)
 
@@ -402,9 +390,7 @@ class TestResultStreamer:
                 on_done.assert_called_once_with(result)
                 error_catcher.assert_called_once_with(result)
 
-        async def test_it_Result_Streamer_only_gives_cancelled_errors_to_catcher_if_we_only_give_exceptions(
-            self, make_streamer
-        ):
+        async def test_it_Result_Streamer_only_gives_cancelled_errors_to_catcher_if_we_only_give_exceptions(self, make_streamer):
             error = AttributeError("nup")
             on_done = mock.Mock(name="on_done")
 
@@ -416,9 +402,7 @@ class TestResultStreamer:
                 raise error
 
             error_catcher = mock.Mock(name="error_catcher")
-            async with make_streamer(
-                error_catcher=error_catcher, exceptions_only_to_error_catcher=True
-            ) as streamer:
+            async with make_streamer(error_catcher=error_catcher, exceptions_only_to_error_catcher=True) as streamer:
                 sleeper_task = await streamer.add_coroutine(sleeper(), on_done=on_done)
                 await streamer.add_coroutine(func(sleeper_task), on_done=on_done)
 
@@ -466,9 +450,7 @@ class TestResultStreamer:
                 raise error
 
             error_catcher = mock.Mock(name="error_catcher")
-            async with make_streamer(
-                error_catcher=error_catcher, exceptions_only_to_error_catcher=True
-            ) as streamer:
+            async with make_streamer(error_catcher=error_catcher, exceptions_only_to_error_catcher=True) as streamer:
                 sleeper_task = await streamer.add_coroutine(sleeper(), on_done=on_done)
                 await streamer.add_coroutine(func(sleeper_task), on_done=on_done)
 
@@ -523,9 +505,7 @@ class TestResultStreamer:
                 error_catcher.assert_not_called()
                 on_done.assert_called_once_with(result)
 
-        async def test_it_doesnt_call_error_catcher_if_success_and_exceptions_only(
-            self, make_streamer
-        ):
+        async def test_it_doesnt_call_error_catcher_if_success_and_exceptions_only(self, make_streamer):
             make_return = hp.create_future()
 
             async def func():
@@ -533,9 +513,7 @@ class TestResultStreamer:
                 return 42
 
             error_catcher = mock.Mock(name="error_catcher")
-            async with make_streamer(
-                error_catcher=error_catcher, exceptions_only_to_error_catcher=True
-            ) as streamer:
+            async with make_streamer(error_catcher=error_catcher, exceptions_only_to_error_catcher=True) as streamer:
                 await streamer.add_task(hp.async_as_background(func()))
 
                 started, runner = await self.retrieve(streamer)
@@ -601,7 +579,6 @@ class TestResultStreamer:
             finish.assert_called_once_with(asyncio.CancelledError, mock.ANY, mock.ANY)
 
     class TestFinishingByFinalFuture:
-
         async def test_it_stops_retrieving_if_there_is_results_left_to_yield(self):
             called = []
 
@@ -649,9 +626,7 @@ class TestResultStreamer:
 
             async with streamer:
                 on_dones["gen"] = mock.Mock(name="on_done gen")
-                tasks["gen"] = await streamer.add_generator(
-                    gen(), context="gen", on_done=on_dones["gen"]
-                )
+                tasks["gen"] = await streamer.add_generator(gen(), context="gen", on_done=on_dones["gen"])
 
                 for name, coro in (
                     ("func", func()),
@@ -659,9 +634,7 @@ class TestResultStreamer:
                     ("func3", func3()),
                 ):
                     on_dones[name] = mock.Mock(name=f"on_done {name}")
-                    tasks[name] = await streamer.add_task(
-                        hp.async_as_background(coro), context=name, on_done=on_dones[name]
-                    )
+                    tasks[name] = await streamer.add_task(hp.async_as_background(coro), context=name, on_done=on_dones[name])
 
                 results = []
                 async for result in streamer:
@@ -709,7 +682,6 @@ class TestResultStreamer:
 
 
 class TestUsingResultStreamer:
-
     @pytest.fixture()
     def final_future(self):
         fut = hp.create_future()
@@ -817,9 +789,7 @@ class TestUsingResultStreamer:
                 yield "r_g2g1g1_last"
 
             XS.g2_g1_g1 = CTX.Gen("gen1_for_gen1_of_gen2", 1)
-            await streamer.add_generator(
-                gen1_for_gen1_of_gen2(), context=XS.g2_g1_g1, on_done=make_on_done(2)
-            )
+            await streamer.add_generator(gen1_for_gen1_of_gen2(), context=XS.g2_g1_g1, on_done=make_on_done(2))
 
         ##########
         ## coro for generator 1 for Second generator
@@ -831,9 +801,7 @@ class TestUsingResultStreamer:
                 raise ValueError("e_g2g1c")
 
             XS.g2_g1_c = CTX("coro_for_gen1_of_gen2")
-            await streamer.add_coroutine(
-                coro_for_gen1_of_gen2(), context=XS.g2_g1_c, on_done=make_on_done(5)
-            )
+            await streamer.add_coroutine(coro_for_gen1_of_gen2(), context=XS.g2_g1_c, on_done=make_on_done(5))
 
         ##########
         ## sub generator 1 for Second generator
@@ -901,9 +869,7 @@ class TestUsingResultStreamer:
                 return "r_g2c2"
 
             XS.g2_c2 = CTX("gen2_coro2")
-            await streamer.add_coroutine(
-                coro1_for_gen2(), context=XS.g2_c2, on_done=make_on_done(8)
-            )
+            await streamer.add_coroutine(coro1_for_gen2(), context=XS.g2_c2, on_done=make_on_done(8))
 
         ##########
         ## Second generator
@@ -1032,9 +998,7 @@ class TestUsingResultStreamer:
                     i += 1
                     key = result.context.key
                     print()
-                    print(
-                        f"STREAMED: value:`{type(result.value)}`{result.value}`\tcontext:`{result.context}`\tkey:`{key}`"
-                    )
+                    print(f"STREAMED: value:`{type(result.value)}`{result.value}`\tcontext:`{result.context}`\tkey:`{key}`")
                     expectedi, r = expected["yielded"][i]()
 
                     if not result.successful and r.successful:

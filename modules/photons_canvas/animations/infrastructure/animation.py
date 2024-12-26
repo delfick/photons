@@ -3,6 +3,7 @@ import logging
 import time
 
 from photons_app import helpers as hp
+
 from photons_canvas.animations.infrastructure.events import AnimationEvent
 from photons_canvas.points import rearrange
 
@@ -79,9 +80,7 @@ class Animation:
                 name=f"Animation({self.__class__.__name__})",
             ) as streamer:
                 await streamer.add_generator(tick(), context=AnimationEvent.Types.TICK)
-                await streamer.add_generator(
-                    self.make_user_events(animation_state), context=AnimationEvent.Types.USER_EVENT
-                )
+                await streamer.add_generator(self.make_user_events(animation_state), context=AnimationEvent.Types.USER_EVENT)
                 streamer.no_more_work()
 
                 async for result in streamer:

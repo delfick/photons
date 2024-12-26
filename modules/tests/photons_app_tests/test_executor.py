@@ -19,7 +19,6 @@ def override_loop():
 
 class TestApp:
     class TestSetupCollector:
-
         def from_config(self, config):
             with hp.a_temp_file() as fle:
                 fle.write(dedent(config).encode())
@@ -91,7 +90,6 @@ class TestApp:
             setup_logging_theme.assert_called_once_with(logging_handler, colors="light")
 
     class TestMainline:
-
         def using_argv(self, argv):
             original_mainline = mock.Mock(name="original_mainline")
 

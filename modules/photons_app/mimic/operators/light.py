@@ -1,8 +1,9 @@
 from delfick_project.norms import BadSpecValue, dictobj, sb
-from photons_app import helpers as hp
-from photons_app.mimic.operator import Operator, operator
 from photons_messages import DeviceMessages, LightMessages
 from photons_products import Family
+
+from photons_app import helpers as hp
+from photons_app.mimic.operator import Operator, operator
 
 
 class color_spec(sb.Spec):
@@ -12,7 +13,7 @@ class color_spec(sb.Spec):
 
         keys = ("hue", "saturation", "brightness", "kelvin")
 
-        if isinstance(val, (list, tuple)):
+        if isinstance(val, list | tuple):
             while len(val) < 4:
                 val = (*val, 0)
         elif isinstance(val, dict):
@@ -88,9 +89,7 @@ class LightState(Operator):
 
             for k in ("hue", "saturation", "brightness", "kelvin"):
                 if getattr(event.pkt, f"set_{k}"):
-                    changes.append(
-                        self.device.attrs.attrs_path("color", k).changer_to(event.pkt[k])
-                    )
+                    changes.append(self.device.attrs.attrs_path("color", k).changer_to(event.pkt[k]))
 
             if changes:
                 await self.device.attrs.attrs_apply(*changes, event=event)

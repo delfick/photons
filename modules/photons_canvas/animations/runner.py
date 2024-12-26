@@ -6,27 +6,24 @@ from collections import defaultdict
 from photons_app import helpers as hp
 from photons_app.errors import FoundNoDevices
 from photons_app.special import SpecialReference
+from photons_messages import LightMessages
+
 from photons_canvas import Canvas
 from photons_canvas.animations.infrastructure import cannons
 from photons_canvas.animations.infrastructure.finish import Finish
 from photons_canvas.animations.infrastructure.state import State
 from photons_canvas.animations.run_options import make_run_options
-from photons_messages import LightMessages
 
 log = logging.getLogger("photons_canvas.animations.runner")
 
 
 class AnimationRunner(hp.AsyncCMMixin):
-    def __init__(
-        self, sender, reference, run_options, *, final_future, animation_options=None, **kwargs
-    ):
+    def __init__(self, sender, reference, run_options, *, final_future, animation_options=None, **kwargs):
         self.sender = sender
         self.kwargs = kwargs
         self.reference = reference
         self.run_options = make_run_options(run_options, animation_options)
-        self.final_future = hp.ChildOfFuture(
-            final_future, name="AnimationRunner::__init__[final_future]"
-        )
+        self.final_future = hp.ChildOfFuture(final_future, name="AnimationRunner::__init__[final_future]")
         self.original_canvas = Canvas()
 
         self.started = None
@@ -78,12 +75,8 @@ class AnimationRunner(hp.AsyncCMMixin):
         animations = self.run_options.animations_iter
         self.combined_state = State(self.final_future)
 
-        async with self.reinstate(), hp.TaskHolder(
-            self.final_future, name="AnimationRunner::run[task_holder]"
-        ) as ts:
-            self.transfer_error(
-                ts, ts.add(self.animate(ts, cannon, self.combined_state, animations))
-            )
+        async with self.reinstate(), hp.TaskHolder(self.final_future, name="AnimationRunner::run[task_holder]") as ts:
+            self.transfer_error(ts, ts.add(self.animate(ts, cannon, self.combined_state, animations)))
 
             async for collected in self.collect_parts(ts):
                 try:
@@ -106,9 +99,7 @@ class AnimationRunner(hp.AsyncCMMixin):
                 fut.cancel()
 
         try:
-            t.add_done_callback(
-                hp.transfer_result(self.final_future, errors_only=True, process=process)
-            )
+            t.add_done_callback(hp.transfer_result(self.final_future, errors_only=True, process=process))
         except asyncio.CancelledError:
             raise
         except Exception as error:
@@ -127,9 +118,7 @@ class AnimationRunner(hp.AsyncCMMixin):
             except StopIteration:
                 break
 
-            with hp.ChildOfFuture(
-                self.final_future, name="AnimationRunner::animate[animation_fut]"
-            ) as animation_fut:
+            with hp.ChildOfFuture(self.final_future, name="AnimationRunner::animate[animation_fut]") as animation_fut:
                 animation = make_animation(animation_fut, self.run_options.pauser)
                 self.current_animation = animation
 
@@ -164,9 +153,7 @@ class AnimationRunner(hp.AsyncCMMixin):
                     elif isinstance(serials, SpecialReference):
                         self.reference.reset()
                         try:
-                            _, serials = await self.reference.find(
-                                self.sender, timeout=self.kwargs.get("find_timeout", 10)
-                            )
+                            _, serials = await self.reference.find(self.sender, timeout=self.kwargs.get("find_timeout", 10))
                         except asyncio.CancelledError:
                             raise
                         except FoundNoDevices:
@@ -206,9 +193,7 @@ class AnimationRunner(hp.AsyncCMMixin):
         finally:
             if not self.run_options.reinstate_on_end:
                 return
-            await self.sender(
-                list(self.original_canvas.restore_msgs()), message_timeout=1, errors=[]
-            )
+            await self.sender(list(self.original_canvas.restore_msgs()), message_timeout=1, errors=[])
 
     async def turn_on(self, serial):
         msg = LightMessages.SetLightPower(level=65535, duration=1)
@@ -216,9 +201,7 @@ class AnimationRunner(hp.AsyncCMMixin):
 
     async def parts_from_serials(self, serials):
         plans = self.sender.make_plans("parts_and_colors")
-        async for serial, _, info in self.sender.gatherer.gather_per_serial(
-            plans, serials, **self.kwargs
-        ):
+        async for serial, _, info in self.sender.gatherer.gather_per_serial(plans, serials, **self.kwargs):
             self.seen_serials.add(serial)
             parts = info["parts_and_colors"]
             if parts:

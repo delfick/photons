@@ -84,15 +84,9 @@ class TestPart:
         assert V.part != different_part
         assert V.part != different_device
 
-        assert V.part == mock.Mock(
-            name="a part", device=V.device, part_number=5, spec=["device", "part_number"]
-        )
-        assert V.part != mock.Mock(
-            name="a part", device=V.device, part_number=1, spec=["device", "part_number"]
-        )
-        assert V.part != mock.Mock(
-            name="a part", device=V.other_device, part_number=5, spec=["device", "part_number"]
-        )
+        assert V.part == mock.Mock(name="a part", device=V.device, part_number=5, spec=["device", "part_number"])
+        assert V.part != mock.Mock(name="a part", device=V.device, part_number=1, spec=["device", "part_number"])
+        assert V.part != mock.Mock(name="a part", device=V.other_device, part_number=5, spec=["device", "part_number"])
 
         assert V.part == (V.device, 5)
         assert V.part == (V.device.serial, 5)
@@ -101,7 +95,6 @@ class TestPart:
         assert V.part != (V.other_device.serial, 5)
 
     def test_it_can_be_ordered(self, V):
-
         parts = [
             V.make_part(V.device, 2),
             V.make_part(V.device, 1),
@@ -296,12 +289,7 @@ class TestPart:
             msgs = list(part.msgs(colors, duration=100))
             assert len(msgs) == 1
             assert msgs[0] | LightMessages.SetColor
-            assert (
-                msgs[0].payload
-                == LightMessages.SetColor(
-                    hue=100, saturation=1, brightness=0.4, kelvin=2400, duration=100
-                ).payload
-            )
+            assert msgs[0].payload == LightMessages.SetColor(hue=100, saturation=1, brightness=0.4, kelvin=2400, duration=100).payload
 
         def test_it_returns_multizone_messages_for_strips(self, V):
             colors = mock.Mock(name="colors", spec=[])
@@ -326,9 +314,7 @@ class TestPart:
 
                     assert list(part.msgs(colors, duration=duration)) == [m1, m2]
 
-                    FakeMultizoneMessagesMaker.assert_called_once_with(
-                        device.serial, cap, colors, duration=duration
-                    )
+                    FakeMultizoneMessagesMaker.assert_called_once_with(device.serial, cap, colors, duration=duration)
                     FakeMultizoneMessagesMaker.reset_mock()
 
         def test_it_returns_special_Set64_message_for_a_tile(self, V):
@@ -373,17 +359,13 @@ class TestPart:
             assert isinstance(msgs[0], Set64)
 
         class TestCaching:
-            def test_it_it_sends_same_messages_or_NO_MESSAGES_depending_on_time_and_difference(
-                self, FakeTime, V
-            ):
+            def test_it_it_sends_same_messages_or_NO_MESSAGES_depending_on_time_and_difference(self, FakeTime, V):
                 colors = [(i, 1, 1, 3500) for i in range(64)]
                 device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
 
                 with FakeTime() as t:
                     t.set(2)
-                    part = V.make_part(
-                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors
-                    )
+                    part = V.make_part(device, 3, orientation=Orientation.RotatedLeft, original_colors=colors)
                     assert part.next_force_send == 1
 
                     msgs = part.msgs(colors, force=False)
@@ -418,9 +400,7 @@ class TestPart:
 
                 with FakeTime() as t:
                     t.set(2)
-                    part = V.make_part(
-                        device, 3, orientation=Orientation.RotatedLeft, original_colors=colors
-                    )
+                    part = V.make_part(device, 3, orientation=Orientation.RotatedLeft, original_colors=colors)
                     assert part.next_force_send == 1
 
                     msgs = part.msgs(colors, force=False)

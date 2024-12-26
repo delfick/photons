@@ -64,7 +64,6 @@ class TestCollection:
 
     class TestEquality:
         def test_it_says_no_if_not_a_collection(self):
-
             class Other:
                 pass
 
@@ -72,7 +71,6 @@ class TestCollection:
             assert collection != Other()
 
         def test_it_says_no_if_not_the_same_typ(self):
-
             class Other:
                 pass
 
@@ -81,7 +79,6 @@ class TestCollection:
             assert collection1 != collection2
 
         def test_it_says_no_if_not_the_same_uuid(self):
-
             class Other:
                 pass
 
@@ -90,7 +87,6 @@ class TestCollection:
             assert collection1 != collection2
 
         def test_it_says_yes_if_the_same_uuid_and_typ(self):
-
             class Other:
                 pass
 
@@ -99,16 +95,11 @@ class TestCollection:
             assert collection1 == collection2
 
         def test_it_says_yes_if_the_same_uuid_and_typ_even_if_names_are_different(self):
-
             class Other:
                 pass
 
-            collection1 = Collection.FieldSpec().empty_normalise(
-                uuid="stuff", typ="group", name="one"
-            )
-            collection2 = Collection.FieldSpec().empty_normalise(
-                uuid="stuff", typ="group", name="two"
-            )
+            collection1 = Collection.FieldSpec().empty_normalise(uuid="stuff", typ="group", name="one")
+            collection2 = Collection.FieldSpec().empty_normalise(uuid="stuff", typ="group", name="two")
             assert collection1 == collection2
 
 
@@ -126,7 +117,6 @@ class TestCollections:
         assert collection.uuid == cuuid
 
     class TestAdding:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -170,9 +160,7 @@ class TestCollections:
             def test_it_doesnt_recreate_collection_if_it_exists(self, V):
                 collection = mock.Mock(name="collection")
                 collection_spec = mock.Mock(name="collection_spec")
-                collection_spec.empty_normalise.side_effect = Exception(
-                    "Expect empty_normalise to not be called"
-                )
+                collection_spec.empty_normalise.side_effect = Exception("Expect empty_normalise to not be called")
 
                 V.collections.collections["location"][V.uid] = collection
 

@@ -17,7 +17,6 @@ class TestReceiver:
         assert receiver.blank_target == b"\x00\x00\x00\x00\x00\x00\x00\x00"
 
     class TestUsage:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -29,9 +28,7 @@ class TestReceiver:
 
                 @hp.memoized_property
                 def packet(s):
-                    return LIFXPacket(
-                        source=s.source, pkt_type=20, sequence=s.sequence, target=s.target
-                    )
+                    return LIFXPacket(source=s.source, pkt_type=20, sequence=s.sequence, target=s.target)
 
                 @hp.memoized_property
                 def original(s):
@@ -98,9 +95,7 @@ class TestReceiver:
                 assert V.packet.Information.remote_addr is None
                 assert V.packet.Information.sender_message is None
 
-            async def test_it_does_not_use_message_catcher_if_can_find_the_key_and_thats_defined(
-                self, V
-            ):
+            async def test_it_does_not_use_message_catcher_if_can_find_the_key_and_thats_defined(self, V):
                 V.register(V.source, V.sequence, V.target)
 
                 message_catcher = pytest.helpers.AsyncMock(name="message_catcher")

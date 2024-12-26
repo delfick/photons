@@ -13,8 +13,9 @@ from queue import Empty as NormalEmpty
 from queue import Queue as NormalQueue
 
 from delfick_project.logging import lc
-from photons_app.errors import PhotonsAppError
 from photons_messages import fields
+
+from photons_app.errors import PhotonsAppError
 
 log = logging.getLogger("photons_app.helpers")
 
@@ -69,7 +70,7 @@ class Color(fields.Color):
 
             other = Color(*other)
 
-        if not isinstance(other, (fields.Color, dict)) and not hasattr(other, "as_dict"):
+        if not isinstance(other, dict | fields.Color) and not hasattr(other, "as_dict"):
             return False
 
         if not isinstance(other, fields.Color):
@@ -120,11 +121,7 @@ class Firmware:
         if isinstance(other, tuple) and len(other) == 2:
             return (self.major, self.minor) == other
         elif isinstance(other, Firmware):
-            return (
-                self.major == other.major
-                and self.minor == other.minor
-                and self.build == other.build
-            )
+            return self.major == other.major and self.minor == other.minor and self.build == other.build
         else:
             raise ValueError(f"Can't compare firmware with {type(other)}: {other}")
 
@@ -181,7 +178,7 @@ def ensure_aexit(instance):
         exc_info = None
         try:
             yield
-        except:
+        except Exception:
             exc_info = sys.exc_info()
 
         if exc_info is not None:
@@ -355,8 +352,7 @@ class ATicker(AsyncCMMixin):
 
         self.waiter = ResettableFuture(name=f"ATicker({self.name})::__init__[waiter]")
         self.final_future = ChildOfFuture(
-            final_future
-            or create_future(name=f"ATicker({self.name})::__init__[owned_final_future]"),
+            final_future or create_future(name=f"ATicker({self.name})::__init__[owned_final_future]"),
             name=f"ATicker({self.name})::__init__[final_future]",
         )
 
@@ -366,17 +362,13 @@ class ATicker(AsyncCMMixin):
 
     def __aiter__(self):
         if not hasattr(self, "gen"):
-            raise Exception(
-                "The ticker must be used as a context manager before being used as an async iterator"
-            )
+            raise Exception("The ticker must be used as a context manager before being used as an async iterator")
         return self.gen
 
     async def finish(self, exc_typ=None, exc=None, tb=None):
         if hasattr(self, "gen"):
             try:
-                await stop_async_generator(
-                    self.gen, exc=exc or self.Stop(), name=f"ATicker({self.name})::stop[stop_gen]"
-                )
+                await stop_async_generator(self.gen, exc=exc or self.Stop(), name=f"ATicker({self.name})::stop[stop_gen]")
             except self.Stop:
                 pass
 
@@ -440,9 +432,7 @@ class ATicker(AsyncCMMixin):
             async with self.pauser:
                 pass
 
-        ts_final_future = ChildOfFuture(
-            self.final_future, name=f"ATicker({self.name})::_wait_for_next[with_pause]"
-        )
+        ts_final_future = ChildOfFuture(self.final_future, name=f"ATicker({self.name})::_wait_for_next[with_pause]")
 
         async with TaskHolder(ts_final_future) as ts:
             ts.add(pause())
@@ -605,14 +595,10 @@ class TaskHolder(AsyncCMMixin):
         self.name = name
 
         self.ts = []
-        self.final_future = ChildOfFuture(
-            final_future, name=f"TaskHolder({self.name})::__init__[final_future]"
-        )
+        self.final_future = ChildOfFuture(final_future, name=f"TaskHolder({self.name})::__init__[final_future]")
 
         self._cleaner = None
-        self._cleaner_waiter = ResettableFuture(
-            name=f"TaskHolder({self.name})::__init__[cleaner_waiter]"
-        )
+        self._cleaner_waiter = ResettableFuture(name=f"TaskHolder({self.name})::__init__[cleaner_waiter]")
 
     def add(self, coro, *, silent=False):
         return self.add_task(async_as_background(coro, silent=silent))
@@ -674,9 +660,7 @@ class TaskHolder(AsyncCMMixin):
     async def _final(self):
         if self._cleaner:
             self._cleaner.cancel()
-            await wait_for_all_futures(
-                self._cleaner, name=f"TaskHolder({self.name})::finish[finally_wait_for_cleaner]"
-            )
+            await wait_for_all_futures(self._cleaner, name=f"TaskHolder({self.name})::finish[finally_wait_for_cleaner]")
 
         await wait_for_all_futures(
             async_as_background(self.clean()),
@@ -708,9 +692,7 @@ class TaskHolder(AsyncCMMixin):
             else:
                 remaining.append(t)
 
-        await wait_for_all_futures(
-            *destroyed, name=f"TaskHolder({self.name})::clean[wait_for_destroyed]"
-        )
+        await wait_for_all_futures(*destroyed, name=f"TaskHolder({self.name})::clean[wait_for_destroyed]")
         self.ts = remaining + [t for t in self.ts if t not in destroyed and t not in remaining]
 
 
@@ -841,19 +823,13 @@ class ResultStreamer(AsyncCMMixin):
             status = "success" if self.successful else "failed"
             return f"<Result {status}: {self.value}: {self.context}>"
 
-    def __init__(
-        self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False, name=None
-    ):
+    def __init__(self, final_future, *, error_catcher=None, exceptions_only_to_error_catcher=False, name=None):
         self.name = name
-        self.final_future = ChildOfFuture(
-            final_future, name=f"ResultStreamer({self.name})::__init__[final_future]"
-        )
+        self.final_future = ChildOfFuture(final_future, name=f"ResultStreamer({self.name})::__init__[final_future]")
         self.error_catcher = error_catcher
         self.exceptions_only_to_error_catcher = exceptions_only_to_error_catcher
 
-        self.queue_future = ChildOfFuture(
-            final_future, name=f"ResultStreamer({self.name})::__init__[queue_future]"
-        )
+        self.queue_future = ChildOfFuture(final_future, name=f"ResultStreamer({self.name})::__init__[queue_future]")
         self.queue = Queue(
             self.queue_future,
             empty_on_finished=True,
@@ -896,9 +872,7 @@ class ResultStreamer(AsyncCMMixin):
         task.gen = gen
 
         if self.final_future.done():
-            await cancel_futures_and_wait(
-                task, name=f"ResultStreamer({self.name})::add_generator[already_stopped_task]"
-            )
+            await cancel_futures_and_wait(task, name=f"ResultStreamer({self.name})::add_generator[already_stopped_task]")
             await wait_for_first_future(
                 async_as_background(gen.aclose()),
                 name=f"ResultStreamer({self.name})::add_generator[already_stopped_gen]",
@@ -924,13 +898,9 @@ class ResultStreamer(AsyncCMMixin):
     async def add_task(self, task, *, context=None, on_done=None, force=False):
         if self.final_future.done():
             if force:
-                await wait_for_all_futures(
-                    task, name=f"ResultStreamer({self.name})::add_task[force_already_stopped]"
-                )
+                await wait_for_all_futures(task, name=f"ResultStreamer({self.name})::add_task[force_already_stopped]")
             else:
-                await cancel_futures_and_wait(
-                    task, name=f"ResultStreamer({self.name})::add_task[already_stopped]"
-                )
+                await cancel_futures_and_wait(task, name=f"ResultStreamer({self.name})::add_task[already_stopped]")
             return task
 
         def add_to_queue(res):
@@ -1296,9 +1266,7 @@ async def cancel_futures_and_wait(*futs, name=None):
             fut.cancel()
             waiting.append(fut)
 
-    await wait_for_all_futures(
-        *waiting, name=f"||cancel_futures_and_wait({name})[wait_for_everything]"
-    )
+    await wait_for_all_futures(*waiting, name=f"||cancel_futures_and_wait({name})[wait_for_everything]")
 
 
 class memoized_property(tp.Generic[T]):
@@ -1339,7 +1307,7 @@ class memoized_property(tp.Generic[T]):
         self.func = func
         self.name = func.__name__
         self.__doc__ = func.__doc__
-        self.cache_name = "_{0}".format(self.name)
+        self.cache_name = f"_{self.name}"
 
     def __get__(self, instance: object = None, owner: object = None) -> T:
         if instance is None:
@@ -1790,9 +1758,7 @@ class SyncQueue:
         self.name = name
         self.timeout = timeout
         self.collection = NormalQueue()
-        self.final_future = ChildOfFuture(
-            final_future, name=f"SyncQueue({self.name})::__init__[final_future]"
-        )
+        self.final_future = ChildOfFuture(final_future, name=f"SyncQueue({self.name})::__init__[final_future]")
         self.empty_on_finished = empty_on_finished
 
     def append(self, item):
@@ -1865,9 +1831,7 @@ class Queue:
         self.name = name
         self.waiter = ResettableFuture(name=f"Queue({self.name})::__init__[waiter]")
         self.collection = deque()
-        self.final_future = ChildOfFuture(
-            final_future, name=f"Queue({self.name})::__init__[final_future]"
-        )
+        self.final_future = ChildOfFuture(final_future, name=f"Queue({self.name})::__init__[final_future]")
         self.empty_on_finished = empty_on_finished
 
         self.stop = False

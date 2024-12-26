@@ -2,12 +2,13 @@ import itertools
 import os
 import sys
 
+from photons_messages import Services, protocol_register
+from photons_transport.targets import LanTarget
+
 from photons_app import helpers as hp
 from photons_app.mimic.device import Device
 from photons_app.mimic.event import Events
 from photons_app.mimic.transport import MemoryTarget
-from photons_messages import Services, protocol_register
-from photons_transport.targets import LanTarget
 
 this_dir = os.path.dirname(__file__)
 for fle in os.listdir(os.path.join(this_dir, "operators")):
@@ -296,9 +297,7 @@ class DeviceCollection:
                 for session in sessions:
                     tt.append(ts.add(session.start()))
 
-                await hp.wait_for_all_futures(
-                    *tt, name="DeviceCollection::for_test[wait_for_start]"
-                )
+                await hp.wait_for_all_futures(*tt, name="DeviceCollection::for_test[wait_for_start]")
 
                 configuration = {
                     "final_future": final_future,
@@ -328,9 +327,7 @@ class DeviceCollection:
                 ends = []
                 for session in sessions:
                     ends.append(ts.add(session.finish(exc_typ=exc_typ, exc=exc, tb=tb)))
-                await hp.wait_for_all_futures(
-                    *ends, name="DeviceCollection::for_test[wait_for_session_ends]"
-                )
+                await hp.wait_for_all_futures(*ends, name="DeviceCollection::for_test[wait_for_session_ends]")
 
 
 __all__ = ["Device", "DeviceCollection"]

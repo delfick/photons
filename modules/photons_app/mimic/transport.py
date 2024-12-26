@@ -1,13 +1,14 @@
 import time
 
 from delfick_project.norms import dictobj, sb
-from photons_app.errors import PhotonsAppError
 from photons_messages import protocol_register
 from photons_protocol.messages import Messages
 from photons_transport.retry_options import Gaps
 from photons_transport.session.network import NetworkSession
 from photons_transport.targets import LanTarget
 from photons_transport.transports.base import Transport
+
+from photons_app.errors import PhotonsAppError
 
 
 def make_message(bts):
@@ -91,20 +92,15 @@ def makeMemorySession(basedon):
                 broadcast = self.transport_target.default_broadcast
 
             if broadcast not in self.broadcast_transports:
-
                 io_service = self.transport_target.io_service
 
                 async def writer(bts, received_data, addr):
                     for device in self.transport_target.devices:
                         self.record(device.serial, bts)
-                        if io_service.name in device.io and await device.discoverable(
-                            io_service, broadcast
-                        ):
+                        if io_service.name in device.io and await device.discoverable(io_service, broadcast):
                             device.io[io_service.name].received(bts, received_data, addr)
 
-                self.broadcast_transports[broadcast] = self.transport_target.transport_kls(
-                    self, self.record, writer
-                )
+                self.broadcast_transports[broadcast] = self.transport_target.transport_kls(self, self.record, writer)
             return self.broadcast_transports[broadcast]
 
     return MemorySession
@@ -115,9 +111,7 @@ class MemoryTarget(LanTarget):
     Knows how to talk to fake devices as if they were on the network.
     """
 
-    gaps = dictobj.Field(
-        Gaps(gap_between_results=0.05, gap_between_ack_and_res=0.05, timeouts=[(0.2, 0.2)])
-    )
+    gaps = dictobj.Field(Gaps(gap_between_results=0.05, gap_between_ack_and_res=0.05, timeouts=[(0.2, 0.2)]))
     io_service = dictobj.Field(sb.any_spec, default=MemoryService)
     transport_kls = dictobj.Field(sb.any_spec, default=MemoryTransport)
 

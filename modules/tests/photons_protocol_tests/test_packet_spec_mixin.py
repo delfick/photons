@@ -26,7 +26,6 @@ def V():
 
 class TestPacketSpecMixin:
     class TestSimple:
-
         @pytest.fixture()
         def Group1(self):
             class Group1(dictobj.PacketSpec):
@@ -46,14 +45,11 @@ class TestPacketSpecMixin:
             return Packet(one="wat", two=2, another=True)
 
         class TestPack:
-
             def test_it_uses_the_provided_packing_kls(self, packet, V):
                 res = mock.Mock(name="res")
                 V.packing_kls.pack.return_value = res
 
-                r = packet.pack(
-                    payload=V.payload, parent=V.parent, serial=V.serial, packing_kls=V.packing_kls
-                )
+                r = packet.pack(payload=V.payload, parent=V.parent, serial=V.serial, packing_kls=V.packing_kls)
 
                 assert r is res
                 V.packing_kls.pack.assert_called_once_with(packet, V.payload, V.parent, V.serial)
@@ -108,7 +104,6 @@ class TestPacketSpecMixin:
             six_typ.size_bits.assert_called_once_with(values)
 
     class TestSpecWithMocks:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -223,9 +218,7 @@ class TestPacketSpecMixin:
         def test_it_it_works_on_a_normal_PacketSpec(self, V):
             with V.patched_packet_spec() as packet_spec:
                 assert V.Group1.spec() is V.spec
-            packet_spec.assert_called_once_with(
-                V.Group1, [("one", V.one_spec), ("two", V.two_spec)], {}
-            )
+            packet_spec.assert_called_once_with(V.Group1, [("one", V.one_spec), ("two", V.two_spec)], {})
 
         def test_it_it_works_on_a_PacketSpec_with_groups(self, V):
             with V.patched_packet_spec() as packet_spec:
@@ -268,7 +261,6 @@ class TestPacketSpecMixin:
             )
 
     class TestSpecWithoutMocks:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -280,12 +272,11 @@ class TestPacketSpecMixin:
                         (
                             "two",
                             T.Int16.transform(
-                                lambda _, v: (int(str(v).split(".")[0]) << 0x10)
-                                + int(str(v).split(".")[1]),
-                                lambda _, v: float("{0}.{1}".format(v >> 0x10, v & 0xFF)),
+                                lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1]),
+                                lambda _, v: float(f"{v >> 0x10}.{v & 0xFF}"),
                             ),
                         ),
-                        ("mod", T.String.default(lambda p: "{0}.modified".format(p["two"]))),
+                        ("mod", T.String.default(lambda p: f"{p['two']}.modified")),
                         ("sb", T.Int8),
                         ("bts", T.Bytes(lambda p: p["sb"])),
                     ]
@@ -355,7 +346,7 @@ class TestPacketSpecMixin:
 
         def test_it_works(self):
             b = bitarray(endian="little")
-            b.frombytes("wat".encode())
+            b.frombytes(b"wat")
             b = b + bitarray("0" * 10)
 
             class Thing(dictobj.PacketSpec):
@@ -367,7 +358,6 @@ class TestPacketSpecMixin:
 
     class TestIsDynamic:
         def test_it_says_no_if_no_field_allows_callable(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -375,7 +365,6 @@ class TestPacketSpecMixin:
             assert not p.is_dynamic
 
         def test_it_says_no_if_a_field_allows_callable_but_has_not_a_callable_alue(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String.allow_callable())]
 
@@ -383,7 +372,6 @@ class TestPacketSpecMixin:
             assert not p.is_dynamic
 
         def test_it_says_yes_if_a_field_allows_callable_and_has_a_callable_alue(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String.allow_callable())]
 
@@ -392,7 +380,6 @@ class TestPacketSpecMixin:
 
     class TestContains:
         def test_it_says_yes_if_the_field_is_on_the_packet(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -401,7 +388,6 @@ class TestPacketSpecMixin:
             assert "three" not in p
 
         def test_it_says_yes_if_the_field_is_in_a_group(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -413,7 +399,6 @@ class TestPacketSpecMixin:
             assert "three" not in p
 
         def test_it_says_yes_if_the_field_is_a_group(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -425,7 +410,6 @@ class TestPacketSpecMixin:
 
     class TestCloning:
         def test_it_works(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool), ("two", T.String)]
 
@@ -544,7 +528,6 @@ class TestPacketSpecMixin:
 
     class TestTobytes:
         def test_it_just_packs_if_payload_is_already_simple(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("payload", T.Bytes)]
 
@@ -561,7 +544,6 @@ class TestPacketSpecMixin:
             pack.assert_called_once_with(payload=b)
 
         def test_it_simplifies_first_if_payload_is_not_str_bytes_or_bitarray(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("payload", "Payload")]
 
@@ -592,7 +574,6 @@ class TestPacketSpecMixin:
 
     class TestAsDict:
         def test_it_returns_groups_with_transformed_values(self):
-
             def pack_t(p, v):
                 return v + 2
 
@@ -609,7 +590,6 @@ class TestPacketSpecMixin:
             assert dct == {"g": {"one": True, "two": 1}}
 
         def test_it_returns_groups_with_untransformed_values_if_asked_not_to_transform(self):
-
             def pack_t(p, v):
                 return v + 2
 
@@ -626,7 +606,6 @@ class TestPacketSpecMixin:
             assert dct == {"g": {"one": True, "two": 3}}
 
         def test_it_includes_payload_as_simple_if_we_are_a_parent_packet(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool)]
 
@@ -646,7 +625,6 @@ class TestPacketSpecMixin:
             assert dct == {"g": {"one": True}, "payload": b.tobytes()}
 
         def test_it_includes_payload_as_complex_if_we_are_not_a_parent_packet(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.Bool)]
 
@@ -668,11 +646,8 @@ class TestPacketSpecMixin:
             assert dct == {"g": {"one": True}, "payload": {"two": 65}}
 
         def test_it_converts_lists(self):
-
             class P(dictobj.PacketSpec):
-                fields = [
-                    ("one", T.Int16.transform(lambda _, v: int(v / 1000), lambda _, v: v * 1000))
-                ]
+                fields = [("one", T.Int16.transform(lambda _, v: int(v / 1000), lambda _, v: v * 1000))]
 
             class Q(dictobj.PacketSpec):
                 fields = [("things", T.Bytes(16).multiple(3, kls=lambda pkt: P))]
@@ -705,7 +680,6 @@ class TestPacketSpecMixin:
                 assert repr(p) == '{"payload": "d073d5"}'
 
         def test_it_reprs_what_isnt_jsonfiable(self):
-
             class E(enum.Enum):
                 ONE = 1
 
@@ -718,7 +692,6 @@ class TestPacketSpecMixin:
 
     class TestCreating:
         def test_it_uses_the_spec_on_the_kls(self):
-
             class P(dictobj.PacketSpec):
                 fields = []
 
@@ -736,7 +709,6 @@ class TestPacketSpecMixin:
             initd_spec.normalise.assert_called_once_with(mock.ANY, val)
 
         def test_it_allows_kwargs_val_with_create(self):
-
             class P(dictobj.PacketSpec):
                 fields = []
 

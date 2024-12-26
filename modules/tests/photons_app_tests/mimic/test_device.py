@@ -27,9 +27,7 @@ class TestDeviceSession:
         assert session.final_future is final_future
         assert session.device is device
 
-    async def test_it_follows_a_prepare_reset_delete_protocol_with_io_operators_started(
-        self, final_future, device
-    ):
+    async def test_it_follows_a_prepare_reset_delete_protocol_with_io_operators_started(self, final_future, device):
         called = []
         async with pytest.helpers.FutureDominoes(expected=9) as futs:
 
@@ -100,12 +98,9 @@ class TestDeviceSession:
                     "delete",
                 ]
 
-    async def test_it_follows_a_prepare_reset_delete_protocol_even_if_io_operators_fail(
-        self, final_future, device
-    ):
+    async def test_it_follows_a_prepare_reset_delete_protocol_even_if_io_operators_fail(self, final_future, device):
         called = []
         async with pytest.helpers.FutureDominoes(expected=8) as futs:
-
             error1 = KeyError("nope")
             error2 = KeyError("nup")
 
@@ -353,10 +348,7 @@ class TestDevice:
             called.clear()
 
             # can be told to not care about getting nothing
-            assert (
-                device.state_for(DeviceMessages.StateLocation, expect_any=False, expect_one=False)
-                == []
-            )
+            assert device.state_for(DeviceMessages.StateLocation, expect_any=False, expect_one=False) == []
             assert called == [
                 ("io1", DeviceMessages.StateLocation, mock.ANY),
                 ("io2", DeviceMessages.StateLocation, mock.ANY),
@@ -408,7 +400,6 @@ class TestDevice:
             called.clear()
 
     class TestPrepare:
-
         async def test_it_instantiates_operator_collections_and_applies_options(self):
             info = {"device": None}
 
@@ -503,7 +494,6 @@ class TestDevice:
             assert device.applied_options
 
     class TestEvents:
-
         @pytest.fixture()
         def record(self):
             class Record:
@@ -692,9 +682,7 @@ class TestDevice:
                 kwarg4 = mock.Mock(name="kwarg4")
 
                 ret = mock.Mock(name="ret")
-                event_with_options = pytest.helpers.AsyncMock(
-                    name="event_with_options", return_value=ret
-                )
+                event_with_options = pytest.helpers.AsyncMock(name="event_with_options", return_value=ret)
 
                 device = Device("d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 0))
 
@@ -702,37 +690,28 @@ class TestDevice:
                     event = await device.event(Events.RESET, arg1, arg2, a=kwarg3, b=kwarg4)
 
                 assert event is ret
-                event_with_options.assert_called_once_with(
-                    Events.RESET, args=(arg1, arg2), kwargs={"a": kwarg3, "b": kwarg4}
-                )
+                event_with_options.assert_called_once_with(Events.RESET, args=(arg1, arg2), kwargs={"a": kwarg3, "b": kwarg4})
 
             class TestHelperForCreatingAndExecutingEvents:
-
                 @pytest.fixture()
                 def mocked(self):
                     class Mocked:
                         def __init__(s):
-                            s.device = Device(
-                                "d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 0)
-                            )
+                            s.device = Device("d073d5001337", Products.LCM2_A19, Device.Firmware(2, 80, 0))
 
                             s.ret = mock.Mock(name="ret")
 
                             async def execute_event(event, is_finished):
                                 return (s.ret, event, is_finished)
 
-                            s.execute_event = pytest.helpers.AsyncMock(
-                                name="execute_event", side_effect=execute_event
-                            )
+                            s.execute_event = pytest.helpers.AsyncMock(name="execute_event", side_effect=execute_event)
 
                     mocked = Mocked()
                     with mock.patch.object(mocked.device, "execute_event", mocked.execute_event):
                         yield mocked
 
                 async def test_it_has_helper_for_creating_and_executing_events(self, mocked):
-                    res = await mocked.device.event_with_options(
-                        Events.RESET, args=(), kwargs={"old_attrs": {}}
-                    )
+                    res = await mocked.device.event_with_options(Events.RESET, args=(), kwargs={"old_attrs": {}})
                     assert res == (mocked.ret, Events.RESET(mocked.device, old_attrs={}), None)
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is False
@@ -756,17 +735,13 @@ class TestDevice:
                     assert res[1]._exclude_viewers is False
 
                 async def test_it_can_make_the_event_invisible_to_viewers(self, mocked):
-                    res = await mocked.device.event_with_options(
-                        Events.RESET, visible=False, args=(), kwargs={"old_attrs": {}}
-                    )
+                    res = await mocked.device.event_with_options(Events.RESET, visible=False, args=(), kwargs={"old_attrs": {}})
                     assert res == (mocked.ret, Events.RESET(mocked.device, old_attrs={}), None)
                     mocked.execute_event.assert_called_once_with(res[1], res[2])
                     assert res[1]._exclude_viewers is True
 
                 async def test_it_can_not_execute(self, mocked):
-                    res = await mocked.device.event_with_options(
-                        Events.RESET, execute=False, args=(), kwargs={"old_attrs": {}}
-                    )
+                    res = await mocked.device.event_with_options(Events.RESET, execute=False, args=(), kwargs={"old_attrs": {}})
                     assert res == Events.RESET(mocked.device, old_attrs={})
                     mocked.execute_event.assert_not_called()
 
@@ -872,9 +847,7 @@ class TestDevice:
                         ("operator", event),
                     ]
 
-                async def test_it_passes_on_invisible_reset_event_into_reset_functions_too(
-                    self, device, record
-                ):
+                async def test_it_passes_on_invisible_reset_event_into_reset_functions_too(self, device, record):
                     attr_change_event = Events.ATTRIBUTE_CHANGE(
                         device,
                         [
@@ -908,10 +881,7 @@ class TestDevice:
                         ("operator", event),
                     ]
 
-                async def test_it_can_stop_going_through_operators_based_on_is_finished(
-                    self, record, final_future
-                ):
-
+                async def test_it_can_stop_going_through_operators_based_on_is_finished(self, record, final_future):
                     class OO(Operator):
                         def setup(s, i):
                             s.i = i
@@ -1056,7 +1026,6 @@ class TestDevice:
                 ]
 
             async def test_it_can_temporarily_be_off(self, device, record):
-
                 def intercept(operator, *v):
                     if operator is not None:
                         return (operator, (*v, operator.device.has_power))
@@ -1291,9 +1260,7 @@ class TestDevice:
 
             async def test_it_can_annotate(self, device, record):
                 await device.annotate("INFO", "hello there", one=1, two=2)
-                annotate_event = Events.ANNOTATION(
-                    device, logging.INFO, "hello there", one=1, two=2
-                )
+                annotate_event = Events.ANNOTATION(device, logging.INFO, "hello there", one=1, two=2)
                 assert record == [
                     ("execute_event", annotate_event, None),
                     ("viewer", annotate_event),
@@ -1303,9 +1270,7 @@ class TestDevice:
                 record.clear()
 
                 await device.annotate(logging.ERROR, "hello there", one=1, two=2)
-                annotate_event = Events.ANNOTATION(
-                    device, logging.ERROR, "hello there", one=1, two=2
-                )
+                annotate_event = Events.ANNOTATION(device, logging.ERROR, "hello there", one=1, two=2)
                 assert record == [
                     ("execute_event", annotate_event, None),
                     ("viewer", annotate_event),
@@ -1325,9 +1290,7 @@ class TestDevice:
                 record.clear()
 
                 assert await device.discoverable(Services.UDP, "255.255.255.255")
-                discoverable_event = Events.DISCOVERABLE(
-                    device, service=Services.UDP, address="255.255.255.255"
-                )
+                discoverable_event = Events.DISCOVERABLE(device, service=Services.UDP, address="255.255.255.255")
                 assert record == [
                     ("execute_event", discoverable_event, None),
                     ("viewer", discoverable_event),
@@ -1344,9 +1307,7 @@ class TestDevice:
 
                 record._intercept = intercept
                 assert not await device.discoverable(Services.UDP, "255.255.0.255")
-                discoverable_event = Events.DISCOVERABLE(
-                    device, service=Services.UDP, address="255.255.0.255"
-                )
+                discoverable_event = Events.DISCOVERABLE(device, service=Services.UDP, address="255.255.0.255")
                 assert record == [
                     ("execute_event", discoverable_event, None),
                     ("viewer", discoverable_event),

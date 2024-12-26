@@ -22,7 +22,6 @@ class TestTarget:
 
 
 class TestTargetRegister:
-
     @pytest.fixture()
     def reg(self):
         return TargetRegister()
@@ -85,9 +84,7 @@ class TestTargetRegister:
             assert sb.NotSpecified not in reg
 
         def test_it_says_no_if_the_name_or_target_doesnt_exist(self, reg):
-            road = mock.Mock(
-                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-            )
+            road = mock.Mock(name="resolvedroad", instantiated_name="road", spec=["instantiated_name"])
             assert road not in reg
             assert "road" not in reg
 
@@ -95,9 +92,7 @@ class TestTargetRegister:
             infratarget = Target.FieldSpec().empty_normalise(type="infrastructure")
 
             reg.register_type("infrastructure", InfraTarget)
-            road = mock.Mock(
-                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-            )
+            road = mock.Mock(name="resolvedroad", instantiated_name="road", spec=["instantiated_name"])
 
             roadcreator = mock.Mock(name="roadcreator", return_value=road)
             reg.add_target("road", infratarget, roadcreator)
@@ -148,18 +143,14 @@ class TestTargetRegister:
     class TestTypeFor:
         def test_it_returns_the_type_of_the_target(self, reg):
             reg.register_type("o", mock.Mock(name="oTarget"))
-            reg.add_target(
-                "one", Target.FieldSpec().empty_normalise(type="o"), mock.Mock(name="creator")
-            )
+            reg.add_target("one", Target.FieldSpec().empty_normalise(type="o"), mock.Mock(name="creator"))
             assert reg.type_for("one") == "o"
 
             with assertRaises(TargetNotFound):
                 reg.type_for("two")
 
             reg.register_type("s", mock.Mock(name="sTarget"))
-            reg.add_target(
-                "two", Target.FieldSpec().empty_normalise(type="s"), mock.Mock(name="creator")
-            )
+            reg.add_target("two", Target.FieldSpec().empty_normalise(type="s"), mock.Mock(name="creator"))
             assert reg.type_for("one") == "o"
             assert reg.type_for("two") == "s"
 
@@ -350,15 +341,11 @@ class TestTargetRegister:
             with assertRaises(KeyError, "This dictionary is read only"):
                 reg.registered.update({"one": 1})
 
-            assert reg.restricted(target_names=["batman"]).registered == {
-                "batman": ("hero", target2, creator2)
-            }
+            assert reg.restricted(target_names=["batman"]).registered == {"batman": ("hero", target2, creator2)}
             assert reg.restricted(target_names=["batman", "licorice"]).registered == {
                 "licorice": ("villian", target3, creator3),
                 "batman": ("hero", target2, creator2),
             }
-            assert reg.restricted(
-                target_names=["batman", "licorice"], target_types=["villian"]
-            ).registered == {
+            assert reg.restricted(target_names=["batman", "licorice"], target_types=["villian"]).registered == {
                 "licorice": ("villian", target3, creator3),
             }

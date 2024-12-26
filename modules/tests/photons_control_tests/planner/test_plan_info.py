@@ -7,7 +7,6 @@ from photons_messages import DeviceMessages
 
 
 class TestPlanInfo:
-
     @pytest.fixture()
     def V(self):
         class V:

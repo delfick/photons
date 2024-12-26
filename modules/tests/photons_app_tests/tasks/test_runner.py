@@ -85,7 +85,6 @@ class TestRunner:
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
     def test_it_cleans_up_after_we_finish_task_if_its_cancelled_outside(self, collector):
-
         called = []
 
         class T(Task):
@@ -127,10 +126,7 @@ class TestRunner:
 
         assert called == [1, 2, 3, 4, "c1a", "c1b", "c2a", "c2b"]
 
-    def test_it_exceptions_stop_the_task_holder_unless_ApplicationStopped_for_a_graceful_task(
-        self, collector
-    ):
-
+    def test_it_exceptions_stop_the_task_holder_unless_ApplicationStopped_for_a_graceful_task(self, collector):
         called = []
 
         class TaskHolder:
@@ -168,9 +164,7 @@ class TestRunner:
                     raise exc
 
             async def post(s, exc_info, name, **kwargs):
-                called.append(
-                    ("graceful post", name, getattr(exc_info[0], "__name__", exc_info[0]))
-                )
+                called.append(("graceful post", name, getattr(exc_info[0], "__name__", exc_info[0])))
 
         for t in (T, G):
             with assertRaises(ApplicationCancelled):

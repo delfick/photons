@@ -18,7 +18,6 @@ from photons_transport.transports.udp import UDP
 
 
 class TestNetworkSession:
-
     @pytest.fixture()
     def V(self):
         class V:
@@ -40,9 +39,7 @@ class TestNetworkSession:
                 transport_target.gaps = s.gaps
                 transport_target.final_future = s.final_future
                 transport_target.default_broadcast = s.default_broadcast
-                transport_target.discovery_options = (
-                    NoDiscoveryOptions.FieldSpec().empty_normalise()
-                )
+                transport_target.discovery_options = NoDiscoveryOptions.FieldSpec().empty_normalise()
                 return transport_target
 
             @hp.memoized_property
@@ -51,9 +48,7 @@ class TestNetworkSession:
 
             @hp.memoized_property
             def gaps(s):
-                return Gaps(
-                    gap_between_ack_and_res=0.2, gap_between_results=0.35, timeouts=[(1, 1)]
-                )
+                return Gaps(gap_between_ack_and_res=0.2, gap_between_results=0.35, timeouts=[(1, 1)])
 
         return V()
 
@@ -120,9 +115,7 @@ class TestNetworkSession:
             msg = "Unable to determine what service to send packet to"
             kwargs = {"protocol": 9001, "pkt_type": 89}
             with assertRaises(NoDesiredService, msg, **kwargs):
-                with mock.patch.object(
-                    V.session, "determine_needed_transport", determine_needed_transport
-                ):
+                with mock.patch.object(V.session, "determine_needed_transport", determine_needed_transport):
                     await V.session.choose_transport(packet, services)
 
             determine_needed_transport.assert_awaited_once_with(packet, services)
@@ -137,9 +130,7 @@ class TestNetworkSession:
             packet = mock.NonCallableMock(name="packet", spec=[])
             services = {Services.UDP: udpservice}
 
-            with mock.patch.object(
-                V.session, "determine_needed_transport", determine_needed_transport
-            ):
+            with mock.patch.object(V.session, "determine_needed_transport", determine_needed_transport):
                 assert await V.session.choose_transport(packet, services) is udpservice
 
                 msg = "Don't have a desired service"
@@ -149,7 +140,6 @@ class TestNetworkSession:
                     await V.session.choose_transport(packet, services)
 
     class TestPrivateDoSearch:
-
         @pytest.fixture()
         def mocks(self, V):
             @contextmanager
@@ -160,9 +150,7 @@ class TestNetworkSession:
                     yield 7, 3
                     yield 4, 4
 
-                _search_retry_iterator = pytest.helpers.MagicAsyncMock(
-                    name="_search_retry_iterator", side_effect=iterator
-                )
+                _search_retry_iterator = pytest.helpers.MagicAsyncMock(name="_search_retry_iterator", side_effect=iterator)
 
                 script = mock.Mock(name="script", spec=["run"])
                 script.run = pytest.helpers.MagicAsyncMock(name="run", side_effect=run)
@@ -177,51 +165,38 @@ class TestNetworkSession:
             return mocks
 
         async def test_it_can_use_hard_coded_discovery(self, V):
-            V.transport_target.discovery_options = (
-                NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
-                    hardcoded_discovery={
-                        "d073d5000001": "192.168.0.1",
-                        "d073d5000002": "192.168.0.2",
-                    }
-                )
+            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(
+                hardcoded_discovery={
+                    "d073d5000001": "192.168.0.1",
+                    "d073d5000002": "192.168.0.2",
+                }
             )
 
             assert V.session.found == Found()
             fn = await V.session._do_search(None, 20)
 
-            assert sorted(fn) == sorted(
-                [binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")]
-            )
+            assert sorted(fn) == sorted([binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")])
 
             assert V.session.found.serials == ["d073d5000001", "d073d5000002"]
             assert V.session.found["d073d5000001"] == {
-                Services.UDP: await V.session.make_transport(
-                    "d073d5000001", Services.UDP, {"host": "192.168.0.1", "port": 56700}
-                )
+                Services.UDP: await V.session.make_transport("d073d5000001", Services.UDP, {"host": "192.168.0.1", "port": 56700})
             }
             assert V.session.found["d073d5000002"] == {
-                Services.UDP: await V.session.make_transport(
-                    "d073d5000002", Services.UDP, {"host": "192.168.0.2", "port": 56700}
-                )
+                Services.UDP: await V.session.make_transport("d073d5000002", Services.UDP, {"host": "192.168.0.2", "port": 56700})
             }
 
             assert len(V.transport_target.script.mock_calls) == 0
 
         async def test_it_finds(self, V, mocks):
-
             async def run(*args, **kwargs):
-                s1 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=56, target="d073d5000001"
-                )
+                s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                 s1.Information.update(
                     remote_addr=("192.168.0.3", 56700),
                     sender_message=DiscoveryMessages.GetService(),
                 )
                 yield s1
 
-                s3 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=58, target="d073d5000002"
-                )
+                s3 = DiscoveryMessages.StateService(service=Services.UDP, port=58, target="d073d5000002")
                 s3.Information.update(
                     remote_addr=("192.168.0.4", 56700),
                     sender_message=DiscoveryMessages.GetService(),
@@ -254,37 +229,26 @@ class TestNetworkSession:
                 )
             )
 
-            assert sorted(fn) == sorted(
-                [binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")]
-            )
+            assert sorted(fn) == sorted([binascii.unhexlify(s) for s in ("d073d5000001", "d073d5000002")])
 
             assert V.session.found.serials == ["d073d5000001", "d073d5000002"]
             assert V.session.found["d073d5000001"] == {
-                Services.UDP: await V.session.make_transport(
-                    "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
-                )
+                Services.UDP: await V.session.make_transport("d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56})
             }
             assert V.session.found["d073d5000002"] == {
-                Services.UDP: await V.session.make_transport(
-                    "d073d5000002", Services.UDP, {"host": "192.168.0.4", "port": 58}
-                )
+                Services.UDP: await V.session.make_transport("d073d5000002", Services.UDP, {"host": "192.168.0.4", "port": 58})
             }
 
         async def test_it_can_filter_serials(self, V, mocks):
-
             async def run(*args, **kwargs):
-                s1 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=56, target="d073d5000001"
-                )
+                s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                 s1.Information.update(
                     remote_addr=("192.168.0.3", 56700),
                     sender_message=DiscoveryMessages.GetService(),
                 )
                 yield s1
 
-                s3 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=58, target="d073d5000002"
-                )
+                s3 = DiscoveryMessages.StateService(service=Services.UDP, port=58, target="d073d5000002")
                 s3.Information.update(
                     remote_addr=("192.168.0.4", 56700),
                     sender_message=DiscoveryMessages.GetService(),
@@ -292,9 +256,7 @@ class TestNetworkSession:
                 yield s3
 
             assert V.session.found == Found()
-            V.transport_target.discovery_options = (
-                NoEnvDiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5000001"])
-            )
+            V.transport_target.discovery_options = NoEnvDiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5000001"])
 
             a = mock.Mock(name="a")
             with mocks(20, run) as script:
@@ -324,19 +286,12 @@ class TestNetworkSession:
 
             assert V.session.found.serials == ["d073d5000001"]
             assert V.session.found["d073d5000001"] == {
-                Services.UDP: await V.session.make_transport(
-                    "d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56}
-                )
+                Services.UDP: await V.session.make_transport("d073d5000001", Services.UDP, {"host": "192.168.0.3", "port": 56})
             }
 
-        async def test_it_stops_after_first_search_if_serials_is_None_and_we_found_serials(
-            self, V, mocks
-        ):
-
+        async def test_it_stops_after_first_search_if_serials_is_None_and_we_found_serials(self, V, mocks):
             async def run(*args, **kwargs):
-                s1 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=56, target="d073d5000001"
-                )
+                s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                 s1.Information.update(
                     remote_addr=("192.168.0.3", 56700),
                     sender_message=DiscoveryMessages.GetService(),
@@ -368,9 +323,7 @@ class TestNetworkSession:
                 if len(called) != 3:
                     return
 
-                s1 = DiscoveryMessages.StateService(
-                    service=Services.UDP, port=56, target="d073d5000001"
-                )
+                s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                 s1.Information.update(
                     remote_addr=("192.168.0.3", 56700),
                     sender_message=DiscoveryMessages.GetService(),
@@ -417,18 +370,14 @@ class TestNetworkSession:
             assert fn == [binascii.unhexlify("d073d5000001")]
             assert V.session.found.serials == ["d073d5000001"]
 
-        async def test_it_keeps_trying_till_we_have_all_serials_if_serials_is_not_None(
-            self, V, mocks
-        ):
+        async def test_it_keeps_trying_till_we_have_all_serials_if_serials_is_not_None(self, V, mocks):
             called = []
 
             async def run(*args, **kwargs):
                 called.append("run")
 
                 if len(called) > 0:
-                    s1 = DiscoveryMessages.StateService(
-                        service=Services.UDP, port=56, target="d073d5000001"
-                    )
+                    s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                     s1.Information.update(
                         remote_addr=("192.168.0.3", 56700),
                         sender_message=DiscoveryMessages.GetService(),
@@ -436,9 +385,7 @@ class TestNetworkSession:
                     yield s1
 
                 if len(called) > 1:
-                    s2 = DiscoveryMessages.StateService(
-                        service=Services.UDP, port=58, target="d073d5000002"
-                    )
+                    s2 = DiscoveryMessages.StateService(service=Services.UDP, port=58, target="d073d5000002")
                     s2.Information.update(
                         remote_addr=("192.168.0.4", 56700),
                         sender_message=DiscoveryMessages.GetService(),
@@ -446,9 +393,7 @@ class TestNetworkSession:
                     yield s2
 
                 if len(called) > 2:
-                    s3 = DiscoveryMessages.StateService(
-                        service=Services.UDP, port=59, target="d073d5000003"
-                    )
+                    s3 = DiscoveryMessages.StateService(service=Services.UDP, port=59, target="d073d5000003")
                     s3.Information.update(
                         remote_addr=("192.168.0.5", 56700),
                         sender_message=DiscoveryMessages.GetService(),
@@ -505,9 +450,7 @@ class TestNetworkSession:
                 called.append("run")
 
                 if len(called) > 0:
-                    s1 = DiscoveryMessages.StateService(
-                        service=Services.UDP, port=56, target="d073d5000001"
-                    )
+                    s1 = DiscoveryMessages.StateService(service=Services.UDP, port=56, target="d073d5000001")
                     s1.Information.update(
                         remote_addr=("192.168.0.3", 56700),
                         sender_message=DiscoveryMessages.GetService(),

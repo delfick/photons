@@ -10,12 +10,13 @@ from delfick_project.addons import Addon, AddonGetter, Register, Result
 from delfick_project.errors import DelfickError
 from delfick_project.norms import Meta, dictobj, sb
 from delfick_project.option_merge import Collector, MergedOptions
+from photons_messages import protocol_register
+
 from photons_app import helpers as hp
 from photons_app.errors import BadConfiguration, BadYaml, UserQuit
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.photons_app import PhotonsAppSpec
 from photons_app.tasks.runner import Runner
-from photons_messages import protocol_register
 
 log = logging.getLogger("photons_app.collector")
 
@@ -73,9 +74,7 @@ class extra_files_spec(sb.Spec):
         self.extras_spec = Extras.FieldSpec()
 
     def normalise_filled(self, meta, val):
-        options_spec = sb.set_options(
-            filename=sb.required(sb.string_spec()), optional=sb.defaulted(sb.boolean(), False)
-        )
+        options_spec = sb.set_options(filename=sb.required(sb.string_spec()), optional=sb.defaulted(sb.boolean(), False))
         lst_spec = sb.listof(sb.or_spec(sb.string_spec(), options_spec))
 
         if isinstance(val, list):
@@ -156,8 +155,8 @@ class Collector(Collector):
 
             print("")
             print("!" * 80)
-            print("Something went wrong! -- {0}".format(error.__class__.__name__))
-            print("\t{0}".format(error))
+            print(f"Something went wrong! -- {error.__class__.__name__}")
+            print(f"\t{error}")
             if conf["photons_app"].debug:
                 raise
             sys.exit(1)
@@ -210,7 +209,10 @@ class Collector(Collector):
 
     def find_photons_app_options(self, configuration, args_dict):
         """Return us all the photons_app options"""
-        d = lambda r: {} if r in (None, "", sb.NotSpecified) else r
+
+        def d(r):
+            return {} if r in (None, "", sb.NotSpecified) else r
+
         return MergedOptions.using(
             dict(d(configuration.get("photons_app")).items()),
             dict(d(args_dict.get("photons_app")).items()),
@@ -225,13 +227,8 @@ class Collector(Collector):
         except ImportError:
             pass
         else:
-            if any(
-                hasattr(getattr(__main__, attr, None), "_delfick_project_addon_entry")
-                for attr in dir(__main__)
-            ):
-                sys.meta_path = [
-                    thing for thing in sys.meta_path if not isinstance(thing, MainFinder)
-                ]
+            if any(hasattr(getattr(__main__, attr, None), "_delfick_project_addon_entry") for attr in dir(__main__)):
+                sys.meta_path = [thing for thing in sys.meta_path if not isinstance(thing, MainFinder)]
                 sys.meta_path.append(MainFinder(__main__))
             else:
                 __main__ = None
@@ -276,9 +273,7 @@ class Collector(Collector):
         This will determine the target and artifact for you given the
         configuration in the collector.
         """
-        configuration.update(
-            {"final_future": configuration["photons_app"].final_future}, source="<photons_app>"
-        )
+        configuration.update({"final_future": configuration["photons_app"].final_future}, source="<photons_app>")
 
         # Post register our addons
         extra_args = {"lifx.photons": {}}
@@ -314,7 +309,7 @@ class Collector(Collector):
                     "Failed to read yaml",
                     location=location,
                     error_type=error.__class__.__name__,
-                    error="{0}{1}".format(error.problem, error.problem_mark),
+                    error=f"{error.problem}{error.problem_mark}",
                 )
 
     def add_configuration(self, configuration, collect_another_source, done, result, src):
@@ -329,9 +324,7 @@ class Collector(Collector):
         if "config_root" in configuration:
             # if we already have a config root then we only keep new config root if it's not the home location
             # i.e. if it is the home configuration, we don't delete the new config_root
-            if configuration["config_root"] != os.path.dirname(
-                self.home_dir_configuration_location()
-            ):
+            if configuration["config_root"] != os.path.dirname(self.home_dir_configuration_location()):
                 if "config_root" in result:
                     del result["config_root"]
 

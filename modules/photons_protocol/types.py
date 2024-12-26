@@ -11,6 +11,7 @@ import re
 from bitarray import bitarray
 from delfick_project.norms import sb
 from photons_app.errors import ProgrammerError
+
 from photons_protocol.errors import BadConversion, BadSpecValue
 
 log = logging.getLogger("photons_protocol.packets.builder")
@@ -220,9 +221,7 @@ class Type:
         * ``(list, str, ",")``
         * json
         """
-        spec = self._maybe_transform_spec(
-            pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform
-        )
+        spec = self._maybe_transform_spec(pkt, self._spec(pkt, unpacking=unpacking), unpacking, transform=transform)
 
         if self._allow_callable:
             spec = callable_spec(spec)
@@ -446,9 +445,7 @@ class multiple_spec(sb.Spec):
 
     def unpack_list(self, meta, val, kls, number):
         if len(val) > number:
-            raise BadSpecValue(
-                "Expected correct number of items", meta=meta, got=len(val), want=number
-            )
+            raise BadSpecValue("Expected correct number of items", meta=meta, got=len(val), want=number)
 
         kls = self.kls
         if kls and not isinstance(kls, type):
@@ -472,7 +469,7 @@ class multiple_spec(sb.Spec):
 
         if isinstance(val, kls):
             return val
-        elif val is sb.NotSpecified or isinstance(val, (bytes, bitarray)):
+        elif val is sb.NotSpecified or isinstance(val, bytes | bitarray):
             if val is sb.NotSpecified:
                 val = b""
             return kls.create(self.spec.normalise(meta, val))
@@ -506,9 +503,7 @@ class multiple_spec(sb.Spec):
 
         number = self.number
         if len(val) > number:
-            raise BadSpecValue(
-                "Expected correct number of items", meta=meta, got=len(val), want=number
-            )
+            raise BadSpecValue("Expected correct number of items", meta=meta, got=len(val), want=number)
 
         kls = self.kls
         if kls and not isinstance(kls, type):
@@ -565,17 +560,13 @@ class expand_spec(sb.Spec):
             elif val is sb.NotSpecified:
                 return self.kls.create()
             else:
-                raise BadSpecValue(
-                    "Expected to unpack bytes", found=val, transforming_into=self.kls
-                )
+                raise BadSpecValue("Expected to unpack bytes", found=val, transforming_into=self.kls)
         else:
             if type(val) not in (bytes, bitarray):
                 try:
                     fields = sb.dictionary_spec().normalise(meta, val)
                 except BadSpecValue as error:
-                    raise BadSpecValue(
-                        "Sorry, dynamic fields only supports a dictionary of values", error=error
-                    )
+                    raise BadSpecValue("Sorry, dynamic fields only supports a dictionary of values", error=error)
                 else:
                     val = self.kls.create(fields).pack()
 
@@ -625,9 +616,7 @@ class version_number_spec(sb.Spec):
             val = sb.string_spec().normalise(meta, val)
             m = regexes["version_number"].match(val)
             if not m:
-                raise BadSpecValue(
-                    r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta
-                )
+                raise BadSpecValue(r"Expected version string to match (\d+.\d+)", wanted=val, meta=meta)
 
             groups = m.groupdict()
             major = int(groups["major"])
@@ -642,9 +631,7 @@ class integer_spec(sb.Spec):
     Take into account whether we have ``enum`` or ``bitmask`` and ``allow_float``
     """
 
-    def setup(
-        self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False
-    ):
+    def setup(self, pkt, enum, bitmask, unpacking=False, allow_float=False, unknown_enum_values=False):
         self.pkt = pkt
         self.enum = enum
         self.bitmask = bitmask
@@ -676,9 +663,7 @@ class integer_spec(sb.Spec):
             kwargs = dict(unpacking=self.unpacking, allow_unknown=self.unknown_enum_values)
             return enum_spec(self.pkt, self.enum, **kwargs).normalise(meta, val)
         else:
-            return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(
-                meta, val
-            )
+            return bitmask_spec(self.pkt, self.bitmask, unpacking=self.unpacking).normalise(meta, val)
 
 
 class bitmask_spec(sb.Spec):
@@ -748,17 +733,13 @@ class bitmask_spec(sb.Spec):
 
         try:
             if not issubclass(bitmask, enum.Enum):
-                raise ProgrammerError("Bitmask is not an enum! got {0}".format(repr(bitmask)))
+                raise ProgrammerError(f"Bitmask is not an enum! got {repr(bitmask)}")
         except TypeError:
-            raise ProgrammerError("Bitmask is not an enum! got {0}".format(repr(bitmask)))
+            raise ProgrammerError(f"Bitmask is not an enum! got {repr(bitmask)}")
 
         for name, member in bitmask.__members__.items():
             if member.value == 0:
-                raise ProgrammerError(
-                    "A bitmask with a zero value item makes no sense: {0} in {1}".format(
-                        name, repr(bitmask)
-                    )
-                )
+                raise ProgrammerError(f"A bitmask with a zero value item makes no sense: {name} in {repr(bitmask)}")
 
         return bitmask
 
@@ -790,9 +771,7 @@ class bitmask_spec(sb.Spec):
                             break
 
                     if not found:
-                        raise BadConversion(
-                            "Can't convert value into value from mask", val=v, wanted=bitmask
-                        )
+                        raise BadConversion("Can't convert value into value from mask", val=v, wanted=bitmask)
 
         return set(result)
 
@@ -859,9 +838,7 @@ class enum_spec(sb.Spec):
         if isinstance(val, em):
             return val
         elif isinstance(val, enum.Enum):
-            raise BadConversion(
-                "Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta
-            )
+            raise BadConversion("Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta)
 
         available = []
         for name, member in em.__members__.items():
@@ -907,13 +884,9 @@ class enum_spec(sb.Spec):
                     return int(m["value"])
 
         if isinstance(val, enum.Enum):
-            raise BadConversion(
-                "Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta
-            )
+            raise BadConversion("Can't convert value of wrong Enum", val=val, wanted=em, got=type(val), meta=meta)
         else:
-            raise BadConversion(
-                "Value wasn't a valid enum value", val=val, available=available, meta=meta
-            )
+            raise BadConversion("Value wasn't a valid enum value", val=val, available=available, meta=meta)
 
     def determine_enum(self):
         """
@@ -929,9 +902,9 @@ class enum_spec(sb.Spec):
 
         try:
             if not issubclass(em, enum.Enum):
-                raise ProgrammerError("Enum is not an enum! got {0}".format(repr(em)))
+                raise ProgrammerError(f"Enum is not an enum! got {repr(em)}")
         except TypeError:
-            raise ProgrammerError("Enum is not an enum! got {0}".format(repr(em)))
+            raise ProgrammerError(f"Enum is not an enum! got {repr(em)}")
 
         return em
 
@@ -1032,17 +1005,13 @@ class csv_spec(sb.Spec):
             if type(val) is bitarray:
                 val = val.tobytes()
             if type(val) is bytes:
-                val = bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
-                    meta, val
-                )
+                val = bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(meta, val)
             if type(val) is str:
                 return val.split(",")
         else:
             if type(val) is list:
                 val = ",".join(val)
-            return bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(
-                meta, val
-            )
+            return bytes_as_string_spec(self.pkt, self.size_bits, self.unpacking).normalise(meta, val)
 
 
 class bytes_spec(sb.Spec):
@@ -1104,9 +1073,7 @@ class bytes_spec(sb.Spec):
             try:
                 b.frombytes(binascii.unhexlify(val))
             except binascii.Error as error:
-                raise BadConversion(
-                    "Failed to turn str into bytes", meta=meta, val=val, error=error
-                )
+                raise BadConversion("Failed to turn str into bytes", meta=meta, val=val, error=error)
         else:
             try:
                 b.frombytes(val)
@@ -1148,16 +1115,10 @@ class bytes_as_string_spec(sb.Spec):
             try:
                 return val.decode()
             except UnicodeDecodeError as error:
-                log.warning(
-                    __import__("photons_app").helpers.lc(
-                        "Can't turn bytes into string, so just returning bytes", error=error
-                    )
-                )
+                log.warning(__import__("photons_app").helpers.lc("Can't turn bytes into string, so just returning bytes", error=error))
                 return val
             except Exception as error:
-                raise BadSpecValue(
-                    "String before the null byte could not be decoded", val=val, erorr=error
-                )
+                raise BadSpecValue("String before the null byte could not be decoded", val=val, erorr=error)
         else:
             if type(val) is str:
                 val = val.encode()
@@ -1171,16 +1132,12 @@ class float_spec(sb.Spec):
 
     def normalise_filled(self, meta, val):
         if type(val) is bool:
-            raise BadSpecValue(
-                "Converting a boolean into a float makes no sense", got=val, meta=meta
-            )
+            raise BadSpecValue("Converting a boolean into a float makes no sense", got=val, meta=meta)
 
         try:
             return float(val)
         except (TypeError, ValueError) as error:
-            raise BadSpecValue(
-                "Failed to convert value into a float", got=val, error=error, meta=meta
-            )
+            raise BadSpecValue("Failed to convert value into a float", got=val, error=error, meta=meta)
 
 
 class MultiOptions:

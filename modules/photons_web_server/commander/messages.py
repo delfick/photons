@@ -16,16 +16,11 @@ from sanic.response import BaseHTTPResponse as Response
 
 log = logging.getLogger("photons_web_server.commander.messages")
 
-ExcInfo: tp.TypeAlias = tp.Union[
-    None,
-    bool,
-    tp.Tuple[None, None, None],
-    tp.Tuple[tp.Type[BaseException], BaseException, types.TracebackType | None],
-]
+type ExcInfo = None | bool | tuple[None, None, None] | tuple[type[BaseException], BaseException, types.TracebackType | None]
 
-ExcTypO: tp.TypeAlias = tp.Union[tp.Type[BaseException], None]
-ExcO: tp.TypeAlias = BaseException | None
-TBO: tp.TypeAlias = types.TracebackType | None
+type ExcTypO = type[BaseException] | None
+type ExcO = BaseException | None
+type TBO = types.TracebackType | None
 
 
 class WithAsDict(tp.Protocol):
@@ -113,23 +108,15 @@ class MessageFromExc:
             )
 
         elif exc_type is asyncio.CancelledError:
-            return ErrorMessage(
-                status=500, error="Request was cancelled", error_code="RequestCancelled"
-            )
+            return ErrorMessage(status=500, error="Request was cancelled", error_code="RequestCancelled")
 
         elif exc and exc_type:
             if self.see_exception is None and self.log_exceptions:
-                self.log.error(
-                    self.lc(f"{type(exc).__name__}: {str(exc)}"), exc_info=(exc_type, exc, tb)
-                )
+                self.log.error(self.lc(f"{type(exc).__name__}: {str(exc)}"), exc_info=(exc_type, exc, tb))
 
-        return ErrorMessage(
-            status=500, error="Internal Server Error", error_code="InternalServerError"
-        )
+        return ErrorMessage(status=500, error="Internal Server Error", error_code="InternalServerError")
 
-    def modify_error_dict(
-        self, exc_type: ExcTypO, exc: ExcO, tb: TBO, dct: dict[str, object]
-    ) -> dict[str, object]:
+    def modify_error_dict(self, exc_type: ExcTypO, exc: ExcO, tb: TBO, dct: dict[str, object]) -> dict[str, object]:
         return dct
 
     __call__ = process

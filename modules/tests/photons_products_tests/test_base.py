@@ -68,24 +68,19 @@ class TestCapability:
 
 class TestProduct:
     def test_it_complains_about_not_having_a_cap(self):
-        with assertRaises(
-            IncompleteProduct, "Product doesn't have a capability specified", name="P"
-        ):
+        with assertRaises(IncompleteProduct, "Product doesn't have a capability specified", name="P"):
 
             class P(base.Product):
                 pass
 
     def test_it_complains_about_attributes_not_implemented(self):
-        with assertRaises(
-            IncompleteProduct, "Attribute wasn't overridden", attr="family", name="P"
-        ):
+        with assertRaises(IncompleteProduct, "Attribute wasn't overridden", attr="family", name="P"):
 
             class P(base.Product):
                 class cap(base.Capability):
                     pass
 
     def test_it_sets_the_cap_as_an_instance_of_the_cap_class(self):
-
         class P(base.Product):
             pid = 1
             family = Family.LCM1
@@ -99,7 +94,6 @@ class TestProduct:
         assert P.cap.product == P
 
     def test_it_does_not_set_a_default_for_friendly(self):
-
         msg = "Attribute wasn't overridden"
         with assertRaises(IncompleteProduct, msg, attr="friendly"):
 
@@ -112,7 +106,6 @@ class TestProduct:
                     pass
 
     def test_it_has_company(self):
-
         class CUBE(base.Product):
             pid = 1
             family = Family.LCM3
@@ -125,7 +118,6 @@ class TestProduct:
         assert CUBE.company == "LIFX"
 
     def test_it_is_equal_if_pid_and_vendor_match(self):
-
         class capability(base.Capability):
             pass
 
@@ -169,7 +161,6 @@ class TestProduct:
         assert P3 == (1, 2)
 
     def test_it_can_be_used_as_a_key_in_a_dictionary(self):
-
         class P1(base.Product):
             pid = 29
             family = Family.LCM1
@@ -185,7 +176,6 @@ class TestProduct:
         assert d[(VendorRegistry.LIFX, 29)] == "thing"
 
     def test_it_has_a_repr(self):
-
         class capability(base.Capability):
             pass
 
@@ -215,7 +205,6 @@ class TestProduct:
         assert repr(LCM2_MONITOR_STAND) == "<Product 5(UNKNOWN):29(LCM2_MONITOR_STAND)>"
 
     def test_it_has_an_as_dict(self):
-
         class LCM2_MONITOR_STAND(base.Product):
             pid = 29
             family = Family.LCM2
@@ -240,7 +229,6 @@ class TestProduct:
 
 class TestMakeUnknownProduct:
     def test_it_works(self):
-
         class cap(base.Capability):
             has_lattice = True
 
@@ -254,7 +242,6 @@ class TestMakeUnknownProduct:
 
 
 class TestProductsHolder:
-
     @pytest.fixture()
     def default_capability_kls(self):
         class capability(base.Capability):
@@ -292,9 +279,7 @@ class TestProductsHolder:
     def holder(self, ProductRegistry, default_capability_kls):
         return base.ProductsHolder(ProductRegistry, default_capability_kls)
 
-    def test_it_holds_onto_the_products_and_creates_by_pair(
-        self, ProductRegistry, holder, default_capability_kls
-    ):
+    def test_it_holds_onto_the_products_and_creates_by_pair(self, ProductRegistry, holder, default_capability_kls):
         assert holder.products is ProductRegistry
         assert holder.default_capability_kls is default_capability_kls
         assert holder.by_pair == {
@@ -304,9 +289,7 @@ class TestProductsHolder:
         }
 
     def test_it_can_yield_product_names(self, holder, ProductRegistry):
-        assert sorted(holder.names) == sorted(
-            ["LCM1_BOUNCY_BALL", "LCM2_DESK", "LCM2_MONITOR_STAND"]
-        )
+        assert sorted(holder.names) == sorted(["LCM1_BOUNCY_BALL", "LCM2_DESK", "LCM2_MONITOR_STAND"])
 
     def test_it_can_access_products_by_name(self, holder, ProductRegistry):
         assert holder.LCM1_BOUNCY_BALL is ProductRegistry.LCM1_BOUNCY_BALL

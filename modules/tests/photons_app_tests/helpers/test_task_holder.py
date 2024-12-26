@@ -51,9 +51,7 @@ class TestTaskHolder:
 
         assert called == [0.05, 0.01]
 
-    async def test_it_can_wait_for_more_tasks_if_they_are_added_when_the_manager_has_left(
-        self, final_future
-    ):
+    async def test_it_can_wait_for_more_tasks_if_they_are_added_when_the_manager_has_left(self, final_future):
         called = []
 
         async def wait(ts, amount):
@@ -231,9 +229,7 @@ class TestTaskHolder:
             await asyncio.sleep(0)
             assert called == ["ONE", "TWO", "CANC_ONE", "FIN_ONE", "DONE_TWO", "FIN_TWO"]
 
-    async def test_it_doesnt_lose_tasks_from_race_condition(
-        self, FakeTime, MockedCallLater, final_future
-    ):
+    async def test_it_doesnt_lose_tasks_from_race_condition(self, FakeTime, MockedCallLater, final_future):
         with FakeTime() as t:
             async with MockedCallLater(t):
                 called = []

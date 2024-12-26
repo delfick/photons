@@ -51,7 +51,7 @@ class Runner:
                 override = self.got_keyboard_interrupt(error)
             except asyncio.CancelledError as error:
                 override = self.got_cancelled(error)
-            except:
+            except Exception:
                 override = sys.exc_info()[1]
 
             log.debug("CLEANING UP")
@@ -72,9 +72,7 @@ class Runner:
 
                 def stop_final_fut():
                     if not final_future.done():
-                        hp.get_event_loop().call_soon_threadsafe(
-                            final_future.set_exception, ApplicationStopped()
-                        )
+                        hp.get_event_loop().call_soon_threadsafe(final_future.set_exception, ApplicationStopped())
 
                 self.loop.add_signal_handler(signal.SIGTERM, stop_final_fut)
 
@@ -166,7 +164,7 @@ class Runner:
                 self.loop.run_until_complete(asyncio.tasks.gather(task, return_exceptions=True))
             except KeyboardInterrupt:
                 pass
-            except:
+            except Exception:
                 pass
             finally:
                 task.cancel()
@@ -176,7 +174,7 @@ class Runner:
             waiter.cancel()
             try:
                 self.loop.run_until_complete(asyncio.tasks.gather(waiter, return_exceptions=True))
-            except:
+            except Exception:
                 pass
 
         def run_cleanup(self):
@@ -192,8 +190,7 @@ class Runner:
 
             if self.photons_app.graceful_final_future.setup:
                 if self.significant_future.cancelled() or isinstance(
-                    self.significant_future.exception(),
-                    (UserQuit, ApplicationStopped, ApplicationCancelled),
+                    self.significant_future.exception(), UserQuit | ApplicationStopped | ApplicationCancelled
                 ):
                     self.photons_app.final_future.cancel()
 
@@ -251,12 +248,10 @@ class Runner:
             # the asyncio loop to think it's shutdown, so I have to do them one at a time
             for ag in closing_agens:
                 try:
-                    await hp.stop_async_generator(
-                        ag, name="||shutdown_asyncgens[wait_for_closing_agens]"
-                    )
+                    await hp.stop_async_generator(ag, name="||shutdown_asyncgens[wait_for_closing_agens]")
                 except asyncio.CancelledError:
                     pass
-                except:
+                except Exception:
                     exc = sys.exc_info()[1]
                     self.loop.call_exception_handler(
                         {

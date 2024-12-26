@@ -72,9 +72,7 @@ class service_info_spec(sb.Spec):
                 options = {"host": options, "port": 56700}
             elif isinstance(options, list):
                 if len(options) not in (1, 2):
-                    raise BadSpecValue(
-                        "A list must be [host] or [host, port]", got=options, meta=meta.at(service)
-                    )
+                    raise BadSpecValue("A list must be [host] or [host, port]", got=options, meta=meta.at(service))
                 if len(options) == 1:
                     options = {"host": options[0], "port": 56700}
                 else:
@@ -91,9 +89,7 @@ class serial_spec(sb.Spec):
         if not val.startswith("d073d5"):
             raise BadSpecValue("serials must start with d073d5", got=val, meta=meta)
         if len(val) != 12:
-            raise BadSpecValue(
-                "serials must be 12 characters long, like d073d5001337", got=val, meta=meta
-            )
+            raise BadSpecValue("serials must be 12 characters long, like d073d5001337", got=val, meta=meta)
 
         try:
             binascii.unhexlify(val)

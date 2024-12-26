@@ -130,7 +130,7 @@ class color_range_spec(sb.Spec):
         return ManyColor([c for c in colors if c is not None])
 
     def interpret(self, meta, val):
-        if not isinstance(val, (tuple, list, str)):
+        if not isinstance(val, tuple | list | str):
             raise BadSpecValue("Each color specifier must be a list or string", got=val, meta=meta)
 
         if isinstance(val, str):
@@ -153,7 +153,7 @@ class color_range_spec(sb.Spec):
         for i, v in enumerate(val):
             m = meta.indexed_at(i)
 
-            if not isinstance(v, (tuple, list, str)):
+            if not isinstance(v, tuple | list | str):
                 raise BadSpecValue("Each color specifier must be a list or string", got=val, meta=m)
 
             if i != 0 and v == "rainbow":
@@ -166,7 +166,7 @@ class color_range_spec(sb.Spec):
             if isinstance(v, str):
                 v = v.split("-")
 
-            if isinstance(v, (int, float)):
+            if isinstance(v, int | float):
                 v = [v]
 
             if len(v) > 2:
@@ -260,10 +260,10 @@ class range_spec(sb.Spec):
             value = value.split("-")
             if len(value) == 1:
                 value *= 2
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, int | float):
             value = (value, value)
 
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, list | tuple):
             raise BadSpecValue("Speed option must be 'min-max' or [min, max]", got=value, meta=meta)
 
         kls = Rate if self.rate else Range

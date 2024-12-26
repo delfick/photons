@@ -266,16 +266,11 @@ def FromGeneratorPerSerial(inner_gen, **generator_kwargs):
     """
 
     async def gen(reference, sender, **kwargs):
-        serials, missing = await find_serials(
-            reference, sender, timeout=kwargs.get("find_timeout", 20)
-        )
+        serials, missing = await find_serials(reference, sender, timeout=kwargs.get("find_timeout", 20))
         for serial in missing:
             yield FailedToFindDevice(serial=serial)
 
-        yield [
-            FromGenerator(inner_gen, reference_override=serial, **generator_kwargs)
-            for serial in serials
-        ]
+        yield [FromGenerator(inner_gen, reference_override=serial, **generator_kwargs) for serial in serials]
 
     return FromGenerator(gen)
 
@@ -417,9 +412,7 @@ class FromGenerator:
             self.reference = reference
             self.sender = sender
 
-            self.stop_fut = hp.ChildOfFuture(
-                stop_fut, name="FromGenerator>Runner::__init__[stop_fut]"
-            )
+            self.stop_fut = hp.ChildOfFuture(stop_fut, name="FromGenerator>Runner::__init__[stop_fut]")
 
             self.streamer = hp.ResultStreamer(
                 self.stop_fut,
@@ -481,9 +474,7 @@ class FromGenerator:
                             break
 
                         complete = hp.create_future(name="FromGenerator>Runner::getter[complete]")
-                        await streamer.add_generator(
-                            self.retrieve_all(msg, complete), context=self.Value
-                        )
+                        await streamer.add_generator(self.retrieve_all(msg, complete), context=self.Value)
                     except StopAsyncIteration:
                         break
             finally:

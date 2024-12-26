@@ -18,9 +18,7 @@ class TestRearrange:
         colors1 = [(i, 1, 1, 3500) for i in range(16)]
         colors2 = [(i, 0, 0, 3500) for i in range(16)]
 
-        part1 = cont.Part(
-            0, 0, 4, 4, 1, Orientation.RightSideUp, device, real_part=rp1, original_colors=colors1
-        )
+        part1 = cont.Part(0, 0, 4, 4, 1, Orientation.RightSideUp, device, real_part=rp1, original_colors=colors1)
         part2 = cont.Part(
             1,
             0.25,
@@ -98,7 +96,6 @@ class TestRearrange:
 
 
 class TestRearrangers:
-
     @classmethod
     def make_parts(cls, *corner_and_sizes):
         device = cont.Device("d073d5001337", Products.LCM3_TILE.cap)
@@ -153,27 +150,15 @@ class TestRearrangers:
 
     class TestSeparateAlignment:
         def test_it_aligns_separate_user_x_and_leaves_y_alignment(self):
-            parts = list(
-                TestRearrangers.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8))
-            )
+            parts = list(TestRearrangers.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8)))
             TestRearrangers.assertParts(rea.Separate(), parts, (0, 1), (8, 2), (12, 7), (15, 4))
 
     class TestStraightAlignment:
         def test_it_makes_all_parts_line_up_on_the_same_y_axis(self):
-            parts = list(
-                TestRearrangers.make_parts(
-                    (0, 1, 7, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 20, 8)
-                )
-            )
-            TestRearrangers.assertParts(
-                rea.Straight(), parts, (0, 0, 1), (4, 0, 0), (11, 0, 3), (31, 0, 2)
-            )
+            parts = list(TestRearrangers.make_parts((0, 1, 7, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 20, 8)))
+            TestRearrangers.assertParts(rea.Straight(), parts, (0, 0, 1), (4, 0, 0), (11, 0, 3), (31, 0, 2))
 
     class TestVerticalAlignment:
         def test_it_puts_all_parts_at_the_same_y_level(self):
-            parts = list(
-                TestRearrangers.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8))
-            )
-            TestRearrangers.assertParts(
-                rea.VerticalAlignment(), parts, (0, 0), (-1, 0), (5, 0), (0, 0)
-            )
+            parts = list(TestRearrangers.make_parts((0, 1, 8, 8), (-1, 2, 4, 5), (5, 7, 3, 10), (0, 4, 8, 8)))
+            TestRearrangers.assertParts(rea.VerticalAlignment(), parts, (0, 0), (-1, 0), (5, 0), (0, 0))

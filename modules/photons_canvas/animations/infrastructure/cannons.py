@@ -49,11 +49,7 @@ class Sem:
         if not self.inflight_limit:
             return False
 
-        self.results[serial] = [
-            (t, r)
-            for t, r in self.results[serial]
-            if not r.done() and time.time() - t < self.wait_timeout
-        ]
+        self.results[serial] = [(t, r) for t, r in self.results[serial] if not r.done() and time.time() - t < self.wait_timeout]
 
         if len(self.results[serial]) >= self.inflight_limit:
             return True

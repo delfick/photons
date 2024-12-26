@@ -1,11 +1,12 @@
 import time
 
 from delfick_project.norms import dictobj, sb
+from photons_messages import DeviceMessages, LightLastHevCycleResult, LightMessages
+from photons_protocol.types import enum_spec
+
 from photons_app import helpers as hp
 from photons_app.mimic.event import Events
 from photons_app.mimic.operator import Operator, operator
-from photons_messages import DeviceMessages, LightLastHevCycleResult, LightMessages
-from photons_protocol.types import enum_spec
 
 # Ensure Device operator comes before this one
 __import__("photons_app.mimic.operators.device")
@@ -59,9 +60,7 @@ class CleanDetails(dictobj.Spec):
                 self.last_trigger = None
 
             self.triggered_at = time.time()
-            self.last_trigger = hp.get_event_loop().call_later(
-                duration, lambda: self.device.io["MEMORY"].ts.add(self.stop_cycle(event))
-            )
+            self.last_trigger = hp.get_event_loop().call_later(duration, lambda: self.device.io["MEMORY"].ts.add(self.stop_cycle(event)))
 
         await self.device.change(*changes, event=event)
 

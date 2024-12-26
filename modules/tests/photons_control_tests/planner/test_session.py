@@ -29,8 +29,8 @@ class TestSession:
         assert isinstance(d, dict)
 
         key2 = str(uuid.uuid4())
-        l = d[key2]
-        assert isinstance(l, list)
+        item = d[key2]
+        assert isinstance(item, list)
 
         key3 = str(uuid.uuid4())
         d = session.filled[key3]
@@ -203,7 +203,6 @@ class TestSession:
             assert ls == [pkt3, pkt5]
 
     class TestRefreshReceived:
-
         @pytest.fixture()
         def V(self, fake_time, session):
             class V:
@@ -213,15 +212,15 @@ class TestSession:
                 serial1 = "d073d5000001"
                 serial2 = "d073d5000002"
 
-                def add(s, n, l, *, t, k):
+                def add(s, n, item, *, t, k):
                     key = getattr(s, f"key{k}")
 
                     pkt = mock.Mock(
-                        name=f"pkt{n}{l}{k}",
+                        name=f"pkt{n}{item}{k}",
                         serial=getattr(s, f"serial{n}"),
                         Information=Information(key),
                     )
-                    setattr(s, f"pkt{n}{l}{k}", pkt)
+                    setattr(s, f"pkt{n}{item}{k}", pkt)
 
                     fake_time.set(t)
                     session.receive(pkt)
@@ -348,7 +347,6 @@ class TestSession:
             }
 
     class TestRefreshFilled:
-
         @pytest.fixture()
         def V(self, session, fake_time):
             class V:

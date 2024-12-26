@@ -26,7 +26,6 @@ async def sender(final_future):
 
 
 class TestSendingMessages:
-
     @pytest.fixture
     def V(self, sender):
         class V:
@@ -38,7 +37,6 @@ class TestSendingMessages:
         return V()
 
     class TestSendApi:
-
         async def test_it_works_with_the_sender_as_sender_api(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
@@ -84,10 +82,7 @@ class TestSendingMessages:
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
         class TestBreakingAStream:
-
-            async def test_it_is_possible_to_cleanly_stop_when_sending_just_a_packet(
-                self, V, sender
-            ):
+            async def test_it_is_possible_to_cleanly_stop_when_sending_just_a_packet(self, V, sender):
                 got = []
                 msg = DeviceMessages.SetPower(level=0)
                 async with sender(msg, [V.device.serial, V.device2.serial]) as pkts:
@@ -105,9 +100,7 @@ class TestSendingMessages:
                 assert devices.store(device) == [
                     Events.INCOMING(device, io, pkt=msg),
                     Events.ATTRIBUTE_CHANGE(device, [ChangeAttr.test("power", 0)], True),
-                    Events.OUTGOING(
-                        device, io, pkt=CoreMessages.Acknowledgement(), replying_to=msg
-                    ),
+                    Events.OUTGOING(device, io, pkt=CoreMessages.Acknowledgement(), replying_to=msg),
                     Events.OUTGOING(device, io, pkt=reply, replying_to=msg),
                 ]
 
@@ -116,15 +109,11 @@ class TestSendingMessages:
                 assert devices.store(device2) == [
                     Events.INCOMING(device2, io2, pkt=msg),
                     Events.ATTRIBUTE_CHANGE(device2, [ChangeAttr.test("power", 0)], True),
-                    Events.OUTGOING(
-                        device2, io2, pkt=CoreMessages.Acknowledgement(), replying_to=msg
-                    ),
+                    Events.OUTGOING(device2, io2, pkt=CoreMessages.Acknowledgement(), replying_to=msg),
                     Events.OUTGOING(device2, io2, pkt=reply, replying_to=msg),
                 ]
 
-            async def test_it_is_possible_to_cleanly_stop(
-                self, V, sender, FakeTime, MockedCallLater
-            ):
+            async def test_it_is_possible_to_cleanly_stop(self, V, sender, FakeTime, MockedCallLater):
                 original = DeviceMessages.EchoRequest(echoing=b"hi", ack_required=False)
 
                 async def gen(sd, reference, **kwargs):
@@ -222,9 +211,7 @@ class TestSendingMessages:
                     ("finally", 5),
                 ]
 
-            async def test_it_is_possible_to_perform_finally_blocks_in_deeper_layers(
-                self, V, sender
-            ):
+            async def test_it_is_possible_to_perform_finally_blocks_in_deeper_layers(self, V, sender):
                 original2 = DeviceMessages.EchoRequest(echoing=b"bye", ack_required=False)
                 called = []
 
@@ -272,9 +259,7 @@ class TestSendingMessages:
                 ]
                 reply1 = expected[0][0].create(**expected[0][1])
                 reply2 = expected[1][0].create(**expected[1][1])
-                pytest.helpers.assertSamePackets(
-                    got, *[expected[0], *[expected[1]] * 3] * 2, expected[0], expected[1]
-                )
+                pytest.helpers.assertSamePackets(got, *[expected[0], *[expected[1]] * 3] * 2, expected[0], expected[1])
 
                 assert len(got) == 10
                 device = V.device
@@ -350,24 +335,16 @@ class TestSendingMessages:
                 assert not errors
                 assert len(got) == 5
 
-            async def test_it_allows_errors_to_go_to_an_error_catcher(
-                self, V, FakeTime, MockedCallLater, sender
-            ):
+            async def test_it_allows_errors_to_go_to_an_error_catcher(self, V, FakeTime, MockedCallLater, sender):
                 ack = CoreMessages.Acknowledgement()
                 original = DeviceMessages.EchoRequest(echoing=b"hi")
                 reply = DeviceMessages.EchoResponse(echoing=b"hi")
 
                 async def gen(sd, reference, **kwargs):
-                    assert await (
-                        yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
-                    )
-                    assert not await (
-                        yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
-                    )
+                    assert await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial))
+                    assert not await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial))
                     for i in range(5):
-                        assert await (
-                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
-                        )
+                        assert await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial))
 
                 msg = FromGenerator(gen)
 
@@ -425,19 +402,11 @@ class TestSendingMessages:
                 reply = DeviceMessages.EchoResponse(echoing=b"hi")
 
                 async def gen(sd, reference, **kwargs):
-                    assert await (
-                        yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
-                    )
-                    assert not await (
-                        yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
-                    )
-                    assert not await (
-                        yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial)
-                    )
+                    assert await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial))
+                    assert not await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial))
+                    assert not await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device2.serial))
                     for i in range(5):
-                        assert await (
-                            yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial)
-                        )
+                        assert await (yield DeviceMessages.EchoRequest(echoing=b"hi", target=V.device.serial))
 
                 msg = FromGenerator(gen)
 
@@ -448,9 +417,7 @@ class TestSendingMessages:
                     async with MockedCallLater(t, precision=0.01):
                         try:
                             with io2.packet_filter.lost_replies(DeviceMessages.EchoResponse):
-                                async with sender(
-                                    msg, [V.device.serial, V.device2.serial], message_timeout=2
-                                ) as pkts:
+                                async with sender(msg, [V.device.serial, V.device2.serial], message_timeout=2) as pkts:
                                     async for pkt in pkts:
                                         got.append(1)
                                         if len(got) == 4:
@@ -492,7 +459,6 @@ class TestSendingMessages:
                         ] * (len(records.record) // 2)
 
     class TestRunWithApi:
-
         async def test_it_works_with_the_run_with_api_with_sender(self, V, sender):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             script = V.target.script(original)
@@ -530,9 +496,7 @@ class TestSendingMessages:
             assert dict(got) == {V.device.serial: [{"echoing": b"hi" + b"\x00" * 62}]}
 
             got = defaultdict(list)
-            async for pkt, remote_addr, sender_message in script.run_with(
-                V.device.serial, sender=sender
-            ):
+            async for pkt, remote_addr, sender_message in script.run_with(V.device.serial, sender=sender):
                 assert pkt.Information.remote_addr == remote_addr
                 assert pkt.Information.sender_message is sender_message
                 assert sender_message is original
@@ -555,9 +519,7 @@ class TestSendingMessages:
             script = V.target.script(original)
 
             got = defaultdict(list)
-            for pkt, remote_addr, sender_message in await script.run_with_all(
-                V.device.serial, sender
-            ):
+            for pkt, remote_addr, sender_message in await script.run_with_all(V.device.serial, sender):
                 assert pkt.Information.remote_addr == remote_addr
                 assert pkt.Information.sender_message is sender_message
                 assert sender_message is original

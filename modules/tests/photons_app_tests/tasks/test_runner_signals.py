@@ -81,7 +81,6 @@ class RunAsExternal:
         *,
         code,
     ):
-
         fut = hp.create_future()
 
         def ready(signum, frame):
@@ -410,9 +409,7 @@ class TestGracefulRunnerSignals:
         class H(GracefulTask):
             """Run inside an external script during test via subprocess"""
 
-            async def execute_task(
-                self, collector, notify, output, graceful_final_future, **kwargs
-            ):
+            async def execute_task(self, collector, notify, output, graceful_final_future, **kwargs):
                 notify()
                 if sys.argv[3] != "None":
                     await hp.wait_for_all_futures(graceful_final_future)
@@ -447,15 +444,11 @@ class TestGracefulRunnerSignals:
                         print("ran", file=fle)
                     assert not self._final_future.cancelled(), "final future was cancelled"
                     assert self._graceful.cancelled()
-                    assert (
-                        self._final_future.exception() is self._error
-                    ), "final future has wrong error"
+                    assert self._final_future.exception() is self._error, "final future has wrong error"
                     with open(output, "a") as fle:
                         print("All good!", file=fle)
 
-            async def execute_task(
-                self, collector, notify, output, graceful_final_future, **kwargs
-            ):
+            async def execute_task(self, collector, notify, output, graceful_final_future, **kwargs):
                 self._final_future = collector.photons_app.final_future
                 self._graceful = graceful_final_future
                 self._error = PhotonsAppError("HI")
@@ -511,9 +504,7 @@ class TestGracefulRunnerSignals:
 
             async def execute_task(self, notify, graceful_final_future, output, **kwargs):
                 notify()
-                self.collector.photons_app.loop.call_soon(
-                    self.collector.photons_app.final_future.set_exception, ValueError("NOPE")
-                )
+                self.collector.photons_app.loop.call_soon(self.collector.photons_app.final_future.set_exception, ValueError("NOPE"))
                 with open(output, "a") as fle:
                     print("before", file=fle)
                 await hp.wait_for_all_futures(graceful_final_future)

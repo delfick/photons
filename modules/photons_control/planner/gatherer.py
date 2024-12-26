@@ -5,11 +5,12 @@ from collections import defaultdict
 
 from photons_app import helpers as hp
 from photons_app.errors import BadRunWithResults, ProgrammerError, RunErrors
-from photons_control.planner.plans import NoMessages, Skip
-from photons_control.script import find_serials
 from photons_transport import catch_errors
 from photons_transport.errors import FailedToFindDevice
 from photons_transport.targets.base import Target
+
+from photons_control.planner.plans import NoMessages, Skip
+from photons_control.script import find_serials
 
 
 class PlanInfo:
@@ -385,9 +386,7 @@ class Gatherer:
 
     def __init__(self, sender):
         if isinstance(sender, Target):
-            raise ProgrammerError(
-                "The Gatherer no longer takes in target instances. Please pass in a target.session result instead"
-            )
+            raise ProgrammerError("The Gatherer no longer takes in target instances. Please pass in a target.session result instead")
         self.sender = sender
 
     @hp.memoized_property
@@ -415,9 +414,7 @@ class Gatherer:
         with catch_errors(error_catcher) as error_catcher:
             kwargs["error_catcher"] = error_catcher
 
-            serials, missing = await find_serials(
-                reference, self.sender, timeout=kwargs.get("find_timeout", 20)
-            )
+            serials, missing = await find_serials(reference, self.sender, timeout=kwargs.get("find_timeout", 20))
 
             for serial in missing:
                 hp.add_error(error_catcher, FailedToFindDevice(serial=serial))
@@ -532,9 +529,9 @@ class Gatherer:
         for _, plan in sorted(plans.items()):
             d = plan.dependant_info
             if d:
-                for l, p in d.items():
+                for item, p in d.items():
                     uid = str(uuid.uuid4())
-                    deps[uid] = (plan, l)
+                    deps[uid] = (plan, item)
                     depplan[uid] = p
                 depinfo[plan] = None
 
@@ -545,9 +542,9 @@ class Gatherer:
                 if completed:
                     for uid, info in i.items():
                         if uid in deps:
-                            plan, l = deps[uid]
+                            plan, item = deps[uid]
                         if depinfo.get(plan) is None:
                             depinfo[plan] = {}
-                        depinfo[plan][l] = info
+                        depinfo[plan][item] = info
 
         return depinfo

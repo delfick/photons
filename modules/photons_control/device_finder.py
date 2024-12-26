@@ -17,9 +17,10 @@ from photons_app import helpers as hp
 from photons_app.errors import FoundNoDevices, PhotonsAppError, RunErrors
 from photons_app.special import FoundSerials, SpecialReference
 from photons_app.tasks import task_register as task
-from photons_control.script import FromGenerator
 from photons_messages import CoreMessages, DeviceMessages, LightMessages
 from photons_products import Products
+
+from photons_control.script import FromGenerator
 
 log = logging.getLogger("photons_control.device_finder")
 
@@ -105,12 +106,7 @@ class device_finder_info(DeviceFinderTask):
 
             async for device in device_finder.info(sender):
                 print(device.serial)
-                print(
-                    "\n".join(
-                        f"  {line}"
-                        for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")
-                    )
-                )
+                print("\n".join(f"  {line}" for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")))
 
 
 regexes = {"key_value": re.compile(r"^(?P<key>[\w_]+)=(?P<value>.+)")}
@@ -132,7 +128,7 @@ class Collection(dictobj.Spec):
     name = dictobj.Field(sb.string_spec, default="")
 
     def setup(self, *args, **kwargs):
-        super(Collection, self).setup(*args, **kwargs)
+        super().setup(*args, **kwargs)
         self.newest_timestamp = None
 
     def add_name(self, timestamp, name):
@@ -305,9 +301,7 @@ class Filter(dictobj.Spec):
     @classmethod
     def empty(kls, refresh_info=False, refresh_discovery=False):
         """Create an empty filter"""
-        return kls.from_options(
-            {"refresh_info": refresh_info, "refresh_discovery": refresh_discovery}
-        )
+        return kls.from_options({"refresh_info": refresh_info, "refresh_discovery": refresh_discovery})
 
     @classmethod
     def from_options(kls, options):
@@ -516,13 +510,8 @@ class Device(dictobj.Spec):
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
-        self.point_futures = {
-            e: hp.ResettableFuture(name=f"Device({self.serial})::setup[point_futures.{e.name}]")
-            for e in InfoPoints
-        }
-        self.point_futures[None] = hp.ResettableFuture(
-            name=f"Device::setup({self.serial})[point_futures.None]"
-        )
+        self.point_futures = {e: hp.ResettableFuture(name=f"Device({self.serial})::setup[point_futures.{e.name}]") for e in InfoPoints}
+        self.point_futures[None] = hp.ResettableFuture(name=f"Device::setup({self.serial})[point_futures.None]")
         self.refreshing = hp.ResettableFuture(name=f"Device({self.serial})::[refreshing]")
 
     @hp.memoized_property
@@ -573,7 +562,7 @@ class Device(dictobj.Spec):
         return self.location.uuid
 
     def as_dict(self):
-        actual = super(Device, self).as_dict()
+        actual = super().as_dict()
         del actual["group"]
         del actual["limit"]
         del actual["location"]
@@ -839,14 +828,10 @@ class DeviceFinderDaemon(hp.AsyncCMMixin):
         self.time_between_queries = time_between_queries
 
         final_future = final_future or sender.stop_fut
-        self.final_future = hp.ChildOfFuture(
-            final_future, name="DeviceFinderDaemon::__init__[final_future]"
-        )
+        self.final_future = hp.ChildOfFuture(final_future, name="DeviceFinderDaemon::__init__[final_future]")
 
         self.own_finder = not bool(finder)
-        self.finder = finder or Finder(
-            self.sender, self.final_future, forget_after=forget_after, limit=limit
-        )
+        self.finder = finder or Finder(self.sender, self.final_future, forget_after=forget_after, limit=limit)
 
         self.ts = hp.TaskHolder(self.final_future, name="DeviceFinderDaemon::__init__[ts]")
         self.hp_tick = hp.tick
@@ -876,9 +861,7 @@ class DeviceFinderDaemon(hp.AsyncCMMixin):
 
             async for device in self.finder.find(refresh_discovery_fltr):
                 await streamer.add_coroutine(
-                    device.refresh_information_loop(
-                        self.sender, self.time_between_queries, self.finder.collections
-                    ),
+                    device.refresh_information_loop(self.sender, self.time_between_queries, self.finder.collections),
                     context=device,
                 )
 
@@ -924,9 +907,7 @@ class Finder(hp.AsyncCMMixin):
         self.last_seen = {}
         self.searched = hp.ResettableFuture(name="Finder::__init__[searched]")
         self.collections = Collections()
-        self.final_future = hp.ChildOfFuture(
-            final_future or self.sender.stop_fut, name="Finder::__init__[final_future]"
-        )
+        self.final_future = hp.ChildOfFuture(final_future or self.sender.stop_fut, name="Finder::__init__[final_future]")
 
     async def find(self, fltr):
         if self.final_future.done():
@@ -946,9 +927,7 @@ class Finder(hp.AsyncCMMixin):
 
         catcher = partial(log_errors, "Failed to determine if device matched filter")
 
-        async with hp.ResultStreamer(
-            self.final_future, name="Finder::find[streamer]", error_catcher=catcher
-        ) as streamer:
+        async with hp.ResultStreamer(self.final_future, name="Finder::find[streamer]", error_catcher=catcher) as streamer:
             for device in removed:
                 await streamer.add_coroutine(device.finish())
 
@@ -958,9 +937,7 @@ class Finder(hp.AsyncCMMixin):
                     fut.set_result(True)
                     await streamer.add_task(fut, context=device)
                 else:
-                    await streamer.add_coroutine(
-                        device.matches(self.sender, fltr, self.collections), context=device
-                    )
+                    await streamer.add_coroutine(device.matches(self.sender, fltr, self.collections), context=device)
 
             streamer.no_more_work()
 
@@ -975,15 +952,11 @@ class Finder(hp.AsyncCMMixin):
         async def find():
             async for device in self.find(fltr):
                 await streamer.add_coroutine(
-                    device.matches(
-                        self.sender, Filter.empty(refresh_info=fltr.refresh_info), self.collections
-                    ),
+                    device.matches(self.sender, Filter.empty(refresh_info=fltr.refresh_info), self.collections),
                     context=device,
                 )
 
-        streamer = hp.ResultStreamer(
-            self.final_future, error_catcher=catcher, name="Finder::info[streamer]"
-        )
+        streamer = hp.ResultStreamer(self.final_future, error_catcher=catcher, name="Finder::info[streamer]")
 
         async with streamer:
             await streamer.add_coroutine(find(), context=True)

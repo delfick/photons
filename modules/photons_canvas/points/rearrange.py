@@ -12,9 +12,7 @@ class Separate:
 class Straight:
     def rearrange(self, canvas):
         user_x = 0
-        for part in sorted(
-            canvas.parts, key=lambda p: (p.real_part.user_x, p.device, p.part_number)
-        ):
+        for part in sorted(canvas.parts, key=lambda p: (p.real_part.user_x, p.device, p.part_number)):
             yield part.clone(user_x=user_x, user_y=0)
             user_x += part.width / 8
 

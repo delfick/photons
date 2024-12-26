@@ -1,6 +1,7 @@
 import random
 
 from delfick_project.norms import dictobj
+
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, an_animation, options
 from photons_canvas.animations.lines import LineOptions
@@ -82,7 +83,7 @@ class State:
                 if top < self.extreme_bottom:
                     remove.append(line)
 
-            self.lines[col] = [l for l in self.lines[col] if l not in remove]
+            self.lines[col] = [bl for bl in self.lines[col] if bl not in remove]
 
             if most_top is None or self.extreme_top - most_top > random.randrange(3, 7):
                 self.lines[col].append(Line.make(self.options, self.extreme_top))

@@ -8,9 +8,7 @@ from photons_transport.comms.base import timeout_task
 
 
 class TestTimeoutTask:
-
     async def test_it_does_nothing_if_the_task_has_a_result(self):
-
         async def doit():
             return 1
 
@@ -23,7 +21,6 @@ class TestTimeoutTask:
         assert not errf.done()
 
     async def test_it_does_nothing_if_the_task_has_an_exception(self):
-
         async def doit():
             raise Exception("NOPE")
 
@@ -38,7 +35,6 @@ class TestTimeoutTask:
         assert not errf.done()
 
     async def test_it_does_nothing_if_the_task_was_cancelled(self):
-
         async def doit():
             return 1
 

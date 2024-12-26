@@ -192,7 +192,7 @@ class LIFXPacket(dictobj.PacketSpec):
 
         def maker(name):
             Payload = type(
-                "{0}Payload".format(name),
+                f"{name}Payload",
                 (dictobj.PacketSpec,),
                 {
                     "fields": list(payload_fields),

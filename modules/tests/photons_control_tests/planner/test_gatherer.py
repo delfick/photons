@@ -110,9 +110,7 @@ def modified_time():
 
 
 class TestGatherer:
-
     class TestAPlanSayingNoMessages:
-
         async def test_it_processes_without_needing_messages(self, sender):
             called = []
 
@@ -208,7 +206,6 @@ class TestGatherer:
             compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     class TestAPlanSayingSkip:
-
         async def test_it_has_no_processing_or_info(self, sender):
             called = []
 
@@ -289,7 +286,6 @@ class TestGatherer:
             compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
 
     class TestAPlanWithNoMessages:
-
         async def test_it_it_gets_all_other_messages(self, sender):
             called = []
 
@@ -332,9 +328,7 @@ class TestGatherer:
                 ],
             )
 
-        async def test_it_still_finishes_if_no_messages_processed_but_finished_after_no_more_messages(
-            self, sender
-        ):
+        async def test_it_still_finishes_if_no_messages_processed_but_finished_after_no_more_messages(self, sender):
             called = []
 
             class NoMessagesPlan(Plan):
@@ -361,7 +355,6 @@ class TestGatherer:
             compare_called(called, [("info", light1.serial), ("info", light2.serial)])
 
     class TestAPlanThatNeverFinishes:
-
         async def test_it_it_doesnt_get_recorded(self, sender):
             called = []
 
@@ -393,7 +386,6 @@ class TestGatherer:
             )
 
     class TestAPlanWithMessages:
-
         async def test_it_messages_are_processed_until_we_say_plan_is_done(self, sender):
             called = []
 
@@ -470,9 +462,7 @@ class TestGatherer:
 
             errors = []
             found.clear()
-            async for serial, label, info in gatherer.gather(
-                plans, devices.serials, error_catcher=errors
-            ):
+            async for serial, label, info in gatherer.gather(plans, devices.serials, error_catcher=errors):
                 found.append((serial, label, info))
             assert errors == [error]
 
@@ -529,9 +519,7 @@ class TestGatherer:
             with assertRaises(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
                 lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
                 with lost:
-                    async for serial, label, info in gatherer.gather(
-                        plans, two_lights, message_timeout=0.1
-                    ):
+                    async for serial, label, info in gatherer.gather(plans, two_lights, message_timeout=0.1):
                         found.append((serial, label, info))
 
             assert found == [
@@ -583,9 +571,7 @@ class TestGatherer:
             with assertRaises(TimedOut, "Waiting for reply to a packet", serial=light1.serial):
                 lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
                 with lost:
-                    async for serial, completed, info in gatherer.gather_per_serial(
-                        plans, two_lights, message_timeout=0.1
-                    ):
+                    async for serial, completed, info in gatherer.gather_per_serial(plans, two_lights, message_timeout=0.1):
                         found.append((serial, completed, info))
 
             compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
@@ -745,9 +731,7 @@ class TestGatherer:
             called.clear()
             lost = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
             with lost:
-                async for serial, completed, info in gatherer.gather_per_serial(
-                    plans, two_lights, **kwargs
-                ):
+                async for serial, completed, info in gatherer.gather_per_serial(plans, two_lights, **kwargs):
                     found.append((serial, completed, info))
 
             assertError(error_catcher)
@@ -776,7 +760,6 @@ class TestGatherer:
             }
 
     class TestRefreshing:
-
         async def test_it_it_can_refresh_always(self, sender):
             called = []
 
@@ -803,9 +786,7 @@ class TestGatherer:
 
             label_type = DeviceMessages.StateLabel.Payload.message_type
 
-            compare_called(
-                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
-            )
+            compare_called(called, [("label", light1.serial, label_type), ("info.label", light1.serial)])
 
             compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -815,9 +796,7 @@ class TestGatherer:
             got = dict(await gatherer.gather_all(plans, light1.serial))
             assert got == {light1.serial: (True, {"label": "bob"})}
 
-            compare_called(
-                called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
-            )
+            compare_called(called, [("label", light1.serial, label_type), ("info.label", light1.serial)])
 
             compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -858,9 +837,7 @@ class TestGatherer:
 
                 label_type = DeviceMessages.StateLabel.Payload.message_type
 
-                compare_called(
-                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
-                )
+                compare_called(called, [("label", light1.serial, label_type), ("info.label", light1.serial)])
 
                 compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -880,9 +857,7 @@ class TestGatherer:
                 got = dict(await gatherer.gather_all(plans, light1.serial))
                 assert got == {light1.serial: (True, {"label": "bob"})}
 
-                compare_called(
-                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
-                )
+                compare_called(called, [("label", light1.serial, label_type), ("info.label", light1.serial)])
 
                 compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
                 called.clear()
@@ -896,9 +871,7 @@ class TestGatherer:
                     light2.serial: (True, {"label": "sam"}),
                 }
 
-                compare_called(
-                    called, [("label", light2.serial, label_type), ("info.label", light2.serial)]
-                )
+                compare_called(called, [("label", light2.serial, label_type), ("info.label", light2.serial)])
                 compare_received({light1: [], light2: [DeviceMessages.GetLabel()], light3: []})
                 called.clear()
 
@@ -910,9 +883,7 @@ class TestGatherer:
                     light2.serial: (True, {"label": "sam"}),
                 }
 
-                compare_called(
-                    called, [("label", light1.serial, label_type), ("info.label", light1.serial)]
-                )
+                compare_called(called, [("label", light1.serial, label_type), ("info.label", light1.serial)])
 
                 compare_received({light1: [DeviceMessages.GetLabel()], light2: [], light3: []})
 
@@ -946,9 +917,7 @@ class TestGatherer:
 
                 called.clear()
 
-        async def test_it_cannot_steal_messages_from_completed_plans_if_we_refresh_messages_those_other_plans_use(
-            self, sender
-        ):
+        async def test_it_cannot_steal_messages_from_completed_plans_if_we_refresh_messages_those_other_plans_use(self, sender):
             called = []
 
             class ReverseLabelPlan(Plan):
@@ -1136,7 +1105,6 @@ class TestGatherer:
             compare_received({light1: [], light2: [], light3: []})
 
     class TestDependencies:
-
         async def test_it_it_can_get_dependencies(self, sender):
             called = []
 
@@ -1172,7 +1140,6 @@ class TestGatherer:
                             return [DeviceMessages.GetLabel()]
 
                     def process(s, pkt):
-
                         if pkt | DeviceMessages.StateLabel:
                             called.append(("info.process.label", pkt.serial, pkt.pkt_type))
                             s.i = pkt.label
@@ -1228,9 +1195,7 @@ class TestGatherer:
                 }
             )
 
-        async def test_it_it_can_get_dependencies_of_dependencies_and_messages_can_be_shared(
-            self, sender
-        ):
+        async def test_it_it_can_get_dependencies_of_dependencies_and_messages_can_be_shared(self, sender):
             called = []
 
             class Plan1(Plan):
@@ -1502,11 +1467,7 @@ class TestGatherer:
             errors = []
             lost = light3.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetLabel)
             with lost:
-                got = dict(
-                    await gatherer.gather_all(
-                        plans, devices.serials, error_catcher=errors, message_timeout=0.1
-                    )
-                )
+                got = dict(await gatherer.gather_all(plans, devices.serials, error_catcher=errors, message_timeout=0.1))
             assert len(errors) == 1
 
             assert got == {

@@ -62,7 +62,6 @@ async def reset_devices(sender):
 
 
 class TestSetCleanConfig:
-
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
 
@@ -91,13 +90,10 @@ class TestSetCleanConfig:
             ],
             light3: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
         }
-        await self.run_and_compare(
-            sender, SetCleanConfig(indication=True, duration_s=3600), expected=expected
-        )
+        await self.run_and_compare(sender, SetCleanConfig(indication=True, duration_s=3600), expected=expected)
 
 
 class TestChangeCleanCycle:
-
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
 
@@ -126,9 +122,7 @@ class TestChangeCleanCycle:
             ],
             light3: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
         }
-        await self.run_and_compare(
-            sender, ChangeCleanCycle(enable=True, duration_s=7200), expected=expected
-        )
+        await self.run_and_compare(sender, ChangeCleanCycle(enable=True, duration_s=7200), expected=expected)
 
     async def test_it_stops_a_clean_cycle(self, sender):
         expected = {
@@ -144,6 +138,4 @@ class TestChangeCleanCycle:
             ],
             light3: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()],
         }
-        await self.run_and_compare(
-            sender, ChangeCleanCycle(enable=False, duration_s=0), expected=expected
-        )
+        await self.run_and_compare(sender, ChangeCleanCycle(enable=False, duration_s=0), expected=expected)

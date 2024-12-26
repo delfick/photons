@@ -1,4 +1,5 @@
 from delfick_project.norms import dictobj
+
 from photons_canvas.animations import Animation, Finish, an_animation
 
 

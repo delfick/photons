@@ -41,7 +41,6 @@ class TestColourParser:
             assert k is None or type(k) is int
 
     class TestGettingHsbk:
-
         def assertCorrect(self, components, h, s, b, k):
             assert ColourParser.hsbk(components) == (h, s, b, k)
 
@@ -95,9 +94,7 @@ class TestColourParser:
             with assertRaises(InvalidColor, "Unable to parse color"):
                 ColourParser.hsbk("brightness:-1")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=2
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="brightness", minimum=0, maximum=1, value=2)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("brightness:2")
 
@@ -108,9 +105,7 @@ class TestColourParser:
             with assertRaises(InvalidColor, "Unable to parse color"):
                 ColourParser.hsbk("saturation:-1")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="saturation", minimum=0, maximum=1, value=2
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="saturation", minimum=0, maximum=1, value=2)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("saturation:2")
 
@@ -122,9 +117,7 @@ class TestColourParser:
             with assertRaises(InvalidColor, "Unable to parse color"):
                 ColourParser.hsbk("hue:-1")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="hue", minimum=0, maximum=360, value=361)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hue:361")
 
@@ -138,21 +131,15 @@ class TestColourParser:
             self.assertCorrect("rgb:0,200,100", 150.0, 1.0, 0.7843137254901961, None)
             self.assertCorrect("rgb:10,1,255", 242.12598425196848, 0.996078431372549, 1.0, None)
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="r", minimum=0, maximum=255, value=256
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="r", minimum=0, maximum=255, value=256)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("rgb:256,1,255")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="g", minimum=0, maximum=255, value=256
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="g", minimum=0, maximum=255, value=256)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("rgb:255,256,255")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="b", minimum=0, maximum=255, value=256
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="b", minimum=0, maximum=255, value=256)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("rgb:255,255,256")
 
@@ -160,9 +147,7 @@ class TestColourParser:
             self.assertCorrect("hsb:240,0.1,0.8", 240, 0.1, 0.8, None)
             self.assertCorrect("hsb:240,1%,80%", 240, 0.01, 0.8, None)
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="hue", minimum=0, maximum=360, value=361
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="hue", minimum=0, maximum=360, value=361)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hsb:361,0,0.8")
 
@@ -196,9 +181,7 @@ class TestColourParser:
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hsb:240,1,120%")
 
-            error = ValueOutOfRange(
-                "Value was not within bounds", component="brightness", minimum=0, maximum=1, value=8
-            )
+            error = ValueOutOfRange("Value was not within bounds", component="brightness", minimum=0, maximum=1, value=8)
             with assertRaises(InvalidColor, error=error.as_dict()):
                 ColourParser.hsbk("hsb:240,1,8")
 

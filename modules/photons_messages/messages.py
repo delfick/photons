@@ -1,10 +1,11 @@
 import math
 
 from delfick_project.norms import sb
-from photons_messages import enums, fields
-from photons_messages.frame import msg
 from photons_protocol.messages import Messages, MultiOptions, T
 from photons_protocol.types import Optional
+
+from photons_messages import enums, fields
+from photons_messages.frame import msg
 
 
 def empty(pkt, attr):

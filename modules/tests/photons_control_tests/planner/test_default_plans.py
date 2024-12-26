@@ -163,9 +163,7 @@ async def gather(sender, reference, *by_label, **kwargs):
 
 
 class TestDefaultPlans:
-
     class TestPacketPlan:
-
         async def test_it_gets_the_packet(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StatePower)
             got = await gather(sender, two_lights, {"result": plan})
@@ -174,12 +172,8 @@ class TestDefaultPlans:
                 light2.serial: (True, {"result": mock.ANY}),
             }
 
-            pytest.helpers.print_packet_difference(
-                got[light1.serial][1]["result"], DeviceMessages.StatePower(level=0)
-            )
-            pytest.helpers.print_packet_difference(
-                got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535)
-            )
+            pytest.helpers.print_packet_difference(got[light1.serial][1]["result"], DeviceMessages.StatePower(level=0))
+            pytest.helpers.print_packet_difference(got[light2.serial][1]["result"], DeviceMessages.StatePower(level=65535))
 
         async def test_it_fails_if_we_cant_get_the_correct_response(self, sender):
             plan = PacketPlan(DeviceMessages.GetPower(), DeviceMessages.StateLabel)
@@ -187,7 +181,6 @@ class TestDefaultPlans:
             assert got == {}
 
     class TestPresencePlan:
-
         async def test_it_returns_True(self, sender):
             got = await gather(sender, two_lights, "presence")
             assert got == {
@@ -215,7 +208,6 @@ class TestDefaultPlans:
                 }
 
         async def test_it_fires_for_offline_devices_that_have_already_been_discovered(self, sender):
-
             errors = []
             _, serials = await FoundSerials().find(sender, timeout=1)
             assert all(serial in serials for serial in two_lights)
@@ -256,7 +248,6 @@ class TestDefaultPlans:
                 assert got == {light1.serial: (True, {"presence": True, "label": "bob"})}
 
     class TestAddressPlan:
-
         async def test_it_gets_the_address(self, sender):
             got = await gather(sender, two_lights, "address")
             assert got == {
@@ -265,7 +256,6 @@ class TestDefaultPlans:
             }
 
     class TestLabelPlan:
-
         async def test_it_gets_the_label(self, sender):
             got = await gather(sender, two_lights, "label")
             assert got == {
@@ -274,7 +264,6 @@ class TestDefaultPlans:
             }
 
     class TestStatePlan:
-
         async def test_it_gets_the_power(self, sender):
             state1 = {
                 "hue": light1.attrs.color.hue,
@@ -301,7 +290,6 @@ class TestDefaultPlans:
             }
 
     class TestPowerPlan:
-
         async def test_it_gets_the_power(self, sender):
             got = await gather(sender, two_lights, "power")
             assert got == {
@@ -310,7 +298,6 @@ class TestDefaultPlans:
             }
 
     class TestHevStatusPlan:
-
         async def test_it_works_when_hev_is_not_on(self, sender):
             assert not clean.attrs.clean_details.enabled
             assert clean.attrs.clean_details.last_result is LightLastHevCycleResult.NONE
@@ -482,7 +469,6 @@ class TestDefaultPlans:
             }
 
     class TestHEVConfigPlan:
-
         async def test_it_can_get_hev_config(self, sender):
             got = await gather(sender, [clean.serial, light1.serial], "hev_config")
             assert got == {
@@ -509,13 +495,9 @@ class TestDefaultPlans:
             }
 
     class TestCapabilityPlan:
-
         async def test_it_gets_the_power(self, sender):
-
             def make_version(vendor, product):
-                msg = DeviceMessages.StateVersion.create(
-                    vendor=vendor, product=product, source=1, sequence=1, target=None
-                )
+                msg = DeviceMessages.StateVersion.create(vendor=vendor, product=product, source=1, sequence=1, target=None)
                 # in the future, I don't have to do this trick to ensure reserved fields have values
                 # Which matters in the test
                 return DeviceMessages.StateVersion.create(msg.pack()).payload
@@ -597,7 +579,6 @@ class TestDefaultPlans:
                     assert not info["capability"]["cap"].has_extended_multizone
 
     class TestFirmwarePlan:
-
         async def test_it_gets_the_firmware(self, sender):
             l1c = {
                 "build": 0,
@@ -639,7 +620,6 @@ class TestDefaultPlans:
             }
 
     class TestVersionPlan:
-
         async def test_it_gets_the_version(self, sender):
             got = await gather(sender, devices.serials, "version")
             assert got == {
@@ -656,7 +636,6 @@ class TestDefaultPlans:
             }
 
     class TestZonesPlan:
-
         async def test_it_gets_zones(self, sender):
             got = await gather(sender, devices.serials, "zones")
             expected = {
@@ -702,7 +681,6 @@ class TestDefaultPlans:
                 devices.store(device).assertIncoming(*expected[device])
 
     class TestColorsPlan:
-
         async def test_it_gets_colors_for_different_devices(self, sender):
             serials = [
                 light1.serial,
@@ -726,9 +704,7 @@ class TestDefaultPlans:
             changes = []
             for i in range(len(light1.attrs.chain)):
                 for j in range(64):
-                    changes.append(
-                        light1.attrs.attrs_path("chain", i, "colors", j, "hue").changer_to(i + j)
-                    )
+                    changes.append(light1.attrs.attrs_path("chain", i, "colors", j, "hue").changer_to(i + j))
             await light1.attrs.attrs_apply(*changes, event=None)
             for i in range(len(light1.attrs.chain)):
                 tile_expected.append(list(light1.attrs.chain[i].colors))
@@ -914,9 +890,7 @@ class TestDefaultPlans:
                 (("chain", 2, "colors"), co.reorient(colors3, co.Orientation.FaceDown)),
                 event=None,
             )
-            await device.attrs.attrs_apply(
-                device.attrs.attrs_path("chain").reduce_length_to(3), event=None
-            )
+            await device.attrs.attrs_apply(device.attrs.attrs_path("chain").reduce_length_to(3), event=None)
 
             got = await gather(sender, [device.serial], "parts")
             info = got[device.serial][1]["parts"]
@@ -971,7 +945,6 @@ class TestDefaultPlans:
                 assert pc.real_part.original_colors == colors
 
     class TestChainPlan:
-
         async def test_it_gets_chain_for_a_bulb(self, sender):
             got = await gather(sender, [light2.serial], "chain")
             info = got[light2.serial][1]["chain"]
@@ -1086,9 +1059,7 @@ class TestDefaultPlans:
 
                 colors = [hp.Color(i, 1, 1, 3500) for i in range(30)]
                 assert info["reorient"](0, colors) == reorient(colors, Orientation.RightSideUp)
-                assert info["reverse_orient"](0, colors) == reorient(
-                    colors, Orientation.RightSideUp
-                )
+                assert info["reverse_orient"](0, colors) == reorient(colors, Orientation.RightSideUp)
             assert info["coords_and_sizes"] == [((0.0, 0.0), (info["width"], 1))]
 
         async def test_it_gets_chain_for_tiles(self, sender):
@@ -1259,7 +1230,6 @@ class TestDefaultPlans:
             assert ro(4, colors) == reorient(colors, Orientation.RightSideUp)
 
     class TestFirmwareEffectsPlan:
-
         async def test_it_gets_firmware_effects(self, sender):
             io = light1.io["MEMORY"]
 
@@ -1333,9 +1303,7 @@ class TestDefaultPlans:
             }
 
             serials = [light1.serial, light2.serial, striplcm1.serial]
-            with (
-                process_outgoing_light1
-            ), process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
+            with process_outgoing_light1, process_outgoing_striplcm1, process_request_light1, process_request_striplcm1:
                 got = await gather(sender, serials, "firmware_effects")
             expected = {
                 light1.serial: (True, {"firmware_effects": l1}),

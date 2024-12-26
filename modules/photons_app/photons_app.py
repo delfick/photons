@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from urllib.parse import unquote, urlparse
 
 from delfick_project.norms import dictobj, sb, va
+
 from photons_app import helpers as hp
 from photons_app.errors import ApplicationStopped, BadOption
 from photons_app.formatter import MergedOptionStringFormatter
@@ -31,29 +32,17 @@ class PhotonsApp(dictobj.Spec):
     .. dictobj_params::
     """
 
-    config = dictobj.Field(
-        sb.file_spec, wrapper=sb.optional_spec, help="The root configuration file"
-    )
-    extra = dictobj.Field(
-        sb.string_spec, default="", help="The arguments after the ``--`` in the commandline"
-    )
+    config = dictobj.Field(sb.file_spec, wrapper=sb.optional_spec, help="The root configuration file")
+    extra = dictobj.Field(sb.string_spec, default="", help="The arguments after the ``--`` in the commandline")
     debug = dictobj.Field(sb.boolean, default=False, help="Whether we are in debug mode or not")
-    artifact = dictobj.Field(
-        default="", format_into=sb.string_spec, help="The artifact string from the commandline"
-    )
-    reference = dictobj.Field(
-        default="", format_into=sb.string_spec, help="The device(s) to send commands to"
-    )
+    artifact = dictobj.Field(default="", format_into=sb.string_spec, help="The artifact string from the commandline")
+    reference = dictobj.Field(default="", format_into=sb.string_spec, help="The device(s) to send commands to")
     cleaners = dictobj.Field(
         lambda: sb.overridden([]),
         help="A list of functions to call when cleaning up at the end of the program",
     )
-    default_activate = dictobj.NullableField(
-        sb.listof(sb.string_spec()), help="A list of photons modules to load by default"
-    )
-    task_specifier = dictobj.Field(
-        sb.delayed(task_specifier_spec()), help="Used to determine chosen task and target"
-    )
+    default_activate = dictobj.NullableField(sb.listof(sb.string_spec()), help="A list of photons modules to load by default")
+    task_specifier = dictobj.Field(sb.delayed(task_specifier_spec()), help="Used to determine chosen task and target")
 
     @hp.memoized_property
     def final_future(self):
@@ -85,7 +74,7 @@ class PhotonsApp(dictobj.Spec):
             if not os.path.exists(location):
                 raise BadOption(f"The path {location} does not exist")
 
-            with open(location, "r") as fle:
+            with open(location) as fle:
                 options = fle.read()
 
         try:
@@ -144,9 +133,7 @@ class PhotonsApp(dictobj.Spec):
 
             def stop():
                 if not graceful_future.done():
-                    hp.get_event_loop().call_soon_threadsafe(
-                        graceful_future.set_exception, ApplicationStopped()
-                    )
+                    hp.get_event_loop().call_soon_threadsafe(graceful_future.set_exception, ApplicationStopped())
 
             reinstate_handler = self.loop.remove_signal_handler(signal.SIGTERM)
             self.loop.add_signal_handler(signal.SIGTERM, stop)
@@ -160,9 +147,7 @@ class PhotonsApp(dictobj.Spec):
 
             def stop():
                 if not final_future.done():
-                    hp.get_event_loop().call_soon_threadsafe(
-                        final_future.set_exception, ApplicationStopped()
-                    )
+                    hp.get_event_loop().call_soon_threadsafe(final_future.set_exception, ApplicationStopped())
 
             self.loop.remove_signal_handler(signal.SIGTERM)
             self.loop.add_signal_handler(signal.SIGTERM, stop)
@@ -226,6 +211,4 @@ class PhotonsAppSpec:
         """
         Get us a dictionary of target name to Target object
         """
-        return sb.dictof(
-            self.target_name_spec, Target.FieldSpec(formatter=MergedOptionStringFormatter)
-        )
+        return sb.dictof(self.target_name_spec, Target.FieldSpec(formatter=MergedOptionStringFormatter))

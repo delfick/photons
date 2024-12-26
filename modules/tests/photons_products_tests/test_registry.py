@@ -4,7 +4,6 @@ from photons_products.base import CapabilityValue
 
 class TestLifxProduct:
     def test_it_has_default_vendor(self):
-
         class P(lifx.Product):
             pid = 3
             family = Family.LCM3
@@ -18,7 +17,6 @@ class TestLifxProduct:
 
 class TestCapability:
     def test_it_has_has_matrix(self):
-
         class P(lifx.Product):
             pid = 1
             name = "Product"
@@ -44,7 +42,6 @@ class TestCapability:
         assert not cap(P).has_matrix
 
     def test_it_has_has_multizone(self):
-
         class P(lifx.Product):
             pid = 1
             name = "Product"
@@ -70,7 +67,6 @@ class TestCapability:
         assert not cap(P).has_multizone
 
     def test_it_has_has_extended_multizone(self):
-
         class P(lifx.Product):
             pid = 1
             name = "Product"
@@ -100,7 +96,6 @@ class TestCapability:
         assert c(firmware_major=3, firmware_minor=60).has_extended_multizone
 
     def test_it_has_items(self):
-
         class P(lifx.Product):
             pid = 1
             name = "Product"
@@ -160,7 +155,6 @@ class TestCapability:
         assert dct == expected
 
     def test_it_has_items_for_non_light_products(self):
-
         class P_SWITCH(lifx.Product):
             pid = 1
             name = "Product"

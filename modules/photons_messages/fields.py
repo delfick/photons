@@ -2,9 +2,10 @@ import random
 
 from delfick_project.norms import sb
 from lru import LRU
-from photons_messages import enums
 from photons_protocol.messages import T
 from photons_protocol.packets import dictobj
+
+from photons_messages import enums, fields
 
 
 def tile_effect_parameters_for(typ):
@@ -20,7 +21,7 @@ def tile_effect_parameters_for(typ):
         yield ("parameter6", T.Reserved(184))
     else:
         for i in range(8):
-            yield ("parameter{0}".format(i), T.Reserved(32))
+            yield (f"parameter{i}", T.Reserved(32))
 
 
 def multizone_effect_parameters_for(typ):
@@ -28,10 +29,10 @@ def multizone_effect_parameters_for(typ):
         yield ("parameter1", T.Reserved(32))
         yield ("speed_direction", T.Uint32.enum(enums.Direction).default(enums.Direction.RIGHT))
         for i in range(6):
-            yield ("parameter{0}".format(i + 2), T.Reserved(32))
+            yield (f"parameter{i + 2}", T.Reserved(32))
     else:
         for i in range(8):
-            yield ("parameter{0}".format(i), T.Reserved(32))
+            yield (f"parameter{i}", T.Reserved(32))
 
 
 # fmt: off

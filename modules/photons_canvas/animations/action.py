@@ -4,6 +4,7 @@ import sys
 from textwrap import dedent
 
 from photons_app.tasks import task_register as task
+
 from photons_canvas.animations.infrastructure.finish import Finish
 from photons_canvas.animations.runner import AnimationRunner
 

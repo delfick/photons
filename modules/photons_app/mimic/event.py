@@ -8,10 +8,11 @@ from unittest import mock
 
 import dateutil.tz
 from delfick_project.norms import BadSpecValue, sb
-from photons_app.errors import ProgrammerError
 from photons_messages import TileMessages
 from photons_protocol.errors import PhotonsProtocolError
 from photons_protocol.packets import dictobj, reprer
+
+from photons_app.errors import ProgrammerError
 
 
 class ConsoleFormat:
@@ -75,7 +76,6 @@ class ConsoleFormat:
                         continue
                     val = payload[name]
                     if isinstance(val, list):
-
                         length = len(val)
                         length_name = f"{name}_count"
                         if length_name in payload:
@@ -173,9 +173,7 @@ class Event(metaclass=EventMeta):
                 raise ValueError("Can't compare against an empty tuple")
 
             if len(other) != 2 or not isinstance(other[0], type):
-                raise ValueError(
-                    f"Can only compare against against a tuple of (EventKls, device): ({other})"
-                )
+                raise ValueError(f"Can only compare against against a tuple of (EventKls, device): ({other})")
 
             return self | other[0] and other[1] is self.device
 
@@ -189,11 +187,7 @@ class Event(metaclass=EventMeta):
 
     def for_console(self, time=True, show_set64_contents=False):
         if time is True:
-            time = (
-                datetime.fromtimestamp(self.created)
-                .astimezone(self.LOCAL_TZ)
-                .strftime("%Y-%m-%d %H:%M:%S.%f%z")
-            )
+            time = datetime.fromtimestamp(self.created).astimezone(self.LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S.%f%z")
         else:
             time = "TIME"
 
@@ -220,9 +214,7 @@ class Event(metaclass=EventMeta):
                             yield f"  | {part}"
 
             elif isinstance(val, dictobj.PacketSpec) or getattr(val, "represents_ack", False):
-                lines = list(
-                    ConsoleFormat.lines_from_packet(val, show_set64_contents=show_set64_contents)
-                )
+                lines = list(ConsoleFormat.lines_from_packet(val, show_set64_contents=show_set64_contents))
                 if lines:
                     yield f"  || {key} = {lines.pop(0)}"
                     for line in lines:
@@ -240,7 +232,6 @@ class EventPktBtsMixin:
         pkt_other = other.log_kwargs["packet"]
 
         if pkt_other is not mock.ANY:
-
             if isinstance(pkt_other, type):
                 if not pkt_have | pkt_other:
                     return False
@@ -418,11 +409,11 @@ class IncomingEvent(EventPktBtsMixin, Event):
             self.replies = []
 
         def flatten(lst):
-            for l in lst:
-                if isinstance(l, list):
-                    yield from flatten(l)
-                elif l is not None:
-                    yield l
+            for item in lst:
+                if isinstance(item, list):
+                    yield from flatten(item)
+                elif item is not None:
+                    yield item
 
         self.replies.extend(list(flatten(replies)))
 
@@ -627,11 +618,7 @@ class AnnotationEvent(Event):
         self.log_kwargs = self.details
 
     def has_same_args(self, other):
-        return (
-            super().has_same_args(other)
-            and self.level == other.level
-            and re.match(other.message, self.message)
-        )
+        return super().has_same_args(other) and self.level == other.level and re.match(other.message, self.message)
 
 
 @Events.register("DISCOVERABLE")

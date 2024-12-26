@@ -65,7 +65,6 @@ class TestTaskRegister:
         assert t2 not in register
 
     def test_it_can_give_specs_to_a_class(self, register):
-
         class T(register.Task):
             req_targ1 = register.requires_target()
             req_targ2 = register.requires_target(target_types=["lan"])
@@ -88,13 +87,9 @@ class TestTaskRegister:
                 assert getattr(got.spec, n) == v
 
         assertField(T.req_targ1, specs.target_spec, mandatory=True)
-        assertField(
-            T.req_targ2, specs.target_spec, mandatory=True, restrictions={"target_types": ["lan"]}
-        )
+        assertField(T.req_targ2, specs.target_spec, mandatory=True, restrictions={"target_types": ["lan"]})
         assertField(T.prov_targ1, specs.target_spec, mandatory=False)
-        assertField(
-            T.prov_targ2, specs.target_spec, mandatory=False, restrictions={"target_names": ["bob"]}
-        )
+        assertField(T.prov_targ2, specs.target_spec, mandatory=False, restrictions={"target_names": ["bob"]})
 
         assertField(T.req_ref1, specs.reference_spec, mandatory=True, special=False)
         assertField(T.req_ref2, specs.reference_spec, mandatory=True, special=True)
@@ -106,7 +101,6 @@ class TestTaskRegister:
         assert isinstance(T.art.spec.spec, sb.any_spec)
 
     class TestTaskFromAFunction:
-
         @pytest.fixture()
         def collector(self):
             with alt_pytest_asyncio.Loop(new_loop=False):
@@ -127,12 +121,8 @@ class TestTaskRegister:
             herotarget = Target.FieldSpec().empty_normalise(type="hero")
             target_register.register_type("hero", HeroTarget)
 
-            road = mock.Mock(
-                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-            )
-            batman = mock.Mock(
-                name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"]
-            )
+            road = mock.Mock(name="resolvedroad", instantiated_name="road", spec=["instantiated_name"])
+            batman = mock.Mock(name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"])
 
             roadcreator = mock.Mock(name="roadcreator", return_value=road)
             batmancreator = mock.Mock(name="batmancreator", return_value=batman)
@@ -185,9 +175,7 @@ class TestTaskRegister:
             t6 = register.registered[0].task
             assert t6._original is task6
 
-            @register.from_function(
-                needs_target=True, needs_reference=True, special_reference=True, label="Stuff"
-            )
+            @register.from_function(needs_target=True, needs_reference=True, special_reference=True, label="Stuff")
             async def task7(**kwargs):
                 ran["task7"] = kwargs
 
@@ -224,9 +212,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            action = register.fill_task(
-                collector, "task1", target=batman, reference="d073d5000001", artifact="stuff"
-            )
+            action = register.fill_task(collector, "task1", target=batman, reference="d073d5000001", artifact="stuff")
             assert isinstance(action, t1)
             await action.run()
             assert ran == {
@@ -240,12 +226,8 @@ class TestTaskRegister:
             ran.clear()
 
             for kls, name in ((t2, "task2"), (t3, "task3")):
-
                 if name == "task2":
-
-                    action = register.fill_task(
-                        collector, name, reference="d073d5000001", artifact="stuff"
-                    )
+                    action = register.fill_task(collector, name, reference="d073d5000001", artifact="stuff")
                     assert isinstance(action, kls)
                     await action.run()
                     assert ran == {
@@ -266,13 +248,9 @@ class TestTaskRegister:
                         available_targets=["batman"],
                         restrictions=[{"target_types": ["hero"]}],
                     ):
-                        register.fill_task(
-                            collector, name, reference="d073d5000001", artifact="stuff"
-                        )
+                        register.fill_task(collector, name, reference="d073d5000001", artifact="stuff")
 
-                action = register.fill_task(
-                    collector, name, target=batman, reference="d073d5000001", artifact="stuff"
-                )
+                action = register.fill_task(collector, name, target=batman, reference="d073d5000001", artifact="stuff")
                 assert isinstance(action, kls)
                 await action.run()
                 assert ran == {
@@ -293,9 +271,7 @@ class TestTaskRegister:
                     available_targets=["batman"],
                     restrictions=[{"target_types": ["hero"]}],
                 ):
-                    register.fill_task(
-                        collector, name, target="road", reference="d073d5000001", artifact="stuff"
-                    )
+                    register.fill_task(collector, name, target="road", reference="d073d5000001", artifact="stuff")
 
             action = register.fill_task(collector, "task4", reference="d073d5000001")
             await action.run()
@@ -309,9 +285,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, "task4")
             assert ran == {}
 
@@ -351,17 +325,13 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, "task6")
 
             with assertRaises(BadTarget, "This task requires you specify a target"):
                 register.fill_task(collector, t7)
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, t7, target=batman)
 
             action = register.fill_task(collector, "task7", target=batman, reference="_")
@@ -376,9 +346,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            action = register.fill_task(
-                collector, "task7", target=batman, reference="_", artifact="blah"
-            )
+            action = register.fill_task(collector, "task7", target=batman, reference="_", artifact="blah")
             await action.run()
             assert ran == {
                 "task7": {
@@ -391,7 +359,6 @@ class TestTaskRegister:
             ran.clear()
 
     class TestTaskFromAClass:
-
         @pytest.fixture()
         def collector(self):
             with alt_pytest_asyncio.Loop(new_loop=False):
@@ -412,12 +379,8 @@ class TestTaskRegister:
             herotarget = Target.FieldSpec().empty_normalise(type="hero")
             target_register.register_type("hero", HeroTarget)
 
-            road = mock.Mock(
-                name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-            )
-            batman = mock.Mock(
-                name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"]
-            )
+            road = mock.Mock(name="resolvedroad", instantiated_name="road", spec=["instantiated_name"])
+            batman = mock.Mock(name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"])
 
             roadcreator = mock.Mock(name="roadcreator", return_value=road)
             batmancreator = mock.Mock(name="batmancreator", return_value=batman)
@@ -511,9 +474,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            action = register.fill_task(
-                collector, "task1", target=batman, reference="d073d5000001", artifact="stuff"
-            )
+            action = register.fill_task(collector, "task1", target=batman, reference="d073d5000001", artifact="stuff")
             assert isinstance(action, t1)
             await action.run()
             assert ran == {
@@ -524,12 +485,8 @@ class TestTaskRegister:
             ran.clear()
 
             for kls, name in ((t2, "task2"), (t3, "task3")):
-
                 if name == "task2":
-
-                    action = register.fill_task(
-                        collector, name, reference="d073d5000001", artifact="stuff"
-                    )
+                    action = register.fill_task(collector, name, reference="d073d5000001", artifact="stuff")
                     assert isinstance(action, kls)
                     await action.run()
                     assert ran == {
@@ -548,13 +505,9 @@ class TestTaskRegister:
                         available_targets=["batman"],
                         restrictions=[{"target_types": "hero"}],
                     ):
-                        register.fill_task(
-                            collector, name, reference="d073d5000001", artifact="stuff"
-                        )
+                        register.fill_task(collector, name, reference="d073d5000001", artifact="stuff")
 
-                action = register.fill_task(
-                    collector, name, target=batman, reference="d073d5000001", artifact="stuff"
-                )
+                action = register.fill_task(collector, name, target=batman, reference="d073d5000001", artifact="stuff")
                 assert isinstance(action, kls)
                 await action.run()
                 assert ran == {
@@ -573,9 +526,7 @@ class TestTaskRegister:
                     available_targets=["batman"],
                     restrictions=[{"target_types": "hero"}],
                 ):
-                    register.fill_task(
-                        collector, name, target="road", reference="d073d5000001", artifact="stuff"
-                    )
+                    register.fill_task(collector, name, target="road", reference="d073d5000001", artifact="stuff")
 
             action = register.fill_task(collector, "task4", reference="d073d5000001")
             await action.run()
@@ -587,9 +538,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, "task4")
             assert ran == {}
 
@@ -627,17 +576,13 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, "task6")
 
             with assertRaises(BadTarget, "This task requires you specify a target"):
                 register.fill_task(collector, t7)
 
-            with assertRaises(
-                BadOption, "This task requires you specify a reference, please do so!"
-            ):
+            with assertRaises(BadOption, "This task requires you specify a reference, please do so!"):
                 register.fill_task(collector, t7, target=batman)
 
             action = register.fill_task(collector, "task7", target=batman, reference="_")
@@ -653,9 +598,7 @@ class TestTaskRegister:
             }
             ran.clear()
 
-            action = register.fill_task(
-                collector, "task7", target=batman, reference="_", artifact="blah"
-            )
+            action = register.fill_task(collector, "task7", target=batman, reference="_", artifact="blah")
             await action.run()
             assert ran == {
                 "task7": {
@@ -669,7 +612,6 @@ class TestTaskRegister:
             ran.clear()
 
     class TestFind:
-
         @pytest.fixture()
         def collector(self):
             with alt_pytest_asyncio.Loop(new_loop=False):
@@ -678,17 +620,13 @@ class TestTaskRegister:
                     instantiated_name="superman",
                     spec=["instantiated_name"],
                 )
-                batman = mock.Mock(
-                    name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"]
-                )
+                batman = mock.Mock(name="resolvedbatman", instantiated_name="batman", spec=["instantiated_name"])
                 vegemite = mock.Mock(
                     name="resolvedvegemite",
                     instantiated_name="vegemite",
                     spec=["instantiated_name"],
                 )
-                road = mock.Mock(
-                    name="resolvedroad", instantiated_name="road", spec=["instantiated_name"]
-                )
+                road = mock.Mock(name="resolvedroad", instantiated_name="road", spec=["instantiated_name"])
 
                 collector = Collector()
                 collector.prepare(None, {})
@@ -802,9 +740,7 @@ class TestTaskRegister:
 
             return register, tasks
 
-        def test_it_can_find_the_correct_task(
-            self, batman, superman, vegemite, road, register, collector
-        ):
+        def test_it_can_find_the_correct_task(self, batman, superman, vegemite, road, register, collector):
             register, tasks = register
 
             available = sorted(["One", "Two", "three", "Four", "Five", "six", "six2", "six3"])

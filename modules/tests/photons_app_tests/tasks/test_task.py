@@ -13,7 +13,6 @@ from photons_app.tasks.tasks import Task
 
 
 class TestTask:
-
     @pytest.fixture()
     def collector(self):
         with alt_pytest_asyncio.Loop(new_loop=False):
@@ -87,9 +86,7 @@ class TestTask:
         assert got == [{"wat": 1, "blah": 2}]
 
     def test_it_has_order_of_cleanup_and_execution(self, FakeTime, MockedCallLater, collector):
-
         got = []
-        m = None
 
         with FakeTime() as t:
 

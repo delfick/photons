@@ -92,7 +92,6 @@ def makeAssertUnhandled(device):
 
 
 class TestLightDevice:
-
     @pytest.fixture()
     def device(self):
         device = devices["a19"]
@@ -110,22 +109,15 @@ class TestLightDevice:
             [DeviceMessages.StateLabel(label="sam")],
             label="sam",
         )
-        await assertResponse(
-            DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
-        )
+        await assertResponse(DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam")
 
     async def test_it_responds_to_power_messages(self, device, assertResponse):
         await assertResponse(DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=0)])
-        await assertResponse(
-            DeviceMessages.SetPower(level=200), [DeviceMessages.StatePower(level=0)], power=200
-        )
-        await assertResponse(
-            DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
-        )
+        await assertResponse(DeviceMessages.SetPower(level=200), [DeviceMessages.StatePower(level=0)], power=200)
+        await assertResponse(DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200)
 
 
 class TestSwitchDevice:
-
     @pytest.fixture()
     def device(self):
         device = devices["switch"]
@@ -153,19 +145,14 @@ class TestSwitchDevice:
             [DeviceMessages.StateLabel(label="sam")],
             label="sam",
         )
-        await assertResponse(
-            DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam"
-        )
+        await assertResponse(DeviceMessages.GetLabel(), [DeviceMessages.StateLabel(label="sam")], label="sam")
 
-    async def test_it_replies_to_light_messages_with_a_StateUnhandled_packet(
-        self, device, assertUnhandled
-    ):
+    async def test_it_replies_to_light_messages_with_a_StateUnhandled_packet(self, device, assertUnhandled):
         await assertUnhandled(LightMessages.GetColor())
         await assertUnhandled(LightMessages.GetLightPower())
 
 
 class TestLightState:
-
     @pytest.fixture()
     def device(self):
         device = devices["a19"]
@@ -183,15 +170,10 @@ class TestLightState:
             [LightMessages.StateLightPower(level=0)],
             power=200,
         )
-        await assertResponse(
-            DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200
-        )
-        await assertResponse(
-            LightMessages.GetLightPower(), [DeviceMessages.StatePower(level=200)], power=200
-        )
+        await assertResponse(DeviceMessages.GetPower(), [DeviceMessages.StatePower(level=200)], power=200)
+        await assertResponse(LightMessages.GetLightPower(), [DeviceMessages.StatePower(level=200)], power=200)
 
     async def test_it_responds_to_Color_messages(self, async_timeout, device, assertResponse):
-
         def light_state(label, power, hue, saturation, brightness, kelvin):
             return LightMessages.LightState.create(
                 label=label,
@@ -211,36 +193,26 @@ class TestLightState:
         )
         await assertResponse(LightMessages.GetColor(), [light_state("bob", 0, 0, 0, 1, 3500)])
 
-        await assertResponse(
-            DeviceMessages.SetPower(level=300), [DeviceMessages.StatePower(level=0)], power=300
-        )
+        await assertResponse(DeviceMessages.SetPower(level=300), [DeviceMessages.StatePower(level=0)], power=300)
         await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 0, 0, 1, 3500)])
 
         await assertResponse(
             LightMessages.SetColor(hue=100, saturation=0.5, brightness=0.5, kelvin=4500),
             [light_state("bob", 300, 0, 0, 1, 3500)],
         )
-        await assertResponse(
-            LightMessages.GetColor(), [light_state("bob", 300, 100, 0.5, 0.5, 4500)]
-        )
+        await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 100, 0.5, 0.5, 4500)])
 
         await assertResponse(
-            LightMessages.SetWaveform(
-                hue=200, saturation=0.6, brightness=0.4, kelvin=9000, waveform=Waveform.SAW
-            ),
+            LightMessages.SetWaveform(hue=200, saturation=0.6, brightness=0.4, kelvin=9000, waveform=Waveform.SAW),
             [light_state("bob", 300, 100, 0.5, 0.5, 4500)],
         )
-        await assertResponse(
-            LightMessages.GetColor(), [light_state("bob", 300, 200, 0.6, 0.4, 9000)]
-        )
+        await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 200, 0.6, 0.4, 9000)])
 
         await assertResponse(
             LightMessages.SetWaveformOptional(hue=333),
             [light_state("bob", 300, 200, 0.6, 0.4, 9000)],
         )
-        await assertResponse(
-            LightMessages.GetColor(), [light_state("bob", 300, 333, 0.6, 0.4, 9000)]
-        )
+        await assertResponse(LightMessages.GetColor(), [light_state("bob", 300, 333, 0.6, 0.4, 9000)])
 
         await assertResponse(
             LightMessages.SetWaveformOptional(saturation=0),
@@ -262,7 +234,6 @@ class TestLightState:
 
 
 class TestInfrared:
-
     @pytest.fixture()
     def device(self):
         device = devices["ir"]
@@ -275,9 +246,7 @@ class TestInfrared:
         return makeAssertResponse(device, **attrs)
 
     async def test_it_responds_to_infrared_messages(self, device, assertResponse):
-        await assertResponse(
-            LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)]
-        )
+        await assertResponse(LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)])
         await assertResponse(
             LightMessages.SetInfrared(brightness=100),
             [LightMessages.StateInfrared(brightness=0)],
@@ -310,9 +279,7 @@ class TestInfrared:
 
         assertResponse = makeAssertResponse(device)
 
-        await assertResponse(
-            LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)]
-        )
+        await assertResponse(LightMessages.GetInfrared(), [LightMessages.StateInfrared(brightness=0)])
         await assertResponse(
             LightMessages.SetInfrared(brightness=100),
             [LightMessages.StateInfrared(brightness=0)],
@@ -326,7 +293,6 @@ class TestInfrared:
 
 
 class TestMatrix:
-
     @pytest.fixture
     def device(self):
         device = devices["tile"]
@@ -368,11 +334,7 @@ class TestMatrix:
     async def test_it_responds_to_tile_effect_messages(self, device, assertResponse):
         await assertResponse(
             TileMessages.GetTileEffect(),
-            [
-                TileMessages.StateTileEffect.create(
-                    type=TileEffectType.OFF, speed=0.005, palette_count=0, parameters={}
-                )
-            ],
+            [TileMessages.StateTileEffect.create(type=TileEffectType.OFF, speed=0.005, palette_count=0, parameters={})],
         )
         await assertResponse(
             TileMessages.SetTileEffect(
@@ -380,11 +342,7 @@ class TestMatrix:
                 palette_count=1,
                 palette=[hp.Color(1, 0, 1, 3500)],
             ),
-            [
-                TileMessages.StateTileEffect.create(
-                    type=TileEffectType.OFF, speed=0.005, palette_count=0, parameters={}, palette=[]
-                )
-            ],
+            [TileMessages.StateTileEffect.create(type=TileEffectType.OFF, speed=0.005, palette_count=0, parameters={}, palette=[])],
             matrix_effect=TileEffectType.FLAME,
         )
         await assertResponse(
@@ -408,15 +366,10 @@ class TestMatrix:
         assertUnhandled = makeAssertUnhandled(device)
 
         await assertUnhandled(TileMessages.GetTileEffect())
-        await assertUnhandled(
-            TileMessages.SetTileEffect.create(
-                type=TileEffectType.FLAME, parameters={}, palette=[hp.Color(0, 0, 0, 3500)]
-            )
-        )
+        await assertUnhandled(TileMessages.SetTileEffect.create(type=TileEffectType.FLAME, parameters={}, palette=[hp.Color(0, 0, 0, 3500)]))
 
 
 class TestZones:
-
     async def make_device(self, name, zones=None):
         device = devices[name]
         if zones is not None:
@@ -431,44 +384,28 @@ class TestZones:
         assertUnhandled = makeAssertUnhandled(device)
 
         await assertUnhandled(MultiZoneMessages.GetMultiZoneEffect())
-        await assertUnhandled(
-            MultiZoneMessages.SetMultiZoneEffect.create(
-                type=MultiZoneEffectType.MOVE, parameters={}
-            )
-        )
+        await assertUnhandled(MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE, parameters={}))
 
         await assertUnhandled(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
-        await assertUnhandled(
-            MultiZoneMessages.SetColorZones(
-                start_index=0, end_index=1, hue=0, saturation=1, brightness=1, kelvin=3500
-            )
-        )
+        await assertUnhandled(MultiZoneMessages.SetColorZones(start_index=0, end_index=1, hue=0, saturation=1, brightness=1, kelvin=3500))
 
         await assertUnhandled(MultiZoneMessages.GetExtendedColorZones())
-        await assertUnhandled(
-            MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)], colors_count=1)
-        )
+        await assertUnhandled(MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)], colors_count=1))
 
     async def test_it_doesnt_respond_to_extended_multizone_if_we_arent_extended_multizone(self):
         for case in ["striplcm1", "striplcm2noextended"]:
             device = await self.make_device(case, zones=[hp.Color(0, 0, 0, 0)])
-            devices.store(device).assertAttrs(
-                zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
-            )
+            devices.store(device).assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)])
 
             assertResponse = makeAssertResponse(device)
 
             await assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
             await assertResponse(
-                MultiZoneMessages.SetMultiZoneEffect.create(
-                    type=MultiZoneEffectType.MOVE, parameters={}
-                ),
+                MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE, parameters={}),
                 True,
             )
 
-            await assertResponse(
-                MultiZoneMessages.GetColorZones(start_index=0, end_index=255), True
-            )
+            await assertResponse(MultiZoneMessages.GetColorZones(start_index=0, end_index=255), True)
             await assertResponse(
                 MultiZoneMessages.SetColorZones(
                     start_index=0,
@@ -483,49 +420,35 @@ class TestZones:
 
             assertUnhandled = makeAssertUnhandled(device)
             await assertUnhandled(MultiZoneMessages.GetExtendedColorZones())
-            await assertUnhandled(
-                MultiZoneMessages.SetExtendedColorZones(
-                    colors=[hp.Color(0, 0, 0, 0)], colors_count=1
-                )
-            )
+            await assertUnhandled(MultiZoneMessages.SetExtendedColorZones(colors=[hp.Color(0, 0, 0, 0)], colors_count=1))
 
     async def test_it_responds_to_all_messages_if_we_have_extended_multizone(self):
         device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)])
-        devices.store(device).assertAttrs(
-            zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
-        )
+        devices.store(device).assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)])
 
         assertResponse = makeAssertResponse(device)
 
         await assertResponse(MultiZoneMessages.GetMultiZoneEffect(), True)
         await assertResponse(
-            MultiZoneMessages.SetMultiZoneEffect.create(
-                type=MultiZoneEffectType.MOVE, parameters={}
-            ),
+            MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE, parameters={}),
             True,
         )
 
         await assertResponse(MultiZoneMessages.GetColorZones(start_index=0, end_index=255), True)
         await assertResponse(
-            MultiZoneMessages.SetColorZones(
-                start_index=0, end_index=1, hue=0, saturation=1, brightness=1, kelvin=3500
-            ),
+            MultiZoneMessages.SetColorZones(start_index=0, end_index=1, hue=0, saturation=1, brightness=1, kelvin=3500),
             True,
         )
 
         await assertResponse(MultiZoneMessages.GetExtendedColorZones(), True)
         await assertResponse(
-            MultiZoneMessages.SetExtendedColorZones(
-                colors_count=1, zone_index=0, colors=[hp.Color(0, 0, 0, 0)]
-            ),
+            MultiZoneMessages.SetExtendedColorZones(colors_count=1, zone_index=0, colors=[hp.Color(0, 0, 0, 0)]),
             True,
         )
 
     async def test_it_responds_to_effect_messages(self):
         device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)])
-        devices.store(device).assertAttrs(
-            zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)]
-        )
+        devices.store(device).assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)])
 
         assertResponse = makeAssertResponse(device)
 
@@ -534,9 +457,7 @@ class TestZones:
             [MultiZoneMessages.StateMultiZoneEffect(type=MultiZoneEffectType.OFF)],
         )
         await assertResponse(
-            MultiZoneMessages.SetMultiZoneEffect.create(
-                type=MultiZoneEffectType.MOVE, parameters={}
-            ),
+            MultiZoneMessages.SetMultiZoneEffect.create(type=MultiZoneEffectType.MOVE, parameters={}),
             [MultiZoneMessages.StateMultiZoneEffect(type=MultiZoneEffectType.OFF)],
             zones_effect=MultiZoneEffectType.MOVE,
         )
@@ -632,11 +553,7 @@ class TestZones:
 
         await assertResponse(
             MultiZoneMessages.GetExtendedColorZones(),
-            [
-                MultiZoneMessages.StateExtendedColorZones(
-                    zones_count=11, zone_index=0, colors_count=11, colors=zones
-                )
-            ],
+            [MultiZoneMessages.StateExtendedColorZones(zones_count=11, zone_index=0, colors_count=11, colors=zones)],
         )
 
         new_colors = [
@@ -645,14 +562,8 @@ class TestZones:
             hp.Color(300, 0.5, 0.6, 7000),
         ]
         await assertResponse(
-            MultiZoneMessages.SetExtendedColorZones(
-                zone_index=3, colors_count=3, colors=new_colors
-            ),
-            [
-                MultiZoneMessages.StateExtendedColorZones(
-                    zones_count=11, zone_index=0, colors_count=11, colors=zones
-                )
-            ],
+            MultiZoneMessages.SetExtendedColorZones(zone_index=3, colors_count=3, colors=new_colors),
+            [MultiZoneMessages.StateExtendedColorZones(zones_count=11, zone_index=0, colors_count=11, colors=zones)],
         )
 
         zones[3] = new_colors[0]
@@ -660,16 +571,11 @@ class TestZones:
         zones[5] = new_colors[2]
         await assertResponse(
             MultiZoneMessages.GetExtendedColorZones(),
-            [
-                MultiZoneMessages.StateExtendedColorZones(
-                    zones_count=11, zone_index=0, colors_count=11, colors=zones
-                )
-            ],
+            [MultiZoneMessages.StateExtendedColorZones(zones_count=11, zone_index=0, colors_count=11, colors=zones)],
         )
 
 
 class TestProduct:
-
     def make_device(self, name, product, firmware):
         device = devices[name]
         assert device.cap.product is product
@@ -690,9 +596,7 @@ class TestProduct:
         )
 
     async def test_it_responds_to_GetHostFirmware(self):
-        device, assertResponse = self.make_device(
-            "color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23)
-        )
+        device, assertResponse = self.make_device("color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
         device.firmware.build = 2
         await assertResponse(
             DeviceMessages.GetHostFirmware(),
@@ -707,9 +611,7 @@ class TestProduct:
         )
 
     async def test_it_responds_to_GetWifiFirmware(self):
-        device, assertResponse = self.make_device(
-            "color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23)
-        )
+        device, assertResponse = self.make_device("color1000", Products.LCMV4_A19_COLOR, hp.Firmware(1, 23))
         await assertResponse(
             DeviceMessages.GetWifiFirmware(),
             [DeviceMessages.StateWifiFirmware(build=0, version_major=0, version_minor=0)],
@@ -723,7 +625,6 @@ class TestProduct:
 
 
 class TestGrouping:
-
     @pytest.fixture()
     def device(self):
         return devices["a19"]
@@ -739,9 +640,7 @@ class TestGrouping:
 
         setter = DeviceMessages.SetGroup.create(group="dcba", label="gl2", updated_at=3)
         state = DeviceMessages.StateGroup(group=setter.group, label="gl2", updated_at=3)
-        await assertResponse(
-            setter, [state], group=Collection(label="gl2", identity=setter.group, updated_at=3)
-        )
+        await assertResponse(setter, [state], group=Collection(label="gl2", identity=setter.group, updated_at=3))
         await assertResponse(
             setter,
             [state],
@@ -765,7 +664,6 @@ class TestGrouping:
 
 
 class TestClean:
-
     @pytest.fixture()
     def device(self):
         return devices["clean"]
@@ -784,9 +682,7 @@ class TestClean:
     def m(self, fake_the_time):
         return fake_the_time[1]
 
-    async def test_it_responds_to_starting_a_cycle_when_light_is_off(
-        self, device, assertResponse, m
-    ):
+    async def test_it_responds_to_starting_a_cycle_when_light_is_off(self, device, assertResponse, m):
         await device.change_one("power", 0, event=None)
 
         assert device.attrs.clean_details.enabled is False
@@ -865,9 +761,7 @@ class TestClean:
         await assertResponse(getter, [state])
         assert device.attrs.power == 0
 
-    async def test_it_responds_to_starting_a_cycle_when_light_is_on(
-        self, device, assertResponse, m
-    ):
+    async def test_it_responds_to_starting_a_cycle_when_light_is_on(self, device, assertResponse, m):
         await device.change_one("power", 0xFFFF, event=None)
 
         assert device.attrs.clean_details.enabled is False
@@ -954,18 +848,13 @@ class TestClean:
         assert device.attrs.clean_details.default_duration_s == 69420
 
     async def test_it_can_interrupt_a_cycle(self, device, assertResponse, m):
-
         async def start(enable, duration):
-            setter = LightMessages.SetHevCycle(
-                enable=enable, duration_s=duration, res_required=False
-            )
+            setter = LightMessages.SetHevCycle(enable=enable, duration_s=duration, res_required=False)
             await assertResponse(setter, True)
 
         async def assertRemaining(duration, remaining, last_power, result):
             getter = LightMessages.GetHevCycle()
-            state = LightMessages.StateHevCycle(
-                duration_s=duration, remaining_s=remaining, last_power=last_power
-            )
+            state = LightMessages.StateHevCycle(duration_s=duration, remaining_s=remaining, last_power=last_power)
             await assertResponse(getter, [state])
 
             getter = LightMessages.GetLastHevCycleResult()

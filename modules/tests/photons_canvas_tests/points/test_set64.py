@@ -94,10 +94,7 @@ class TestSet64:
         real = TileMessages.Set64.create(
             **{
                 **kwargs,
-                "colors": [
-                    {"hue": h, "saturation": s, "brightness": b, "kelvin": k}
-                    for h, s, b, k in colors
-                ],
+                "colors": [{"hue": h, "saturation": s, "brightness": b, "kelvin": k} for h, s, b, k in colors],
             }
         )
         simple = Set64(**kwargs)
@@ -105,7 +102,6 @@ class TestSet64:
         assertSame(real, simple)
 
     def test_it_lets_you_modify_attributes(self):
-
         changes = [
             ("source", 10),
             ("sequence", 12),
@@ -176,7 +172,6 @@ class TestSet64:
         assert msg.width == 6
 
     def test_it_can_be_given_colors_in_multiple_ways(self, seed):
-
         c1 = Color(100, 1, 1, 3500)
         c2 = Color(200, 0, 0, 3500)
 
@@ -201,11 +196,7 @@ class TestSet64:
 
     def test_it_can_be_given_None_as_a_valid_color(self):
         simple = Set64(colors=[(100, 1, 0, 3500), None, (200, 0, 1, 9000)])
-        assert (
-            simple.colors
-            == [Color(100, 1, 0, 3500), Color(0, 0, 0, 0), Color(200, 0, 1, 9000)]
-            + [Color(0, 0, 0, 0)] * 61
-        )
+        assert simple.colors == [Color(100, 1, 0, 3500), Color(0, 0, 0, 0), Color(200, 0, 1, 9000)] + [Color(0, 0, 0, 0)] * 61
 
     def test_it_can_have_a_source_set(self):
         simple = Set64()

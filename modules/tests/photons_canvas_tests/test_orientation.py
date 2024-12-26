@@ -21,9 +21,7 @@ class TestRotatedIndex:
 
         for i, o, expected in testcases:
             got = orientation.rotated_index(i, o)
-            assert (
-                got == expected
-            ), f"Rotated {i} to {got} instead of {expected} with orientation {o.name}"
+            assert got == expected, f"Rotated {i} to {got} instead of {expected} with orientation {o.name}"
 
 
 class TestReverseOrientation:
@@ -39,9 +37,7 @@ class TestReverseOrientation:
 
         for o, expected in testcases:
             got = orientation.reverse_orientation(o)
-            assert (
-                got is expected
-            ), f"Expected reverse of {o.name} to be {expected.name}, got {got.name}"
+            assert got is expected, f"Expected reverse of {o.name} to be {expected.name}, got {got.name}"
 
 
 class TestNearestOrientation:
@@ -60,9 +56,7 @@ class TestNearestOrientation:
 
         for x, y, z, expected in testcases:
             got = orientation.nearest_orientation(x, y, z)
-            assert (
-                got is expected
-            ), f"Expected accel meas ({x}, {y}, {x}) to be orientated {expected.name}, got {got.name}"
+            assert got is expected, f"Expected accel meas ({x}, {y}, {x}) to be orientated {expected.name}, got {got.name}"
 
 
 class TestReorient:

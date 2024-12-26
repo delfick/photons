@@ -17,17 +17,13 @@ def V():
 
         @hp.memoized_property
         def meta(s):
-            return Meta({"collector": s.collector, "final_future": s.final_future}, []).at(
-                "options"
-            )
+            return Meta({"collector": s.collector, "final_future": s.final_future}, []).at("options")
 
     return V()
 
 
 class TestPhotonsAppSpec:
-
     class TestTargetNameSpec:
-
         @pytest.fixture()
         def tns(self, V):
             return V.spec.target_name_spec
@@ -53,9 +49,7 @@ class TestPhotonsAppSpec:
 
     class TestPhotonsAppSpec:
         def test_it_gets_us_back_a_PhotonsApp(self, V):
-            res = V.spec.photons_app_spec.normalise(
-                V.meta, {"task_specifier": "blah:things", "debug": True}
-            )
+            res = V.spec.photons_app_spec.normalise(V.meta, {"task_specifier": "blah:things", "debug": True})
             assert isinstance(res, PhotonsApp)
             assert res.task_specifier() == ("blah", "things")
             assert res.debug is True

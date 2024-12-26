@@ -31,7 +31,6 @@ class TestDeviceFinder:
         assert isinstance(reference, SpecialReference)
 
     class TestUsage:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -169,21 +168,16 @@ class TestDeviceFinder:
                 assert found == [d1, d2]
 
         class TestProxyingFilterClassmethods:
-
             @pytest.fixture()
             def fltr(self):
                 return Filter.from_kwargs(label="kitchen", cap=["matrix", "chain"])
 
             def test_it_supports_from_json_str(self, V, fltr):
-                reference = DeviceFinder.from_json_str(
-                    '{"label": "kitchen", "cap": ["matrix", "chain"]}'
-                )
+                reference = DeviceFinder.from_json_str('{"label": "kitchen", "cap": ["matrix", "chain"]}')
                 assert reference.fltr == fltr
                 assert reference.finder is None
 
-                reference = DeviceFinder.from_json_str(
-                    '{"label": "kitchen", "cap": ["matrix", "chain"]}', finder=V.finder
-                )
+                reference = DeviceFinder.from_json_str('{"label": "kitchen", "cap": ["matrix", "chain"]}', finder=V.finder)
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
@@ -192,9 +186,7 @@ class TestDeviceFinder:
                 assert reference.fltr == fltr
                 assert reference.finder is None
 
-                reference = DeviceFinder.from_key_value_str(
-                    "label=kitchen cap=matrix,chain", finder=V.finder
-                )
+                reference = DeviceFinder.from_key_value_str("label=kitchen cap=matrix,chain", finder=V.finder)
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
@@ -203,9 +195,7 @@ class TestDeviceFinder:
                 assert reference.fltr == fltr
                 assert reference.finder is None
 
-                reference = DeviceFinder.from_url_str(
-                    "label=kitchen&cap=matrix&cap=chain", finder=V.finder
-                )
+                reference = DeviceFinder.from_url_str("label=kitchen&cap=matrix&cap=chain", finder=V.finder)
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
@@ -214,9 +204,7 @@ class TestDeviceFinder:
                 assert reference.fltr == fltr
                 assert reference.finder is None
 
-                reference = DeviceFinder.from_kwargs(
-                    label="kitchen", cap=["matrix", "chain"], finder=V.finder
-                )
+                reference = DeviceFinder.from_kwargs(label="kitchen", cap=["matrix", "chain"], finder=V.finder)
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
@@ -227,9 +215,7 @@ class TestDeviceFinder:
                     assert reference.fltr == expected
                     assert reference.finder is None
 
-                    reference = DeviceFinder.empty(
-                        refresh_info=ri, refresh_discovery=rd, finder=V.finder
-                    )
+                    reference = DeviceFinder.empty(refresh_info=ri, refresh_discovery=rd, finder=V.finder)
                     assert reference.fltr == expected
                     assert reference.finder is V.finder
 
@@ -242,21 +228,16 @@ class TestDeviceFinder:
                 assert reference.finder is V.finder
 
             def test_it_supports_from_options(self, V, fltr):
-                reference = DeviceFinder.from_options(
-                    {"label": "kitchen", "cap": ["matrix", "chain"]}
-                )
+                reference = DeviceFinder.from_options({"label": "kitchen", "cap": ["matrix", "chain"]})
                 assert reference.fltr == fltr
                 assert reference.finder is None
 
-                reference = DeviceFinder.from_options(
-                    {"label": "kitchen", "cap": ["matrix", "chain"]}, finder=V.finder
-                )
+                reference = DeviceFinder.from_options({"label": "kitchen", "cap": ["matrix", "chain"]}, finder=V.finder)
                 assert reference.fltr == fltr
                 assert reference.finder is V.finder
 
 
 class TestFindingDevices:
-
     @pytest.fixture()
     async def V(self, final_future):
         class V:
@@ -264,9 +245,7 @@ class TestFindingDevices:
             devices = pytest.helpers.mimic()
 
             d1 = devices.add("d1")(serials[0], Products.LCM3_TILE, hp.Firmware(3, 50))
-            d2 = devices.add("d2")(
-                serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[])
-            )
+            d2 = devices.add("d2")(serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[]))
             d3 = devices.add("d3")(
                 serials[2],
                 Products.LCM2_A19,
@@ -345,9 +324,7 @@ class TestFindingDevices:
         assert ss == [V.d1.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
-            )
+            V.devices.store(device).assertIncoming(DiscoveryMessages.GetService(), DeviceMessages.GetVersion())
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["matrix", "multizone"])
@@ -357,9 +334,7 @@ class TestFindingDevices:
         assert ss == [V.d1.serial, V.d2.serial]
 
         for device in V.devices:
-            V.devices.store(device).assertIncoming(
-                DiscoveryMessages.GetService(), DeviceMessages.GetVersion()
-            )
+            V.devices.store(device).assertIncoming(DiscoveryMessages.GetService(), DeviceMessages.GetVersion())
             V.devices.store(device).clear()
 
         reference = DeviceFinder.from_kwargs(cap=["not_matrix"], label="kitchen")
@@ -464,7 +439,6 @@ class TestFindingDevices:
             V.devices.store(device).clear()
 
     async def test_it_can_reuse_a_finder(self, V):
-
         finder = Finder(V.sender)
 
         reference = DeviceFinder.empty(finder=finder)

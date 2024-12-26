@@ -27,11 +27,10 @@ def list_of_dicts(lst):
     This behaviour is due to a performance optimisation I don't want to remove
     so, I compare with normalised values instead
     """
-    return [l.as_dict() for l in lst]
+    return [item.as_dict() for item in lst]
 
 
 class TestTheMultipleModifier:
-
     def assertProperties(self, thing, checker):
         checker(thing)
 
@@ -43,7 +42,6 @@ class TestTheMultipleModifier:
         checker(thing3)
 
     def test_it_allows_multiple_of_raw_types_and_structs(self):
-
         class Other(dictobj.PacketSpec):
             fields = [("four", T.Uint32)]
 
@@ -65,7 +63,6 @@ class TestTheMultipleModifier:
         self.assertProperties(thing, test_thing)
 
     def test_it_create_items_from_nothing(self):
-
         class E(enum.Enum):
             ZERO = 0
             MEH = 1
@@ -112,7 +109,6 @@ class TestTheMultipleModifier:
         ]
 
     def test_it_allows_replacing_items_in_place(self):
-
         class E(enum.Enum):
             ZERO = 0
             MEH = 1
@@ -180,7 +176,6 @@ class TestTheMultipleModifier:
         self.assertProperties(thing, test_replacement)
 
     def test_it_allows_replacing_items_in_place_when_from_nothing(self):
-
         class E(enum.Enum):
             ZERO = 0
             MEH = 1
@@ -228,7 +223,6 @@ class TestTheMultipleModifier:
         self.assertProperties(thing, test_replacement)
 
     def test_it_complains_if_setting_a_value_incorrectly(self):
-
         class E(enum.Enum):
             ZERO = 0
             MEH = 1
@@ -264,15 +258,12 @@ class TestTheMultipleModifier:
             thing.five[1] = 6
         with assertRaises(BadSpecValue, "Expected an integer"):
             thing.two[0] = "asdf"
-        with assertRaises(
-            BadSpecValue, "BoolInts must be True, False, 0 or 1", meta=Meta.empty().at("one")
-        ):
+        with assertRaises(BadSpecValue, "BoolInts must be True, False, 0 or 1", meta=Meta.empty().at("one")):
             thing.four[0] = {"one": "asdf"}
 
         self.assertProperties(thing, partial(test_thing, UnknownEnum(6)))
 
     def test_it_can_set_as_bytes(self):
-
         class E(enum.Enum):
             ZERO = 0
             MEH = 1
@@ -328,7 +319,6 @@ class TestTheMultipleModifier:
         self.assertProperties(thing, check2)
 
     def test_it_can_edit_structs_inline(self):
-
         class Other(dictobj.PacketSpec):
             fields = [("other", T.BoolInt), ("another", T.String(64).default(""))]
 
@@ -366,7 +356,6 @@ class TestTheMultipleModifier:
         self.assertProperties(thing, check2)
 
     def test_it_can_determine_class_and_number_based_off_other_fields(self):
-
         class One(dictobj.PacketSpec):
             fields = [("one", T.BoolInt.multiple(4).default(lambda pkt: False))]
 
@@ -386,9 +375,7 @@ class TestTheMultipleModifier:
                 ("val", T.Bytes(32).multiple(lambda pkt: pkt.amount, kls=choose_kls)),
             ]
 
-        chooser = Chooser(
-            choice="one", amount=3, val=[{"one": [True, True, False, True]}, {"one": [False, True]}]
-        )
+        chooser = Chooser(choice="one", amount=3, val=[{"one": [True, True, False, True]}, {"one": [False, True]}])
 
         def check(chooser):
             assert chooser.choice == "one"
@@ -411,7 +398,6 @@ class TestTheMultipleModifier:
         self.assertProperties(chooser, check)
 
     def test_it_can_determine_number_based_off_other_fields(self):
-
         class Vals(dictobj.PacketSpec):
             fields = [
                 ("amount", T.Uint8),

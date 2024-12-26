@@ -99,9 +99,7 @@ class CommandSplitter(MergedOptionStringFormatter):
             name = parts[0]
             if len(parts) == 1:
                 if name not in os.environ:
-                    raise sys.exit(
-                        f"This script requires you have a '{name}' variable in your environment"
-                    )
+                    raise sys.exit(f"This script requires you have a '{name}' variable in your environment")
                 return os.environ[name] or " "
             else:
                 return os.environ.get(name, parts[1]) or " "

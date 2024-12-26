@@ -94,9 +94,7 @@ class Filter:
                 self._lost_replies.add(kls)
             yield
         finally:
-            self._lost_replies = {
-                kls for kls in self._lost_replies if kls not in klses or kls in before
-            }
+            self._lost_replies = {kls for kls in self._lost_replies if kls not in klses or kls in before}
 
     @contextmanager
     def lost_request(self, *klses):
@@ -106,9 +104,7 @@ class Filter:
                 self._lost_request.add(kls)
             yield
         finally:
-            self._lost_request = {
-                kls for kls in self._lost_request if kls not in klses or kls in before
-            }
+            self._lost_request = {kls for kls in self._lost_request if kls not in klses or kls in before}
 
     @contextmanager
     def intercept_see_request(self, func):
@@ -191,11 +187,7 @@ class Filter:
             else:
                 return
 
-        if (
-            not request_event.pkt.res_required
-            and not request_event.pkt.__class__.__name__.startswith("Get")
-            and not represents_ack
-        ):
+        if not request_event.pkt.res_required and not request_event.pkt.__class__.__name__.startswith("Get") and not represents_ack:
             return
 
         if not represents_ack and any(request_event.pkt | kls for kls in self._lost_replies):

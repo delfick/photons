@@ -15,6 +15,7 @@ import logging
 from textwrap import dedent
 
 from bitarray import bitarray
+
 from photons_protocol.errors import BadConversion
 from photons_protocol.types import MultiOptions, Type
 
@@ -68,9 +69,7 @@ class PacketTypeExtractor:
 
         if protocol == 1024:
             if len(data) < 288:
-                raise BadConversion(
-                    "Data is too small to be a LIFX packet", need_atleast=36, got=len(data) // 8
-                )
+                raise BadConversion("Data is too small to be a LIFX packet", need_atleast=36, got=len(data) // 8)
 
             ptbts = data[256 : 256 + 16].tobytes()
             pkt_type = ptbts[0] + (ptbts[1] << 8)
@@ -91,9 +90,7 @@ class PacketTypeExtractor:
 
         if protocol == 1024:
             if len(data) < 36:
-                raise BadConversion(
-                    "Data is too small to be a LIFX packet", need_atleast=36, got=len(data)
-                )
+                raise BadConversion("Data is too small to be a LIFX packet", need_atleast=36, got=len(data))
             pkt_type = data[32] + (data[33] << 8)
 
         return protocol, pkt_type
@@ -111,7 +108,7 @@ def sources_for(kls):
         return
     except OSError as error:
         if error.args and error.args[0] == "could not find class definition":
-            log.warning("Couldn't find source code for kls\tkls={0}".format(kls))
+            log.warning(f"Couldn't find source code for kls\tkls={kls}")
         else:
             raise
     else:
@@ -125,7 +122,6 @@ def sources_for(kls):
                 in_kls = attr
 
             if not line.strip().startswith("#"):
-
                 buf.append(line)
 
         if buf and in_kls:
@@ -174,9 +170,7 @@ class MessagesMixin:
 
         prot = protocol_register.get(protocol)
         if prot is None:
-            raise BadConversion(
-                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
-            )
+            raise BadConversion("Unknown packet protocol", wanted=protocol, available=list(protocol_register))
         Packet, messages_register = prot
 
         mkls = None
@@ -199,9 +193,7 @@ class MessagesMixin:
 
         prot = protocol_register.get(protocol)
         if prot is None:
-            raise BadConversion(
-                "Unknown packet protocol", wanted=protocol, available=list(protocol_register)
-            )
+            raise BadConversion("Unknown packet protocol", wanted=protocol, available=list(protocol_register))
         Packet, messages_register = prot
 
         mkls = None

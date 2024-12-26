@@ -43,7 +43,6 @@ async def parent_ts(final_future):
 
 class TestIO:
     def test_it_has_a_packet_filter(self, device):
-
         class IIO(IO):
             io_source = "iio"
 
@@ -53,9 +52,7 @@ class TestIO:
         assert io.last_final_future is None
 
     class TestSession:
-        async def test_it_manages_a_queue_and_consumer_task_for_incoming_messages(
-            self, device, wrap_io, final_future, parent_ts
-        ):
+        async def test_it_manages_a_queue_and_consumer_task_for_incoming_messages(self, device, wrap_io, final_future, parent_ts):
             process = []
             got = hp.ResettableFuture()
 
@@ -95,7 +92,6 @@ class TestIO:
             assert io.incoming.final_future.done()
 
         async def test_it_can_restart_a_session(self, device, wrap_io, final_future, parent_ts):
-
             class IIO(IO):
                 io_source = "iio"
 
@@ -146,9 +142,7 @@ class TestIO:
                     await queue.finish()
 
     class TestProcessInstruction:
-        async def test_it_puts_result_from_instruction_through_filter_and_sends_replies(
-            self, wrap_io, device, final_future
-        ):
+        async def test_it_puts_result_from_instruction_through_filter_and_sends_replies(self, wrap_io, device, final_future):
             got = []
 
             class MyIO(IO):
@@ -204,7 +198,6 @@ class TestIO:
             ]
 
     class TestProcessIncoming:
-
         @pytest.fixture()
         def record(self):
             rec = []
@@ -289,9 +282,7 @@ class TestIO:
                 lambda d: iokls(d),
                 lambda d: Listener(d),
                 lambda d: Responder(d),
-                lambda d: RecordEvents(
-                    d, {"record_events_store": record, "got_event_fut": got_event}
-                ),
+                lambda d: RecordEvents(d, {"record_events_store": record, "got_event_fut": got_event}),
                 search_for_operators=False,
             )
             async with device.session(final_future):
@@ -307,9 +298,7 @@ class TestIO:
                 lambda d: iokls(d),
                 lambda d: Listener(d),
                 lambda d: Responder(d),
-                lambda d: RecordEvents(
-                    d, {"record_events_store": record, "got_event_fut": got_event}
-                ),
+                lambda d: RecordEvents(d, {"record_events_store": record, "got_event_fut": got_event}),
                 search_for_operators=False,
             )
             async with device.session(final_future):
@@ -317,9 +306,7 @@ class TestIO:
                     record.pop()
                 yield device
 
-        async def test_it_does_nothing_if_the_device_is_offline(
-            self, device, sent, record, got_event
-        ):
+        async def test_it_does_nothing_if_the_device_is_offline(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -352,9 +339,7 @@ class TestIO:
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
-            pkt = make_packet(
-                DiscoveryMessages.GetService, source=3, sequence=3, target=device.serial
-            )
+            pkt = make_packet(DiscoveryMessages.GetService, source=3, sequence=3, target=device.serial)
             io.received(pkt.pack().tobytes(), True, addr)
 
             while len(record) != 4:
@@ -419,9 +404,7 @@ class TestIO:
                     raise Cont()
 
             with intercept:
-                pkt = make_packet(
-                    DeviceMessages.GetPower, source=3, sequence=3, target=device.serial
-                )
+                pkt = make_packet(DeviceMessages.GetPower, source=3, sequence=3, target=device.serial)
                 io.received(pkt.pack().tobytes(), True, addr)
 
                 while len(record) != 4:
@@ -442,9 +425,7 @@ class TestIO:
                 ]
                 record.clear()
 
-        async def test_it_can_have_unhandled_messages(
-            self, switch, device, sent, record, got_event
-        ):
+        async def test_it_can_have_unhandled_messages(self, switch, device, sent, record, got_event):
             io = device.io["TESTIO"]
             ioswitch = switch.io["TESTIO"]
             addr = ("memory", device.serial)
@@ -494,9 +475,7 @@ class TestIO:
             ]
             record.clear()
 
-        async def test_it_can_not_send_replies_from_res_required_false_unless_is_a_get(
-            self, device, sent, record, got_event
-        ):
+        async def test_it_can_not_send_replies_from_res_required_false_unless_is_a_get(self, device, sent, record, got_event):
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
@@ -549,9 +528,7 @@ class TestIO:
             io = device.io["TESTIO"]
             addr = ("memory", device.serial)
 
-            pkt = make_packet(
-                DeviceMessages.SetPower, source=2, sequence=3, target=device.serial, level=65535
-            )
+            pkt = make_packet(DeviceMessages.SetPower, source=2, sequence=3, target=device.serial, level=65535)
             io.received(pkt.pack().tobytes(), True, addr)
             await sent
             sent.reset()
@@ -619,9 +596,7 @@ class TestIO:
             ]
             record.clear()
 
-            pkt = make_packet(
-                DeviceMessages.SetPower, source=2, sequence=5, target=device.serial, level=0
-            )
+            pkt = make_packet(DeviceMessages.SetPower, source=2, sequence=5, target=device.serial, level=0)
 
             with io.packet_filter.lost_replies(DeviceMessages.SetPower):
                 io.received(pkt.pack().tobytes(), True, addr)

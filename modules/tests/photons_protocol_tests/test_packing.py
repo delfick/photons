@@ -57,7 +57,6 @@ class TestValToBitarray:
 
 
 class TestBitarraySlice:
-
     @pytest.fixture()
     def slce(self):
         name = mock.Mock(name="name")
@@ -108,9 +107,7 @@ class TestBitarraySlice:
             slce.val = bitarray("1")
             assert slce.unpackd is True
 
-        def test_it_pads_left_if_original_size_is_greater_than_actual_val_and_we_have_left_cut(
-            self, slce
-        ):
+        def test_it_pads_left_if_original_size_is_greater_than_actual_val_and_we_have_left_cut(self, slce):
             slce.typ = T.Int8.S(6, left=True)
             slce.val = bitarray("000010", endian="little")
 
@@ -122,9 +119,7 @@ class TestBitarraySlice:
 
             assert slce.unpackd == 64
 
-        def test_it_pads_right_if_original_size_is_greater_than_actual_val_and_we_dont_have_left_cut(
-            self, slce
-        ):
+        def test_it_pads_right_if_original_size_is_greater_than_actual_val_and_we_dont_have_left_cut(self, slce):
             slce.typ = T.Int8.S(6)
             slce.val = bitarray("000010", endian="little")
 
@@ -151,7 +146,6 @@ class TestBitarraySlice:
 
 
 class TestFieldInfo:
-
     @pytest.fixture()
     def val(self):
         return mock.Mock(name="val")
@@ -183,17 +177,13 @@ class TestFieldInfo:
         def test_it_returns_value_as_is(self, info, val):
             assert info.value is val
 
-        def test_it_returns_value_as_0_bits_if_our_typ_is_Reserved_and_val_is_NotSpecified(
-            self, info
-        ):
+        def test_it_returns_value_as_0_bits_if_our_typ_is_Reserved_and_val_is_NotSpecified(self, info):
             info.typ = T.Reserved(8)
             info.size_bits = 8
             info.val = sb.NotSpecified
             assert info.value == bitarray("0" * 8)
 
-        def test_it_returns_value_as_is_if_typ_is_Reserved_but_value_is_not_NotSpecified(
-            self, info, val
-        ):
+        def test_it_returns_value_as_is_if_typ_is_Reserved_but_value_is_not_NotSpecified(self, info, val):
             info.typ = T.Reserved(8)
             assert info.value == val
 
@@ -247,7 +237,6 @@ class TestFieldInfo:
             to_bitarray.assert_called_once_with()
 
     class TestToBitarray:
-
         @contextmanager
         def a_val(self, val):
             with mock.patch.object(FieldInfo, "value", val):
@@ -357,7 +346,6 @@ class TestFieldInfo:
 
 
 class TestPacketPacking:
-
     @pytest.fixture()
     def V(self):
         class V:
@@ -385,9 +373,8 @@ class TestPacketPacking:
 
     class TestFieldsIn:
         def test_it_yields_FieldInfo_objects(self, V):
-
             def cb(pkt, serial):
-                return "{0}.cb".format(serial)
+                return f"{serial}.cb"
 
             p = V.P(one=True, two=cb, other=1)
 
@@ -405,9 +392,8 @@ class TestPacketPacking:
 
     class TestPktFromBitarray:
         def test_it_creates_a_pkt_field_by_field(self, V):
-
             def cb(pkt, serial):
-                return "{0}.cb2".format(serial)
+                return f"{serial}.cb2"
 
             p = V.P(one=True, two=cb, other=1)
             packd = p.pack(serial="d073d5")
@@ -466,7 +452,6 @@ class TestPacketPacking:
         def test_it_returns_where_we_are_in_the_bitarray_which_is_helpful_when_we_have_an_empty_payload(
             self,
         ):
-
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("one", T.Int16), ("payload", "Payload")]
@@ -508,9 +493,7 @@ class TestPacketPacking:
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray(
-                    "01111010", endian="little"
-                )
+                assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray("01111010", endian="little")
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
@@ -543,9 +526,7 @@ class TestPacketPacking:
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                assert PacketPacking.pack(
-                    pkt, payload=payload, parent=parent, serial=serial
-                ) == bitarray("0111101001010101", endian="little")
+                assert PacketPacking.pack(pkt, payload=payload, parent=parent, serial=serial) == bitarray("0111101001010101", endian="little")
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
@@ -578,14 +559,11 @@ class TestPacketPacking:
             parent = mock.Mock(name="parent")
             serial = mock.Mock(name="serial")
             with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray(
-                    "0111101001010101", endian="little"
-                )
+                assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray("0111101001010101", endian="little")
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
         def test_it_does_not_set_payload_if_we_arent_a_parent_packet(self):
-
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("payload", "Payload")]
@@ -624,9 +602,7 @@ class TestPacketPacking:
             serial = mock.Mock(name="serial")
             with assertRaises(BadConversion, "Failed to convert field into a bitarray"):
                 with mock.patch.object(PacketPacking, "fields_in", fields_in):
-                    assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray(
-                        "01111010", endian="little"
-                    )
+                    assert PacketPacking.pack(pkt, parent=parent, serial=serial) == bitarray("01111010", endian="little")
 
             fields_in.assert_called_once_with(pkt, parent, serial)
 
@@ -658,7 +634,6 @@ class TestPacketPacking:
             ]
 
         def test_it_assigns_the_remainder_if_we_have_a_payload_with_message_type_0(self):
-
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("one", T.Int8), ("payload", "Payload")]

@@ -1,9 +1,10 @@
 from delfick_project.norms import Meta, sb
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks import task_register as task
+from photons_messages import DeviceMessages, LightMessages
+
 from photons_control.colour import ColourParser
 from photons_control.script import FromGenerator, Pipeline
-from photons_messages import DeviceMessages, LightMessages
 
 
 def PowerToggle(duration=1, group=False, **kwargs):
@@ -28,13 +29,9 @@ def PowerToggle(duration=1, group=False, **kwargs):
         async for pkt in sender(get_power, reference, **kwargs):
             if pkt | DeviceMessages.StatePower:
                 if pkt.level == 0:
-                    yield LightMessages.SetLightPower(
-                        level=65535, res_required=False, duration=duration, target=pkt.serial
-                    )
+                    yield LightMessages.SetLightPower(level=65535, res_required=False, duration=duration, target=pkt.serial)
                 else:
-                    yield LightMessages.SetLightPower(
-                        level=0, res_required=False, duration=duration, target=pkt.serial
-                    )
+                    yield LightMessages.SetLightPower(level=0, res_required=False, duration=duration, target=pkt.serial)
 
     return FromGenerator(gen)
 
@@ -112,9 +109,7 @@ class Transformer:
             return []
 
         if state.get("power") == "on" and has_color_options:
-            return transformer.power_on_and_color(
-                state, keep_brightness=keep_brightness, transition_color=transition_color
-            )
+            return transformer.power_on_and_color(state, keep_brightness=keep_brightness, transition_color=transition_color)
 
         msgs = []
         if "power" in state:
@@ -164,7 +159,6 @@ class Transformer:
             currently_off = current_state.power == 0
 
             if currently_off:
-
                 clone = color_message.clone()
                 clone.period = 0
                 clone.brightness = 0
@@ -185,9 +179,7 @@ class Transformer:
             set_color.target = serial
 
             if currently_off:
-                set_color.brightness = (
-                    current_state.brightness if want_brightness is None else want_brightness
-                )
+                set_color.brightness = current_state.brightness if want_brightness is None else want_brightness
                 set_color.set_brightness = True
             elif want_brightness is not None:
                 set_color.brightness = want_brightness
@@ -236,16 +228,12 @@ class transform(task.Task):
         extra = self.photons_app.extra_as_json
         extra = sb.dictionary_spec().normalise(Meta.empty(), extra)
 
-        transform_options = sb.set_options(transform_options=sb.dictionary_spec()).normalise(
-            Meta.empty(), extra
-        )["transform_options"]
+        transform_options = sb.set_options(transform_options=sb.dictionary_spec()).normalise(Meta.empty(), extra)["transform_options"]
 
         msg = Transformer.using(extra, **transform_options)
 
         if not msg:
-            raise PhotonsAppError(
-                'Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``'
-            )
+            raise PhotonsAppError('Please specify valid options after --. For example ``transform -- \'{"power": "on", "color": "red"}\'``')
 
         await self.target.send(msg, self.reference)
 

@@ -1,5 +1,6 @@
 from delfick_project.norms import dictobj
 from photons_app import helpers as hp
+
 from photons_canvas.animations import an_animation
 from photons_canvas.animations.registered.marquee import (
     MarqueeAnimation,
