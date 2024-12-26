@@ -35,9 +35,7 @@ async def doit(collector):
     ]
     colors = Pipeline(*color_msgs, spread=spread, synchronized=True)
 
-    pipeline = Pipeline(
-        power_on, Repeater(colors, min_loop_time=len(color_names)), synchronized=True
-    )
+    pipeline = Pipeline(power_on, Repeater(colors, min_loop_time=len(color_names)), synchronized=True)
 
     def e(error):
         log.error(error)

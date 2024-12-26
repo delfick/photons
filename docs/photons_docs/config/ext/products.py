@@ -22,9 +22,7 @@ class ShowProductsDirective(Directive):
                 + [""],
             )
 
-        source = self.state_machine.input_lines.source(
-            self.lineno - self.state_machine.input_offset - 1
-        )
+        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
         tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
         lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)

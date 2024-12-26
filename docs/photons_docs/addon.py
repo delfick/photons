@@ -31,9 +31,7 @@ class DocOptions(dictobj.Spec):
 
 @addon_hook()
 def __lifx__(collector, *args, **kwargs):
-    collector.register_converters(
-        {"documentation": DocOptions.FieldSpec(formatter=MergedOptionStringFormatter)}
-    )
+    collector.register_converters({"documentation": DocOptions.FieldSpec(formatter=MergedOptionStringFormatter)})
 
 
 def port_connected(port):
