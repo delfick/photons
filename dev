@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# https://stackoverflow.com/questions/2683279/how-to-detect-if-a-script-is-being-sourced
+sourced=0
+if [ -n "$ZSH_VERSION" ]; then 
+    case $ZSH_EVAL_CONTEXT in *:file) sourced=1;; esac
+elif [ -n "$KSH_VERSION" ]; then
+    # shellcheck disable=SC2296
+    [ "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ] && sourced=1
+elif [ -n "$BASH_VERSION" ]; then
+    (return 0 2>/dev/null) && sourced=1 
+else
+    # All other shells: examine $0 for known shell binary filenames.
+    # Detects `sh` and `dash`; add additional shell filenames as needed.
+    case ${0##*/} in sh|-sh|dash|-dash)
+        if [ -z "$PROJECT_ROOT" ]; then
+            echo "POSIX environments need PROJECT_ROOT in the environment for 'source dev activate' to work"
+            echo "This must be set to the root of this repository"
+            return 1
+        fi
+    ;;
+    esac
+fi
+
+# Bash does not make it easy to find where this file is
+# Here I'm making it so it doesn't matter what directory you are in
+# when you execute this script. And it doesn't matter whether you're
+# executing a symlink to this script
+# Note the `-h` in the while loop asks if this path is a symlink
+pushd . >'/dev/null'
+DIRECTORY_BEFORE="$(pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+
+find_here() {
+    while [ -h "$SCRIPT_PATH" ]; do
+        cd "$(dirname -- "$SCRIPT_PATH")" || return 1
+        SCRIPT_PATH="$(readlink -f -- "$SCRIPT_PATH")"
+    done
+    cd "$(dirname -- "$SCRIPT_PATH")" >'/dev/null' || return 1
+}
+
+if ! find_here; then
+    if [ "$sourced" = "1" ]; then
+        return 1
+    else
+        exit 1
+    fi
+fi
+
+PROJECT_ROOT=$(pwd)
+export PROJECT_ROOT
+
+if ! ./tools/uv sync --locked -q; then
+    if [ "$sourced" = "1" ]; then
+        return 1
+    else
+        exit 1
+    fi
+fi
+
+if [ -f ./tools/requirements.local.txt ]; then
+    if ! ./tools/uv pip install -q -r ./tools/requirements.local.txt; then
+        if [ "$sourced" = "1" ]; then
+            return 1
+        else
+            exit 1
+        fi
+    fi
+fi
+
+if [ "$sourced" = "1" ]; then
+    # shellcheck source=/dev/null
+    source .venv/bin/activate
+    cd "$DIRECTORY_BEFORE" || return 1
+else
+    exec ./tools/uv run ./tools/run.py "$@"
+fi

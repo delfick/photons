@@ -1,0 +1,88 @@
+#!/bin/bash
+
+TOOLS="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd )"
+BOOTSTRAP_VENV="$TOOLS/.bootstrap-venv"
+
+UV_CONSTRAINTS="$TOOLS/requirements.uv.txt"
+UV_CONSTRAINTS_DEST="$BOOTSTRAP_VENV/requirements.uv.txt"
+
+UNAME="$(uname -sr)"
+
+bin_path() {
+    case "$UNAME" in
+    Linux*Microsoft*)
+        echo "$BOOTSTRAP_VENV/Scripts/$1.exe"
+        ;;
+
+    CYGWIN* | MINGW* | MSYS*)
+        echo "$BOOTSTRAP_VENV/Scripts/$1.exe"
+        ;;
+
+    *)
+        echo "$BOOTSTRAP_VENV/bin/$1"
+        ;;
+    esac
+}
+
+if [ ! -f "$(bin_path python)" ]; then
+    # Assume $BOOTSTRAP_VENV isn't a valid virtualenv, delete it so it can be remade
+    # Use -f so it doesn't matter if it doesn't even exist yet
+    rm -rf "$BOOTSTRAP_VENV"
+fi
+
+if [ -f "$(bin_path uv)" ]; then
+    UV="$(bin_path uv)"
+elif which uv &>/dev/null; then
+    # If we have a uv on PATH it'll be quicker to make the virtualenv
+    # where we'll put the uv in that we actually use
+    UV="$(which uv)"
+fi
+
+if [ ! -d "$BOOTSTRAP_VENV" ]; then
+    # We aren't guaranteed what version of uv we found so we make a virtualenv
+    # where we can get the specific version we care about
+    if [ -n "$UV" ]; then
+        "$UV" venv "$BOOTSTRAP_VENV"
+    elif which python3 &>/dev/null; then
+        python3 -m venv "$BOOTSTRAP_VENV"
+    elif which python &>/dev/null; then
+        python -m venv "$BOOTSTRAP_VENV"
+    else
+        echo "!!! Unable to find a 'uv', 'python3' or 'python' on PATH"
+        exit 1
+    fi
+fi
+
+# We have a venv now, but we may not have any UV yet
+if [ -z "$UV" ]; then
+    if [ ! -f "$(bin_path pip)" ] && [ ! -f "$(bin_path pip3)" ]; then
+        # We aren't guaranteed the virtualenv has pip in it
+        # We have no uv or pip, make a pip so we can install a uv
+        "$(bin_path python)" -m ensurepip
+    fi
+
+    if [ -f "$(bin_path pip)" ]; then
+        PIP="$(bin_path pip)"
+    elif [ -f "$(bin_path pip3)" ]; then
+        PIP="$(bin_path pip3)"
+    else
+        echo "!!! Failed to get a 'pip' to get 'uv' with"
+        exit 1
+    fi
+
+    "$PIP" install uv -c "$UV_CONSTRAINTS" --disable-pip-version-check
+
+    if [ ! -f "$(bin_path uv)" ]; then
+        echo "!!! Failed to get 'uv'"
+        exit 1
+    fi
+
+    UV="$(bin_path uv)"
+fi
+
+if [ ! -f "$UV_CONSTRAINTS_DEST" ] || ! cmp -s "$UV_CONSTRAINTS_DEST" "$UV_CONSTRAINTS"; then
+    "$UV" pip install uv -c "$UV_CONSTRAINTS" -p "$(bin_path python)"
+    cp "$UV_CONSTRAINTS" "$UV_CONSTRAINTS_DEST"
+fi
+
+exec "$(bin_path uv)" "$@"

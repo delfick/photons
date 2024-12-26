@@ -58,16 +58,13 @@ jobs:
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
 
-      - name: Install deps
-        shell: bash
-        env:
-          VENVSTARTER_ONLY_MAKE_VENV: "1"
-        run: python ./tools/venv
+      - name: Install venv
+        run: ./tools/uv sync --extra tools --locked
 
       - name: Run module tests
         shell: bash
-        run: cd modules && ./test.sh -v
+        run: ./tools/ci module-tests -v
 
       - name: Run interactor tests
         shell: bash
-        run: cd apps/interactor && ./test.sh -v
+        run: ./tools/ci interactor-tests -v

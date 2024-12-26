@@ -12,7 +12,7 @@ The environment
 Everything that is needed is available in a virtualenv in the current terminal
 session by doing::
 
-    > source run.sh activate
+    > source dev activate
 
 Even if this has been done before, doing it again will install new dependencies
 if the version of Photons has changed.
@@ -28,12 +28,6 @@ For the interactor tests run from any folder::
 
     > ./apps/interactor/test.sh
 
-Alternatively tox may be used::
-
-    > source run.sh activate
-    > cd modules
-    > tox
-
 Tests are grouped by their module inside the ``tests`` folder. Note that we name
 each folder as "<module>_tests" so that import statements for that module don't
 get clobbered by these test files.
@@ -45,7 +39,7 @@ We use the black project (https://black.readthedocs.io/en/stable/) to format the
 python code in this repository.
 
 All the developer needs to know is that either their editor is run in the same
-session as a ``source run.sh activate`` or that they run::
+session as a ``source dev activate`` or that they run::
 
    $ ./format
 

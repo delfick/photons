@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+if [[ -n $CLEAR_MYPY_CACHE ]]; then
+    echo "Clearing mypy caches"
+    rm -rf .mypy_cache
+fi
+
+exec ./dev types "$@"

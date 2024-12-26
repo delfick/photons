@@ -1,28 +1,24 @@
 #!/bin/bash
 
+set -e
+
 # Helper for searching code base without searching through external code
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$(git rev-parse --show-toplevel)"
 
-(
-    cd $DIR
-    exec ack "$@" \
-        --ignore-directory .tox \
-        --ignore-directory dist \
-        --ignore-directory build \
-        --ignore-directory lifx_photons_core.egg-info \
-        --ignore-directory tools \
-        --ignore-directory docs/.photons-docs \
-        --ignore-directory docs/res \
-        --ignore-directory docs/gh-pages \
-        --ignore-directory docs/lifx_photons_docs.egg-info \
-        --ignore-directory examples/.lifx \
-        --ignore-directory generate_photons_messages/.generate_photons_messages \
-        --ignore-directory apps/tile_arranger/static/node_modules \
-        --ignore-directory apps/tile_arranger/static/dist \
-        --ignore-directory apps/interactor/docker/.harpoon \
-        --ignore-directory modules/.mypy_cache \
-        --ignore-directory apps/arranger/.mypy_cache \
-        --ignore-directory apps/interactor/.mypy_cache \
-        --ignore-directory .mypy_cache
-)
+exec ack "$@" \
+    --ignore-directory .tox \
+    --ignore-directory .mypy_cache \
+    --ignore-directory .dmypy.json \
+    --ignore-directory dist \
+    --ignore-directory build \
+    --ignore-directory "*.egg-info" \
+    --ignore-directory tools/.bootstrap-venv \
+    --ignore-directory docs/res \
+    --ignore-directory docs/gh-pages \
+    --ignore-directory examples/.lifx \
+    --ignore-directory generate_photons_messages/.generate_photons_messages \
+    --ignore-directory apps/interactor/docker/.harpoon \
+    --ignore-directory modules/.mypy_cache \
+    --ignore-directory apps/arranger/.mypy_cache \
+    --ignore-directory apps/interactor/.mypy_cache

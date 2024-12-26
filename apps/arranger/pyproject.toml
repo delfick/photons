@@ -1,25 +1,20 @@
 [build-system]
-requires = ["hatchling"]
+requires = [ "hatchling" ]
 build-backend = "hatchling.build"
 
 [project]
 name = "lifx-photons-arranger"
-dynamic = ["version"]
+dynamic = [ "version" ]
 description = "A web interface for changing the user co-ordinates of LIFX tiles"
 readme = "README.rst"
 license = "MIT"
 requires-python = ">= 3.12"
-authors = [
-    { name = "Stephen Moore", email = "github@delfick.com" },
-]
-keywords = [
-    "arranger",
-    "lifx",
-    "photons",
-]
-dependencies = [
-    "lifx-photons-core[web-server]>=0.46.3",
-]
+keywords = [ "arranger", "lifx", "photons" ]
+dependencies = [ "lifx-photons-core[web-server]>=0.46.3" ]
+
+[[project.authors]]
+name = "Stephen Moore"
+email = "github@delfick.com"
 
 [project.entry-points."lifx.photons"]
 arranger = "arranger.addon"
@@ -31,16 +26,10 @@ Homepage = "http://github.com/delfick/photons/apps/arranger"
 path = "arranger/__init__.py"
 
 [tool.hatch.build]
-artifacts = [
-    "/arranger/static/dist/prod/*",
-]
+artifacts = [ "/arranger/static/dist/prod/*" ]
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/arranger",
-]
+include = [ "/arranger" ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "/arranger",
-]
+include = [ "/arranger" ]

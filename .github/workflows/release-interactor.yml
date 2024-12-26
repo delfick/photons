@@ -44,6 +44,11 @@ jobs:
     name: Create the package
     runs-on: ubuntu-latest
     environment: docker
+    permissions:
+      # for trusted publishing
+      id-token: write
+      # for creating the release
+      contents: write
     needs: interactor_static
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +66,7 @@ jobs:
       - run: python3 -m pip install venvstarter
 
       - id: build
-        run: cd apps/interactor && pip install hatch==1.6.3 && hatch build
+        run: cd apps/interactor && ../../tools/uv build -o dist
 
       - id: version
         run: |
@@ -75,36 +80,19 @@ jobs:
         run: >
           echo "package=lifx_photons_interactor-${{ steps.version.outputs.version}}.tar.gz" >> $GITHUB_OUTPUT
 
-      - id: create_release
-        uses: actions/create-release@v1
-        if: github.event.inputs.skippypi == '0'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      - id: create-release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "release-interactor-${{ steps.version.outputs.version }}"
-          release_name: Photons Interactor ${{ steps.version.outputs.version }}
+          name: Photons Interactor ${{ steps.version.outputs.version }}
           body: "https://photons.delfick.com/apps/interactor/changelog.html#release-interactor-${{ steps.version.outputs.versiondash }}"
+          tag_name: "release-interactor-${{ steps.version.outputs.version }}"
+          fail_on_unmatched_files: true
           draft: false
           prerelease: false
+          files: "apps/interactor/dist/*"
 
-      - id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        if: github.event.inputs.skippypi == '0'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: "apps/interactor/dist/${{ steps.package.outputs.package }}"
-          asset_name: ${{ steps.package.outputs.package }}
-          asset_content_type: application/tar+gzip
-
-      - uses: pypa/gh-action-pypi-publish@v1.4.1
-        if: github.event.inputs.skippypi == '0'
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_INTERACTOR }}
-          packages_dir: apps/interactor/dist
+      - name: publish
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Get the docker context
         env:

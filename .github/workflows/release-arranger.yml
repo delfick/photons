@@ -8,6 +8,11 @@ jobs:
     name: Create the package
     runs-on: ubuntu-latest
     environment: github_release
+    permissions:
+      # for trusted publishing
+      id-token: write
+      # for creating the release
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +44,7 @@ jobs:
         run: ls -R apps/arranger/arranger/static/dist
 
       - id: build
-        run: cd apps/arranger && pip install hatch==1.6.3 && hatch build
+        run: cd apps/arranger && ../../tools/uv build -o dist
 
       - id: version
         run: |
@@ -53,30 +58,16 @@ jobs:
         run: >
           echo "package=lifx_photons_arranger-${{ steps.version.outputs.version}}.tar.gz" >> $GITHUB_OUTPUT
 
-      - id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      - id: create-release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "release-arranger-${{ steps.version.outputs.version }}"
-          release_name: Photons Arranger ${{ steps.version.outputs.version }}
+          name: Photons Arranger ${{ steps.version.outputs.version }}
           body: "https://photons.delfick.com/apps/arranger/index.html#release-arranger-${{ steps.version.outputs.versiondash }}"
+          tag_name: "release-arranger-${{ steps.version.outputs.version }}"
+          fail_on_unmatched_files: true
           draft: false
           prerelease: false
+          files: "apps/arranger/dist/*"
 
-      - id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: "apps/arranger/dist/${{ steps.package.outputs.package }}"
-          asset_name: ${{ steps.package.outputs.package }}
-          asset_content_type: application/tar+gzip
-
-      - uses: pypa/gh-action-pypi-publish@v1.4.1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN_ARRANGER }}
-          packages_dir: apps/arranger/dist
+      - name: publish
+        uses: pypa/gh-action-pypi-publish@release/v1
