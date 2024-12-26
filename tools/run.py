@@ -14,7 +14,8 @@ def run(*args: str, env: dict[str, str] | None = None, cwd: pathlib.Path | None 
     try:
         subprocess.run(["/bin/bash", str(here / "uv"), "run", *args], env=env, cwd=cwd, check=True)
     except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
+        if e.returncode != 0:
+            sys.exit(e.returncode)
 
 
 @click.group()
