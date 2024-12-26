@@ -35,11 +35,6 @@ jobs:
         run: >
           echo "package=lifx_photons_core-${{ steps.version.outputs.version }}.tar.gz" >> $GITHUB_OUTPUT
 
-      - id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - id: create-release
         uses: softprops/action-gh-release@v2
         with:
@@ -49,7 +44,9 @@ jobs:
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
-          files: "dist/*"
+          files: "modules/dist/*"
 
       - name: publish
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: modules/dist
