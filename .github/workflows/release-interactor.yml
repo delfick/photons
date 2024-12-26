@@ -80,6 +80,7 @@ jobs:
 
       - id: create-release
         uses: softprops/action-gh-release@v2
+        if: github.event.inputs.skippypi == '0'
         with:
           name: Photons Interactor ${{ steps.version.outputs.version }}
           body: "https://photons.delfick.com/apps/interactor/changelog.html#release-interactor-${{ steps.version.outputs.versiondash }}"
@@ -91,6 +92,7 @@ jobs:
 
       - name: publish
         uses: pypa/gh-action-pypi-publish@release/v1
+        if: github.event.inputs.skippypi == '0'
         with:
           packages-dir: apps/interactor/dist
 
