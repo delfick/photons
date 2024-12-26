@@ -1,5 +1,6 @@
-from interactor.database.base import Base
 from sqlalchemy import Column, String, Text
+
+from interactor.database.base import Base
 
 
 class SceneInfo(Base):

@@ -31,9 +31,7 @@ class sized_list_spec(sb.Spec):
     def normalise_filled(self, meta, val):
         val = sb.listof(self.spec).normalise(meta, val)
         if len(val) != self.length:
-            raise BadSpecValue(
-                "Expected certain number of parts", want=self.length, got=len(val), meta=meta
-            )
+            raise BadSpecValue("Expected certain number of parts", want=self.length, got=len(val), meta=meta)
         return val
 
 
@@ -84,9 +82,7 @@ class json_string_spec(sb.Spec):
 def make_spec(storing=True):
     class Fields(dictobj.Spec):
         uuid = dictobj.Field(sb.string_spec, wrapper=sb.required)
-        matcher = dictobj.Field(
-            json_string_spec(sb.dictionary_spec(), storing), wrapper=sb.required
-        )
+        matcher = dictobj.Field(json_string_spec(sb.dictionary_spec(), storing), wrapper=sb.required)
         power = dictobj.NullableField(sb.boolean)
         color = dictobj.NullableField(sb.string_spec)
         zones = dictobj.NullableField(json_string_spec(sb.listof(hsbk()), storing))
@@ -154,9 +150,7 @@ def make_spec(storing=True):
                         start = i
 
                 color = colors[i]
-                yield MultiZoneMessages.SetColorZones(
-                    start_index=start, end_index=i, **color, duration=duration, res_required=False
-                )
+                yield MultiZoneMessages.SetColorZones(start_index=start, end_index=i, **color, duration=duration, res_required=False)
 
             def chain_msgs(self, overrides):
                 power_message = self.power_message(overrides)

@@ -3,11 +3,12 @@ from typing import ClassVar
 import attrs
 import sanic
 import strcs
+from photons_web_server import commander
+
 from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.devices import DeviceFinder
 from interactor.commander.store import Command, reg, store
-from photons_web_server import commander
 
 
 @attrs.define
@@ -54,9 +55,7 @@ class DiscoverCommands(Command):
                 methods=["GET"],
                 name=f"v2_discover_{name}",
             )
-            routes.http(
-                route, f"/v2/discover/{name}", methods=["GET"], name=f"v2_discover_{name}_all"
-            )
+            routes.http(route, f"/v2/discover/{name}", methods=["GET"], name=f"v2_discover_{name}_all")
 
     async def discover_serials(
         self,
@@ -102,13 +101,9 @@ class DiscoverCommands(Command):
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
-        return await getattr(self, route.__name__)(
-            progress, request, _body.selector, _params=_body.discover_params(_params)
-        )
+        return await getattr(self, route.__name__)(progress, request, _body.selector, _params=_body.discover_params(_params))
 
     implements_v1_commands: ClassVar[set[str]] = {"discover"}
 

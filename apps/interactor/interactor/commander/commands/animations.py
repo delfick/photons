@@ -6,12 +6,13 @@ import attrs
 import sanic
 import strcs
 from delfick_project.norms import sb
+from photons_web_server import commander
+
 from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.animations import Animations
 from interactor.commander.devices import DeviceFinder
 from interactor.commander.store import Command, Store, reg, store
-from photons_web_server import commander
 
 
 @attrs.define
@@ -136,9 +137,7 @@ class AnimationCommands(Command):
     def add_routes(kls, routes: commander.RouteTransformer) -> None:
         routes.http(kls.animation_put, "/v2/animation", name="v2_animation_put")
 
-        routes.http(
-            kls.animation_help, "/v2/animation/help", methods=["GET"], name="v2_animation_help_get"
-        )
+        routes.http(kls.animation_help, "/v2/animation/help", methods=["GET"], name="v2_animation_help_get")
 
         for name, route in kls.known_routes.items():
             routes.http(
@@ -236,9 +235,7 @@ class AnimationCommands(Command):
         if identity is None:
             identity = secrets.token_urlsafe(6)
 
-        device_finder = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        device_finder = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
 
         return sanic.json(
             await animations.start(
@@ -326,9 +323,7 @@ class AnimationCommands(Command):
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
         use = store.determine_http_args_and_kwargs(self.meta, route, progress, request, [], {})
         return await getattr(self, route.__name__)(*use)
@@ -378,9 +373,7 @@ class AnimationCommands(Command):
                 v1body = self.create(V1AnimationBodyNotStart, args)
                 body_raw = dict(args)
                 if command == "animation/info":
-                    body_raw["identities"] = (
-                        [v1body.identity] if v1body.identity is not None else []
-                    )
+                    body_raw["identities"] = [v1body.identity] if v1body.identity is not None else []
                 elif command == "animation/pause":
                     body_raw["identities"] = v1body.pause
                 elif command == "animation/resume":
@@ -390,9 +383,7 @@ class AnimationCommands(Command):
 
             store = meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
             route = self.known_routes[command.split("/")[1]]
-            use = store.determine_http_args_and_kwargs(
-                self.meta, route, progress, request, [], {"_body_raw": body_raw}
-            )
+            use = store.determine_http_args_and_kwargs(self.meta, route, progress, request, [], {"_body_raw": body_raw})
             return await getattr(self, route.__name__)(*use)
 
     async def _run_across_identities(

@@ -4,10 +4,6 @@ from typing import ClassVar, Self
 import attrs
 import sanic
 import strcs
-from interactor.commander import helpers as ihp
-from interactor.commander import selector
-from interactor.commander.devices import DeviceFinder
-from interactor.commander.store import Command, Store, reg, store
 from photons_canvas.theme import ApplyTheme
 from photons_control.multizone import SetZonesEffect
 from photons_control.planner import Skip
@@ -15,6 +11,11 @@ from photons_control.script import FromGeneratorPerSerial
 from photons_control.tile import SetTileEffect
 from photons_messages.enums import MultiZoneEffectType, TileEffectType
 from photons_web_server import commander
+
+from interactor.commander import helpers as ihp
+from interactor.commander import selector
+from interactor.commander.devices import DeviceFinder
+from interactor.commander.store import Command, Store, reg, store
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -154,13 +155,9 @@ class EffectsCommands(Command):
         routes.http(kls.effects_put, "/v2/effects", methods=["PUT"], name="v2_effects_put")
 
         routes.http(kls.effects_put, "/v2/effects/run", methods=["PUT"], name="v2_effects_run_put")
-        routes.http(
-            kls.effects_put, "/v2/effects/stop", methods=["PUT"], name="v2_effects_stop_put"
-        )
+        routes.http(kls.effects_put, "/v2/effects/stop", methods=["PUT"], name="v2_effects_stop_put")
 
-        routes.http(
-            kls.effects_put, "/v2/effects/status", methods=["GET"], name="v2_effects_status_put"
-        )
+        routes.http(kls.effects_put, "/v2/effects/status", methods=["GET"], name="v2_effects_status_put")
 
     async def effects_run(
         self,
@@ -187,9 +184,7 @@ class EffectsCommands(Command):
             if _body.linear_animation.effect:
                 yield SetZonesEffect(_body.linear_animation.effect, **(_body.linear_options or {}))
 
-        return sanic.json(
-            (await devices.send(FromGeneratorPerSerial(gen), add_replies=False)).as_dict()
-        )
+        return sanic.json((await devices.send(FromGeneratorPerSerial(gen), add_replies=False)).as_dict())
 
     async def effects_stop(
         self,
@@ -216,9 +211,7 @@ class EffectsCommands(Command):
             if _body.stop_linear:
                 yield SetZonesEffect(MultiZoneEffectType.OFF, **(_body.linear_options or {}))
 
-        return sanic.json(
-            (await devices.send(FromGeneratorPerSerial(gen), add_replies=False)).as_dict()
-        )
+        return sanic.json((await devices.send(FromGeneratorPerSerial(gen), add_replies=False)).as_dict())
 
     async def effects_status(
         self,
@@ -291,9 +284,7 @@ class EffectsCommands(Command):
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
         if command == "effects/run":
             body = reg.create(EffectsRunBody, _body_raw, meta=_meta)
@@ -349,9 +340,7 @@ class EffectsCommands(Command):
                 body = reg.create(V1EffectsStop, args, meta=meta)
                 match = reg.create(selector.Selector, body.matcher.raw, meta=meta)
                 _params = EffectsParams(timeout=body.timeout.value)
-                return await self.effects_stop(
-                    progress, request, match, _body=body, _params=_params
-                )
+                return await self.effects_stop(progress, request, match, _body=body, _params=_params)
             elif command == "effects/status":
                 body = reg.create(V1Effects, args, meta=meta)
                 match = reg.create(selector.Selector, body.matcher.raw, meta=meta)

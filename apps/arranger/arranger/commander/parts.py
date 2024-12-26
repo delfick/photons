@@ -3,9 +3,10 @@ from typing import Annotated, Protocol, TypeVar
 
 import attrs
 import strcs
-from arranger.arranger import Arranger
 from photons_app import helpers as hp
 from photons_web_server import commander
+
+from arranger.arranger import Arranger
 
 from .selector import Serial
 
@@ -106,9 +107,7 @@ class PartRouter:
         await body.arranger.add_highlight((body.serial.serial, body.part_number))
 
     async def change_position(self, respond: commander.Responder, body: ChangePositionBody) -> None:
-        await body.arranger.change_position(
-            body.serial.serial, body.part_number, body.user_x, body.user_y
-        )
+        await body.arranger.change_position(body.serial.serial, body.part_number, body.user_x, body.user_y)
 
 
 class PartsCommand(commander.Command):
@@ -128,12 +127,8 @@ class PartsCommand(commander.Command):
         if path != "/v1/lifx/command":
             await respond(NoSuchPath(wanted=path, available=["/v1/lifx/command"]))
 
-        part_router = self.meta.retrieve_one(
-            PartRouter, type_cache=self.store.strcs_register.type_cache
-        )
-        tasks = self.meta.retrieve_one(
-            hp.TaskHolder, type_cache=self.store.strcs_register.type_cache
-        )
+        part_router = self.meta.retrieve_one(PartRouter, type_cache=self.store.strcs_register.type_cache)
+        tasks = self.meta.retrieve_one(hp.TaskHolder, type_cache=self.store.strcs_register.type_cache)
         arranger = self.meta.retrieve_one(Arranger, type_cache=self.store.strcs_register.type_cache)
 
         message_id = message.body.get("message_id") or None

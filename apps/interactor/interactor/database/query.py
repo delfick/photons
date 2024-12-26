@@ -62,7 +62,7 @@ class Query:
 
             model_name = self.clean_name(name)
             if model_name.lower() not in self.Base.metadata.tables:
-                raise AttributeError("No such table as %s" % model_name)
+                raise AttributeError(f"No such table as {model_name}")
 
             def getter(**attrs):
                 """Returned method that calls the desired action with the correct model"""

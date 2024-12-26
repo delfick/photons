@@ -21,9 +21,7 @@ class PixelBrightness:
         self.return_handle = None
 
     def finish(self):
-        self.return_handle = hp.get_event_loop().call_later(
-            0.5, lambda: setattr(self, "returning", True)
-        )
+        self.return_handle = hp.get_event_loop().call_later(0.5, lambda: setattr(self, "returning", True))
 
     def ensure(self):
         if getattr(self, "return_handle", None):
@@ -71,9 +69,7 @@ class PatternLayer:
 
     @property
     def has_change(self):
-        return (
-            not self.started or self.brightness_change is not None or self.highlight_row is not None
-        )
+        return not self.started or self.brightness_change is not None or self.highlight_row is not None
 
     @hp.memoized_property
     def pattern_canvas(self):
@@ -157,9 +153,7 @@ class PatternLayer:
                 self.highlight_row = direction, row + 1
 
         if self.brightness_change is not None:
-            if self.brightness_change and not any(
-                b.has_change for b in self.brightness_change.values()
-            ):
+            if self.brightness_change and not any(b.has_change for b in self.brightness_change.values()):
                 self.brightness_change = None
 
 
@@ -194,8 +188,7 @@ class Patterns:
 
         while True:
             nxt = next(os)
-            for sp in nxt:
-                yield sp
+            yield from nxt
 
     def options(self, colors):
         shifted = colors[2:] + colors[:2]

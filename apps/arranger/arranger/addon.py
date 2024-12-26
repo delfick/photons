@@ -7,8 +7,6 @@ import socket
 import subprocess
 import webbrowser
 
-from arranger.options import Options
-from arranger.server import ArrangerServer
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb
 from photons_app import helpers as hp
@@ -17,14 +15,15 @@ from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
 from photons_web_server.server import WebServerTask
 
+from arranger.options import Options
+from arranger.server import ArrangerServer
+
 log = logging.getLogger("arranger.addon")
 
 
 @addon_hook(extras=[("lifx.photons", "__all__")])
 def __lifx__(collector, *args, **kwargs):
-    collector.register_converters(
-        {"arranger": Options.FieldSpec(formatter=MergedOptionStringFormatter)}
-    )
+    collector.register_converters({"arranger": Options.FieldSpec(formatter=MergedOptionStringFormatter)})
 
 
 def port_connected(port):
@@ -84,9 +83,7 @@ class arrange(WebServerTask):
                     break
 
         if not port_connected(self.options.port):
-            self.photons_app.final_future.set_exception(
-                PhotonsAppError("Failed to start the server")
-            )
+            self.photons_app.final_future.set_exception(PhotonsAppError("Failed to start the server"))
             return
 
         if "NO_WEB_OPEN" not in os.environ:
@@ -129,9 +126,7 @@ class arranger_assets(task.Task):
                 assets.run("run", "generate")
 
             else:
-                raise PhotonsAppError(
-                    "Didn't get a recognised command", want=self.reference, available=available
-                )
+                raise PhotonsAppError("Didn't get a recognised command", want=self.reference, available=available)
         except subprocess.CalledProcessError as error:
             raise PhotonsAppError("Failed to run command", error=error)
 

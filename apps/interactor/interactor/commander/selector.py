@@ -2,12 +2,13 @@ from typing import Annotated
 
 import attrs
 import strcs
-from interactor.commander.store import creator
 from photons_app.registers import ReferenceResolverRegister
 from photons_app.special import SpecialReference
 from photons_control.device_finder import DeviceFinder, Finder
 from photons_messages import protocol_register
 from photons_messages.enums import MultiZoneEffectType, TileEffectType
+
+from interactor.commander.store import creator
 
 
 @attrs.define
@@ -86,9 +87,7 @@ class Selector:
 
 
 @creator(Selector)
-def create_selector(
-    val: object, /, reference_resolver_register: ReferenceResolverRegister, finder: Finder
-) -> strcs.ConvertResponse[Selector]:
+def create_selector(val: object, /, reference_resolver_register: ReferenceResolverRegister, finder: Finder) -> strcs.ConvertResponse[Selector]:
     if val is strcs.NotSpecified:
         val = "_"
 
@@ -103,9 +102,7 @@ def create_selector(
 
 
 @creator(SpecialReference)
-def create_special_reference(
-    val: object, /, reference_resolver_register: ReferenceResolverRegister
-) -> strcs.ConvertResponse[SpecialReference]:
+def create_special_reference(val: object, /, reference_resolver_register: ReferenceResolverRegister) -> strcs.ConvertResponse[SpecialReference]:
     if isinstance(val, Selector):
         return val.selector
     return None
@@ -174,11 +171,7 @@ def create_timeout(val: object, /) -> strcs.ConvertResponse[Timeout]:
     if isinstance(val, str) and val.isdigit():
         return {"value": int(val)}
 
-    elif (
-        isinstance(val, str)
-        and val.count(".") == 1
-        and all(part.isdigit() for part in val.split("."))
-    ):
+    elif isinstance(val, str) and val.count(".") == 1 and all(part.isdigit() for part in val.split(".")):
         return {"value": float(val)}
 
     elif isinstance(val, int | float):

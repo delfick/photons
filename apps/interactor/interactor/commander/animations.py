@@ -77,17 +77,13 @@ class Animations:
             else:
                 return self.animations[identity].info
 
-        animations = {
-            identity: animation.info for identity, animation in sorted(self.animations.items())
-        }
+        animations = {identity: animation.info for identity, animation in sorted(self.animations.items())}
         if not expand:
             animations = sorted(animations)
 
         return {
             "animations": animations,
-            "paused": sorted(
-                [animation.identity for animation in self.animations.values() if animation.paused]
-            ),
+            "paused": sorted([animation.identity for animation in self.animations.values() if animation.paused]),
             **extra,
         }
 
@@ -100,9 +96,7 @@ class Animations:
         animations=sb.NotSpecified,
     ):
         pauser = asyncio.Semaphore()
-        final_future = hp.ChildOfFuture(
-            self.final_future, name=f"Animations::start({identity})[final_future]"
-        )
+        final_future = hp.ChildOfFuture(self.final_future, name=f"Animations::start({identity})[final_future]")
 
         if run_options is sb.NotSpecified:
             run_options = {}
@@ -125,9 +119,7 @@ class Animations:
             if identity in self.animations:
                 del self.animations[identity]
 
-        self.animations[identity] = Animation(final_future, identity, runner, pauser).start(
-            self.tasks, remove
-        )
+        self.animations[identity] = Animation(final_future, identity, runner, pauser).start(self.tasks, remove)
 
         return self.info(started=identity)
 

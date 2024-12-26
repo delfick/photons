@@ -4,9 +4,10 @@ import shutil
 import subprocess
 
 from delfick_project.norms import dictobj, sb
-from interactor.zeroconf import Zeroconf
 from photons_app.errors import PhotonsAppError
 from photons_app.formatter import MergedOptionStringFormatter
+
+from interactor.zeroconf import Zeroconf
 
 
 class host_spec(sb.Spec):
@@ -42,10 +43,7 @@ class Assets(dictobj.Spec):
 
     @property
     def needs_install(self) -> bool:
-        return (
-            not os.path.exists(os.path.join(self.src, "node_modules"))
-            or os.environ.get("REBUILD") == 1
-        )
+        return not os.path.exists(os.path.join(self.src, "node_modules")) or os.environ.get("REBUILD") == 1
 
     def run(self, *args) -> None:
         subprocess.check_call(["npm", *args], cwd=self.src)
@@ -67,9 +65,7 @@ class Options(dictobj.Spec):
     )
 
     database = dictobj.Field(
-        lambda: __import__("interactor.database.database").database.database.Database.FieldSpec(
-            formatter=MergedOptionStringFormatter
-        ),
+        lambda: __import__("interactor.database.database").database.database.Database.FieldSpec(formatter=MergedOptionStringFormatter),
         help="Database options",
     )
 

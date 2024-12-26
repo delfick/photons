@@ -393,12 +393,8 @@ class TestEffects:
     class TestV1:
         async def test_it_can_start_effects(self, server, results):
             results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "MORPH"
-            palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"][
-                "palette"
-            ]
-            results.effects_running["results"]["d073d5000008"]["effect"]["options"][
-                "palette"
-            ] = palette
+            palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"]
+            results.effects_running["results"]["d073d5000008"]["effect"]["options"]["palette"] = palette
 
             await server.assertCommand(
                 "/v1/lifx/command",
@@ -461,24 +457,16 @@ class TestEffects:
             )
 
             results.effects_running["results"]["d073d5000005"]["effect"]["type"] = "OFF"
-            del results.effects_running["results"]["d073d5000005"]["effect"]["options"][
-                "speed_direction"
-            ]
+            del results.effects_running["results"]["d073d5000005"]["effect"]["options"]["speed_direction"]
 
             results.effects_running["results"]["d073d5000006"]["effect"]["type"] = "OFF"
-            del results.effects_running["results"]["d073d5000006"]["effect"]["options"][
-                "speed_direction"
-            ]
+            del results.effects_running["results"]["d073d5000006"]["effect"]["options"]["speed_direction"]
 
             results.effects_running["results"]["d073d5000007"]["effect"]["type"] = "FLAME"
             results.effects_running["results"]["d073d5000008"]["effect"]["type"] = "FLAME"
 
-            palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"][
-                "palette"
-            ]
-            results.effects_running["results"]["d073d5000008"]["effect"]["options"][
-                "palette"
-            ] = palette
+            palette = results.effects_running["results"]["d073d5000007"]["effect"]["options"]["palette"]
+            results.effects_running["results"]["d073d5000008"]["effect"]["options"]["palette"] = palette
 
             await server.assertCommand(
                 "/v1/lifx/command",
@@ -568,9 +556,7 @@ class TestEffects:
                 if device.serial in ("d073d5000007", "d073d5000008"):
                     assert device.attrs.power == 65535
 
-        async def test_it_can_start_matrix_and_linear_effects_without_powering_on(
-            self, devices, server, results
-        ):
+        async def test_it_can_start_matrix_and_linear_effects_without_powering_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 
@@ -591,9 +577,7 @@ class TestEffects:
             for device in devices:
                 assert device.attrs.power == 0
 
-        async def test_it_can_stop_matrix_and_linear_effects_without_powering_on(
-            self, devices, server, results
-        ):
+        async def test_it_can_stop_matrix_and_linear_effects_without_powering_on(self, devices, server, results):
             for device in devices:
                 await device.change_one("power", 0, event=None)
 

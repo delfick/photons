@@ -1,19 +1,19 @@
 """add_scenes
 
 Revision ID: 119f5f1434f7
-Revises: 
+Revises:
 Create Date: 2018-07-28 12:12:32.114158
 
 """
+
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "119f5f1434f7"
 down_revision = None
 branch_labels = None
 depends_on = None
-
-import sqlalchemy as sa
-from alembic import op
 
 
 def upgrade():

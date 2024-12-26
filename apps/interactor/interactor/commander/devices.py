@@ -2,13 +2,13 @@ import typing as tp
 
 import attrs
 import strcs
+from photons_app.special import FoundSerials, HardCodedSerials
+from photons_control.device_finder import Device, Filter, Finder
+from photons_control.device_finder import DeviceFinder as DeviceFinderSelector
+from photons_transport.comms.base import Communication
+
 from interactor.commander import helpers as ihp
 from interactor.commander.store import creator
-from photons_app.special import FoundSerials, HardCodedSerials
-from photons_control.device_finder import Device
-from photons_control.device_finder import DeviceFinder as DeviceFinderSelector
-from photons_control.device_finder import Filter, Finder
-from photons_transport.comms.base import Communication
 
 from . import selector
 

@@ -16,9 +16,7 @@ class TestScene:
             # sqlite is very slow on github actions for some reason
             async_timeout.set_timeout_seconds(20)
 
-            await server.assertCommand(
-                "/v1/lifx/command", {"command": "scene_info"}, json_output={}
-            )
+            await server.assertCommand("/v1/lifx/command", {"command": "scene_info"}, json_output={})
 
             scene_capture = {
                 "meta": mock.ANY,
@@ -71,13 +69,9 @@ class TestScene:
                 ],
             }
 
-            got = await server.assertCommand(
-                "/v1/lifx/command", {"command": "scene_capture"}, json_output=scene_capture
-            )
+            got = await server.assertCommand("/v1/lifx/command", {"command": "scene_capture"}, json_output=scene_capture)
 
-            got2 = await server.assertCommand(
-                "/v1/lifx/command", {"command": "scene_capture"}, json_output=scene_capture
-            )
+            got2 = await server.assertCommand("/v1/lifx/command", {"command": "scene_capture"}, json_output=scene_capture)
 
             assert got["meta"]["uuid"] != got2["meta"]["uuid"]
             await server.assertCommand(
@@ -154,9 +148,7 @@ class TestScene:
                 if not d.cap.is_light:
                     continue
 
-                assert any(
-                    event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
-                ), devices.store(d)
+                assert any(event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)), devices.store(d)
 
             # Very naive test with an override that is None
             for d in devices:
@@ -175,6 +167,4 @@ class TestScene:
                 if not d.cap.is_light:
                     continue
 
-                assert any(
-                    event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)
-                ), devices.store(d)
+                assert any(event | Events.ATTRIBUTE_CHANGE for event in devices.store(d)), devices.store(d)

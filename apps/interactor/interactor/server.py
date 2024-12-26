@@ -5,8 +5,6 @@ import typing as tp
 import sanic.exceptions
 import socketio
 import strcs
-from interactor.commander.animations import Animations
-from interactor.database import DB
 from photons_app import helpers as hp
 from photons_app.registers import ReferenceResolverRegister
 from photons_control.device_finder import DeviceFinderDaemon, Finder
@@ -15,6 +13,9 @@ from photons_web_server.server import Server
 from sanic.handlers import directory
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
+
+from interactor.commander.animations import Animations
+from interactor.database import DB
 
 
 class InteractorMessageFromExc(commander.MessageFromExc):
@@ -78,14 +79,10 @@ class InteractorServer(Server):
         self.finder = Finder(sender, final_future=self.final_future)
         self.cleaners.append(self.finder.finish)
 
-        self.daemon = DeviceFinderDaemon(
-            sender, finder=self.finder, **self.server_options.daemon_options
-        )
+        self.daemon = DeviceFinderDaemon(sender, finder=self.finder, **self.server_options.daemon_options)
         self.cleaners.append(self.daemon.finish)
 
-        self.animations = Animations(
-            self.final_future, self.tasks, self.sender, self.animation_options
-        )
+        self.animations = Animations(self.final_future, self.tasks, self.sender, self.animation_options)
 
         self.meta = strcs.Meta(
             dict(
@@ -163,29 +160,21 @@ class InteractorServer(Server):
             use_modified_since=True,
             use_content_range=False,
             stream_large_files=True,
-            directory_handler=directory.DirectoryHandler(
-                uri=uri, directory=str(self.server_options.assets.dist), index=index
-            ),
+            directory_handler=directory.DirectoryHandler(uri=uri, directory=str(self.server_options.assets.dist), index=index),
             __file_uri__=path,
         )
 
     async def before_start(self):
-        await self.server_options.zeroconf.start(
-            self.tasks, self.server_options.host, self.server_options.port, self.sender, self.finder
-        )
+        await self.server_options.zeroconf.start(self.tasks, self.server_options.host, self.server_options.port, self.sender, self.finder)
         await self.database.start()
         await self.daemon.start()
 
     async def before_stop(self):
         self.tasks.add(self.animations.stop())
         self.tasks.add(self.server_options.zeroconf.finish())
-        await hp.wait_for_all_futures(
-            *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
-        )
+        await hp.wait_for_all_futures(*self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]")
 
-    def log_request_dict(
-        self, request: Request, remote_addr: str, identifier: str
-    ) -> dict[str, tp.Any] | None:
+    def log_request_dict(self, request: Request, remote_addr: str, identifier: str) -> dict[str, tp.Any] | None:
         matcher = None
         key = "matcher"
         add_command: dict[str, str] = {}

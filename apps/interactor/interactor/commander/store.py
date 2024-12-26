@@ -112,9 +112,7 @@ class Store(commander.Store):
             if isinstance(cmd, _WithV1Http):
                 available_commands |= cmd.implements_v1_commands
                 if command in cmd.implements_v1_commands:
-                    with route_transformer.instantiate_route(
-                        message.request, cmd, cmd.run_v1_http
-                    ) as route:
+                    with route_transformer.instantiate_route(message.request, cmd, cmd.run_v1_http) as route:
                         response = await route(
                             command=command,
                             args=args,

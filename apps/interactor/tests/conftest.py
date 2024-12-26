@@ -123,7 +123,7 @@ class WSTester(hp.AsyncCMMixin):
         class IsNum:
             def __eq__(self, value):
                 self.got = value
-                return isinstance(value, (int, float)) or value.isdigit()
+                return isinstance(value, int | float) or value.isdigit()
 
             def __repr__(self):
                 if hasattr(self, "got"):
@@ -197,9 +197,7 @@ class ServerWrapper(hp.AsyncCMMixin):
         async with aiohttp.ClientSession() as session:
             content = None
             try:
-                async with session.put(
-                    f"http://127.0.0.1:{self.port}{path}", json=body
-                ) as response:
+                async with session.put(f"http://127.0.0.1:{self.port}{path}", json=body) as response:
                     content = await response.read()
                     if "json" in response.headers.get("Content-Type", ""):
                         content = await response.json()
@@ -233,9 +231,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                 if json_output is not None:
                     if got != json_output:
                         print(desc)
-                        wanted = json.dumps(
-                            json_output, sort_keys=True, indent="  ", default=lambda o: repr(o)
-                        )
+                        wanted = json.dumps(json_output, sort_keys=True, indent="  ", default=lambda o: repr(o))
                         wanted = "\n".join([f"  {line}" for line in wanted.split("\n")])
                         print(f"WANT:\n{wanted}")
                     assert got == json_output
@@ -274,9 +270,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                     if method == "GET":
                         cm = session.get(f"http://127.0.0.1:{self.port}{path}{params_qs}")
                     elif method == "PUT":
-                        cm = session.put(
-                            f"http://127.0.0.1:{self.port}{path}{params_qs}", json=body
-                        )
+                        cm = session.put(f"http://127.0.0.1:{self.port}{path}{params_qs}", json=body)
                     else:
                         raise AssertionError("Only Support GET or PUT")
                     async with cm as response:
@@ -308,9 +302,7 @@ class ServerWrapper(hp.AsyncCMMixin):
                 if json_output is not None:
                     if got != json_output:
                         print(desc)
-                        wanted = json.dumps(
-                            json_output, sort_keys=True, indent="  ", default=lambda o: repr(o)
-                        )
+                        wanted = json.dumps(json_output, sort_keys=True, indent="  ", default=lambda o: repr(o))
                         wanted = "\n".join([f"  {line}" for line in wanted.split("\n")])
                         print(f"WANT:\n{wanted}")
                     assert got == json_output

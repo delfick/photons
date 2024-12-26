@@ -15,10 +15,7 @@ class TestControl:
             )
 
             results = responses.light_state_responses["results"]
-            expected = {
-                device.serial: results[device.serial]
-                for device in devices.for_attribute("power", 65535, expect=8)
-            }
+            expected = {device.serial: results[device.serial] for device in devices.for_attribute("power", 65535, expect=8)}
             await server.assertCommand(
                 "/v1/lifx/command",
                 {"command": "query", "args": {"pkt_type": 101, "matcher": "power=on"}},
@@ -75,12 +72,7 @@ class TestControl:
 
             for device in devices:
                 io = device.io["MEMORY"]
-                assert (
-                    devices.store(device).count(
-                        Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))
-                    )
-                    == 1
-                )
+                assert devices.store(device).count(Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))) == 1
                 devices.store(device).clear()
 
             # With an offline light
@@ -112,14 +104,7 @@ class TestControl:
                 for device in devices:
                     if device is not bathroom_light:
                         io = device.io["MEMORY"]
-                        assert (
-                            devices.store(device).count(
-                                Events.INCOMING(
-                                    device, io, pkt=DeviceMessages.SetPower(level=0xFFFF)
-                                )
-                            )
-                            == 1
-                        )
+                        assert devices.store(device).count(Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0xFFFF))) == 1
                     devices.store(device).clear()
 
             # With a matcher
@@ -172,23 +157,9 @@ class TestControl:
             for device in devices:
                 io = device.io["MEMORY"]
                 if device.serial == "d073d5000001":
-                    assert (
-                        devices.store(device).count(
-                            Events.INCOMING(
-                                device, io, pkt=LightMessages.SetLightPower(level=65535, duration=1)
-                            )
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=65535, duration=1))) == 1
                 else:
-                    assert (
-                        devices.store(device).count(
-                            Events.INCOMING(
-                                device, io, pkt=LightMessages.SetLightPower(level=0, duration=1)
-                            )
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=0, duration=1))) == 1
                 devices.store(device).clear()
 
             await server.assertCommand(
@@ -200,32 +171,11 @@ class TestControl:
             for device in devices:
                 io = device.io["MEMORY"]
                 if device.serial == "d073d5000001":
-                    assert (
-                        devices.store(device).count(
-                            Events.INCOMING(
-                                device, io, pkt=LightMessages.SetLightPower(level=0, duration=2)
-                            )
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=0, duration=2))) == 1
                 elif not device.cap.is_light:
-                    assert (
-                        devices.store(device).count(
-                            Events.UNHANDLED(
-                                device, io, pkt=LightMessages.SetLightPower(level=0, duration=2)
-                            )
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.UNHANDLED(device, io, pkt=LightMessages.SetLightPower(level=0, duration=2))) == 1
                 else:
-                    assert (
-                        devices.store(device).count(
-                            Events.INCOMING(
-                                device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2)
-                            )
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2))) == 1
                 devices.store(device).clear()
 
         async def test_it_has_power_toggle_group_command(self, devices, server):
@@ -239,14 +189,7 @@ class TestControl:
 
             for device in devices:
                 io = device.io["MEMORY"]
-                assert (
-                    devices.store(device).count(
-                        Events.INCOMING(
-                            device, io, pkt=LightMessages.SetLightPower(level=0, duration=1)
-                        )
-                    )
-                    == 1
-                )
+                assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=0, duration=1))) == 1
                 devices.store(device).clear()
 
             await server.assertCommand(
@@ -257,14 +200,7 @@ class TestControl:
 
             for device in devices:
                 io = device.io["MEMORY"]
-                assert (
-                    devices.store(device).count(
-                        Events.INCOMING(
-                            device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2)
-                        )
-                    )
-                    == 1
-                )
+                assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=65535, duration=2))) == 1
                 devices.store(device).clear()
 
             await server.assertCommand(
@@ -275,14 +211,7 @@ class TestControl:
 
             for device in devices:
                 io = device.io["MEMORY"]
-                assert (
-                    devices.store(device).count(
-                        Events.INCOMING(
-                            device, io, pkt=LightMessages.SetLightPower(level=0, duration=3)
-                        )
-                    )
-                    == 1
-                )
+                assert devices.store(device).count(Events.INCOMING(device, io, pkt=LightMessages.SetLightPower(level=0, duration=3))) == 1
                 devices.store(device).clear()
 
         async def test_it_has_transform_command(self, async_timeout, devices, server):
@@ -298,12 +227,7 @@ class TestControl:
 
             for device in devices:
                 io = device.io["MEMORY"]
-                assert (
-                    devices.store(device).count(
-                        Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))
-                    )
-                    == 1
-                )
+                assert devices.store(device).count(Events.INCOMING(device, io, pkt=DeviceMessages.SetPower(level=0))) == 1
                 devices.store(device).clear()
 
             # Just color
@@ -320,9 +244,7 @@ class TestControl:
                     io,
                     pkt=(
                         LightMessages.SetWaveformOptional,
-                        ColourParser.msg(
-                            "red", overrides={"effect": "sine", "res_required": False}
-                        ).payload.as_dict(),
+                        ColourParser.msg("red", overrides={"effect": "sine", "res_required": False}).payload.as_dict(),
                     ),
                 )
                 assert devices.store(device).count(want) == 1, device
@@ -360,12 +282,7 @@ class TestControl:
                 if device.attrs.label == "tv":
                     devices.store(device).assertNoSetMessages()
                 elif not device.cap.is_light:
-                    assert (
-                        devices.store(device).count(
-                            Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())) == 1
                 elif device.serial in ("d073d5000001", "d073d5000003"):
                     devices.store(device).count(
                         Events.INCOMING(
@@ -376,17 +293,11 @@ class TestControl:
                     ) == 1
                 else:
                     for pkt in [
-                        ColourParser.msg(
-                            "blue", overrides={"brightness": 0, "res_required": False}
-                        ),
+                        ColourParser.msg("blue", overrides={"brightness": 0, "res_required": False}),
                         DeviceMessages.SetPower(level=65535, res_required=False),
-                        ColourParser.msg(
-                            "blue", overrides={"brightness": 0.5, "res_required": False}
-                        ),
+                        ColourParser.msg("blue", overrides={"brightness": 0.5, "res_required": False}),
                     ]:
-                        assert (
-                            devices.store(device).count(Events.INCOMING(device, io, pkt=pkt)) == 1
-                        )
+                        assert devices.store(device).count(Events.INCOMING(device, io, pkt=pkt)) == 1
                 devices.store(device).clear()
 
             # Power on and transition color
@@ -425,12 +336,7 @@ class TestControl:
                 if device.attrs.label == "tv":
                     devices.store(device).assertNoSetMessages()
                 elif not device.cap.is_light:
-                    assert (
-                        devices.store(device).count(
-                            Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())
-                        )
-                        == 1
-                    )
+                    assert devices.store(device).count(Events.UNHANDLED(device, io, pkt=LightMessages.GetColor())) == 1
                 elif device.serial in ("d073d5000001", "d073d5000003"):
                     assert (
                         devices.store(device).count(
@@ -468,9 +374,7 @@ class TestControl:
                             Events.INCOMING(
                                 device,
                                 io,
-                                pkt=ColourParser.msg(
-                                    "blue", overrides={"brightness": 0.5, "res_required": False}
-                                ),
+                                pkt=ColourParser.msg("blue", overrides={"brightness": 0.5, "res_required": False}),
                             )
                         )
                         == 1

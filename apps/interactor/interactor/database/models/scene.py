@@ -1,7 +1,8 @@
 from delfick_project.norms import sb
+from sqlalchemy import Boolean, Column, Integer, String, Text
+
 from interactor.database.base import Base
 from interactor.database.models.scene_spec import make_spec
-from sqlalchemy import Boolean, Column, Integer, String, Text
 
 
 class Scene(Base):
@@ -28,11 +29,7 @@ class Scene(Base):
         return self.Spec(storing=False).empty_normalise(**dct)
 
     def as_dict(self, ignore=None):
-        return {
-            k: v
-            for k, v in self.as_object().as_dict().items()
-            if v is not None and k not in (ignore or ())
-        }
+        return {k: v for k, v in self.as_object().as_dict().items() if v is not None and k not in (ignore or ())}
 
     @classmethod
     def Spec(kls, storing=True):

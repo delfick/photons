@@ -35,21 +35,15 @@ def reference_resolver_register() -> ReferenceResolverRegister:
 
 
 class SelectorCreator(Protocol):
-    def __call__(
-        self, options: str | strcs.NotSpecifiedMeta = strcs.NotSpecified
-    ) -> selector.Selector: ...
+    def __call__(self, options: str | strcs.NotSpecifiedMeta = strcs.NotSpecified) -> selector.Selector: ...
 
 
 @pytest.fixture
-def create_selector(
-    reference_resolver_register: ReferenceResolverRegister, finder: Finder
-) -> SelectorCreator:
+def create_selector(reference_resolver_register: ReferenceResolverRegister, finder: Finder) -> SelectorCreator:
     return functools.partial(
         reg.create,
         selector.Selector,
-        meta=strcs.Meta(
-            {"reference_resolver_register": reference_resolver_register, "finder": finder}
-        ),
+        meta=strcs.Meta({"reference_resolver_register": reference_resolver_register, "finder": finder}),
     )
 
 
@@ -95,9 +89,7 @@ class TestSelector:
         made = create_selector(want)
         assert made is want
 
-    def test_it_can_create_SpecialReference_from_selector(
-        self, reference_resolver_register: ReferenceResolverRegister
-    ):
+    def test_it_can_create_SpecialReference_from_selector(self, reference_resolver_register: ReferenceResolverRegister):
         hard_coded = special.HardCodedSerials(["d073d5"])
         made = reg.create(
             selector.SpecialReference,

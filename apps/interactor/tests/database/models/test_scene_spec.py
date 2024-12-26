@@ -108,14 +108,10 @@ class TestHsbk:
     def test_it_complains_if_hue_is_outside_0_and_360(self, meta):
         spec = scene_spec.hsbk()
 
-        with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=0, maximum=360
-        ):
+        with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=360):
             spec.normalise(meta, [-1, 1, 1, 3500])
 
-        with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=0, maximum=360
-        ):
+        with assertRaises(BadSpecValue, "Number must be between min and max", minimum=0, maximum=360):
             spec.normalise(meta, [361, 1, 1, 3500])
 
     def test_it_complains_if_saturation_is_outside_0_and_1(self, meta):
@@ -139,14 +135,10 @@ class TestHsbk:
     def test_it_complains_if_kelvin_is_outside_1500_and_9000(self, meta):
         spec = scene_spec.hsbk()
 
-        with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000
-        ):
+        with assertRaises(BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000):
             spec.normalise(meta, [1, 0, 0, 1000])
 
-        with assertRaises(
-            BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000
-        ):
+        with assertRaises(BadSpecValue, "Number must be between min and max", minimum=1500, maximum=9000):
             spec.normalise(meta, [360, 1, 1, 9001])
 
 
@@ -263,7 +255,6 @@ class TestMakeSpec:
             }
 
     class TestNotStoring:
-
         @pytest.fixture()
         def V(self, meta):
             class V:
@@ -499,7 +490,6 @@ class TestMakeSpec:
                 determine_duration.assert_called_once_with(overrides)
 
             class TestYieldingSetMultiZoneColorZonesMessages:
-
                 @pytest.fixture()
                 def setter(self):
                     def setter(h, s, b, k, **kwargs):
@@ -588,13 +578,10 @@ class TestMakeSpec:
                 determine_duration.assert_called_once_with(overrides)
 
             class TestYieldingSet64Messages:
-
                 @pytest.fixture()
                 def setter(self):
                     def setter(**kwargs):
-                        return TileMessages.Set64(
-                            length=1, x=0, y=0, width=8, res_required=False, **kwargs
-                        )
+                        return TileMessages.Set64(length=1, x=0, y=0, width=8, res_required=False, **kwargs)
 
                     return setter
 
@@ -608,9 +595,7 @@ class TestMakeSpec:
                         assert o is overrides
                         return original(c, {})
 
-                    colors_from_hsbks = mock.Mock(
-                        name="colors_from_hsbks", side_effect=colors_from_hsbks
-                    )
+                    colors_from_hsbks = mock.Mock(name="colors_from_hsbks", side_effect=colors_from_hsbks)
 
                     determine_duration = mock.Mock(name="determine_duration", return_value=1)
 
