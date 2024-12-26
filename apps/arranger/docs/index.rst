@@ -49,6 +49,11 @@ Once the tiles are given their correct positions, photons can be used to run
 Changelog
 ---------
 
+.. _release-arranger-0-9-3:
+
+0.9.3 - TBD
+    * The project is now formatted and linted with ruff
+
 .. _release-arranger-0-9-2:
 
 0.9.2 - 14 September 2024
