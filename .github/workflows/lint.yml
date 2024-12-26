@@ -21,16 +21,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
-      - name: Install deps
-        shell: bash
-        env:
-          VENVSTARTER_ONLY_MAKE_VENV: "1"
-        run: python ./tools/venv
+      - name: Install venv
+        run: ./tools/uv sync --extra tools --locked
 
       - name: Ensure linter is happy
-        run: ./lint
+        run: ./tools/ci lint
 
   format:
     runs-on: ubuntu-latest
@@ -40,17 +37,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
 
-      - name: Install deps
-        shell: bash
-        env:
-          VENVSTARTER_ONLY_MAKE_VENV: "1"
-        run: python ./tools/venv
+      - name: Install venv
+        run: ./tools/uv sync --extra tools --locked
 
       - name: Ensure code is formatted
         run: |
-          ./format
+          ./tools/ci format
 
           # Complain if there were changes
           if [[ ! -z "$(git status --porcelain)" ]]; then

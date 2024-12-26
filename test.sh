@@ -4,4 +4,4 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-exec ./dev format "$@"
+exec ./dev tests "$@"

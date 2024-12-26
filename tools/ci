@@ -1,0 +1,3 @@
+#!/bin/bash
+set -e
+./tools/uv run ./tools/run.py "$@"
