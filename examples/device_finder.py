@@ -41,12 +41,7 @@ async def process_command(daemon, command):
     elif command.startswith("info"):
         async for device in daemon.info(fltr):
             print(device.serial)
-            print(
-                "\n".join(
-                    f"  {line}"
-                    for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")
-                )
-            )
+            print("\n".join(f"  {line}" for line in json.dumps(device.info, sort_keys=True, indent="  ").split("\n")))
     elif command.startswith("set_"):
         msg = ColourParser.msg(command[4:])
         await daemon.sender(msg, daemon.reference(fltr))
@@ -78,7 +73,7 @@ async def run_prompt(daemon, final_future, loop):
         try:
             nxt = input()
         except Exception as error:
-            if isinstance(error, (EOFError, KeyboardInterrupt)):
+            if isinstance(error, EOFError | KeyboardInterrupt):
                 error = UserQuit()
             if not final_future.done():
                 final_future.set_exception(error)
@@ -104,7 +99,7 @@ async def run_prompt(daemon, final_future, loop):
                 await process_command(daemon, nxt)
             except asyncio.CancelledError:
                 raise
-            except:
+            except Exception:
                 log.exception("Unexpected error")
 
         if final_future.done():

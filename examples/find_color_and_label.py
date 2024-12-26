@@ -19,10 +19,7 @@ async def doit(collector):
         if pkt | DeviceMessages.StateLabel:
             info[pkt.serial]["label"] = pkt.label
         elif pkt | LightMessages.LightState:
-            hsbk = " ".join(
-                "{0}={1}".format(key, pkt[key])
-                for key in ("hue", "saturation", "brightness", "kelvin")
-            )
+            hsbk = " ".join(f"{key}={pkt[key]}" for key in ("hue", "saturation", "brightness", "kelvin"))
             info[pkt.serial]["hsbk"] = hsbk
 
     for serial, details in info.items():

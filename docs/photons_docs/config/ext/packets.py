@@ -60,9 +60,7 @@ class ShowPacketsDirective(Directive):
         template.extend(["", ".. _message_enums:", "", title, "-" * len(title), ""])
         template.extend(list(self.enums()))
 
-        source = self.state_machine.input_lines.source(
-            self.lineno - self.state_machine.input_offset - 1
-        )
+        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
         tab_width = self.options.get("tab-width", self.state.document.settings.tab_width)
         lines = statemachine.string2lines("\n".join(template), tab_width, convert_whitespace=True)
         self.state_machine.insert_input(lines, source)
@@ -76,8 +74,8 @@ class ShowPacketsDirective(Directive):
 
             yield f"* :ref:`{name}`"
 
-        yield f"* :ref:`message_objects`"
-        yield f"* :ref:`message_enums`"
+        yield "* :ref:`message_objects`"
+        yield "* :ref:`message_enums`"
 
     def message_group(self, kls):
         name = kls.__name__
@@ -196,7 +194,7 @@ class ShowPacketsDirective(Directive):
 
         if typ._optional and not message.__name__.startswith("State"):
             transformed = True
-            yield f"    **optional**: This attribute is optional"
+            yield "    **optional**: This attribute is optional"
             yield ""
 
         if typ._enum is not sb.NotSpecified:
@@ -206,7 +204,7 @@ class ShowPacketsDirective(Directive):
             yield ""
 
             if typ._unknown_enum_values:
-                yield f"    **unknown enums**: This attribute allows values that aren't part of the enum"
+                yield "    **unknown enums**: This attribute allows values that aren't part of the enum"
 
         if typ._transform is not sb.NotSpecified and message.__name__.startswith("Set"):
             transformed = True
