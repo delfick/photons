@@ -2,13 +2,14 @@ import asyncio
 import colorsys
 import logging
 
-from arranger.colors import convert_K_to_RGB
-from arranger.patterns import Patterns
 from delfick_project.norms import dictobj, sb
 from photons_app import helpers as hp
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, AnimationRunner
 from photons_messages import TileMessages
+
+from arranger.colors import convert_K_to_RGB
+from arranger.patterns import Patterns
 
 log = logging.getLogger("arranger.arranger")
 
@@ -163,9 +164,7 @@ class ArrangerAnimation(Animation):
             return event.state.next_layer
 
     async def make_user_events(self, animation_state):
-        async with hp.ResultStreamer(
-            self.final_future, name="ArrangerAnimation::make_user_events[streamer]"
-        ) as streamer:
+        async with hp.ResultStreamer(self.final_future, name="ArrangerAnimation::make_user_events[streamer]") as streamer:
             self.options.arranger.animation_streamer = streamer
 
             if self.options.arranger.progress_cbs:
@@ -204,7 +203,7 @@ class PartsInfo:
 
         try:
             progress_cb({"instruction": "parts", "parts": self.all_info}, do_log=False)
-        except:
+        except Exception:
             log.exception("Failed to send progress")
         else:
             sent["parts"] = True
@@ -218,7 +217,7 @@ class PartsInfo:
                     progress_cb({"instruction": "parts", "parts": self.info}, do_log=False)
                 else:
                     progress_cb({"instruction": "parts", "parts": self.all_info}, do_log=False)
-            except:
+            except Exception:
                 log.exception("Failed to send progress")
             else:
                 sent["parts"] = True
@@ -272,7 +271,7 @@ class Arranger:
 
     async def animation_event(self, event):
         if self.animation_streamer:
-            if not isinstance(event, (str, tuple)):
+            if not isinstance(event, str | tuple):
                 await self.animation_streamer.add_generator(event)
             else:
                 await self.animation_streamer.add_value(event)
@@ -325,9 +324,7 @@ class Arranger:
                     yield "changing", part
 
                     try:
-                        new_position = await self._change_position(
-                            part, new_position["user_x"], new_position["user_y"]
-                        )
+                        new_position = await self._change_position(part, new_position["user_x"], new_position["user_y"])
                     except asyncio.CancelledError:
                         raise
                     except Exception as error:
@@ -346,17 +343,13 @@ class Arranger:
     async def _change_position(self, part, new_user_x, new_user_y):
         part.update(new_user_x, new_user_y, part.width, part.height)
 
-        msg = TileMessages.SetUserPosition(
-            tile_index=part.part_number, user_x=part.user_x, user_y=part.user_y, res_required=False
-        )
+        msg = TileMessages.SetUserPosition(tile_index=part.part_number, user_x=part.user_x, user_y=part.user_y, res_required=False)
 
         await self.sender(msg, part.device.serial, message_timeout=2)
 
         plans = self.sender.make_plans("parts")
 
-        async for serial, _, info in self.sender.gatherer.gather(
-            plans, part.device.serial, message_timeou=2
-        ):
+        async for serial, _, info in self.sender.gatherer.gather(plans, part.device.serial, message_timeou=2):
             for found in info:
                 if found.part_number != part.part_number:
                     continue
@@ -399,14 +392,10 @@ class Arranger:
             return
 
         self.running = True
-        self.animation_fut = hp.ChildOfFuture(
-            self.final_future, name="Arranger::run[animation_fut]"
-        )
+        self.animation_fut = hp.ChildOfFuture(self.final_future, name="Arranger::run[animation_fut]")
 
         run_options = {
-            "animations": [
-                [(ArrangerAnimation, Options), {"arranger": self, "patterns": self.patterns}]
-            ],
+            "animations": [[(ArrangerAnimation, Options), {"arranger": self, "patterns": self.patterns}]],
             "reinstate_on_end": True,
         }
 

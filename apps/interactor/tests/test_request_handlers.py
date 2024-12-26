@@ -114,9 +114,7 @@ class TestSimpleWebSocketBase:
             # NO_ERROR
 
             msg_id = str(uuid.uuid1())
-            await server.ws_write(
-                connection, {"path": "/no_error", "body": {}, "message_id": msg_id}
-            )
+            await server.ws_write(connection, {"path": "/no_error", "body": {}, "message_id": msg_id})
             got = await server.ws_read(connection)
             assert got == {
                 "message_id": msg_id,
@@ -128,9 +126,7 @@ class TestSimpleWebSocketBase:
             # INTERNAL_ERROR
 
             msg_id = str(uuid.uuid1())
-            await server.ws_write(
-                connection, {"path": "/internal_error", "body": {}, "message_id": msg_id}
-            )
+            await server.ws_write(connection, {"path": "/internal_error", "body": {}, "message_id": msg_id})
             got = await server.ws_read(connection)
             assert got == {
                 "message_id": msg_id,
@@ -145,9 +141,7 @@ class TestSimpleWebSocketBase:
             # BUILDER_ERROR
 
             msg_id = str(uuid.uuid1())
-            await server.ws_write(
-                connection, {"path": "/builder_error", "body": {}, "message_id": msg_id}
-            )
+            await server.ws_write(connection, {"path": "/builder_error", "body": {}, "message_id": msg_id})
             got = await server.ws_read(connection)
             assert got == {
                 "message_id": msg_id,
@@ -174,9 +168,7 @@ class TestSimpleWebSocketBase:
             # BUILDER_SERIAL_ERROR
 
             msg_id = str(uuid.uuid1())
-            await server.ws_write(
-                connection, {"path": "/builder_serial_error", "body": {}, "message_id": msg_id}
-            )
+            await server.ws_write(connection, {"path": "/builder_serial_error", "body": {}, "message_id": msg_id})
 
             got = await server.ws_read(connection)
             assert got == {

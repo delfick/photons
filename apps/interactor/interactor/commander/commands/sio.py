@@ -1,6 +1,7 @@
 import attrs
-from interactor.commander.store import Command, reg, store
 from photons_web_server import commander
+
+from interactor.commander.store import Command, reg, store
 
 
 @attrs.define
@@ -27,9 +28,7 @@ class SIOCommands(Command):
         respond: commander.Responder,
         message: commander.Message,
     ) -> None:
-        route_transformer = self.meta.retrieve_one(
-            commander.RouteTransformer, type_cache=reg.type_cache
-        )
+        route_transformer = self.meta.retrieve_one(commander.RouteTransformer, type_cache=reg.type_cache)
         body = self.create(SIOBody, message.body)
         route = route_transformer.app.router.resolve(path=body.path, method=body.method)
         if not route:

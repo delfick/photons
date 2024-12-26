@@ -41,7 +41,6 @@ async def runner(db_runner):
 
 class TestDB:
     async def test_it_can_execute_queries(self, runner):
-
         async def do_set(session, query):
             one = await query.create_thing(one="one", two=True)
             session.add(one)

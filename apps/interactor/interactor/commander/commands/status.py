@@ -2,8 +2,9 @@ from typing import ClassVar
 
 import sanic
 import strcs
-from interactor.commander.store import Command, store
 from photons_web_server import commander
+
+from interactor.commander.store import Command, store
 
 
 @store.command

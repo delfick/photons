@@ -3,9 +3,6 @@ import time
 from collections.abc import Callable
 
 import strcs
-from arranger.arranger import Arranger
-from arranger.commander.parts import PartRouter
-from arranger.options import Options
 from photons_app import helpers as hp
 from photons_app.special import SpecialReference
 from photons_transport.comms.base import Communication
@@ -13,6 +10,10 @@ from photons_web_server import commander
 from photons_web_server.server import Server
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
+
+from arranger.arranger import Arranger
+from arranger.commander.parts import PartRouter
+from arranger.options import Options
 
 
 class ArrangerMessageFromExc(commander.MessageFromExc):
@@ -55,9 +56,7 @@ class ArrangerServer(Server):
         self.server_options = options
         self.wsconnections: dict[str, asyncio.Future] = {}
 
-        self.arranger = Arranger(
-            self.final_future, self.sender, reference, options.animation_options, cleaners
-        )
+        self.arranger = Arranger(self.final_future, self.sender, reference, options.animation_options, cleaners)
         self.tasks.add(self.arranger.run())
 
         self.meta = strcs.Meta(
@@ -88,9 +87,7 @@ class ArrangerServer(Server):
         self.app.static("/", self.server_options.assets.dist, index="index.html")
 
     async def before_stop(self):
-        await hp.wait_for_all_futures(
-            *self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]"
-        )
+        await hp.wait_for_all_futures(*self.wsconnections.values(), name="Server::cleanup[wait_for_wsconnections]")
 
     def log_ws_request(
         self,

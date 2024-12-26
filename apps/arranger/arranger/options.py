@@ -49,10 +49,7 @@ class Assets(dictobj.Spec):
 
     @property
     def needs_install(self):
-        return (
-            not os.path.exists(os.path.join(self.src, "node_modules"))
-            or os.environ.get("REBUILD") == 1
-        )
+        return not os.path.exists(os.path.join(self.src, "node_modules")) or os.environ.get("REBUILD") == 1
 
     def run(self, *args, no_node_env=False):
         env = None

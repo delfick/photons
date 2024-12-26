@@ -7,7 +7,6 @@ from photons_messages import DeviceMessages, LightMessages
 
 
 class TestFindPacket:
-
     def test_it_can_find_a_packet_based_on_pkt_type_integer(self):
         assert ihp.find_packet(23) is DeviceMessages.GetLabel
         assert ihp.find_packet(116) is LightMessages.GetLightPower

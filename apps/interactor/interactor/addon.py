@@ -6,23 +6,22 @@ import subprocess
 import aiohttp
 from delfick_project.addons import addon_hook
 from delfick_project.norms import sb
-from interactor.errors import InteractorError
-from interactor.options import Options
-from interactor.server import InteractorServer as Server
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.tasks import task_register as task
 from photons_web_server.server import WebServerTask
 
+from interactor.errors import InteractorError
+from interactor.options import Options
+from interactor.server import InteractorServer as Server
+
 log = logging.getLogger("interactor.addon")
 
 
 @addon_hook(extras=[("lifx.photons", "core"), ("lifx.photons", "web_server")])
 def __lifx__(collector, *args, **kwargs):
-    collector.register_converters(
-        {"interactor": Options.FieldSpec(formatter=MergedOptionStringFormatter)}
-    )
+    collector.register_converters({"interactor": Options.FieldSpec(formatter=MergedOptionStringFormatter)})
 
 
 @task.register(task_group="Interactor")
@@ -50,9 +49,7 @@ class interactor(WebServerTask):
     async def server_kwargs(self):
         async with self.target.session() as sender:
             yield dict(
-                reference_resolver_register=self.collector.configuration[
-                    "reference_resolver_register"
-                ],
+                reference_resolver_register=self.collector.configuration["reference_resolver_register"],
                 sender=sender,
                 options=self.options,
                 cleaners=self.photons_app.cleaners,
@@ -147,14 +144,10 @@ class interactor_assets(task.Task):
                 assets.run("run", "build")
 
             else:
-                raise PhotonsAppError(
-                    "Didn't get a recognised command", want=self.reference, available=available
-                )
+                raise PhotonsAppError("Didn't get a recognised command", want=self.reference, available=available)
         except subprocess.CalledProcessError as error:
             raise PhotonsAppError("Failed to run command", error=error)
 
 
-if (
-    importlib.resources.files("interactor") / ".." / "interactor_webapp" / "interactor" / "src"
-).exists():
+if (importlib.resources.files("interactor") / ".." / "interactor_webapp" / "interactor" / "src").exists():
     task.register(task_group="Interactor")(interactor_assets)

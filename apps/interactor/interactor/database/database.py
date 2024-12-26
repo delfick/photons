@@ -6,13 +6,14 @@ from urllib.parse import urlparse
 
 import sqlalchemy
 from delfick_project.norms import dictobj, sb
-from interactor.database.base import Base
-from interactor.database.query import Query
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from sqlalchemy import create_engine, pool
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+
+from interactor.database.base import Base
+from interactor.database.query import Query
 
 log = logging.getLogger("interactor.database.database")
 
@@ -104,9 +105,7 @@ class DB(hp.AsyncCMMixin):
 
         except sqlalchemy.exc.OperationalError as error:
             await session.rollback()
-            log.error(
-                hp.lc("Failed to use database, will rollback and maybe try again", error=error)
-            )
+            log.error(hp.lc("Failed to use database, will rollback and maybe try again", error=error))
 
             if tries > 1:
                 raise
@@ -140,9 +139,7 @@ async def migrate(database, extra=""):
             target_metadata = Base.metadata
 
             def run_migrations_offline():
-                alembic_context.configure(
-                    url=database.uri, target_metadata=target_metadata, literal_binds=True
-                )
+                alembic_context.configure(url=database.uri, target_metadata=target_metadata, literal_binds=True)
                 with alembic_context.begin_transaction():
                     alembic_context.run_migrations()
 
@@ -150,9 +147,7 @@ async def migrate(database, extra=""):
                 connectable = create_engine(database.uri, poolclass=pool.NullPool)
 
                 with connectable.connect() as connection:
-                    alembic_context.configure(
-                        connection=connection, target_metadata=target_metadata
-                    )
+                    alembic_context.configure(connection=connection, target_metadata=target_metadata)
                     with alembic_context.begin_transaction():
                         alembic_context.run_migrations()
 

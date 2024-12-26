@@ -22,8 +22,8 @@ class Base:
     def __repr__(self):
         title = self.__tablename__
         cols = dict((key, getattr(self, key)) for key in self.__repr_columns__)
-        columns = ", ".join("%s:%s" % (key, value) for key, value in cols.items())
-        return "<%s (%s)>" % (title, columns)
+        columns = ", ".join(f"{key}:{value}" for key, value in cols.items())
+        return f"<{title} ({columns})>"
 
 
 Base = declarative_base(cls=Base)

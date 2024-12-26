@@ -3,10 +3,11 @@ from typing import ClassVar
 import attrs
 import sanic
 import strcs
+from photons_web_server import commander
+
 from interactor.commander import helpers as ihp
 from interactor.commander.errors import NoSuchCommand
 from interactor.commander.store import Command, Store, _WithV1Http, reg, store
-from photons_web_server import commander
 
 
 @attrs.define
@@ -60,9 +61,7 @@ class HelpCommands(Command):
         if command not in cls.implements_v1_commands:
             return None
 
-        return ihp.v1_help_text_from_body(
-            doc=cls.help.__doc__, body_typ=strcs.Type.create(HelpBody, cache=type_cache)
-        )
+        return ihp.v1_help_text_from_body(doc=cls.help.__doc__, body_typ=strcs.Type.create(HelpBody, cache=type_cache))
 
     async def run_v1_http(
         self,

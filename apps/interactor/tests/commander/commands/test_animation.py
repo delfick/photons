@@ -244,8 +244,6 @@ class TestAnimationCommands:
             assert "unlocked" in info["animations"][identity]["options"]["pauser"]
             assert info["animations"][identity]["options"]["noisy_network"] == 0
 
-            specific = await server.assertCommand(
-                "/v1/lifx/command", {"command": "animation/info", "args": {"identity": identity}}
-            )
+            specific = await server.assertCommand("/v1/lifx/command", {"command": "animation/info", "args": {"identity": identity}})
             info["animations"][identity]["current_animation"]["started"] = mock.ANY
             assert info["animations"][identity] == specific

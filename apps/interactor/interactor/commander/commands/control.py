@@ -3,13 +3,14 @@ from typing import ClassVar, Self
 import attrs
 import sanic
 import strcs
+from photons_canvas.theme import ApplyTheme
+from photons_control.transform import PowerToggle, Transformer
+from photons_web_server import commander
+
 from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.devices import DeviceFinder
 from interactor.commander.store import Command, Store, store
-from photons_canvas.theme import ApplyTheme
-from photons_control.transform import PowerToggle, Transformer
-from photons_web_server import commander
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -177,9 +178,7 @@ class ControlCommands(Command):
         Send a pkt to devices and return the result
         """
         _params = _params.update_from_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
         msg = ihp.make_message(_body.pkt_type.value, _body.pkt_args)
         return sanic.json((await devices.send(msg)).as_dict())
 
@@ -196,9 +195,7 @@ class ControlCommands(Command):
         and results aren't returned
         """
         _params = _params.update_from_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
         msg = ihp.make_message(_body.pkt_type.value, _body.pkt_args)
         msg.res_required = False
         return sanic.json((await devices.send(msg)).as_dict())
@@ -215,9 +212,7 @@ class ControlCommands(Command):
         Toggle the power of the lights you specify
         """
         _params = _params.update_from_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
         kwargs = {"duration": _body.duration, "group": _body.group}
         msg = PowerToggle(**kwargs)
         return sanic.json((await devices.send(msg, add_replies=False)).as_dict())
@@ -234,9 +229,7 @@ class ControlCommands(Command):
         Apply a http api like transformation to the lights
         """
         _params = _params.update_from_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
         msg = Transformer.using(_body.transform, **_body.transform_options)
         return sanic.json((await devices.send(msg, add_replies=False)).as_dict())
 
@@ -264,12 +257,8 @@ class ControlCommands(Command):
             This will override all colours used when applying the theme
         """
         _params = _params.update_from_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
-        return sanic.json(
-            (await devices.send(ApplyTheme.msg(_body.theme_options), add_replies=False)).as_dict()
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
+        return sanic.json((await devices.send(ApplyTheme.msg(_body.theme_options), add_replies=False)).as_dict())
 
     known_routes = {
         "query": control_query,
@@ -279,15 +268,11 @@ class ControlCommands(Command):
         "apply_theme": control_apply_theme,
     }
 
-    async def control_put(
-        self, progress: commander.Progress, request: commander.Request, /, _body: Body, store: Store
-    ) -> commander.Response | None:
+    async def control_put(self, progress: commander.Progress, request: commander.Request, /, _body: Body, store: Store) -> commander.Response | None:
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
         use = store.determine_http_args_and_kwargs(self.meta, route, progress, request, [], {})
         return await getattr(self, route.__name__)(*use)

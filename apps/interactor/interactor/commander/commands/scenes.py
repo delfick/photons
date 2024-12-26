@@ -9,13 +9,6 @@ import sanic
 import strcs
 from delfick_project.norms import Meta as norms_Meta
 from delfick_project.norms import sb
-from interactor.commander import helpers as ihp
-from interactor.commander import selector
-from interactor.commander.devices import DeviceFinder
-from interactor.commander.errors import NoSuchScene
-from interactor.commander.store import Command, reg, store
-from interactor.database import DB
-from interactor.database.models import Scene, SceneInfo
 from photons_app import helpers as hp
 from photons_app import special
 from photons_control.device_finder import Filter, Finder
@@ -24,6 +17,14 @@ from photons_control.transform import Transformer
 from photons_transport import catch_errors
 from photons_transport.comms.base import Communication
 from photons_web_server import commander
+
+from interactor.commander import helpers as ihp
+from interactor.commander import selector
+from interactor.commander.devices import DeviceFinder
+from interactor.commander.errors import NoSuchScene
+from interactor.commander.store import Command, reg, store
+from interactor.database import DB
+from interactor.database.models import Scene, SceneInfo
 
 
 @attrs.define(slots=False, kw_only=True)
@@ -117,9 +118,7 @@ class SceneApplyBody(TimeoutBody):
     uuid: str
     """The uuid of the scene to apply"""
 
-    overrides: Annotated[
-        dict[str, object], strcs.Ann(creator=selector.create_dict_without_none)
-    ] = attrs.field(factory=dict)
+    overrides: Annotated[dict[str, object], strcs.Ann(creator=selector.create_dict_without_none)] = attrs.field(factory=dict)
     """Overrides to the scene"""
 
     def make_filter(self, matcher: dict | str | None) -> Filter:
@@ -278,7 +277,6 @@ class ScenesCommands(Command):
         /,
         _body: SceneDeleteBody,
     ) -> commander.Response:
-
         removed = []
 
         async def delete(session, query):
@@ -345,9 +343,7 @@ class ScenesCommands(Command):
                         ts.add(_body.transform(fltr, scene, result, msgs))
 
                     else:
-                        ts.add(
-                            _body.transform(_body.make_filter(scene.matcher), scene, result, msgs)
-                        )
+                        ts.add(_body.transform(_body.make_filter(scene.matcher), scene, result, msgs))
 
             def make_gen(msg_and_serials):
                 async def gen(reference, sender, **kwargs):
@@ -361,9 +357,7 @@ class ScenesCommands(Command):
                     DeviceFinder,
                     {"selector": special.HardCodedSerials(serials), "timeout": _params.timeout},
                 )
-                await devices.send(
-                    list(map(make_gen, msgs)), serials=serials, add_replies=False, result=result
-                )
+                await devices.send(list(map(make_gen, msgs)), serials=serials, add_replies=False, result=result)
 
         return sanic.json(result.as_dict())
 
@@ -379,9 +373,7 @@ class ScenesCommands(Command):
         Capture a scene
         """
         _params = _params.update_with_put_body(_body)
-        devices = self.create(
-            DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout}
-        )
+        devices = self.create(DeviceFinder, {"selector": _body.selector, "timeout": _params.timeout})
         plans = devices.sender.make_plans("power", "parts_and_colors")
         serials = await devices.serials
 
@@ -409,9 +401,7 @@ class ScenesCommands(Command):
                 state["chain"] = chain
             else:
                 color = parts[0].colors[0]
-                state["color"] = (
-                    f"kelvin:{color[3]} saturation:{color[1]} brightness:{color[2]} hue:{color[0]}"
-                )
+                state["color"] = f"kelvin:{color[3]} saturation:{color[1]} brightness:{color[2]} hue:{color[0]}"
 
             scene.append(state)
 
@@ -440,11 +430,7 @@ class ScenesCommands(Command):
         else:
             identifier = result.body.decode()
 
-        info = (
-            await self.scenes_info(
-                progress, request, _body=SceneInfoBody(database=_body.database, uuid=[identifier])
-            )
-        ).raw_body
+        info = (await self.scenes_info(progress, request, _body=SceneInfoBody(database=_body.database, uuid=[identifier]))).raw_body
 
         if identifier in info:
             return sanic.json(info[identifier])
@@ -470,14 +456,10 @@ class ScenesCommands(Command):
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
         _params = _params.update_with_put_body(_body)
-        return await getattr(self, route.__name__)(
-            progress, request, _body.selector, _params=_params
-        )
+        return await getattr(self, route.__name__)(progress, request, _body.selector, _params=_params)
 
     implements_v1_commands: ClassVar[set[str]] = {
         "scene_info",
@@ -537,9 +519,7 @@ class ScenesCommands(Command):
                     request,
                     _body=body,
                     _params=TimeoutParams(),
-                    request_future=meta.retrieve_one(
-                        asyncio.Future, "request_future", type_cache=reg.type_cache
-                    ),
+                    request_future=meta.retrieve_one(asyncio.Future, "request_future", type_cache=reg.type_cache),
                     sender=meta.retrieve_one(Communication, "sender", type_cache=reg.type_cache),
                 )
             elif command == "scene_capture":
@@ -553,6 +533,4 @@ class ScenesCommands(Command):
                         "selector": match,
                     },
                 )
-                return await self.scenes_capture(
-                    progress, request, _body=body, _params=TimeoutParams()
-                )
+                return await self.scenes_capture(progress, request, _body=body, _params=TimeoutParams())

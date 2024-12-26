@@ -42,9 +42,7 @@ class Commands(Command):
         message: commander.Message,
     ) -> bool | None:
         _body = self.create(V1Body, message.body["body"])
-        route_transformer = self.meta.retrieve_one(
-            commander.RouteTransformer, "route_transformer", type_cache=reg.type_cache
-        )
+        route_transformer = self.meta.retrieve_one(commander.RouteTransformer, "route_transformer", type_cache=reg.type_cache)
         store = self.meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
         result = await self.commands(
             respond.progress,
@@ -66,30 +64,20 @@ class Commands(Command):
         store: Store,
     ) -> commander.Response:
         assert _body.command in self.known_routes
-        with route_transformer.instantiate_route(
-            request, self.__class__, route := self.known_routes[_body.command]
-        ) as route:
-            use = store.determine_http_args_and_kwargs(
-                self.meta, route, progress, request, [], {"_body_raw": _body.args}
-            )
+        with route_transformer.instantiate_route(request, self.__class__, known_route := self.known_routes[_body.command]) as route:
+            use = store.determine_http_args_and_kwargs(self.meta, known_route, progress, request, [], {"_body_raw": _body.args})
             return await route(*use)
 
-    async def test_done_progress(
-        self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial
-    ) -> commander.Response:
+    async def test_done_progress(self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial) -> commander.Response:
         await progress(None, serial=_body.serial)
         return sanic.json({"serial": _body.serial})
 
-    async def test_no_error(
-        self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial
-    ) -> commander.Response:
+    async def test_no_error(self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial) -> commander.Response:
         await progress("hello", serial=_body.serial)
         await progress("there")
         return sanic.json({"serial": _body.serial})
 
-    async def test_error(
-        self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial
-    ) -> commander.Response:
+    async def test_error(self, progress: commander.Progress, request: commander.Request, /, _body: WithSerial) -> commander.Response:
         await progress(Exception("Nope"), serial=_body.serial)
         await progress(ValueError("Yeap"))
 
@@ -107,31 +95,23 @@ class Commands(Command):
 
 
 class TestCommands:
-
     def command(self, command):
-        serial = "d073d5{:06d}".format(random.randrange(1, 9999))
+        serial = f"d073d5{random.randrange(1, 9999):06d}"
         cmd = {"command": command, "args": {"serial": serial}}
         return cmd, serial
 
     async def test_it_has_progress_cb_functionality_for_http(self, server):
         command, serial = self.command("test_no_error")
-        await server.assertCommand(
-            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
-        )
+        await server.assertCommand("/v1/lifx/command", command, status=200, json_output={"serial": serial})
 
         command, serial = self.command("test_error")
-        await server.assertCommand(
-            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
-        )
+        await server.assertCommand("/v1/lifx/command", command, status=200, json_output={"serial": serial})
 
         command, serial = self.command("test_done_progress")
-        await server.assertCommand(
-            "/v1/lifx/command", command, status=200, json_output={"serial": serial}
-        )
+        await server.assertCommand("/v1/lifx/command", command, status=200, json_output={"serial": serial})
 
     async def test_it_has_progress_cb_functionality_for_websockets(self, server):
         async with server.ws_stream() as stream:
-
             # Done progress
             command, serial = self.command("test_done_progress")
             await stream.create("/v1/lifx/command", command)
@@ -148,9 +128,7 @@ class TestCommands:
             # With error
             command, serial = self.command("test_error")
             await stream.create("/v1/lifx/command", command)
-            await stream.check_reply(
-                {"progress": {"error": "Nope", "error_code": "Exception", "serial": serial}}
-            )
+            await stream.check_reply({"progress": {"error": "Nope", "error_code": "Exception", "serial": serial}})
             await stream.check_reply({"progress": {"error": "Yeap", "error_code": "ValueError"}})
             await stream.check_reply(
                 {

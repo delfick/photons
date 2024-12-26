@@ -53,9 +53,7 @@ class Commands(Command):
     def add_routes(kls, routes: commander.RouteTransformer) -> None:
         routes.http(kls.test, "/v2/test", methods=["PUT"], name="test")
 
-    async def test(
-        self, progress: commander.Progress, request: commander.Request, /, _body: Body
-    ) -> commander.Response:
+    async def test(self, progress: commander.Progress, request: commander.Request, /, _body: Body) -> commander.Response:
         """
         A test command to test help output
         """
@@ -70,9 +68,7 @@ class Commands(Command):
         if command not in cls.implements_v1_commands:
             return None
 
-        return ihp.v1_help_text_from_body(
-            doc=cls.test.__doc__, body_typ=strcs.Type.create(Body, cache=type_cache)
-        )
+        return ihp.v1_help_text_from_body(doc=cls.test.__doc__, body_typ=strcs.Type.create(Body, cache=type_cache))
 
     async def run_v1_http(
         self,
@@ -134,6 +130,4 @@ class TestCommands:
                     available |= cmd.implements_v1_commands
 
             for command in sorted(available):
-                await server.assertCommand(
-                    "/v1/lifx/command", {"command": "help", "args": {"command": command}}
-                )
+                await server.assertCommand("/v1/lifx/command", {"command": "help", "args": {"command": command}})

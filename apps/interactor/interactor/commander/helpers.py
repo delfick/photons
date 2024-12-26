@@ -2,10 +2,11 @@ import asyncio
 from textwrap import dedent
 
 import strcs
-from interactor.commander.errors import NoSuchPacket
 from photons_app import helpers as hp
 from photons_messages import protocol_register
 from photons_web_server.commander.messages import MessageFromExc
+
+from interactor.commander.errors import NoSuchPacket
 
 
 def find_packet(pkt_type):
@@ -61,11 +62,7 @@ def v1_help_text_from_body(doc: str, body_typ: strcs.Type[object]) -> str:
                 typ = strcs.Type.create(typ.extracted, cache=typ.cache)
 
             fields.append(f"\n\n{field.name}: " f"{typ.for_display()} ({required_or_default})\n")
-            fields.append(
-                "\n".join(
-                    [f"    {line}".rstrip() for line in dedent(docstring).strip().split("\n")]
-                )
-            )
+            fields.append("\n".join([f"    {line}".rstrip() for line in dedent(docstring).strip().split("\n")]))
 
     doc = dedent(doc or "").strip()
     return f"\n{doc}\n\n{''.join(fields)}\n"
@@ -137,9 +134,7 @@ class ResultBuilder:
         info = {
             "pkt_type": pkt.__class__.Payload.message_type,
             "pkt_name": pkt.__class__.__name__,
-            "payload": {
-                key: val for key, val in pkt.payload.as_dict().items() if "reserved" not in key
-            },
+            "payload": {key: val for key, val in pkt.payload.as_dict().items() if "reserved" not in key},
         }
 
         for k, v in list(info["payload"].items()):
@@ -156,11 +151,7 @@ class ResultBuilder:
             self.result["results"][pkt.serial] = info
 
     def error(self, e):
-        msg = (
-            MessageFromExc(lc=hp.lc.using(), logger_name="result_builder")
-            .process(type(e), e, e.__traceback__)
-            .response_dict()
-        )
+        msg = MessageFromExc(lc=hp.lc.using(), logger_name="result_builder").process(type(e), e, e.__traceback__).response_dict()
 
         serial = None
         if hasattr(e, "kwargs") and "serial" in e.kwargs:
@@ -258,7 +249,7 @@ class memoized_iterable:
     def __init__(self, func):
         self.func = func
         self.name = func.__name__
-        self.cache_name = "_{0}".format(self.name)
+        self.cache_name = f"_{self.name}"
 
     def __get__(self, instance=None, owner=None):
         if instance is None:
@@ -309,7 +300,7 @@ class memoized_async:
     def __init__(self, func):
         self.func = func
         self.name = func.__name__
-        self.cache_name = "_{0}".format(self.name)
+        self.cache_name = f"_{self.name}"
 
     def __get__(self, instance=None, owner=None):
         if instance is None:

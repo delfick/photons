@@ -8,9 +8,7 @@ class TestDatabaseMigration:
     async def test_it_can_create_a_database(self):
         with hp.a_temp_file() as fle:
             uri = f"sqlite:///{fle.name}"
-            options = Database.FieldSpec(formatter=MergedOptionStringFormatter).empty_normalise(
-                uri=uri
-            )
+            options = Database.FieldSpec(formatter=MergedOptionStringFormatter).empty_normalise(uri=uri)
             await migrate(options, "upgrade head")
 
             inspector = inspect(create_engine(options.uri))

@@ -36,12 +36,8 @@ class TestResultBuilder:
             builder.result["results"]["three"] = {"error": "blah"}
             dct = builder.as_dict()
 
-            assert builder.result == {
-                "results": {"one": {"pkt_type": 1}, "three": {"error": "blah"}}
-            }
-            assert dct == {
-                "results": {"one": {"pkt_type": 1}, "two": "ok", "three": {"error": "blah"}}
-            }
+            assert builder.result == {"results": {"one": {"pkt_type": 1}, "three": {"error": "blah"}}}
+            assert dct == {"results": {"one": {"pkt_type": 1}, "two": "ok", "three": {"error": "blah"}}}
 
         def test_it_includes_errors_on_result(self):
             builder = ihp.ResultBuilder(["one", "two"])
@@ -63,9 +59,7 @@ class TestResultBuilder:
         def test_it_makes_a_list_if_already_have_packet_for_that_bulb(self):
             packet1 = DeviceMessages.StatePower(level=0, target="d073d5000001")
             packet2 = DeviceMessages.StatePower(level=65535, target="d073d5000001")
-            packet3 = DeviceMessages.StateHostFirmware(
-                build=0, version_major=1, version_minor=2, target="d073d5000001"
-            )
+            packet3 = DeviceMessages.StateHostFirmware(build=0, version_major=1, version_minor=2, target="d073d5000001")
 
             info1 = {"pkt_type": 22, "pkt_name": "StatePower", "payload": {"level": 0}}
             info2 = {"pkt_type": 22, "pkt_name": "StatePower", "payload": {"level": 65535}}

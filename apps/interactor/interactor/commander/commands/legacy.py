@@ -1,7 +1,8 @@
 import attrs
 import strcs
-from interactor.commander.store import Command, Store, reg, store
 from photons_web_server import commander
+
+from interactor.commander.store import Command, Store, reg, store
 
 strcs.Meta
 
@@ -43,11 +44,7 @@ class LegacyCommands(Command):
         respond: commander.Responder,
         message: commander.Message,
     ) -> bool | None:
-        route_transformer = self.meta.retrieve_one(
-            commander.RouteTransformer, type_cache=reg.type_cache
-        )
+        route_transformer = self.meta.retrieve_one(commander.RouteTransformer, type_cache=reg.type_cache)
         assert respond.progress is not None
         store = self.meta.retrieve_one(Store, "store", type_cache=reg.type_cache)
-        return await store.run_v1_ws(
-            respond, message, _meta=self.meta, route_transformer=route_transformer
-        )
+        return await store.run_v1_ws(respond, message, _meta=self.meta, route_transformer=route_transformer)

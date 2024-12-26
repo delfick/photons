@@ -4,13 +4,14 @@ import attrs
 import sanic
 import strcs
 from delfick_project.option_merge import MergedOptions
+from photons_control.clean import ChangeCleanCycle
+from photons_control.planner import Skip
+from photons_web_server import commander
+
 from interactor.commander import helpers as ihp
 from interactor.commander import selector
 from interactor.commander.devices import DeviceFinder
 from interactor.commander.store import Command, Store, reg, store
-from photons_control.clean import ChangeCleanCycle
-from photons_control.planner import Skip
-from photons_web_server import commander
 
 
 @attrs.define
@@ -90,13 +91,7 @@ class CleanCommands(Command):
         the default duration if a duration is not provided.
         """
         devices = self.create(DeviceFinder, {"selector": selector, "timeout": _params.timeout})
-        return sanic.json(
-            (
-                await devices.send(
-                    ChangeCleanCycle(enable=True, duration_s=_params.duration_s), add_replies=False
-                )
-            ).as_dict()
-        )
+        return sanic.json((await devices.send(ChangeCleanCycle(enable=True, duration_s=_params.duration_s), add_replies=False)).as_dict())
 
     async def clean_stop(
         self,
@@ -112,9 +107,7 @@ class CleanCommands(Command):
         started.
         """
         devices = self.create(DeviceFinder, {"selector": selector, "timeout": _params.timeout})
-        return sanic.json(
-            (await devices.send(ChangeCleanCycle(enable=False), add_replies=False)).as_dict()
-        )
+        return sanic.json((await devices.send(ChangeCleanCycle(enable=False), add_replies=False)).as_dict())
 
     async def clean_status(
         self,
@@ -134,9 +127,7 @@ class CleanCommands(Command):
         serials = await devices.serials
         result = ihp.ResultBuilder()
 
-        got = await devices.sender.gatherer.gather_all(
-            plans, serials, error_catcher=result.error, message_timeout=_params.timeout
-        )
+        got = await devices.sender.gatherer.gather_all(plans, serials, error_catcher=result.error, message_timeout=_params.timeout)
 
         for serial, (complete, info) in got.items():
             if not complete:
@@ -170,15 +161,11 @@ class CleanCommands(Command):
         route = self.known_routes.get(command := _body.command)
 
         if route is None:
-            raise sanic.BadRequest(
-                message=f"Unknown command '{command}', available: {sorted(self.known_routes)}"
-            )
+            raise sanic.BadRequest(message=f"Unknown command '{command}', available: {sorted(self.known_routes)}")
 
         if command == "clean/start":
             body = reg.create(CleanStartBody, _body_raw, meta=_meta)
-            params = reg.create(CleanStartParams, _params_raw, meta=_meta).update_from_put_body(
-                body
-            )
+            params = reg.create(CleanStartParams, _params_raw, meta=_meta).update_from_put_body(body)
             return route(progress, request, body.selector, _params=params)
         else:
             body = reg.create(CleanBody, _body_raw, meta=_meta)
