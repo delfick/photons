@@ -14,7 +14,6 @@ photons_app_dir = pathlib.Path(__file__).parent.parent.parent / "photons_app"
 
 
 class TestMergedOptionStringFormatter:
-
     @pytest.fixture()
     def V(self):
         class V:
@@ -23,9 +22,7 @@ class TestMergedOptionStringFormatter:
 
             @hp.memoized_property
             def meta(s):
-                options = MergedOptions.using(
-                    {"target_register": s.target_register}, dont_prefix=[mock.Mock]
-                )
+                options = MergedOptions.using({"target_register": s.target_register}, dont_prefix=[mock.Mock])
                 return Meta(options, [])
 
         return V()
@@ -47,7 +44,7 @@ class TestMergedOptionStringFormatter:
     def test_it_complains_if_the_key_is_not_in_all_options(self, V):
         key = str(uuid.uuid1())
         with assertRaises(BadOptionFormat, "Can't find key in options", key=key):
-            V.spec.normalise(V.meta, "{{{0}}}".format(key))
+            V.spec.normalise(V.meta, f"{{{key}}}")
 
     def test_it_otherwise_just_gets_keys(self, V):
         val = str(uuid.uuid1())

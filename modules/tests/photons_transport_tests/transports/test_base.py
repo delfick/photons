@@ -25,7 +25,6 @@ class TestTransport:
             assert transport.transport is None
 
         async def test_it_has_a_setup_function(self, session):
-
             class T(Transport):
                 def setup(s, one, two, *, three):
                     s.one = one
@@ -43,7 +42,6 @@ class TestTransport:
             assert transport.three is three
 
     class TestSpawn:
-
         @pytest.fixture()
         def V(self, session):
             class V:
@@ -98,9 +96,7 @@ class TestTransport:
             assert s is V.spawned
             assert V.called == [("spawn_transport", 10), ("spawn_transport", 20)]
 
-        async def test_it_re_gets_the_transport_if_has_exception_first_time(
-            self, original_message, V
-        ):
+        async def test_it_re_gets_the_transport_if_has_exception_first_time(self, original_message, V):
             assert V.called == []
             V.spawn_transport.side_effect = ValueError("YEAP")
 
@@ -137,7 +133,6 @@ class TestTransport:
                 is_transport_active.assert_called_once_with(original_message, V.spawned)
 
         class TestClose:
-
             @pytest.fixture()
             def transport(self, session):
                 return Transport(session)
@@ -146,7 +141,6 @@ class TestTransport:
                 await transport.close()
 
             async def test_it_doesnt_swallow_cancellations(self, transport, V):
-
                 async def getter():
                     await asyncio.sleep(2)
                     return V.spawned
@@ -192,7 +186,6 @@ class TestTransport:
                 close_transport.assert_called_once_with(V.spawned)
 
         class TestHooks:
-
             @pytest.fixture()
             def transport(self, session):
                 return Transport(session)

@@ -15,9 +15,7 @@ from photons_messages import (
 from photons_products import Products
 
 devices = pytest.helpers.mimic()
-devices.add("strip")(
-    "d073d5001337", Products.LCM2_Z, hp.Firmware(2, 80), value_store={"zones_count": 22}
-)
+devices.add("strip")("d073d5001337", Products.LCM2_Z, hp.Firmware(2, 80), value_store={"zones_count": 22})
 
 
 @pytest.fixture()
@@ -52,7 +50,6 @@ def assertSent(sender, *expected):
 
 
 class TestSendingASingleMessages:
-
     @pytest.fixture()
     def send_single(self, sender):
         async def send_single(original, **kwargs):
@@ -67,7 +64,6 @@ class TestSendingASingleMessages:
         return devices["strip"]
 
     class TestHappyPath:
-
         async def test_it_can_send_and_receive_a_single_message(self, send_single, device):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             result = await send_single(original, timeout=1)
@@ -83,15 +79,11 @@ class TestSendingASingleMessages:
                     pkt=CoreMessages.Acknowledgement,
                     replying_to=original,
                 ),
-                devices.Events.OUTGOING(
-                    device, device.io["MEMORY"], pkt=expected, replying_to=original
-                ),
+                devices.Events.OUTGOING(device, device.io["MEMORY"], pkt=expected, replying_to=original),
             ]
 
         async def test_it_can_get_multiple_replies(self, send_single, device):
-            await device.event(
-                devices.Events.SET_ZONES, zones=[(i, hp.Color(i, 1, 1, 3500)) for i in range(22)]
-            )
+            await device.event(devices.Events.SET_ZONES, zones=[(i, hp.Color(i, 1, 1, 3500)) for i in range(22)])
             devices.store(device).clear()
 
             original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
@@ -117,8 +109,7 @@ class TestSendingASingleMessages:
                     {
                         "zones_count": 22,
                         "zone_index": 16,
-                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
-                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
+                        "colors": [hp.Color(i, 1, 1, 3500) for i in range(16, 22)] + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
                     },
                 ),
             ]
@@ -134,17 +125,10 @@ class TestSendingASingleMessages:
                     pkt=CoreMessages.Acknowledgement,
                     replying_to=original,
                 ),
-                *[
-                    devices.Events.OUTGOING(
-                        device, device.io["MEMORY"], pkt=ex, replying_to=original
-                    )
-                    for ex in expected
-                ],
+                *[devices.Events.OUTGOING(device, device.io["MEMORY"], pkt=ex, replying_to=original) for ex in expected],
             ]
 
-        async def test_it_can_get_unlimited_replies(
-            self, send_single, device, FakeTime, MockedCallLater
-        ):
+        async def test_it_can_get_unlimited_replies(self, send_single, device, FakeTime, MockedCallLater):
             original = DiscoveryMessages.GetService(ack_required=False)
             with FakeTime() as t:
                 async with MockedCallLater(t):
@@ -159,16 +143,11 @@ class TestSendingASingleMessages:
             pytest.helpers.assertSamePackets(result, expected)
             assert devices.store(device) == [
                 devices.Events.INCOMING(device, device.io["MEMORY"], pkt=original),
-                devices.Events.OUTGOING(
-                    device, device.io["MEMORY"], pkt=expected, replying_to=original
-                ),
+                devices.Events.OUTGOING(device, device.io["MEMORY"], pkt=expected, replying_to=original),
             ]
 
     class TestTimeouts:
-
-        async def test_it_can_retry_until_it_gets_a_timeout(
-            self, send_single, sender, device, FakeTime, MockedCallLater
-        ):
+        async def test_it_can_retry_until_it_gets_a_timeout(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             with FakeTime() as t:
@@ -188,15 +167,10 @@ class TestSendingASingleMessages:
 
             assertSent(
                 sender,
-                *[
-                    (round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload)
-                    for at in range(int(2 / 0.2))
-                ],
+                *[(round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload) for at in range(int(2 / 0.2))],
             )
 
-        async def test_it_can_retry_until_it_gets_a_result(
-            self, send_single, sender, device, FakeTime, MockedCallLater
-        ):
+        async def test_it_can_retry_until_it_gets_a_result(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             io = device.io["MEMORY"]
 
@@ -226,17 +200,12 @@ class TestSendingASingleMessages:
                     pkt=CoreMessages.Acknowledgement,
                     replying_to=original,
                 ),
-                devices.Events.OUTGOING(
-                    device, device.io["MEMORY"], pkt=expected, replying_to=original
-                ),
+                devices.Events.OUTGOING(device, device.io["MEMORY"], pkt=expected, replying_to=original),
             ]
 
             assertSent(
                 sender,
-                *[
-                    (at, device.serial, original.Payload.__name__, original.payload)
-                    for at in [0, 0.2, 0.4, 0.6]
-                ],
+                *[(at, device.serial, original.Payload.__name__, original.payload) for at in [0, 0.2, 0.4, 0.6]],
             )
 
         async def test_it_can_give_up_on_getting_multiple_messages_that_have_a_set_length(
@@ -290,18 +259,11 @@ class TestSendingASingleMessages:
 
             assertSent(
                 sender,
-                *[
-                    (round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload)
-                    for at in range(int(round(3 / 0.2)))
-                ],
+                *[(round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload) for at in range(int(round(3 / 0.2)))],
             )
 
-        async def test_it_can_retry_getting_multiple_replies_till_it_has_all_replies(
-            self, send_single, sender, device, FakeTime, MockedCallLater
-        ):
-            original = MultiZoneMessages.GetColorZones(
-                start_index=0, end_index=255, ack_required=False
-            )
+        async def test_it_can_retry_getting_multiple_replies_till_it_has_all_replies(self, send_single, sender, device, FakeTime, MockedCallLater):
+            original = MultiZoneMessages.GetColorZones(start_index=0, end_index=255, ack_required=False)
             io = device.io["MEMORY"]
 
             expected = (
@@ -326,8 +288,7 @@ class TestSendingASingleMessages:
                     dict(
                         zones_count=22,
                         zone_index=16,
-                        colors=[hp.Color(i, 1, 1, 3500) for i in range(16, 22)]
-                        + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
+                        colors=[hp.Color(i, 1, 1, 3500) for i in range(16, 22)] + [hp.Color(0, 0, 0, 0) for _ in range(22, 24)],
                     ),
                 ),
             )
@@ -400,14 +361,10 @@ class TestSendingASingleMessages:
 
             assertSent(
                 sender,
-                *[
-                    (round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload)
-                    for at in range(1 + int(round(2.2 / 0.2)))
-                ],
+                *[(round(at * 0.2, 3), device.serial, original.Payload.__name__, original.payload) for at in range(1 + int(round(2.2 / 0.2)))],
             )
 
     class TestWithoutRetries:
-
         async def test_it_works_if_we_get_a_response_first_time(self, send_single, device):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
             expected = (DeviceMessages.EchoResponse, {"echoing": b"hi"})
@@ -418,17 +375,11 @@ class TestSendingASingleMessages:
             io = device.io["MEMORY"]
             assert devices.store(device) == [
                 devices.Events.INCOMING(device, io, pkt=original),
-                devices.Events.OUTGOING(
-                    device, io, pkt=CoreMessages.Acknowledgement(), replying_to=original
-                ),
-                devices.Events.OUTGOING(
-                    device, io, pkt=expected[0].create(**expected[1]), replying_to=original
-                ),
+                devices.Events.OUTGOING(device, io, pkt=CoreMessages.Acknowledgement(), replying_to=original),
+                devices.Events.OUTGOING(device, io, pkt=expected[0].create(**expected[1]), replying_to=original),
             ]
 
-        async def test_it_times_out_if_we_dont_get_a_response(
-            self, send_single, sender, device, FakeTime, MockedCallLater
-        ):
+        async def test_it_times_out_if_we_dont_get_a_response(self, send_single, sender, device, FakeTime, MockedCallLater):
             original = DeviceMessages.EchoRequest(echoing=b"hi")
 
             with FakeTime() as t:
@@ -543,9 +494,7 @@ class TestSendingASingleMessages:
                     raise Cont()
 
             with process_request, process_outgoing, FakeTime() as t:
-
                 async with MockedCallLater(t) as m:
-
                     info["m"] = m
 
                     with assertRaises(
@@ -563,9 +512,7 @@ class TestSendingASingleMessages:
                         devices.Events.INCOMING(device, io, pkt=original),
                     ]
 
-                    assertSent(
-                        sender, (0, device.serial, original.Payload.__name__, original.payload)
-                    )
+                    assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))
 
                     await m.resume_after(1.5)
                     assert devices.store(device) == [
@@ -604,9 +551,7 @@ class TestSendingASingleMessages:
                     raise Cont()
 
             with process_request, process_outgoing, FakeTime() as t:
-
                 async with MockedCallLater(t) as m:
-
                     info["m"] = m
                     result = await send_single(original, timeout=1, no_retry=True)
 
@@ -624,6 +569,4 @@ class TestSendingASingleMessages:
                         ),
                     )
 
-                    assertSent(
-                        sender, (0, device.serial, original.Payload.__name__, original.payload)
-                    )
+                    assertSent(sender, (0, device.serial, original.Payload.__name__, original.payload))

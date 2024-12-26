@@ -8,7 +8,6 @@ from photons_messages import fields
 
 class TestFutureToString:
     def test_it_just_reprs_a_not_future(self):
-
         class Thing:
             def __repr__(s):
                 return "<REPR THING>"
@@ -94,9 +93,7 @@ class TestJustLogExceptions:
         with hp.just_log_exceptions(log):
             raise error
 
-        log.error.assert_called_once_with(
-            "Unexpected error", exc_info=(ValueError, error, mock.ANY)
-        )
+        log.error.assert_called_once_with("Unexpected error", exc_info=(ValueError, error, mock.ANY))
 
     def test_it_can_be_given_a_different_message(self):
         log = mock.Mock(name="log")
@@ -105,9 +102,7 @@ class TestJustLogExceptions:
         with hp.just_log_exceptions(log, message="a different message"):
             raise error
 
-        log.error.assert_called_once_with(
-            "a different message", exc_info=(ValueError, error, mock.ANY)
-        )
+        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
 
     def test_it_can_reraise_particular_errors(self):
         log = mock.Mock(name="log")
@@ -116,9 +111,7 @@ class TestJustLogExceptions:
         with hp.just_log_exceptions(log, message="a different message", reraise=[TypeError]):
             raise error
 
-        log.error.assert_called_once_with(
-            "a different message", exc_info=(ValueError, error, mock.ANY)
-        )
+        log.error.assert_called_once_with("a different message", exc_info=(ValueError, error, mock.ANY))
         log.error.reset_mock()
 
         with assertRaises(TypeError, "wat"):
@@ -337,22 +330,12 @@ class TestColor:
         assert hp.Color(2, 0, 0, 3500) != hp.Color(2, 0, 0, 3700)
 
     def test_it_can_be_compared_with_a_real_fieldsColor(self):
-        assert hp.Color(2, 0, 0, 3500) == fields.Color(
-            hue=2, saturation=0, brightness=0, kelvin=3500
-        )
+        assert hp.Color(2, 0, 0, 3500) == fields.Color(hue=2, saturation=0, brightness=0, kelvin=3500)
 
-        assert hp.Color(2, 0, 0, 3500) != fields.Color(
-            hue=20, saturation=0, brightness=0, kelvin=3500
-        )
-        assert hp.Color(2, 0, 0, 3500) != fields.Color(
-            hue=2, saturation=1, brightness=0, kelvin=3500
-        )
-        assert hp.Color(2, 0, 0, 3500) != fields.Color(
-            hue=2, saturation=0, brightness=1, kelvin=3500
-        )
-        assert hp.Color(2, 0, 0, 3500) != fields.Color(
-            hue=2, saturation=0, brightness=0, kelvin=3700
-        )
+        assert hp.Color(2, 0, 0, 3500) != fields.Color(hue=20, saturation=0, brightness=0, kelvin=3500)
+        assert hp.Color(2, 0, 0, 3500) != fields.Color(hue=2, saturation=1, brightness=0, kelvin=3500)
+        assert hp.Color(2, 0, 0, 3500) != fields.Color(hue=2, saturation=0, brightness=1, kelvin=3500)
+        assert hp.Color(2, 0, 0, 3500) != fields.Color(hue=2, saturation=0, brightness=0, kelvin=3700)
 
     def test_it_compares_to_4_decimal_places(self):
         assert hp.Color(250.245677, 0.134577, 0.765477, 4568) == (

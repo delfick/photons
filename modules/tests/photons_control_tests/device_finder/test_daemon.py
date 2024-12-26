@@ -67,7 +67,6 @@ class TestDeviceFinderDaemon:
         assert daemon.finder is finder
 
     class TestUsage:
-
         @pytest.fixture()
         def final_future(self):
             fut = hp.create_future()
@@ -159,7 +158,6 @@ class TestDeviceFinderDaemon:
             finish.assert_not_called()
 
         class TestSearchLoop:
-
             async def test_it_keeps_doing_a_search(self, V):
                 called = []
                 finish_fut = hp.create_future()
@@ -191,7 +189,10 @@ class TestDeviceFinderDaemon:
 
             async def test_it_does_refresh_information_loops(self, V):
                 called = []
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+
+                def m(s):
+                    return Device.FieldSpec().empty_normalise(serial=s)
+
                 d1 = m("d073d5000001")
                 d2 = m("d073d5000002")
 
@@ -255,15 +256,15 @@ class TestDeviceFinderDaemon:
                 for eril in (d1ril, d2ril):
                     assert len(eril.mock_calls) >= 3
 
-                    assert eril.mock_calls[0] == mock.call(
-                        V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections
-                    )
+                    assert eril.mock_calls[0] == mock.call(V.daemon.sender, V.daemon.time_between_queries, V.daemon.finder.collections)
 
             async def test_it_keeps_going_if_find_fails(self, V):
                 called = []
                 async with pytest.helpers.FutureDominoes(expected=5) as futs:
 
-                    m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                    def m(s):
+                        return Device.FieldSpec().empty_normalise(serial=s)
+
                     d1 = m("d073d5000001")
                     d2 = m("d073d5000002")
 
@@ -335,7 +336,9 @@ class TestDeviceFinderDaemon:
             async def test_it_yields_devices_from_finderfind(self, V):
                 fltr = Filter.from_kwargs(label="kitchen")
 
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                def m(s):
+                    return Device.FieldSpec().empty_normalise(serial=s)
+
                 d1 = m("d073d5000001")
                 d2 = m("d073d5000002")
 
@@ -357,7 +360,9 @@ class TestDeviceFinderDaemon:
             async def test_it_yields_devices_from_finderinfo(self, V):
                 fltr = Filter.from_kwargs(label="kitchen")
 
-                m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                def m(s):
+                    return Device.FieldSpec().empty_normalise(serial=s)
+
                 d1 = m("d073d5000001")
                 d2 = m("d073d5000002")
 
@@ -377,7 +382,6 @@ class TestDeviceFinderDaemon:
 
 
 class TestGettingDevicesFromTheDaemon:
-
     @pytest.fixture()
     async def V(self, final_future):
         class V:
@@ -385,9 +389,7 @@ class TestGettingDevicesFromTheDaemon:
             devices = pytest.helpers.mimic()
 
             d1 = devices.add("d1")(serials[0], Products.LCM3_TILE, hp.Firmware(3, 50))
-            d2 = devices.add("d2")(
-                serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[])
-            )
+            d2 = devices.add("d2")(serials[1], Products.LCM2_Z, hp.Firmware(2, 80), value_store=dict(zones=[]))
             d3 = devices.add("d3")(
                 serials[2],
                 Products.LCM2_A19,

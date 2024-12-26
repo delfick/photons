@@ -34,7 +34,6 @@ class TestSpecialReference:
         assert not ref.found.done()
 
     class TestFind:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -45,7 +44,6 @@ class TestSpecialReference:
             return V()
 
         async def test_it_transfers_cancellation_from_find_serials(self, V):
-
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
                     f = hp.create_future()
@@ -57,7 +55,6 @@ class TestSpecialReference:
                 await ref.find(V.sender, timeout=V.find_timeout)
 
         async def test_it_transfers_exceptions_from_find_serials(self, V):
-
             class Finder(SpecialReference):
                 async def find_serials(s, sender, *, timeout, broadcast=True):
                     f = hp.create_future()
@@ -137,13 +134,10 @@ class TestFoundSerials:
         res = await ref.find_serials(sender, broadcast=broadcast, timeout=find_timeout)
 
         assert res == found
-        sender.find_devices.assert_called_once_with(
-            broadcast=broadcast, raise_on_none=True, timeout=find_timeout
-        )
+        sender.find_devices.assert_called_once_with(broadcast=broadcast, raise_on_none=True, timeout=find_timeout)
 
 
 class TestHardCodedSerials:
-
     @pytest.fixture()
     def V(self):
         class V:
@@ -181,7 +175,6 @@ class TestHardCodedSerials:
         assert ref.serials == ["d073d5000001", "d073d5000002"]
 
     class TestFindSerials:
-
         async def assertFindSerials(self, found, serials, expected, missing):
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
@@ -196,9 +189,7 @@ class TestHardCodedSerials:
 
             assert f == expected
 
-            sender.find_specific_serials.assert_called_once_with(
-                serials, broadcast=broadcast, raise_on_none=False, timeout=find_timeout
-            )
+            sender.find_specific_serials.assert_called_once_with(serials, broadcast=broadcast, raise_on_none=False, timeout=find_timeout)
 
             assert ref.missing(f) == missing
 
@@ -216,17 +207,13 @@ class TestHardCodedSerials:
             missing = []
             await self.assertFindSerials(found, serials, expected, missing)
 
-        async def test_it_doesnt_call_to_find_specific_serials_if_the_serials_are_already_on_the_sender(
-            self, V
-        ):
+        async def test_it_doesnt_call_to_find_specific_serials_if_the_serials_are_already_on_the_sender(self, V):
             broadcast = mock.Mock(name="broadcast")
             find_timeout = mock.Mock(name="find_timeout")
 
             sender = mock.Mock(name="sender")
             sender.found = {V.target1: V.info1, V.target2: V.info2}
-            sender.find_specific_serials = pytest.helpers.AsyncMock(
-                name="find_specific_serials", side_effect=AssertionError("Shouldn't be called")
-            )
+            sender.find_specific_serials = pytest.helpers.AsyncMock(name="find_specific_serials", side_effect=AssertionError("Shouldn't be called"))
 
             ref = HardCodedSerials([V.serial1])
             f = await ref.find_serials(sender, broadcast=broadcast, timeout=find_timeout)
@@ -272,7 +259,7 @@ class TestResolveReferencesFromFile:
         FakeHardCodedSerials = mock.Mock(name="HardCodedSerials", return_value=resolver)
 
         with hp.a_temp_file() as fle:
-            fle.write("{}\n{}".format(serial1, serial2).encode())
+            fle.write(f"{serial1}\n{serial2}".encode())
             fle.close()
 
             with mock.patch("photons_app.special.HardCodedSerials", FakeHardCodedSerials):

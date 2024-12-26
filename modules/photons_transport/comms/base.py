@@ -9,6 +9,7 @@ from photons_app import helpers as hp
 from photons_app.errors import BadRunWithResults, FoundNoDevices, RunErrors, TimedOut
 from photons_protocol.messages import Messages
 from photons_protocol.packets import Information
+
 from photons_transport import catch_errors
 from photons_transport.comms.receiver import Receiver
 from photons_transport.comms.writer import Writer
@@ -106,12 +107,7 @@ class Found:
         return iter(self.found)
 
     def __repr__(self):
-        services = json.dumps(
-            {
-                binascii.hexlify(t).decode(): ",".join(repr(s) for s in services.keys())
-                for t, services in self.found.items()
-            }
-        )
+        services = json.dumps({binascii.hexlify(t).decode(): ",".join(repr(s) for s in services.keys()) for t, services in self.found.items()})
         return f"<FOUND: {services}>"
 
 
@@ -195,13 +191,9 @@ class Communication:
         self.transport_target = target
 
         self.found = Found()
-        self.stop_fut = hp.ChildOfFuture(
-            self.transport_target.final_future, name=f"{type(self).__name__}.__init__|stop_fut|"
-        )
+        self.stop_fut = hp.ChildOfFuture(self.transport_target.final_future, name=f"{type(self).__name__}.__init__|stop_fut|")
         self.receiver = Receiver()
-        self.received_data_tasks = hp.TaskHolder(
-            self.stop_fut, name=f"{type(self).__name__}.__init__|received_data_tasks|"
-        )
+        self.received_data_tasks = hp.TaskHolder(self.stop_fut, name=f"{type(self).__name__}.__init__|received_data_tasks|")
 
         self.make_plans = __import__("photons_control.planner").planner.make_plans
 
@@ -254,9 +246,7 @@ class Communication:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                log.exception(
-                    hp.lc("Failed to close transport", service=service, error=error, serial=serial)
-                )
+                log.exception(hp.lc("Failed to close transport", service=service, error=error, serial=serial))
 
     async def add_service(self, serial, service, **kwargs):
         new = await self.make_transport(serial, service, kwargs)
@@ -291,9 +281,7 @@ class Communication:
         found, _ = await self.find_specific_serials(None, **kwargs)
         return found
 
-    async def find_specific_serials(
-        self, serials, ignore_lost=False, raise_on_none=False, **kwargs
-    ):
+    async def find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, **kwargs):
         kwargs["ignore_lost"] = ignore_lost
         kwargs["raise_on_none"] = raise_on_none
         found = await self._find_specific_serials(serials, **kwargs)
@@ -304,9 +292,7 @@ class Communication:
 
         return found, missing
 
-    async def _find_specific_serials(
-        self, serials, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs
-    ):
+    async def _find_specific_serials(self, serials, ignore_lost=False, raise_on_none=False, timeout=60, **kwargs):
         found_now = await self._do_search(serials, timeout, **kwargs)
 
         if not ignore_lost:
@@ -340,13 +326,8 @@ class Communication:
         kwargs["is_broadcast"] = True
         return await self.send_single(packet, **kwargs)
 
-    async def send_single(
-        self, original, packet, *, timeout, no_retry=False, broadcast=False, connect_timeout=10
-    ):
-
-        transport, is_broadcast = await self._transport_for_send(
-            None, packet, original, broadcast, connect_timeout
-        )
+    async def send_single(self, original, packet, *, timeout, no_retry=False, broadcast=False, connect_timeout=10):
+        transport, is_broadcast = await self._transport_for_send(None, packet, original, broadcast, connect_timeout)
 
         retry_gaps = self.retry_gaps(original, transport)
 
@@ -384,14 +365,10 @@ class Communication:
             name=f"SendPacket({original.pkt_type, packet.serial})::send_single[streamer_fut]",
         )
 
-        retry_ticker = retry_gaps.retry_ticker(
-            name=f"{type(self).__name__}({type(transport).__name__})::retry_ticker"
-        )
+        retry_ticker = retry_gaps.retry_ticker(name=f"{type(self).__name__}({type(transport).__name__})::retry_ticker")
 
         with tick_fut, streamer_fut:
-            async with hp.ResultStreamer(
-                streamer_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single"
-            ) as streamer:
+            async with hp.ResultStreamer(streamer_fut, name=f"SendPacket({original.pkt_type, packet.serial}).send_single") as streamer:
                 await streamer.add_generator(
                     retry_ticker.tick(tick_fut, timeout),
                     context="tick",
@@ -449,9 +426,7 @@ class Communication:
 
         try:
             protocol_register = self.transport_target.protocol_register
-            protocol, pkt_type, Packet, PacketKls, data = Messages.get_packet_type(
-                data, protocol_register
-            )
+            protocol, pkt_type, Packet, PacketKls, data = Messages.get_packet_type(data, protocol_register)
 
             if protocol == 1024 and pkt_type == 45:
                 if isinstance(data, bytes):

@@ -22,9 +22,7 @@ class Responder(Operator):
             event.set_replies(DeviceMessages.StatePower(level=s.device_attrs.power))
         elif event | DeviceMessages.SetPower:
             event.set_replies(DeviceMessages.StatePower(level=s.device_attrs.power))
-            await s.device_attrs.attrs_apply(
-                s.device_attrs.attrs_path("power").changer_to(event.pkt.level), event=event
-            )
+            await s.device_attrs.attrs_apply(s.device_attrs.attrs_path("power").changer_to(event.pkt.level), event=event)
 
 
 @pytest.fixture()
@@ -47,7 +45,6 @@ def make_device():
 
 
 class TestCanSendOverMemory:
-
     @pytest.fixture()
     async def device(self, final_future, make_device):
         device = make_device()
@@ -82,9 +79,7 @@ class TestCanSendOverMemory:
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async def test_it_times_out_if_the_device_is_offline(
-        self, sender, device, FakeTime, MockedCallLater
-    ):
+    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]
@@ -132,7 +127,6 @@ class TestCanSendOverMemory:
 
 
 class TestCanSendOverUdp:
-
     @pytest.fixture()
     async def device(self, final_future, make_device):
         device = make_device(has_udp=True, value_store={"port": 56700})
@@ -149,10 +143,7 @@ class TestCanSendOverUdp:
         reference = HardCodedSerials([device.serial])
         found, serials = await reference.find(sender, timeout=1)
         assert serials == [device.serial]
-        assert (
-            found[binascii.unhexlify(device.serial)][Services.UDP].port
-            == device.io[Services.UDP.name].options.port
-        )
+        assert found[binascii.unhexlify(device.serial)][Services.UDP].port == device.io[Services.UDP.name].options.port
 
         pkts = await sender(DeviceMessages.SetPower(level=65535), device.serial)
         assert len(pkts) == 1
@@ -175,9 +166,7 @@ class TestCanSendOverUdp:
         assert pkt | DeviceMessages.StatePower
         assert pkt.level == 0
 
-    async def test_it_times_out_if_the_device_is_offline(
-        self, sender, device, FakeTime, MockedCallLater
-    ):
+    async def test_it_times_out_if_the_device_is_offline(self, sender, device, FakeTime, MockedCallLater):
         pkts = await sender(DeviceMessages.GetPower(), device.serial)
         assert len(pkts) == 1
         pkt = pkts[0]

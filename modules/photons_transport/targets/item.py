@@ -5,6 +5,7 @@ from delfick_project.norms import sb
 from photons_app import helpers as hp
 from photons_app.errors import DevicesNotFound, TimedOut
 from photons_app.special import SpecialReference
+
 from photons_transport import catch_errors
 
 log = logging.getLogger("photons_transport.targets.item")
@@ -130,9 +131,7 @@ class Item:
             broadcast = kwargs.get("broadcast", False)
             find_timeout = kwargs.get("find_timeout", 20)
 
-            found, serials, missing = await self._find(
-                kwargs.get("found"), reference, sender, broadcast, find_timeout
-            )
+            found, serials, missing = await self._find(kwargs.get("found"), reference, sender, broadcast, find_timeout)
 
             # Work out what and where to send
             # All the packets from here have targets on them
@@ -146,9 +145,7 @@ class Item:
             if missing is None and not broadcast:
                 accept_found = kwargs.get("accept_found") or broadcast
 
-                found, missing = await self.search(
-                    sender, found, accept_found, packets, broadcast, find_timeout, kwargs
-                )
+                found, missing = await self.search(sender, found, accept_found, packets, broadcast, find_timeout, kwargs)
 
             # Complain if we care about having all wanted devices
             if not broadcast and kwargs.get("require_all_devices") and missing:
@@ -222,9 +219,7 @@ class Item:
                     packets.append((original, clone))
             else:
                 clone = p.clone()
-                clone.update(
-                    dict(source=choose_source(clone, sender.source), sequence=sender.seq(p.serial))
-                )
+                clone.update(dict(source=choose_source(clone, sender.source), sequence=sender.seq(p.serial)))
                 packets.append((original, clone))
 
         return packets
@@ -251,15 +246,11 @@ class Item:
 
         error_catcher = kwargs["error_catcher"]
 
-        async with hp.ResultStreamer(
-            sender.stop_fut, error_catcher=silence_errors, name="Item::write_messages[streamer]"
-        ) as streamer:
+        async with hp.ResultStreamer(sender.stop_fut, error_catcher=silence_errors, name="Item::write_messages[streamer]") as streamer:
             count = 0
             for original, packet in packets:
                 count += 1
-                await streamer.add_coroutine(
-                    self.do_send(sender, original, packet, kwargs), context=packet
-                )
+                await streamer.add_coroutine(self.do_send(sender, original, packet, kwargs), context=packet)
 
             streamer.no_more_work()
 

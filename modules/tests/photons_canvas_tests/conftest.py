@@ -16,10 +16,11 @@ def modify_hsbk_calculation():
     is calculated to match!
     """
 
-    scaled_hue_transform = (
-        lambda _, v: int(0x10000 * (0 if v is sb.NotSpecified else float(v)) / 360) % 0x10000
-    )
-    scaled_to_65535_transform = lambda _, v: int(0xFFFF * (0 if v is sb.NotSpecified else float(v)))
+    def scaled_hue_transform(_, v):
+        return int(0x10000 * (0 if v is sb.NotSpecified else float(v)) / 360) % 0x10000
+
+    def scaled_to_65535_transform(_, v):
+        return int(0xFFFF * (0 if v is sb.NotSpecified else float(v)))
 
     p1 = mock.patch.object(scaled_hue, "_transform", scaled_hue_transform)
     p2 = mock.patch.object(scaled_to_65535, "_transform", scaled_to_65535_transform)

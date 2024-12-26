@@ -6,14 +6,11 @@ from photons_protocol.types import Optional
 
 
 class TestLightMessages:
-
     def create(self, msg):
         return LightMessages.create(msg, protocol_register=protocol_register)
 
     def test_it_has_Setcolor(self):
-        msg = self.create(
-            "3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000"
-        )
+        msg = self.create("3100001480dd8f29d073d522932200000000000000000301000000000000000066000000001c079919ff7fc409e8030000")
         assert msg | LightMessages.SetColor
         pytest.helpers.assertPayloadsEquals(
             msg.payload,
@@ -27,9 +24,7 @@ class TestLightMessages:
         assert msg.payload.actual("duration") == 1000
 
     def test_it_has_SetWaveform(self):
-        msg = self.create(
-            "39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01"
-        )
+        msg = self.create("39000014575df165d073d52293220000000000000000030100000000000000006700000000001c479919ff7fc409d00700000000a040cc0c01")
         assert msg | LightMessages.SetWaveform
         pytest.helpers.assertPayloadsEquals(
             msg.payload,
@@ -134,10 +129,8 @@ class TestLightMessages:
 
     def test_it_has_LightState(self):
         msg = self.create(
-            (
-                "580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b0000000007"
-                "9919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000"
-            )
+            "580000149c0bf333d073d522932200004c4946585632010100e8a719e40800006b0000000007"
+            "9919ff7fc4090000ffff64656e00000000000000000000000000000000000000000000000000000000000000000000000000"
         )
         assert msg | LightMessages.LightState
         pytest.helpers.assertPayloadsEquals(

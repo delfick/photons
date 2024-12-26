@@ -4,11 +4,12 @@ from textwrap import dedent
 from delfick_project.norms import sb
 from photons_app.errors import BadOption, DeprecatedTask
 from photons_app.tasks import task_register as task
+from photons_messages import LightMessages
+
 from photons_control.multizone import SetZonesEffect
 from photons_control.planner import Skip
 from photons_control.script import FromGenerator
 from photons_control.tile import SetTileEffect
-from photons_messages import LightMessages
 
 
 def find_packet(protocol_register, value, prefix):
@@ -46,15 +47,11 @@ class attr(task.Task):
         protocol_register = self.collector.configuration["protocol_register"]
 
         if self.artifact is sb.NotSpecified:
-            raise BadOption(
-                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr <reference> <attr_to_get>"
-            )
+            raise BadOption(f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr <reference> <attr_to_get>")
 
         kls = find_packet(protocol_register, self.artifact, "")
         if kls is None:
-            raise BadOption(
-                "Sorry, couldn't a class for this message", prefix="", want=self.artifact
-            )
+            raise BadOption("Sorry, couldn't a class for this message", prefix="", want=self.artifact)
 
         extra = self.photons_app.extra_as_json
 
@@ -88,15 +85,11 @@ class attr_actual(task.Task):
         protocol_register = self.collector.configuration["protocol_register"]
 
         if self.artifact is sb.NotSpecified:
-            raise BadOption(
-                f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr_actual <reference> <attr_to_get>"
-            )
+            raise BadOption(f"Please specify what you want to get\nUsage: {sys.argv[0]} <target>:attr_actual <reference> <attr_to_get>")
 
         kls = find_packet(protocol_register, self.artifact, "")
         if kls is None:
-            raise BadOption(
-                "Sorry, couldn't a class for this message", prefix="", want=self.artifact
-            )
+            raise BadOption("Sorry, couldn't a class for this message", prefix="", want=self.artifact)
 
         extra = self.photons_app.extra_as_json
 

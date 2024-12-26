@@ -19,7 +19,6 @@ class TestSpace:
 
 
 class TestCharacter:
-
     @pytest.fixture()
     def char(self):
         return font.Character(
@@ -80,7 +79,6 @@ class TestCharacter:
 
 
 class TestCharacters:
-
     @pytest.fixture()
     def char1(self):
         class Char1(font.Character):

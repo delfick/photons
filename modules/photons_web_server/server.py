@@ -10,6 +10,12 @@ from delfick_project.option_merge import MergedOptions
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks.tasks import GracefulTask
+from sanic.models.handler_types import RouteHandler
+from sanic.request import Request
+from sanic.response import BaseHTTPResponse as Response
+from sanic.server import AsyncioServer
+from sanic.server.protocols.websocket_protocol import WebSocketProtocol
+
 from photons_web_server.commander import (
     REQUEST_IDENTIFIER_HEADER,
     Command,
@@ -17,11 +23,6 @@ from photons_web_server.commander import (
     WrappedWebsocketHandler,
 )
 from photons_web_server.commander.messages import ErrorMessage, catch_ErrorMessage
-from sanic.models.handler_types import RouteHandler
-from sanic.request import Request
-from sanic.response import BaseHTTPResponse as Response
-from sanic.server import AsyncioServer
-from sanic.server.protocols.websocket_protocol import WebSocketProtocol
 
 try:
     import sanic
@@ -152,9 +153,7 @@ class Server:
             self.tasks.add(self.server.serve_forever())
             self.tasks.add(self.after_start())
 
-            await hp.wait_for_all_futures(
-                self.server_stop_future, name="Server::serve[wait_for_stop]"
-            )
+            await hp.wait_for_all_futures(self.server_stop_future, name="Server::serve[wait_for_stop]")
         finally:
             exc_info = sys.exc_info()
             await self.finished()
@@ -172,7 +171,6 @@ class Server:
 
         await self.before_stop()
         if self.server.is_serving():
-
             for connection in self.connections:
                 connection.close_if_idle()
 
@@ -205,9 +203,7 @@ class Server:
     def attach_exception(self, request: Request, exception: BaseException) -> None:
         request.ctx.exc_info = (type(exception), exception, exception.__traceback__)
 
-    def log_request_dict(
-        self, request: Request, remote_addr: str, identifier: str
-    ) -> dict[str, tp.Any] | None:
+    def log_request_dict(self, request: Request, remote_addr: str, identifier: str) -> dict[str, tp.Any] | None:
         return dict(
             method=request.method,
             uri=request.path,
@@ -238,9 +234,7 @@ class Server:
 
         getattr(log, method)(lc("Request", **dct))
 
-    def log_ws_request(
-        self, request: Request, first: tp.Any, title: str = "Websocket Request", **extra_lc_context
-    ) -> None:
+    def log_ws_request(self, request: Request, first: tp.Any, title: str = "Websocket Request", **extra_lc_context) -> None:
         remote_addr = request.remote_addr
         identifier = request.ctx.request_identifier
 

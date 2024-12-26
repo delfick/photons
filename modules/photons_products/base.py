@@ -1,4 +1,5 @@
 from photons_app.errors import ProgrammerError
+
 from photons_products.enums import Family, VendorRegistry
 from photons_products.errors import IncompleteProduct
 
@@ -14,8 +15,7 @@ class CapabilityValue:
 
     def __repr__(self):
         upgrades = [
-            f"({ma}, {mi}, {becomes}, conditions:({', '.join(repr(c) for c in conditions)}))"
-            for ma, mi, becomes, conditions in self.upgrades
+            f"({ma}, {mi}, {becomes}, conditions:({', '.join(repr(c) for c in conditions)}))" for ma, mi, becomes, conditions in self.upgrades
         ]
         if upgrades:
             return f"<CapabilityValue ({self._value}) -> {' -> '.join(upgrades)}>"
@@ -23,11 +23,7 @@ class CapabilityValue:
             return f"<CapabilityValue ({self._value})>"
 
     def __eq__(self, other):
-        return (
-            isinstance(other, CapabilityValue)
-            and self._value == other._value
-            and self.upgrades == other.upgrades
-        )
+        return isinstance(other, CapabilityValue) and self._value == other._value and self.upgrades == other.upgrades
 
     def value(self, cap):
         value = self._value
@@ -41,9 +37,7 @@ class CapabilityValue:
         return value
 
     def until(self, major, minor, *conditions, becomes):
-        if any(
-            (ma, mi) >= (major, minor) and conditions == conds for ma, mi, _, conds in self.upgrades
-        ):
+        if any((ma, mi) >= (major, minor) and conditions == conds for ma, mi, _, conds in self.upgrades):
             raise ProgrammerError("Each .until must be for a greater version number")
 
         self.upgrades.append((major, minor, becomes, conditions))
@@ -115,19 +109,13 @@ class Capability(metaclass=CapabilityDefinition):
         self.firmware_minor = firmware_minor
 
     def __call__(self, firmware_major, firmware_minor):
-        return self.__class__(
-            self.product, firmware_major=firmware_major, firmware_minor=firmware_minor
-        )
+        return self.__class__(self.product, firmware_major=firmware_major, firmware_minor=firmware_minor)
 
     def __repr__(self):
         return f"<Capability {self.product.name}>"
 
     def __eq__(self, other):
-        return (
-            self.product == other.product
-            and self.firmware_major == other.firmware_major
-            and self.firmware_minor == other.firmware_minor
-        )
+        return self.product == other.product and self.firmware_major == other.firmware_major and self.firmware_minor == other.firmware_minor
 
     def items(self):
         for capability in sorted(list(self.Meta.capabilities) + self.Meta.properties):
@@ -285,7 +273,7 @@ class ProductsHolder:
         return super().__getattribute__(name)
 
     def __getitem__(self, key):
-        if isinstance(key, (list, tuple)) and len(key) == 2:
+        if isinstance(key, list | tuple) and len(key) == 2:
             if key not in self.by_pair:
                 vid, pid = key
                 return make_unknown_product(vid, pid, self.default_capability_kls)

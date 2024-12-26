@@ -13,13 +13,14 @@ import socketio
 import strcs
 from delfick_project.logging import LogContext
 from photons_app import helpers as hp
-from photons_web_server.commander.const import REQUEST_IDENTIFIER_HEADER
-from photons_web_server.commander.messages import ExcInfo
 from sanic import Sanic
 from sanic.models.handler_types import RouteHandler
 from sanic.request import Request
 from sanic.response import BaseHTTPResponse as Response
 from strcs import Meta
+
+from photons_web_server.commander.const import REQUEST_IDENTIFIER_HEADER
+from photons_web_server.commander.messages import ExcInfo
 
 from .messages import (
     TBO,
@@ -29,11 +30,13 @@ from .messages import (
     MessageFromExc,
     ProgressMessageMaker,
     TMessageFromExc,
+    TReprer,
+    get_logger,
+    get_logger_name,
+    reprer,
 )
 from .messages import TProgressMessageMaker as Progress
-from .messages import TReprer
 from .messages import TResponseMaker as Responder
-from .messages import get_logger, get_logger_name, reprer
 from .routes import Route
 from .stream_wrap import (
     Message,
@@ -87,12 +90,8 @@ class CommandWebsocketWrap(WebsocketWrap):
         self.instance = instance
         self.message_from_exc_maker = message_from_exc_maker
 
-    def message_from_exc(
-        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception:
-        return self.message_from_exc_maker(
-            lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name
-        )(exc_type, exc, tb)
+    def message_from_exc(self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
+        return self.message_from_exc_maker(lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name)(exc_type, exc, tb)
 
     def make_responder(
         self,
@@ -121,12 +120,8 @@ class CommandSocketioWrap(SocketioWrap):
         self.instance = instance
         self.message_from_exc_maker = message_from_exc_maker
 
-    def message_from_exc(
-        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception:
-        return self.message_from_exc_maker(
-            lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name
-        )(exc_type, exc, tb)
+    def message_from_exc(self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
+        return self.message_from_exc_maker(lc=self.instance.lc.using(message_id=message.id), logger_name=self.instance.logger_name)(exc_type, exc, tb)
 
     def make_responder(
         self,
@@ -227,14 +222,10 @@ class RouteTransformer(tp.Generic[C]):
             return self.app.add_websocket_route(self.wrap_ws(method), *args, **kwargs)
 
     def sio(self, event: str, method: WrappedSocketioHandlerOnClass) -> RouteHandler:
-        return self.store.sio.on(event)(
-            self.wrap_sio(method, specific_event=None if event == "*" else event)
-        )
+        return self.store.sio.on(event)(self.wrap_sio(method, specific_event=None if event == "*" else event))
 
     @contextmanager
-    def a_request_future(
-        self, request: Request, name: str
-    ) -> tp.Generator[asyncio.Future, None, None]:
+    def a_request_future(self, request: Request, name: str) -> tp.Generator[asyncio.Future, None, None]:
         if hasattr(request.ctx, "request_future"):
             yield request.ctx.request_future
             return
@@ -259,9 +250,7 @@ class RouteTransformer(tp.Generic[C]):
 
         return handle
 
-    def wrap_sio(
-        self, method: WrappedSocketioHandlerOnClass, specific_event: str | None
-    ) -> RouteHandler:
+    def wrap_sio(self, method: WrappedSocketioHandlerOnClass, specific_event: str | None) -> RouteHandler:
         @wraps(method)
         async def handle(sid: str, *data: object):
             if specific_event is None:
@@ -275,9 +264,7 @@ class RouteTransformer(tp.Generic[C]):
                 if "lock" not in session:
                     session["lock"] = asyncio.Lock()
 
-            room = SocketioRoomEvent(
-                lock=session["lock"], sio=self.store.sio, sid=sid, data=data, event=event
-            )
+            room = SocketioRoomEvent(lock=session["lock"], sio=self.store.sio, sid=sid, data=data, event=event)
             request = self.store.sio.get_environ(sid)["sanic.request"]
 
             with self._an_instance(request, method) as (_, instance):
@@ -300,12 +287,8 @@ class RouteTransformer(tp.Generic[C]):
                 ret = False
                 try:
                     route = partial(method, instance)
-                    progress = instance.progress_message_maker(
-                        lc=instance.lc, logger_name=instance.logger_name
-                    )
-                    route_args = self.store.determine_http_args_and_kwargs(
-                        instance.meta, route, progress, request, args, kwargs
-                    )
+                    progress = instance.progress_message_maker(lc=instance.lc, logger_name=instance.logger_name)
+                    route_args = self.store.determine_http_args_and_kwargs(instance.meta, route, progress, request, args, kwargs)
 
                     if inspect.iscoroutinefunction(route):
                         t = hp.async_as_background(route(*route_args))
@@ -324,9 +307,7 @@ class RouteTransformer(tp.Generic[C]):
                 except (asyncio.CancelledError, Exception):
                     exc_info = sys.exc_info()
                     if ret or exc_info[0] is not asyncio.CancelledError:
-                        raise self.message_from_exc_maker(
-                            lc=instance.lc, logger_name=instance.logger_name
-                        )(*exc_info)
+                        raise self.message_from_exc_maker(lc=instance.lc, logger_name=instance.logger_name)(*exc_info)
 
                     if exc_info[0] is asyncio.CancelledError:
                         raise sanic.exceptions.ServiceUnavailable("Cancelled")
@@ -337,9 +318,7 @@ class RouteTransformer(tp.Generic[C]):
         return tp.cast(RouteHandler, route)
 
     @contextmanager
-    def instantiate_route(
-        self, request: Request, kls: type["Command"], method: tp.Callable[P, R]
-    ) -> tp.Generator[tp.Callable[P, R], None, None]:
+    def instantiate_route(self, request: Request, kls: type["Command"], method: tp.Callable[P, R]) -> tp.Generator[tp.Callable[P, R], None, None]:
         with self._an_instance(request, method, kls=kls) as (_, instance):
             route = getattr(instance, method.__name__)
             route_name = f"{route.__func__.__module__}.{route.__func__.__qualname__}"
@@ -355,9 +334,7 @@ class RouteTransformer(tp.Generic[C]):
 
     @tp.overload
     @contextmanager
-    def _an_instance(
-        self, request: Request, method: tp.Callable[..., object], kls: None
-    ) -> tp.Generator[tuple[str, C], None, None]: ...
+    def _an_instance(self, request: Request, method: tp.Callable[..., object], kls: None) -> tp.Generator[tuple[str, C], None, None]: ...
 
     @contextmanager
     def _an_instance(
@@ -365,13 +342,7 @@ class RouteTransformer(tp.Generic[C]):
     ) -> tp.Generator[tuple[str, C], None, None]:
         name = f"RouteTransformer::__call__({self.kls.__name__}:{method.__name__})"
 
-        lc = hp.lc.using(
-            **(
-                {}
-                if not hasattr(request.ctx, "request_identifier")
-                else {"request_identifier": request.ctx.request_identifier}
-            )
-        )
+        lc = hp.lc.using(**({} if not hasattr(request.ctx, "request_identifier") else {"request_identifier": request.ctx.request_identifier}))
 
         logger_name = get_logger_name(method=method)
         logger = logging.getLogger(logger_name)
@@ -444,9 +415,7 @@ class Command:
     ) -> T:
         if meta is None:
             meta = self.meta
-        return self.store.strcs_register.create(
-            typ, value, meta=meta, once_only_creator=once_only_creator
-        )
+        return self.store.strcs_register.create(typ, value, meta=meta, once_only_creator=once_only_creator)
 
     @classmethod
     def log_request_dict(
@@ -604,28 +573,19 @@ class Store:
         values = list(signature.parameters.values())
         use: list[object] = []
 
-        if (
-            values
-            and values[0].kind is inspect.Parameter.POSITIONAL_ONLY
-            and values[0].name == "self"
-            and values[0].annotation is inspect._empty
-        ):
+        if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY and values[0].name == "self" and values[0].annotation is inspect._empty:
             values.pop(0)
 
         if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY:
             nxt = values.pop(0)
             if nxt.annotation not in (inspect._empty, Progress):
-                raise IncorrectPositionalArgument(
-                    "First positional only argument must be a progress object"
-                )
+                raise IncorrectPositionalArgument("First positional only argument must be a progress object")
             use.append(progress)
 
         if values and values[0].kind is inspect.Parameter.POSITIONAL_ONLY:
             nxt = values.pop(0)
             if nxt.annotation not in (inspect._empty, Request):
-                raise IncorrectPositionalArgument(
-                    "Second positional only argument must be a request object"
-                )
+                raise IncorrectPositionalArgument("Second positional only argument must be a request object")
             use.append(request)
 
         remaining_args = list(args)
@@ -633,9 +593,7 @@ class Store:
         while values:
             nxt = values.pop(0)
             if remaining_args:
-                use.append(
-                    self.strcs_register.create(nxt.annotation, remaining_args.pop(0), meta=meta)
-                )
+                use.append(self.strcs_register.create(nxt.annotation, remaining_args.pop(0), meta=meta))
                 continue
 
             if nxt.kind is not inspect.Parameter.POSITIONAL_ONLY:
@@ -644,15 +602,9 @@ class Store:
 
             if nxt.default is inspect._empty:
                 try:
-                    use.append(
-                        self.strcs_register.create(
-                            nxt.annotation, kwargs.pop(nxt.name, strcs.NotSpecified), meta=meta
-                        )
-                    )
+                    use.append(self.strcs_register.create(nxt.annotation, kwargs.pop(nxt.name, strcs.NotSpecified), meta=meta))
                 except (TypeError, ValueError) as e:
-                    raise NotEnoughArgs(
-                        reason="request expected more positional arguments than it got"
-                    ) from e
+                    raise NotEnoughArgs(reason="request expected more positional arguments than it got") from e
 
                 continue
 

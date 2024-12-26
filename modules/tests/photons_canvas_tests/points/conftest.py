@@ -26,9 +26,7 @@ def V():
             orientation=Orientation.RightSideUp,
             **kwargs,
         ):
-            return cont.Part(
-                user_x, user_y, width, height, part_number, orientation, device, **kwargs
-            )
+            return cont.Part(user_x, user_y, width, height, part_number, orientation, device, **kwargs)
 
         @hp.memoized_property
         def real_part(s):

@@ -3,6 +3,7 @@ import tokenize
 import uuid
 
 from delfick_project.norms import BadSpecValue, sb
+
 from photons_app.errors import TargetNotFound
 from photons_app.formatter import MergedOptionStringFormatter
 from photons_app.registers import Target
@@ -20,9 +21,7 @@ class task_specifier_spec(sb.Spec):
             val = tuple(val)
 
         if isinstance(val, tuple):
-            return sb.tuple_spec(
-                sb.optional_spec(sb.string_spec()), sb.required(sb.string_spec())
-            ).normalise(meta, val)
+            return sb.tuple_spec(sb.optional_spec(sb.string_spec()), sb.required(sb.string_spec())).normalise(meta, val)
 
         task = sb.or_spec(sb.string_spec(), sb.none_spec()).normalise(meta, val)
         if not task:
@@ -44,14 +43,14 @@ class task_specifier_spec(sb.Spec):
         target_register = collector.configuration["target_register"]
 
         target_name = tokens.pop(0).string
-        target_name = self.parse_overridden_target(
-            meta, val, collector, target_register, target_name, tokens
-        )
+        target_name = self.parse_overridden_target(meta, val, collector, target_register, target_name, tokens)
         return target_name, chosen_task
 
     def initial_parse(self, val):
         lines = [val.encode(), b""]
-        readline = lambda size=-1: lines.pop(0)
+
+        def readline(size=-1):
+            return lines.pop(0)
 
         try:
             tokens = list(tokenize.tokenize(readline))
@@ -71,16 +70,12 @@ class task_specifier_spec(sb.Spec):
 
     def parse_overridden_target(self, meta, val, collector, target_register, target_name, tokens):
         if target_name not in target_register.registered:
-            raise TargetNotFound(
-                name=target_name, available=list(target_register.registered.keys())
-            )
+            raise TargetNotFound(name=target_name, available=list(target_register.registered.keys()))
 
         if tokens[0].string != "(" or tokens[-1].string != ")":
             raise BadSpecValue("target with options should have options in parenthesis", got=val)
 
-        parent_target_options = collector.configuration.get(
-            ["targets", target_name], ignore_converters=True
-        ).as_dict()
+        parent_target_options = collector.configuration.get(["targets", target_name], ignore_converters=True).as_dict()
 
         target = self.parse_target(meta, parent_target_options, target_name, tokens)
 
@@ -101,9 +96,7 @@ class task_specifier_spec(sb.Spec):
         try:
             val = ast.parse(untokenized)
         except SyntaxError as e:
-            raise BadSpecValue(
-                "Target options must be valid dictionary syntax", error=e, got=untokenized
-            )
+            raise BadSpecValue("Target options must be valid dictionary syntax", error=e, got=untokenized)
         else:
             for kw in val.body[0].value.keywords:
                 try:

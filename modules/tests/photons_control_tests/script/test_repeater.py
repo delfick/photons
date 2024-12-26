@@ -58,7 +58,6 @@ def assertReceived(received, want):
 
 
 class TestRepeater:
-
     async def test_it_repeats_messages(self, sender):
         for use_pipeline in (True, False):
             pipeline = [
@@ -281,13 +280,10 @@ class TestRepeater:
             got[pkt.serial].append((pkt, time.time()))
 
         assert all(serial in got for serial in devices.serials), got
-        assert all(len(pkts) == 6 for pkts in got.values()), [
-            (serial, len(pkts)) for serial, pkts in got.items()
-        ]
+        assert all(len(pkts) == 6 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
         assert len(done) == 3
 
     async def test_it_is_not_stopped_by_errors(self, sender):
-
         async def process_request(event, Cont):
             if event | DeviceMessages.SetPower:
                 return
@@ -318,16 +314,10 @@ class TestRepeater:
 
         got = defaultdict(list)
         with psr1, psr2, psr3:
-            async for pkt in sender(
-                msg, devices.serials, error_catcher=got_error, message_timeout=0.1
-            ):
+            async for pkt in sender(msg, devices.serials, error_catcher=got_error, message_timeout=0.1):
                 got[pkt.serial].append(pkt)
 
         assert all(serial in got for serial in devices.serials), got
-        assert all(len(pkts) == 2 for pkts in got.values()), [
-            (serial, len(pkts)) for serial, pkts in got.items()
-        ]
-        assert all(
-            all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()
-        ), got
+        assert all(len(pkts) == 2 for pkts in got.values()), [(serial, len(pkts)) for serial, pkts in got.items()]
+        assert all(all(pkt | LightMessages.LightState for pkt in pkts) for pkts in got.values()), got
         assert len(done) == 2

@@ -42,7 +42,6 @@ async def reset_devices(sender):
 
 
 class TestPipeline:
-
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
     async def test_it_does_all_messages_at_once_if_pipeline_isnt_used(self, sender, reference):
         called = []
@@ -87,9 +86,7 @@ class TestPipeline:
         assert sorted(called) == sorted(devices.serials)
 
     @pytest.mark.parametrize("reference", [devices.serials, FoundSerials()])
-    async def test_it_waits_on_replies_before_sending_next_if_we_have_a_pipeline(
-        self, sender, reference
-    ):
+    async def test_it_waits_on_replies_before_sending_next_if_we_have_a_pipeline(self, sender, reference):
         called = []
         wait = hp.create_future()
 
@@ -199,11 +196,7 @@ class TestPipeline:
                 got[pkt.serial].append(pkt)
                 called.append(("got_reply", type(pkt.payload).__name__))
 
-                with_two = [
-                    serial
-                    for serial, pkts in got.items()
-                    if serial != light1.serial and len(pkts) == 2
-                ]
+                with_two = [serial for serial, pkts in got.items() if serial != light1.serial and len(pkts) == 2]
                 if len(with_two) == 2 and not light1_power_wait.done():
                     assert len(got) == 2, list(got)
                     assert all(len(pkts) == 2 for pkts in got.values())
@@ -234,9 +227,7 @@ class TestPipeline:
             assert pkts[0] | DeviceMessages.StatePower, pkts
             assert pkts[1] | LightMessages.LightState, pkts
 
-    async def test_it_devices_are_slowed_down_by_other_slow_devices_if_synchronized_is_True(
-        self, sender
-    ):
+    async def test_it_devices_are_slowed_down_by_other_slow_devices_if_synchronized_is_True(self, sender):
         wait = hp.create_future()
         called = []
         got_times = defaultdict(list)
@@ -294,7 +285,6 @@ class TestPipeline:
             assert pkts[1] | LightMessages.LightState, pkts
 
     async def test_it_doesnt_stop_on_errors(self, sender):
-
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
                 if event.pkt.serial == light1.serial:
@@ -348,7 +338,6 @@ class TestPipeline:
         assert [t for _, t in got[serial]] == [0, 1]
 
     async def test_it_can_short_cut_on_errors(self, sender):
-
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
                 if event.pkt.serial == light1.serial:
@@ -401,7 +390,6 @@ class TestPipeline:
         assert got[serial][0][1] == 0
 
     async def test_it_can_short_cut_on_errors_with_synchronized(self, sender):
-
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
                 if event.pkt.serial == light1.serial:
@@ -453,7 +441,6 @@ class TestPipeline:
         assert got[serial][0][1] == 0
 
     async def test_it_can_raise_all_errors(self, sender):
-
         async def process_request(event, Cont):
             if event | DeviceMessages.SetLabel:
                 if event.pkt.serial in (light1.serial, light2.serial):

@@ -81,9 +81,7 @@ class Result(asyncio.Future):
         result
         """
         current = getattr(self, attr)
-        hp.get_event_loop().call_later(
-            self.retry_gaps.finish_multi_gap, self.maybe_finish, current, attr
-        )
+        hp.get_event_loop().call_later(self.retry_gaps.finish_multi_gap, self.maybe_finish, current, attr)
 
     def maybe_finish(self, last, attr):
         """

@@ -2,10 +2,9 @@
 Copied from python3.8 and python3.6 contextlib
 """
 
+import _collections_abc
 import abc
 from functools import wraps
-
-import _collections_abc
 
 
 class AbstractAsyncContextManager(abc.ABC):
@@ -81,7 +80,7 @@ class _AsyncGeneratorContextManager(_GeneratorContextManagerBase, AbstractAsyncC
                 # have this behavior). But do this only if the exception wrapped
                 # by the RuntimeError is actully Stop(Async)Iteration (see
                 # issue29692).
-                if isinstance(value, (StopIteration, StopAsyncIteration)):
+                if isinstance(value, StopIteration | StopAsyncIteration):
                     if exc.__cause__ is value:
                         return False
                 raise

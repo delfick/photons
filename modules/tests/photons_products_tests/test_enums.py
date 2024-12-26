@@ -16,7 +16,6 @@ class TestVendor:
         assert v == v
 
     def test_it_can_be_given_a_name(self):
-
         class T:
             BLAH = Vendor(1)
 

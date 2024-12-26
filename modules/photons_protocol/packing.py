@@ -3,6 +3,7 @@ import struct
 
 from bitarray import bitarray
 from delfick_project.norms import dictobj, sb
+
 from photons_protocol.errors import BadConversion
 from photons_protocol.types import Optional
 
@@ -118,9 +119,7 @@ class FieldInfo(dictobj):
                     group=self.group,
                     field=self.name,
                 )
-            return (
-                bitarray("0", endian="little") if val is False else bitarray("1", endian="little")
-            )
+            return bitarray("0", endian="little") if val is False else bitarray("1", endian="little")
 
         else:
             b = bitarray(endian="little")
@@ -173,9 +172,7 @@ class PacketPacking:
                     number = number(pkt)
 
                 if len(val) != number:
-                    raise BadConversion(
-                        "Expected correct number of items", name=name, found=len(val), want=number
-                    )
+                    raise BadConversion("Expected correct number of items", name=name, found=len(val), want=number)
 
                 for v in val:
                     yield FieldInfo(name, typ, v, size_bits, group)
@@ -250,9 +247,7 @@ class PacketPacking:
         if getattr(pkt, "parent_packet", False) and pkt.Meta.field_types:
             name, typ = pkt.Meta.field_types[-1]
             if getattr(typ, "message_type", None) == 0:
-                final += val_to_bitarray(
-                    payload or pkt[name], doing="Adding payload when packing a packet"
-                )
+                final += val_to_bitarray(payload or pkt[name], doing="Adding payload when packing a packet")
 
         return final
 

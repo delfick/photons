@@ -47,7 +47,6 @@ def mocks(collector, configuration, args_dict, photons_app, register):
 
 
 class TestCollector:
-
     @pytest.fixture()
     def collector(self):
         with alt_pytest_asyncio.Loop(new_loop=False):
@@ -59,7 +58,6 @@ class TestCollector:
         assert collector.photons_app is collector.configuration["photons_app"]
 
     def test_it_has_a_shortcut_to_resolve_a_target(self):
-
         class Target(dictobj.Spec):
             pass
 
@@ -130,7 +128,6 @@ class TestCollector:
             assert clone2.configuration["photons_app"] is not collector.photons_app
 
     class TestExtraPrepare:
-
         def test_it_puts_things_into_the_configuration_and_sets_up_the_addon_register(self):
             extra = str(uuid.uuid1())
             photons_app = {"extra": extra}
@@ -227,9 +224,7 @@ class TestCollector:
 
             def rik(*args):
                 register = info["register"]
-                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
-                    ["delfick_project.addons", "lifx.photons"]
-                )
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(["delfick_project.addons", "lifx.photons"])
                 assert register.known == [("lifx.photons", "one"), ("lifx.photons", "two")]
                 called.append("recursive_import_known")
 
@@ -238,9 +233,7 @@ class TestCollector:
             def rri():
                 called.append("recursive_resolve_imported")
 
-            recursive_resolve_imported = mock.Mock(
-                name="recursive_resolve_imported", side_effect=rri
-            )
+            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
                 with mock.patch.multiple(
@@ -248,9 +241,7 @@ class TestCollector:
                     recursive_import_known=recursive_import_known,
                     recursive_resolve_imported=recursive_resolve_imported,
                 ):
-                    Collector().setup_addon_register(
-                        {"addons": {"lifx.photons": ["one", "two"]}}, None
-                    )
+                    Collector().setup_addon_register({"addons": {"lifx.photons": ["one", "two"]}}, None)
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
@@ -269,9 +260,7 @@ class TestCollector:
 
             def rik(*args):
                 register = info["register"]
-                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
-                    ["delfick_project.addons", "lifx.photons"]
-                )
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(["delfick_project.addons", "lifx.photons"])
                 assert register.known == [
                     ("lifx.photons", "one"),
                     ("lifx.photons", "two"),
@@ -284,9 +273,7 @@ class TestCollector:
             def rri():
                 called.append("recursive_resolve_imported")
 
-            recursive_resolve_imported = mock.Mock(
-                name="recursive_resolve_imported", side_effect=rri
-            )
+            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
                 with mock.patch.multiple(
@@ -294,9 +281,7 @@ class TestCollector:
                     recursive_import_known=recursive_import_known,
                     recursive_resolve_imported=recursive_resolve_imported,
                 ):
-                    Collector().setup_addon_register(
-                        {"addons": {"lifx.photons": ["one", "two"]}}, True
-                    )
+                    Collector().setup_addon_register({"addons": {"lifx.photons": ["one", "two"]}}, True)
 
             recursive_import_known.assert_called_once_with()
             recursive_resolve_imported.assert_called_once_with()
@@ -315,9 +300,7 @@ class TestCollector:
 
             def rik(*args):
                 register = info["register"]
-                assert sorted(register.addon_getter.namespaces.keys()) == sorted(
-                    ["delfick_project.addons", "lifx.photons"]
-                )
+                assert sorted(register.addon_getter.namespaces.keys()) == sorted(["delfick_project.addons", "lifx.photons"])
                 assert register.known == []
                 called.append("recursive_import_known")
 
@@ -326,9 +309,7 @@ class TestCollector:
             def rri():
                 called.append("recursive_resolve_imported")
 
-            recursive_resolve_imported = mock.Mock(
-                name="recursive_resolve_imported", side_effect=rri
-            )
+            recursive_resolve_imported = mock.Mock(name="recursive_resolve_imported", side_effect=rri)
 
             with mock.patch("photons_app.collector.Register", FakeRegister):
                 with mock.patch.multiple(
@@ -362,9 +343,7 @@ class TestCollector:
                 },
                 configuration=configuration,
             )
-            configuration.converters._converters.insert(
-                0, configuration.converters._converters.pop()
-            )
+            configuration.converters._converters.insert(0, configuration.converters._converters.pop())
             configuration.converters.activate()
 
             collector.extra_prepare_after_activation(configuration, args_dict)
@@ -390,9 +369,7 @@ class TestCollector:
                 },
                 configuration=configuration,
             )
-            configuration.converters._converters.insert(
-                0, configuration.converters._converters.pop()
-            )
+            configuration.converters._converters.insert(0, configuration.converters._converters.pop())
             configuration.converters.activate()
 
             collector.extra_prepare_after_activation(configuration, args_dict)
@@ -419,9 +396,7 @@ class TestCollector:
                 },
                 configuration=configuration,
             )
-            configuration.converters._converters.insert(
-                0, configuration.converters._converters.pop()
-            )
+            configuration.converters._converters.insert(0, configuration.converters._converters.pop())
             configuration.converters.activate()
 
             add_targets = mock.Mock(name="add_targets")
@@ -430,9 +405,7 @@ class TestCollector:
 
             collector.configuration = configuration
 
-            add_targets.assert_called_once_with(
-                configuration["target_register"], configuration["targets"]
-            )
+            add_targets.assert_called_once_with(configuration["target_register"], configuration["targets"])
 
             target_register = configuration["target_register"]
             with assertRaises(TargetNotFound):
@@ -451,9 +424,7 @@ class TestCollector:
             current_home = os.environ.get("HOME")
             try:
                 os.environ["HOME"] = "/home/bob"
-                assert (
-                    Collector().home_dir_configuration_location() == "/home/bob/.photons_apprc.yml"
-                )
+                assert Collector().home_dir_configuration_location() == "/home/bob/.photons_apprc.yml"
             finally:
                 if have_current_home:
                     os.environ["HOME"] = current_home
@@ -462,7 +433,6 @@ class TestCollector:
 
     class TestStartConfiguration:
         def test_it_returns_MergedOptions_that_doesnt_prefix_dictobj_objects(self):
-
             class D(dictobj):
                 fields = ["one"]
 
@@ -525,7 +495,7 @@ class TestCollector:
             assert configuration["config_root"] == config_root
 
         def test_it_removes_config_root_if_its_the_home_dir_configuration(self):
-            home_location = "/home/bob/{0}".format(str(uuid.uuid1()))
+            home_location = f"/home/bob/{str(uuid.uuid1())}"
             configuration = MergedOptions.using({"config_root": "/home/bob"})
 
             new_config_root = str(uuid.uuid1())
@@ -534,18 +504,12 @@ class TestCollector:
             done = {}
             src = str(uuid.uuid1())
 
-            home_dir_configuration_location = mock.Mock(
-                name="home_dir_configuration_location", return_value=home_location
-            )
+            home_dir_configuration_location = mock.Mock(name="home_dir_configuration_location", return_value=home_location)
             collect_another_source = mock.NonCallableMock(name="collect_another_source")
             collector = Collector()
 
-            with mock.patch.object(
-                collector, "home_dir_configuration_location", home_dir_configuration_location
-            ):
-                collector.add_configuration(
-                    configuration, collect_another_source, done, result, src
-                )
+            with mock.patch.object(collector, "home_dir_configuration_location", home_dir_configuration_location):
+                collector.add_configuration(configuration, collect_another_source, done, result, src)
 
             home_dir_configuration_location.assert_called_once_with()
             assert configuration.storage.data[0] == (
@@ -557,7 +521,7 @@ class TestCollector:
 
         def test_it_sets_the_source_in_terms_of_the_config_root(self):
             src_item = str(uuid.uuid1())
-            src = "/one/two/{0}".format(src_item)
+            src = f"/one/two/{src_item}"
             configuration = MergedOptions.using({"config_root": "/one/two"})
 
             result = {"one": 1}
@@ -591,9 +555,7 @@ class TestCollector:
 
             collector = Collector()
             with mock.patch("os.path.exists", alwaystrue), mock.patch("os.path.isfile", alwaystrue):
-                collector.add_configuration(
-                    configuration, collect_another_source, done, result, src
-                )
+                collector.add_configuration(configuration, collect_another_source, done, result, src)
 
             assert collect_another_source.mock_calls == [
                 mock.call("/one/two/three"),
@@ -620,15 +582,12 @@ class TestCollector:
                     filename="/one/two/three",
                     source=src,
                 ):
-                    Collector().add_configuration(
-                        configuration, collect_another_source, done, result, src
-                    )
+                    Collector().add_configuration(configuration, collect_another_source, done, result, src)
 
             exists.assert_called_once_with("/one/two/three")
 
         def test_it_can_do_extra_files_before_and_after_current_configuration(self, a_temp_dir):
             with a_temp_dir() as (d, make_file):
-
                 make_file(
                     "before1.yml",
                     """
@@ -774,9 +733,7 @@ class TestCollector:
 
     class TestExtraConfigurationCollection:
         def test_it_registers_converters_for_serveral_things(self):
-            configuration = MergedOptions.using(
-                {"targets": {"one": {"type": "special", "options": {1: 2}}}}
-            )
+            configuration = MergedOptions.using({"targets": {"one": {"type": "special", "options": {1: 2}}}})
 
             collector = Collector()
             configuration["collector"] = collector

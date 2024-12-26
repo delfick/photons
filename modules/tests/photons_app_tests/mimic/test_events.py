@@ -72,7 +72,6 @@ def assertConsoleOutput(event, *lines):
 
 class TestConsoleFormat:
     class TestLinesFromError:
-
         def assertLines(self, err, *lines):
             assertLines(ConsoleFormat.lines_from_error, err, *lines)
 
@@ -88,7 +87,6 @@ class TestConsoleFormat:
             )
 
         def test_it_can_format_a_DelfickError(self):
-
             class MyError(PhotonsAppError):
                 desc = "oh noes"
 
@@ -100,7 +98,6 @@ class TestConsoleFormat:
             )
 
         def test_it_can_see_an_expand_function(self):
-
             class MyError(PhotonsAppError):
                 desc = "oh noes"
 
@@ -117,7 +114,6 @@ class TestConsoleFormat:
             )
 
     class TestLinesFromAPacket:
-
         def assertLines(self, pkt, *lines):
             assertLines(ConsoleFormat.lines_from_packet, pkt, *lines)
 
@@ -200,7 +196,6 @@ class TestEvent:
         assert not event.IncomingEvent | event.ResetEvent
 
     def test_it_has_a_name(self, device):
-
         class MyEvent(Event):
             pass
 
@@ -208,7 +203,6 @@ class TestEvent:
         assert e.name == "d073d5001337(LCM2_A19:2,80) MyEvent"
 
     def test_it_has_a_repr(self, device):
-
         class MyEvent(Event):
             pass
 
@@ -216,7 +210,6 @@ class TestEvent:
         assert repr(e) == "<Event:d073d5001337:MyEvent>"
 
     def test_it_has_equality(self, device, device2):
-
         class MyEvent(Event):
             pass
 
@@ -236,7 +229,6 @@ class TestEvent:
         MyEvent(device) == (MyEvent2, device2)
 
     def test_it_has_equality_by_default_only_on_log_args_and_log_kwargs(self, device):
-
         class MyEvent3(Event):
             def setup(self, *, one, two, three):
                 self.one = one
@@ -260,7 +252,6 @@ class TestEvent:
         MyEvent4(device, one=1, two=4, three=5) != MyEvent4(device, one=1, two=4, three=3)
 
     def test_it_has_setup(self, device, FakeTime):
-
         got = []
 
         with FakeTime() as t:
@@ -291,7 +282,6 @@ class TestEvent:
         assert not e | Events.POWER_OFF
 
     class TestFormattingForTheConsole:
-
         def test_it_can_format_a_simple_event(self, device):
             assertConsoleOutput(
                 Events.POWER_OFF(device),
@@ -299,7 +289,6 @@ class TestEvent:
             )
 
         def test_it_can_format_an_event_with_arguments(self, device):
-
             class Simple(Event):
                 def setup(self):
                     self.log_args = ("hello", "there")
@@ -367,7 +356,6 @@ class TestEvents:
 
 
 class TestIncomingEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.INCOMING
@@ -391,16 +379,13 @@ class TestIncomingEvent:
         assert not e | Events.OUTGOING
 
         # Show doesn't apply to a different event
-        e = Events.OUTGOING(
-            device, io, pkt=DeviceMessages.GetPower(), addr="somewhere", replying_to="the test"
-        )
+        e = Events.OUTGOING(device, io, pkt=DeviceMessages.GetPower(), addr="somewhere", replying_to="the test")
         assert not e | DeviceMessages.GetPower
         assert not e | DeviceMessages.SetPower
         assert not e | Events.INCOMING
         assert e | Events.OUTGOING
 
     def test_it_can_do_comparisons_on_the_io(self, EKLS, device):
-
         class MyIO(Operator):
             io_source = "HIGHWAY_TO_INFO"
 
@@ -504,7 +489,6 @@ class TestIncomingEvent:
 
 
 class TestOutgoingEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.OUTGOING
@@ -578,7 +562,6 @@ class TestOutgoingEvent:
 
 
 class TestUnhandledEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.UNHANDLED
@@ -635,7 +618,6 @@ class TestUnhandledEvent:
 
 
 class TestIgnoredEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.IGNORED
@@ -692,7 +674,6 @@ class TestIgnoredEvent:
 
 
 class TestLostEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.LOST
@@ -749,7 +730,6 @@ class TestLostEvent:
 
 
 class TestAttributeChangeEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.ATTRIBUTE_CHANGE
@@ -792,7 +772,6 @@ class TestAttributeChangeEvent:
 
 
 class TestAnnotationEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.ANNOTATION
@@ -834,7 +813,6 @@ class TestAnnotationEvent:
 
 
 class TestDiscoverableEvent:
-
     @pytest.fixture()
     def EKLS(self):
         return Events.DISCOVERABLE

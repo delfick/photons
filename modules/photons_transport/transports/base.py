@@ -29,9 +29,7 @@ class Transport:
             return None
 
         if self.transport is None:
-            self.transport = hp.create_future(
-                name=f"Transport::{self.session.__class__.__name__}::spawn[transport]"
-            )
+            self.transport = hp.create_future(name=f"Transport::{self.session.__class__.__name__}::spawn[transport]")
             t = hp.async_as_background(self.spawn_transport(timeout))
             t.add_done_callback(hp.transfer_result(self.transport))
 
@@ -39,9 +37,7 @@ class Transport:
 
     async def close(self):
         if self.transport:
-            await hp.wait_for_all_futures(
-                self.transport, name=f"Transport::{self.session.__class__.__name__}::close"
-            )
+            await hp.wait_for_all_futures(self.transport, name=f"Transport::{self.session.__class__.__name__}::close")
 
             t = self.transport
             self.transport = None

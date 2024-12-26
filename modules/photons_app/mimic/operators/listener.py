@@ -1,4 +1,5 @@
 from delfick_project.norms import dictobj, sb
+
 from photons_app import helpers as hp
 from photons_app.mimic.event import Events
 from photons_app.mimic.operator import Viewer, operator
@@ -120,11 +121,7 @@ class PacketWaiter(Viewer):
         if "make_packet_waiter" in device.value_store:
             return kls(device)
 
-    attrs = [
-        Viewer.Attr.Lambda(
-            "event_waiter", from_zero=lambda event, options: EventWaiter(event.device)
-        )
-    ]
+    attrs = [Viewer.Attr.Lambda("event_waiter", from_zero=lambda event, options: EventWaiter(event.device))]
 
     async def respond(self, event):
         if hasattr(self.device.attrs, "event_waiter"):

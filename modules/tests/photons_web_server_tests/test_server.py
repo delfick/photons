@@ -104,9 +104,7 @@ class Between:
 
 
 class TestTask:
-
     def test_it_Runs_the_server(self, collector: Collector):
-
         called = []
 
         p = pytest.helpers.free_port()
@@ -139,7 +137,6 @@ class TestTask:
 class TestServer:
     class TestTheSanicApp:
         async def test_it_has_config_that_weve_provided(self):
-
             class MyConfig(Config):
                 pass
 
@@ -151,7 +148,6 @@ class TestServer:
                 assert server.app.name == "photons_web_server"
 
         async def test_it_has_server_name_weve_provided(self):
-
             class MyServer(Server):
                 sanic_server_name = "my_server_is_better_than_yours"
 
@@ -160,9 +156,7 @@ class TestServer:
                 assert server.app.name == "my_server_is_better_than_yours"
 
     class TestLifecycle:
-        def test_it_has_own_lifecycle_methods_that_use_sanic_life_cycle_methods(
-            self, collector: Collector
-        ):
+        def test_it_has_own_lifecycle_methods_that_use_sanic_life_cycle_methods(self, collector: Collector):
             called: list[object] = []
             calledlong = hp.create_future()
             p = pytest.helpers.free_port()
@@ -260,10 +254,7 @@ class TestServer:
                 "after_stop",
             ]
 
-        def test_it_fails_if_the_server_wants_a_port_already_in_use(
-            self, used_port: int, collector: Collector
-        ):
-
+        def test_it_fails_if_the_server_wants_a_port_already_in_use(self, used_port: int, collector: Collector):
             def route(request: Request, /) -> HTTPResponse | None:
                 return sanic.text("route")
 
@@ -301,7 +292,6 @@ class TestServer:
                 task.run_loop(collector=collector)
 
     class TestStoppingServer:
-
         async def test_it_waits_for_requests_based_on_a_default_15_second_timeout_from_sanic(
             self, final_future: asyncio.Future, collector: Collector, fake_event_loop, fake_time
         ):
@@ -366,9 +356,7 @@ class TestServer:
 
             server_properties = {"Config": Config}
 
-            async with pws_thp.WebServerRoutes(
-                final_future, setup_routes, server_properties
-            ) as srv:
+            async with pws_thp.WebServerRoutes(final_future, setup_routes, server_properties) as srv:
                 req = srv.start_request("PUT", "/route")
                 await started
                 assert time.time() < 0.3
@@ -381,10 +369,7 @@ class TestServer:
                 await req
 
     class TestLogging:
-
-        async def test_it_records_commands_and_responses(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_records_commands_and_responses(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             Ident1 = pws_thp.IdentifierMatch(identifiers)
@@ -417,12 +402,7 @@ class TestServer:
                     }
                 srv.stop()
 
-            records = [
-                r.msg
-                for r in caplog.records
-                if isinstance(r.msg, dict)
-                and any(m in r.msg["msg"] for m in ("Response", "Request"))
-            ]
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict) and any(m in r.msg["msg"] for m in ("Response", "Request"))]
 
             assert records == [
                 {
@@ -465,13 +445,9 @@ class TestServer:
             ]
 
             assert records[0]["request_identifier"] == records[1]["request_identifier"]
-            assert all(
-                r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:]
-            )
+            assert all(r["request_identifier"] == records[-1]["request_identifier"] for r in records[2:])
 
-        async def test_it_lets_the_handler_hook_into_the_logging(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_lets_the_handler_hook_into_the_logging(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             called: list[object] = []
             expected_called: list[object] = []
 
@@ -590,16 +566,9 @@ class TestServer:
                     }
                 srv.stop()
 
-                assert (await unknown.text()).startswith(
-                    "⚠️ 404 — Not Found\n==================\nRequested URL /unknown_route not found"
-                )
+                assert (await unknown.text()).startswith("⚠️ 404 — Not Found\n==================\nRequested URL /unknown_route not found")
 
-            records = [
-                r.msg
-                for r in caplog.records
-                if isinstance(r.msg, dict)
-                and any(m in r.msg["msg"] for m in ("Response", "Request"))
-            ]
+            records = [r.msg for r in caplog.records if isinstance(r.msg, dict) and any(m in r.msg["msg"] for m in ("Response", "Request"))]
 
             assert records == [
                 {
@@ -697,10 +666,7 @@ class TestServer:
             assert called == expected_called
 
     class TestWebsocketStreams:
-
-        async def test_it_can_send_progress_messages(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_can_send_progress_messages(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -724,13 +690,9 @@ class TestServer:
                     }
                     await stream.recv() is None
 
-        async def test_it_can_provide_a_progress_callback(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_can_provide_a_progress_callback(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
-            progress = pytest.helpers.AsyncMock(
-                name="progress", return_value={"ret": "from progress"}
-            )
+            progress = pytest.helpers.AsyncMock(name="progress", return_value={"ret": "from progress"})
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
             WSIdentM1 = pws_thp.IdentifierMatch(identifiers)
@@ -756,9 +718,7 @@ class TestServer:
 
             progress.assert_called_once_with("there", do_log=True, one=1, two=2)
 
-        async def test_it_complains_if_the_message_isnt_valid_json(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_complains_if_the_message_isnt_valid_json(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -832,9 +792,7 @@ class TestServer:
                 },
             ]
 
-        async def test_it_can_use_message_id_that_is_provided(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_can_use_message_id_that_is_provided(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -884,9 +842,7 @@ class TestServer:
                 },
             ]
 
-        async def test_it_can_not_override_the_request_identifier(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_can_not_override_the_request_identifier(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)
@@ -1077,9 +1033,7 @@ class TestServer:
                     },
                 ]
 
-        async def test_it_doesnt_close_connection_on_an_exception(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_doesnt_close_connection_on_an_exception(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             async with pytest.helpers.FutureDominoes(expected=7) as futs:
                 identifiers: set[str] = set()
 
@@ -1248,9 +1202,7 @@ class TestServer:
             ]
             assert called == ["cancelled", "closed"]
 
-        async def test_it_logs_response_if_abruptly_closed(
-            self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog
-        ):
+        async def test_it_logs_response_if_abruptly_closed(self, final_future: asyncio.Future, collector: Collector, fake_event_loop, caplog):
             identifiers: set[str] = set()
 
             WSIdent1 = pws_thp.IdentifierMatch(identifiers)

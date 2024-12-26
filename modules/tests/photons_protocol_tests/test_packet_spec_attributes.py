@@ -20,7 +20,6 @@ from photons_protocol.types import Type as T
 class TestPacketAttributes:
     class TestGetitem:
         def test_it_raises_KeyError_if_the_key_is_not_on_the_packet(self):
-
             class P(dictobj.PacketSpec):
                 fields = []
 
@@ -29,7 +28,6 @@ class TestPacketAttributes:
                 p["one"]
 
         def test_it_does_not_raise_KeyError_if_the_key_is_a_group(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("payload", "Payload")]
 
@@ -40,7 +38,6 @@ class TestPacketAttributes:
             assert p["payload"] == P.Payload()
 
         def test_it_uses_sbNotSpecified_if_there_is_no_value_for_the_key(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.String)]
 
@@ -51,12 +48,9 @@ class TestPacketAttributes:
             with mock.patch.object(p, "getitem_spec", getitem_spec):
                 assert p["one"] is val
 
-            getitem_spec.assert_called_once_with(
-                T.String, "one", sb.NotSpecified, None, None, True, False, True
-            )
+            getitem_spec.assert_called_once_with(T.String, "one", sb.NotSpecified, None, None, True, False, True)
 
         def test_it_uses_found_value_if_there_is_a_value_for_the_key(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.String)]
 
@@ -71,7 +65,6 @@ class TestPacketAttributes:
             getitem_spec.assert_called_once_with(T.String, "one", v, None, None, True, False, True)
 
         def test_it_passes_along_information_provided_to_getitem_spec(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.String)]
 
@@ -97,12 +90,9 @@ class TestPacketAttributes:
             with mock.patch.object(p, "getitem_spec", getitem_spec):
                 assert p.__getitem__("one", **options) is val
 
-            getitem_spec.assert_called_once_with(
-                T.String, "one", v, parent, serial, do_transform, allow_bitarray, unpacking
-            )
+            getitem_spec.assert_called_once_with(T.String, "one", v, parent, serial, do_transform, allow_bitarray, unpacking)
 
         def test_it_returns_empty_payload_as_a_bitarray(self):
-
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("payload", "Payload")]
@@ -119,7 +109,6 @@ class TestPacketAttributes:
                 assert P(payload=val).__getitem__("payload", allow_bitarray=True) == b
 
         def test_it_returns_nonempty_payload_as_that_payload(self):
-
             class P(dictobj.PacketSpec):
                 parent_packet = True
                 fields = [("payload", "Payload")]
@@ -138,7 +127,6 @@ class TestPacketAttributes:
             assert Child(one=True).payload == Child.Payload(one=True)
 
         def test_it_returns_groups_as_filled_in(self):
-
             class G(dictobj.PacketSpec):
                 fields = [
                     ("one", T.Bool.default(lambda p: True)),
@@ -154,7 +142,6 @@ class TestPacketAttributes:
             assert type(g) is G
 
         def test_it_does_not_use_getitem_spec_if_do_spec_is_False(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.String)]
 
@@ -172,7 +159,6 @@ class TestPacketAttributes:
             assert len(getitem_spec.mock_calls) == 0
 
         def test_it_works_for_transformed_values(self):
-
             def pack_t(p, v):
                 return v + 5
 
@@ -187,7 +173,6 @@ class TestPacketAttributes:
             assert p.__getitem__("one", unpacking=False) == 5
 
         def test_it_works_for_bytes_values(self):
-
             class P(dictobj.PacketSpec):
                 fields = [("one", T.Bytes)]
 
@@ -200,15 +185,13 @@ class TestPacketAttributes:
             assert p.__getitem__("one", allow_bitarray=True) == b
 
         def test_it_works_for_transform_values_that_have_no_value(self):
-
             class P(dictobj.PacketSpec):
                 fields = [
                     (
                         "one",
                         T.Int16.transform(
-                            lambda _, v: (int(str(v).split(".")[0]) << 0x10)
-                            + int(str(v).split(".")[1]),
-                            lambda v: float("{0}.{1}".format(v >> 0x10, v & 0xFF)),
+                            lambda _, v: (int(str(v).split(".")[0]) << 0x10) + int(str(v).split(".")[1]),
+                            lambda v: float(f"{v >> 0x10}.{v & 0xFF}"),
                         ),
                     )
                 ]
@@ -217,7 +200,6 @@ class TestPacketAttributes:
             assert p.one is sb.NotSpecified
 
     class TestGetitemSpec:
-
         @pytest.fixture()
         def V(self):
             class V:
@@ -268,18 +250,14 @@ class TestPacketAttributes:
 
             p = P()
             meta = Meta.empty()
-            assert (
-                V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) is V.untransformed
-            )
+            assert V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) is V.untransformed
 
             actual.assert_called_with(V.parent, V.serial)
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), cald)
             V.untransform.assert_called_with(p, V.normalised)
 
-        def test_it_does_not_call_the_value_if_its_not_allowed_to_be_callable_and_is_callable(
-            self, V
-        ):
+        def test_it_does_not_call_the_value_if_its_not_allowed_to_be_callable_and_is_callable(self, V):
             actual = mock.Mock(name="actual")
 
             class P(PacketSpecMixin):
@@ -287,9 +265,7 @@ class TestPacketAttributes:
 
             p = P()
             meta = Meta.empty()
-            assert (
-                V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) is V.untransformed
-            )
+            assert V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) is V.untransformed
 
             assert len(actual.mock_calls) == 0
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
@@ -304,9 +280,7 @@ class TestPacketAttributes:
 
             p = P()
             meta = Meta.empty()
-            assert (
-                V.getitem_spec(p, actual, do_transform=False, allow_bitarray=True) is V.normalised
-            )
+            assert V.getitem_spec(p, actual, do_transform=False, allow_bitarray=True) is V.normalised
 
             assert len(actual.mock_calls) == 0
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
@@ -314,7 +288,6 @@ class TestPacketAttributes:
             assert len(V.untransform.mock_calls) == 0
 
         def test_it_does_not_transform_if_the_value_from_spec_is_sbNotSpecified(self, V):
-
             class P(PacketSpecMixin):
                 pass
 
@@ -322,17 +295,13 @@ class TestPacketAttributes:
             meta = Meta.empty()
 
             V.initd_spec.normalise.return_value = sb.NotSpecified
-            assert (
-                V.getitem_spec(p, sb.NotSpecified, do_transform=True, allow_bitarray=True)
-                is sb.NotSpecified
-            )
+            assert V.getitem_spec(p, sb.NotSpecified, do_transform=True, allow_bitarray=True) is sb.NotSpecified
 
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), sb.NotSpecified)
             assert len(V.untransform.mock_calls) == 0
 
         def test_it_does_not_transform_if_the_value_from_spec_is_Optional(self, V):
-
             class P(PacketSpecMixin):
                 pass
 
@@ -340,10 +309,7 @@ class TestPacketAttributes:
             meta = Meta.empty()
 
             V.initd_spec.normalise.return_value = Optional
-            assert (
-                V.getitem_spec(p, sb.NotSpecified, do_transform=True, allow_bitarray=True)
-                is Optional
-            )
+            assert V.getitem_spec(p, sb.NotSpecified, do_transform=True, allow_bitarray=True) is Optional
 
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), sb.NotSpecified)
@@ -388,9 +354,7 @@ class TestPacketAttributes:
 
             p = P()
             meta = Meta.empty()
-            assert V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) == bitarray(
-                "0000"
-            )
+            assert V.getitem_spec(p, actual, do_transform=True, allow_bitarray=True) == bitarray("0000")
 
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), actual)
@@ -405,9 +369,7 @@ class TestPacketAttributes:
 
             p = P()
             meta = Meta.empty()
-            assert V.getitem_spec(p, actual, do_transform=False, allow_bitarray=True) == bitarray(
-                "0000"
-            )
+            assert V.getitem_spec(p, actual, do_transform=False, allow_bitarray=True) == bitarray("0000")
 
             V.typ.spec.assert_called_once_with(p, V.unpacking, transform=False)
             V.initd_spec.normalise.assert_called_with(meta.at(V.key), actual)
@@ -430,7 +392,6 @@ class TestPacketAttributes:
 
     class TestGetattr:
         def test_it_uses_getitem_if_is_a_Group(self):
-
             class P(PacketSpecMixin):
                 class Meta:
                     groups = ["one"]
@@ -445,7 +406,6 @@ class TestPacketAttributes:
             __getitem__.assert_called_once_with("one")
 
         def test_it_uses_getitem_if_is_in_all_names(self):
-
             class P(PacketSpecMixin):
                 class Meta:
                     groups = []
@@ -510,7 +470,6 @@ class TestPacketAttributes:
 
     class TestSetattr:
         def test_it_uses_setitem_if_key_is_a_group(self):
-
             class P(PacketSpecMixin):
                 class Meta:
                     groups = ["one"]
@@ -526,7 +485,6 @@ class TestPacketAttributes:
             __setitem__.assert_called_once_with("one", val)
 
         def test_it_uses_setitem_if_key_is_a_field(self):
-
             class P(PacketSpecMixin):
                 class Meta:
                     groups = []
@@ -543,7 +501,6 @@ class TestPacketAttributes:
             __setitem__.assert_called_once_with("one", val)
 
         def test_it_uses_dictobj_setattr_if_key_is_neither_a_group_or_field(self):
-
             class P(PacketSpecMixin):
                 class Meta:
                     groups = []
@@ -567,7 +524,6 @@ class TestPacketAttributes:
             dictobj__setattr__.assert_called_once_with(p, "one", val)
 
         def test_it_works_in_union_with_getattr_semantics(self):
-
             def pack_t(p, v):
                 return v + 5
 
@@ -588,7 +544,6 @@ class TestPacketAttributes:
 
     class TestSetitem:
         def test_it_does_nothing_if_the_key_is_a_group_and_value_is_Initial(self):
-
             class G(dictobj.PacketSpec):
                 fields = [("one", T.String)]
 
@@ -622,7 +577,6 @@ class TestPacketAttributes:
             assert list(p.actual_items()) == [("one", sb.NotSpecified)]
 
         class TestTransformation:
-
             @pytest.fixture()
             def V(self):
                 class V:
@@ -639,9 +593,7 @@ class TestPacketAttributes:
 
                     @hp.memoized_property
                     def two_typ(s):
-                        return mock.Mock(
-                            name="two_typ", _transform=sb.NotSpecified, spec=["_transform"]
-                        )
+                        return mock.Mock(name="two_typ", _transform=sb.NotSpecified, spec=["_transform"])
 
                     @hp.memoized_property
                     def P(s):
@@ -699,7 +651,6 @@ class TestPacketAttributes:
 
     class TestSetGroupItem:
         class TestSettingEmptyPayload:
-
             @pytest.fixture()
             def P(self):
                 class P(dictobj.PacketSpec):
@@ -736,7 +687,6 @@ class TestPacketAttributes:
                     assert dictobj.__getitem__(p, "payload") == val
 
         class TestSettingAGroupAsSbNotSpecified:
-
             @pytest.fixture()
             def P(self):
                 class G(dictobj.PacketSpec):
@@ -752,9 +702,7 @@ class TestPacketAttributes:
                 assert sorted(p.actual_items()) == sorted([("one", "wat"), ("two", 8)])
 
                 p["g"] = sb.NotSpecified
-                assert sorted(p.actual_items()) == sorted(
-                    [("one", sb.NotSpecified), ("two", sb.NotSpecified)]
-                )
+                assert sorted(p.actual_items()) == sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)])
 
         class TestSettingAGroupFromAnInstanceOfThatGroup:
             def test_it_does_a_direct_copy_without_going_through_transformation_or_specs(self):
@@ -817,7 +765,6 @@ class TestPacketAttributes:
                 )
 
         class TestSettingAGroupFromNotAnInstanceOfThatGroup:
-
             @pytest.fixture()
             def V(self):
                 class V:
@@ -869,20 +816,15 @@ class TestPacketAttributes:
                 ]
 
                 p = V.P()
-                assert sorted(p.actual_items()) == sorted(
-                    [("one", sb.NotSpecified), ("two", sb.NotSpecified)]
-                )
+                assert sorted(p.actual_items()) == sorted([("one", sb.NotSpecified), ("two", sb.NotSpecified)])
 
                 p["g"] = val
-                assert sorted(p.actual_items()) == sorted(
-                    [("one", V.for_packing), ("two", "d073d5")]
-                )
+                assert sorted(p.actual_items()) == sorted([("one", V.for_packing), ("two", "d073d5")])
 
                 assert p.one == V.for_user
                 assert p.two == binascii.unhexlify("d073d5")
 
     class TestInformation:
-
         @pytest.fixture
         def V(self):
             class V:

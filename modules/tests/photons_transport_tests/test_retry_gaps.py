@@ -10,9 +10,7 @@ class TestGaps:
         assert obj.gap_between_results == 0.9
         assert obj.timeouts == [(0.1, 0.5)]
 
-        obj = gaps.empty_normalise(
-            gap_between_ack_and_res=0.2, gap_between_results=0.1, timeouts=[(0.1, 0.6), (0.5, 3)]
-        )
+        obj = gaps.empty_normalise(gap_between_ack_and_res=0.2, gap_between_results=0.1, timeouts=[(0.1, 0.6), (0.5, 3)])
 
         assert obj.gap_between_ack_and_res == 0.2
         assert obj.gap_between_results == 0.1
@@ -26,9 +24,7 @@ class TestGaps:
         assert ticker.name == "hello"
         assert ticker.timeouts == [(0.1, 0.5)]
 
-        obj = gaps.empty_normalise(
-            gap_between_ack_and_res=0.2, gap_between_results=0.1, timeouts=[[0.1, 0.6], [0.5, 3]]
-        )
+        obj = gaps.empty_normalise(gap_between_ack_and_res=0.2, gap_between_results=0.1, timeouts=[[0.1, 0.6], [0.5, 3]])
 
         ticker = obj.retry_ticker(name="there")
         assert ticker.name == "there"

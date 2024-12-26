@@ -2,10 +2,11 @@ import itertools
 import random
 import time
 
+from photons_messages import LightMessages
+
 from photons_canvas.orientation import Orientation, reorient, reverse_orientation
 from photons_canvas.points import helpers as php
 from photons_canvas.points.simple_messages import MultizoneMessagesMaker, Set64
-from photons_messages import LightMessages
 
 NO_MESSAGES = ()
 
@@ -89,9 +90,7 @@ class Part:
     def clone_real_part(self):
         return self.real_part.clone(real_part=self.real_part, frm=self)
 
-    def clone(
-        self, *, user_x=None, user_y=None, width=None, height=None, real_part=False, frm=None
-    ):
+    def clone(self, *, user_x=None, user_y=None, width=None, height=None, real_part=False, frm=None):
         if frm is None:
             frm = self
 
@@ -100,7 +99,8 @@ class Part:
         w = self.width if width is None else width
         h = self.height if height is None else height
 
-        l = lambda ss: ss if ss is None else list(ss)
+        def listify(ss):
+            return ss if ss is None else list(ss)
 
         return Part(
             ux,
@@ -110,9 +110,9 @@ class Part:
             self.part_number,
             self.orientation,
             self.device,
-            colors=l(getattr(frm, "colors")),
+            colors=listify(getattr(frm, "colors")),
             real_part=real_part if not getattr(self, "real_part", False) else self.real_part,
-            original_colors=l(getattr(frm, "original_colors")),
+            original_colors=listify(getattr(frm, "original_colors")),
         )
 
     def update(self, user_x, user_y, width, height):
@@ -183,9 +183,7 @@ class Part:
 
     def _msgs(self, colors, acks=False, duration=1, randomize=False):
         if self.device.cap.has_matrix:
-            colors = [
-                c if c is not None else None for c in self.reorient(colors, randomize=randomize)
-            ]
+            colors = [c if c is not None else None for c in self.reorient(colors, randomize=randomize)]
 
             kwargs = {"colors": colors}
             if duration != 0:
@@ -198,9 +196,7 @@ class Part:
             return (msg,)
 
         elif self.device.cap.has_multizone:
-            return MultizoneMessagesMaker(
-                self.device.serial, self.device.cap, colors, duration=duration
-            ).msgs
+            return MultizoneMessagesMaker(self.device.serial, self.device.cap, colors, duration=duration).msgs
 
         elif colors:
             if isinstance(colors[0], tuple):

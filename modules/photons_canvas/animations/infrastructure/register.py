@@ -28,9 +28,7 @@ class Animator:
         if options is None:
             options = {}
 
-        background = (
-            background if background in (True, False) else background in (sb.NotSpecified, None)
-        )
+        background = background if background in (True, False) else background in (sb.NotSpecified, None)
 
         return self.Resolver(self, options, background)
 

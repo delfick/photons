@@ -71,7 +71,6 @@ def default_async_timeout() -> float:
 
 
 class TestApplyTheme:
-
     async def test_it_can_apply_a_theme(self, async_timeout, sender):
         async_timeout.set_timeout_seconds(15)
         msg = ApplyTheme.msg({})

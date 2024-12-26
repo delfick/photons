@@ -1,10 +1,11 @@
 from delfick_project.norms import dictobj, sb
+from photons_messages import MultiZoneEffectType, MultiZoneMessages
+from photons_protocol.types import enum_spec
+
 from photons_app import helpers as hp
 from photons_app.mimic.event import Event, Events
 from photons_app.mimic.operator import Operator, operator
 from photons_app.mimic.operators.light import color_spec
-from photons_messages import MultiZoneEffectType, MultiZoneMessages
-from photons_protocol.types import enum_spec
 
 
 class ZonesAttr:
@@ -55,9 +56,7 @@ class Multizone(Operator):
         zones = dictobj.Field(sb.listof(color_spec()))
         zones_count = dictobj.NullableField(sb.integer_spec)
 
-        zones_effect = dictobj.Field(
-            enum_spec(None, MultiZoneEffectType, unpacking=True), default=MultiZoneEffectType.OFF
-        )
+        zones_effect = dictobj.Field(enum_spec(None, MultiZoneEffectType, unpacking=True), default=MultiZoneEffectType.OFF)
 
     @classmethod
     def select(kls, device):
@@ -101,9 +100,7 @@ class Multizone(Operator):
             event.add_replies(*state)
 
             zones = []
-            color = hp.Color(
-                event.pkt.hue, event.pkt.saturation, event.pkt.brightness, event.pkt.kelvin
-            )
+            color = hp.Color(event.pkt.hue, event.pkt.saturation, event.pkt.brightness, event.pkt.kelvin)
             for i in range(event.pkt.start_index, event.pkt.end_index + 1):
                 zones.append((i, color))
             await self.respond(Events.SET_ZONES(self.device, zones=zones))
@@ -170,9 +167,7 @@ class ExtendedMultizone(Operator):
                 zones.append((i + event.pkt.zone_index, color))
 
             zones = zones[: len(self.device.attrs.zones)]
-            await self.device.event_with_options(
-                Events.SET_ZONES, args=(), kwargs={"zones": zones}, visible=False
-            )
+            await self.device.event_with_options(Events.SET_ZONES, args=(), kwargs={"zones": zones}, visible=False)
 
     def make_state_for(self, kls, result):
         if not self.device.cap.has_extended_multizone:

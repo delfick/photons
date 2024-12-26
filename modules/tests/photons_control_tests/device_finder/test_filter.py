@@ -18,7 +18,6 @@ def assertFltrMatches(filtr, expect):
 
 class TestFilter:
     class TestConstruction:
-
         def test_it_defaults_everything_to_NotSpecified(self):
             filtr = Filter.empty()
             assert len(filtr.fields) == 16
@@ -122,9 +121,7 @@ class TestFilter:
 
         class TestEmpty:
             def test_it_gives_back_a_filter_with_just_refresh_options(self):
-                assertFltrMatches(
-                    Filter.empty(), {"refresh_info": False, "refresh_discovery": False}
-                )
+                assertFltrMatches(Filter.empty(), {"refresh_info": False, "refresh_discovery": False})
                 assertFltrMatches(
                     Filter.empty(refresh_info=True),
                     {"refresh_info": True, "refresh_discovery": False},
@@ -261,9 +258,7 @@ class TestFilter:
     class TestPoints:
         def test_it_returns_the_InfoPoint_enums_for_the_fields_that_have_values(self):
             filtr = Filter.from_kwargs(label="kitchen", product_id=22)
-            assert set(filtr.points) == set(
-                [InfoPoints.LIGHT_STATE, InfoPoints.LABEL, InfoPoints.VERSION]
-            )
+            assert set(filtr.points) == set([InfoPoints.LIGHT_STATE, InfoPoints.LABEL, InfoPoints.VERSION])
 
             filtr = Filter.from_kwargs(group_name="one")
             assert set(filtr.points) == set([InfoPoints.GROUP])

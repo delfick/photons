@@ -20,16 +20,13 @@ class FakeIO:
                 for msg in self.received(data, addr):
                     self.udp_transport.sendto(msg, addr)
 
-        self.remote, _ = await hp.get_event_loop().create_datagram_endpoint(
-            ServerProtocol, local_addr=("0.0.0.0", self.port)
-        )
+        self.remote, _ = await hp.get_event_loop().create_datagram_endpoint(ServerProtocol, local_addr=("0.0.0.0", self.port))
 
     async def finish(self, exc_type=None, exc=None, tb=None):
         self.remote.close()
 
 
 class TestUDP:
-
     @pytest.fixture()
     def V(self):
         class V:

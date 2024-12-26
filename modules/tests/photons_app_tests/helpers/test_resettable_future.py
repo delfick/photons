@@ -166,7 +166,9 @@ class TestResettableFuture:
 
             called = []
 
-            cb = lambda res: called.append("DONE1")
+            def cb(res):
+                return called.append("DONE1")
+
             fut.add_done_callback(cb)
             pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
             pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)
@@ -191,7 +193,10 @@ class TestResettableFuture:
             f = fut.fut
 
             called = []
-            cb = lambda res: called.append("DONE1")
+
+            def cb(res):
+                return called.append("DONE1")
+
             fut.add_done_callback(cb)
             pytest.helpers.assertFutCallbacks(f, cb, hp.silent_reporter)
             pytest.helpers.assertFutCallbacks(fut, cb, hp.silent_reporter)

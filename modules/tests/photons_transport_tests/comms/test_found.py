@@ -25,7 +25,8 @@ class TestFound:
         found["d073d5000001"] = {"one": 1, "two": 2}
         found["d073d5000002"] = {"three": 3, "four": 4}
 
-        h = lambda serial: binascii.unhexlify(serial)[:6]
+        def h(serial):
+            return binascii.unhexlify(serial)[:6]
 
         found2 = found.clone()
         del found2["d073d5000001"]["one"]
@@ -48,7 +49,6 @@ class TestFound:
         assert found2.found == {h("d073d5000001"): {"two": 2}}
 
     def test_it_can_cleanse_a_serial(self, found):
-
         def assertCleansed(i, o):
             assert found.cleanse_serial(i) == o
 
@@ -166,10 +166,7 @@ class TestFound:
         found["d073d5000001"] = {"UDP": 1, "THI": 2}
         found["d073d5000002"] = {"MEMORY": 1}
 
-        assert (
-            repr(found)
-            == """<FOUND: {"d073d5000001": "'UDP','THI'", "d073d5000002": "'MEMORY'"}>"""
-        )
+        assert repr(found) == """<FOUND: {"d073d5000001": "'UDP','THI'", "d073d5000002": "'MEMORY'"}>"""
 
     def test_it_can_borrow_found(self, found):
         t1clone = mock.Mock(name="t1clone")
@@ -207,7 +204,6 @@ class TestFound:
 
 
 class TestFoundremoveLost:
-
     async def test_it_closes_and_removes_transports_that_are_not_in_found_now(self):
         ts = [
             "d073d5000002",

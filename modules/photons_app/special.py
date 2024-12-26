@@ -16,9 +16,7 @@ class SpecialReference:
 
     def __init__(self):
         self.found = hp.ResettableFuture(name=f"SpecialReference({self.__class__.__name__}.found)")
-        self.finding = hp.ResettableFuture(
-            name=f"SpecialReference({self.__class__.__name__}.finding"
-        )
+        self.finding = hp.ResettableFuture(name=f"SpecialReference({self.__class__.__name__}.finding")
 
     async def find_serials(self, sender, *, timeout, broadcast=True):
         """Must be implemented by the subclass, return ``found`` from this function"""
@@ -46,9 +44,7 @@ class SpecialReference:
             return await self.found
 
         self.finding.set_result(True)
-        t = hp.get_event_loop().create_task(
-            self.find_serials(sender, timeout=timeout, broadcast=broadcast)
-        )
+        t = hp.get_event_loop().create_task(self.find_serials(sender, timeout=timeout, broadcast=broadcast))
 
         def transfer(res):
             if res.cancelled():
@@ -113,15 +109,13 @@ class HardCodedSerials(SpecialReference):
 
         self.serials = [binascii.hexlify(target).decode() for target in self.targets]
 
-        super(HardCodedSerials, self).__init__()
+        super().__init__()
 
     async def find_serials(self, sender, *, timeout, broadcast=True):
         found = getattr(sender, "found", {})
 
         if not all(target in found for target in self.targets):
-            found, _ = await sender.find_specific_serials(
-                self.serials, broadcast=broadcast, raise_on_none=False, timeout=timeout
-            )
+            found, _ = await sender.find_specific_serials(self.serials, broadcast=broadcast, raise_on_none=False, timeout=timeout)
 
         return {target: found[target] for target in self.targets if target in found}
 
@@ -140,9 +134,7 @@ class ResolveReferencesFromFile(SpecialReference):
             with open(self.filename) as fle:
                 serials = [s.strip() for s in fle.readlines() if s.strip()]
         except OSError as error:
-            raise PhotonsAppError(
-                "Failed to read serials from a file", filename=self.filename, error=error
-            )
+            raise PhotonsAppError("Failed to read serials from a file", filename=self.filename, error=error)
 
         if not serials:
             raise PhotonsAppError("Found no serials in file", filename=self.filename)

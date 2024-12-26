@@ -1,11 +1,12 @@
 import asyncio
 
 from delfick_project.norms import Meta, dictobj
+from photons_protocol.messages import Messages
+
 from photons_app import helpers as hp
 from photons_app.errors import PhotonsAppError, ProgrammerError
 from photons_app.mimic.event import Events
 from photons_app.mimic.packet_filter import Filter, SendAck, SendReplies, SendUnhandled
-from photons_protocol.messages import Messages
 
 register = []
 
@@ -75,9 +76,7 @@ class Operator:
     def __init__(self, device, options=None, *args, **kwargs):
         self.device = device
         self.device_attrs = device.attrs
-        self.options = self.Options.FieldSpec().normalise(
-            Meta.empty(), {} if options is None else options
-        )
+        self.options = self.Options.FieldSpec().normalise(Meta.empty(), {} if options is None else options)
         self.setup(*args, **kwargs)
 
     def setup(self):
@@ -170,9 +169,7 @@ class IO(Operator):
 
     async def restart_session(self):
         if self.last_final_future is None or self.last_final_future.done():
-            raise PhotonsAppError(
-                "The IO does not have a valid final future to restart the session from"
-            )
+            raise PhotonsAppError("The IO does not have a valid final future to restart the session from")
         await self.shutting_down(Events.SHUTTING_DOWN(self.device))
         await self.start_session(self.last_final_future, self.parent_ts)
         await self.power_on(Events.POWER_ON(self.device))
@@ -227,19 +224,13 @@ class IO(Operator):
         await self.process_instruction(SendAck(event), give_reply)
 
         if processed is False:
-            await self.device.event(
-                Events.IGNORED, self, pkt=event.pkt, bts=event.bts, addr=event.addr
-            )
+            await self.device.event(Events.IGNORED, self, pkt=event.pkt, bts=event.bts, addr=event.addr)
             return
 
         if event.ignored:
-            await self.device.event(
-                Events.IGNORED, self, pkt=event.pkt, bts=event.bts, addr=event.addr
-            )
+            await self.device.event(Events.IGNORED, self, pkt=event.pkt, bts=event.bts, addr=event.addr)
         elif not event.handled and not event.replies:
-            await self.device.event(
-                Events.UNHANDLED, self, pkt=event.pkt, bts=event.bts, addr=event.addr
-            )
+            await self.device.event(Events.UNHANDLED, self, pkt=event.pkt, bts=event.bts, addr=event.addr)
             await self.process_instruction(SendUnhandled(event), give_reply)
         else:
             await self.process_instruction(SendReplies(event), give_reply)
@@ -247,9 +238,7 @@ class IO(Operator):
     async def process_instruction(self, instruction, give_reply):
         async for reply in instruction.process():
             async for rr in self.packet_filter.outgoing(reply, instruction.event):
-                await self._send_reply(
-                    rr, give_reply, instruction.event.addr, replying_to=instruction.event.pkt
-                )
+                await self._send_reply(rr, give_reply, instruction.event.addr, replying_to=instruction.event.pkt)
 
     async def respond(self, event):
         pass

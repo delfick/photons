@@ -3,6 +3,7 @@ import logging
 
 from photons_app import helpers as hp
 from photons_messages import DiscoveryMessages, Services
+
 from photons_transport.comms.base import Communication
 from photons_transport.errors import InvalidBroadcast, NoDesiredService, UnknownService
 from photons_transport.retry_options import RetryTicker
@@ -26,9 +27,7 @@ class NetworkSession(Communication):
         await super().finish(exc_typ, exc, tb)
 
         ts = [hp.async_as_background(t.close()) for t in self.broadcast_transports.values()]
-        await hp.cancel_futures_and_wait(
-            *ts, name=f"{type(self).__name__}::finish[wait_for_broadcast_transports]"
-        )
+        await hp.cancel_futures_and_wait(*ts, name=f"{type(self).__name__}::finish[wait_for_broadcast_transports]")
 
         for t in ts:
             if not t.cancelled():
@@ -66,9 +65,7 @@ class NetworkSession(Communication):
             log.debug("Using hard coded discovery information")
             return await discovery_options.discover(self.add_service)
 
-        get_service = DiscoveryMessages.GetService(
-            target=None, tagged=True, addressable=True, res_required=True, ack_required=False
-        )
+        get_service = DiscoveryMessages.GetService(target=None, tagged=True, addressable=True, res_required=True, ack_required=False)
 
         kwargs["no_retry"] = True
         kwargs["broadcast"] = kwargs.get("broadcast", True) or True
@@ -95,9 +92,9 @@ class NetworkSession(Communication):
 
     async def _search_retry_iterator(self, end_after):
         timeouts = [(0.6, 1.8), (1, 2), (2, 6), (4, 10), (5, 20)]
-        async for info in RetryTicker(
-            timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_ticker]"
-        ).tick(self.stop_fut, end_after):
+        async for info in RetryTicker(timeouts=timeouts, name=f"{type(self).__name__}::_search_retry_iterator[retry_ticker]").tick(
+            self.stop_fut, end_after
+        ):
             yield info
 
     async def make_transport(self, serial, service, kwargs):
@@ -116,9 +113,7 @@ class NetworkSession(Communication):
         if isinstance(broadcast, str):
             broadcast = (broadcast, 56700)
 
-        if type(broadcast) is not str and not (
-            isinstance(broadcast, tuple) and len(broadcast) == 2
-        ):
+        if type(broadcast) is not str and not (isinstance(broadcast, tuple) and len(broadcast) == 2):
             raise InvalidBroadcast("Expect a string or (host, port) tuple", got=broadcast)
 
         if broadcast in self.broadcast_transports:

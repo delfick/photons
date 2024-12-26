@@ -20,7 +20,7 @@ from delfick_project.norms import sb
 
 try:
     import pytest
-except:
+except ImportError:
 
     class FakePytest:
         class fixture:
@@ -124,10 +124,7 @@ def run_pytest():
                     "-W",
                     "ignore:Using or importing the ABCs:DeprecationWarning",
                     "-W",
-                    (
-                        "ignore:websockets.connection was renamed to websockets.protocol"
-                        " and Connection was renamed to Protocol:DeprecationWarning"
-                    ),
+                    ("ignore:websockets.connection was renamed to websockets.protocol" " and Connection was renamed to Protocol:DeprecationWarning"),
                     "-W",
                     "ignore:ServerConnection was renamed to ServerProtocol:DeprecationWarning",
                     "--log-level=INFO",
@@ -545,17 +542,11 @@ def pytest_configure(config):
 
     @pytest.helpers.register
     def AsyncMock(*args, **kwargs):
-        if sys.version_info < (3, 8):
-            return __import__("mock").AsyncMock(*args, **kwargs)
-        else:
-            return mock.AsyncMock(*args, **kwargs)
+        return mock.AsyncMock(*args, **kwargs)
 
     @pytest.helpers.register
     def MagicAsyncMock(*args, **kwargs):
-        if sys.version_info < (3, 8):
-            return __import__("mock").MagicMock(*args, **kwargs)
-        else:
-            return mock.MagicMock(*args, **kwargs)
+        return mock.MagicMock(*args, **kwargs)
 
     @pytest.helpers.register
     def child_future_of(fut):
@@ -646,9 +637,7 @@ def pytest_configure(config):
             if Context is not None:
                 if callbacks:
                     assert len(callbacks) == 1, f"Expect only one context callback: got {callbacks}"
-                    assert isinstance(
-                        callbacks[0], Context
-                    ), f"Expected just a context callback: got {callbacks}"
+                    assert isinstance(callbacks[0], Context), f"Expected just a context callback: got {callbacks}"
             else:
                 assert callbacks == [], f"Expected no callbacks, got {callbacks}"
 
@@ -705,7 +694,6 @@ def pytest_configure(config):
             print(f"  GOT : {one.__class__}")
             print(f"  WANT: {two.__class__}")
             if one.__class__ == two.__class__:
-
                 dictc = json.loads(json.dumps(dict(one), default=reprer))
                 dictw = json.loads(json.dumps(dict(two), default=reprer))
                 for k, v in dictc.items():
@@ -720,20 +708,14 @@ def pytest_configure(config):
                         if isinstance(v, list) and isinstance(dictw[k], list):
                             for i, (g, w) in enumerate(zip(v, dictw[k])):
                                 if g != w:
-                                    print(
-                                        f"    = || key {k}[{i}]\n    = || GOT -> {g}\n    = || WANT-> {w}"
-                                    )
+                                    print(f"    = || key {k}[{i}]\n    = || GOT -> {g}\n    = || WANT-> {w}")
                         else:
                             Reserved = __import__("photons_protocol.types").types.Type.Reserved
                             if isinstance(one.Meta.all_field_types_dict[k], Reserved.__class__):
-                                if v is sb.NotSpecified or (
-                                    isinstance(v, str) and set(list(v)) == set(["0"])
-                                ):
+                                if v is sb.NotSpecified or (isinstance(v, str) and set(list(v)) == set(["0"])):
                                     continue
 
-                            print(
-                                f"    = || key {k}\n    = || GOT -> {v}\n    = || WANT-> {dictw[k]}"
-                            )
+                            print(f"    = || key {k}\n    = || GOT -> {v}\n    = || WANT-> {dictw[k]}")
                         different = True
 
                 for k in dictw:

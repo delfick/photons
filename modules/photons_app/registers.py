@@ -5,6 +5,7 @@ These allow addons to be able to register more functionality.
 """
 
 from delfick_project.norms import dictobj, sb
+
 from photons_app.errors import (
     ProgrammerError,
     ResolverNotFound,
@@ -146,13 +147,9 @@ class TargetRegister:
 
             restrictions = []
             if self.target_types is not None:
-                restrictions.append(
-                    f"restricted_types='{','.join(str(t) for t in self.target_types)}'"
-                )
+                restrictions.append(f"restricted_types='{','.join(str(t) for t in self.target_types)}'")
             if self.target_names is not None:
-                restrictions.append(
-                    f"restricted_names='{','.join(str(n) for n in self.target_names)}'"
-                )
+                restrictions.append(f"restricted_names='{','.join(str(n) for n in self.target_names)}'")
 
             return f"<Restrictions {' '.join(restrictions)}>"
 

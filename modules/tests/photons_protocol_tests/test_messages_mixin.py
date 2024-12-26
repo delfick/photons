@@ -26,9 +26,7 @@ class TestPacketTypeExtractor:
             packet_type_from_dict = mock.Mock(name="packet_type_from_dict", return_value=res)
 
             data = {}
-            with mock.patch.object(
-                PacketTypeExtractor, "packet_type_from_dict", packet_type_from_dict
-            ):
+            with mock.patch.object(PacketTypeExtractor, "packet_type_from_dict", packet_type_from_dict):
                 assert PacketTypeExtractor.packet_type(data) is res
 
             packet_type_from_dict.assert_called_once_with(data)
@@ -38,23 +36,17 @@ class TestPacketTypeExtractor:
             packet_type_from_bytes = mock.Mock(name="packet_type_from_bytes", return_value=res)
 
             data = b"AA"
-            with mock.patch.object(
-                PacketTypeExtractor, "packet_type_from_bytes", packet_type_from_bytes
-            ):
+            with mock.patch.object(PacketTypeExtractor, "packet_type_from_bytes", packet_type_from_bytes):
                 assert PacketTypeExtractor.packet_type(data) is res
 
             packet_type_from_bytes.assert_called_once_with(data)
 
         def test_it_delegates_for_bitarray(self):
             res = mock.Mock(name="res")
-            packet_type_from_bitarray = mock.Mock(
-                name="packet_type_from_bitarray", return_value=res
-            )
+            packet_type_from_bitarray = mock.Mock(name="packet_type_from_bitarray", return_value=res)
 
             data = ba(b"AA")
-            with mock.patch.object(
-                PacketTypeExtractor, "packet_type_from_bitarray", packet_type_from_bitarray
-            ):
+            with mock.patch.object(PacketTypeExtractor, "packet_type_from_bitarray", packet_type_from_bitarray):
                 assert PacketTypeExtractor.packet_type(data) is res
 
             packet_type_from_bitarray.assert_called_once_with(data)
@@ -185,7 +177,6 @@ class TestSourcesFor:
 
 
 class TestMessagesMixin:
-
     @pytest.fixture()
     def protocol_register(self, TestMessages):
         protocol_register = ProtocolRegister()
@@ -194,7 +185,6 @@ class TestMessagesMixin:
         return protocol_register
 
     class TestGetPacketType:
-
         def test_it_can_get_us_information_about_our_data(self, protocol_register, TestMessages):
             data = mock.Mock(name="data")
             packet_type = mock.Mock(name="packet_type", return_value=(1024, 78))
@@ -214,9 +204,7 @@ class TestMessagesMixin:
 
             packet_type.assert_called_once_with(data)
 
-        def test_it_can_get_us_information_about_unknown_pkt_types_known_protocol(
-            self, protocol_register
-        ):
+        def test_it_can_get_us_information_about_unknown_pkt_types_known_protocol(self, protocol_register):
             data = mock.Mock(name="data")
             packet_type = mock.Mock(name="packet_type", return_value=(1024, 88))
 
@@ -264,9 +252,7 @@ class TestMessagesMixin:
             assert pkt.pack() == bts
 
         def test_it_works_with_unknown_packet(self, protocol_register):
-            bts = LIFXPacket(
-                pkt_type=100, source=1, sequence=2, target="d073d5000001", payload="AA"
-            ).pack()
+            bts = LIFXPacket(pkt_type=100, source=1, sequence=2, target="d073d5000001", payload="AA").pack()
             pkt = Messages.create(bts, protocol_register, unknown_ok=True)
 
             assert isinstance(pkt, LIFXPacket)
@@ -358,9 +344,7 @@ class TestMessagesMixin:
             bts = LIFXPacket.create(**data).pack()
             assert Messages.pack(data, protocol_register, unknown_ok=True) == bts
 
-        def test_it_works_out_packet_type_and_packs_when_you_have_a_PacketKls(
-            self, protocol_register
-        ):
+        def test_it_works_out_packet_type_and_packs_when_you_have_a_PacketKls(self, protocol_register):
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")
@@ -379,9 +363,7 @@ class TestMessagesMixin:
             pkt.pack.assert_called_once_with()
             get_packet_type.assert_called_once_with(data, protocol_register)
 
-        def test_it_works_out_packet_type_and_packs_when_you_have_dont_have_PacketKls_but_unknown_is_ok(
-            self, protocol_register
-        ):
+        def test_it_works_out_packet_type_and_packs_when_you_have_dont_have_PacketKls_but_unknown_is_ok(self, protocol_register):
             res = mock.Mock(name="res")
             kls = mock.Mock(name="kls")
             pkt = mock.Mock(name="pkt")

@@ -14,7 +14,6 @@ def meta():
 
 
 class TestServiceTypeSpec:
-
     @pytest.fixture()
     def spec(self):
         return do.service_type_spec()
@@ -39,7 +38,6 @@ class TestServiceTypeSpec:
 
 
 class TestHardcodedDiscoverySpec:
-
     @pytest.fixture()
     def spec(self):
         return do.hardcoded_discovery_spec()
@@ -54,9 +52,7 @@ class TestHardcodedDiscoverySpec:
         fake_spec.normalise.return_value = ret
         return fake_spec
 
-    def test_it_uses_HARDCODED_DISCOVERY_environment_variable_if_it_exists(
-        self, meta, spec, ret, fake_spec
-    ):
+    def test_it_uses_HARDCODED_DISCOVERY_environment_variable_if_it_exists(self, meta, spec, ret, fake_spec):
         spec.spec = fake_spec
 
         with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"one": "two"}'):
@@ -124,9 +120,7 @@ class TestHardcodedDiscoverySpec:
             got="d073d500133",
             meta=meta.at("d073d500133"),
         )
-        e2 = BadSpecValue(
-            "serials must start with d073d5", got="e073d5001338", meta=meta.at("e073d5001338")
-        )
+        e2 = BadSpecValue("serials must start with d073d5", got="e073d5001338", meta=meta.at("e073d5001338"))
         e3 = BadSpecValue(
             "serials must be valid hex",
             error=S("Non-hexadecimal digit found"),
@@ -141,7 +135,6 @@ class TestHardcodedDiscoverySpec:
 
 
 class TestServiceInfoSpec:
-
     @pytest.fixture()
     def spec(self):
         return do.service_info_spec()
@@ -188,7 +181,6 @@ class TestServiceInfoSpec:
 
 
 class TestSerialSpec:
-
     @pytest.fixture()
     def spec(self):
         return do.serial_spec()
@@ -218,7 +210,6 @@ class TestSerialSpec:
 
 
 class TestSerialFilterSpec:
-
     @pytest.fixture()
     def spec(self):
         return do.serial_filter_spec()
@@ -267,35 +258,25 @@ class TestSerialFilterSpec:
                     spec.normalise(meta, v)
 
     def test_it_complains_about_invalid_serials_in_value(self, meta, spec):
-        e = BadSpecValue(
-            "serials must start with d073d5", got="e073d5001339", meta=meta.indexed_at(0)
-        )
+        e = BadSpecValue("serials must start with d073d5", got="e073d5001339", meta=meta.indexed_at(0))
         with assertRaises(BadSpecValue, _errors=[e]):
             spec.normalise(meta, "e073d5001339")
 
 
 class TestDiscoveryOptions:
     async def test_it_has_serial_filter_and_hardcoded_discovery(self):
-        with pytest.helpers.modified_env(
-            HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
-        ):
+        with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"):
             options = do.DiscoveryOptions.FieldSpec().empty_normalise()
             assert options.serial_filter == ["d073d5001337"]
-            assert options.hardcoded_discovery == {
-                "d073d5001337": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
-            }
+            assert options.hardcoded_discovery == {"d073d5001337": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}}
 
         options = do.DiscoveryOptions.FieldSpec().empty_normalise()
         assert options.serial_filter == sb.NotSpecified
         assert options.hardcoded_discovery == sb.NotSpecified
 
-        options = do.DiscoveryOptions.FieldSpec().empty_normalise(
-            serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
-        )
+        options = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"})
         assert options.serial_filter == ["d073d5001338"]
-        assert options.hardcoded_discovery == {
-            "d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}
-        }
+        assert options.hardcoded_discovery == {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}}
 
     async def test_it_says_we_dont_have_hardcoded_discovery_if_thats_the_case(self):
         options = do.DiscoveryOptions.FieldSpec().empty_normalise()
@@ -323,9 +304,7 @@ class TestDiscoveryOptions:
             assert options.want(mock.Mock(name="serial"))
 
     async def test_it_says_we_only_want_filtered_serials(self):
-        options = do.DiscoveryOptions.FieldSpec().empty_normalise(
-            serial_filter=["d073d5001337", "d073d5001338"]
-        )
+        options = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5001337", "d073d5001338"])
         assert not options.want("d073d5000001")
         assert not options.want("d073d5000002")
         assert not options.want(mock.Mock(name="serial"))
@@ -338,9 +317,7 @@ class TestDiscoveryOptions:
         v = {"d073d5000001": "192.168.9.3", "d073d5000002": ["192.168.7.8", 56]}
         options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=v)
 
-        expected_found = set(
-            [binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")]
-        )
+        expected_found = set([binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")])
         assert await options.discover(add_service) == expected_found
 
         assert add_service.mock_calls == [
@@ -355,13 +332,9 @@ class TestDiscoveryOptions:
             "d073d5000002": ["192.168.7.8", 56],
             "d073d5000003": "192.158.0.7",
         }
-        options = do.DiscoveryOptions.FieldSpec().empty_normalise(
-            hardcoded_discovery=v, serial_filter=["d073d5000001", "d073d5000002"]
-        )
+        options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery=v, serial_filter=["d073d5000001", "d073d5000002"])
 
-        expected_found = set(
-            [binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")]
-        )
+        expected_found = set([binascii.unhexlify("d073d5000001"), binascii.unhexlify("d073d5000002")])
         assert await options.discover(add_service) == expected_found
 
         assert add_service.mock_calls == [
@@ -372,9 +345,7 @@ class TestDiscoveryOptions:
 
 class TestNoDiscoveryOptions:
     def test_it_overrides_serial_filter_and_hardcoded_discovery_with_None(self):
-        with pytest.helpers.modified_env(
-            HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
-        ):
+        with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"):
             options = do.NoDiscoveryOptions.FieldSpec().empty_normalise()
             assert options.serial_filter is None
             assert options.hardcoded_discovery is None
@@ -401,9 +372,7 @@ class TestNoDiscoveryOptions:
 
 class TestNoEnvDiscoveryOptions:
     def test_it_does_not_care_about_environment_variables(self):
-        with pytest.helpers.modified_env(
-            HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"
-        ):
+        with pytest.helpers.modified_env(HARDCODED_DISCOVERY='{"d073d5001337": "192.168.0.1"}', SERIAL_FILTER="d073d5001337"):
             options = do.NoEnvDiscoveryOptions.FieldSpec().empty_normalise()
             assert options.serial_filter == sb.NotSpecified
             assert options.hardcoded_discovery == sb.NotSpecified
@@ -412,44 +381,33 @@ class TestNoEnvDiscoveryOptions:
                 serial_filter=["d073d5001338"], hardcoded_discovery={"d073d5001339": "192.178.1.1"}
             )
             assert options.serial_filter == ["d073d5001338"]
-            assert options.hardcoded_discovery == {
-                "d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}
-            }
+            assert options.hardcoded_discovery == {"d073d5001339": {Services.UDP: {"host": "192.178.1.1", "port": 56700}}}
 
             assert isinstance(options, do.DiscoveryOptions)
 
 
 class TestDiscoveryOptionsSpec:
-
     @pytest.fixture()
     def spec(self):
         return do.discovery_options_spec()
 
-    def test_it_creates_a_DiscoveryOptions_when_no_discovery_options_in_metaeverything(
-        self, meta, spec
-    ):
+    def test_it_creates_a_DiscoveryOptions_when_no_discovery_options_in_metaeverything(self, meta, spec):
         res = spec.normalise(meta, sb.NotSpecified)
         assert isinstance(res, do.DiscoveryOptions)
 
     def test_it_inherits_from_global_discovery_options(self, meta, spec):
-        options = do.DiscoveryOptions.FieldSpec().empty_normalise(
-            serial_filter=["d073d5000001"], hardcoded_discovery={"d073d5000001": "192.168.0.6"}
-        )
+        options = do.DiscoveryOptions.FieldSpec().empty_normalise(serial_filter=["d073d5000001"], hardcoded_discovery={"d073d5000001": "192.168.0.6"})
         meta.everything["discovery_options"] = options
         res = spec.normalise(meta, sb.NotSpecified)
         assert res.serial_filter == ["d073d5000001"]
-        assert res.hardcoded_discovery == {
-            "d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}
-        }
+        assert res.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}}
 
         # And modifying res doesn't change global
         res.serial_filter.append("d073d5000002")
         res.hardcoded_discovery["d073d5000001"][Services.UDP]["wat"] = True
 
         assert options.serial_filter == ["d073d5000001"]
-        assert options.hardcoded_discovery == {
-            "d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}
-        }
+        assert options.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.6", "port": 56700}}}
 
     def test_it_can_override_global_serial_filter(self, meta, spec):
         for gl in ("d073d5000001", ["d073d5000002"], None, sb.NotSpecified):
@@ -475,9 +433,7 @@ class TestDiscoveryOptionsSpec:
             assert res.hardcoded_discovery is None
 
             res = spec.normalise(meta, {"hardcoded_discovery": {"d073d5000002": "192.168.0.2"}})
-            assert res.hardcoded_discovery == {
-                "d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}}
-            }
+            assert res.hardcoded_discovery == {"d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}}}
 
             res = spec.normalise(
                 meta,
@@ -497,9 +453,7 @@ class TestDiscoveryOptionsSpec:
             assert options.hardcoded_discovery == gl
 
     def test_it_can_add_to_global_hardcoded_discovery(self, meta, spec):
-        options = do.DiscoveryOptions.FieldSpec().empty_normalise(
-            hardcoded_discovery={"d073d5000001": "192.168.0.1"}
-        )
+        options = do.DiscoveryOptions.FieldSpec().empty_normalise(hardcoded_discovery={"d073d5000001": "192.168.0.1"})
         meta.everything["discovery_options"] = options
 
         res = spec.normalise(meta, {"hardcoded_discovery": None})
@@ -520,6 +474,4 @@ class TestDiscoveryOptionsSpec:
             "d073d5000002": {Services.UDP: {"host": "192.168.0.2", "port": 56700}},
         }
 
-        assert options.hardcoded_discovery == {
-            "d073d5000001": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}
-        }
+        assert options.hardcoded_discovery == {"d073d5000001": {Services.UDP: {"host": "192.168.0.1", "port": 56700}}}

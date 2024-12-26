@@ -3,6 +3,7 @@ import sys
 import typing as tp
 
 from delfick_project.norms import Meta, dictobj, sb
+
 from photons_app import helpers as hp
 from photons_app.errors import ApplicationStopped
 from photons_app.formatter import MergedOptionStringFormatter
@@ -65,9 +66,7 @@ class TaskBase(dictobj, metaclass=TaskMeta):
 
     @hp.memoized_property
     def task_holder(self):
-        return hp.TaskHolder(
-            self.photons_app.final_future, name=f"Task({self.__class__.__name__})::task_holder"
-        )
+        return hp.TaskHolder(self.photons_app.final_future, name=f"Task({self.__class__.__name__})::task_holder")
 
     def run_loop(self, **kwargs):
         return Runner(self, kwargs).run_loop()
@@ -78,7 +77,7 @@ class TaskBase(dictobj, metaclass=TaskMeta):
             async with self.task_holder:
                 try:
                     return await self.execute_task(**kwargs)
-                except:
+                except Exception:
                     exc_info = sys.exc_info()
                     if not self.hide_exception_from_task_holder(exc_info):
                         raise

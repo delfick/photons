@@ -31,13 +31,7 @@ class TestCapabilityValue:
         assert cv.value(cap(2, 80)) == 1
 
     def test_it_can_have_upgrades(self, cap):
-        cv = (
-            CapabilityValue(1)
-            .until(1, 40, becomes=2)
-            .until(2, 50, becomes=3)
-            .until(2, 60, becomes=4)
-            .until(3, 70, becomes=5)
-        )
+        cv = CapabilityValue(1).until(1, 40, becomes=2).until(2, 50, becomes=3).until(2, 60, becomes=4).until(3, 70, becomes=5)
         assert cv.value(cap) == 1
         assert cv.value(cap(1, 30)) == 1
         assert cv.value(cap(1, 40)) == 2
@@ -49,7 +43,6 @@ class TestCapabilityValue:
         assert cv.value(cap(4, 60)) == 5
 
     def test_it_can_have_upgrades_with_conditions(self):
-
         cv = (
             CapabilityValue(1)
             .until(1, 40, cond.Family("laptop"), becomes=2)
@@ -118,9 +111,7 @@ class TestCapabilityValue:
 
     def test_it_complains_if_you_give_upgrades_out_of_order(self):
         with assertRaises(ProgrammerError, "Each .until must be for a greater version number"):
-            CapabilityValue(1).until(1, 40, becomes=2).until(2, 60, becomes=4).until(
-                2, 50, becomes=3
-            ).until(3, 70, becomes=5)
+            CapabilityValue(1).until(1, 40, becomes=2).until(2, 60, becomes=4).until(2, 50, becomes=3).until(3, 70, becomes=5)
 
     def test_it_has_equality(self):
         cv1 = CapabilityValue(1)
@@ -138,20 +129,10 @@ class TestCapabilityValue:
         cv1 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
         cv2 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20)
         cv3 = CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20)
-        cv4 = (
-            CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20).until(3, 60, becomes=10)
-        )
-        cv5 = (
-            CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
-        )
-        cv6 = (
-            CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
-        )
-        cv7 = (
-            CapabilityValue(1)
-            .until(2, 70, cond.Family("two"), cond.Capability(things=1), becomes=20)
-            .until(3, 60, becomes=10)
-        )
+        cv4 = CapabilityValue(1).until(2, 70, cond.Family("one"), becomes=20).until(3, 60, becomes=10)
+        cv5 = CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
+        cv6 = CapabilityValue(1).until(2, 70, cond.Family("two"), becomes=20).until(3, 60, becomes=10)
+        cv7 = CapabilityValue(1).until(2, 70, cond.Family("two"), cond.Capability(things=1), becomes=20).until(3, 60, becomes=10)
 
         assert cv1 == cv2
         assert cv1 != cv3
@@ -163,7 +144,6 @@ class TestCapabilityValue:
 
 class TestCapabilityRange:
     def test_it_can_create_two_CapabilityValue_objects(self):
-
         class cap(Capability):
             one, two = CapabilityRange((1, 2))
 
@@ -171,21 +151,14 @@ class TestCapabilityRange:
         assert cap.Meta.capabilities["two"] == CapabilityValue(2)
 
         class cap(Capability):
-            one, two = (
-                CapabilityRange((1, 2)).until(2, 70, becomes=(3, 4)).until(7, 60, becomes=(5, 6))
-            )
+            one, two = CapabilityRange((1, 2)).until(2, 70, becomes=(3, 4)).until(7, 60, becomes=(5, 6))
 
-        assert cap.Meta.capabilities["one"] == CapabilityValue(1).until(2, 70, becomes=3).until(
-            7, 60, becomes=5
-        )
-        assert cap.Meta.capabilities["two"] == CapabilityValue(2).until(2, 70, becomes=4).until(
-            7, 60, becomes=6
-        )
+        assert cap.Meta.capabilities["one"] == CapabilityValue(1).until(2, 70, becomes=3).until(7, 60, becomes=5)
+        assert cap.Meta.capabilities["two"] == CapabilityValue(2).until(2, 70, becomes=4).until(7, 60, becomes=6)
 
 
 class TestCapability:
     def test_it_puts_capabilities_on_Meta(self, product):
-
         class cap(Capability):
             pass
 

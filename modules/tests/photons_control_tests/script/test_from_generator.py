@@ -64,7 +64,6 @@ async def reset_devices(sender):
 
 
 class TestFromGenerator:
-
     async def assertScript(self, sender, gen, *, generator_kwargs=None, expected, **kwargs):
         msg = FromGenerator(gen, **(generator_kwargs or {}))
         await sender(msg, devices.serials, **kwargs)
@@ -81,7 +80,6 @@ class TestFromGenerator:
             devices.store(device).clear()
 
     async def test_it_is_able_to_do_a_FromGenerator_per_serial(self, sender):
-
         async def gen(serial, sender, **kwargs):
             assert serial in (light1.serial, light2.serial)
             yield Pipeline([DeviceMessages.GetPower(), DeviceMessages.SetLabel(label="wat")])
@@ -120,10 +118,7 @@ class TestFromGenerator:
                 assert got[device.serial][0] | DeviceMessages.StatePower
                 assert got[device.serial][1] | DeviceMessages.StateLabel
 
-    async def test_it_is_able_to_do_a_FromGenerator_per_serial_with_per_serial_error_catchers(
-        self, sender
-    ):
-
+    async def test_it_is_able_to_do_a_FromGenerator_per_serial_with_per_serial_error_catchers(self, sender):
         per_light_errors = {light1.serial: [], light2.serial: [], light3.serial: []}
 
         def error_catcher_override(serial, original_error_catcher):
@@ -161,9 +156,7 @@ class TestFromGenerator:
             lost_light1 = light1.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.SetLabel)
             lost_light2 = light2.io["MEMORY"].packet_filter.lost_replies(DeviceMessages.GetPower)
             with lost_light1, lost_light2:
-                async for pkt in sender(
-                    msg, devices.serials, error_catcher=errors, message_timeout=2
-                ):
+                async for pkt in sender(msg, devices.serials, error_catcher=errors, message_timeout=2):
                     got[pkt.serial].append(pkt)
 
         assert len(devices) > 0
@@ -203,7 +196,6 @@ class TestFromGenerator:
         }
 
     async def test_it_Can_get_results(self, sender):
-
         async def gen(reference, sender, **kwargs):
             yield DeviceMessages.GetPower(target=light1.serial)
             yield DeviceMessages.GetPower(target=light2.serial)
@@ -235,7 +227,6 @@ class TestFromGenerator:
                 assert got[device.serial][0] | DeviceMessages.StatePower
 
     async def test_it_Sends_all_the_messages_that_are_yielded(self, sender):
-
         async def gen(reference, sender, **kwargs):
             get_power = DeviceMessages.GetPower()
 
@@ -282,7 +273,6 @@ class TestFromGenerator:
         assert got == [error]
 
     async def test_it_it_can_know_if_the_message_was_sent_successfully(self, sender):
-
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
             assert await t
@@ -293,12 +283,9 @@ class TestFromGenerator:
             light3: [DeviceMessages.GetPower()],
         }
 
-        await self.assertScript(
-            sender, gen, generator_kwargs={"reference_override": True}, expected=expected
-        )
+        await self.assertScript(sender, gen, generator_kwargs={"reference_override": True}, expected=expected)
 
     async def test_it_it_can_know_if_the_message_was_not_sent_successfully(self, sender):
-
         async def gen(reference, sender, **kwargs):
             t = yield DeviceMessages.GetPower()
             assert not (await t)
@@ -311,9 +298,7 @@ class TestFromGenerator:
 
         errors = []
 
-        lost_request_light1 = light1.io["MEMORY"].packet_filter.lost_request(
-            DeviceMessages.GetPower
-        )
+        lost_request_light1 = light1.io["MEMORY"].packet_filter.lost_request(DeviceMessages.GetPower)
         with lost_request_light1:
             await self.assertScript(
                 sender,
@@ -334,7 +319,6 @@ class TestFromGenerator:
         )
 
     async def test_it_it_can_have_a_serial_override(self, sender):
-
         async def gen(reference, sender, **kwargs):
             async def inner_gen(level, reference, sender2, **kwargs2):
                 assert sender is sender2
@@ -429,9 +413,7 @@ class TestFromGenerator:
         with psr1, psr2, psr3:
             start = time.time()
             errors = []
-            await self.assertScript(
-                sender, gen, expected=expected, error_catcher=errors, message_timeout=2
-            )
+            await self.assertScript(sender, gen, expected=expected, error_catcher=errors, message_timeout=2)
 
         got = list(got.values())
         assert len(got) == 3

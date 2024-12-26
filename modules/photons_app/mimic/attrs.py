@@ -1,6 +1,7 @@
 import fnmatch
 
 from delfick_project.norms import sb
+
 from photons_app.mimic.event import Events
 
 
@@ -41,7 +42,7 @@ class Path:
 
     def retrieve_length(self, at, part):
         got = self.retrieve(at, part, allow_missing=False)
-        if not isinstance(got, (list, tuple)):
+        if not isinstance(got, list | tuple):
             return "<not a list>"
         else:
             return len(got)
@@ -68,12 +69,12 @@ class Path:
             current = at[part]
 
         if isinstance(current, list):
-            l = len(current)
+            length = len(current)
             while len(current) > new_length:
                 current.pop()
-                if len(current) == l:
+                if len(current) == length:
                     break
-                l = len(current)
+                length = len(current)
         elif isinstance(current, tuple):
             current = current[:new_length]
 
@@ -294,9 +295,7 @@ class Attrs:
         if key.startswith("_"):
             object.__setattr__(self, key, value)
         else:
-            raise AttributeError(
-                f"Use 'await attrs.attrs_apply(*changes)' to change attributes: Tried changing {key} to {value}"
-            )
+            raise AttributeError(f"Use 'await attrs.attrs_apply(*changes)' to change attributes: Tried changing {key} to {value}")
 
     def __getitem__(self, key):
         return self._attrs[key]

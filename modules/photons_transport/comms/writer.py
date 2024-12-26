@@ -2,6 +2,7 @@ import binascii
 import logging
 
 from photons_app import helpers as hp
+
 from photons_transport.comms.result import Result
 
 log = logging.getLogger("photons_transport.comms.writer")

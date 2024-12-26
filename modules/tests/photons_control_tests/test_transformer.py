@@ -113,7 +113,6 @@ def generate_options(color, exclude=None):
 
 
 class TestPowerToggle:
-
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
 
@@ -167,7 +166,6 @@ class TestPowerToggle:
 
 
 class TestPowerToggleGroup:
-
     async def run_and_compare(self, sender, msg, *, expected):
         await sender(msg, devices.serials)
 
@@ -221,9 +219,7 @@ class TestPowerToggleGroup:
 
 
 async def transform(sender, state, *, expected, keep_brightness=False, transition_color=False):
-    msg = Transformer.using(
-        state, keep_brightness=keep_brightness, transition_color=transition_color
-    )
+    msg = Transformer.using(state, keep_brightness=keep_brightness, transition_color=transition_color)
     await sender(msg, devices.serials)
 
     assert len(devices) > 0
@@ -239,7 +235,6 @@ async def transform(sender, state, *, expected, keep_brightness=False, transitio
 
 
 class TestTransformer:
-
     async def test_it_returns_an_empty_list_if_no_power_or_color_options(self):
         assert Transformer.using({}) == []
 
@@ -318,7 +313,6 @@ class TestTransformer:
             await transform(sender, state, expected=expected)
 
     class TestWhenPowerOnAndNeedColor:
-
         async def test_it_sets_power_on_if_it_needs_to(self, sender):
             state = {"color": "blue", "power": "on"}
             expected = {
@@ -326,9 +320,7 @@ class TestTransformer:
                     LightMessages.GetColor(),
                     ColourParser.msg("blue", overrides={"brightness": 0}),
                     DeviceMessages.SetPower(level=65535),
-                    ColourParser.msg(
-                        "blue", overrides={"brightness": light1.attrs.color.brightness}
-                    ),
+                    ColourParser.msg("blue", overrides={"brightness": light1.attrs.color.brightness}),
                 ],
                 light2: [LightMessages.GetColor(), ColourParser.msg("blue")],
                 light3: [LightMessages.GetColor(), ColourParser.msg("blue")],

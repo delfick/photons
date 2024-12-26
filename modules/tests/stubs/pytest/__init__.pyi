@@ -1,3 +1,6 @@
+import typing as tp
+from unittest import mock
+
 from _pytest import version_tuple as version_tuple
 from _pytest._code import ExceptionInfo as ExceptionInfo
 from _pytest.assertion import register_assert_rewrite as register_assert_rewrite
@@ -24,7 +27,6 @@ from _pytest.legacypath import TempdirFactory as TempdirFactory
 from _pytest.legacypath import Testdir as Testdir
 from _pytest.logging import LogCaptureFixture as LogCaptureFixture
 from _pytest.main import Session as Session
-from _pytest.mark import MARK_GEN as mark
 from _pytest.mark import Mark as Mark
 from _pytest.mark import MarkDecorator as MarkDecorator
 from _pytest.mark import MarkGenerator as MarkGenerator
@@ -85,14 +87,10 @@ from _pytest.warning_types import (
 )
 from _pytest.warning_types import PytestWarning as PytestWarning
 from _typeshed import Incomplete
-
-set_trace: Incomplete
-
-import typing as tp
-from unittest import mock
-
 from photons_pytest import FutureDominoes
 from tests.photons_web_server_tests.conftest import IsInstance
+
+set_trace: Incomplete
 
 class helpers:
     @staticmethod

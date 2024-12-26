@@ -7,6 +7,7 @@ import typing as tp
 from contextlib import contextmanager
 from functools import wraps
 from textwrap import dedent
+from typing import Self
 
 import attrs
 import sanic.exceptions
@@ -21,13 +22,10 @@ from sanic.request.types import json_loads
 from sanic.response import BaseHTTPResponse as Response
 from sanic.response import HTTPResponse
 from sanic.response.types import json_dumps
-from typing_extensions import Self
 
-from .messages import TBO, ErrorMessage, ExcO, ExcTypO
+from .messages import TBO, ErrorMessage, ExcO, ExcTypO, TReprer, reprer
 from .messages import TProgressMessageMaker as Progress
-from .messages import TReprer
 from .messages import TResponseMaker as Responder
-from .messages import reprer
 
 try:
     import ulid
@@ -107,12 +105,8 @@ class Message:
 
     @classmethod
     @contextmanager
-    def unknown(
-        cls, request: Request, stream_fut: asyncio.Future, body: object
-    ) -> tp.Generator["Message", None, None]:
-        with hp.ChildOfFuture(
-            stream_fut, name="Message(unknown)::unknown[message_fut]"
-        ) as message_fut:
+    def unknown(cls, request: Request, stream_fut: asyncio.Future, body: object) -> tp.Generator["Message", None, None]:
+        with hp.ChildOfFuture(stream_fut, name="Message(unknown)::unknown[message_fut]") as message_fut:
             yield cls(
                 id="unknown",
                 body=tp.cast(dict, body),
@@ -123,12 +117,8 @@ class Message:
 
     @classmethod
     @contextmanager
-    def create(
-        cls, message_id: str, body: dict, request: Request, stream_fut: asyncio.Future
-    ) -> tp.Generator["Message", None, None]:
-        with hp.ChildOfFuture(
-            stream_fut, name=f"Message({message_id})::create[message_fut]"
-        ) as message_fut:
+    def create(cls, message_id: str, body: dict, request: Request, stream_fut: asyncio.Future) -> tp.Generator["Message", None, None]:
+        with hp.ChildOfFuture(stream_fut, name=f"Message({message_id})::create[message_fut]") as message_fut:
             yield cls(
                 id=message_id,
                 body=body,
@@ -142,13 +132,9 @@ class WrappedWebsocketHandler(tp.Protocol):
     async def __call__(self, respond: Responder, message: Message) -> bool | None: ...
 
 
-WrappedWebsocketHandlerOnClass: tp.TypeAlias = tp.Callable[
-    [tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
-]
+type WrappedWebsocketHandlerOnClass = tp.Callable[[tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]]
 
-WrappedSocketioHandlerOnClass: tp.TypeAlias = tp.Callable[
-    [tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]
-]
+type WrappedSocketioHandlerOnClass = tp.Callable[[tp.Any, Responder, Message], tp.Coroutine[tp.Any, tp.Any, bool | None]]
 
 T_Handler = tp.TypeVar("T_Handler", WrappedWebsocketHandlerOnClass, WrappedSocketioHandlerOnClass)
 T_Transport = tp.TypeVar("T_Transport")
@@ -249,9 +235,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
             self.setup(*args, **kwargs)
 
     @abc.abstractmethod
-    def message_from_exc(
-        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception: ...
+    def message_from_exc(self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception: ...
 
     @abc.abstractmethod
     def make_responder(
@@ -286,9 +270,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
                     request.ctx.__commander_class__ = handler.__commander_class__
 
             with self.a_stream_fut(request) as stream_fut:
-                async with hp.TaskHolder(
-                    stream_fut, name="WebsocketWrap::__call__[tasks]"
-                ) as tasks:
+                async with hp.TaskHolder(stream_fut, name="WebsocketWrap::__call__[tasks]") as tasks:
                     await self.handle_request(handler, request, transport, tasks, stream_fut)
 
         return handle
@@ -299,9 +281,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
             yield request.ctx.request_future
             return
 
-        with hp.ChildOfFuture(
-            self.final_future, name="WebsocketWrap::a_stream_fut[stream_fut]"
-        ) as stream_fut:
+        with hp.ChildOfFuture(self.final_future, name="WebsocketWrap::a_stream_fut[stream_fut]") as stream_fut:
             request.ctx.request_future = stream_fut
             yield stream_fut
 
@@ -322,7 +302,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
                 result = await handler(respond=respond, message=message)
                 status = 200
                 return result
-            except:
+            except Exception:
                 request.ctx.exc_info = sys.exc_info()
                 res = self.message_from_exc(message, *request.ctx.exc_info)
                 if isinstance(res, ErrorMessage):
@@ -334,9 +314,7 @@ class StreamWrap(tp.Generic[T_Handler, T_Transport], abc.ABC):
 
 
 class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
-    def message_from_exc(
-        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception:
+    def message_from_exc(self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
         return InternalServerError("Internal Server Error")
 
     def make_responder(
@@ -364,9 +342,7 @@ class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
                     if loop_stop.done():
                         break
 
-                    await self.handle_next(
-                        loop_stop, tasks, handler, request, stream_fut, transport
-                    )
+                    await self.handle_next(loop_stop, tasks, handler, request, stream_fut, transport)
             finally:
                 await transport.close()
 
@@ -380,9 +356,7 @@ class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
         ws: T_Transport,
     ) -> None:
         get_nxt = tasks.add(ws.recv())
-        await hp.wait_for_first_future(
-            get_nxt, loop_stop, name="WebsocketWrap::handle_next[wait_for_nxt]"
-        )
+        await hp.wait_for_first_future(get_nxt, loop_stop, name="WebsocketWrap::handle_next[wait_for_nxt]")
 
         if loop_stop.done():
             await ws.close()
@@ -425,9 +399,7 @@ class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
 
         async def process() -> None:
             try:
-                if (
-                    await self._process(handler, ws, message_id, body, request, stream_fut)
-                ) is False:
+                if (await self._process(handler, ws, message_id, body, request, stream_fut)) is False:
                     loop_stop.cancel()
             except sanic.exceptions.WebsocketClosed:
                 loop_stop.cancel()
@@ -436,9 +408,7 @@ class WebsocketWrap(StreamWrap[WrappedWebsocketHandler, Websocket]):
 
 
 class SocketioWrap(StreamWrap[WrappedSocketioHandlerOnClass, str]):
-    def message_from_exc(
-        self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO
-    ) -> ErrorMessage | Exception:
+    def message_from_exc(self, message: Message, exc_type: ExcTypO, exc: ExcO, tb: TBO) -> ErrorMessage | Exception:
         return InternalServerError("Internal Server Error")
 
     def make_responder(

@@ -130,14 +130,14 @@ class TestCanvas:
         # e = (4, 3) -> (5, 1)
         # f = d + e
 
-        O = Orientation.RightSideUp
+        OO = Orientation.RightSideUp
 
         device1 = V.device
         device2 = V.other_device
 
         # Part = user_x, user_y, width, height, part_number, orientation, device
-        a = cont.Part(1 / 8, 6 / 8, 4, 3, 2, O, device1)
-        b = cont.Part(2 / 8, 6 / 8, 2, 2, 1, O, device2)
+        a = cont.Part(1 / 8, 6 / 8, 4, 3, 2, OO, device1)
+        b = cont.Part(2 / 8, 6 / 8, 2, 2, 1, OO, device2)
         d = cont.Part(1 / 8, 3 / 8, 4, 2, 1, 1, device1)
         e = cont.Part(4 / 8, 3 / 8, 2, 3, 3, 1, device1)
 
@@ -281,7 +281,8 @@ class TestCanvas:
             c = Canvas()
             assert c.bounds == ((None, None), (None, None), (None, None))
 
-            M = lambda h, v, s: mock.Mock(name="thing", bounds=(h, v, s), spec=["bounds"])
+            def M(h, v, s):
+                return mock.Mock(name="thing", bounds=(h, v, s), spec=["bounds"])
 
             part1 = V.make_part(V.device, 1, user_x=1 / 8, user_y=10 / 8, width=2, height=4)
 
@@ -356,9 +357,7 @@ class TestCanvas:
             part1 = V.make_part(V.device, 2, user_x=-1, user_y=3, width=7, height=10)
 
             colors2 = [(i + 20, 1, 0, 3500) for i in range(72)]
-            part2 = V.make_part(
-                V.device, 1, user_x=0, user_y=3, width=8, height=9, original_colors=colors2
-            )
+            part2 = V.make_part(V.device, 1, user_x=0, user_y=3, width=8, height=9, original_colors=colors2)
 
             assert part1.bounds == ((-8, -1), (24, 14), (7, 10))
             assert part2.bounds == ((0, 8), (24, 15), (8, 9))
@@ -379,9 +378,7 @@ class TestCanvas:
             part1 = V.make_part(V.device, 2, user_x=-1, user_y=3, width=7, height=10)
 
             colors2 = [(i + 20, 1, 0, 3500) for i in range(72)]
-            part2 = V.make_part(
-                V.device, 1, user_x=0, user_y=3, width=8, height=9, original_colors=colors2
-            )
+            part2 = V.make_part(V.device, 1, user_x=0, user_y=3, width=8, height=9, original_colors=colors2)
 
             assert part1.bounds == ((-8, -1), (24, 14), (7, 10))
             assert part2.bounds == ((0, 8), (24, 15), (8, 9))
@@ -402,9 +399,7 @@ class TestCanvas:
             assert canvas.is_parts(hue=1, brightness=1, saturation=1, kelvin=9000)
 
             colors1 = [(i, 1, 1, 3500) for i in range(64)]
-            part1 = V.make_part(
-                V.device, 1, original_colors=colors1, user_x=20, user_y=20, width=8, height=8
-            )
+            part1 = V.make_part(V.device, 1, original_colors=colors1, user_x=20, user_y=20, width=8, height=8)
 
             canvas = Canvas()
             canvas.add_parts(part1)
@@ -427,9 +422,7 @@ class TestCanvas:
             assert not canvas.is_parts(hue=0)
 
             colors2 = [(i, 0, 1, 9000) for i in range(64)]
-            part2 = V.make_part(
-                V.device, 2, original_colors=colors2, user_x=-20, user_y=-20, width=8, height=8
-            )
+            part2 = V.make_part(V.device, 2, original_colors=colors2, user_x=-20, user_y=-20, width=8, height=8)
             canvas.add_parts(part2, with_colors=True)
             assert canvas.is_parts(brightness=1)
             assert not canvas.is_parts(brightness=0)

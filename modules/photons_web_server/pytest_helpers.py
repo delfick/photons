@@ -9,6 +9,7 @@ import socketio
 import websockets
 import websockets.client
 from photons_app import helpers as hp
+
 from photons_web_server.server import Server
 
 
@@ -141,12 +142,8 @@ class WebServerRoutes(hp.AsyncCMMixin):
         if self.server_properties is None:
             self.server_properties = {}
 
-        self.task_holder = hp.TaskHolder(
-            self.final_future, name="WebServerRoutes::__init__[task_holder]"
-        )
-        self.graceful_final_future = hp.create_future(
-            name="WebServerRoutes::__init__[graceful_final_future]"
-        )
+        self.task_holder = hp.TaskHolder(self.final_future, name="WebServerRoutes::__init__[task_holder]")
+        self.graceful_final_future = hp.create_future(name="WebServerRoutes::__init__[graceful_final_future]")
 
     async def start(self, kls: type[Server] = Server) -> "WebServerRoutes":
         assert self.server_properties is not None
@@ -177,14 +174,10 @@ class WebServerRoutes(hp.AsyncCMMixin):
     def stop(self) -> None:
         self.graceful_final_future.cancel()
 
-    def start_request(
-        self, method: str, route: str, body: dict | None = None
-    ) -> asyncio.Task[aiohttp.ClientResponse]:
+    def start_request(self, method: str, route: str, body: dict | None = None) -> asyncio.Task[aiohttp.ClientResponse]:
         async def request() -> aiohttp.ClientResponse:
             async with aiohttp.ClientSession() as session:
-                return await getattr(session, method.lower())(
-                    f"http://127.0.0.1:{self.port}{route}", json=body
-                )
+                return await getattr(session, method.lower())(f"http://127.0.0.1:{self.port}{route}", json=body)
 
         return hp.get_event_loop().create_task(request())
 
@@ -205,6 +198,6 @@ class WebServerRoutes(hp.AsyncCMMixin):
         await hp.wait_for_all_futures(self.serve_task)
         try:
             await self.server.finished()
-        except:
+        except Exception:
             self.final_future.cancel()
             await self.task_holder.finish()

@@ -123,9 +123,7 @@ class TestStore:
         assert made == [pytest.helpers.IsInstance(asyncio.Task), 3]
         assert time.time() == 3 + time_at_wait
 
-    async def test_it_can_do_dependency_injection_based_on_signature_args(
-        self, final_future: asyncio.Future, fake_event_loop
-    ):
+    async def test_it_can_do_dependency_injection_based_on_signature_args(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         class Thing: ...
@@ -151,9 +149,7 @@ class TestStore:
                 routes.http(kls.async_route, "async_route")
                 routes.http(kls.sync_route, "sync_route", methods=["PUT"])
 
-            async def async_route(
-                s, progress: Progress, request: Request, /, _meta: strcs.Meta, thing: Thing
-            ) -> Response | None:
+            async def async_route(s, progress: Progress, request: Request, /, _meta: strcs.Meta, thing: Thing) -> Response | None:
                 called.append(("async_route", _meta, thing))
                 return sanic.text("async_route")
 
@@ -176,20 +172,14 @@ class TestStore:
 
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/async_route")
-            res2 = await srv.start_request(
-                "PUT", "/sync_route?three=3&four=thing&four=stuff", {"one": 2, "two": "blah"}
-            )
+            res2 = await srv.start_request("PUT", "/sync_route?three=3&four=thing&four=stuff", {"one": 2, "two": "blah"})
 
         assert (await res1.text()) == "async_route"
         assert (await res2.text()) == "sync_route"
 
         class IsMeta:
             def __eq__(self, o: object) -> bool:
-                assert (
-                    isinstance(o, strcs.Meta)
-                    and all(o.data[k] == v for k, v in meta.data.items())
-                    and o is not meta
-                )
+                assert isinstance(o, strcs.Meta) and all(o.data[k] == v for k, v in meta.data.items()) and o is not meta
                 return True
 
         assert called == [
@@ -202,9 +192,7 @@ class TestStore:
             ),
         ]
 
-    async def test_it_provides_ability_to_get_raw_body_and_params(
-        self, final_future: asyncio.Future, fake_event_loop
-    ):
+    async def test_it_provides_ability_to_get_raw_body_and_params(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         called: list[tuple[object, ...]] = []
@@ -250,9 +238,7 @@ class TestStore:
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route2, "route2")
 
-            async def route2(
-                s, progress: Progress, request: Request, /, thing: Thing
-            ) -> Response | None:
+            async def route2(s, progress: Progress, request: Request, /, thing: Thing) -> Response | None:
                 return sanic.text(thing.param)
 
         @store.command
@@ -261,9 +247,7 @@ class TestStore:
             def add_routes(kls, routes: RouteTransformer) -> None:
                 routes.http(kls.route1, "route1")
 
-            async def route1(
-                s, progress: Progress, request: Request, /, route_transformer: RouteTransformer
-            ) -> Response | None:
+            async def route1(s, progress: Progress, request: Request, /, route_transformer: RouteTransformer) -> Response | None:
                 with route_transformer.instantiate_route(request, COther, COther.route2) as route:
                     return await route(progress, request, thing=Thing(param="blah"))
 
@@ -275,9 +259,7 @@ class TestStore:
 
         assert (await res1.text()) == "blah"
 
-    async def test_it_understands_when_the_route_itself_raises_a_CancelledError(
-        self, final_future: asyncio.Future, fake_event_loop
-    ):
+    async def test_it_understands_when_the_route_itself_raises_a_CancelledError(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -298,14 +280,10 @@ class TestStore:
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
-        assert (
-            await res1.text()
-        ) == '{"error_code":"RequestCancelled","error":"Request was cancelled"}'
+        assert (await res1.text()) == '{"error_code":"RequestCancelled","error":"Request was cancelled"}'
         assert res1.content_type == "application/json"
 
-    async def test_it_server_stopping_is_a_503_cancelled(
-        self, final_future: asyncio.Future, fake_event_loop
-    ):
+    async def test_it_server_stopping_is_a_503_cancelled(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -327,21 +305,15 @@ class TestStore:
 
         assert 5 < time.time() < 6
         res = await t1
-        assert (
-            (await res.text())
-            == dedent(
-                """
+        assert (await res.text()) == dedent(
+            """
             ⚠️ 503 — Service Unavailable
             ============================
             Cancelled
             """
-            ).strip()
-            + "\n\n"
-        )
+        ).strip() + "\n\n"
 
-    async def test_it_understands_when_the_route_was_cancelled_above_the_route(
-        self, final_future: asyncio.Future, fake_event_loop
-    ):
+    async def test_it_understands_when_the_route_was_cancelled_above_the_route(self, final_future: asyncio.Future, fake_event_loop):
         store = Store()
 
         @store.command
@@ -372,22 +344,16 @@ class TestStore:
 
         assert 5 < time.time() < 6
         res = await t1
-        assert (
-            (await res.text())
-            == dedent(
-                """
+        assert (await res.text()) == dedent(
+            """
             ⚠️ 503 — Service Unavailable
             ============================
             Cancelled
             """
-            ).strip()
-            + "\n\n"
-        )
+        ).strip() + "\n\n"
 
-    async def test_it_logs_random_exceptions_and_returns_InternalServerError(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
-        identifier: str
+    async def test_it_logs_random_exceptions_and_returns_InternalServerError(self, final_future: asyncio.Future, fake_event_loop, caplog):
+        identifier: str = ""
         store = Store()
         error = ValueError("NUP")
 
@@ -408,16 +374,12 @@ class TestStore:
         async with pws_thp.WebServerRoutes(final_future, setup_routes) as srv:
             res1 = await srv.start_request("GET", "/route1")
 
-        assert (
-            await res1.text()
-        ) == '{"error_code":"InternalServerError","error":"Internal Server Error"}'
+        assert (await res1.text()) == '{"error_code":"InternalServerError","error":"Internal Server Error"}'
         assert res1.content_type == "application/json"
 
         assert len(caplog.records) > 3
         record = caplog.records[-2]
-        assert (
-            record.message == f"{{'request_identifier': '{identifier}', 'msg': 'ValueError: NUP'}}"
-        )
+        assert record.message == f"{{'request_identifier': '{identifier}', 'msg': 'ValueError: NUP'}}"
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info == (
             ValueError,
@@ -425,10 +387,8 @@ class TestStore:
             pytest.helpers.IsInstance(types.TracebackType),
         )
 
-    async def test_it_is_easy_to_log_things_in_route(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
-        identifier: str
+    async def test_it_is_easy_to_log_things_in_route(self, final_future: asyncio.Future, fake_event_loop, caplog):
+        identifier: str = ""
         store = Store()
 
         @store.command
@@ -453,17 +413,12 @@ class TestStore:
 
         assert len(caplog.records) > 3
         record = caplog.records[-2]
-        assert (
-            record.message
-            == f"{{'request_identifier': '{identifier}', 'msg': 'Hello there', 'one': 2}}"
-        )
+        assert record.message == f"{{'request_identifier': '{identifier}', 'msg': 'Hello there', 'one': 2}}"
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
 
-    async def test_it_is_possible_to_have_progress_messages_on_a_http_handler(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
-        identifier: str
+    async def test_it_is_possible_to_have_progress_messages_on_a_http_handler(self, final_future: asyncio.Future, fake_event_loop, caplog):
+        identifier: str = ""
         store = Store()
 
         @store.command
@@ -489,24 +444,16 @@ class TestStore:
 
         assert len(caplog.records) > 4
         record = caplog.records[-3]
-        assert (
-            record.message
-            == f"{{'request_identifier': '{identifier}', 'msg': 'progress', 'info': 'hi', 'there': True}}"
-        )
+        assert record.message == f"{{'request_identifier': '{identifier}', 'msg': 'progress', 'info': 'hi', 'there': True}}"
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
 
         record = caplog.records[-2]
-        assert (
-            record.message
-            == f"{{'request_identifier': '{identifier}', 'msg': 'progress', 'error_code': 'ValueError', 'error': 'asdf'}}"
-        )
+        assert record.message == f"{{'request_identifier': '{identifier}', 'msg': 'progress', 'error_code': 'ValueError', 'error': 'asdf'}}"
         assert record.name == "photons_web_server_tests.commander.test_store:C:route1"
         assert record.exc_info is None
 
-    async def test_it_supports_websocket_commands(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
+    async def test_it_supports_websocket_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
         identifiers: set[str] = set()
 
@@ -867,9 +814,7 @@ class TestStore:
             },
         ]
 
-    async def test_it_supports_message_from_exc_from_commands(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
+    async def test_it_supports_message_from_exc_from_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
         identifiers: set[str] = set()
 

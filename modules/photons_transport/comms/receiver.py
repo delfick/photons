@@ -61,9 +61,7 @@ class Receiver:
                 # But gets a reply from multiple of these requests
                 # The first one back will unregister the future
                 # And so there's nothing to resolve with this newly received data
-                log.debug(
-                    hp.lc("Received a message that wasn't expected", key=key, serial=pkt.serial)
-                )
+                log.debug(hp.lc("Received a message that wasn't expected", key=key, serial=pkt.serial))
             return
 
         if key not in self.results:

@@ -4,8 +4,6 @@ from delfick_project.norms import BadSpecValue, Meta, sb
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks import task_register as task
 from photons_canvas.orientation import nearest_orientation
-from photons_control.colour import make_hsbks
-from photons_control.script import FromGenerator
 from photons_messages import (
     LightMessages,
     TileEffectSkyType,
@@ -13,12 +11,12 @@ from photons_messages import (
     TileMessages,
 )
 
+from photons_control.colour import make_hsbks
+from photons_control.script import FromGenerator
+
 log = logging.getLogger(name="photons_control.tiles")
 
-default_tile_palette = [
-    {"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500}
-    for hue in [0, 40, 60, 122, 239, 271, 294]
-]
+default_tile_palette = [{"hue": hue, "brightness": 1, "saturation": 1, "kelvin": 3500} for hue in [0, 40, 60, 122, 239, 271, 294]]
 
 default_sky_palette = []
 
@@ -37,9 +35,7 @@ def tiles_from(state_pkt):
 def orientations_from(pkt):
     orientations = {}
     for i, tile in enumerate(tiles_from(pkt)):
-        orientations[i] = nearest_orientation(
-            tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z
-        )
+        orientations[i] = nearest_orientation(tile.accel_meas_x, tile.accel_meas_y, tile.accel_meas_z)
     return orientations
 
 
@@ -173,16 +169,13 @@ class get_chain_state(task.Task):
     reference = task.provides_reference(special=True)
 
     async def execute_task(self, **kwargs):
-
         async with self.target.session() as sender:
             plans = sender.make_plans("parts_and_colors")
 
             def error(e):
                 log.error(e)
 
-            async for serial, _, parts in sender.gatherer.gather(
-                plans, self.reference, error_catcher=error
-            ):
+            async for serial, _, parts in sender.gatherer.gather(plans, self.reference, error_catcher=error):
                 if not parts or not parts[0].device.cap.has_matrix:
                     continue
 
@@ -299,20 +292,12 @@ class set_chain_state(task.Task):
         options["width"] = width
 
         if "colors" in options:
-            spec = sb.listof(
-                sb.listof(
-                    list_spec(
-                        sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec()
-                    )
-                )
-            )
+            spec = sb.listof(sb.listof(list_spec(sb.integer_spec(), sb.float_spec(), sb.float_spec(), sb.integer_spec())))
             colors = spec.normalise(Meta.empty().at("colors"), options["colors"])
 
             row_lengths = [len(row) for row in colors]
             if len(set(row_lengths)) != 1:
-                raise PhotonsAppError(
-                    "Please specify colors as a grid with the same length rows", got=row_lengths
-                )
+                raise PhotonsAppError("Please specify colors as a grid with the same length rows", got=row_lengths)
 
             cells = []
             for row in colors:
@@ -335,9 +320,7 @@ class set_chain_state(task.Task):
 
             options["colors"] = cells
         else:
-            raise PhotonsAppError(
-                "Please specify colors in options after -- as a grid of [h, s, b, k]"
-            )
+            raise PhotonsAppError("Please specify colors in options after -- as a grid of [h, s, b, k]")
 
         missing = []
         for field in TileMessages.Set64.Payload.Meta.all_names:
@@ -368,9 +351,7 @@ class set_tile_positions(task.Task):
         positions = sb.listof(sb.listof(sb.float_spec())).normalise(Meta.empty(), extra)
 
         if any(len(position) != 2 for position in positions):
-            raise PhotonsAppError(
-                "Please enter positions as a list of two item lists of user_x, user_y"
-            )
+            raise PhotonsAppError("Please enter positions as a list of two item lists of user_x, user_y")
 
         async def gen(reference, sender, **kwargs):
             ps = sender.make_plans("capability")

@@ -53,7 +53,6 @@ class TestMessagesMeta:
         }
 
     def test_it_has_the_MessagesMixin(self):
-
         class M(Messages):
             pass
 

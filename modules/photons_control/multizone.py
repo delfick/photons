@@ -1,16 +1,17 @@
 from delfick_project.norms import sb
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks import task_register as task
-from photons_control.colour import make_hsbks
-from photons_control.planner import NoMessages, Plan, Skip
-from photons_control.planner.plans import CapabilityPlan
-from photons_control.script import FromGenerator
 from photons_messages import (
     Direction,
     LightMessages,
     MultiZoneEffectType,
     MultiZoneMessages,
 )
+
+from photons_control.colour import make_hsbks
+from photons_control.planner import NoMessages, Plan, Skip
+from photons_control.planner.plans import CapabilityPlan
+from photons_control.script import FromGenerator
 
 
 async def find_multizone(reference, sender, **kwargs):
@@ -312,7 +313,7 @@ class get_zones(task.Task):
             async for serial, zones in zones_from_reference(self.reference, sender):
                 print(serial)
                 for zone, color in zones:
-                    print("\tZone {0}: {1}".format(zone, repr(color)))
+                    print(f"\tZone {zone}: {repr(color)}")
 
 
 @task
@@ -335,9 +336,7 @@ class set_zones(task.Task):
         options = self.photons_app.extra_as_json
 
         if "colors" not in options:
-            raise PhotonsAppError(
-                """Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`"""
-            )
+            raise PhotonsAppError("""Say something like ` -- '{"colors": [["red", 10], ["blue", 3]]}'`""")
 
         await self.target.send(SetZones(**options), self.reference)
 

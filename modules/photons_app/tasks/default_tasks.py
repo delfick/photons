@@ -5,6 +5,7 @@ from textwrap import dedent
 
 from delfick_project.norms import Meta, sb
 from delfick_project.option_merge import MergedOptions
+
 from photons_app.errors import PhotonsAppError
 from photons_app.tasks.register import task_register
 from photons_app.tasks.specifier import task_specifier_spec
@@ -52,9 +53,7 @@ class help(task.Task):
 
         if self.reference is not sb.NotSpecified:
             if ":" in self.reference:
-                target_name, task_name = task_specifier_spec().normalise(
-                    Meta.empty(), self.reference
-                )
+                target_name, task_name = task_specifier_spec().normalise(Meta.empty(), self.reference)
             else:
                 task_name = self.reference
 
@@ -73,13 +72,8 @@ class help(task.Task):
             if target_name in target_register.registered or target_name in target_register.types:
                 kwargs["specific_target"] = target_name
 
-            if (
-                target_name not in target_register.registered
-                and target_name not in target_register.types
-            ):
-                raise PhotonsAppError(
-                    "Sorry, cannot find help for non existing target", wanted=target_name
-                )
+            if target_name not in target_register.registered and target_name not in target_register.types:
+                raise PhotonsAppError("Sorry, cannot find help for non existing target", wanted=target_name)
 
         if task_name is not sb.NotSpecified:
             kwargs["specific_task"] = task_name
@@ -90,9 +84,7 @@ class help(task.Task):
                     available=task_register.names,
                 )
 
-        await task_register.fill_task(
-            self.collector, list_tasks, specific_task_groups=self.specific_task_groups, **kwargs
-        ).run()
+        await task_register.fill_task(self.collector, list_tasks, specific_task_groups=self.specific_task_groups, **kwargs).run()
 
 
 @task
@@ -129,10 +121,7 @@ class list_tasks(task.Task):
 
         tasks = []
         for task in task_register.registered:
-            if (
-                self.specific_task_groups is not None
-                and task.task_group not in self.specific_task_groups
-            ):
+            if self.specific_task_groups is not None and task.task_group not in self.specific_task_groups:
                 continue
 
             if self.specific_task is sb.NotSpecified or task.name == self.specific_task:
@@ -182,19 +171,14 @@ class list_tasks(task.Task):
                 doc = doc.split("\n")[0]
 
             o = StringIO()
-            task_register.fill_task(
-                self.collector, self.__class__, output=o
-            ).print_target_restrictions(targets_by_name, restriction)
+            task_register.fill_task(self.collector, self.__class__, output=o).print_target_restrictions(targets_by_name, restriction)
             o.flush()
             o.seek(0)
             by_restriction[o.read()].append((t.name, t.task_group, doc))
 
         for show_those_without_restriction in (False, True):
             for restriction, tasks in by_restriction.items():
-                if (
-                    restriction.startswith("- Can be used with any target")
-                    ^ show_those_without_restriction
-                ):
+                if restriction.startswith("- Can be used with any target") ^ show_those_without_restriction:
                     continue
 
                 self("=" * 80)

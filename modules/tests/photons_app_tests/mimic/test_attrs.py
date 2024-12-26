@@ -23,7 +23,6 @@ def device():
 
 
 class TestPath:
-
     @pytest.fixture()
     def attrs(self, device):
         attrs = Attrs(device)
@@ -37,9 +36,7 @@ class TestPath:
             thing3 = dictobj.Field(sb.string_spec())
 
         # Bypass the change system cause the tests is testing that system!
-        attrs._attrs["one"] = One.FieldSpec().empty_normalise(
-            list1=[{"blah": True}, {"blah": False}], list2=[1, 2, 3], thing3="yeap"
-        )
+        attrs._attrs["one"] = One.FieldSpec().empty_normalise(list1=[{"blah": True}, {"blah": False}], list2=[1, 2, 3], thing3="yeap")
         attrs._attrs["stuff"] = "things"
         attrs._attrs["many"] = ["yes", "yah", "yarp"]
 
@@ -153,10 +150,7 @@ class TestPath:
             called.clear()
             assert attrs.holder.my_property == 5
 
-        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(
-            self, attrs
-        ):
-
+        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(self, attrs):
             class Sticky(dictobj.Spec):
                 @property
                 def one(s):
@@ -216,17 +210,13 @@ class TestPath:
                 "many": ["yes", "yah", "nope"],
             }
 
-        async def test_it_can_add_attributes_that_dont_already_exist_to_the_base_of_attrs(
-            self, attrs
-        ):
+        async def test_it_can_add_attributes_that_dont_already_exist_to_the_base_of_attrs(self, attrs):
             changer = attrs.attrs_path("new").changer_to("newer")
             assert repr(changer) == "<Will change <Path new> to newer>"
             await changer()
             assert repr(changer) == "<Changed new to newer>"
 
-        async def test_it_can_not_add_attributes_that_dont_already_exist_to_after_base_of_attrs(
-            self, attrs
-        ):
+        async def test_it_can_not_add_attributes_that_dont_already_exist_to_after_base_of_attrs(self, attrs):
             changer = attrs.attrs_path("one", "list1", 0, "nope").changer_to("never")
             assert repr(changer) == "<Will change <Path one.list1[0]<nope>> to never>"
             await changer()
@@ -291,10 +281,7 @@ class TestPath:
             assert attrs.holder.a_list == (1, 2)
             assert called == [("attr_change", "a_list", (1, 2), None)]
 
-        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(
-            self, attrs
-        ):
-
+        async def test_it_has_a_repr_if_we_applied_to_a_path_but_the_value_didnt_change(self, attrs):
             class Unpoppable(list):
                 def __init__(self):
                     super().__init__()
@@ -353,7 +340,6 @@ class TestPath:
 
 
 class TestAttrs:
-
     @pytest.fixture()
     def final_future(self):
         fut = hp.create_future()
@@ -401,9 +387,7 @@ class TestAttrs:
         assert attrs.one == 3
         assert attrs["one"] == 3
 
-    def test_it_complains_if_you_try_to_set_things_on_the_attrs_with_item_or_attr_syntax(
-        self, attrs
-    ):
+    def test_it_complains_if_you_try_to_set_things_on_the_attrs_with_item_or_attr_syntax(self, attrs):
         assert "nup" not in attrs
         with assertRaises(TypeError, "'Attrs' object does not support item assignment"):
             attrs["nup"] = 3
@@ -506,9 +490,7 @@ class TestAttrs:
             "three": "blah",
         }
 
-    async def test_it_hides_changes_if_the_attrs_havent_started_yet(
-        self, device, attrs, record, final_future
-    ):
+    async def test_it_hides_changes_if_the_attrs_havent_started_yet(self, device, attrs, record, final_future):
         device.value_store["has_io"] = False
         device.value_store["test_console_record"] = record
 

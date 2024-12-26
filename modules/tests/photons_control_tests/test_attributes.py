@@ -3,7 +3,6 @@ from photons_control.colour import ColourParser, make_hsbks
 
 
 class TestMakeHsbks:
-
     @pytest.fixture()
     def colors(self):
         return [
@@ -26,7 +25,6 @@ class TestMakeHsbks:
         ]
 
     def test_it_can_make_colors(self, colors):
-
         def hsbk(*args, **kwargs):
             h, s, b, k = ColourParser.hsbk(*args, **kwargs)
             return {"hue": h, "saturation": s, "brightness": b, "kelvin": k}

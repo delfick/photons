@@ -19,7 +19,6 @@ from photons_messages import DeviceMessages, LightMessages
 
 
 class TestDevice:
-
     @pytest.fixture()
     def device(self):
         return Device.FieldSpec().empty_normalise(serial="d073d5000001")
@@ -41,12 +40,8 @@ class TestDevice:
             else:
                 assert getattr(device, field) == sb.NotSpecified
 
-        device.group = Collection.FieldSpec().empty_normalise(
-            typ="group", uuid="uuidg", name="blah"
-        )
-        device.location = Collection.FieldSpec().empty_normalise(
-            typ="location", uuid="uuidl", name="meh"
-        )
+        device.group = Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
+        device.location = Collection.FieldSpec().empty_normalise(typ="location", uuid="uuidl", name="meh")
 
         assert device.group_id == "uuidg"
         assert device.group_name == "blah"
@@ -92,9 +87,7 @@ class TestDevice:
 
         assertChange("label", "kitchen")
         assertChange("power", "on")
-        assertChange(
-            "group", Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
-        )
+        assertChange("group", Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah"))
         assertChange(
             "location",
             Collection.FieldSpec().empty_normalise(typ="location", uuid="uuidl", name="meh"),
@@ -108,17 +101,13 @@ class TestDevice:
         info["product_name"] = values["product_name"] = "LIFX Z"
         info["product_type"] = "light"
         info["product_id"] = values["product_id"] = 32
-        info["cap"] = values["cap"] = pytest.helpers.has_caps_list(
-            "color", "multizone", "variable_color_temp"
-        )
+        info["cap"] = values["cap"] = pytest.helpers.has_caps_list("color", "multizone", "variable_color_temp")
         assert device.info == info
         assert device.as_dict() == values
 
         device.firmware = hp.Firmware(2, 80)
         values["firmware_version"] = "2.80"
-        values["cap"] = pytest.helpers.has_caps_list(
-            "color", "extended_multizone", "multizone", "variable_color_temp"
-        )
+        values["cap"] = pytest.helpers.has_caps_list("color", "extended_multizone", "multizone", "variable_color_temp")
         assert device.info == values
         assert device.as_dict() == values
 
@@ -156,9 +145,7 @@ class TestDevice:
             device.label = "kitchen"
             device.power = "on"
             device.product_id = 22
-            device.group = Collection.FieldSpec().empty_normalise(
-                typ="group", uuid="uuidg", name="blah"
-            )
+            device.group = Collection.FieldSpec().empty_normalise(typ="group", uuid="uuidg", name="blah")
 
             assert device.matches_fltr(filtr)
 
@@ -182,9 +169,7 @@ class TestDevice:
             assert sorted(filtr.matches.mock_calls) == (
                 sorted(
                     [
-                        mock.call(
-                            "cap", pytest.helpers.has_caps_list("color", "variable_color_temp")
-                        ),
+                        mock.call("cap", pytest.helpers.has_caps_list("color", "variable_color_temp")),
                         mock.call("label", "kitchen"),
                         mock.call("power", "on"),
                         mock.call("product_id", 22),
@@ -198,15 +183,12 @@ class TestDevice:
             )
 
     class TestSetFromPkt:
-
         @pytest.fixture()
         def collections(self):
             return Collections()
 
         def test_it_can_take_in_a_LightState(self, device, collections):
-            pkt = LightMessages.LightState.create(
-                label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
-            )
+            pkt = LightMessages.LightState.create(label="kitchen", power=0, hue=250, saturation=0.6, brightness=0.7, kelvin=4500)
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
 
@@ -218,9 +200,7 @@ class TestDevice:
             assert device.kelvin == 4500
 
             # And test when power is on
-            pkt = LightMessages.LightState.create(
-                label="kitchen", power=65535, hue=250, saturation=0.6, brightness=0.7, kelvin=4500
-            )
+            pkt = LightMessages.LightState.create(label="kitchen", power=65535, hue=250, saturation=0.6, brightness=0.7, kelvin=4500)
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LIGHT_STATE
             assert device.power == "on"
 
@@ -235,9 +215,7 @@ class TestDevice:
 
             group = device.group
 
-            pkt = DeviceMessages.StateGroup.create(
-                group=group_uuid, updated_at=2, label="group1renamed"
-            )
+            pkt = DeviceMessages.StateGroup.create(group=group_uuid, updated_at=2, label="group1renamed")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.GROUP
             assert device.group == collections.collections["group"][group_uuid]
@@ -259,9 +237,7 @@ class TestDevice:
 
         def test_it_can_take_in_StateLocation(self, device, collections):
             location_uuid = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateLocation.create(
-                location=location_uuid, updated_at=1, label="location1"
-            )
+            pkt = DeviceMessages.StateLocation.create(location=location_uuid, updated_at=1, label="location1")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
             assert device.location == collections.collections["location"][location_uuid]
@@ -270,9 +246,7 @@ class TestDevice:
 
             location = device.location
 
-            pkt = DeviceMessages.StateLocation.create(
-                location=location_uuid, updated_at=2, label="location1renamed"
-            )
+            pkt = DeviceMessages.StateLocation.create(location=location_uuid, updated_at=2, label="location1renamed")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
             assert device.location == collections.collections["location"][location_uuid]
@@ -281,9 +255,7 @@ class TestDevice:
             assert device.location_name == "location1renamed"
 
             location_uuid2 = str(uuid.uuid1()).replace("-", "")
-            pkt = DeviceMessages.StateLocation.create(
-                location=location_uuid2, updated_at=2, label="location2"
-            )
+            pkt = DeviceMessages.StateLocation.create(location=location_uuid2, updated_at=2, label="location2")
 
             assert device.set_from_pkt(pkt, collections) is InfoPoints.LOCATION
             assert device.location == collections.collections["location"][location_uuid2]
@@ -320,7 +292,6 @@ class TestDevice:
             ]
 
     class TestPointsFromFltr:
-
         @pytest.fixture()
         def RF(self):
             class RF:
@@ -337,7 +308,6 @@ class TestDevice:
 
         @pytest.fixture()
         def Points(self, device, RF):
-
             expect = {e: RF() for e in InfoPoints}
             expect[None] = RF()
             assert device.point_futures == expect
@@ -369,9 +339,7 @@ class TestDevice:
         def test_it_returns_all_the_InfoPoints_for_an_empty_fltr(self, device):
             assert list(device.points_from_fltr(Filter.empty())) == list(InfoPoints)
 
-        def test_it_only_yields_points_if_one_of_its_keys_are_on_the_fltr(
-            self, device, Points, Fltr
-        ):
+        def test_it_only_yields_points_if_one_of_its_keys_are_on_the_fltr(self, device, Points, Fltr):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -383,9 +351,7 @@ class TestDevice:
             assert list(device.points_from_fltr(fltr)) == [Points.TWO]
             assert all(f.done() for f in device.point_futures.values())
 
-        def test_it_resets_futures_if_we_have_a_refresh_info_and_a_refresh_amount(
-            self, device, Points, Fltr, RF
-        ):
+        def test_it_resets_futures_if_we_have_a_refresh_info_and_a_refresh_amount(self, device, Points, Fltr, RF):
             for f in device.point_futures.values():
                 f.set_result(True)
 
@@ -399,9 +365,7 @@ class TestDevice:
                 Points.THREE: RF(False),
             }
 
-        def test_it_does_not_reset_futures_if_we_have_a_refresh_info_but_fltr_doesnt_match(
-            self, device, Points, Fltr, RF
-        ):
+        def test_it_does_not_reset_futures_if_we_have_a_refresh_info_but_fltr_doesnt_match(self, device, Points, Fltr, RF):
             for f in device.point_futures.values():
                 f.set_result(True)
 

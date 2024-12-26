@@ -112,7 +112,6 @@ async def reset_devices(sender):
 
 
 class TestSetZonesPlan:
-
     @pytest.fixture()
     def specifier(self):
         return [
@@ -441,9 +440,7 @@ def compare_received(by_light):
 
 
 class TestMultizoneHelpers:
-
     class TestFindMultizone:
-
         async def test_it_yields_serials_and_capability(self, sender):
             got = {}
             async for serial, cap in find_multizone(devices.serials, sender):
@@ -460,30 +457,21 @@ class TestMultizoneHelpers:
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
-            want = {
-                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in devices
-            }
+            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in devices}
             compare_received(want)
 
             del sender.gatherer
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
-            want = {
-                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in devices
-            }
+            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in devices}
             compare_received(want)
 
         async def test_it_uses_cached_gatherer_on_the_sender(self, sender):
             async for serial, cap in find_multizone(devices.serials, sender):
                 pass
 
-            want = {
-                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in devices
-            }
+            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in devices}
             compare_received(want)
 
             async for serial, cap in find_multizone(devices.serials, sender):
@@ -493,7 +481,6 @@ class TestMultizoneHelpers:
             compare_received(want)
 
     class TestZonesFromReference:
-
         async def test_it_yield_zones(self, sender):
             got = {}
             async for serial, zones in zones_from_reference(devices.serials, sender):
@@ -510,14 +497,9 @@ class TestMultizoneHelpers:
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
-            want = {
-                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in devices
-            }
+            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in devices}
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
-            want[striplcm2noextended].append(
-                MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
-            )
+            want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             compare_received(want)
 
@@ -531,14 +513,9 @@ class TestMultizoneHelpers:
             async for serial, zones in zones_from_reference(devices.serials, sender):
                 pass
 
-            want = {
-                device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()]
-                for device in devices
-            }
+            want = {device: [DeviceMessages.GetHostFirmware(), DeviceMessages.GetVersion()] for device in devices}
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
-            want[striplcm2noextended].append(
-                MultiZoneMessages.GetColorZones(start_index=0, end_index=255)
-            )
+            want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
             compare_received(want)
 
@@ -548,7 +525,6 @@ class TestMultizoneHelpers:
             compare_received({device: [] for device in devices})
 
     class TestSetZones:
-
         async def test_it_can_power_on_devices_and_set_zones(self, sender):
             for device in strips:
                 await device.change_one("zones", [zeroColor] * 16, event=None)
@@ -740,7 +716,6 @@ class TestMultizoneHelpers:
             )
 
     class TestSetZonesEffect:
-
         async def test_it_can_power_on_devices_and_set_zones_effect(self, sender):
             msg = SetZonesEffect("move")
             got = await sender(msg, devices.serials)
@@ -775,9 +750,7 @@ class TestMultizoneHelpers:
             )
 
         async def test_it_has_options(self, sender):
-            msg = SetZonesEffect(
-                "move", speed=5, duration=10, direction="LEFT", power_on_duration=20
-            )
+            msg = SetZonesEffect("move", speed=5, duration=10, direction="LEFT", power_on_duration=20)
             got = await sender(msg, devices.serials)
             assert got == []
 
@@ -876,17 +849,13 @@ class TestMultizoneHelpers:
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.create(
-                            duration=5, type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(duration=5, type=MultiZoneEffectType.MOVE),
                     ],
                     striplcm2extended: [
                         DeviceMessages.GetHostFirmware(),
                         DeviceMessages.GetVersion(),
                         LightMessages.SetLightPower(level=65535, duration=1),
-                        MultiZoneMessages.SetMultiZoneEffect.create(
-                            duration=5, type=MultiZoneEffectType.MOVE
-                        ),
+                        MultiZoneMessages.SetMultiZoneEffect.create(duration=5, type=MultiZoneEffectType.MOVE),
                     ],
                 }
             )

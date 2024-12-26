@@ -1,6 +1,7 @@
 import random
 
 from delfick_project.norms import dictobj
+
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, an_animation, options
 
@@ -23,9 +24,7 @@ class Twinkle:
 
     @property
     def color(self):
-        c = self._color = php.Color.adjust(
-            self._color, brightness_change=self.fades[self.direction]
-        )
+        c = self._color = php.Color.adjust(self._color, brightness_change=self.fades[self.direction])
 
         if c[2] >= 1:
             self.direction = 1

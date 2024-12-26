@@ -1,6 +1,7 @@
 import random
 
 from delfick_project.norms import dictobj
+
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, Finish, an_animation, options
 

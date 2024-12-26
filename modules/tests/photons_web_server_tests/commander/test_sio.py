@@ -43,9 +43,7 @@ class Between:
 
 
 class TestStoreWithSio:
-    async def test_it_supports_sio_commands(
-        self, final_future: asyncio.Future, fake_event_loop, caplog
-    ):
+    async def test_it_supports_sio_commands(self, final_future: asyncio.Future, fake_event_loop, caplog):
         store = Store()
 
         sio = socketio.AsyncServer(async_mode="sanic")

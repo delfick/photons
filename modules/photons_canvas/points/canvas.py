@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from delfick_project.norms import sb
+
 from photons_canvas.points import helpers as php
 
 
@@ -149,9 +150,7 @@ class Canvas:
                 if onto is not None:
                     onto[point] = c
 
-            for msg in part.msgs(
-                cs, acks=acks, duration=duration, randomize=randomize, force=False
-            ):
+            for msg in part.msgs(cs, acks=acks, duration=duration, randomize=randomize, force=False):
                 msgs.append(msg)
 
         return msgs
@@ -206,10 +205,10 @@ class Canvas:
             else:
                 bounds = part.bounds
 
-            (l, r), (t, b), _ = bounds
+            (bl, r), (t, b), _ = bounds
 
             top = top if top is not None and t < top else t
-            left = left if left is not None and l > left else l
+            left = left if left is not None and bl > left else bl
             right = right if right is not None and r < right else r
             bottom = bottom if bottom is not None and b > bottom else b
 

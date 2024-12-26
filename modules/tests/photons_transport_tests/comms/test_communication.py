@@ -69,7 +69,6 @@ class TestFakeAck:
 
 class TestCommunication:
     async def test_it_is_formattable(self, V):
-
         class Other:
             pass
 
@@ -80,9 +79,7 @@ class TestCommunication:
             other = dictobj.Field(sb.overridden("{other}"), formatted=True)
             comms = dictobj.Field(sb.overridden("{comms}"), formatted=True)
 
-        thing = Thing.FieldSpec(formatter=MergedOptionStringFormatter).normalise(
-            Meta(options, []).at("thing"), {}
-        )
+        thing = Thing.FieldSpec(formatter=MergedOptionStringFormatter).normalise(Meta(options, []).at("thing"), {})
 
         assert thing.comms is V.communication
         assert thing.other == str(other)
@@ -294,9 +291,7 @@ class TestCommunication:
             serial = "d073d5000001"
             service = mock.Mock(name="service")
             othertransport = mock.Mock(name="othertransport")
-            othertransport.close = pytest.helpers.AsyncMock(
-                name="close", side_effect=Exception("NOPE")
-            )
+            othertransport.close = pytest.helpers.AsyncMock(name="close", side_effect=Exception("NOPE"))
 
             V.communication.found[serial] = {service: othertransport}
 
@@ -313,7 +308,6 @@ class TestCommunication:
             othertransport.close.assert_called_once_with()
 
         async def test_it_does_not_replace_if_the_transport_is_equal(self, V):
-
             class T:
                 def __eq__(s, other):
                     return True
@@ -349,14 +343,10 @@ class TestCommunication:
             find_specific_serials.return_value = (found, missing)
 
             with mock.patch.object(V.communication, "find_specific_serials", find_specific_serials):
-                f = await V.communication.find_devices(
-                    ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
-                )
+                f = await V.communication.find_devices(ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a)
 
             assert f is found
-            find_specific_serials.assert_called_once_with(
-                None, ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a
-            )
+            find_specific_serials.assert_called_once_with(None, ignore_lost=ignore_lost, raise_on_none=raise_on_none, broadcast=broadcast, a=a)
 
         async def test_it_has_defaults_for_ignore_lost_and_raise_on_none(self, V):
             a = mock.Mock(name="a")
@@ -370,12 +360,9 @@ class TestCommunication:
                 f = await V.communication.find_devices(a=a)
 
             assert f is found
-            find_specific_serials.assert_called_once_with(
-                None, ignore_lost=False, raise_on_none=False, a=a
-            )
+            find_specific_serials.assert_called_once_with(None, ignore_lost=False, raise_on_none=False, a=a)
 
     class TestFindSpecificSerials:
-
         @pytest.fixture()
         def V(self, VBase):
             V = VBase
@@ -408,9 +395,7 @@ class TestCommunication:
                     _find_specific_serials = pytest.helpers.AsyncMock(name="_find_specific_serials")
                     _find_specific_serials.return_value = f
 
-                    with mock.patch.object(
-                        s.communication, "_find_specific_serials", _find_specific_serials
-                    ):
+                    with mock.patch.object(s.communication, "_find_specific_serials", _find_specific_serials):
                         f2, m = await s.communication.find_specific_serials(
                             serials,
                             ignore_lost=ignore_lost,
@@ -430,18 +415,12 @@ class TestCommunication:
                     )
 
                     _find_specific_serials.reset_mock()
-                    with mock.patch.object(
-                        s.communication, "_find_specific_serials", _find_specific_serials
-                    ):
-                        f3, m = await s.communication.find_specific_serials(
-                            serials, broadcast=broadcast, a=a
-                        )
+                    with mock.patch.object(s.communication, "_find_specific_serials", _find_specific_serials):
+                        f3, m = await s.communication.find_specific_serials(serials, broadcast=broadcast, a=a)
 
                     assert f3 is f
                     assert m == missing
-                    _find_specific_serials.assert_called_once_with(
-                        serials, ignore_lost=False, raise_on_none=False, broadcast=broadcast, a=a
-                    )
+                    _find_specific_serials.assert_called_once_with(serials, ignore_lost=False, raise_on_none=False, broadcast=broadcast, a=a)
 
             return V()
 
@@ -506,10 +485,7 @@ class TestCommunication:
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):
-                assert (
-                    await V.communication._find_specific_serials(serials, timeout=timeout, a=a)
-                    is found
-                )
+                assert await V.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -536,10 +512,7 @@ class TestCommunication:
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):
-                assert (
-                    await V.communication._find_specific_serials(serials, timeout=timeout, a=a)
-                    is found
-                )
+                assert await V.communication._find_specific_serials(serials, timeout=timeout, a=a) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -568,11 +541,7 @@ class TestCommunication:
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):
-                assert (
-                    await V.communication._find_specific_serials(
-                        serials, timeout=timeout, ignore_lost=True, a=a
-                    )
-                ) is found
+                assert (await V.communication._find_specific_serials(serials, timeout=timeout, ignore_lost=True, a=a)) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -595,18 +564,14 @@ class TestCommunication:
 
             with assertRaises(FoundNoDevices):
                 with mock.patch.object(V.communication, "_do_search", _do_search):
-                    await V.communication._find_specific_serials(
-                        None, timeout=timeout, raise_on_none=True, a=a
-                    )
+                    await V.communication._find_specific_serials(None, timeout=timeout, raise_on_none=True, a=a)
 
             _do_search.assert_called_once_with(None, timeout, a=a)
 
             assert not found
             s3.close.assert_called_once_with()
 
-        async def test_it_does_not_complain_if_none_are_found_and_raise_on_none_but_non_None_serials(
-            self, V
-        ):
+        async def test_it_does_not_complain_if_none_are_found_and_raise_on_none_but_non_None_serials(self, V):
             s3 = mock.Mock(name="s3", spec=[])
             found = V.communication.found
             found["d073d5000003"] = {"UDP": s3}
@@ -621,11 +586,7 @@ class TestCommunication:
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):
-                assert (
-                    await V.communication._find_specific_serials(
-                        serials, raise_on_none=True, timeout=timeout, a=a
-                    )
-                ) is found
+                assert (await V.communication._find_specific_serials(serials, raise_on_none=True, timeout=timeout, a=a)) is found
 
             _do_search.assert_called_once_with(serials, timeout, a=a)
 
@@ -643,11 +604,7 @@ class TestCommunication:
             timeout = mock.Mock(name="timeout")
 
             with mock.patch.object(V.communication, "_do_search", _do_search):
-                assert (
-                    await V.communication._find_specific_serials(
-                        None, ignore_lost=True, timeout=timeout, a=a
-                    )
-                ) is found
+                assert (await V.communication._find_specific_serials(None, ignore_lost=True, timeout=timeout, a=a)) is found
 
             _do_search.assert_called_once_with(None, timeout, a=a)
 
@@ -663,21 +620,16 @@ class TestCommunication:
             transport = mock.Mock(name="transport")
 
             send_single = pytest.helpers.AsyncMock(name="send_single", return_value=res)
-            make_broadcast_transport = pytest.helpers.AsyncMock(
-                name="make_broadcast_transport", return_value=transport
-            )
+            make_broadcast_transport = pytest.helpers.AsyncMock(name="make_broadcast_transport", return_value=transport)
 
             mod = {"send_single": send_single, "make_broadcast_transport": make_broadcast_transport}
             with mock.patch.multiple(V.communication, **mod):
                 assert await V.communication.broadcast(packet, broadcast, a=a) is res
 
             make_broadcast_transport.assert_awaited_once_with(broadcast)
-            send_single.assert_awaited_once_with(
-                packet, is_broadcast=True, transport=transport, a=a
-            )
+            send_single.assert_awaited_once_with(packet, is_broadcast=True, transport=transport, a=a)
 
     class TestPrivateTransportForSend:
-
         @pytest.fixture()
         def V(self, VBase):
             V = VBase
@@ -695,19 +647,11 @@ class TestCommunication:
 
                 @contextmanager
                 def maker_mocks(s):
-                    make_broadcast_transport = pytest.helpers.AsyncMock(
-                        name="make_broadcast_transport", return_value=s.transport
-                    )
-                    choose_transport = pytest.helpers.AsyncMock(
-                        name="choose_transport", return_value=s.transport
-                    )
+                    make_broadcast_transport = pytest.helpers.AsyncMock(name="make_broadcast_transport", return_value=s.transport)
+                    choose_transport = pytest.helpers.AsyncMock(name="choose_transport", return_value=s.transport)
 
-                    mbt_patch = mock.patch.object(
-                        s.communication, "make_broadcast_transport", make_broadcast_transport
-                    )
-                    ct_patch = mock.patch.object(
-                        s.communication, "choose_transport", choose_transport
-                    )
+                    mbt_patch = mock.patch.object(s.communication, "make_broadcast_transport", make_broadcast_transport)
+                    ct_patch = mock.patch.object(s.communication, "choose_transport", choose_transport)
 
                     with mbt_patch, ct_patch:
                         yield (make_broadcast_transport, choose_transport)
@@ -716,9 +660,7 @@ class TestCommunication:
 
         async def test_it_uses_make_broadcast_transport_if_broadcast(self, V):
             with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await V.communication._transport_for_send(
-                    None, V.packet, V.original, True, V.connect_timeout
-                )
+                res = await V.communication._transport_for_send(None, V.packet, V.original, True, V.connect_timeout)
                 assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
@@ -729,9 +671,7 @@ class TestCommunication:
             broadcast = "192.168.0.255"
 
             with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await V.communication._transport_for_send(
-                    None, V.packet, V.original, broadcast, V.connect_timeout
-                )
+                res = await V.communication._transport_for_send(None, V.packet, V.original, broadcast, V.connect_timeout)
                 assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(broadcast)
@@ -742,9 +682,7 @@ class TestCommunication:
             V.packet.target = None
 
             with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await V.communication._transport_for_send(
-                    None, V.packet, V.original, False, V.connect_timeout
-                )
+                res = await V.communication._transport_for_send(None, V.packet, V.original, False, V.connect_timeout)
                 assert res == (V.transport, True)
 
             make_broadcast_transport.assert_called_once_with(True)
@@ -759,9 +697,7 @@ class TestCommunication:
             V.communication.found["d073d5"] = services
 
             with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await V.communication._transport_for_send(
-                    None, V.packet, V.original, False, V.connect_timeout
-                )
+                res = await V.communication._transport_for_send(None, V.packet, V.original, False, V.connect_timeout)
                 assert res == (V.transport, False)
 
             choose_transport.assert_called_once_with(V.original, services)
@@ -774,9 +710,7 @@ class TestCommunication:
 
             with assertRaises(FailedToFindDevice, serial="d073d5"):
                 with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                    await V.communication._transport_for_send(
-                        None, V.packet, V.original, False, V.connect_timeout
-                    )
+                    await V.communication._transport_for_send(None, V.packet, V.original, False, V.connect_timeout)
 
             assert len(make_broadcast_transport.mock_calls) == 0
             assert len(choose_transport.mock_calls) == 0
@@ -784,9 +718,7 @@ class TestCommunication:
 
         async def test_it_just_spawns_transport_if_one_is_provided(self, V):
             with V.maker_mocks() as (make_broadcast_transport, choose_transport):
-                res = await V.communication._transport_for_send(
-                    V.transport, V.packet, V.original, False, V.connect_timeout
-                )
+                res = await V.communication._transport_for_send(V.transport, V.packet, V.original, False, V.connect_timeout)
                 assert res == (V.transport, False)
 
             assert len(make_broadcast_transport.mock_calls) == 0
@@ -823,9 +755,7 @@ class TestCommunication:
             recv = pytest.helpers.AsyncMock(name="recv", side_effect=recv)
 
             with mock.patch.object(V.communication.receiver, "recv", recv):
-                pkt = LIFXPacket(
-                    payload=b"things", pkt_type=9001, source=1, sequence=1, target=None
-                )
+                pkt = LIFXPacket(payload=b"things", pkt_type=9001, source=1, sequence=1, target=None)
                 data = pkt.pack().tobytes()
                 await V.communication.received_data(data, addr, allow_zero=allow_zero)
 

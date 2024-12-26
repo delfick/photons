@@ -8,7 +8,6 @@ def call_later(*args):
 
 
 class TestMockedCalledLater:
-
     async def test_it_works(self, FakeTime, MockedCallLater):
         with FakeTime() as t:
             async with MockedCallLater(t):

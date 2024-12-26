@@ -6,7 +6,6 @@ from photons_transport.comms.writer import Writer
 
 
 class TestWriter:
-
     @pytest.fixture()
     def V(self):
         class V:

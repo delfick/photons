@@ -53,7 +53,6 @@ async def reset_devices(sender):
 
 
 class TestFromCapability:
-
     async def assertScript(self, sender, msg, *, expected, **kwargs):
         await sender(msg, devices.serials, **kwargs)
 
@@ -69,7 +68,6 @@ class TestFromCapability:
             devices.store(device).clear()
 
     async def test_it_sends_the_messages_to_devices_with_only_correct_capability(self, sender):
-
         msg = ForCapability(hev=LightMessages.GetHevCycle())
 
         expected = {
@@ -85,7 +83,6 @@ class TestFromCapability:
         await self.assertScript(sender, msg, expected=expected)
 
     async def test_it_can_send_message_to_groups(self, sender):
-
         msg = ForCapability(**{"ir,hev": DeviceMessages.SetPower(level=65535)})
 
         expected = {
@@ -105,7 +102,6 @@ class TestFromCapability:
         await self.assertScript(sender, msg, expected=expected)
 
     async def test_it_can_send_to_negative_capability(self, sender):
-
         msg = ForCapability(hev=LightMessages.GetHevCycle(), not_hev=LightMessages.GetLightPower())
 
         expected = {

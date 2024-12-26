@@ -1,7 +1,8 @@
 from delfick_project.norms import BadSpecValue, dictobj, sb
-from photons_app.mimic.operator import Operator, operator
 from photons_messages import DeviceMessages
 from photons_protocol.types import bytes_spec
+
+from photons_app.mimic.operator import Operator, operator
 
 
 class identity_spec(sb.Spec):
@@ -19,12 +20,8 @@ class Collection(dictobj.Spec):
     updated_at = dictobj.Field(sb.integer_spec, default=0)
 
     @classmethod
-    def create(
-        self, *, identity=sb.NotSpecified, label=sb.NotSpecified, updated_at=sb.NotSpecified
-    ):
-        return Collection.FieldSpec().empty_normalise(
-            identity=identity, label=label, updated_at=updated_at
-        )
+    def create(self, *, identity=sb.NotSpecified, label=sb.NotSpecified, updated_at=sb.NotSpecified):
+        return Collection.FieldSpec().empty_normalise(identity=identity, label=label, updated_at=updated_at)
 
 
 class power_spec(sb.Spec):
@@ -183,9 +180,7 @@ class Product(Operator):
             result.append(kls(build=0, version_major=0, version_minor=0))
 
         elif kls | DeviceMessages.StateVersion:
-            result.append(
-                kls(vendor=self.device.cap.product.vendor.vid, product=self.device.cap.product.pid)
-            )
+            result.append(kls(vendor=self.device.cap.product.vendor.vid, product=self.device.cap.product.pid))
 
         elif kls | DeviceMessages.StateHostFirmware:
             result.append(

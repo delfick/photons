@@ -2,6 +2,7 @@ import math
 import time
 
 from delfick_project.norms import dictobj, sb
+
 from photons_canvas import font
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, an_animation, options

@@ -2,9 +2,10 @@ import enum
 
 from delfick_project.norms import dictobj, sb
 from photons_app import helpers as hp
+from photons_protocol.types import enum_spec
+
 from photons_canvas.animations import Animation, Finish, an_animation, options
 from photons_canvas.font import Characters, alphabet_8
-from photons_protocol.types import enum_spec
 
 
 class MarqueeDirection(enum.Enum):
@@ -157,11 +158,7 @@ class MarqueeAnimation(Animation):
             event.state.bounds = event.canvas.bounds
 
         elif event.is_tick:
-
-            if (
-                self.options.num_iterations > 0
-                and event.state.iteration >= self.options.num_iterations
-            ):
+            if self.options.num_iterations > 0 and event.state.iteration >= self.options.num_iterations:
                 raise Finish("Reached maximum iterations")
 
             return event.state.next_layer

@@ -1,9 +1,8 @@
-import typing as tp
-
 from delfick_project.norms import dictobj, sb
+from photons_messages import DeviceMessages, RelayMessages
+
 from photons_app.mimic.event import Event, Events
 from photons_app.mimic.operator import Operator, operator
-from photons_messages import DeviceMessages, RelayMessages
 
 # Ensure Device operator comes before this one
 __import__("photons_app.mimic.operators.device")
@@ -13,7 +12,7 @@ __import__("photons_app.mimic.operators.device")
 class SetRelaysPower(Event):
     """Used to change the power of zero or more relays"""
 
-    def setup(self, *, relays: tp.Dict[int, int]):
+    def setup(self, *, relays: dict[int, int]):
         self.relays = relays
 
     def __repr__(self):
@@ -42,11 +41,7 @@ class RelaysAttr:
             options = Relays.Options.FieldSpec().empty_normalise()
 
         relays = list(options.relays) if options.relays is not None else []
-        relays_count = (
-            options.relays_count
-            if isinstance(options.relays_count, int) and options.relays_count > 0
-            else 4
-        )
+        relays_count = options.relays_count if isinstance(options.relays_count, int) and options.relays_count > 0 else 4
 
         while len(relays) < relays_count:
             relays.append(Relay.FieldSpec().empty_normalise())
@@ -76,18 +71,14 @@ class Relays(Operator):
 
         elif event | RelayMessages.SetRPower:
             event.add_replies(self.state_for(RelayPowerGetter(event.pkt.relay_index)))
-            await self.respond(
-                SetRelaysPower(self.device, relays={event.pkt.relay_index: event.pkt.level})
-            )
+            await self.respond(SetRelaysPower(self.device, relays={event.pkt.relay_index: event.pkt.level}))
 
         elif event | DeviceMessages.SetPower:
             event.set_replies(self.state_for(DeviceMessages.StatePower))
             await self.respond(
                 SetRelaysPower(
                     self.device,
-                    relays={
-                        index: event.pkt.level for index in range(len(self.device.attrs.relays))
-                    },
+                    relays={index: event.pkt.level for index in range(len(self.device.attrs.relays))},
                 )
             )
 
@@ -98,9 +89,7 @@ class Relays(Operator):
             for index, power in event.relays.items():
                 if 0 <= index < len(self.device.attrs.relays):
                     new_power = 0 if power == 0 else 65535
-                    changes.append(
-                        self.device.attrs.attrs_path("relays", index, "power").changer_to(new_power)
-                    )
+                    changes.append(self.device.attrs.attrs_path("relays", index, "power").changer_to(new_power))
                     powers[index] = new_power
 
             # On a real switch this changes depending on how you've setup your switch
@@ -115,8 +104,4 @@ class Relays(Operator):
     def make_state_for(self, kls, result):
         if kls | RelayPowerGetter:
             if 0 < kls.index < len(self.device.attrs.relays):
-                result.append(
-                    RelayMessages.StateRPower(
-                        relay_index=kls.index, level=self.device.attrs.relays[kls.index].power
-                    )
-                )
+                result.append(RelayMessages.StateRPower(relay_index=kls.index, level=self.device.attrs.relays[kls.index].power))

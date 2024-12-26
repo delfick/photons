@@ -28,7 +28,6 @@ def item():
 
 
 class TestNoLimit:
-
     async def test_it_behaves_like_a_normal_semaphore_context_manager(self):
         called = []
 
@@ -69,14 +68,11 @@ class TestItem:
         assert item.parts == [part, part2]
 
     class TestFunctionality:
-
         class TestSimplifyParts:
             async def test_it_returns_originals_with_packets_as_they_are_if_they_are_dynamic_else_we_simplify_them(
                 self,
             ):
-                part1_dynamic = mock.Mock(
-                    name="part1_dynamic", is_dynamic=True, spec=["is_dynamic"]
-                )
+                part1_dynamic = mock.Mock(name="part1_dynamic", is_dynamic=True, spec=["is_dynamic"])
 
                 part2_static = mock.Mock(name="part2_static", is_dynamic=False)
                 part2_simple = mock.Mock(name="part2_simple")
@@ -86,13 +82,9 @@ class TestItem:
                 part3_simple = mock.Mock(name="part3_simple")
                 part3_static.simplify.return_value = part3_simple
 
-                part4_dynamic = mock.Mock(
-                    name="part4_dynamic", is_dynamic=True, spec=["is_dynamic"]
-                )
+                part4_dynamic = mock.Mock(name="part4_dynamic", is_dynamic=True, spec=["is_dynamic"])
 
-                simplified = Item(
-                    [part1_dynamic, part2_static, part3_static, part4_dynamic]
-                ).simplify_parts()
+                simplified = Item([part1_dynamic, part2_static, part3_static, part4_dynamic]).simplify_parts()
                 assert simplified == [
                     (part1_dynamic, part1_dynamic),
                     (part2_static, part2_simple),
@@ -183,7 +175,6 @@ class TestItem:
                 c5.actual.assert_called_once_with("source")
 
         class TestSearch:
-
             @pytest.fixture()
             def V(self, item):
                 class V:
@@ -304,9 +295,7 @@ class TestItem:
                     a=V.a,
                 )
 
-            async def test_it_uses_find_specific_serials_if_found_is_not_None_and_dont_have_all_serials(
-                self, V
-            ):
+            async def test_it_uses_find_specific_serials_if_found_is_not_None_and_dont_have_all_serials(self, V):
                 found = mock.Mock(name="found")
                 missing = mock.Mock(name="missing")
                 V.find_specific_serials.return_value = (found, missing)
@@ -334,7 +323,6 @@ class TestItem:
                 )
 
         class TestWriteMessages:
-
             @pytest.fixture()
             def V(self, final_future):
                 class V:
@@ -343,9 +331,7 @@ class TestItem:
 
                     results = [mock.Mock(name=f"res{i}") for i in range(10)]
 
-                    sender = mock.Mock(
-                        name="sender", stop_fut=final_future, spec=["send_single", "stop_fut"]
-                    )
+                    sender = mock.Mock(name="sender", stop_fut=final_future, spec=["send_single", "stop_fut"])
 
                     error_catcher = []
 
@@ -383,7 +369,6 @@ class TestItem:
                 return V()
 
             async def test_it_sends_the_packets_and_gets_the_replies(self, item, V):
-
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
@@ -409,22 +394,13 @@ class TestItem:
                 assert res == [V.results[i] for i in (1, 2, 7, 5, 6, 3, 4)]
 
                 assert V.sender.send_single.mock_calls == [
-                    mock.call(
-                        V.o1, V.p1, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
-                    ),
-                    mock.call(
-                        V.o2, V.p2, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
-                    ),
-                    mock.call(
-                        V.o3, V.p3, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
-                    ),
-                    mock.call(
-                        V.o4, V.p4, timeout=10, no_retry=False, broadcast=None, connect_timeout=10
-                    ),
+                    mock.call(V.o1, V.p1, timeout=10, no_retry=False, broadcast=None, connect_timeout=10),
+                    mock.call(V.o2, V.p2, timeout=10, no_retry=False, broadcast=None, connect_timeout=10),
+                    mock.call(V.o3, V.p3, timeout=10, no_retry=False, broadcast=None, connect_timeout=10),
+                    mock.call(V.o4, V.p4, timeout=10, no_retry=False, broadcast=None, connect_timeout=10),
                 ]
 
             async def test_it_gets_arguments_for_send_from_kwargs(self, item, V):
-
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
@@ -496,7 +472,6 @@ class TestItem:
                 ]
 
             async def test_it_records_errors(self, item, V):
-
                 async def send_single(original, packet, **kwargs):
                     assert dict(V.packets)[original] is packet
                     if original is V.o1:
@@ -528,7 +503,6 @@ class TestItem:
                 assert res == [V.results[i] for i in (0, 6)]
 
         class TestPrivateFind:
-
             @pytest.fixture()
             def V(self):
                 class V:
@@ -553,18 +527,14 @@ class TestItem:
                 assert s == ["d073d5000000"]
                 assert m is None
 
-                f, s, m = await item._find(
-                    None, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout
-                )
+                f, s, m = await item._find(None, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout)
                 assert f is V.found
                 assert s == ["d073d5000000", "d073d5000001"]
                 assert m is None
 
             async def test_it_returns_the_provided_found_if_one_was_given(self, item, V):
                 found = mock.Mock(name="found")
-                f, s, m = await item._find(
-                    found, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout
-                )
+                f, s, m = await item._find(found, ["d073d5000000", "d073d5000001"], V.sender, V.broadcast, V.timeout)
                 assert f is found
                 assert s == ["d073d5000000", "d073d5000001"]
                 assert m is None
@@ -618,7 +588,6 @@ class TestItem:
                 ]
 
         class TestRun:
-
             @pytest.fixture()
             def V(self, final_future):
                 class V:
@@ -643,9 +612,7 @@ class TestItem:
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
-                _find = pytest.helpers.AsyncMock(
-                    name="_find", return_value=(found, serials, missing)
-                )
+                _find = pytest.helpers.AsyncMock(name="_find", return_value=(found, serials, missing))
 
                 packets = mock.Mock(name="packets")
                 make_packets = mock.Mock(name="make_packets", return_value=packets)
@@ -661,9 +628,7 @@ class TestItem:
                     yield res1
                     yield res2
 
-                write_messages = pytest.helpers.MagicAsyncMock(
-                    name="write_messages", side_effect=write_messages
-                )
+                write_messages = pytest.helpers.MagicAsyncMock(name="write_messages", side_effect=write_messages)
 
                 mod = {
                     "_find": _find,
@@ -684,20 +649,14 @@ class TestItem:
 
                 _find.assert_called_once_with(None, reference, V.sender, False, 20)
                 make_packets.assert_called_once_with(V.sender, serials)
-                search.assert_called_once_with(
-                    V.sender, found, False, packets, False, 20, {"a": a, "error_catcher": mock.ANY}
-                )
-                write_messages.assert_called_once_with(
-                    V.sender, packets, {"a": a, "error_catcher": mock.ANY}
-                )
+                search.assert_called_once_with(V.sender, found, False, packets, False, 20, {"a": a, "error_catcher": mock.ANY})
+                write_messages.assert_called_once_with(V.sender, packets, {"a": a, "error_catcher": mock.ANY})
 
             async def test_it_shortcuts_if_no_packets_to_send(self, item, V):
                 found = mock.Mock(name="found")
                 serials = ["d073d5000000", "d073d5000001"]
                 missing = None
-                _find = pytest.helpers.AsyncMock(
-                    name="_find", return_value=(found, serials, missing)
-                )
+                _find = pytest.helpers.AsyncMock(name="_find", return_value=(found, serials, missing))
 
                 make_packets = mock.Mock(name="make_packets", return_value=[])
 
@@ -746,12 +705,9 @@ class TestItem:
                     packets.append((part, clone))
 
                 assert len(search.mock_calls) == 0
-                write_messages.assert_called_once_with(
-                    V.sender, packets, {"broadcast": True, "error_catcher": mock.ANY}
-                )
+                write_messages.assert_called_once_with(V.sender, packets, {"broadcast": True, "error_catcher": mock.ANY})
 
             async def test_it_complains_if_we_havent_found_all_our_serials(self, item, V):
-
                 class Ref(SpecialReference):
                     async def find(s, *args, **kwargs):
                         found = Found()
@@ -766,16 +722,12 @@ class TestItem:
                         pass
 
                 es = []
-                async for _ in item.run(
-                    Ref(), V.sender, require_all_devices=True, error_catcher=es
-                ):
+                async for _ in item.run(Ref(), V.sender, require_all_devices=True, error_catcher=es):
                     pass
                 assert es == [DevicesNotFound(missing=["d073d5000001"])]
 
                 es = mock.Mock(name="es")
-                async for _ in item.run(
-                    Ref(), V.sender, require_all_devices=True, error_catcher=es
-                ):
+                async for _ in item.run(Ref(), V.sender, require_all_devices=True, error_catcher=es):
                     pass
                 es.assert_called_once_with(DevicesNotFound(missing=["d073d5000001"]))
 
@@ -789,9 +741,7 @@ class TestItem:
                     hp.add_error(kwargs["error_catcher"], error)
                     yield res2
 
-                write_messages = pytest.helpers.MagicAsyncMock(
-                    name="write_messages", side_effect=write_messages
-                )
+                write_messages = pytest.helpers.MagicAsyncMock(name="write_messages", side_effect=write_messages)
 
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []
@@ -831,9 +781,7 @@ class TestItem:
                     yield res2
                     hp.add_error(kwargs["error_catcher"], error2)
 
-                write_messages = pytest.helpers.MagicAsyncMock(
-                    name="write_messages", side_effect=write_messages
-                )
+                write_messages = pytest.helpers.MagicAsyncMock(name="write_messages", side_effect=write_messages)
 
                 with mock.patch.object(item, "write_messages", write_messages):
                     res = []

@@ -60,9 +60,7 @@ def compare_received(by_light):
 
 
 class TestTileHelpers:
-
     class TestSetTileEffect:
-
         async def test_it_complains_if_we_have_more_than_16_colors_in_the_palette(self):
             with assertRaises(PhotonsAppError, "Palette can only be up to 16 colors", got=17):
                 SetTileEffect("flame", palette=["red"] * 17)
@@ -102,9 +100,7 @@ class TestTileHelpers:
             )
 
         async def test_it_has_options(self, sender):
-            msg = SetTileEffect(
-                "flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"]
-            )
+            msg = SetTileEffect("flame", speed=5, duration=10, power_on_duration=20, palette=["red", "green"])
             got = await sender(msg, devices.serials)
             assert got == []
 

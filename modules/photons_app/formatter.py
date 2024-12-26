@@ -20,6 +20,7 @@ import importlib.resources
 import operator
 
 from delfick_project.option_merge import MergedOptionStringFormatter
+
 from photons_app import helpers as hp
 
 
@@ -68,12 +69,6 @@ class MergedOptionStringFormatter(MergedOptionStringFormatter):
         """Know about any special formats"""
         if format_spec == "resource":
             parts = obj.split("/")
-            return str(
-                functools.reduce(
-                    operator.truediv, [importlib.resources.files(parts[0]), *parts[1:]]
-                ).resolve()
-            )
-        elif any(
-            isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)
-        ):
+            return str(functools.reduce(operator.truediv, [importlib.resources.files(parts[0]), *parts[1:]]).resolve())
+        elif any(isinstance(obj, f) for f in (asyncio.Future, hp.ChildOfFuture, hp.ResettableFuture)):
             return obj

@@ -49,7 +49,6 @@ class TestFinder:
         assert finder.forget_after == 42
 
     class TestUsage:
-
         @pytest.fixture()
         def final_future(self):
             fut = hp.create_future()
@@ -83,9 +82,7 @@ class TestFinder:
             finish.assert_called_once_with(None, None, None)
 
         async def test_it_cleans_up_its_devices_on_finish(self, V):
-            serials = {
-                s: pytest.helpers.AsyncMock(name=f"{s}_finish") for s in ("s1", "s2", "s3", "s4")
-            }
+            serials = {s: pytest.helpers.AsyncMock(name=f"{s}_finish") for s in ("s1", "s2", "s3", "s4")}
             patches = []
 
             for serial, finish in serials.items():
@@ -160,11 +157,9 @@ class TestFinder:
                     assert rd == removed
                     assert all(serial not in V.finder.devices for serial in removed)
 
-                    assert {
-                        d.serial: id(d)
-                        for d in V.finder.devices.values()
-                        if d.serial in existing and d.serial not in removed
-                    } == {serial: d for serial, d in existing.items() if serial not in removed}
+                    assert {d.serial: id(d) for d in V.finder.devices.values() if d.serial in existing and d.serial not in removed} == {
+                        serial: d for serial, d in existing.items() if serial not in removed
+                    }
 
                     for serial in V.finder.devices:
                         assert serial not in removed
@@ -188,14 +183,11 @@ class TestFinder:
                 await assertDevices(["s1", "s5"], [], [])
 
         class TestFind:
-
             @pytest.mark.parametrize(
                 "fltr,matches_runs",
                 [(Filter.empty(), False), (Filter.from_kwargs(label="kitchen"), True)],
             )
-            async def test_it_streams_devices_that_match_the_filter(
-                self, V, fltr, matches_runs, fake_time
-            ):
+            async def test_it_streams_devices_that_match_the_filter(self, V, fltr, matches_runs, fake_time):
                 t = fake_time
 
                 class Patches:
@@ -214,17 +206,13 @@ class TestFinder:
                             pmatch = mock.patch.object(
                                 d,
                                 "matches",
-                                pytest.helpers.AsyncMock(
-                                    name=f"{d.serial}_matches", side_effect=match
-                                ),
+                                pytest.helpers.AsyncMock(name=f"{d.serial}_matches", side_effect=match),
                             )
 
                             pfinish = mock.patch.object(
                                 d,
                                 "finish",
-                                pytest.helpers.AsyncMock(
-                                    name=f"{d.serial}_finish", side_effect=finish
-                                ),
+                                pytest.helpers.AsyncMock(name=f"{d.serial}_finish", side_effect=finish),
                             )
 
                             for p in (pmatch, pfinish):
@@ -237,7 +225,10 @@ class TestFinder:
 
                 called = []
                 async with pytest.helpers.FutureDominoes(expected=6) as futs:
-                    m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+
+                    def m(s):
+                        return Device.FieldSpec().empty_normalise(serial=s)
+
                     s1 = m("s1")
                     s2 = m("s2")
                     s3 = m("s3")
@@ -247,9 +238,7 @@ class TestFinder:
                     s7 = m("s7")
 
                     all_serials = [s1, s2, s3, s4, s5, s6, s7]
-                    private_find_all_serials = pytest.helpers.AsyncMock(
-                        name="_find_all_serials", return_value=all_serials
-                    )
+                    private_find_all_serials = pytest.helpers.AsyncMock(name="_find_all_serials", return_value=all_serials)
 
                     removed = [s4, s5, s6]
                     private_ensure_devices = mock.Mock(name="_ensure_devices", return_value=removed)
@@ -257,16 +246,10 @@ class TestFinder:
                     assert V.finder.devices == {}
                     V.finder.devices = {"s1": s1, "s2": s2, "s3": s3, "s7": s7}
 
-                    ensure_devices_patch = mock.patch.object(
-                        V.finder, "_ensure_devices", private_ensure_devices
-                    )
-                    find_all_serials_patch = mock.patch.object(
-                        V.finder, "_find_all_serials", private_find_all_serials
-                    )
+                    ensure_devices_patch = mock.patch.object(V.finder, "_ensure_devices", private_ensure_devices)
+                    find_all_serials_patch = mock.patch.object(V.finder, "_find_all_serials", private_find_all_serials)
 
-                    with Patches(
-                        [s1, s2, s3, s4, s5, s6, s7]
-                    ), ensure_devices_patch, find_all_serials_patch:
+                    with Patches([s1, s2, s3, s4, s5, s6, s7]), ensure_devices_patch, find_all_serials_patch:
 
                         async def s4finish():
                             called.append("s4finish_start")
@@ -354,9 +337,7 @@ class TestFinder:
                             for d in (s4, s5, s6):
                                 d.matches.assert_not_called()
                             for d in (s1, s2, s3, s7):
-                                d.matches.assert_called_once_with(
-                                    V.finder.sender, fltr, V.finder.collections
-                                )
+                                d.matches.assert_called_once_with(V.finder.sender, fltr, V.finder.collections)
                         else:
                             for d in (s1, s2, s3, s4, s5, s6, s7):
                                 d.matches.assert_not_called()
@@ -393,7 +374,6 @@ class TestFinder:
                 assert called == expected_called
 
         class TestInfo:
-
             @pytest.mark.parametrize(
                 "fltr",
                 [
@@ -401,9 +381,7 @@ class TestFinder:
                     Filter.from_options({"label": "attic", "refresh_info": True}),
                 ],
             )
-            async def test_it_streams_devices_after_getting_all_info_for_that_device(
-                self, V, fltr, fake_time
-            ):
+            async def test_it_streams_devices_after_getting_all_info_for_that_device(self, V, fltr, fake_time):
                 t = fake_time
 
                 class Patches:
@@ -419,9 +397,7 @@ class TestFinder:
                             pmatch = mock.patch.object(
                                 d,
                                 "matches",
-                                pytest.helpers.AsyncMock(
-                                    name=f"{d.serial}_matches", side_effect=match
-                                ),
+                                pytest.helpers.AsyncMock(name=f"{d.serial}_matches", side_effect=match),
                             )
                             pmatch.start()
                             s.patches.append(pmatch)
@@ -433,7 +409,9 @@ class TestFinder:
                 async with pytest.helpers.FutureDominoes(expected=7) as futs:
                     called = []
 
-                    m = lambda s: Device.FieldSpec().empty_normalise(serial=s)
+                    def m(s):
+                        return Device.FieldSpec().empty_normalise(serial=s)
+
                     s1 = m("s1")
                     s2 = m("s2")
                     s3 = m("s3")
@@ -514,6 +492,4 @@ class TestFinder:
 
                         empty_fltr = Filter.empty(refresh_info=fltr.refresh_info)
                         for d in (s1, s2, s3, s4):
-                            d.matches.assert_called_once_with(
-                                V.finder.sender, empty_fltr, V.finder.collections
-                            )
+                            d.matches.assert_called_once_with(V.finder.sender, empty_fltr, V.finder.collections)

@@ -1,6 +1,7 @@
 import logging
 
 from photons_app import helpers as hp
+
 from photons_transport.transports.base import Transport
 
 log = logging.getLogger("photons_transport.transports.socket")
@@ -40,11 +41,7 @@ class Socket(Transport):
         return self.__class__(session, self.host, self.port, serial=self.serial)
 
     def __eq__(self, other):
-        return (
-            isinstance(other, self.__class__)
-            and other.host == self.host
-            and other.port == self.port
-        )
+        return isinstance(other, self.__class__) and other.host == self.host and other.port == self.port
 
     async def close(self):
         await super().close()
@@ -52,9 +49,7 @@ class Socket(Transport):
         for fut in self.socket_futs:
             close_existing(fut)
 
-        await hp.cancel_futures_and_wait(
-            *self.socket_futs, name=f"{type(self).__name__}::close[wait_for_sockets]"
-        )
+        await hp.cancel_futures_and_wait(*self.socket_futs, name=f"{type(self).__name__}::close[wait_for_sockets]")
 
     async def close_transport(self, transport):
         close_socket(transport)

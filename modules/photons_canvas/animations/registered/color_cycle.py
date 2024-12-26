@@ -3,6 +3,7 @@ import random
 from collections import defaultdict
 
 from delfick_project.norms import dictobj, sb
+
 from photons_canvas import point_helpers as php
 from photons_canvas.animations import Animation, an_animation
 
@@ -218,9 +219,7 @@ class Layer:
             c = self.event.state["colors"].get(key)
 
         if key is None or c is None:
-            c = self.event.state["colors"][key] = self.changer.color(
-                point, canvas, self.event, self.event.state["state"]
-            )
+            c = self.event.state["colors"][key] = self.changer.color(point, canvas, self.event, self.event.state["state"])
 
         return c
 
