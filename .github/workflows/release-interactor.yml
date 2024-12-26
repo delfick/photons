@@ -63,8 +63,6 @@ jobs:
         with:
           python-version: 3.12
 
-      - run: python3 -m pip install venvstarter
-
       - id: build
         run: cd apps/interactor && ../../tools/uv build -o dist
 
@@ -103,7 +101,8 @@ jobs:
           set -e
           mkdir staging
           cd staging
-          ../apps/interactor/docker/harpoon get_docker_context lifx-photons-interactor
+          ../dev interactor-docker get_docker_context lifx-photons-interactor
+          mv ../apps/interactor/docker/context_lifx-photons-interactor.tar .
           tar xf context_lifx-photons-interactor.tar
           rm context_lifx-photons-interactor.tar
 

@@ -1,0 +1,7 @@
+[project]
+name = "lifx-photons-interactor-docker"
+version = "0.1"
+requires-python = ">= 3.12"
+dependencies = [
+  "docker-harpoon==0.19.0",
+]

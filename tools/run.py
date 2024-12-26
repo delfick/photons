@@ -160,5 +160,26 @@ def interactor_tests(args: list[str]) -> None:
     run("run_photons_core_tests", *ags, env=env, cwd=cwd)
 
 
+@cli.command(context_settings=dict(ignore_unknown_options=True))
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def interactor_docker(args: list[str]) -> None:
+    """
+    Run harpoon for the interactor
+    """
+    harpoon_folder = here / ".." / "apps" / "interactor" / "docker"
+    os.chdir(harpoon_folder)
+
+    def run(*ags: str) -> None:
+        try:
+            subprocess.run(["/bin/bash", str(here / "uv"), "--directory", str(harpoon_folder), *ags], cwd=str(harpoon_folder), check=True)
+        except subprocess.CalledProcessError as e:
+            sys.exit(e.returncode)
+
+    os.environ["VIRTUAL_ENV"] = ""
+
+    run("sync")
+    run("run", "harpoon", *args)
+
+
 if __name__ == "__main__":
     cli()
