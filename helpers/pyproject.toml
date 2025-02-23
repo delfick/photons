@@ -7,7 +7,7 @@ name = "lifx-photons-test-driver"
 dynamic = [ "version" ]
 dependencies = [
   "typing-extensions==4.12.2",
-  "alt-pytest-asyncio==0.9.1",
+  "alt-pytest-asyncio==0.9.2",
   "pytest-helpers-namespace==2021.12.29",
   "pytest==8.0.1",
   "sanic==24.6.0",
