@@ -7,7 +7,7 @@ import aiohttp
 import pytest
 import socketio
 import websockets
-import websockets.client
+import websockets.asyncio.client
 from photons_app import helpers as hp
 
 from photons_web_server.server import Server
@@ -82,13 +82,13 @@ class SocketioStream(hp.AsyncCMMixin):
 
 
 class Stream(hp.AsyncCMMixin):
-    _websocket: websockets.client.WebSocketClientProtocol
+    _websocket: websockets.asyncio.client.ClientProtocol
 
     def __init__(self, address: str):
         self.address = address
 
     async def start(self) -> "Stream":
-        self._websocket = await websockets.client.connect(self.address)
+        self._websocket = await websockets.asyncio.client.connect(self.address)
         return self
 
     async def finish(

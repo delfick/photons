@@ -46,12 +46,12 @@ docs = "https://photons.delfick.com/changelog"
 [project.optional-dependencies]
 web-server = [
     "aiohttp>=3.9.0",
-    "sanic>=24.6.0",
+    "sanic>=24.12.0",
     "sanic-testing>=24.6.0",
     "ulid-py>=1.1.0",
     "strcs==0.4.1",
     "attrs>=23.2.0",
-    "python-socketio==5.11.2"
+    "python-socketio==5.12.1"
 ]       
 
 [project.scripts]

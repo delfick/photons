@@ -50,7 +50,7 @@ fi
 PROJECT_ROOT=$(pwd)
 export PROJECT_ROOT
 
-if ! ./tools/uv sync --locked -q; then
+if ! ./tools/uv sync --extra dev --locked -q; then
     if [ "$sourced" = "1" ]; then
         return 1
     else
