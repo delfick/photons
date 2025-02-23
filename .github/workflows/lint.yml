@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install venv
-        run: ./tools/uv sync --extra tools --locked
+        run: ./tools/uv sync --extra dev --locked
 
       - name: Ensure linter is happy
         run: ./tools/ci lint
@@ -40,7 +40,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install venv
-        run: ./tools/uv sync --extra tools --locked
+        run: ./tools/uv sync --extra dev --locked
 
       - name: Ensure code is formatted
         run: |

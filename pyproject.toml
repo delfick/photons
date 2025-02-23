@@ -1,5 +1,10 @@
-[tool.uv]
-dev-dependencies = [
+[project]
+name = "photons"
+version = "0"
+
+[project.optional-dependencies]
+dev = [
+  "tools",
   "lifx-photons-core[web-server]",
   "lifx-photons-arranger",
   "lifx-photons-interactor",
