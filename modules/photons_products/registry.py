@@ -1318,5 +1318,24 @@ class ProductRegistry:
             has_color = True
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_LIFX_CAPSULE_MINI_US(lifx.Product):
+        pid = 219
+        family = Family.LCMX
+        friendly = "LIFX Capsule Mini US"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_CAPSULE_MINI_INTL(lifx.Product):
+        pid = 220
+        family = Family.LCMX
+        friendly = "LIFX Capsule Mini Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+            min_kelvin, max_kelvin = (1500, 9000)
 
 Products = ProductsHolder(ProductRegistry, lifx.Capability)
