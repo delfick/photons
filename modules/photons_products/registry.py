@@ -1338,4 +1338,5 @@ class ProductRegistry:
             has_color = True
             min_kelvin, max_kelvin = (1500, 9000)
 
+
 Products = ProductsHolder(ProductRegistry, lifx.Capability)

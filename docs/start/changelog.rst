@@ -3,6 +3,11 @@
 ChangeLog
 =========
 
+.. _release-core-0-46-5:
+
+0.46.5 - 22 May 2025
+    * Added LIFX Luna to the product registry
+
 .. _release-core-0-46-4:
 
 0.46.4 - 26 December 2024

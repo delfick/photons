@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-10:
+
+0.16.10 - 22 May 2025
+    * Added LIFX Luna to the product registry
+
 .. _release-interactor-0-16-9:
 
 0.16.9 - 26 December 2024
