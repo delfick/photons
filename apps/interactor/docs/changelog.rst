@@ -3,6 +3,12 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-11:
+
+0.16.11 - 28 September 2025
+    * Photons now understands devices with more than 82 zones may return multiple
+      extended multizone state messages
+
 .. _release-interactor-0-16-10:
 
 0.16.10 - 22 May 2025

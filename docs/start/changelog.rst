@@ -3,6 +3,12 @@
 ChangeLog
 =========
 
+.. _release-core-0-46-6:
+
+0.46.6 - 28 September 2025
+    * Photons now understands devices with more than 82 zones may return multiple
+      extended multizone state messages
+
 .. _release-core-0-46-5:
 
 0.46.5 - 22 May 2025
