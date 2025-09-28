@@ -18,6 +18,10 @@ def color_zones_response_count(req, res):
     return min([req_count, res_count])
 
 
+def extended_color_zones_response_count(res):
+    return math.ceil(res.zones_count // 82) + 1
+
+
 # fmt: off
 
 ########################
@@ -338,7 +342,12 @@ class MultiZoneMessages(Messages):
         , ("colors", T.Bytes(64).multiple(82, kls=fields.Color))
         )
 
-    GetExtendedColorZones = msg(511)
+    GetExtendedColorZones = msg(511
+        , multi = MultiOptions(
+              lambda req: [MultiZoneMessages.StateExtendedColorZones]
+            , lambda req, res: extended_color_zones_response_count(res)
+            )
+        )
 
     StateExtendedColorZones = msg(512
         , ("zones_count", T.Uint16)
