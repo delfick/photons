@@ -94,6 +94,10 @@ output:
           return min([req_count, res_count])
 
 
+      def extended_color_zones_response_count(res):
+          return math.ceil(res.zones_count // 82)
+
+
 types:
   duration_type:
     type: uint32
@@ -422,6 +426,11 @@ changes:
 
   MultiZoneExtendedGetColorZones:
     rename: GetExtendedColorZones
+    multi: |
+      MultiOptions(
+           lambda req: [MultiZoneMessages.StateExtendedColorZones]
+         , lambda req, res: extended_color_zones_response_count(res)
+         )
 
   MultiZoneExtendedSetColorZones:
     rename: SetExtendedColorZones

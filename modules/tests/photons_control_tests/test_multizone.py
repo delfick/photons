@@ -25,6 +25,7 @@ zeroColor = hp.Color(0, 0, 0, 3500)
 zones1 = [hp.Color(i, 1, 1, 3500) for i in range(30)]
 zones2 = [hp.Color(90 - i, 1, 1, 3500) for i in range(6)]
 zones3 = [hp.Color(300 - i, 1, 1, 3500) for i in range(16)]
+zones4 = [hp.Color(300 - i, 1, 1, 3500) for i in range(100)]
 
 devices = pytest.helpers.mimic()
 
@@ -82,6 +83,18 @@ striplcm2extended = devices.add("striplcm2extended")(
         power=0,
         label="lcm2-extended",
         zones=zones3,
+    ),
+)
+
+
+neon = devices.add("neon")(
+    "d073d5000006",
+    Products.LCM3_NEON_INTL,
+    hp.Firmware(3, 100),
+    value_store=dict(
+        power=0,
+        label="neon",
+        zones=zones4,
     ),
 )
 
@@ -451,6 +464,7 @@ class TestMultizoneHelpers:
                 striplcm1.serial: False,
                 striplcm2noextended.serial: False,
                 striplcm2extended.serial: True,
+                neon.serial: True,
             }
 
         async def test_it_resends_messages_each_time_if_we_reset_the_gatherer(self, sender):
@@ -491,6 +505,7 @@ class TestMultizoneHelpers:
                 striplcm1.serial: [(i, c) for i, c in enumerate(zones1)],
                 striplcm2noextended.serial: [(i, c) for i, c in enumerate(zones2)],
                 striplcm2extended.serial: [(i, c) for i, c in enumerate(zones3)],
+                neon.serial: [(i, c) for i, c in enumerate(zones4)],
             }
 
         async def test_it_resends_messages_if_no_gatherer_is_reset_between_runs(self, sender):
@@ -501,6 +516,7 @@ class TestMultizoneHelpers:
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
+            want[neon].append(MultiZoneMessages.GetExtendedColorZones())
             compare_received(want)
 
             del sender.gatherer
@@ -517,6 +533,7 @@ class TestMultizoneHelpers:
             want[striplcm1].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2noextended].append(MultiZoneMessages.GetColorZones(start_index=0, end_index=255))
             want[striplcm2extended].append(MultiZoneMessages.GetExtendedColorZones())
+            want[neon].append(MultiZoneMessages.GetExtendedColorZones())
             compare_received(want)
 
             async for serial, zones in zones_from_reference(devices.serials, sender):
