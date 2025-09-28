@@ -446,6 +446,20 @@ class TestZones:
             True,
         )
 
+    async def test_it_can_respond_with_multiple_extended_zones(self):
+        device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)] * 100)
+        devices.store(device).assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)] * 100)
+
+        assertResponse = makeAssertResponse(device)
+
+        await assertResponse(
+            MultiZoneMessages.GetExtendedColorZones(),
+            (
+                MultiZoneMessages.StateExtendedColorZones(zones_count=100, zone_index=0, colors_count=82, colors=[hp.Color(0, 0, 0, 0)] * 82),
+                MultiZoneMessages.StateExtendedColorZones(zones_count=100, zone_index=82, colors_count=18, colors=[hp.Color(0, 0, 0, 0)] * 18),
+            ),
+        )
+
     async def test_it_responds_to_effect_messages(self):
         device = await self.make_device("striplcm2extended", zones=[hp.Color(0, 0, 0, 0)])
         devices.store(device).assertAttrs(zones_effect=MultiZoneEffectType.OFF, zones=[hp.Color(0, 0, 0, 0)])

@@ -16,8 +16,6 @@ class ZonesAttr:
         elif not options.zones_count:
             zones_count = len(options.zones)
 
-        if zones_count > 82:
-            zones_count = 82
         if zones_count < 0:
             zones_count = 0
 
@@ -157,7 +155,7 @@ class ExtendedMultizone(Operator):
             return
 
         if event | MultiZoneMessages.GetExtendedColorZones:
-            event.add_replies(self.state_for(MultiZoneMessages.StateExtendedColorZones))
+            event.add_replies(self.state_for(MultiZoneMessages.StateExtendedColorZones, expect_one=len(self.device.attrs.zones) <= 82))
 
         elif event | MultiZoneMessages.SetExtendedColorZones:
             event.add_replies(self.state_for(MultiZoneMessages.StateExtendedColorZones))
@@ -174,11 +172,17 @@ class ExtendedMultizone(Operator):
             return
 
         if kls | MultiZoneMessages.StateExtendedColorZones:
-            result.append(
-                kls(
-                    zones_count=len(self.device.attrs.zones),
-                    zone_index=0,
-                    colors_count=len(self.device.attrs.zones),
-                    colors=[z.as_dict() for z in self.device.attrs.zones],
+            zones_index = 0
+            zones_count = len(self.device.attrs.zones)
+
+            while zones_index < zones_count:
+                colors_count = min([82, zones_count - zones_index])
+                result.append(
+                    kls(
+                        zones_count=zones_count,
+                        zone_index=zones_index,
+                        colors_count=colors_count,
+                        colors=[z.as_dict() for z in self.device.attrs.zones[zones_index : zones_index + colors_count]],
+                    )
                 )
-            )
+                zones_index += colors_count
