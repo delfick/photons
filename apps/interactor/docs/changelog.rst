@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. _release-interactor-0-16-12:
+
+0.16.12 - 30 October 2025
+    * Updated Photons for updated product registry
+
 .. _release-interactor-0-16-11:
 
 0.16.11 - 28 September 2025

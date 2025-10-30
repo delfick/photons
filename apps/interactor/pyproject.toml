@@ -13,7 +13,7 @@ keywords = [ "lifx", "photons" ]
 dependencies = [
   "aiosqlite==0.17.0",
   "alembic==1.13.1",
-  "lifx-photons-core[web-server]>=0.46.6",
+  "lifx-photons-core[web-server]>=0.46.7",
   "netifaces==0.11.0",
   "SQLAlchemy[asyncio]==2.0.36",
   "zeroconf==0.36.12"
