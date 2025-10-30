@@ -1170,6 +1170,36 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_LIFX_DOWNLIGHT_US_178(lifx.Product):
+        pid = 178
+        family = Family.LCMX
+        friendly = "LIFX Downlight US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_DOWNLIGHT_US_179(lifx.Product):
+        pid = 179
+        family = Family.LCMX
+        friendly = "LIFX Downlight US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_DOWNLIGHT_US_180(lifx.Product):
+        pid = 180
+        family = Family.LCMX
+        friendly = "LIFX Downlight US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
     class LCMX_COLOR_US(lifx.Product):
         pid = 181
         family = Family.LCMX
@@ -1234,6 +1264,28 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_LIFX_CEILING_13x26_US(lifx.Product):
+        pid = 201
+        family = Family.LCMX
+        friendly = 'LIFX Ceiling 13"x26" US'
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_CEILING_13x26_INTL(lifx.Product):
+        pid = 202
+        family = Family.LCMX
+        friendly = 'LIFX Ceiling 13"x26" Intl'
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
     class LCMX_STRING_US(lifx.Product):
         pid = 203
         family = Family.LCMX
@@ -1278,6 +1330,30 @@ class ProductRegistry:
 
             min_kelvin, max_kelvin = (1500, 9000)
 
+    class LCMX_LIFX_PERMANENT_OUTDOOR_US(lifx.Product):
+        pid = 213
+        family = Family.LCMX
+        friendly = "LIFX Permanent Outdoor US"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+            has_extended_multizone = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_PERMANENT_OUTDOOR_INTL(lifx.Product):
+        pid = 214
+        family = Family.LCMX
+        friendly = "LIFX Permanent Outdoor Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.LINEAR
+            has_color = True
+            has_extended_multizone = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
     class LCMX_LIFX_CANDLE_US(lifx.Product):
         pid = 215
         family = Family.LCMX
@@ -1318,24 +1394,80 @@ class ProductRegistry:
             has_color = True
             min_kelvin, max_kelvin = (1500, 9000)
 
-    class LCMX_LIFX_CAPSULE_MINI_US(lifx.Product):
+    class LCMX_LIFX_LUNA_US(lifx.Product):
         pid = 219
         family = Family.LCMX
-        friendly = "LIFX Capsule Mini US"
+        friendly = "LIFX Luna US"
 
         class cap(lifx.Capability):
             zones = Zones.MATRIX
             has_color = True
+            has_buttons = True
             min_kelvin, max_kelvin = (1500, 9000)
 
-    class LCMX_LIFX_CAPSULE_MINI_INTL(lifx.Product):
+    class LCMX_LIFX_LUNA_INTL(lifx.Product):
         pid = 220
         family = Family.LCMX
-        friendly = "LIFX Capsule Mini Intl"
+        friendly = "LIFX Luna Intl"
 
         class cap(lifx.Capability):
             zones = Zones.MATRIX
             has_color = True
+            has_buttons = True
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_ROUND_SPOT_INTL(lifx.Product):
+        pid = 221
+        family = Family.LCMX
+        friendly = "LIFX Round Spot Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_ROUND_PATH_INTL(lifx.Product):
+        pid = 222
+        family = Family.LCMX
+        friendly = "LIFX Round Path Intl"
+
+        class cap(lifx.Capability):
+            zones = Zones.MATRIX
+            has_chain = False
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_DOWNLIGHT_US_223(lifx.Product):
+        pid = 223
+        family = Family.LCMX
+        friendly = "LIFX Downlight US"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_DOWNLIGHT_INTL(lifx.Product):
+        pid = 224
+        family = Family.LCMX
+        friendly = "LIFX Downlight Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
+            min_kelvin, max_kelvin = (1500, 9000)
+
+    class LCMX_LIFX_PAR38_INTL(lifx.Product):
+        pid = 225
+        family = Family.LCMX
+        friendly = "LIFX PAR38 Intl"
+
+        class cap(lifx.Capability):
+            has_color = True
+
             min_kelvin, max_kelvin = (1500, 9000)
 
 
